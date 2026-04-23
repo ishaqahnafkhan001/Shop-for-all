@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-// Schema for when a Vendor wants to add a new Staff Member or Customer
+// Schema for User Creation (Staff, Customers, or Vendor registration)
 const createUserSchema = Joi.object({
     fullName: Joi.string()
         .trim()
@@ -14,7 +14,7 @@ const createUserSchema = Joi.object({
         }),
 
     email: Joi.string()
-        .email() // Joi has built-in email format checking!
+        .email()
         .required()
         .messages({
             'string.email': 'Please provide a valid email address',
@@ -30,21 +30,21 @@ const createUserSchema = Joi.object({
         }),
 
     role: Joi.string()
-        // Ensure they can only assign specific roles (prevents a vendor from making themselves a SuperAdmin)
-        .valid('VendorStaff', 'Customer')
-        .required(),
+        .valid('VendorAdmin', 'VendorStaff', 'Customer')
+        .optional() // Made optional because the controller often sets this automatically
+        .default('Customer'),
 
-    // shop_id is required here because a vendor can only create users for their own shop
+    // shop_id is optional in Joi because we often inject it from the JWT or Subdomain logic
     shop_id: Joi.string()
         .hex()
-        .length(24) // Ensures it looks like a valid MongoDB ObjectId
-        .required()
+        .length(24)
+        .optional()
         .messages({
             'string.length': 'Invalid Shop ID format'
         })
 });
 
-// Schema for a simple Login Request (only needs email and password)
+// Schema for a simple Login Request
 const loginUserSchema = Joi.object({
     email: Joi.string().email().required().messages({
         'string.email': 'Please provide a valid email address',
