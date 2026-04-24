@@ -7,22 +7,22 @@ import Button from '../../../components/ui/Button';
 
 const EditProduct = () => {
     const navigate = useNavigate();
-    const { id } = useParams(); // Get the product ID from the URL
-    const { state } = useLocation(); // Get the product data passed from ProductList
+    const { id } = useParams();
+    const { state } = useLocation();
 
     const [isLoading, setIsLoading] = useState(false);
 
-    // Pre-fill the form with the passed data (Updated to use new price fields)
     const [formData, setFormData] = useState({
         title: state?.product?.title || '',
         description: state?.product?.description || '',
         buyingPrice: state?.product?.buyingPrice || '',
         sellingPrice: state?.product?.sellingPrice || '',
+        // ✨ NEW: Individual Discount field
+        discount: state?.product?.discount || 0,
         category: state?.product?.category || '',
         stock: state?.product?.stock || '',
     });
 
-    // If the user refreshes the page, the state is lost. Send them back to the list.
     useEffect(() => {
         if (!state?.product) {
             navigate('/dashboard/products');
@@ -33,16 +33,23 @@ const EditProduct = () => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
     };
 
+    // ✨ Logic to show the discounted price in the UI
+    const calculateDiscountedPrice = () => {
+        const price = Number(formData.sellingPrice) || 0;
+        const disc = Number(formData.discount) || 0;
+        return Math.round(price - (price * disc / 100));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
 
         try {
-            // Send a PATCH request to update the product with the new price fields
             await API.patch(`/admin/products/${id}`, {
                 ...formData,
                 buyingPrice: Number(formData.buyingPrice),
                 sellingPrice: Number(formData.sellingPrice),
+                discount: Number(formData.discount), // ✨ Send discount to backend
                 stock: Number(formData.stock)
             });
 
@@ -55,8 +62,8 @@ const EditProduct = () => {
         }
     };
 
-    // Calculate profit dynamically for the UI
-    const profit = (Number(formData.sellingPrice) || 0) - (Number(formData.buyingPrice) || 0);
+    const discountedPrice = calculateDiscountedPrice();
+    const profit = discountedPrice - (Number(formData.buyingPrice) || 0);
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -76,16 +83,15 @@ const EditProduct = () => {
                             value={formData.description}
                             onChange={handleChange}
                             rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 outline-none"
                             required
                         />
                     </div>
 
-                    {/* ✨ NEW: Price Configuration Grid ✨ */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <Input
                             id="buyingPrice"
-                            label="Buying Price (Cost ৳)"
+                            label="Buying Price (৳)"
                             type="number"
                             value={formData.buyingPrice}
                             onChange={handleChange}
@@ -93,20 +99,37 @@ const EditProduct = () => {
                         />
                         <Input
                             id="sellingPrice"
-                            label="Selling Price (Retail ৳)"
+                            label="Retail Price (৳)"
                             type="number"
                             value={formData.sellingPrice}
                             onChange={handleChange}
                             required
                         />
+                        {/* ✨ NEW: Discount Input Field ✨ */}
+                        <Input
+                            id="discount"
+                            label="Discount (%)"
+                            type="number"
+                            value={formData.discount}
+                            onChange={handleChange}
+                            min="0"
+                            max="100"
+                        />
                     </div>
 
-                    {/* ✨ NEW: Real-time Profit Preview ✨ */}
-                    {formData.buyingPrice !== '' && formData.sellingPrice !== '' && (
-                        <div className={`p-3 border rounded-md text-sm font-medium ${profit > 0 ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
-                            {profit > 0
-                                ? `Estimated Profit per unit: ৳${profit}`
-                                : `Warning: You are taking a loss of ৳${Math.abs(profit)} per unit!`}
+                    {/* ✨ NEW: Smart Price & Profit Preview ✨ */}
+                    {formData.sellingPrice !== '' && (
+                        <div className={`p-4 border rounded-xl space-y-2 ${profit > 0 ? 'bg-indigo-50/50 border-indigo-100' : 'bg-red-50 border-red-100'}`}>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Final Sale Price:</span>
+                                <span className="font-bold text-indigo-700">৳{discountedPrice}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Actual Profit:</span>
+                                <span className={`font-bold ${profit > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    ৳{profit} {profit <= 0 && '(Loss!)'}
+                                </span>
+                            </div>
                         </div>
                     )}
 

@@ -1,56 +1,44 @@
-// models/Product.js
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
-    // THE CRITICAL INDEX:
-    // This tells MongoDB to group all products by shop_id for lightning-fast lookups
     shop_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Shop',
         required: true,
         index: true
     },
-
-    title: {
-        type: String,
-        required: [true, 'Product title is required'],
-        trim: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    buyingPrice: {
+    title: { type: String, required: true, trim: true },
+    description: { type: String, required: true },
+    buyingPrice: { type: Number, required: true },
+    sellingPrice: { type: Number, required: true },
+    category: { type: String, index: true },
+    imageUrl: { type: String, required: true },
+    stock: { type: Number, default: 1 },
+    discount: {
         type: Number,
-        required: [true, 'Buying price is required for profit tracking'],
-        min: [0, 'Price cannot be negative']
-    },
-    sellingPrice: {
-        type: Number,
-        required: [true, 'Selling price is required'],
-        min: [0, 'Price cannot be negative']
-    },
-    originalPrice: {
-        type: Number,
-        default: 0
-    },
-    category: {
-        type: String,
-        index: true // Optional: Add this if vendors will frequently filter by category!
-    },
-    imageUrl: {
-        type: String,
-        required: true // This will be the URL from Cloudinary
-    },
-    stock: {
-        type: Number,
-        default: 1
+        default: 0, // Individual product discount %
+        min: 0,
+        max: 100
     }
-}, {timestamps: true});
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
 
-// Optional: A Compound Index
-// If a customer visits "clothingbd.yourwebsite.com/category/shirts",
-// this makes searching by BOTH shop and category instantly fast.
-productSchema.index({shop_id: 1, category: 1});
+/**
+ * ✨ THE VIRTUAL FINAL PRICE
+ * This calculates the price based on the individual product discount.
+ */
+productSchema.virtual('finalPrice').get(function() {
+    const discountToApply = this.discount || 0;
+
+    if (discountToApply > 0) {
+        const reduction = (this.sellingPrice * discountToApply) / 100;
+        return Math.round(this.sellingPrice - reduction);
+    }
+
+    return this.sellingPrice;
+});
 
 module.exports = mongoose.model('Product', productSchema);

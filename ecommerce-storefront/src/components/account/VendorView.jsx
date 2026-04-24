@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 
 export default function VendorView({ user, handleLogout }) {
+    const adminUrl = process.env.NEXT_PUBLIC_ADMIN_PANEL_URL
     return (
         <div className="container mx-auto px-4 py-16 max-w-3xl">
             <div className="bg-gray-900 text-white p-10 rounded-[2rem] text-center relative overflow-hidden border border-gray-800 shadow-2xl">
@@ -14,7 +15,7 @@ export default function VendorView({ user, handleLogout }) {
                         You are logged in as <span className="text-indigo-400 font-medium">{user.role}</span>.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <a href="http://localhost:5173/login" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white text-gray-900 px-8 py-3.5 rounded-xl font-bold hover:bg-indigo-50 transition-all transform hover:scale-105">
+                        <a href={adminUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white text-gray-900 px-8 py-3.5 rounded-xl font-bold hover:bg-indigo-50 transition-all transform hover:scale-105">
                             Open Admin Panel <ArrowRight size={18} />
                         </a>
                         <button onClick={handleLogout} className="px-8 py-3.5 rounded-xl font-bold text-gray-300 hover:text-white hover:bg-white/5 transition-colors">

@@ -38,15 +38,38 @@ const ProductList = () => {
                 </div>
             )
         },
+        // ✨ NEW: Discount & Final Price Column ✨
         {
-            label: 'Profit Margin',
+            label: 'Offer / Final Price',
+            key: 'finalPrice',
+            render: (row) => (
+                <div className="flex flex-col">
+                    {row.discount > 0 ? (
+                        <>
+                            <span className="font-bold text-indigo-600">৳ {row.finalPrice}</span>
+                            <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded w-fit uppercase">
+                            {row.discount}% OFF
+                        </span>
+                        </>
+                    ) : (
+                        <span className="text-gray-400 text-sm italic">No Discount</span>
+                    )}
+                </div>
+            )
+        },
+        {
+            label: 'Actual Profit',
             key: 'profit',
             render: (row) => {
-                const profit = (row.sellingPrice || 0) - (row.buyingPrice || 0);
+                // ✨ THE FIX: We calculate profit based on finalPrice (what customer actually pays)
+                const profit = (row.finalPrice || row.sellingPrice || 0) - (row.buyingPrice || 0);
                 return (
+                    <div className="flex flex-col">
                     <span className={`font-semibold ${profit > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {profit > 0 ? '+' : ''}৳ {profit}
                     </span>
+                        <span className="text-[10px] text-gray-400">Per unit</span>
+                    </div>
                 );
             }
         },
@@ -55,8 +78,8 @@ const ProductList = () => {
             key: 'stock',
             render: (row) => (
                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${row.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {row.stock > 0 ? `${row.stock} In Stock` : 'Out of Stock'}
-                </span>
+                {row.stock > 0 ? `${row.stock} In Stock` : 'Out of Stock'}
+            </span>
             )
         },
     ];

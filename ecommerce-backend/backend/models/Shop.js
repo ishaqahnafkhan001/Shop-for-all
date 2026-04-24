@@ -14,12 +14,18 @@ const shopSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        // Regex: Only allows lowercase letters and numbers (no spaces, dashes, or special chars)
         match: [/^[a-z0-9]+$/, 'Subdomain can only contain lowercase letters and numbers']
     },
     isActive: {
         type: Boolean,
         default: true
+    },
+    // ✨ NEW: Storewide Discount Feature
+    storewideDiscount: {
+        type: Number,
+        default: 0, // 0 means no sale is active
+        min: [0, 'Discount cannot be negative'],
+        max: [100, 'Discount cannot exceed 100%']
     }
 }, { timestamps: true });
 

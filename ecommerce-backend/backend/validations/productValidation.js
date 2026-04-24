@@ -41,6 +41,7 @@ const createProductSchema = Joi.object({
         .max(50)
         .optional(),
 
+    discount: Joi.number().min(0).max(100).optional(), // 👈 Add this
     // We enforce that the uploaded image path is a valid URL (from Cloudinary)
     imageUrl: Joi.string()
         .uri()
