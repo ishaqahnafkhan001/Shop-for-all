@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Package, Truck, CheckCircle, XCircle, Clock } from 'lucide-react';
+// ✨ Added 'Eye' icon import
+import { Package, Truck, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
+// ✨ Import your new Modal
+import OrderDetailsModal from '../../../components/dashboard/OrderDetailsModal';
 
 const OrderList = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // 1. Fetch Orders from Backend
+    // ✨ NEW STATE: Tracks which order to show in the modal (null means closed)
+    const [selectedOrder, setSelectedOrder] = useState(null);
+
     useEffect(() => {
         const fetchOrders = async () => {
             try {
@@ -23,24 +28,19 @@ const OrderList = () => {
         fetchOrders();
     }, []);
 
-    // 2. Inline Status Update Logic
     const handleStatusChange = async (orderId, newStatus) => {
         try {
-            // Optimistically update the UI so it feels instant
             setOrders(orders.map(order =>
                 order._id === orderId ? { ...order, status: newStatus } : order
             ));
-
             await API.patch(`/admin/orders/${orderId}/status`, { status: newStatus });
             toast.success(`Order marked as ${newStatus}`);
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to update status");
-            // If it fails, refresh the page to get the true database state
             window.location.reload();
         }
     };
 
-    // Helper function for beautiful status badges
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -63,12 +63,10 @@ const OrderList = () => {
         }
     };
 
-    // --- Desktop Table Configuration ---
     const columns = [
         {
             label: 'Order ID',
             key: '_id',
-            // Only show the last 6 characters of the MongoDB ID for a cleaner look
             render: (row) => <span className="font-mono text-sm font-semibold text-indigo-600">#{row._id.slice(-6).toUpperCase()}</span>
         },
         {
@@ -105,23 +103,32 @@ const OrderList = () => {
         },
     ];
 
-    // The magical inline dropdown!
+    // ✨ UPDATED: Actions now have a View Details button AND the Status Dropdown side-by-side
     const renderActions = (row) => (
-        <select
-            value={row.status}
-            onChange={(e) => handleStatusChange(row._id, e.target.value)}
-            className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8"
-        >
-            <option value="Pending">Pending</option>
-            <option value="Processing">Processing</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Delivered">Delivered</option>
-            <option value="Cancelled">Cancelled</option>
-        </select>
+        <div className="flex items-center justify-end space-x-3">
+            <button
+                onClick={() => setSelectedOrder(row)}
+                className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 transition px-2 py-1.5 rounded-md hover:bg-indigo-50"
+                title="View Details"
+            >
+                <Eye size={18} className="mr-1.5" /> View
+            </button>
+            <select
+                value={row.status}
+                onChange={(e) => handleStatusChange(row._id, e.target.value)}
+                className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8"
+            >
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
+                <option value="Shipped">Shipped</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+        </div>
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
                 <p className="mt-1 text-sm text-gray-500">Track and fulfill your customer orders.</p>
@@ -131,12 +138,10 @@ const OrderList = () => {
                 <div className="py-10 text-center text-gray-500">Loading your orders...</div>
             ) : (
                 <>
-                    {/* DESKTOP VIEW */}
                     <div className="hidden md:block">
                         <Table columns={columns} data={orders} actions={renderActions} />
                     </div>
 
-                    {/* MOBILE VIEW */}
                     <div className="md:hidden space-y-4">
                         {orders.length === 0 ? (
                             <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
@@ -159,12 +164,11 @@ const OrderList = () => {
 
                                     <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                                         <div>
-                                            <p className="text-xs text-gray-500 uppercase tracking-wider">Total Amount</p>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wider">Total</p>
                                             <p className="font-bold text-gray-900 text-lg">৳ {order.totalAmount}</p>
                                         </div>
-                                        {/* Mobile Action Dropdown */}
-                                        <div className="flex flex-col items-end">
-                                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Update Status</p>
+                                        {/* Mobile Action Dropdown & Button */}
+                                        <div className="flex flex-col items-end space-y-2">
                                             {renderActions(order)}
                                         </div>
                                     </div>
@@ -174,6 +178,12 @@ const OrderList = () => {
                     </div>
                 </>
             )}
+
+            {/* ✨ NEW: Conditionally render the Modal if selectedOrder is not null */}
+            <OrderDetailsModal
+                order={selectedOrder}
+                onClose={() => setSelectedOrder(null)}
+            />
         </div>
     );
 };

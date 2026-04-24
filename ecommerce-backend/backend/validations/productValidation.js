@@ -22,13 +22,15 @@ const createProductSchema = Joi.object({
             'string.min': 'Description is too short. Provide more details.'
         }),
 
-    price: Joi.number()
-        .min(0)
-        .required()
-        .messages({
-            'number.min': 'Price cannot be a negative number',
-            'any.required': 'Price is required'
-        }),
+    // Remove 'price' and add these:
+    buyingPrice: Joi.number().min(0).required().messages({
+        'number.base': 'Buying price must be a number',
+        'any.required': 'Buying price is required'
+    }),
+    sellingPrice: Joi.number().min(0).required().messages({
+        'number.base': 'Selling price must be a number',
+        'any.required': 'Selling price is required'
+    }),
 
     originalPrice: Joi.number()
         .min(0)

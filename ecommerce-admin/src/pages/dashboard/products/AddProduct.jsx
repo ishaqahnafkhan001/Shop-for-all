@@ -9,14 +9,15 @@ const AddProduct = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 
-    // State matching your Joi Validation schema
+    // State updated to remove the old 'price' and use buying/selling prices
     const [formData, setFormData] = useState({
         title: '',
         description: '',
-        price: '',
+        buyingPrice: '',
+        sellingPrice: '',
         category: '',
         stock: '',
-        imageUrl: 'https://via.placeholder.com/150' // Temporary placeholder until we add Cloudinary
+        imageUrl: 'https://via.placeholder.com/150'
     });
 
     const handleChange = (e) => {
@@ -28,21 +29,25 @@ const AddProduct = () => {
         setIsLoading(true);
 
         try {
-            // POST to your real backend route
+            // POST to your real backend route with the new price fields parsed as Numbers
             await API.post('/admin/products', {
                 ...formData,
-                price: Number(formData.price),
+                buyingPrice: Number(formData.buyingPrice),
+                sellingPrice: Number(formData.sellingPrice),
                 stock: Number(formData.stock)
             });
 
             toast.success("Product added successfully!");
-            navigate('/dashboard/products'); // Send them back to the list
+            navigate('/dashboard/products');
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to add product");
         } finally {
             setIsLoading(false);
         }
     };
+
+    // Calculate profit dynamically for the UI
+    const profit = (Number(formData.sellingPrice) || 0) - (Number(formData.buyingPrice) || 0);
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -62,17 +67,46 @@ const AddProduct = () => {
                             value={formData.description}
                             onChange={handleChange}
                             rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                             required
                         />
                     </div>
 
+                    {/* ✨ NEW: Price Configuration Grid ✨ */}
                     <div className="grid grid-cols-2 gap-4">
-                        <Input id="price" label="Price (৳)" type="number" value={formData.price} onChange={handleChange} placeholder="0.00" required />
-                        <Input id="stock" label="Stock Quantity" type="number" value={formData.stock} onChange={handleChange} placeholder="0" required />
+                        <Input
+                            id="buyingPrice"
+                            label="Buying Price (Cost ৳)"
+                            type="number"
+                            value={formData.buyingPrice}
+                            onChange={handleChange}
+                            placeholder="0"
+                            required
+                        />
+                        <Input
+                            id="sellingPrice"
+                            label="Selling Price (Retail ৳)"
+                            type="number"
+                            value={formData.sellingPrice}
+                            onChange={handleChange}
+                            placeholder="0"
+                            required
+                        />
                     </div>
 
-                    <Input id="category" label="Category" value={formData.category} onChange={handleChange} placeholder="e.g. Electronics" required />
+                    {/* ✨ NEW: Real-time Profit Preview ✨ */}
+                    {formData.buyingPrice && formData.sellingPrice && (
+                        <div className={`p-3 border rounded-md text-sm font-medium ${profit > 0 ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                            {profit > 0
+                                ? `Estimated Profit per unit: ৳${profit}`
+                                : `Warning: You are taking a loss of ৳${Math.abs(profit)} per unit!`}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input id="stock" label="Stock Quantity" type="number" value={formData.stock} onChange={handleChange} placeholder="0" required />
+                        <Input id="category" label="Category" value={formData.category} onChange={handleChange} placeholder="e.g. Electronics" required />
+                    </div>
 
                     <div className="pt-4">
                         <Button type="submit" isLoading={isLoading}>Save Product</Button>

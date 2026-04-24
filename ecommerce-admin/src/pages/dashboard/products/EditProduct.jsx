@@ -12,11 +12,12 @@ const EditProduct = () => {
 
     const [isLoading, setIsLoading] = useState(false);
 
-    // Pre-fill the form with the passed data
+    // Pre-fill the form with the passed data (Updated to use new price fields)
     const [formData, setFormData] = useState({
         title: state?.product?.title || '',
         description: state?.product?.description || '',
-        price: state?.product?.price || '',
+        buyingPrice: state?.product?.buyingPrice || '',
+        sellingPrice: state?.product?.sellingPrice || '',
         category: state?.product?.category || '',
         stock: state?.product?.stock || '',
     });
@@ -37,10 +38,11 @@ const EditProduct = () => {
         setIsLoading(true);
 
         try {
-            // Send a PATCH request to update the product
+            // Send a PATCH request to update the product with the new price fields
             await API.patch(`/admin/products/${id}`, {
                 ...formData,
-                price: Number(formData.price),
+                buyingPrice: Number(formData.buyingPrice),
+                sellingPrice: Number(formData.sellingPrice),
                 stock: Number(formData.stock)
             });
 
@@ -52,6 +54,9 @@ const EditProduct = () => {
             setIsLoading(false);
         }
     };
+
+    // Calculate profit dynamically for the UI
+    const profit = (Number(formData.sellingPrice) || 0) - (Number(formData.buyingPrice) || 0);
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
@@ -76,12 +81,39 @@ const EditProduct = () => {
                         />
                     </div>
 
+                    {/* ✨ NEW: Price Configuration Grid ✨ */}
                     <div className="grid grid-cols-2 gap-4">
-                        <Input id="price" label="Price (৳)" type="number" value={formData.price} onChange={handleChange} required />
-                        <Input id="stock" label="Stock Quantity" type="number" value={formData.stock} onChange={handleChange} required />
+                        <Input
+                            id="buyingPrice"
+                            label="Buying Price (Cost ৳)"
+                            type="number"
+                            value={formData.buyingPrice}
+                            onChange={handleChange}
+                            required
+                        />
+                        <Input
+                            id="sellingPrice"
+                            label="Selling Price (Retail ৳)"
+                            type="number"
+                            value={formData.sellingPrice}
+                            onChange={handleChange}
+                            required
+                        />
                     </div>
 
-                    <Input id="category" label="Category" value={formData.category} onChange={handleChange} required />
+                    {/* ✨ NEW: Real-time Profit Preview ✨ */}
+                    {formData.buyingPrice !== '' && formData.sellingPrice !== '' && (
+                        <div className={`p-3 border rounded-md text-sm font-medium ${profit > 0 ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                            {profit > 0
+                                ? `Estimated Profit per unit: ৳${profit}`
+                                : `Warning: You are taking a loss of ৳${Math.abs(profit)} per unit!`}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input id="stock" label="Stock Quantity" type="number" value={formData.stock} onChange={handleChange} required />
+                        <Input id="category" label="Category" value={formData.category} onChange={handleChange} required />
+                    </div>
 
                     <div className="pt-4">
                         <Button type="submit" isLoading={isLoading}>Update Product</Button>

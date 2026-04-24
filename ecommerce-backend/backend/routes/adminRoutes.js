@@ -13,7 +13,7 @@ const {
     deleteProduct
 } = require('../controllers/productController');
 
-const { getShopOrders, updateOrderStatus, getDashboardStats } = require('../controllers/orderController');
+const { getShopOrders, updateOrderStatus, getDashboardStats,getRevenueAnalytics } = require('../controllers/orderController');
 
 const {getShopCustomers,
     getShopUsers,
@@ -75,6 +75,10 @@ router.post(
 
 
 // Add this alongside your other protected admin routes
+
+
+// Make sure this is protected so only the vendor can see their money!
+router.get('/analytics/revenue', protect, getRevenueAnalytics);
 router.get('/dashboard-stats', protect, getDashboardStats);
 
 router.get('/orders', protect, getShopOrders);

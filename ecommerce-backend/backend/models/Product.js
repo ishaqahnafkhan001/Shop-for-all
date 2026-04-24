@@ -20,9 +20,14 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    price: {
+    buyingPrice: {
         type: Number,
-        required: true,
+        required: [true, 'Buying price is required for profit tracking'],
+        min: [0, 'Price cannot be negative']
+    },
+    sellingPrice: {
+        type: Number,
+        required: [true, 'Selling price is required'],
         min: [0, 'Price cannot be negative']
     },
     originalPrice: {
@@ -41,11 +46,11 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 1
     }
-}, { timestamps: true });
+}, {timestamps: true});
 
 // Optional: A Compound Index
 // If a customer visits "clothingbd.yourwebsite.com/category/shirts",
 // this makes searching by BOTH shop and category instantly fast.
-productSchema.index({ shop_id: 1, category: 1 });
+productSchema.index({shop_id: 1, category: 1});
 
 module.exports = mongoose.model('Product', productSchema);
