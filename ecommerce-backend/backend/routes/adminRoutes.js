@@ -13,9 +13,12 @@ const {
     deleteProduct
 } = require('../controllers/productController');
 
-const {
+const { getShopOrders, updateOrderStatus, getDashboardStats } = require('../controllers/orderController');
+
+const {getShopCustomers,
     getShopUsers,
-    createShopUser
+    createShopUser,
+    toggleCustomerStatus
 } = require('../controllers/userController');
 
 // --- PRODUCT MANAGEMENT ---
@@ -70,4 +73,14 @@ router.post(
     createShopUser
 );
 
+
+// Add this alongside your other protected admin routes
+router.get('/dashboard-stats', protect, getDashboardStats);
+
+router.get('/orders', protect, getShopOrders);
+router.patch('/orders/:id/status', protect, updateOrderStatus);
+
+router.patch('/customers/:id/status', protect, toggleCustomerStatus);
+
+router.get('/customers', protect, getShopCustomers);
 module.exports = router;

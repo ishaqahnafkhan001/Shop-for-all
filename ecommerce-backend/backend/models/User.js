@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema({
         enum: ['SuperAdmin', 'VendorAdmin', 'VendorStaff', 'Customer'],
         default: 'Customer'
     },
+    // Add this inside your UserSchema definition:
+    status: {
+        type: String,
+        enum: ['Active', 'Suspended'],
+        default: 'Active'
+    },
     // THE LINK: Connects the user to a specific storefront
     shop_id: {
         type: mongoose.Schema.Types.ObjectId,
