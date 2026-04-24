@@ -34,6 +34,9 @@ const createUserSchema = Joi.object({
         .optional() // Made optional because the controller often sets this automatically
         .default('Customer'),
 
+    subdomain: Joi.string().required().messages({
+        'any.required': 'Subdomain context is missing'
+    }),
     // shop_id is optional in Joi because we often inject it from the JWT or Subdomain logic
     shop_id: Joi.string()
         .hex()

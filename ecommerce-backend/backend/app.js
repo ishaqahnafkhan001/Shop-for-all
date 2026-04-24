@@ -11,6 +11,7 @@ const { errorHandler } = require('./middlewares/error');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const storefrontRoutes = require('./routes/storefrontRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 
 // 1. Initialize Database
 connectDB();
@@ -36,6 +37,7 @@ app.use(cors({
 app.use('/api/auth', authRoutes);           // Registration, Login, Logout
 app.use('/api/admin', adminRoutes);         // Product & Staff management (Protected)
 app.use('/api/storefront', storefrontRoutes); // Public Storefront data (Subdomain-based)
+app.use('/api/public', publicRoutes);
 
 // 4. Base Health Check Route
 app.get('/', (req, res) => {
