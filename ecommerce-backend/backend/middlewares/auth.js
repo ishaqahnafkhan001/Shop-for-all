@@ -20,6 +20,8 @@ exports.protect = async (req, res, next) => {
         // 3. Attach the decoded user data (userId, role, shopId) to the request object!
         req.user = decoded;
 
+        req.user._id = decoded.userId;
+
         // 4. Pass control to the next function (the controller)
         next();
     } catch (err) {

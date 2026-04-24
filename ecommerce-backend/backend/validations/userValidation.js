@@ -42,7 +42,7 @@ const createUserSchema = Joi.object({
         .messages({
             'string.length': 'Invalid Shop ID format'
         })
-});
+}).required();
 
 // Schema for a simple Login Request
 const loginUserSchema = Joi.object({
@@ -53,7 +53,7 @@ const loginUserSchema = Joi.object({
     password: Joi.string().required().messages({
         'string.empty': 'Password is required'
     })
-});
+}).required();
 
 module.exports = {
     createUserSchema,

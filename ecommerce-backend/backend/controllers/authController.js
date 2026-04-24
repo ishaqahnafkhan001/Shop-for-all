@@ -65,21 +65,21 @@ exports.registerVendor = async (req, res) => {
 };
 
 
+
 exports.registerCustomer = async (req, res) => {
     try {
         // 1. Validate the user data
         const { error, value } = createUserSchema.validate(req.body);
         if (error) return res.status(400).json({ error: error.details[0].message });
 
-        const { fullName, email, password } = value;
+        // Extract everything cleanly from 'value' (including shop_id!)
+        const { fullName, email, password, shop_id } = value;
 
         // 2. Check for existing email
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ error: "Email already registered." });
 
-        // 3. Tenancy check - make sure we know which shop they belong to
-        // Using shop_id to match your MongoDB schema
-        const { shop_id } = req.body;
+        // 3. Tenancy check
         if (!shop_id) return res.status(400).json({ error: "Shop reference is required." });
 
         // 4. Secure the password
@@ -91,17 +91,38 @@ exports.registerCustomer = async (req, res) => {
             fullName,
             email,
             password: hashedPassword,
-            role: 'Customer', // Forced for security
+            role: 'Customer',
             shop_id: shop_id
         });
 
+        // ✨ 6. AUTO-LOGIN: Generate the JWT ✨
+        const token = jwt.sign(
+            {
+                userId: newCustomer._id,
+                role: newCustomer.role,
+                shopId: newCustomer.shop_id
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        // ✨ 7. AUTO-LOGIN: Set the Cookie ✨
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        // 8. Return success response
         res.status(201).json({
             success: true,
-            message: "Account created! You can now log in.",
+            message: "Account created and logged in successfully!",
             user: {
                 id: newCustomer._id,
                 fullName: newCustomer.fullName,
-                shop_id: newCustomer.shop_id
+                role: newCustomer.role,
+                shopId: newCustomer.shop_id
             }
         });
 
@@ -109,8 +130,7 @@ exports.registerCustomer = async (req, res) => {
         console.error("Reg Error:", err);
         res.status(500).json({ error: "Registration failed." });
     }
-};
-/**
+};/**
  * @desc    Login user & Set HttpOnly Cookie
  */
 exports.login = async (req, res) => {
@@ -139,7 +159,7 @@ exports.login = async (req, res) => {
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
-
+        console.log(token)
         res.status(200).json({
             message: "Login successful",
             user: { id: user._id, fullName: user.fullName, role: user.role, shopId: user.shop_id }
