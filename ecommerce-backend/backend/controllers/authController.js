@@ -113,6 +113,7 @@ exports.registerCustomer = async (req, res) => {
 
         res.status(201).json({
             success: true,
+            token: token,
             user: { id: newCustomer._id, fullName: newCustomer.fullName, role: newCustomer.role }
         });
 
@@ -139,7 +140,8 @@ exports.login = async (req, res) => {
         if (!isMatch) return res.status(401).json({ error: "Invalid email or password" });
 
         const token = jwt.sign(
-            { userId: user._id, role: user.role, shopId: user.shop_id },
+            // ✨ THE FIX: Changed 'userId' to 'id' to match the middleware
+            { id: user._id, role: user.role, shopId: user.shop_id },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -151,16 +153,21 @@ exports.login = async (req, res) => {
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
-        console.log(token)
+
+        console.log("Generated Token:", token);
+
         res.status(200).json({
             message: "Login successful",
-            user: { id: user._id, fullName: user.fullName, role: user.role, shopId: user.shop_id }
+            token: token,
+            // ✨ Perfect: The email is included here!
+            user: { id: user._id, fullName: user.fullName, role: user.role, shopId: user.shop_id, email: user.email }
         });
 
     } catch (err) {
         res.status(500).json({ error: "Login failed" });
     }
 };
+
 
 /**
  * @desc    Get Current Logged-in User Info

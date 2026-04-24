@@ -140,3 +140,46 @@ exports.getPublicProduct = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+exports.getMyOrders = async (req, res) => {
+    try {
+        const customerId = req.user.id || req.user.userId;
+
+        // ✨ ADD THESE LOGS
+        console.log("🔍 Search requested by Customer ID:", customerId);
+
+        const orders = await Order.find({ customer: customerId })
+            .sort({ createdAt: -1 });
+
+        console.log(`📦 Found ${orders.length} orders for this ID.`);
+        res.status(200).json(orders);
+    } catch (err) {
+        console.error("Fetch Orders Error:", err);
+        res.status(500).json({ error: "Failed to fetch order history." });
+    }
+};
+
+// Add this to your public controller
+exports.trackPublicOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        // Verify it's a valid MongoDB ObjectId to prevent server crashes
+        if (!orderId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ error: "Invalid Order ID format." });
+        }
+
+        const order = await Order.findById(orderId)
+            // Optional: Populating product titles/images makes the tracking page look better!
+            .populate('items.product', 'title imageUrl category');
+
+        if (!order) {
+            return res.status(404).json({ error: "Order not found. Please check your ID." });
+        }
+
+        res.status(200).json(order);
+    } catch (err) {
+        console.error("Tracking Error:", err);
+        res.status(500).json({ error: "Server error while tracking order." });
+    }
+};

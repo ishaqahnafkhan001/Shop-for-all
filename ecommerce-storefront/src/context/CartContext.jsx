@@ -1,77 +1,106 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 
 const CartContext = createContext();
 
-export const CartProvider = ({ children }) => {
-    const [cart, setCart] = useState([]);
+export const CartProvider = ({ children, subdomain }) => {
+    const [cartItems, setCartItems] = useState([]);
+    const [isMounted, setIsMounted] = useState(false);
 
-    // ✨ NEW: We need a flag to track if we've loaded the saved cart yet
-    const [isLoaded, setIsLoaded] = useState(false);
+    const storageKey = `shopforall_cart_${subdomain}`;
 
-    // ✨ NEW STEP 1: Load the cart from Local Storage when the app starts
+    // Load cart from LocalStorage on first render
     useEffect(() => {
-        const savedCart = localStorage.getItem('shopforall_cart');
+        setIsMounted(true);
+        const savedCart = localStorage.getItem(storageKey);
         if (savedCart) {
             try {
-                setCart(JSON.parse(savedCart));
-            } catch (error) {
-                console.error("Failed to load cart from storage", error);
+                setCartItems(JSON.parse(savedCart));
+            } catch (e) {
+                console.error("Failed to parse cart data");
             }
         }
-        setIsLoaded(true); // Tell the app we are done loading
-    }, []);
+    }, [storageKey]);
 
-    // ✨ NEW STEP 2: Save the cart to Local Storage EVERY TIME it changes
+    // Save cart to LocalStorage whenever it changes
     useEffect(() => {
-        // We only save if isLoaded is true.
-        // Otherwise, we might accidentally overwrite their saved cart with an empty array on the first millisecond!
-        if (isLoaded) {
-            localStorage.setItem('shopforall_cart', JSON.stringify(cart));
+        if (isMounted) {
+            localStorage.setItem(storageKey, JSON.stringify(cartItems));
         }
-    }, [cart, isLoaded]);
+    }, [cartItems, isMounted, storageKey]);
 
-    const addToCart = (product) => {
-        const existingItem = cart.find(item => item._id === product._id);
+    // --- CART ACTIONS --- //
 
-        if (existingItem) {
-            toast.success(`Increased quantity for ${product.title}`);
-            setCart((prevCart) =>
-                prevCart.map(item =>
-                    item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item
-                )
-            );
+    const addToCart = (product, quantity = 1) => {
+        // ✨ THE FIX: We trigger the Toast notifications OUTSIDE the state updater
+        const isExisting = cartItems.some((item) => item._id === product._id);
+
+        if (isExisting) {
+            toast.success(`Increased ${product.title} quantity!`);
         } else {
-            toast.success(`${product.title} added to cart`);
-            setCart((prevCart) => [...prevCart, { ...product, quantity: 1 }]);
+            toast.success(`${product.title} added to cart!`);
         }
+
+        // ✨ We do the actual state update purely, with no side effects inside
+        setCartItems((prev) => {
+            if (prev.some((item) => item._id === product._id)) {
+                return prev.map((item) =>
+                    item._id === product._id
+                        ? { ...item, quantity: item.quantity + quantity }
+                        : item
+                );
+            }
+            return [...prev, { ...product, quantity }];
+        });
+    };
+
+    const removeFromCart = (productId) => {
+        // Toasts are safe here because they aren't inside the setCartItems function
+        toast.success("Item removed from cart");
+        setCartItems((prev) => prev.filter((item) => item._id !== productId));
     };
 
     const updateQuantity = (productId, newQuantity) => {
-        if (newQuantity < 1) return;
-        setCart((prevCart) =>
-            prevCart.map(item =>
+        if (newQuantity < 1) return removeFromCart(productId);
+
+        setCartItems((prev) =>
+            prev.map((item) =>
                 item._id === productId ? { ...item, quantity: newQuantity } : item
             )
         );
     };
 
-    const removeFromCart = (productId) => {
-        setCart((prevCart) => prevCart.filter(item => item._id !== productId));
-        toast.error("Item removed from cart", {
-            style: { background: '#ef4444', color: '#fff' }
-        });
+    const clearCart = () => {
+        setCartItems([]);
     };
 
-    const clearCart = () => setCart([]);
+    // --- DERIVED STATE (Calculated on the fly) --- //
+
+    const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+    const cartTotal = cartItems.reduce((total, item) => total + (item.sellingPrice * item.quantity), 0);
 
     return (
-        <CartContext.Provider value={{ cart, addToCart, updateQuantity, removeFromCart, clearCart }}>
-            {/* ✨ We only show the children once localStorage has finished loading. This prevents a weird "flicker" */}
-            {isLoaded ? children : null}
+        <CartContext.Provider
+            value={{
+                cartItems,
+                addToCart,
+                removeFromCart,
+                updateQuantity,
+                clearCart,
+                cartCount,
+                cartTotal,
+            }}
+        >
+            {children}
         </CartContext.Provider>
     );
 };
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => {
+    const context = useContext(CartContext);
+    if (!context) {
+        throw new Error("useCart must be used within a CartProvider");
+    }
+    return context;
+};

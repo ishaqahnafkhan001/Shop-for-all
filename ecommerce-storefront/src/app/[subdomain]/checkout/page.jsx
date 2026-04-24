@@ -9,7 +9,7 @@ import API from '@/api/api';
 
 export default function CheckoutPage({ params }) {
     const { subdomain } = React.use(params);
-    const { cart, clearCart } = useCart();
+    const { cartItems, cartTotal, clearCart } = useCart();
     const router = useRouter();
 
     const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ export default function CheckoutPage({ params }) {
     });
 
     const shippingCost = formData.zone === 'Inside Dhaka' ? 60 : 120;
-    const subtotal = cart.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
+    const subtotal = cartTotal;
     const totalAmount = subtotal + shippingCost;
 
     const handleInputChange = (e) => {
@@ -37,7 +37,7 @@ export default function CheckoutPage({ params }) {
     const handlePlaceOrder = async (e) => {
         e.preventDefault();
 
-        if (cart.length === 0) {
+        if (cartItems.length === 0) {
             toast.error("Your cart is empty!");
             return;
         }
@@ -45,33 +45,65 @@ export default function CheckoutPage({ params }) {
         setLoading(true);
 
         try {
-            // Format the payload to match your backend expectations
-            const orderPayload = {
-                subdomain,
-                customer: {
-                    fullName: formData.fullName,
-                    email: formData.email,
-                    phone: formData.phone,
-                },
-                shippingAddress: `${formData.address}, ${formData.city}`,
-                shippingZone: formData.zone,
-                items: cart.map(item => ({
-                    product: item._id,
-                    quantity: item.quantity,
-                    price: item.sellingPrice
-                })),
-                shippingCost,
-                totalAmount
-            };
+            // ✨ 1. Check if the user is currently logged in
+            const token = localStorage.getItem('shopforall_token');
+            let savedOrderData;
 
-            const { data } = await API.post('/public/orders', orderPayload);
+            if (token) {
+                // ==========================================
+                // 🚪 DOOR 1: LOGGED-IN USER CHECKOUT
+                // ==========================================
+                const securePayload = {
+                    items: cartItems.map(item => ({
+                        product: item._id,
+                        quantity: item.quantity
+                    })),
+                    shippingZone: formData.zone,
+                    shippingAddress: `${formData.address}, ${formData.city}`
+                };
 
-            setOrderId(data._id);
+                // Send to the secure route
+                const response = await API.post(`/storefront/${subdomain}/orders`, securePayload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                // Your secure route returns { success: true, order: {...} }
+                savedOrderData = response.data.order;
+
+            } else {
+                // ==========================================
+                // 🚪 DOOR 2: GUEST CHECKOUT
+                // ==========================================
+                const guestPayload = {
+                    subdomain,
+                    customer: {
+                        fullName: formData.fullName,
+                        email: formData.email,
+                        phone: formData.phone,
+                    },
+                    shippingAddress: `${formData.address}, ${formData.city}`,
+                    shippingZone: formData.zone,
+                    items: cartItems.map(item => ({
+                        product: item._id,
+                        quantity: item.quantity,
+                        price: item.sellingPrice
+                    })),
+                    shippingCost,
+                    totalAmount
+                };
+
+                const response = await API.post('/public/orders', guestPayload);
+                savedOrderData = response.data;
+            }
+
+            // ✨ 3. Success for both doors!
+            setOrderId(savedOrderData._id);
             setIsSuccess(true);
-            clearCart(); // Empty the cart after successful order!
+            clearCart();
             toast.success("Order placed successfully!");
 
         } catch (error) {
+            console.error("ORDER REJECTED BECAUSE:", error.response?.data || error.message);
             toast.error(error.response?.data?.error || "Failed to place order.");
         } finally {
             setLoading(false);
@@ -95,7 +127,7 @@ export default function CheckoutPage({ params }) {
     }
 
     // --- EMPTY CART REDIRECT ---
-    if (cart.length === 0) {
+    if (cartItems.length === 0) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center text-center">
                 <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
@@ -171,7 +203,7 @@ export default function CheckoutPage({ params }) {
 
                         {/* Cart Items Preview */}
                         <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
-                            {cart.map(item => (
+                            {cartItems.map(item => (
                                 <div key={item._id} className="flex justify-between text-sm">
                                     <div className="flex items-center">
                                         <span className="font-semibold mr-2">{item.quantity}x</span>

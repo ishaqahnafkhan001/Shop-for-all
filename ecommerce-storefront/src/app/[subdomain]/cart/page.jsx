@@ -5,15 +5,16 @@ import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CartPage() {
-    const { cart, removeFromCart, updateQuantity } = useCart();
+    // ✨ THE FIX: Import cartItems and cartTotal
+    const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart();
 
     // Calculate Costs
-    const subtotal = cart.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
-    const shipping = cart.length > 0 ? 60 : 0; // Flat rate shipping (৳ 60)
+    const subtotal = cartTotal; // ✨ THE FIX: Use the pre-calculated math
+    const shipping = cartItems.length > 0 ? 60 : 0; // Flat rate shipping (৳ 60)
     const total = subtotal + shipping;
 
     // EMPTY CART STATE
-    if (cart.length === 0) {
+    if (cartItems.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] py-20 px-4 text-center">
                 <div className="bg-gray-50 p-6 rounded-full mb-6">
@@ -46,7 +47,7 @@ export default function CartPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 {/* Left Side: Cart Items List */}
                 <div className="lg:col-span-2 space-y-4">
-                    {cart.map((item) => (
+                    {cartItems.map((item) => (
                         <div key={item._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition">
 
                             {/* Product Info */}
@@ -102,7 +103,7 @@ export default function CartPage() {
 
                         <div className="space-y-3 text-sm text-gray-600 mb-6">
                             <div className="flex justify-between">
-                                <span>Subtotal ({cart.length} items)</span>
+                                <span>Subtotal ({cartItems.length} items)</span>
                                 <span className="font-medium text-gray-900">৳ {subtotal}</span>
                             </div>
                             <div className="flex justify-between">

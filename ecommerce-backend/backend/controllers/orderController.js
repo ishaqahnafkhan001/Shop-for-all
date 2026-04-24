@@ -15,8 +15,8 @@ exports.createOrder = async (req, res) => {
     try {
         // ✨ 1. REAL-TIME SECURITY CHECK: Is the user banned? ✨
         // We use .select('status') to make this query incredibly fast
-        const customerCheck = await User.findById(req.user._id).select('status');
-
+        const customerCheck = await User.findById(req.user.id).select('status');
+        console.log("🕵️ SECURITY CHECK - User Data:", req.user);
         if (!customerCheck) {
             return res.status(404).json({ error: "Customer account not found." });
         }
@@ -70,7 +70,7 @@ exports.createOrder = async (req, res) => {
         // 4. Create the Order
         const newOrder = new Order({
             shop_id: tenantId,
-            customer: req.user._id,
+            customer: req.user.id,
             items: itemsWithPrice,
             shippingZone,
             shippingCost,
@@ -287,3 +287,4 @@ exports.getRevenueAnalytics = async (req, res) => {
         res.status(500).json({ error: "Failed to fetch revenue data." });
     }
 };
+
