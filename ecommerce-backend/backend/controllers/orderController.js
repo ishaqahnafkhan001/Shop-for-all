@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const { createOrderSchema,updateOrderStatusSchema } = require('../validations/orderValidation');
+const InventoryLog = require('../models/InventoryLog');
 
 
 
@@ -12,100 +13,298 @@ const { createOrderSchema,updateOrderStatusSchema } = require('../validations/or
  */
 
 exports.createOrder = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-        // ✨ 1. REAL-TIME SECURITY CHECK: Is the user banned? ✨
-        // We use .select('status') to make this query incredibly fast
-        const customerCheck = await User.findById(req.user.id).select('status');
-        console.log("🕵️ SECURITY CHECK - User Data:", req.user);
-        if (!customerCheck) {
-            return res.status(404).json({ error: "Customer account not found." });
+        const { items, shipping, payment } = req.body;
+        const shopId = req.tenantId;
+
+        // 🔐 1. Security check
+        const customer = await User.findById(req.user.id).select('status').session(session);
+
+        if (!customer) {
+            throw new Error("Customer not found");
         }
 
-        if (customerCheck.status === 'Suspended') {
+        if (customer.status === 'Suspended') {
             return res.status(403).json({
-                error: "Your account has been suspended by the store admin. You cannot place orders."
+                error: "Account suspended"
             });
         }
 
-        // ==========================================
-        //  If they pass the check, process the order
-        // ==========================================
-
-        const { items, shippingZone, shippingAddress } = req.body;
-        const tenantId = req.tenantId;
-
-        let itemsWithPrice = [];
         let subtotal = 0;
+        const orderItems = [];
 
-        // 2. Fetch current prices from the DB for every item sent by the user
+        // 🔁 2. Process each item safely
         for (const item of items) {
-            const product = await Product.findOne({ _id: item.product, shop_id: tenantId });
+
+            const product = await Product.findOne({
+                _id: item.productId,
+                shop_id: shopId,
+                isDeleted: false
+            }).session(session);
 
             if (!product) {
-                return res.status(404).json({ error: `Product ${item.product} not found.` });
+                throw new Error("Product not found");
             }
 
-            // Check stock while we are at it
-            if (product.stock < item.quantity) {
-                return res.status(400).json({ error: `Insufficient stock for ${product.title}` });
+            const variant = product.variants.id(item.variantId);
+
+            if (!variant) {
+                throw new Error("Variant not found");
             }
 
-            // Use the prices FROM THE DATABASE
-            const sellingPriceAtPurchase = product.sellingPrice;
-            const buyingPriceAtPurchase = product.buyingPrice;
+            // 🔐 Stock check
+            if (variant.stock < item.quantity) {
+                throw new Error(`Out of stock for ${product.title}`);
+            }
 
-            itemsWithPrice.push({
-                product: product._id,
+            const beforeStock = variant.stock;
+
+            // 🔻 Reduce stock
+            variant.stock -= item.quantity;
+
+            await product.save({ session });
+
+            const afterStock = variant.stock;
+
+            // 💰 Pricing
+            const price = product.finalPrice;
+            const total = price * item.quantity;
+
+            subtotal += total;
+
+            // 📦 Order snapshot
+            orderItems.push({
+                productId: product._id,
+                variantId: variant._id,
+                title: product.title,
+                sku: variant.sku,
+                attributes: variant.attributes,
                 quantity: item.quantity,
-                price: sellingPriceAtPurchase,        // What the customer pays
-                buyingPrice: buyingPriceAtPurchase    // Saved for your Profit Chart
+                price,
+                buyingPrice: product.pricing.buyingPrice,
+                total
             });
 
-            subtotal += sellingPriceAtPurchase * item.quantity;
+            // 🧾 🔥 INVENTORY LOG (ORDER)
+            await InventoryLog.create([{
+                shop_id: shopId,
+                productId: product._id,
+                variantId: variant._id,
+
+                change: -item.quantity,
+                type: 'ORDER',
+                referenceId: null, // will update after order created
+
+                beforeStock,
+                afterStock,
+
+                user: req.user._id,
+                note: 'Order placed'
+            }], { session });
         }
+        // 🚚 Shipping
+        const shippingCost =
+            shipping.zone === "Inside Dhaka" ? 80 : 130;
 
-        // 3. Shipping logic
-        const shippingCost = shippingZone === 'Inside Dhaka' ? 80 : 130;
+        const totalAmount = subtotal + shippingCost;
 
-        // 4. Create the Order
-        const newOrder = new Order({
-            shop_id: tenantId,
+        // 🧾 Create Order
+        const order = await Order.create([{
+            shop_id: shopId,
             customer: req.user.id,
-            items: itemsWithPrice,
-            shippingZone,
-            shippingCost,
-            totalAmount: subtotal + shippingCost,
-            shippingAddress,
-            status: 'Pending'
+            items: orderItems,
+
+            pricing: {
+                subtotal,
+                shipping: shippingCost,
+                total: totalAmount
+            },
+
+            payment: {
+                method: payment.method,
+                status: "Pending"
+            },
+
+            shipping: {
+                zone: shipping.zone,
+                cost: shippingCost,
+                address: shipping.address
+            },
+
+            status: "Pending"
+        }], { session });
+
+        await session.commitTransaction();
+
+        res.status(201).json({
+            success: true,
+            order: order[0]
         });
 
-        // Save the order to the database
-        await newOrder.save();
-
-        // ✨ 5. THE FIX: Reduce the stock for each product ✨
-        // We do this AFTER the order saves successfully so we don't reduce stock if the order fails.
-        const stockUpdatePromises = itemsWithPrice.map(item =>
-            Product.findByIdAndUpdate(
-                item.product,
-                { $inc: { stock: -item.quantity } }, // Subtracts the ordered amount
-                { new: true }
-            )
-        );
-
-        // Run all stock updates in parallel for maximum speed
-        await Promise.all(stockUpdatePromises);
-
-        res.status(201).json({ success: true, order: newOrder });
-
     } catch (err) {
-        console.error("Order Creation Error:", err);
-        res.status(500).json({ error: "Checkout failed." });
+        await session.abortTransaction();
+
+        res.status(400).json({
+            error: err.message
+        });
+
+    } finally {
+        session.endSession();
     }
 };
+
 /**
  * @desc    Get all orders for the logged-in vendor's shop
  * @route   GET /api/admin/orders
  */
+
+exports.cancelOrder = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const orderId = req.params.id;
+        const shopId = req.user.shopId;
+
+        // 🔍 1. Find order
+        const order = await Order.findOne({
+            _id: orderId,
+            shop_id: shopId,
+            isDeleted: false
+        }).session(session);
+
+        if (!order) {
+            throw new Error("Order not found");
+        }
+
+        // 🔒 2. Prevent double cancel
+        if (order.status === 'Cancelled') {
+            throw new Error("Order already cancelled");
+        }
+
+        // 🔒 3. Prevent invalid cancel
+        if (['Shipped', 'Delivered'].includes(order.status)) {
+            throw new Error("Cannot cancel after shipment");
+        }
+
+        // 🔁 4. Restore stock
+        for (const item of order.items) {
+
+            // 🔍 Get product WITH session
+            const product = await Product.findOne({
+                _id: item.productId
+            }).session(session);
+
+            if (!product) {
+                throw new Error("Product not found during restore");
+            }
+
+            const variant = product.variants.id(item.variantId);
+
+            if (!variant) {
+                throw new Error("Variant not found during restore");
+            }
+
+            const beforeStock = variant.stock;
+
+            // 🔄 Restore stock
+            variant.stock += item.quantity;
+
+            await product.save({ session });
+
+            // 🧾 LOG INVENTORY CHANGE
+            await InventoryLog.create([{
+                shop_id: shopId,
+                productId: product._id,
+                variantId: variant._id,
+
+                change: +item.quantity,
+                type: 'CANCEL',
+                referenceId: order._id,
+
+                beforeStock,
+                afterStock: variant.stock,
+
+                user: req.user._id,
+                note: 'Order cancelled'
+            }], { session });
+        }
+
+        // 🔄 5. Update order status
+        order.status = 'Cancelled';
+
+        // 💳 Optional: mark payment refunded
+        if (order.payment?.status === 'Paid') {
+            order.payment.status = 'Refunded';
+        }
+
+        await order.save({ session });
+
+        await session.commitTransaction();
+
+        res.status(200).json({
+            success: true,
+            message: "Order cancelled and stock restored"
+        });
+
+    } catch (err) {
+
+        await session.abortTransaction();
+
+        res.status(400).json({
+            error: err.message
+        });
+
+    } finally {
+        session.endSession();
+    }
+};
+
+
+exports.updateStock = async (req, res) => {
+    const { productId, variantId, quantity } = req.body;
+
+    const product = await Product.findById(productId);
+    const variant = product.variants.id(variantId);
+
+    const beforeStock = variant.stock;
+
+    variant.stock += quantity;
+
+    await product.save();
+
+    await InventoryLog.create({
+        shop_id: req.user.shopId,
+        productId,
+        variantId,
+
+        change: quantity,
+        type: 'MANUAL',
+
+        beforeStock,
+        afterStock: variant.stock,
+
+        user: req.user._id
+    });
+
+    res.json({ success: true });
+};
+
+exports.getInventoryLogs = async (req, res) => {
+    const logs = await InventoryLog.find({
+        shop_id: req.user.shopId
+    })
+        .populate('productId', 'title')
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+    res.json(logs);
+};
+
+
 exports.getShopOrders = async (req, res) => {
     try {
         const shopId = req.user.shop_id || req.user.shopId;

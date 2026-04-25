@@ -1,71 +1,164 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const orderSchema = new mongoose.Schema({
-    // Tenant Isolation
-    shop_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Shop',
-        required: true
-    },
-    // The buyer
-    customer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    // The items purchased
-    items: [
+/**
+ * 🔹 Order Item Snapshot
+ */
+const orderItemSchema = new Schema({
+    productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+    variantId: { type: Schema.Types.ObjectId, required: true },
+
+    title: { type: String, required: true },
+    sku: String,
+
+    attributes: [
         {
-            product: {type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true},
-            quantity: {type: Number, required: true},
-            price: {type: Number, required: true}, // This is the sellingPrice the customer paid
-            buyingPrice: {type: Number, required: true} // ✨ NEW: Hidden from customer, used for profit
+            name: String,
+            value: String
         }
     ],
 
-    // --- Financials & Logistics ---
-    totalAmount: {
-        type: Number,
+    quantity: { type: Number, required: true, min: 1 },
+
+    price: { type: Number, required: true },
+    buyingPrice: { type: Number, required: true },
+
+    total: { type: Number, required: true }
+
+}, { _id: false });
+
+/**
+ * 🔹 Payment Schema
+ */
+const paymentSchema = new Schema({
+    method: {
+        type: String,
+        enum: ['COD', 'BKASH', 'NAGAD', 'CARD'],
         required: true
     },
-    shippingZone: {
+
+    status: {
+        type: String,
+        enum: ['Pending', 'Paid', 'Failed', 'Refunded'],
+        default: 'Pending'
+    },
+
+    transactionId: String,
+    paidAt: Date
+
+}, { _id: false });
+
+/**
+ * 🔹 Shipping Schema
+ */
+const shippingSchema = new Schema({
+    zone: {
         type: String,
         enum: ['Inside Dhaka', 'Outside Dhaka'],
         required: true
     },
-    shippingCost: {
+
+    cost: {
         type: Number,
-        required: true,
-        // When we build the checkout controller, we will enforce:
-        // Inside Dhaka = 80, Outside Dhaka = 130
-    },
-    shippingAddress: {
-        type: String,
         required: true
     },
 
-    // --- Status ---
+    address: {
+        fullName: { type: String, required: true },
+        phone: { type: String, required: true },
+        addressLine: { type: String, required: true },
+        city: { type: String, required: true }
+    },
+
+    courier: String,
+    trackingId: String,
+
+    shippedAt: Date,
+    deliveredAt: Date
+
+}, { _id: false });
+
+/**
+ * 🔹 Main Order Schema
+ */
+const orderSchema = new Schema({
+
+    shop_id: {
+        type: Schema.Types.ObjectId,
+        ref: 'Shop',
+        required: true,
+        index: true
+    },
+
+    customer: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true
+    },
+
+    items: {
+        type: [orderItemSchema],
+        required: true
+    },
+
+    /**
+     * 💰 Pricing Breakdown
+     */
+    pricing: {
+        subtotal: { type: Number, required: true },
+        discount: { type: Number, default: 0 },
+        shipping: { type: Number, required: true },
+        tax: { type: Number, default: 0 },
+        total: { type: Number, required: true }
+    },
+
+    /**
+     * 💳 Payment
+     */
+    payment: paymentSchema,
+
+    /**
+     * 🚚 Shipping
+     */
+    shipping: shippingSchema,
+
+    /**
+     * 🔄 Order Status
+     */
     status: {
         type: String,
-        enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-        default: 'Pending'
+        enum: [
+            'Pending',
+            'Confirmed',
+            'Processing',
+            'Shipped',
+            'Delivered',
+            'Cancelled',
+            'Returned'
+        ],
+        default: 'Pending',
+        index: true
+    },
+
+    /**
+     * 📝 Extra
+     */
+    notes: String,
+
+    isDeleted: {
+        type: Boolean,
+        default: false
     }
-}, {timestamps: true});
+
+}, {
+    timestamps: true
+});
 
 
-// ==========================================
-// 🚀 DATABASE INDEXING FOR HIGH PERFORMANCE
-// ==========================================
-
-// 1. Compound Index: Perfect for your Admin Dashboard's main query
-// This matches: Order.find({ shop_id: ... }).sort({ createdAt: -1 })
-orderSchema.index({shop_id: 1, createdAt: -1});
-
-// 2. Filter Index: Super fast when vendors click "Show me all Pending orders"
-orderSchema.index({shop_id: 1, status: 1});
-
-// 3. Customer Index: Super fast when a customer checks their "My Order History" page
-orderSchema.index({customer: 1});
-
+// 🚀 INDEXES (IMPORTANT)
+orderSchema.index({ shop_id: 1, createdAt: -1 });
+orderSchema.index({ shop_id: 1, status: 1 });
+orderSchema.index({ customer: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Order', orderSchema);

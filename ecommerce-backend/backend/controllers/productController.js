@@ -1,26 +1,47 @@
 const Product = require('../models/Product');
-const { createProductSchema } = require('../validations/productValidation');
+const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
 
 /**
- * @desc    Get all products for the logged-in vendor
- * @route   GET /api/admin/products
+ * @desc Get all products (with pagination + search)
  */
 exports.getShopProducts = async (req, res) => {
     try {
-        // We use req.user.shopId which was attached by the 'protect' middleware
-        const products = await Product.find({ shop_id: req.user.shopId })
-            .sort({ createdAt: -1 });
+        const { page = 1, limit = 10, search, category } = req.query;
 
-        res.status(200).json(products);
+        const query = {
+            shop_id: req.user.shopId,
+            isDeleted: false
+        };
+
+        if (category) query.category = category;
+
+        if (search) {
+            query.$text = { $search: search };
+        }
+
+        const products = await Product.find(query)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
+
+        const total = await Product.countDocuments(query);
+
+        res.status(200).json({
+            data: products,
+            pagination: {
+                total,
+                page: Number(page),
+                pages: Math.ceil(total / limit)
+            }
+        });
+
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: "Failed to fetch products" });
     }
 };
 
 /**
- * @desc    Create a new product
- * @route   POST /api/admin/products
+ * @desc Create product
  */
 exports.createProduct = async (req, res) => {
     try {
@@ -29,33 +50,46 @@ exports.createProduct = async (req, res) => {
             return res.status(400).json({ error: error.details[0].message });
         }
 
-        const newProduct = await Product.create({
+        const product = await Product.create({
             ...value,
             shop_id: req.user.shopId
         });
 
         res.status(201).json({
-            message: "Product added successfully!",
-            product: newProduct
+            message: "Product created successfully",
+            product
         });
+
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Failed to add product" });
-    }
-};
+        console.error(err); // keep this
+
+        res.status(500).json({
+            error: "Failed to create product",
+            details: err.message   // 👈 ADD THIS
+        });
+    }}
 
 /**
- * @desc    Update a product
- * @route   PATCH /api/admin/products/:id
+ * @desc Update product (SAFE PATCH)
  */
 exports.updateProduct = async (req, res) => {
     try {
-        // We don't validate the whole schema because it's a PATCH (partial update)
-        // But we ensure the user can only update products belonging to THEIR shop
+        const { error, value } = updateProductSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
         const product = await Product.findOneAndUpdate(
-            { _id: req.params.id, shop_id: req.user.shopId },
-            { $set: req.body },
-            { new: true, runValidators: true }
+            {
+                _id: req.params.id,
+                shop_id: req.user.shopId,
+                isDeleted: false
+            },
+            { $set: value },
+            {
+                new: true,
+                runValidators: true
+            }
         );
 
         if (!product) {
@@ -63,33 +97,40 @@ exports.updateProduct = async (req, res) => {
         }
 
         res.status(200).json({
-            message: "Product updated successfully",
+            message: "Product updated",
             product
         });
+
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: "Failed to update product" });
     }
 };
 
 /**
- * @desc    Delete a product
- * @route   DELETE /api/admin/products/:id
+ * @desc Soft delete product
  */
 exports.deleteProduct = async (req, res) => {
     try {
-        const product = await Product.findOneAndDelete({
-            _id: req.params.id,
-            shop_id: req.user.shopId
-        });
+        const product = await Product.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                shop_id: req.user.shopId
+            },
+            {
+                isDeleted: true
+            },
+            { new: true }
+        );
 
         if (!product) {
             return res.status(404).json({ error: "Product not found or unauthorized" });
         }
 
-        res.status(200).json({ message: "Product deleted successfully" });
+        res.status(200).json({
+            message: "Product deleted (soft)"
+        });
+
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: "Failed to delete product" });
     }
 };

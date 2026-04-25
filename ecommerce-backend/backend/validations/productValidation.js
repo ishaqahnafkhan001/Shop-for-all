@@ -1,60 +1,125 @@
 const Joi = require('joi');
 
-const createProductSchema = Joi.object({
-    title: Joi.string()
+/**
+ * 🔹 Reusable key-value schema
+ */
+const keyValueSchema = Joi.object({
+    title: Joi.string().trim().min(1).max(100).required(),
+    value: Joi.string().trim().min(1).max(500).required()
+});
+
+/**
+ * 🔹 Attribute Schema (normalized)
+ */
+const attributeSchema = Joi.object({
+    name: Joi.string().trim().lowercase().required(),   // ✅ normalize
+    value: Joi.string().trim().required()
+});
+
+/**
+ * 🔹 Variant Schema (IMPROVED)
+ */
+const variantSchema = Joi.object({
+    sku: Joi.string()
         .trim()
-        .min(3)
+        .uppercase() // ✅ normalize SKU
         .max(100)
-        .required()
-        .messages({
-            'string.empty': 'Product title is required',
-            'string.min': 'Title must be at least 3 characters long',
-            'string.max': 'Title cannot exceed 100 characters'
-        }),
-
-    description: Joi.string()
-        .trim()
-        .min(10)
-        .max(3000)
-        .required()
-        .messages({
-            'string.empty': 'Description is required',
-            'string.min': 'Description is too short. Provide more details.'
-        }),
-
-    // Remove 'price' and add these:
-    buyingPrice: Joi.number().min(0).required().messages({
-        'number.base': 'Buying price must be a number',
-        'any.required': 'Buying price is required'
-    }),
-    sellingPrice: Joi.number().min(0).required().messages({
-        'number.base': 'Selling price must be a number',
-        'any.required': 'Selling price is required'
-    }),
-
-    originalPrice: Joi.number()
-        .min(0)
-        .optional(), // Only used if the item is on sale
-
-    category: Joi.string()
-        .trim()
-        .max(50)
         .optional(),
 
-    discount: Joi.number().min(0).max(100).optional(), // 👈 Add this
-    // We enforce that the uploaded image path is a valid URL (from Cloudinary)
-    imageUrl: Joi.string()
-        .uri()
-        .required()
-        .messages({
-            'string.uri': 'Image must be a valid URL',
-            'any.required': 'Product image is required'
-        }),
+    attributes: Joi.array()
+        .items(attributeSchema)
+        .min(1)
+        .required(),
 
     stock: Joi.number()
-        .integer() // You can't have 1.5 t-shirts in stock!
+        .integer()
         .min(0)
-        .default(1)
+        .required(),
+
+    priceOverride: Joi.number()
+        .min(0)
+        .optional(),
+
+    image: Joi.string().uri().optional(),
+
+    isActive: Joi.boolean().default(true)
+});
+
+/**
+ * 🔹 Main Product Validation (ENHANCED)
+ */
+const createProductSchema = Joi.object({
+    title: Joi.string().trim().min(3).max(100).required(),
+
+    description: Joi.string().trim().min(10).max(3000).required(),
+
+    category: Joi.string().trim().max(100).optional(),
+
+    images: Joi.array()
+        .items(Joi.string().uri())
+        .min(1)
+        .max(10) // ✅ limit size
+        .required(),
+
+    /**
+     * 💰 Pricing (STRICT RULE)
+     */
+    pricing: Joi.object({
+        buyingPrice: Joi.number().min(0).required(),
+
+        sellingPrice: Joi.number()
+            .min(Joi.ref('buyingPrice')) // ✅ must be >= buying
+            .required(),
+
+        discount: Joi.number().min(0).max(100).default(0)
+    }).required(),
+
+    /**
+     * ✅ VARIANTS (WITH DUPLICATE CHECK)
+     */
+    variants: Joi.array()
+        .items(variantSchema)
+        .min(1)
+        .max(100) // ✅ prevent abuse
+        .required()
+        .custom((variants, helpers) => {
+            const seen = new Set();
+
+            for (const v of variants) {
+                const key = JSON.stringify(
+                    v.attributes
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                );
+
+                if (seen.has(key)) {
+                    return helpers.error('any.invalid');
+                }
+                seen.add(key);
+            }
+
+            return variants;
+        })
+        .messages({
+            'any.invalid': 'Duplicate variant combination detected'
+        }),
+
+    /**
+     * OPTIONAL ARRAYS (LIMITED)
+     */
+    features: Joi.array()
+        .items(keyValueSchema)
+        .max(20)
+        .optional(),
+
+    specifications: Joi.array()
+        .items(keyValueSchema)
+        .max(20)
+        .optional(),
+
+    comments: Joi.array()
+        .items(keyValueSchema)
+        .max(20)
+        .optional()
 });
 
 module.exports = { createProductSchema };

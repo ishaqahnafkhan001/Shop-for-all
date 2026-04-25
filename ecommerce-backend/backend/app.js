@@ -12,6 +12,8 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const storefrontRoutes = require('./routes/storefrontRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const inventory = require('./routes/inventory');
+
 
 // 1. Initialize Database
 connectDB();
@@ -38,7 +40,7 @@ app.use('/api/auth', authRoutes);           // Registration, Login, Logout
 app.use('/api/admin', adminRoutes);         // Product & Staff management (Protected)
 app.use('/api/storefront', storefrontRoutes); // Public Storefront data (Subdomain-based)
 app.use('/api/public', publicRoutes);
-
+app.use('/api/admin/inventory', inventory);
 // 4. Base Health Check Route
 app.get('/', (req, res) => {
     res.send('API is running successfully...');
