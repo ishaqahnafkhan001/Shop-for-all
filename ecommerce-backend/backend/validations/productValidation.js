@@ -12,7 +12,8 @@ const keyValueSchema = Joi.object({
  * 🔹 Attribute Schema (normalized)
  */
 const attributeSchema = Joi.object({
-    name: Joi.string().trim().lowercase().required(),   // ✅ normalize
+    _id: Joi.string().hex().length(24).optional(), // ✅ allow Mongo ID
+    name: Joi.string().trim().lowercase().required(),
     value: Joi.string().trim().required()
 });
 
@@ -122,4 +123,139 @@ const createProductSchema = Joi.object({
         .optional()
 });
 
-module.exports = { createProductSchema };
+
+const updateVariantSchema = Joi.object({
+    _id: Joi.string().hex().length(24).optional(), // existing variant
+
+    sku: Joi.string()
+        .trim()
+        .uppercase()
+        .max(100)
+        .optional(),
+
+    attributes: Joi.array()
+        .items(attributeSchema)
+        .min(1)
+        .required(),
+
+    stock: Joi.number()
+        .integer()
+        .min(0)
+        .required(),
+
+    priceOverride: Joi.number()
+        .min(0)
+        .optional(),
+
+    image: Joi.string().uri().optional(),
+
+    isActive: Joi.boolean().optional()
+});
+
+
+/**
+ * 🔹 UPDATE PRODUCT SCHEMA (PATCH SAFE)
+ */
+const updateProductSchema = Joi.object({
+
+    title: Joi.string()
+        .trim()
+        .min(3)
+        .max(100)
+        .optional(),
+
+    description: Joi.string()
+        .trim()
+        .min(10)
+        .max(3000)
+        .optional(),
+
+    category: Joi.string()
+        .trim()
+        .max(100)
+        .optional(),
+
+    images: Joi.array()
+        .items(Joi.string().uri())
+        .max(10)
+        .optional(),
+
+    /**
+     * 💰 Pricing (partial update)
+     */
+    pricing: Joi.object({
+        buyingPrice: Joi.number().min(0).optional(),
+
+        sellingPrice: Joi.number()
+            .min(Joi.ref('buyingPrice'))
+            .optional(),
+
+        discount: Joi.number()
+            .min(0)
+            .max(100)
+            .optional()
+    }).optional(),
+
+    /**
+     * 🔥 Variants (optional)
+     */
+    variants: Joi.array()
+        .items(updateVariantSchema)
+        .max(100)
+        .optional()
+        .custom((variants, helpers) => {
+            const seen = new Set();
+
+            for (const v of variants) {
+                const key = JSON.stringify(
+                    v.attributes
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                );
+
+                if (seen.has(key)) {
+                    return helpers.error('any.invalid');
+                }
+
+                seen.add(key);
+            }
+
+            return variants;
+        })
+        .messages({
+            'any.invalid': 'Duplicate variant combination detected'
+        }),
+
+    /**
+     * OPTIONAL ARRAYS
+     */
+    features: Joi.array()
+        .items(keyValueSchema)
+        .max(20)
+        .optional(),
+
+    specifications: Joi.array()
+        .items(keyValueSchema)
+        .max(20)
+        .optional(),
+
+    comments: Joi.array()
+        .items(keyValueSchema)
+        .max(20)
+        .optional()
+
+})
+.min(1) // 🔥 MUST send at least one field
+.messages({
+    'object.min': 'At least one field must be updated'
+});
+
+
+/**
+ * 🔹 EXPORT BOTH
+ */
+module.exports = {
+    createProductSchema,
+    updateProductSchema}
+
+
+
