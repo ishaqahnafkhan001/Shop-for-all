@@ -30,7 +30,8 @@ app.use(cors({
     origin: [
         'http://localhost:3000', // Next.js Storefront
         'http://localhost:5173', // React Admin (Vite)
-        /\.localhost:3000$/      // Allows all subdomains on localhost
+        /\.localhost:3000$/
+        // Allows all subdomains on localhost
     ],
     credentials: true // Crucial: Allows cookies to be sent back and forth
 }));
@@ -41,6 +42,8 @@ app.use('/api/admin', adminRoutes);         // Product & Staff management (Prote
 app.use('/api/storefront', storefrontRoutes); // Public Storefront data (Subdomain-based)
 app.use('/api/public', publicRoutes);
 app.use('/api/admin/inventory', inventory);
+
+
 // 4. Base Health Check Route
 app.get('/', (req, res) => {
     res.send('API is running successfully...');

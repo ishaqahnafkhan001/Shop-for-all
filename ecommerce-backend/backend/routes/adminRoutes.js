@@ -5,7 +5,7 @@ const router = express.Router();
 const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 
-// Controllers (We'll assume these functions exist in your controller files)
+// Controllers
 const {
     getShopProducts,
     createProduct,
@@ -13,17 +13,23 @@ const {
     deleteProduct
 } = require('../controllers/productController');
 
-const { getShopOrders, updateOrderStatus, getDashboardStats,getRevenueAnalytics } = require('../controllers/orderController');
+const {
+    getShopOrders,
+    updateOrderStatus,
+    getDashboardStats,
+    getRevenueAnalytics
+} = require('../controllers/orderController');
 
-const {getShopCustomers,
+const {
+    getShopCustomers,
     getShopUsers,
     createShopUser,
     toggleCustomerStatus
 } = require('../controllers/userController');
 
+
 // --- PRODUCT MANAGEMENT ---
 
-// GET /api/admin/products -> View all products for the logged-in shop
 router.get(
     '/products',
     protect,
@@ -31,7 +37,6 @@ router.get(
     getShopProducts
 );
 
-// POST /api/admin/products -> Add a new product
 router.post(
     '/products',
     protect,
@@ -39,7 +44,6 @@ router.post(
     createProduct
 );
 
-// PATCH /api/admin/products/:id -> Edit product details
 router.patch(
     '/products/:id',
     protect,
@@ -47,7 +51,6 @@ router.patch(
     updateProduct
 );
 
-// DELETE /api/admin/products/:id -> Delete a product
 router.delete(
     '/products/:id',
     protect,
@@ -55,9 +58,9 @@ router.delete(
     deleteProduct
 );
 
+
 // --- USER / STAFF MANAGEMENT ---
 
-// GET /api/admin/users -> See all staff and customers of the shop
 router.get(
     '/users',
     protect,
@@ -65,7 +68,6 @@ router.get(
     getShopUsers
 );
 
-// POST /api/admin/users -> Create a new staff member account
 router.post(
     '/users',
     protect,
@@ -74,17 +76,52 @@ router.post(
 );
 
 
-// Add this alongside your other protected admin routes
+// --- ORDER MANAGEMENT ---
+
+// FIX: All three order routes were missing authorize() — any authenticated
+// user (including Customers) could read or mutate orders for any shop
+router.get(
+    '/orders',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getShopOrders
+);
+
+router.patch(
+    '/orders/:id/status',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    updateOrderStatus
+);
 
 
-// Make sure this is protected so only the vendor can see their money!
-router.get('/analytics/revenue', protect, getRevenueAnalytics);
-router.get('/dashboard-stats', protect, getDashboardStats);
+// --- CUSTOMER MANAGEMENT ---
 
-router.get('/orders', protect, getShopOrders);
-router.patch('/orders/:id/status', protect, updateOrderStatus);
+// FIX: Both customer routes were missing authorize()
+router.get(
+    '/customers',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getShopCustomers
+);
 
-router.patch('/customers/:id/status', protect, toggleCustomerStatus);
+router.patch(
+    '/customers/:id/status',
+    protect,
+    authorize('VendorAdmin'), // Status toggle is a destructive action — Admin only
+    toggleCustomerStatus
+);
 
-router.get('/customers', protect, getShopCustomers);
+
+// --- DASHBOARD / ANALYTICS ---
+
+// FIX: dashboard-stats was missing authorize()
+router.get(
+    '/dashboard-stats',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getDashboardStats
+);
+
+
 module.exports = router;

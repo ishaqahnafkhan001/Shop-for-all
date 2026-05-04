@@ -108,13 +108,12 @@ const productSchema = new Schema({
  * 💰 Final Price (Product level)
  */
 productSchema.virtual('finalPrice').get(function () {
+    if (!this.pricing) return undefined;  // same guard
     const discount = this.pricing.discount || 0;
     const price = this.pricing.sellingPrice;
-
     if (discount > 0) {
         return Math.round(price - (price * discount) / 100);
     }
-
     return price;
 });
 
@@ -122,6 +121,7 @@ productSchema.virtual('finalPrice').get(function () {
  * 📦 Total Stock (sum of variants)
  */
 productSchema.virtual('totalStock').get(function () {
+    if (!this.variants) return undefined;  // guard: field not selected in this query
     return this.variants.reduce((sum, v) => sum + v.stock, 0);
 });
 

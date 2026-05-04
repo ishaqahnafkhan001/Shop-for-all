@@ -2,80 +2,75 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const mongoose = require('mongoose');
-const { createOrderSchema,updateOrderStatusSchema } = require('../validations/orderValidation');
+const { createOrderSchema, updateOrderStatusSchema } = require('../validations/orderValidation');
 const InventoryLog = require('../models/InventoryLog');
-
 
 
 /**
  * @desc    Create a new order (Storefront)
  * @route   POST /api/orders
+ * @access  Private (Customer)
  */
-
 exports.createOrder = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const { items, shipping, payment } = req.body;
+        // ✅ Validate request body first
+        const { error, value } = createOrderSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ success: false, error: error.details[0].message });
+        }
+
+        const { items, shipping, payment } = value;
         const shopId = req.tenantId;
+        const userId = req.user?._id;
 
-        // 🔐 1. Security check
-        const customer = await User.findById(req.user.id).select('status').session(session);
+        if (!userId) throw new Error("Authentication failed. Please log in again.");
 
-        if (!customer) {
-            throw new Error("Customer not found");
-        }
-
-        if (customer.status === 'Suspended') {
-            return res.status(403).json({
-                error: "Account suspended"
-            });
-        }
+        // ✅ Customer existence + status check
+        const customer = await User.findById(userId).select('status').session(session);
+        if (!customer) throw new Error("Customer not found");
+        if (customer.status === 'Suspended') throw new Error("Your account is suspended.");
 
         let subtotal = 0;
         const orderItems = [];
+        const inventoryLogs = [];
 
-        // 🔁 2. Process each item safely
+        // ✅ Process each item
         for (const item of items) {
-
             const product = await Product.findOne({
                 _id: item.productId,
                 shop_id: shopId,
                 isDeleted: false
             }).session(session);
 
-            if (!product) {
-                throw new Error("Product not found");
-            }
+            if (!product) throw new Error(`Product not found: ${item.productId}`);
 
             const variant = product.variants.id(item.variantId);
+            if (!variant) throw new Error(`Variant not found for product: ${product.title}`);
 
-            if (!variant) {
-                throw new Error("Variant not found");
-            }
-
-            // 🔐 Stock check
             if (variant.stock < item.quantity) {
-                throw new Error(`Out of stock for ${product.title}`);
+                throw new Error(`Insufficient stock for "${product.title}" (SKU: ${variant.sku}). Available: ${variant.stock}`);
             }
 
             const beforeStock = variant.stock;
 
-            // 🔻 Reduce stock
+            // ✅ Deduct stock
             variant.stock -= item.quantity;
-
             await product.save({ session });
 
             const afterStock = variant.stock;
 
-            // 💰 Pricing
-            const price = product.finalPrice;
-            const total = price * item.quantity;
+            // ✅ Price calculation: variant override takes priority over base price
+            const basePrice = variant.priceOverride || product.pricing.sellingPrice;
+            const discount = product.pricing.discount || 0;
+            const unitPrice = Math.round(basePrice - (basePrice * discount / 100));
+            const totalItemPrice = unitPrice * item.quantity;
 
-            subtotal += total;
+            subtotal += totalItemPrice;
 
-            // 📦 Order snapshot
+            // ✅ Snapshot item for order (prices locked at time of purchase)
             orderItems.push({
                 productId: product._id,
                 variantId: variant._id,
@@ -83,363 +78,448 @@ exports.createOrder = async (req, res) => {
                 sku: variant.sku,
                 attributes: variant.attributes,
                 quantity: item.quantity,
-                price,
+                price: unitPrice,
                 buyingPrice: product.pricing.buyingPrice,
-                total
+                total: totalItemPrice
             });
 
-            // 🧾 🔥 INVENTORY LOG (ORDER)
-            await InventoryLog.create([{
+            // ✅ Stage inventory log (referenceId filled after order created)
+            inventoryLogs.push({
                 shop_id: shopId,
                 productId: product._id,
                 variantId: variant._id,
-
                 change: -item.quantity,
                 type: 'ORDER',
-                referenceId: null, // will update after order created
-
+                referenceId: null,
                 beforeStock,
                 afterStock,
-
-                user: req.user._id,
+                user: userId,
                 note: 'Order placed'
-            }], { session });
+            });
         }
-        // 🚚 Shipping
-        const shippingCost =
-            shipping.zone === "Inside Dhaka" ? 80 : 130;
 
+        // ✅ Shipping cost (Dhaka-based)
+        const shippingCost = shipping.zone === 'Inside Dhaka' ? 80 : 130;
         const totalAmount = subtotal + shippingCost;
 
-        // 🧾 Create Order
-        const order = await Order.create([{
+        // ✅ Create order
+        const [order] = await Order.create([{
             shop_id: shopId,
-            customer: req.user.id,
+            customer: userId,
             items: orderItems,
-
             pricing: {
                 subtotal,
                 shipping: shippingCost,
                 total: totalAmount
             },
-
             payment: {
                 method: payment.method,
-                status: "Pending"
+                status: 'Pending'
             },
-
             shipping: {
                 zone: shipping.zone,
                 cost: shippingCost,
                 address: shipping.address
             },
-
-            status: "Pending"
+            status: 'Pending'
         }], { session });
+
+        // ✅ Link inventory logs to the new order
+        const logsWithRef = inventoryLogs.map(log => ({
+            ...log,
+            referenceId: order._id
+        }));
+        await InventoryLog.insertMany(logsWithRef, { session });
 
         await session.commitTransaction();
 
         res.status(201).json({
             success: true,
-            order: order[0]
+            message: 'Order placed successfully',
+            orderId: order._id,
+            total: totalAmount
         });
 
     } catch (err) {
         await session.abortTransaction();
-
-        res.status(400).json({
-            error: err.message
-        });
-
+        res.status(400).json({ success: false, error: err.message });
     } finally {
         session.endSession();
     }
 };
 
-/**
- * @desc    Get all orders for the logged-in vendor's shop
- * @route   GET /api/admin/orders
- */
 
+/**
+ * @desc    Cancel an order and restore stock
+ * @route   DELETE /api/orders/:id
+ * @access  Private (Customer / Admin)
+ */
 exports.cancelOrder = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
         const orderId = req.params.id;
-        const shopId = req.user.shopId;
+        const shopId = req.tenantId;
 
-        // 🔍 1. Find order
         const order = await Order.findOne({
             _id: orderId,
             shop_id: shopId,
             isDeleted: false
         }).session(session);
 
-        if (!order) {
-            throw new Error("Order not found");
-        }
-
-        // 🔒 2. Prevent double cancel
-        if (order.status === 'Cancelled') {
-            throw new Error("Order already cancelled");
-        }
-
-        // 🔒 3. Prevent invalid cancel
+        if (!order) throw new Error("Order not found");
+        if (order.status === 'Cancelled') throw new Error("Order is already cancelled");
         if (['Shipped', 'Delivered'].includes(order.status)) {
-            throw new Error("Cannot cancel after shipment");
+            throw new Error("Cannot cancel an order that has already been shipped or delivered");
         }
 
-        // 🔁 4. Restore stock
-        for (const item of order.items) {
+        const logs = [];
 
-            // 🔍 Get product WITH session
+        // ✅ Restore stock for each item
+        for (const item of order.items) {
             const product = await Product.findOne({
-                _id: item.productId
+                _id: item.productId,
+                shop_id: shopId,
             }).session(session);
 
-            if (!product) {
-                throw new Error("Product not found during restore");
-            }
+            if (!product) throw new Error(`Product not found while restoring stock: ${item.productId}`);
 
             const variant = product.variants.id(item.variantId);
-
-            if (!variant) {
-                throw new Error("Variant not found during restore");
-            }
+            if (!variant) throw new Error(`Variant not found while restoring stock: ${item.variantId}`);
 
             const beforeStock = variant.stock;
-
-            // 🔄 Restore stock
             variant.stock += item.quantity;
-
             await product.save({ session });
 
-            // 🧾 LOG INVENTORY CHANGE
-            await InventoryLog.create([{
+            logs.push({
                 shop_id: shopId,
                 productId: product._id,
                 variantId: variant._id,
-
-                change: +item.quantity,
+                change: item.quantity,
                 type: 'CANCEL',
                 referenceId: order._id,
-
                 beforeStock,
                 afterStock: variant.stock,
-
                 user: req.user._id,
-                note: 'Order cancelled'
-            }], { session });
+                note: 'Order cancelled — stock restored'
+            });
         }
 
-        // 🔄 5. Update order status
-        order.status = 'Cancelled';
+        // ✅ Batch insert logs
+        if (logs.length > 0) {
+            await InventoryLog.insertMany(logs, { session });
+        }
 
-        // 💳 Optional: mark payment refunded
+        // ✅ Update order status
+        order.status = 'Cancelled';
         if (order.payment?.status === 'Paid') {
             order.payment.status = 'Refunded';
         }
-
         await order.save({ session });
 
         await session.commitTransaction();
 
         res.status(200).json({
             success: true,
-            message: "Order cancelled and stock restored"
+            message: 'Order cancelled and stock restored'
         });
 
     } catch (err) {
-
         await session.abortTransaction();
-
-        res.status(400).json({
-            error: err.message
-        });
-
+        res.status(400).json({ success: false, error: err.message });
     } finally {
         session.endSession();
     }
 };
 
 
-exports.updateStock = async (req, res) => {
-    const { productId, variantId, quantity } = req.body;
-
-    const product = await Product.findById(productId);
-    const variant = product.variants.id(variantId);
-
-    const beforeStock = variant.stock;
-
-    variant.stock += quantity;
-
-    await product.save();
-
-    await InventoryLog.create({
-        shop_id: req.user.shopId,
-        productId,
-        variantId,
-
-        change: quantity,
-        type: 'MANUAL',
-
-        beforeStock,
-        afterStock: variant.stock,
-
-        user: req.user._id
-    });
-
-    res.json({ success: true });
-};
-
-exports.getInventoryLogs = async (req, res) => {
-    const logs = await InventoryLog.find({
-        shop_id: req.user.shopId
-    })
-        .populate('productId', 'title')
-        .sort({ createdAt: -1 })
-        .limit(50);
-
-    res.json(logs);
-};
-
-
+/**
+ * @desc    Get all orders for a shop (admin view)
+ * @route   GET /api/admin/orders
+ * @access  Private (Admin)
+ */
 exports.getShopOrders = async (req, res) => {
     try {
-        const shopId = req.user.shop_id || req.user.shopId;
+        const shopId = req.tenantId;
 
-        // Fetch orders AND pull in the customer's name AND product titles
-        const orders = await Order.find({ shop_id: shopId })
-            .populate('customer', 'fullName email') // Injects the actual user data
-            .populate('items.product', 'title')     // ✨ ADD THIS LINE HERE ✨
-            .sort({ createdAt: -1 }); // Newest orders at the top
+        const orders = await Order.find({ shop_id: shopId, isDeleted: false })
+            .populate('customer', 'fullName email')
+            .populate('items.productId', 'title')
+            .sort({ createdAt: -1 });
 
-        res.status(200).json(orders);
+        res.status(200).json({ success: true, data: orders });
+
     } catch (err) {
         console.error("Error fetching orders:", err);
-        res.status(500).json({ error: "Failed to fetch orders." });
+        res.status(500).json({ success: false, error: "Failed to fetch orders" });
     }
 };
+
 
 /**
  * @desc    Update the status of a specific order
  * @route   PATCH /api/admin/orders/:id/status
+ * @access  Private (Admin)
  */
 exports.updateOrderStatus = async (req, res) => {
     try {
-        const shopId = req.user.shop_id || req.user.shopId;
-
-        // 2. Validate the request body using Joi
+        // FIX: actually run the Joi validation that was previously only commented about
         const { error, value } = updateOrderStatusSchema.validate(req.body);
-
-        // 3. If validation fails, instantly return a clean 400 Bad Request error
         if (error) {
-            return res.status(400).json({ error: error.details[0].message });
+            return res.status(400).json({ success: false, error: error.details[0].message });
         }
 
-        const { status } = value; // Safe to use now!
+        const shopId = req.tenantId;
+        const { status } = value;
 
-        // Find the order AND ensure it belongs to this specific vendor
+        // ✅ Prevent bypassing the stock restoration logic
+        if (['Cancelled', 'Returned'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                error: "To cancel or return an order, please use the dedicated cancel/return endpoints so stock is properly restored."
+            });
+        }
+
         const order = await Order.findOneAndUpdate(
-            { _id: req.params.id, shop_id: shopId },
-            { status: status },
-            { returnDocument: 'after' } // <--- The modern syntax
+            { _id: req.params.id, shop_id: shopId, isDeleted: false },
+            { status },
+            { new: true }
         ).populate('customer', 'fullName email');
 
         if (!order) {
-            return res.status(404).json({ error: "Order not found or access denied." });
+            return res.status(404).json({ success: false, error: "Order not found or access denied" });
         }
 
         res.status(200).json({
             success: true,
-            message: `Order status updated to ${status}`,
-            order
+            message: `Order status updated to "${status}"`,
+            data: order
         });
 
     } catch (err) {
         console.error("Error updating order status:", err);
-        res.status(500).json({ error: "Failed to update order status." });
+        res.status(500).json({ success: false, error: "Failed to update order status" });
     }
 };
 
+
 /**
- * @desc    Get dashboard overview stats for a specific shop
+ * @desc    Get dashboard overview stats for a shop
  * @route   GET /api/admin/dashboard-stats
+ * @access  Private (Admin)
  */
 exports.getDashboardStats = async (req, res) => {
     try {
-        const shopId = req.user.shop_id || req.user.shopId;
+        // FIX: Use req.tenantId (set reliably by auth middleware) instead of
+        // req.user?.shopId + manual ObjectId validation, consistent with rest of codebase
+        const shopId = new mongoose.Types.ObjectId(req.tenantId);
 
-        // Run all queries in parallel for maximum speed
-        const [revenueData, activeOrders, totalProducts, totalCustomers] = await Promise.all([
-            // 1. Calculate Total Revenue using MongoDB Aggregation
-            Order.aggregate([
-                { $match: { shop_id: shopId, status: { $ne: 'Cancelled' } } },
-                { $group: { _id: null, total: { $sum: "$totalAmount" } } }
-            ]),
-            // 2. Count Active Orders (anything not Delivered or Cancelled)
-            Order.countDocuments({ shop_id: shopId, status: { $in: ['Pending', 'Processing', 'Shipped'] } }),
-            // 3. Count Total Products
-            Product.countDocuments({ shop_id: shopId }),
-            // 4. Count Total Customers
-            User.countDocuments({ shop_id: shopId, role: 'Customer' })
+        const [result] = await Order.aggregate([
+            {
+                $match: {
+                    shop_id: shopId,
+                    isDeleted: false
+                }
+            },
+
+            {
+                $facet: {
+                    // 💰 Revenue (pricing.total includes shipping/tax/discount)
+                    revenue: [
+                        { $match: { status: 'Delivered' } },
+                        {
+                            $group: {
+                                _id: null,
+                                total: { $sum: '$pricing.total' }
+                            }
+                        }
+                    ],
+
+                    // 📈 Profit + items sold (item-level)
+                    profitAndItems: [
+                        { $match: { status: 'Delivered' } },
+                        { $unwind: '$items' },
+                        {
+                            $group: {
+                                _id: null,
+                                totalCost: {
+                                    $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] }
+                                },
+                                itemsRevenue: {
+                                    $sum: { $multiply: ['$items.price', '$items.quantity'] }
+                                },
+                                totalItemsSold: { $sum: '$items.quantity' }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                totalItemsSold: 1,
+                                netProfit: { $subtract: ['$itemsRevenue', '$totalCost'] }
+                            }
+                        }
+                    ],
+
+                    // 📦 Active orders
+                    activeOrders: [
+                        {
+                            $match: {
+                                status: { $in: ['Pending', 'Processing', 'Shipped'] }
+                            }
+                        },
+                        { $count: 'count' }
+                    ],
+
+                    // 🛒 Products
+                    products: [
+                        {
+                            $lookup: {
+                                from: 'products',
+                                let: { shopId: '$shop_id' },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $and: [
+                                                    { $eq: ['$shop_id', '$$shopId'] },
+                                                    { $eq: ['$isDeleted', false] }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    { $count: 'count' }
+                                ],
+                                as: 'products'
+                            }
+                        },
+                        { $unwind: '$products' },
+                        { $replaceRoot: { newRoot: '$products' } }
+                    ],
+
+                    // 👤 Customers
+                    customers: [
+                        {
+                            $lookup: {
+                                from: 'users',
+                                let: { shopId: '$shop_id' },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $and: [
+                                                    { $eq: ['$shop_id', '$$shopId'] },
+                                                    { $eq: ['$role', 'Customer'] }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    { $count: 'count' }
+                                ],
+                                as: 'customers'
+                            }
+                        },
+                        { $unwind: '$customers' },
+                        { $replaceRoot: { newRoot: '$customers' } }
+                    ]
+                }
+            },
+
+            {
+                $project: {
+                    totalRevenue: {
+                        $ifNull: [{ $arrayElemAt: ['$revenue.total', 0] }, 0]
+                    },
+                    activeOrders: {
+                        $ifNull: [{ $arrayElemAt: ['$activeOrders.count', 0] }, 0]
+                    },
+                    totalProducts: {
+                        $ifNull: [{ $arrayElemAt: ['$products.count', 0] }, 0]
+                    },
+                    totalCustomers: {
+                        $ifNull: [{ $arrayElemAt: ['$customers.count', 0] }, 0]
+                    },
+                    totalItemsSold: {
+                        $ifNull: [{ $arrayElemAt: ['$profitAndItems.totalItemsSold', 0] }, 0]
+                    },
+                    netProfit: {
+                        $ifNull: [{ $arrayElemAt: ['$profitAndItems.netProfit', 0] }, 0]
+                    }
+                }
+            }
         ]);
 
-        res.status(200).json({
-            totalRevenue: revenueData[0]?.total || 0,
-            activeOrders,
-            totalProducts,
-            totalCustomers
+        return res.status(200).json({
+            success: true,
+            data: result || {
+                totalRevenue: 0,
+                activeOrders: 0,
+                totalProducts: 0,
+                totalCustomers: 0,
+                totalItemsSold: 0,
+                netProfit: 0
+            }
         });
+
     } catch (err) {
-        console.error("Dashboard Stats Error:", err);
-        res.status(500).json({ error: "Failed to fetch dashboard statistics." });
+        console.error("Dashboard stats error:", err);
+        return res.status(500).json({
+            success: false,
+            error: "Failed to fetch dashboard statistics"
+        });
     }
 };
 
+
+/**
+ * @desc    Get detailed revenue analytics with optional month/year filter
+ * @route   GET /api/admin/inventory/revenue/analytics?month=3&year=2025
+ * @access  Private (Admin)
+ */
 exports.getRevenueAnalytics = async (req, res) => {
     try {
-        const shopId = req.user.shop_id || req.user.shopId;
+        // FIX: Use req.tenantId consistently; removed manual ObjectId validation
+        // that duplicated what the auth middleware already guarantees
+        const shopId = new mongoose.Types.ObjectId(req.tenantId);
+
         const { month, year } = req.query;
 
-        // ✨ THE FIX: Manually convert the string to a MongoDB ObjectId ✨
-        let matchQuery = {
-            shop_id: new mongoose.Types.ObjectId(shopId),
-            status: { $in: ['Delivered', 'Shipped', 'Processing', 'Pending'] }
+        // FIX: removed debug console.log statements
+        const matchQuery = {
+            shop_id: shopId,
+            status: { $in: ['Delivered'] },
+            isDeleted: false
         };
 
-
-        // ✨ 3. THE FIX: If they asked for a specific month, filter by Date! ✨
+        // 📅 Date filter
         if (month && year) {
-            // JavaScript months are 0-indexed (0 = Jan, 2 = Mar).
-            // So if they pass month=3, we subtract 1 to get March.
             const startDate = new Date(year, month - 1, 1);
-            const endDate = new Date(year, month, 1); // 1st day of the NEXT month
-
-            // Add the date range to our search filter
-            matchQuery.createdAt = {
-                $gte: startDate, // Greater than or equal to 1st of the month
-                $lt: endDate     // Less than 1st of the next month
-            };
+            const endDate = new Date(year, month, 1);
+            matchQuery.createdAt = { $gte: startDate, $lt: endDate };
         }
 
         const analytics = await Order.aggregate([
-            // Pass our dynamic matchQuery here instead of the hardcoded object
             { $match: matchQuery },
+            { $unwind: '$items' },
 
-            { $unwind: "$items" },
-
-            // ... (The rest of your $facet pipeline stays EXACTLY the same)
             {
                 $facet: {
                     overview: [
                         {
                             $group: {
                                 _id: null,
-                                totalRevenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
-                                totalCost: { $sum: { $multiply: ["$items.buyingPrice", "$items.quantity"] } },
-                                totalItemsSold: { $sum: "$items.quantity" }
+                                totalRevenue: {
+                                    $sum: {
+                                        $add: [
+                                            { $multiply: ['$items.price', '$items.quantity'] },
+                                            '$pricing.shipping'
+                                        ]
+                                    }
+                                },
+                                totalCost: {
+                                    $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] }
+                                },
+                                totalItemsSold: { $sum: '$items.quantity' }
                             }
                         },
                         {
@@ -448,42 +528,60 @@ exports.getRevenueAnalytics = async (req, res) => {
                                 totalRevenue: 1,
                                 totalCost: 1,
                                 totalItemsSold: 1,
-                                netProfit: { $subtract: ["$totalRevenue", "$totalCost"] }
+                                netProfit: { $subtract: ['$totalRevenue', '$totalCost'] }
                             }
                         }
                     ],
+
                     monthlyData: [
                         {
                             $group: {
-                                _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
-                                revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
-                                cost: { $sum: { $multiply: ["$items.buyingPrice", "$items.quantity"] } }
+                                _id: {
+                                    year: { $year: '$createdAt' },
+                                    month: { $month: '$createdAt' }
+                                },
+                                revenue: {
+                                    $sum: { $multiply: ['$items.price', '$items.quantity'] }
+                                },
+                                cost: {
+                                    $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] }
+                                }
                             }
                         },
                         {
                             $project: {
                                 _id: 0,
-                                year: "$_id.year", month: "$_id.month",
-                                revenue: 1, cost: 1,
-                                profit: { $subtract: ["$revenue", "$cost"] }
+                                year: '$_id.year',
+                                month: '$_id.month',
+                                revenue: 1,
+                                cost: 1,
+                                profit: { $subtract: ['$revenue', '$cost'] }
                             }
                         },
-                        { $sort: { "year": 1, "month": 1 } }
+                        { $sort: { year: 1, month: 1 } }
                     ]
                 }
             }
         ]);
 
-        const result = {
-            overview: analytics[0]?.overview[0] || { totalRevenue: 0, totalCost: 0, netProfit: 0, totalItemsSold: 0 },
-            monthlyData: analytics[0]?.monthlyData || []
-        };
-
-        res.status(200).json({ success: true, data: result });
+        return res.status(200).json({
+            success: true,
+            data: {
+                overview: analytics[0]?.overview[0] || {
+                    totalRevenue: 0,
+                    totalCost: 0,
+                    netProfit: 0,
+                    totalItemsSold: 0
+                },
+                monthlyData: analytics[0]?.monthlyData || []
+            }
+        });
 
     } catch (err) {
-        console.error("Analytics Error:", err);
-        res.status(500).json({ error: "Failed to fetch revenue data." });
+        console.error("Revenue analytics error:", err);
+        return res.status(500).json({
+            success: false,
+            error: "Failed to fetch revenue analytics"
+        });
     }
 };
-

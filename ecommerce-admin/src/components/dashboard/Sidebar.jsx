@@ -46,24 +46,27 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                         {navItems.map((item) => {
                             const Icon = item.icon;
                             return (
+                                // Inside Sidebar.jsx
                                 <NavLink
                                     key={item.name}
                                     to={item.path}
                                     end={item.path === '/dashboard'}
-                                    // 4. Close the menu automatically when a user clicks a link on mobile!
                                     onClick={() => setIsOpen(false)}
                                     className={({ isActive }) =>
                                         `group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                                            isActive
-                                                ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                            isActive ? 'bg-indigo-50 text-indigo-700 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                         }`
                                     }
                                 >
-                                    <Icon className={`flex-shrink-0 mr-3 h-5 w-5 transition-colors ${
-                                        ({isActive}) => isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'
-                                    }`} />
-                                    <span>{item.name}</span>
+                                    {/* FIX: Use the render prop here to access isActive for the icon */}
+                                    {({ isActive }) => (
+                                        <>
+                                            <Icon className={`flex-shrink-0 mr-3 h-5 w-5 transition-colors ${
+                                                isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'
+                                            }`} />
+                                            <span>{item.name}</span>
+                                        </>
+                                    )}
                                 </NavLink>
                             );
                         })}

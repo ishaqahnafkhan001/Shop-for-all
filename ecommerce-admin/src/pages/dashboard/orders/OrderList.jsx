@@ -1,24 +1,20 @@
 import { useState, useEffect } from 'react';
-// ✨ Added 'Eye' icon import
 import { Package, Truck, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
-// ✨ Import your new Modal
 import OrderDetailsModal from '../../../components/dashboard/OrderDetailsModal';
 
 const OrderList = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // ✨ NEW STATE: Tracks which order to show in the modal (null means closed)
     const [selectedOrder, setSelectedOrder] = useState(null);
 
     useEffect(() => {
         const fetchOrders = async () => {
             try {
                 const { data } = await API.get('/admin/orders');
-                setOrders(data);
+                setOrders(data.data);
             } catch (err) {
                 toast.error("Failed to load orders");
             } finally {
@@ -37,29 +33,33 @@ const OrderList = () => {
             toast.success(`Order marked as ${newStatus}`);
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to update status");
-            window.location.reload();
+            // Revert optimistic update on failure
+            const { data } = await API.get('/admin/orders').catch(() => ({ data: { data: orders } }));
+            setOrders(data.data);
         }
     };
 
     const getStatusStyle = (status) => {
         switch (status) {
-            case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            case 'Pending':    return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+            case 'Confirmed':  return 'bg-sky-100 text-sky-800 border-sky-200';
             case 'Processing': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'Shipped': return 'bg-purple-100 text-purple-800 border-purple-200';
-            case 'Delivered': return 'bg-green-100 text-green-800 border-green-200';
-            case 'Cancelled': return 'bg-red-100 text-red-800 border-red-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
+            case 'Shipped':    return 'bg-purple-100 text-purple-800 border-purple-200';
+            case 'Delivered':  return 'bg-green-100 text-green-800 border-green-200';
+            case 'Cancelled':  return 'bg-red-100 text-red-800 border-red-200';
+            case 'Returned':   return 'bg-orange-100 text-orange-800 border-orange-200';
+            default:           return 'bg-gray-100 text-gray-800 border-gray-200';
         }
     };
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'Pending': return <Clock size={14} className="mr-1" />;
+            case 'Pending':    return <Clock size={14} className="mr-1" />;
             case 'Processing': return <Package size={14} className="mr-1" />;
-            case 'Shipped': return <Truck size={14} className="mr-1" />;
-            case 'Delivered': return <CheckCircle size={14} className="mr-1" />;
-            case 'Cancelled': return <XCircle size={14} className="mr-1" />;
-            default: return null;
+            case 'Shipped':    return <Truck size={14} className="mr-1" />;
+            case 'Delivered':  return <CheckCircle size={14} className="mr-1" />;
+            case 'Cancelled':  return <XCircle size={14} className="mr-1" />;
+            default:           return null;
         }
     };
 
@@ -67,7 +67,11 @@ const OrderList = () => {
         {
             label: 'Order ID',
             key: '_id',
-            render: (row) => <span className="font-mono text-sm font-semibold text-indigo-600">#{row._id.slice(-6).toUpperCase()}</span>
+            render: (row) => (
+                <span className="font-mono text-sm font-semibold text-indigo-600">
+                    #{row._id.slice(-6).toUpperCase()}
+                </span>
+            )
         },
         {
             label: 'Customer',
@@ -82,28 +86,32 @@ const OrderList = () => {
         {
             label: 'Date',
             key: 'createdAt',
-            render: (row) => <span className="text-sm text-gray-600">{new Date(row.createdAt).toLocaleDateString('en-GB')}</span>
+            render: (row) => (
+                <span className="text-sm text-gray-600">
+                    {new Date(row.createdAt).toLocaleDateString('en-GB')}
+                </span>
+            )
         },
         {
             label: 'Total',
-            key: 'totalAmount',
-            render: (row) => <span className="font-bold text-gray-900">৳ {row.totalAmount}</span>
+            key: 'pricing',
+            // FIX: was row.totalAmount which doesn't exist — backend uses row.pricing.total
+            render: (row) => (
+                <span className="font-bold text-gray-900">৳ {row.pricing?.total}</span>
+            )
         },
         {
             label: 'Status',
             key: 'status',
             render: (row) => (
-                <div className="flex items-center space-x-2">
-                    <span className={`flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyle(row.status)}`}>
-                        {getStatusIcon(row.status)}
-                        {row.status}
-                    </span>
-                </div>
+                <span className={`flex items-center w-fit px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyle(row.status)}`}>
+                    {getStatusIcon(row.status)}
+                    {row.status}
+                </span>
             )
         },
     ];
 
-    // ✨ UPDATED: Actions now have a View Details button AND the Status Dropdown side-by-side
     const renderActions = (row) => (
         <div className="flex items-center justify-end space-x-3">
             <button
@@ -113,16 +121,24 @@ const OrderList = () => {
             >
                 <Eye size={18} className="mr-1.5" /> View
             </button>
+
+            {/* FIX: Removed 'Cancelled' and 'Returned' from dropdown — backend blocks these
+                 and returns 400 telling the caller to use dedicated cancel/return endpoints.
+                 Those statuses are display-only here. */}
             <select
-                value={row.status}
+                value={['Cancelled', 'Returned'].includes(row.status) ? row.status : row.status}
                 onChange={(e) => handleStatusChange(row._id, e.target.value)}
-                className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8"
+                disabled={['Cancelled', 'Returned', 'Delivered'].includes(row.status)}
+                className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
                 <option value="Processing">Processing</option>
                 <option value="Shipped">Shipped</option>
                 <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
+                {/* Read-only options — shown only when order is already in that state */}
+                {row.status === 'Cancelled' && <option value="Cancelled">Cancelled</option>}
+                {row.status === 'Returned'  && <option value="Returned">Returned</option>}
             </select>
         </div>
     );
@@ -152,7 +168,9 @@ const OrderList = () => {
                                 <div key={order._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <span className="font-mono text-sm font-bold text-indigo-600">#{order._id.slice(-6).toUpperCase()}</span>
+                                            <span className="font-mono text-sm font-bold text-indigo-600">
+                                                #{order._id.slice(-6).toUpperCase()}
+                                            </span>
                                             <p className="text-sm font-bold text-gray-900 mt-1">{order.customer?.fullName}</p>
                                             <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString('en-GB')}</p>
                                         </div>
@@ -165,9 +183,9 @@ const OrderList = () => {
                                     <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                                         <div>
                                             <p className="text-xs text-gray-500 uppercase tracking-wider">Total</p>
-                                            <p className="font-bold text-gray-900 text-lg">৳ {order.totalAmount}</p>
+                                            {/* FIX: was order.totalAmount */}
+                                            <p className="font-bold text-gray-900 text-lg">৳ {order.pricing?.total}</p>
                                         </div>
-                                        {/* Mobile Action Dropdown & Button */}
                                         <div className="flex flex-col items-end space-y-2">
                                             {renderActions(order)}
                                         </div>
@@ -179,7 +197,6 @@ const OrderList = () => {
                 </>
             )}
 
-            {/* ✨ NEW: Conditionally render the Modal if selectedOrder is not null */}
             <OrderDetailsModal
                 order={selectedOrder}
                 onClose={() => setSelectedOrder(null)}

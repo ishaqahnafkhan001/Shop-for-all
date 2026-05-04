@@ -1,38 +1,26 @@
+// The newly consolidated storefrontRoutes.js
 const express = require('express');
 const router = express.Router();
 
-// Middleware
 const { resolveTenant } = require('../middlewares/tenant');
-const { protect } = require('../middlewares/auth'); // Customer Auth
+const { protect } = require('../middlewares/auth');
 
-// Controllers
 const {
     getStoreInfo,
     getStoreProducts,
     getSingleProduct
 } = require('../controllers/storeController');
 const { createOrder } = require('../controllers/orderController');
+// Import the missing features you need from the old public controller
+const { getMyOrders, trackPublicOrder } = require('../controllers/publicController');
 
-/**
- * @route   GET /api/storefront/:subdomain/info
- */
 router.get('/:subdomain/info', resolveTenant, getStoreInfo);
-
-/**
- * @route   GET /api/storefront/:subdomain/products
- */
 router.get('/:subdomain/products', resolveTenant, getStoreProducts);
-
-/**
- * @route   GET /api/storefront/:subdomain/products/:id
- */
 router.get('/:subdomain/products/:id', resolveTenant, getSingleProduct);
+router.post('/:subdomain/orders', resolveTenant, createOrder); // Allow guest checkout (no 'protect')
 
-/**
- * @route   POST /api/storefront/:subdomain/orders
- * @desc    Place an order on a specific store
- * @access  Private (Customer must be logged in)
- */
-router.post('/:subdomain/orders', resolveTenant, protect, createOrder);
+// Added from the old public routes
+router.get('/:subdomain/track-order/:orderId', resolveTenant, trackPublicOrder);
+router.get('/:subdomain/my-orders', resolveTenant, protect, getMyOrders);
 
 module.exports = router;

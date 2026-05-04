@@ -39,16 +39,18 @@ exports.registerVendor = async (req, res) => {
             shop_id: newShop._id
         });
 
-        // 5. Issue JWT (Optional: Auto-login after registration)
+        // 5. Issue JWT (🔥 FIX: changed 'userId' to 'id' to match middleware)
         const token = jwt.sign(
-            { userId: newAdmin._id, role: newAdmin.role, shopId: newAdmin.shop_id },
+            { id: newAdmin._id, role: newAdmin.role, shopId: newAdmin.shop_id },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
+        // 6. Set Cookie (🔥 FIX: Added 'domain' property so auth persists across subdomains)
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
+            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : 'localhost',
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
@@ -65,16 +67,19 @@ exports.registerVendor = async (req, res) => {
 };
 
 
-
+/**
+ * @desc    Register a new Customer for a specific storefront
+ * @route   POST /api/auth/register-customer
+ */
 exports.registerCustomer = async (req, res) => {
     try {
-        // 1. Validate (Now Joi allows 'subdomain')
-        const { error, value } = createUserSchema.validate(req.body);
+        // 1. Validate (🔥 FIX: Using the newly split registerCustomerSchema)
+        const { error, value } = registerCustomerSchema.validate(req.body);
         if (error) return res.status(400).json({ error: error.details[0].message });
 
         const { fullName, email, password, subdomain } = value;
 
-        // 2. ✨ THE DETECTIVE WORK: Find the Shop ID using the Subdomain
+        // 2. Find the Shop ID using the Subdomain
         const targetShop = await Shop.findOne({ subdomain });
         if (!targetShop) {
             return res.status(404).json({ error: "Storefront not found." });
@@ -94,19 +99,21 @@ exports.registerCustomer = async (req, res) => {
             email,
             password: hashedPassword,
             role: 'Customer',
-            shop_id: targetShop._id // ✨ We link the ID found in Step 2
+            shop_id: targetShop._id
         });
 
-        // 6. Generate JWT and Cookie (Keep your existing code here...)
+        // 6. Generate JWT (🔥 FIX: changed 'userId' to 'id' to match middleware)
         const token = jwt.sign(
-            { userId: newCustomer._id, role: newCustomer.role, shopId: newCustomer.shop_id },
+            { id: newCustomer._id, role: newCustomer.role, shopId: newCustomer.shop_id },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
 
+        // 7. Set Cookie (🔥 FIX: Added 'domain' property so auth persists across subdomains)
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
+            domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : 'localhost',
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
@@ -174,8 +181,10 @@ exports.login = async (req, res) => {
  */
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.userId).select('-password');
+        const user = await User.findById(req.user._id).select('-password');
+
         if (!user) return res.status(404).json({ error: "User not found" });
+
         res.status(200).json({ success: true, user });
     } catch (err) {
         res.status(500).json({ error: "Error fetching user session" });

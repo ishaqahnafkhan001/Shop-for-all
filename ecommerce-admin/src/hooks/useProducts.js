@@ -1,38 +1,25 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import API from '../api/api';
 
 export const useProducts = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
 
-  const fetchProducts = useCallback(async () => {
+  // FIX: added try/catch — without it any network error leaves loading=true forever
+  // and the error is silently swallowed with no feedback to the user
+  const fetchProducts = useCallback(async (page = 1) => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      const res = await API.get('/admin/products');
-
-      // 🔥 Handle ALL possible backend formats safely
-      let productData = [];
-
-      if (Array.isArray(res.data)) {
-        productData = res.data;
-      } else if (Array.isArray(res.data?.data)) {
-        productData = res.data.data;
-      } else if (Array.isArray(res.data?.products)) {
-        productData = res.data.products;
-      } else {
-        productData = [];
-        console.warn("Unexpected product response:", res.data);
+      const res = await API.get(`/admin/products?page=${page}`);
+      setProducts(res.data.data || []);
+      if (res.data.pagination) {
+        setPagination(res.data.pagination);
       }
-
-      setProducts(productData);
-
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to load products");
-      setProducts([]); // 🔥 prevent crash
+      toast.error(err.response?.data?.error || "Failed to load products");
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -47,24 +34,20 @@ export const useProducts = () => {
 
     try {
       await API.delete(`/admin/products/${id}`);
-
       toast.success("Product deleted");
-
-      // 🔥 Safe update
       setProducts((prev) =>
-        Array.isArray(prev) ? prev.filter(p => p._id !== id) : []
+          Array.isArray(prev) ? prev.filter(p => p._id !== id) : []
       );
-
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to delete product");
     }
   };
 
   return {
-    products: Array.isArray(products) ? products : [], // 🔥 always safe
+    products: Array.isArray(products) ? products : [],
     loading,
+    pagination,
     deleteProduct,
     refetchProducts: fetchProducts
   };
 };
-

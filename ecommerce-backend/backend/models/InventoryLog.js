@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const {Schema} = mongoose;
 
 const inventoryLogSchema = new Schema({
 
@@ -31,7 +31,8 @@ const inventoryLogSchema = new Schema({
 
     type: {
         type: String,
-        enum: ['ORDER', 'CANCEL', 'MANUAL', 'RETURN'],
+        // FIX: Added 'RESTOCK'
+        enum: ['ORDER', 'CANCEL', 'MANUAL', 'RETURN', 'RESTOCK'],
         required: true
     },
 
@@ -55,11 +56,11 @@ const inventoryLogSchema = new Schema({
 
     note: String
 
-}, { timestamps: true });
+}, {timestamps: true});
 
 
 // 🔥 Indexes
-inventoryLogSchema.index({ productId: 1, createdAt: -1 });
-inventoryLogSchema.index({ shop_id: 1, createdAt: -1 });
+inventoryLogSchema.index({productId: 1, createdAt: -1});
+inventoryLogSchema.index({shop_id: 1, createdAt: -1});
 
 module.exports = mongoose.model('InventoryLog', inventoryLogSchema);

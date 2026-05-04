@@ -1,30 +1,36 @@
 const jwt = require('jsonwebtoken');
 
-exports.protect = async (req, res, next) => {
+exports.protect = (req, res, next) => {
     try {
-        // 1. Look for the token in the cookies
-        let token = req.cookies.token;
+        let token;
 
-        // (Optional Fallback) Check Authorization header just in case you test with Postman
-        if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        if (req.cookies && req.cookies.token) {
+            token = req.cookies.token;
+        }
+        else if (
+            req.headers.authorization &&
+            req.headers.authorization.startsWith('Bearer')
+        ) {
             token = req.headers.authorization.split(' ')[1];
         }
 
         if (!token) {
-            return res.status(401).json({ error: "Not authorized to access this route. Please log in." });
+            return res.status(401).json({ error: "Not authorized. Please login again." });
         }
 
-        // 2. Verify the token using your secret key
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // 3. Attach the decoded user data (userId, role, shopId) to the request object!
-        req.user = decoded;
+        req.user = {
+            _id: decoded.id,
+            role: decoded.role,
+            shopId: decoded.shopId
+        };
 
-        req.user._id = decoded.userId;
-
-        // 4. Pass control to the next function (the controller)
+        req.tenantId = decoded.shopId;
+        
         next();
+
     } catch (err) {
-        return res.status(401).json({ error: "Session expired or invalid token. Please log in again." });
+        return res.status(401).json({ error: "Session expired or invalid token" });
     }
 };

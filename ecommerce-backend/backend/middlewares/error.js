@@ -1,5 +1,8 @@
 exports.errorHandler = (err, req, res, next) => {
-    console.error(err.stack.red); // Logs the error in your terminal
+    // FIX: err.stack.red crashes the handler itself if the `colors` package is not
+    // installed or not imported. Use err.stack directly — terminal colouring belongs
+    // in the logger layer, not in error handling middleware.
+    console.error(err.stack);
 
     let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
     let message = err.message || "Internal Server Error";
@@ -16,9 +19,16 @@ exports.errorHandler = (err, req, res, next) => {
         message = "Duplicate field value entered. Please use another value.";
     }
 
+    // FIX: Mongoose validation failures (e.g. required field missing, enum mismatch)
+    // were falling through to the default 500. They are client errors and must return 400.
+    if (err.name === 'ValidationError') {
+        statusCode = 400;
+        message = Object.values(err.errors).map(e => e.message).join(', ');
+    }
+
     res.status(statusCode).json({
         error: message,
-        // Only show the messy stack trace if you are in development mode
+        // Only show the stack trace in development
         stack: process.env.NODE_ENV === 'production' ? null : err.stack,
     });
 };

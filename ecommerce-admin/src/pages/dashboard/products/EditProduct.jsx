@@ -1,203 +1,255 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import {useState, useEffect} from 'react';
+import {useNavigate, useParams, useLocation} from 'react-router-dom';
+import {toast} from 'react-hot-toast';
+import {Plus, Trash2} from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 
 const EditProduct = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const { state } = useLocation();
+    const navigate = useNavigate();
+    const {id} = useParams();
+    const {state} = useLocation();
 
-  const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    pricing: {
-      buyingPrice: 0,
-      sellingPrice: 0,
-      discount: 0
-    },
-    variants: []
-  });
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        category: '',
+        pricing: {
+            buyingPrice: 0,
+            sellingPrice: 0,
+            discount: 0
+        },
+        variants: [],
+        features: [],
+        specifications: [],
+        comments: []
+    });
 
-  // 🔹 Fetch product (fallback if refresh)
-  useEffect(() => {
-    const loadProduct = async () => {
-      try {
-        let product = state?.product;
+    // 🔹 LOAD PRODUCT
+    useEffect(() => {
+        const loadProduct = async () => {
+            try {
+                let product = state?.product;
 
-        if (!product) {
-          const res = await API.get(`/admin/products/${id}`);
-          product = res.data.data || res.data;
-        }
+                if (!product) {
+                    const res = await API.get(`/admin/products/${id}`);
+                    product = res.data.data || res.data;
+                }
 
-        setFormData({
-          title: product.title,
-          description: product.description,
-          category: product.category,
+                setFormData({
+                    title: product.title,
+                    description: product.description,
+                    category: product.category,
 
-          pricing: {
-            buyingPrice: product.pricing?.buyingPrice || 0,
-            sellingPrice: product.pricing?.sellingPrice || 0,
-            discount: product.pricing?.discount || 0
-          },
+                    pricing: {
+                        buyingPrice: product.pricing?.buyingPrice || 0,
+                        sellingPrice: product.pricing?.sellingPrice || 0,
+                        discount: product.pricing?.discount || 0
+                    },
 
-          variants: product.variants || []
-        });
+                    variants: product.variants || [],
+                    features: product.features || [],
+                    specifications: product.specifications || [],
+                    comments: product.comments || []
+                });
 
-      } catch (err) {
-        toast.error("Failed to load product");
-        navigate('/dashboard/products');
-      } finally {
-        setLoading(false);
-      }
+            } catch (err) {
+                toast.error("Failed to load product");
+                navigate('/dashboard/products');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadProduct();
+    }, [id, state, navigate]);
+
+    // 🔹 BASIC
+    const handleChange = (e) => {
+        setFormData({...formData, [e.target.id]: e.target.value});
     };
 
-    loadProduct();
-  }, [id, state, navigate]);
+    // 🔹 PRICING
+    const handlePricing = (e) => {
+        setFormData({
+            ...formData,
+            pricing: {
+                ...formData.pricing,
+                [e.target.id]: Number(e.target.value)
+            }
+        });
+    };
 
-  // 🔹 Basic change
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
-  };
+    // 🔹 VARIANT STOCK
+    const handleVariantStock = (i, value) => {
+        const updated = [...formData.variants];
+        updated[i].stock = Number(value);
+        setFormData({...formData, variants: updated});
+    };
 
-  // 🔹 Pricing change
-  const handlePricing = (e) => {
-    setFormData({
-      ...formData,
-      pricing: {
-        ...formData.pricing,
-        [e.target.id]: Number(e.target.value)
-      }
-    });
-  };
+    // 🔹 KEY VALUE HANDLER
+    const handleKVChange = (type, index, field, value) => {
+        const updated = [...formData[type]];
+        updated[index][field] = value;
+        setFormData({...formData, [type]: updated});
+    };
 
-  // 🔹 Variant stock change
-  const handleVariantStock = (index, value) => {
-    const updated = [...formData.variants];
-    updated[index].stock = Number(value);
-    setFormData({ ...formData, variants: updated });
-  };
+    const addKV = (type) => {
+        setFormData({
+            ...formData,
+            [type]: [...formData[type], {title: '', value: ''}]
+        });
+    };
 
-  // 🔹 Calculations
-  const finalPrice =
-    formData.pricing.sellingPrice -
-    (formData.pricing.sellingPrice * formData.pricing.discount) / 100;
+    const removeKV = (type, index) => {
+        const updated = formData[type].filter((_, i) => i !== index);
+        setFormData({...formData, [type]: updated});
+    };
 
-  const profit = finalPrice - formData.pricing.buyingPrice;
+    // 🔹 CALCULATION
+    const selling = Number(formData.pricing.sellingPrice) || 0;
+    const buying = Number(formData.pricing.buyingPrice) || 0;
+    const discount = Number(formData.pricing.discount) || 0;
 
-  // 🔹 Submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+    const finalPrice = selling - (selling * discount / 100);
+    const profit = finalPrice - buying;
 
-    try {
-      await API.patch(`/admin/products/${id}`, formData);
+    // 🔹 SUBMIT
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
 
-      toast.success("Product updated");
-      navigate('/dashboard/products');
+        try {
+            await API.patch(`/admin/products/${id}`, formData);
+            toast.success("Product updated");
+            navigate('/dashboard/products');
+        } catch (err) {
+            toast.error(err.response?.data?.error || "Update failed");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-    } catch (err) {
-      toast.error(err.response?.data?.error || "Update failed");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    if (loading) return <div className="text-center py-10">Loading...</div>;
 
-  if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
-  }
+    return (
+        <div className="max-w-4xl mx-auto px-4 space-y-6">
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 space-y-6">
+            {/* HEADER */}
+            <div className="flex justify-between items-center">
+                <h1 className="text-xl sm:text-2xl font-bold">Edit Product</h1>
+                <button onClick={() => navigate(-1)} className="text-sm text-gray-500">
+                    Cancel
+                </button>
+            </div>
 
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold">Edit Product</h1>
+            <form onSubmit={handleSubmit} className="space-y-6 bg-white p-5 rounded-xl border">
 
-        <button
-          onClick={() => navigate(-1)}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          Cancel
-        </button>
-      </div>
+                {/* BASIC */}
+                <Input id="title" label="Title" value={formData.title} onChange={handleChange}/>
 
-      {/* FORM */}
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-5 rounded-xl shadow border">
+                <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="w-full border rounded p-2"
+                />
 
-        {/* BASIC */}
-        <div className="grid gap-4">
-          <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
+                <Input id="category" label="Category" value={formData.category} onChange={handleChange}/>
 
-          <textarea
-            id="description"
-            value={formData.description}
-            onChange={handleChange}
-            className="w-full border rounded p-2"
-            rows="3"
-          />
+                {/* PRICING */}
 
-          <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
-        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* FIX: Bind to 'buying', not 'selling' */}
+                    <Input id="buyingPrice" label="Buying" type="number" value={buying} onChange={handlePricing}/>
+                    <Input id="sellingPrice" label="Selling" type="number" value={selling} onChange={handlePricing}/>
+                    <Input id="discount" label="Discount %" type="number" value={discount} onChange={handlePricing}/>
+                </div>
 
-        {/* PRICING */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Input id="buyingPrice" label="Buying" type="number" value={formData.pricing.buyingPrice} onChange={handlePricing} />
-          <Input id="sellingPrice" label="Selling" type="number" value={formData.pricing.sellingPrice} onChange={handlePricing} />
-          <Input id="discount" label="Discount %" type="number" value={formData.pricing.discount} onChange={handlePricing} />
-        </div>
+                {/* PRICE */}
+                <div className={`p-4 border rounded ${profit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <div className="flex justify-between">
+                        <span>Final Price</span>
+                        <span className="font-bold">৳ {Math.round(finalPrice)}</span>
+                    </div>
 
-        {/* PRICE PREVIEW */}
-        <div className={`p-4 rounded border ${profit > 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-          <div className="flex justify-between text-sm">
-            <span>Final Price:</span>
-            <span className="font-bold">৳ {Math.round(finalPrice)}</span>
-          </div>
-
-          <div className="flex justify-between text-sm">
-            <span>Profit:</span>
-            <span className={profit > 0 ? 'text-green-600' : 'text-red-600'}>
+                    <div className="flex justify-between">
+                        <span>Profit</span>
+                        <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
               ৳ {profit}
             </span>
-          </div>
+                    </div>
+                </div>
+
+                {/* VARIANTS */}
+                <div>
+                    <h2 className="font-semibold">Variants</h2>
+                    {formData.variants.map((v, i) => (
+                        <div key={i} className="border p-3 rounded mb-2">
+                            <div className="text-xs text-gray-400">
+                                {v.attributes?.map(a => `${a.name}: ${a.value}`).join(', ')}
+                            </div>
+
+                            <Input
+                                label="Stock"
+                                type="number"
+                                value={v.stock}
+                                onChange={(e) => handleVariantStock(i, e.target.value)}
+                            />
+                        </div>
+                    ))}
+                </div>
+
+                {/* 🔥 FEATURES / SPEC / COMMENTS */}
+                {['features', 'specifications', 'comments'].map((type) => (
+                    <div key={type} className="space-y-2">
+                        <div className="flex justify-between">
+                            <h2 className="font-semibold capitalize">{type}</h2>
+                            <button type="button" onClick={() => addKV(type)}
+                                    className="text-indigo-600 text-sm flex items-center">
+                                <Plus size={14} className="mr-1"/> Add
+                            </button>
+                        </div>
+
+                        {formData[type].map((item, i) => (
+                            <div key={i} className="grid grid-cols-2 gap-2 relative">
+                                <input
+                                    className="border p-2 rounded"
+                                    value={item.title}
+                                    placeholder="Title"
+                                    onChange={(e) => handleKVChange(type, i, 'title', e.target.value)}
+                                />
+                                <input
+                                    className="border p-2 rounded"
+                                    value={item.value}
+                                    placeholder="Value"
+                                    onChange={(e) => handleKVChange(type, i, 'value', e.target.value)}
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={() => removeKV(type, i)}
+                                    className="absolute right-0 top-0 text-red-500"
+                                >
+                                    <Trash2 size={14}/>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                ))}
+
+                <Button type="submit" isLoading={isSubmitting}>
+                    Update Product
+                </Button>
+
+            </form>
         </div>
-
-        {/* VARIANTS */}
-        <div>
-          <h2 className="font-semibold mb-2">Variants</h2>
-
-          {formData.variants.map((variant, i) => (
-            <div key={i} className="border p-3 rounded mb-2">
-
-              <div className="text-xs text-gray-500 mb-1">
-                {variant.attributes?.map(a => `${a.name}: ${a.value}`).join(', ')}
-              </div>
-
-              <Input
-                label="Stock"
-                type="number"
-                value={variant.stock}
-                onChange={(e) => handleVariantStock(i, e.target.value)}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* BUTTON */}
-        <Button type="submit" isLoading={isSubmitting}>
-          Update Product
-        </Button>
-
-      </form>
-    </div>
-  );
+    );
 };
 
 export default EditProduct;

@@ -4,6 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/ecommerce-admin/node_modules" />
       <excludeFolder url="file://$MODULE_DIR$/ecommerce-backend/backend/node_modules" />
+      <excludeFolder url="file://$MODULE_DIR$/ecommerce-storefront/node_modules" />
     </content>
     <content url="file://$MODULE_DIR$/ecommerce-admin/node_modules" />
     <content url="file://$MODULE_DIR$/ecommerce-backend/backend/node_modules" />

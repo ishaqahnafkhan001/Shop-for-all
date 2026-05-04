@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
-// Schema for User Creation (Staff, Customers, or Vendor registration)
-const createUserSchema = Joi.object({
+// Base properties shared by all users to keep the validation logic clean
+const baseUserObj = {
     fullName: Joi.string()
         .trim()
         .min(3)
@@ -31,20 +31,23 @@ const createUserSchema = Joi.object({
 
     role: Joi.string()
         .valid('VendorAdmin', 'VendorStaff', 'Customer')
-        .optional() // Made optional because the controller often sets this automatically
-        .default('Customer'),
+        .default('Customer')
+};
 
+// 🔥 Schema for public customer registration (Requires subdomain)
+const registerCustomerSchema = Joi.object({
+    ...baseUserObj,
     subdomain: Joi.string().required().messages({
-        'any.required': 'Subdomain context is missing'
-    }),
-    // shop_id is optional in Joi because we often inject it from the JWT or Subdomain logic
-    shop_id: Joi.string()
-        .hex()
-        .length(24)
-        .optional()
-        .messages({
-            'string.length': 'Invalid Shop ID format'
-        })
+        'any.required': 'Subdomain context is missing for customer registration'
+    })
+}).required();
+
+// 🔥 Schema for an Admin creating a Staff member (Does NOT require subdomain, accepts shop_id)
+const createStaffSchema = Joi.object({
+    ...baseUserObj,
+    shop_id: Joi.string().hex().length(24).optional().messages({
+        'string.length': 'Invalid Shop ID format'
+    })
 }).required();
 
 // Schema for a simple Login Request
@@ -59,6 +62,7 @@ const loginUserSchema = Joi.object({
 }).required();
 
 module.exports = {
-    createUserSchema,
+    registerCustomerSchema,
+    createStaffSchema,
     loginUserSchema
 };

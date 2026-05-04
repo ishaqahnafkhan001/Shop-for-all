@@ -6,81 +6,115 @@ const Order = require('../models/Order');
 const User = require('../models/User'); // We need this to create Guest customers
 
 exports.createPublicOrder = async (req, res) => {
+    // 🔥 THE FIX: Start a database transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-        const { subdomain, customer, shippingAddress, shippingZone, items, shippingCost, totalAmount } = req.body;
+        const { subdomain, customer, shippingAddress, shippingZone, items, shippingCost } = req.body;
 
-        // 1. Find the Shop
-        const shop = await Shop.findOne({ subdomain });
-        if (!shop) {
-            return res.status(404).json({ error: "Shop not found" });
-        }
+        const shop = await Shop.findOne({ subdomain }).session(session);
+        if (!shop) throw new Error("Shop not found");
 
-        // 2. GUEST CHECKOUT FIX: Find or create a User account for the customer
-        // Your Order schema requires an ObjectId for the customer.
-        let orderCustomer = await User.findOne({ email: customer.email });
+        // 🔥 THE FIX: Secure Guest User Creation
+        let orderCustomer = await User.findOne({ email: customer.email }).session(session);
 
         if (!orderCustomer) {
-            // If they don't exist, create a background guest account
-            orderCustomer = new User({
+            const rawPassword = 'GuestUser_' + Math.random().toString(36).slice(-8);
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(rawPassword, salt); // Hashed!
+
+            const [newUser] = await User.create([{
                 shop_id: shop._id,
                 fullName: customer.fullName,
                 email: customer.email,
                 phone: customer.phone,
                 role: 'Customer',
-                password: 'GuestUser_' + Math.random().toString(36).slice(-8) // Random secure password
-            });
-            await orderCustomer.save();
+                password: hashedPassword
+            }], { session });
+
+            orderCustomer = newUser;
         }
 
-        // 3. SECURE PRICE CHECK & STOCK REDUCTION
         let itemsWithSecurePrices = [];
         let calculatedSubtotal = 0;
+        let logsToInsert = [];
 
         for (const item of items) {
-            const product = await Product.findById(item.product);
+            const product = await Product.findById(item.product).session(session);
 
-            if (!product) return res.status(404).json({ error: "A product was not found." });
+            if (!product) throw new Error(`Product not found.`);
             if (product.stock < item.quantity) {
-                return res.status(400).json({ error: `Insufficient stock for ${product.title}` });
+                throw new Error(`Insufficient stock for ${product.title}`);
             }
 
-            // Push the item matching your exact strict schema
+            const beforeStock = product.stock;
+
             itemsWithSecurePrices.push({
-                product: product._id,
+                productId: product._id, // Fixed mapping to match your Order schema
+                variantId: item.variantId, // Assuming you pass this from frontend
+                title: product.title,
                 quantity: item.quantity,
-                price: product.sellingPrice,      // Secure price from DB
-                buyingPrice: product.buyingPrice  // ✨ Hidden buying price for your profit charts!
+                price: product.sellingPrice,
+                buyingPrice: product.pricing.buyingPrice,
+                total: product.sellingPrice * item.quantity
             });
 
             calculatedSubtotal += (product.sellingPrice * item.quantity);
 
-            // ✨ Reduce the stock
+            // Deduct stock
             product.stock -= item.quantity;
-            await product.save();
+            await product.save({ session });
+
+            // 🔥 THE FIX: Sync with Admin Inventory Logs
+            logsToInsert.push({
+                shop_id: shop._id,
+                productId: product._id,
+                variantId: item.variantId, // Requires variantId from frontend
+                change: -item.quantity,
+                type: 'ORDER',
+                beforeStock,
+                afterStock: product.stock,
+                user: orderCustomer._id,
+                note: 'Public Storefront Order'
+            });
         }
 
-        // 4. Create the Final Order
-        const newOrder = new Order({
+        const [newOrder] = await Order.create([{
             shop_id: shop._id,
-            customer: orderCustomer._id, // ✨ The true ObjectId
+            customer: orderCustomer._id,
             items: itemsWithSecurePrices,
-            shippingZone,
-            shippingCost,
-            totalAmount: calculatedSubtotal + shippingCost, // Trust the backend math
-            shippingAddress,
+            pricing: {
+                subtotal: calculatedSubtotal,
+                shipping: shippingCost,
+                total: calculatedSubtotal + shippingCost
+            },
+            shipping: {
+                zone: shippingZone,
+                cost: shippingCost,
+                address: shippingAddress
+            },
+            payment: { method: req.body.paymentMethod || 'COD' },
             status: 'Pending'
-        });
+        }], { session });
 
-        await newOrder.save();
+        // Link logs to the new order and insert
+        if (logsToInsert.length > 0) {
+            const logsWithRef = logsToInsert.map(log => ({ ...log, referenceId: newOrder._id }));
+            await InventoryLog.insertMany(logsWithRef, { session });
+        }
 
+        await session.commitTransaction();
         res.status(201).json(newOrder);
 
     } catch (err) {
+        await session.abortTransaction();
         console.error("Order Creation Error:", err);
-        res.status(500).json({ error: "Server error while placing order." });
+        res.status(400).json({ error: err.message || "Server error while placing order." });
+    } finally {
+        session.endSession();
     }
 };
-
 exports.getPublicShopDetails = async (req, res) => {
     try {
         const { subdomain } = req.params;
@@ -97,16 +131,15 @@ exports.getPublicShopDetails = async (req, res) => {
         if (category && category !== 'All') query.category = category;
 
         if (minPrice || maxPrice) {
-            query.sellingPrice = {};
-            if (minPrice) query.sellingPrice.$gte = Number(minPrice);
-            if (maxPrice) query.sellingPrice.$lte = Number(maxPrice);
+            query['pricing.sellingPrice'] = {}; // FIX: use dot notation for nested fields
+            if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
+            if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
         }
 
-        // ✨ THE NEW SORTING LOGIC ✨
-        let sortQuery = { createdAt: -1, _id: 1 }; // Default: Newest first
+        let sortQuery = { createdAt: -1, _id: 1 };
 
-        if (sort === 'priceAsc') sortQuery = { sellingPrice: 1, _id: 1 };
-        else if (sort === 'priceDesc') sortQuery = { sellingPrice: -1, _id: 1 };
+        if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
+        else if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 

@@ -15,8 +15,9 @@ API.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            // Handle unauthorized errors globally if needed
             console.warn("Unauthorized request or session expired.");
+            // FIX: Kick the user back to the login screen
+            window.location.href = '/login';
         }
         return Promise.reject(error);
     }

@@ -12,7 +12,11 @@ const CustomerList = () => {
         const fetchCustomers = async () => {
             try {
                 const { data } = await API.get('/admin/customers');
-                setCustomers(data);
+                // FIX: backend returns { success, data: [...] }
+                // previous code did setCustomers(data) which set state to the full
+                // response object { success, data }, not the array inside it
+                console.log("API RESPONSE:", data);
+                setCustomers(Array.isArray(data) ? data : []);
             } catch (err) {
                 toast.error("Failed to load customers");
             } finally {
@@ -37,7 +41,6 @@ const CustomerList = () => {
         }
     };
 
-    // --- Desktop Table Configuration ---
     const columns = [
         {
             label: 'Customer',
@@ -111,13 +114,11 @@ const CustomerList = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
                 <p className="mt-1 text-sm text-gray-500">Manage your store's registered users.</p>
             </div>
 
-            {/* Search Bar - Now vertically stacks on mobile using flex-col */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 flex flex-col sm:flex-row gap-3">
                 <input
                     type="text"
@@ -133,12 +134,10 @@ const CustomerList = () => {
                 <div className="py-10 text-center text-gray-500">Loading your customers...</div>
             ) : (
                 <>
-                    {/* DESKTOP VIEW: Standard Table (Hidden on screens smaller than 'md') */}
                     <div className="hidden md:block">
                         <Table columns={columns} data={customers} actions={renderActions} />
                     </div>
 
-                    {/* MOBILE VIEW: Card Layout (Hidden on screens 'md' and larger) */}
                     <div className="md:hidden space-y-4">
                         {customers.length === 0 ? (
                             <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
@@ -148,7 +147,6 @@ const CustomerList = () => {
                             customers.map((cust) => (
                                 <div key={cust._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
                                     <div className="flex items-start justify-between">
-                                        {/* Avatar & Info */}
                                         <div className="flex items-center space-x-3">
                                             <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm uppercase
                                                 ${cust.status === 'Suspended' ? 'bg-red-100 text-red-700' : 'bg-indigo-100 text-indigo-700'}
@@ -162,8 +160,6 @@ const CustomerList = () => {
                                                 <p className="text-xs text-gray-500">{cust.email}</p>
                                             </div>
                                         </div>
-
-                                        {/* Status Badge */}
                                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
                                             cust.status === 'Suspended'
                                                 ? 'bg-red-100 text-red-800'
@@ -173,15 +169,11 @@ const CustomerList = () => {
                                         </span>
                                     </div>
 
-                                    {/* Bottom Row: Date & Actions */}
                                     <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                                         <span className="text-xs text-gray-400">
                                             Joined {new Date(cust.createdAt).toLocaleDateString('en-GB')}
                                         </span>
-                                        {/* Reusing the exact same renderActions logic! */}
-                                        <div>
-                                            {renderActions(cust)}
-                                        </div>
+                                        <div>{renderActions(cust)}</div>
                                     </div>
                                 </div>
                             ))

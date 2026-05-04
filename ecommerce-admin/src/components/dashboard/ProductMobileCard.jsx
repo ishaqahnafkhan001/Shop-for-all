@@ -1,7 +1,14 @@
 import { Package, Edit, Trash2 } from 'lucide-react';
 
 const ProductMobileCard = ({ product, onEdit, onDelete }) => {
-    const profit = (product.sellingPrice || 0) - (product.buyingPrice || 0);
+    const sellingPrice = product.pricing?.sellingPrice || 0;
+    const buyingPrice  = product.pricing?.buyingPrice  || 0;
+    const discount     = product.pricing?.discount     || 0;
+    const finalPrice   = Math.round(sellingPrice - (sellingPrice * discount / 100));
+    const profit       = finalPrice - buyingPrice;
+
+    // FIX: product.stock doesn't exist — stock lives inside product.variants[].stock
+    const totalStock = product.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
 
     return (
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3 relative">
@@ -19,22 +26,20 @@ const ProductMobileCard = ({ product, onEdit, onDelete }) => {
                 </div>
             </div>
 
-            {/* Middle Row: Price, Profit & Stock */}
             <div className="flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-100">
                 <div className="flex flex-col">
-                    <span className="font-bold text-indigo-600">৳ {product.sellingPrice}</span>
+                    <span className="font-bold text-indigo-600">৳ {finalPrice}</span>
                     <span className={`text-[10px] font-medium ${profit > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                        Profit: ৳{profit}
+                        Profit: ৳ {profit}
                     </span>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
-                    product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    totalStock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
-                    {product.stock > 0 ? `${product.stock} Left` : 'Out of Stock'}
+                    {totalStock > 0 ? `${totalStock} Left` : 'Out of Stock'}
                 </span>
             </div>
 
-            {/* Bottom Row: Actions */}
             <div className="pt-2 flex justify-end space-x-2 border-t border-gray-50">
                 <button
                     onClick={() => onEdit(product)}

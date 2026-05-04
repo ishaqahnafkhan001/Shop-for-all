@@ -3,46 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createUserSchema, loginUserSchema } = require('../validations/userValidation');
 
-/**
- * @desc    Login user & return JWT
- * @route   POST /api/auth/login
- */
-exports.login = async (req, res) => {
-    try {
-        // 1. Validate input
-        const { error, value } = loginUserSchema.validate(req.body);
-        if (error) return res.status(400).json({ error: error.details[0].message });
 
-        // 2. Check if user exists
-        const user = await User.findOne({ email: value.email });
-        if (!user) return res.status(401).json({ error: "Invalid email or password" });
-
-        // 3. Verify password
-        const isMatch = await bcrypt.compare(value.password, user.password);
-        if (!isMatch) return res.status(401).json({ error: "Invalid email or password" });
-
-        // 4. Create JWT Payload
-        const payload = {
-            id: user._id,
-            shopId: user.shop_id,
-            role: user.role
-        };
-
-        // 5. Sign Token
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
-
-        // 6. Send response (Optionally set as HTTP-only cookie for better security)
-        res.status(200).json({
-            message: "Login successful",
-            token,
-            user: { id: user._id, fullName: user.fullName, role: user.role, shopId: user.shop_id }
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error during login" });
-    }
-};
 /**
  * @desc    Toggle a customer's ban status (Active <-> Suspended)
  * @route   PATCH /api/admin/customers/:id/status
@@ -147,14 +108,4 @@ exports.getShopUsers = async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch users" });
     }
-};
-
-/**
- * @desc    Logout user
- * @route   POST /api/auth/logout
- */
-exports.logout = (req, res) => {
-    // If using cookies, clear the cookie. If using LocalStorage,
-    // the frontend simply deletes the token.
-    res.status(200).json({ message: "Logged out successfully" });
 };
