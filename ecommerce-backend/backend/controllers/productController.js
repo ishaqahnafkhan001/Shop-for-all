@@ -90,11 +90,50 @@ exports.getSingleProduct = async (req, res) => {
  */
 exports.createProduct = async (req, res) => {
     try {
-        const { error, value } = createProductSchema.validate(req.body);
+        // 1️⃣ Extract Cloudinary Media URLs from req.files
+        let imageUrls = [];
+        let videoUrls = [];
+
+        if (req.files) {
+            if (req.files.images) {
+                imageUrls = req.files.images.map(file => file.path);
+            }
+            if (req.files.videos) {
+                videoUrls = req.files.videos.map(file => file.path);
+            }
+        }
+
+        // 2️⃣ Parse FormData strings back into JSON objects/arrays
+        const parsedBody = { ...req.body };
+        const jsonFields = ['pricing', 'variants', 'features', 'specifications', 'comments'];
+
+        for (const field of jsonFields) {
+            if (typeof parsedBody[field] === 'string') {
+                try {
+                    parsedBody[field] = JSON.parse(parsedBody[field]);
+                } catch (e) {
+                    return res.status(400).json({
+                        success: false,
+                        error: `Invalid JSON format provided for field: ${field}`
+                    });
+                }
+            }
+        }
+
+        // 3️⃣ Combine parsed text fields with media URLs for validation
+        const payloadToValidate = {
+            ...parsedBody,
+            images: imageUrls,
+            videos: videoUrls
+        };
+
+        // 4️⃣ Run Joi Validation
+        const { error, value } = createProductSchema.validate(payloadToValidate);
         if (error) {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
 
+        // 5️⃣ Save to MongoDB
         const product = await Product.create({
             ...value,
             shop_id: req.tenantId  // ✅ Consistent with rest of codebase
@@ -111,7 +150,6 @@ exports.createProduct = async (req, res) => {
         res.status(500).json({ success: false, error: "Failed to create product", details: err.message });
     }
 };
-
 
 /**
  * @desc    Update a product (safe partial update)

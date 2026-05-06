@@ -17,7 +17,6 @@ const attributeSchema = Joi.object({
 const noDuplicateVariants = (variants, helpers) => {
     const seen = new Set();
     for (const v of variants) {
-        // Sort attributes to ensure {color: red, size: M} matches {size: M, color: red}
         const key = JSON.stringify(
             [...v.attributes].sort((a, b) => a.name.localeCompare(b.name))
         );
@@ -53,7 +52,10 @@ const createProductSchema = Joi.object({
     title: Joi.string().trim().min(3).max(100).required(),
     description: Joi.string().trim().min(10).max(3000).required(),
     category: Joi.string().trim().max(100).optional(),
+
+    // ✅ Updated to include images AND videos
     images: Joi.array().items(Joi.string().uri()).min(1).max(10).required(),
+    videos: Joi.array().items(Joi.string().uri()).max(2).optional(),
 
     pricing: Joi.object({
         buyingPrice: Joi.number().min(0).required(),
@@ -84,7 +86,10 @@ const updateProductSchema = Joi.object({
     title: Joi.string().trim().min(3).max(100).optional(),
     description: Joi.string().trim().min(10).max(3000).optional(),
     category: Joi.string().trim().max(100).optional(),
+
+    // ✅ Updated to include images AND videos
     images: Joi.array().items(Joi.string().uri()).max(10).optional(),
+    videos: Joi.array().items(Joi.string().uri()).max(2).optional(),
 
     pricing: Joi.object({
         buyingPrice: Joi.number().min(0).optional(),
@@ -93,7 +98,6 @@ const updateProductSchema = Joi.object({
     })
         .optional()
         .custom((pricing, helpers) => {
-            // Only enforce cross-field validation if BOTH are provided in the patch
             if (pricing.buyingPrice !== undefined && pricing.sellingPrice !== undefined && pricing.sellingPrice < pricing.buyingPrice) {
                 return helpers.error('any.invalid');
             }

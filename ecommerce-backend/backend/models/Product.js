@@ -45,6 +45,7 @@ const productSchema = new Schema({
         index: true
     },
     images: [String],
+    videos: [String],
     pricing: {
         buyingPrice: { type: Number, required: true },
         sellingPrice: { type: Number, required: true },

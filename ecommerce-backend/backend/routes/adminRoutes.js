@@ -4,7 +4,7 @@ const router = express.Router();
 // Middlewares
 const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
-
+const { upload } = require('../config/cloudinary');
 // Controllers
 const {
     getShopProducts,
@@ -41,6 +41,11 @@ router.post(
     '/products',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
+    // 👇 Use .fields() to accept multiple images and multiple videos
+    upload.fields([
+        { name: 'images', maxCount: 5 }, // Accepts up to 5 files under the 'images' field
+        { name: 'videos', maxCount: 2 }  // Accepts up to 2 files under the 'videos' field
+    ]),
     createProduct
 );
 
@@ -48,17 +53,20 @@ router.patch(
     '/products/:id',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
+    // 👇 Apply the same logic to updates if users can add/change media later
+    upload.fields([
+        { name: 'images', maxCount: 5 },
+        { name: 'videos', maxCount: 2 }
+    ]),
     updateProduct
 );
 
 router.delete(
     '/products/:id',
     protect,
-    authorize('VendorAdmin'), // Only Admin can delete, not Staff
+    authorize('VendorAdmin'),
     deleteProduct
 );
-
-
 // --- USER / STAFF MANAGEMENT ---
 
 router.get(
