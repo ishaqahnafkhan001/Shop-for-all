@@ -1,245 +1,622 @@
-
-import {useState, useEffect} from 'react';
-import {useNavigate, useParams, useLocation} from 'react-router-dom';
-import {toast} from 'react-hot-toast';
-import {Plus, Trash2} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 
+/**
+ * EditProduct
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Variant operations map to 3 backend ops:
+ *
+ * 1. Stock edits & New Variants → saved on main submit (Op A: flat variants patch)
+ * 2. Remove button              → immediate PATCH      (Op D: removeVariants)
+ * 3. Add Option                 → its own action       (Op C: addAttributeOption)
+ */
 const EditProduct = () => {
-    const navigate = useNavigate();
-    const {id} = useParams();
-    const {state} = useLocation();
+    const navigate    = useNavigate();
+    const { id }      = useParams();
+    const { state }   = useLocation();
 
-    const [loading, setLoading] = useState(true);
+    const [loading,      setLoading]      = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // ── Scalar + variant state ────────────────────────────────────────────────
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        category: '',
-        pricing: {
-            buyingPrice: 0,
-            sellingPrice: 0,
-            discount: 0
-        },
-        variants: [],
-        features: [],
+        title:          '',
+        description:    '',
+        category:       '',
+        pricing:        { buyingPrice: 0, sellingPrice: 0, discount: 0 },
+        variants:       [],    // live variant list (reflects DB state + local additions)
+        features:       [],
         specifications: [],
-        comments: []
+        comments:       []
     });
 
-    // 🔹 LOAD PRODUCT
+    // Track which variant stocks were changed (or newly added) by the user
+    // variantId (or _tempId) → new stock value
+    const [changedStocks, setChangedStocks] = useState({});
+
+    // ── "Add option" panel state ──────────────────────────────────────────────
+    const [showAddOption, setShowAddOption] = useState(false);
+    const [addOptionForm, setAddOptionForm] = useState({
+        name:         '',
+        option:       '',
+        defaultStock: 0
+    });
+    const [isAddingOption, setIsAddingOption] = useState(false);
+
+    // ── "Create Custom Variant" panel state ───────────────────────────────────
+    const [showAddVariant, setShowAddVariant] = useState(false);
+    const [newVariantForm, setNewVariantForm] = useState({
+        attributes: [{ name: '', value: '' }],
+        stock: 0
+    });
+
+    // Derive the unique attribute names from current variants (for the dropdown)
+    const existingAttrNames = [...new Set(
+        formData.variants.flatMap(v => v.attributes.map(a => a.name))
+    )];
+
+    // ── Load product ──────────────────────────────────────────────────────────
     useEffect(() => {
-        const loadProduct = async () => {
+        const load = async () => {
             try {
                 let product = state?.product;
-
                 if (!product) {
                     const res = await API.get(`/admin/products/${id}`);
-                    product = res.data.data || res.data;
+                    product   = res.data.data || res.data;
                 }
-
                 setFormData({
-                    title: product.title,
-                    description: product.description,
-                    category: product.category,
-
+                    title:          product.title          || '',
+                    description:    product.description    || '',
+                    category:       product.category       || '',
                     pricing: {
-                        buyingPrice: product.pricing?.buyingPrice || 0,
+                        buyingPrice:  product.pricing?.buyingPrice  || 0,
                         sellingPrice: product.pricing?.sellingPrice || 0,
-                        discount: product.pricing?.discount || 0
+                        discount:     product.pricing?.discount     || 0
                     },
-
-                    variants: product.variants || [],
-                    features: product.features || [],
+                    variants:       product.variants       || [],
+                    features:       product.features       || [],
                     specifications: product.specifications || [],
-                    comments: product.comments || []
+                    comments:       product.comments       || []
                 });
-
-            } catch (err) {
-                toast.error("Failed to load product");
+            } catch {
+                toast.error('Failed to load product');
                 navigate('/dashboard/products');
             } finally {
                 setLoading(false);
             }
         };
-
-        loadProduct();
+        load();
     }, [id, state, navigate]);
 
-    // 🔹 BASIC
-    const handleChange = (e) => {
-        setFormData({...formData, [e.target.id]: e.target.value});
+    // ── Scalar handlers ───────────────────────────────────────────────────────
+    const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
+    const handlePricing = (e) => setFormData({
+        ...formData,
+        pricing: { ...formData.pricing, [e.target.id]: Number(e.target.value) }
+    });
+
+    // ── Stock handler ─────────────────────────────────────────────────────────
+    const handleStockChange = (variantId, value) => {
+        setChangedStocks(prev => ({ ...prev, [variantId]: Number(value) }));
     };
 
-    // 🔹 PRICING
-    const handlePricing = (e) => {
-        setFormData({
-            ...formData,
-            pricing: {
-                ...formData.pricing,
-                [e.target.id]: Number(e.target.value)
-            }
-        });
+    const getDisplayStock = (variant) => {
+        const vid = variant._id?.toString() || variant._tempId;
+        return changedStocks[vid] !== undefined ? changedStocks[vid] : variant.stock;
     };
 
-    // 🔹 VARIANT STOCK
-    const handleVariantStock = (i, value) => {
-        const updated = [...formData.variants];
-        updated[i].stock = Number(value);
-        setFormData({...formData, variants: updated});
+    // ── Remove variant ────────────────────────────────────────────────────────
+    const handleRemoveVariant = async (variantId) => {
+        if (formData.variants.length <= 1) {
+            toast.error('A product must have at least one variant');
+            return;
+        }
+        if (!window.confirm('Remove this variant?')) return;
+
+        // If it's a locally added temporary variant, remove it immediately from UI
+        if (variantId.startsWith('temp_')) {
+            setFormData(prev => ({
+                ...prev,
+                variants: prev.variants.filter(v => v._tempId !== variantId)
+            }));
+            setChangedStocks(prev => {
+                const cleaned = { ...prev };
+                delete cleaned[variantId];
+                return cleaned;
+            });
+            toast.success('Local variant removed');
+            return;
+        }
+
+        // Otherwise, send the API patch to remove from DB
+        try {
+            await API.patch(`/admin/products/${id}`, { removeVariants: [variantId] });
+            setFormData(prev => ({
+                ...prev,
+                variants: prev.variants.filter(v => v._id?.toString() !== variantId)
+            }));
+            setChangedStocks(prev => {
+                const cleaned = { ...prev };
+                delete cleaned[variantId];
+                return cleaned;
+            });
+            toast.success('Variant removed');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to remove variant');
+        }
     };
 
-    // 🔹 KEY VALUE HANDLER
+    // ── Add single option (Immediate API Call) ────────────────────────────────
+    const handleAddOption = async () => {
+        if (!addOptionForm.name.trim() || !addOptionForm.option.trim()) {
+            toast.error('Attribute name and option value are required');
+            return;
+        }
+        setIsAddingOption(true);
+        try {
+            const res = await API.patch(`/admin/products/${id}`, {
+                addAttributeOption: {
+                    name:         addOptionForm.name.trim().toLowerCase(),
+                    option:       addOptionForm.option.trim().toLowerCase(),
+                    defaultStock: Number(addOptionForm.defaultStock)
+                }
+            });
+            const updated = res.data.data;
+            setFormData(prev => ({ ...prev, variants: updated.variants || prev.variants }));
+            setAddOptionForm({ name: '', option: '', defaultStock: 0 });
+            setShowAddOption(false);
+            toast.success(`Added "${addOptionForm.option}" option — new combinations created`);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to add option');
+        } finally {
+            setIsAddingOption(false);
+        }
+    };
+
+    // ── Add Completely New Variant (Saved on Main Submit) ─────────────────────
+    const handleNewVariantAttrChange = (index, field, value) => {
+        const updated = [...newVariantForm.attributes];
+        updated[index][field] = value;
+        setNewVariantForm(prev => ({ ...prev, attributes: updated }));
+    };
+
+    const handleAddCustomVariant = () => {
+        // Filter out empty attributes
+        const validAttrs = newVariantForm.attributes.filter(a => a.name.trim() && a.value.trim());
+        if (validAttrs.length === 0) {
+            toast.error("Add at least one complete attribute (e.g., color: blue)");
+            return;
+        }
+
+        const tempId = `temp_${Date.now()}`;
+        const newVariant = {
+            _tempId: tempId,
+            attributes: validAttrs.map(a => ({
+                name: a.name.trim().toLowerCase(),
+                value: a.value.trim().toLowerCase()
+            })),
+            stock: Number(newVariantForm.stock),
+            isActive: true
+        };
+
+        // Append to local variants array
+        setFormData(prev => ({ ...prev, variants: [...prev.variants, newVariant] }));
+
+        // Mark as changed so it gets bundled into the update payload
+        setChangedStocks(prev => ({ ...prev, [tempId]: newVariant.stock }));
+
+        // Reset the form
+        setNewVariantForm({ attributes: [{ name: '', value: '' }], stock: 0 });
+        setShowAddVariant(false);
+        toast.success("Variant added locally! Click 'Update Product' to save it.");
+    };
+
+    // ── KV handlers ───────────────────────────────────────────────────────────
     const handleKVChange = (type, index, field, value) => {
         const updated = [...formData[type]];
         updated[index][field] = value;
-        setFormData({...formData, [type]: updated});
+        setFormData({ ...formData, [type]: updated });
     };
+    const addKV    = (type) => setFormData({ ...formData, [type]: [...formData[type], { title: '', value: '' }] });
+    const removeKV = (type, index) => setFormData({ ...formData, [type]: formData[type].filter((_, i) => i !== index) });
 
-    const addKV = (type) => {
-        setFormData({
-            ...formData,
-            [type]: [...formData[type], {title: '', value: ''}]
-        });
-    };
-
-    const removeKV = (type, index) => {
-        const updated = formData[type].filter((_, i) => i !== index);
-        setFormData({...formData, [type]: updated});
-    };
-
-    // 🔹 CALCULATION
-    const selling = Number(formData.pricing.sellingPrice) || 0;
-    const buying = Number(formData.pricing.buyingPrice) || 0;
-    const discount = Number(formData.pricing.discount) || 0;
-
+    // ── Pricing display ───────────────────────────────────────────────────────
+    const selling    = Number(formData.pricing.sellingPrice) || 0;
+    const buying     = Number(formData.pricing.buyingPrice)  || 0;
+    const discount   = Number(formData.pricing.discount)     || 0;
     const finalPrice = selling - (selling * discount / 100);
-    const profit = finalPrice - buying;
+    const profit     = finalPrice - buying;
 
-    // 🔹 SUBMIT
+    // ── Main submit (scalar + stock changes + new variants) ───────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
         try {
-            await API.patch(`/admin/products/${id}`, formData);
-            toast.success("Product updated");
+            const body = {
+                title:          formData.title,
+                description:    formData.description,
+                category:       formData.category,
+                pricing:        formData.pricing,
+                features:       formData.features,
+                specifications: formData.specifications,
+                comments:       formData.comments
+            };
+
+            // Process modified stocks AND newly created local variants
+            if (Object.keys(changedStocks).length > 0) {
+                body.variants = formData.variants
+                    .filter(v => {
+                        const vid = v._id?.toString() || v._tempId;
+                        return changedStocks[vid] !== undefined;
+                    })
+                    .map(v => {
+                        const vid = v._id?.toString() || v._tempId;
+                        const payload = {
+                            attributes:    v.attributes,
+                            stock:         changedStocks[vid],
+                            priceOverride: v.priceOverride,
+                            image:         v.image,
+                            isActive:      v.isActive !== undefined ? v.isActive : true
+                        };
+                        // Only attach _id if it's a pre-existing variant.
+                        // Backend will create new ones if _id is missing.
+                        if (v._id) {
+                            payload._id = v._id;
+                        }
+                        return payload;
+                    });
+            }
+
+            await API.patch(`/admin/products/${id}`, body);
+
+            // Fetch the freshly updated product to sync real DB IDs
+            const res = await API.get(`/admin/products/${id}`);
+            const freshProduct = res.data.data || res.data;
+
+            setFormData(prev => ({ ...prev, variants: freshProduct.variants || [] }));
+            setChangedStocks({});
+
+            toast.success('Product updated successfully');
             navigate('/dashboard/products');
         } catch (err) {
-            toast.error(err.response?.data?.error || "Update failed");
+            // 1. Log the full error to your browser console for debugging
+            console.error("FULL ERROR OBJECT:", err);
+            console.error("BACKEND RESPONSE:", err.response?.data);
+
+            // 2. Create a much more specific error message
+            let errorMessage = "Update failed. Please try again.";
+
+            if (err.response) {
+                // The backend sent a response, but it was an error (e.g., 400 or 500)
+                errorMessage = err.response.data?.error
+                    || err.response.data?.message
+                    || err.response.data?.details
+                    || `Server Error: ${err.response.status}`;
+            } else if (err.request) {
+                // The request was sent but no response was received (Server down / CORS)
+                errorMessage = "Network error: Could not reach the server.";
+            } else {
+                // Something else happened while setting up the request
+                errorMessage = err.message;
+            }
+
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (loading) return <div className="text-center py-10">Loading...</div>;
+    // ─────────────────────────────────────────────────────────────────────────
+    if (loading) return <div className="text-center py-10 text-gray-400">Loading…</div>;
 
     return (
-        <div className="max-w-4xl mx-auto px-4 space-y-6">
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
-            {/* HEADER */}
+            {/* Header */}
             <div className="flex justify-between items-center">
                 <h1 className="text-xl sm:text-2xl font-bold">Edit Product</h1>
-                <button onClick={() => navigate(-1)} className="text-sm text-gray-500">
+                <button onClick={() => navigate(-1)} className="text-sm text-gray-400 hover:text-gray-600">
                     Cancel
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6 bg-white p-5 rounded-xl border">
+            <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* BASIC */}
-                <Input id="title" label="Title" value={formData.title} onChange={handleChange}/>
-
-                <textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="w-full border rounded p-2"
-                />
-
-                <Input id="category" label="Category" value={formData.category} onChange={handleChange}/>
-
-                {/* PRICING */}
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* FIX: Bind to 'buying', not 'selling' */}
-                    <Input id="buyingPrice" label="Buying" type="number" value={buying} onChange={handlePricing}/>
-                    <Input id="sellingPrice" label="Selling" type="number" value={selling} onChange={handlePricing}/>
-                    <Input id="discount" label="Discount %" type="number" value={discount} onChange={handlePricing}/>
+                {/* ── BASIC ─────────────────────────────────────────────── */}
+                <div className="bg-white p-5 rounded-xl border space-y-4">
+                    <h2 className="font-semibold text-gray-700">Basic Info</h2>
+                    <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
+                    <textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={handleChange}
+                        className="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        rows={3}
+                    />
+                    <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
                 </div>
 
-                {/* PRICE */}
-                <div className={`p-4 border rounded ${profit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <div className="flex justify-between">
-                        <span>Final Price</span>
-                        <span className="font-bold">৳ {Math.round(finalPrice)}</span>
+                {/* ── PRICING ───────────────────────────────────────────── */}
+                <div className="bg-white p-5 rounded-xl border space-y-4">
+                    <h2 className="font-semibold text-gray-700">Pricing</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Input id="buyingPrice"  label="Buying"     type="number" value={buying}   onChange={handlePricing} />
+                        <Input id="sellingPrice" label="Selling"    type="number" value={selling}  onChange={handlePricing} />
+                        <Input id="discount"     label="Discount %" type="number" value={discount} onChange={handlePricing} />
                     </div>
-
-                    <div className="flex justify-between">
-                        <span>Profit</span>
-                        <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
-              ৳ {profit}
-            </span>
-                    </div>
-                </div>
-
-                {/* VARIANTS */}
-                <div>
-                    <h2 className="font-semibold">Variants</h2>
-                    {formData.variants.map((v, i) => (
-                        <div key={i} className="border p-3 rounded mb-2">
-                            <div className="text-xs text-gray-400">
-                                {v.attributes?.map(a => `${a.name}: ${a.value}`).join(', ')}
-                            </div>
-
-                            <Input
-                                label="Stock"
-                                type="number"
-                                value={v.stock}
-                                onChange={(e) => handleVariantStock(i, e.target.value)}
-                            />
-                        </div>
-                    ))}
-                </div>
-
-                {/* 🔥 FEATURES / SPEC / COMMENTS */}
-                {['features', 'specifications', 'comments'].map((type) => (
-                    <div key={type} className="space-y-2">
+                    <div className={`p-4 rounded-lg border text-sm space-y-1 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
                         <div className="flex justify-between">
-                            <h2 className="font-semibold capitalize">{type}</h2>
-                            <button type="button" onClick={() => addKV(type)}
-                                    className="text-indigo-600 text-sm flex items-center">
-                                <Plus size={14} className="mr-1"/> Add
-                            </button>
+                            <span className="text-gray-500">Final Price:</span>
+                            <span className="font-bold text-indigo-600">৳ {Math.round(finalPrice)}</span>
                         </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Profit:</span>
+                            <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                ৳ {profit.toFixed(2)} {profit < 0 && '(Loss!)'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
-                        {formData[type].map((item, i) => (
-                            <div key={i} className="grid grid-cols-2 gap-2 relative">
-                                <input
-                                    className="border p-2 rounded"
-                                    value={item.title}
-                                    placeholder="Title"
-                                    onChange={(e) => handleKVChange(type, i, 'title', e.target.value)}
-                                />
-                                <input
-                                    className="border p-2 rounded"
-                                    value={item.value}
-                                    placeholder="Value"
-                                    onChange={(e) => handleKVChange(type, i, 'value', e.target.value)}
-                                />
+                {/* ── VARIANTS ──────────────────────────────────────────── */}
+                <div className="bg-white p-5 rounded-xl border space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="font-semibold text-gray-700">Variants</h2>
+                            <p className="text-xs text-gray-400 mt-0.5">Edit stock directly. Use the panels below to add new dimensions.</p>
+                        </div>
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
+                            {formData.variants.length} variants
+                        </span>
+                    </div>
+
+                    {/* Variant table */}
+                    <div className="border rounded-xl overflow-hidden">
+                        <table className="w-full text-sm">
+                            <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wide">
+                            <tr>
+                                <th className="text-left px-4 py-2.5 font-medium">Combination</th>
+                                <th className="text-right px-4 py-2.5 font-medium w-32">Stock</th>
+                                <th className="w-10" />
+                            </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                            {formData.variants.map((v) => {
+                                const vid        = v._id?.toString() || v._tempId;
+                                const isModified = changedStocks[vid] !== undefined;
+                                const isNew      = !!v._tempId;
+
+                                return (
+                                    <tr key={vid} className={`hover:bg-gray-50/60 ${isNew ? 'bg-green-50/30' : ''}`}>
+                                        <td className="px-4 py-2.5">
+                                            <div className="flex flex-wrap gap-2 items-center">
+                                                {v.attributes?.map(a => (
+                                                    <span key={a.name} className="text-gray-700">
+                                                        <span className="text-gray-400 text-xs mr-0.5">{a.name}:</span>
+                                                        <span className="font-medium">{a.value}</span>
+                                                    </span>
+                                                ))}
+                                                {isNew && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase font-bold">New</span>}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-2.5 text-right">
+                                            <input
+                                                type="number" min={0}
+                                                value={getDisplayStock(v)}
+                                                onChange={(e) => handleStockChange(vid, e.target.value)}
+                                                className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-colors ${
+                                                    isModified ? 'border-amber-300 bg-amber-50/60' : ''
+                                                }`}
+                                            />
+                                        </td>
+                                        <td className="px-2 py-2.5 text-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveVariant(vid)}
+                                                disabled={formData.variants.length <= 1}
+                                                className="text-gray-300 hover:text-red-500 disabled:opacity-20 transition-colors"
+                                                title="Remove variant"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {Object.keys(changedStocks).length > 0 && (
+                        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                            {Object.keys(changedStocks).length} pending change(s) — saved when you click "Update Product"
+                        </p>
+                    )}
+
+                    {/* ── Add option panel (Existing Dimension) ───────────────── */}
+                    <div className="border rounded-xl overflow-hidden mt-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowAddOption(p => !p)}
+                            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-indigo-600 hover:bg-indigo-50/60 transition-colors"
+                        >
+                            <span className="flex items-center gap-1.5">
+                                <Plus size={14} /> Add new option to existing attribute
+                            </span>
+                            {showAddOption ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+
+                        {showAddOption && (
+                            <div className="px-4 pb-4 pt-1 border-t bg-gray-50/40 space-y-3">
+                                <p className="text-xs text-gray-400">
+                                    e.g. add "red" to the color attribute → auto-creates combos
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-gray-500">Attribute</label>
+                                        {existingAttrNames.length > 0 ? (
+                                            <select
+                                                value={addOptionForm.name}
+                                                onChange={(e) => setAddOptionForm(p => ({ ...p, name: e.target.value }))}
+                                                className="w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                                            >
+                                                <option value="">Select…</option>
+                                                {existingAttrNames.map(n => (
+                                                    <option key={n} value={n}>{n}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                className="w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                placeholder="e.g. color"
+                                                value={addOptionForm.name}
+                                                onChange={(e) => setAddOptionForm(p => ({ ...p, name: e.target.value }))}
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-gray-500">New value</label>
+                                        <input
+                                            className="w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            placeholder="e.g. red"
+                                            value={addOptionForm.option}
+                                            onChange={(e) => setAddOptionForm(p => ({ ...p, option: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium text-gray-500">Default stock</label>
+                                        <input
+                                            type="number" min={0}
+                                            className="w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            value={addOptionForm.defaultStock}
+                                            onChange={(e) => setAddOptionForm(p => ({ ...p, defaultStock: e.target.value }))}
+                                        />
+                                    </div>
+                                </div>
+
+                                <Button type="button" onClick={handleAddOption} isLoading={isAddingOption} className="w-full sm:w-auto">
+                                    Add Option
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── Create Entirely New Custom Variant ──────────────────── */}
+                    <div className="border rounded-xl overflow-hidden mt-3">
+                        <button
+                            type="button"
+                            onClick={() => setShowAddVariant(p => !p)}
+                            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-emerald-600 hover:bg-emerald-50/60 transition-colors"
+                        >
+                            <span className="flex items-center gap-1.5">
+                                <Plus size={14} /> Create entirely new custom variant
+                            </span>
+                            {showAddVariant ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+
+                        {showAddVariant && (
+                            <div className="px-4 pb-4 pt-1 border-t bg-gray-50/40 space-y-3">
+                                <p className="text-xs text-gray-400">
+                                    Manually define a completely new combination of attributes.
+                                </p>
+
+                                {newVariantForm.attributes.map((attr, idx) => (
+                                    <div key={idx} className="flex gap-2 items-center">
+                                        <input
+                                            className="w-1/2 border rounded-lg px-2 py-1.5 text-sm"
+                                            placeholder="Attribute (e.g. storage)"
+                                            value={attr.name}
+                                            onChange={(e) => handleNewVariantAttrChange(idx, 'name', e.target.value)}
+                                        />
+                                        <input
+                                            className="w-1/2 border rounded-lg px-2 py-1.5 text-sm"
+                                            placeholder="Value (e.g. 256GB)"
+                                            value={attr.value}
+                                            onChange={(e) => handleNewVariantAttrChange(idx, 'value', e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewVariantForm(prev => ({...prev, attributes: prev.attributes.filter((_, i) => i !== idx)}))}
+                                            disabled={newVariantForm.attributes.length === 1}
+                                            className="text-gray-400 hover:text-red-500 disabled:opacity-30"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))}
 
                                 <button
                                     type="button"
-                                    onClick={() => removeKV(type, i)}
-                                    className="absolute right-0 top-0 text-red-500"
+                                    onClick={() => setNewVariantForm(p => ({...p, attributes: [...p.attributes, {name:'', value:''}]}))}
+                                    className="text-xs text-indigo-600 font-medium flex items-center gap-1"
                                 >
-                                    <Trash2 size={14}/>
+                                    <Plus size={12} /> Add another attribute to this variant
+                                </button>
+
+                                <div className="pt-2 border-t">
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Initial Stock</label>
+                                    <input
+                                        type="number" min={0}
+                                        className="w-32 border rounded-lg px-2 py-1.5 text-sm"
+                                        value={newVariantForm.stock}
+                                        onChange={(e) => setNewVariantForm(p => ({ ...p, stock: e.target.value }))}
+                                    />
+                                </div>
+
+                                <Button type="button" onClick={handleAddCustomVariant} className="w-full sm:w-auto mt-2 bg-emerald-600 hover:bg-emerald-700">
+                                    Add Variant to List
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                </div>
+
+                {/* ── FEATURES / SPECS / COMMENTS ───────────────────────── */}
+                {['features', 'specifications', 'comments'].map((type) => (
+                    <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
+                        <div className="flex justify-between items-center">
+                            <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                            <button
+                                type="button" onClick={() => addKV(type)}
+                                className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700"
+                            >
+                                <Plus size={14} /> Add
+                            </button>
+                        </div>
+                        {formData[type].map((item, i) => (
+                            <div key={i} className="grid grid-cols-2 gap-2 relative pr-6">
+                                <input
+                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                    placeholder="Title"
+                                    value={item.title}
+                                    onChange={(e) => handleKVChange(type, i, 'title', e.target.value)}
+                                />
+                                <input
+                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                    placeholder="Value"
+                                    value={item.value}
+                                    onChange={(e) => handleKVChange(type, i, 'value', e.target.value)}
+                                />
+                                <button
+                                    type="button" onClick={() => removeKV(type, i)}
+                                    className="absolute right-0 top-2 text-gray-300 hover:text-red-500 transition-colors"
+                                >
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         ))}
+                        {formData[type].length === 0 && (
+                            <p className="text-xs text-gray-400">None added</p>
+                        )}
                     </div>
                 ))}
 
@@ -253,4 +630,3 @@ const EditProduct = () => {
 };
 
 export default EditProduct;
-

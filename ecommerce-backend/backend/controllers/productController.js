@@ -2,7 +2,55 @@ const Product = require('../models/Product');
 const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
 const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
+const {
+    expandMatrix,
+    makeVariantKey,
+    generateNewOptionCombos
+} = require('../helpers/variantMatrix');
 
+
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+
+// ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...
+
+
+/**
+ * @desc    Generate Product Description via AI (Gemini)
+ * @route   POST /api/admin/products/generate-description
+ * @access  Private (Admin)
+ */
+exports.generateDescription = async (req, res) => {
+    try {
+        const { title, category } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ success: false, error: "Product title is required." });
+        }
+
+        // Initialize Gemini (Ensure GEMINI_API_KEY is in your .env file)
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        // Prompt Engineering
+        const prompt = `
+            Act as an expert e-commerce copywriter. Write a compelling, SEO-friendly product description for the following item:
+            - Product Name: ${title}
+            - Category: ${category || 'General'}
+            
+            Format the response in 2 short paragraphs. Focus on the benefits to the user. Keep it professional yet engaging. Do not use markdown symbols like ** or ##.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const description = result.response.text();
+
+        res.status(200).json({ success: true, description: description.trim() });
+
+    } catch (err) {
+        console.error("AI Generation Error:", err);
+        res.status(500).json({ success: false, error: "Failed to generate description. Please try again." });
+    }
+};
 
 /**
  * @desc    Get all products for a shop (paginated + searchable)
@@ -90,64 +138,65 @@ exports.getSingleProduct = async (req, res) => {
  */
 exports.createProduct = async (req, res) => {
     try {
-        // 1️⃣ Extract Cloudinary Media URLs from req.files
+        // ── 1. Extract Cloudinary media URLs ─────────────────────────────────
         let imageUrls = [];
         let videoUrls = [];
 
-        if (req.files) {
-            if (req.files.images) {
-                imageUrls = req.files.images.map(file => file.path);
-            }
-            if (req.files.videos) {
-                videoUrls = req.files.videos.map(file => file.path);
-            }
-        }
+        if (req.files?.images) imageUrls = req.files.images.map(f => f.path);
+        if (req.files?.videos) videoUrls = req.files.videos.map(f => f.path);
 
-        // 2️⃣ Parse FormData strings back into JSON objects/arrays
-        const parsedBody = { ...req.body };
-        const jsonFields = ['pricing', 'variants', 'features', 'specifications', 'comments'];
+        // ── 2. Parse JSON fields from FormData ────────────────────────────────
+        //    When sent as multipart/form-data, JSON objects arrive as strings.
+        const parsedBody   = { ...req.body };
+        const JSON_FIELDS  = ['pricing', 'variants', 'variantMatrix', 'features', 'specifications', 'comments'];
 
-        for (const field of jsonFields) {
+        for (const field of JSON_FIELDS) {
             if (typeof parsedBody[field] === 'string') {
                 try {
                     parsedBody[field] = JSON.parse(parsedBody[field]);
-                } catch (e) {
+                } catch {
                     return res.status(400).json({
                         success: false,
-                        error: `Invalid JSON format provided for field: ${field}`
+                        error: `Invalid JSON in field: "${field}"`
                     });
                 }
             }
         }
 
-        // 3️⃣ Combine parsed text fields with media URLs for validation
-        const payloadToValidate = {
-            ...parsedBody,
-            images: imageUrls,
-            videos: videoUrls
-        };
+        // ── 3. Merge media into payload ───────────────────────────────────────
+        const payload = { ...parsedBody, images: imageUrls, videos: videoUrls };
 
-        // 4️⃣ Run Joi Validation
-        const { error, value } = createProductSchema.validate(payloadToValidate);
+        // ── 4. Validate ───────────────────────────────────────────────────────
+        const { error, value } = createProductSchema.validate(payload, { abortEarly: true });
         if (error) {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
 
-        // 5️⃣ Save to MongoDB
+        // ── 5. Expand matrix → flat variants ──────────────────────────────────
+        if (value.variantMatrix) {
+            value.variants = expandMatrix(value.variantMatrix);
+            delete value.variantMatrix;
+        }
+
+        // ── 6. Save ───────────────────────────────────────────────────────────
         const product = await Product.create({
             ...value,
-            shop_id: req.tenantId  // ✅ Consistent with rest of codebase
+            shop_id: req.tenantId
         });
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
-            message: "Product created successfully",
-            data: product
+            message: 'Product created successfully',
+            data:    product
         });
 
     } catch (err) {
-        console.error("Create product error:", err);
-        res.status(500).json({ success: false, error: "Failed to create product", details: err.message });
+        console.error('Create product error:', err);
+        return res.status(500).json({
+            success: false,
+            error:   'Failed to create product',
+            details: err.message
+        });
     }
 };
 
@@ -163,108 +212,137 @@ exports.updateProduct = async (req, res) => {
     try {
         const shopId = req.tenantId;
 
-        // ✅ Sanitize attributes — guard against missing attributes array
+        // ── 1. Sanitize attributes in incoming flat variants ──────────────────
         if (req.body.variants) {
             req.body.variants = req.body.variants.map(v => ({
                 ...v,
-                attributes: (v.attributes || []).map(a => ({
-                    name: a.name,
-                    value: a.value
-                }))
+                attributes: (v.attributes || []).map(a => ({ name: a.name, value: a.value }))
             }));
         }
 
-        const { error, value } = updateProductSchema.validate(req.body);
+        // ── 2. Validate ───────────────────────────────────────────────────────
+        const { error, value } = updateProductSchema.validate(req.body, { abortEarly: true });
         if (error) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
 
+        // ── 3. Fetch product ──────────────────────────────────────────────────
         const product = await Product.findOne({
-            _id: req.params.id,
-            shop_id: shopId,
+            _id:       req.params.id,
+            shop_id:   shopId,
             isDeleted: false
         }).session(session);
 
-        if (!product) throw new Error("Product not found");
+        if (!product) throw new Error('Product not found');
 
-        // ✅ Snapshot old stock before any changes
-        const oldVariantsMap = new Map();
-        product.variants.forEach(v => {
-            oldVariantsMap.set(v._id.toString(), v.stock);
-        });
+        // ── 4. Snapshot current stock for inventory logging ───────────────────
+        const oldStockById  = new Map(); // variantId  → stock
+        const oldStockByKey = new Map(); // stableKey  → stock  (for matrix matching)
 
-        // ✅ Update scalar fields
-        if (value.title       !== undefined) product.title       = value.title;
-        if (value.description !== undefined) product.description = value.description;
-        if (value.category    !== undefined) product.category    = value.category;
-        if (value.images      !== undefined) product.images      = value.images;
+        for (const v of product.variants) {
+            oldStockById.set(v._id.toString(), v.stock);
+            oldStockByKey.set(makeVariantKey(v.attributes), v.stock);
+        }
+
+        // ── 5. Update scalar fields ───────────────────────────────────────────
+        const SCALAR = ['title', 'description', 'category', 'images', 'videos', 'features', 'specifications', 'comments'];
+        for (const field of SCALAR) {
+            if (value[field] !== undefined) product[field] = value[field];
+        }
 
         if (value.pricing) {
             product.pricing = { ...product.pricing.toObject(), ...value.pricing };
         }
 
-        if (value.features !== undefined) {
-            product.features = value.features;
-        }
+        // ── 6. Variant operations ─────────────────────────────────────────────
+        //   Priority order: variantMatrix > addAttributeOption > removeVariants > variants
+        //   In practice callers should only send one; the priority just prevents
+        //   ambiguous or conflicting operations from silently combining.
 
-        if (value.specifications !== undefined) {
-            product.specifications = value.specifications;
-        }
+        if (value.variantMatrix) {
+            // ── Op B: matrix regeneration ─────────────────────────────────────
+            // Existing stock is preserved wherever attribute combos match.
+            product.variants = expandMatrix(value.variantMatrix, oldStockByKey);
 
-        if (value.comments !== undefined) {
-            product.comments = value.comments;
-        }
+        } else if (value.addAttributeOption) {
+            // ── Op C: add one new option to an existing dimension ─────────────
+            const { name, option, defaultStock, defaultPrice } = value.addAttributeOption;
 
-        // ✅ Smart variant update: patch existing, append new — never silently drop
-        if (value.variants) {
-            const updatedVariants = [];
+            const { newVariants, error: opError } = generateNewOptionCombos(
+                product.variants,
+                name,
+                option,
+                defaultStock,
+                defaultPrice
+            );
 
+            if (opError) throw new Error(opError);
+
+            // Append — existing variants untouched
+            product.variants.push(...newVariants);
+
+        } else if (value.removeVariants) {
+            // ── Op D: remove by _id ───────────────────────────────────────────
+            const removeSet = new Set(value.removeVariants);
+            const remaining = product.variants.filter(v => !removeSet.has(v._id.toString()));
+
+            if (remaining.length === 0) {
+                throw new Error('Cannot remove all variants. A product must have at least one variant.');
+            }
+
+            // Verify all requested IDs actually existed
+            const foundIds = new Set(product.variants.map(v => v._id.toString()));
+            for (const id of removeSet) {
+                if (!foundIds.has(id)) throw new Error(`Variant not found: ${id}`);
+            }
+
+            product.variants = remaining;
+
+        } else if (value.variants) {
+            // ── Op A: flat patch ──────────────────────────────────────────────
             for (const incoming of value.variants) {
                 if (incoming._id) {
                     const existing = product.variants.id(incoming._id);
-
                     if (!existing) {
-                        throw new Error(`Variant not found: ${incoming._id}. Send without _id to create a new one.`);
+                        throw new Error(
+                            `Variant not found: ${incoming._id}. Omit _id to create a new variant.`
+                        );
                     }
-
                     existing.stock         = incoming.stock;
                     existing.attributes    = incoming.attributes;
                     existing.priceOverride = incoming.priceOverride;
                     existing.image         = incoming.image;
                     existing.isActive      = incoming.isActive ?? true;
-
-                    updatedVariants.push(existing);
+                    if (incoming.sku !== undefined) existing.sku = incoming.sku;
                 } else {
-                    // New variant — no _id
-                    updatedVariants.push(incoming);
+                    product.variants.push(incoming);
                 }
             }
-
-            product.variants = updatedVariants;
         }
 
+        // ── 7. Save ───────────────────────────────────────────────────────────
         await product.save({ session });
 
-        // ✅ Batch inventory logs — single insertMany instead of N awaits in a loop
+        // ── 8. Batch inventory logs (single insertMany, not N awaits) ─────────
         const logsToInsert = [];
 
         for (const v of product.variants) {
-            const oldStock = oldVariantsMap.get(v._id.toString()) ?? 0;
-            const diff = v.stock - oldStock;
+            const oldStock = oldStockById.get(v._id.toString()) ?? 0;
+            const diff     = v.stock - oldStock;
 
             if (diff !== 0) {
                 logsToInsert.push({
-                    shop_id: shopId,
-                    productId: product._id,
-                    variantId: v._id,
-                    change: diff,
-                    type: 'MANUAL',
+                    shop_id:     shopId,
+                    productId:   product._id,
+                    variantId:   v._id,
+                    change:      diff,
+                    type:        'MANUAL',
                     referenceId: product._id,
                     beforeStock: oldStock,
-                    afterStock: v.stock,
-                    user: req.user._id,
-                    note: 'Product update — manual stock change'
+                    afterStock:  v.stock,
+                    user:        req.user._id,
+                    note:        'Product update — manual stock change'
                 });
             }
         }
@@ -275,21 +353,20 @@ exports.updateProduct = async (req, res) => {
 
         await session.commitTransaction();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: "Product updated successfully",
-            data: product
+            message: 'Product updated successfully',
+            data:    product
         });
 
     } catch (err) {
         await session.abortTransaction();
-        console.error("Update product error:", err);
-        res.status(400).json({ success: false, error: err.message });
+        console.error('Update product error:', err);
+        return res.status(400).json({ success: false, error: err.message });
     } finally {
         session.endSession();
     }
 };
-
 
 /**
  * @desc    Soft delete a product

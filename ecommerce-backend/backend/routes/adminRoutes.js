@@ -10,7 +10,9 @@ const {
     getShopProducts,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getSingleProduct,
+    generateDescription
 } = require('../controllers/productController');
 
 const {
@@ -29,6 +31,9 @@ const {
 
 
 // --- PRODUCT MANAGEMENT ---
+
+
+router.post('/generate-description', generateDescription);
 
 router.get(
     '/products',
@@ -119,7 +124,12 @@ router.patch(
     authorize('VendorAdmin'), // Status toggle is a destructive action — Admin only
     toggleCustomerStatus
 );
-
+router.get(
+    '/products/:id',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getSingleProduct
+);
 
 // --- DASHBOARD / ANALYTICS ---
 

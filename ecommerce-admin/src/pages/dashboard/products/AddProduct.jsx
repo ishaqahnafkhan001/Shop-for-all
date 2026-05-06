@@ -1,105 +1,255 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Plus, Trash2, Image as ImageIcon, Video } from 'lucide-react'; // Added icons for UI
+// ✨ Added Sparkles and Loader2 for the AI button
+import { Plus, Trash2, X, Image as ImageIcon, Video, Sparkles, Loader2 } from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 
+// ── Pure helpers (mirrors backend variantMatrix.js) ───────────────────────────
+
+function cartesian(attrs) {
+    if (!attrs.length) return [[]];
+    const [first, ...rest] = attrs;
+    const tail = cartesian(rest);
+    return first.options.flatMap(opt =>
+        tail.map(combo => [{ name: first.name, value: opt }, ...combo])
+    );
+}
+
+function makePipeKey(combo) {
+    return combo.map(a => a.value).join('|');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const AddProduct = () => {
-    const navigate = useNavigate();
+    const navigate   = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 
-    // 1️⃣ ADDED: State for actual file objects
+    // ✨ AI Generation Loading State
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    // Multi-media states
     const [imageFiles, setImageFiles] = useState([]);
     const [videoFiles, setVideoFiles] = useState([]);
 
-    // Removed the dummy 'images' string array from here
+    // ── Scalar fields ─────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        category: '',
-        pricing: { buyingPrice: '', sellingPrice: '', discount: 0 },
-        variants: [{ attributes: [{ name: 'color', value: 'white' }], stock: 0 }],
-        features: [],
+        title:          '',
+        description:    '',
+        category:       '',
+        pricing:        { buyingPrice: '', sellingPrice: '', discount: 0 },
+        features:       [],
         specifications: [],
-        comments: []
+        comments:       []
     });
 
-    // --- State Handlers (Unchanged) ---
-    const handleChange = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
-    const handlePricing = (e) => setFormData({ ...formData, pricing: { ...formData.pricing, [e.target.id]: Number(e.target.value) } });
+    // ── Variant matrix state ──────────────────────────────────────────────────
+    const [attributes,    setAttributes]    = useState([{ name: '', options: [] }]);
+    const [optionInputs,  setOptionInputs]  = useState(['']);
+    const [defaultStock,  setDefaultStock]  = useState(0);
+    const [stockOverrides, setStockOverrides] = useState({});
 
-    const handleVariantChange = (i, field, value) => {
-        const updated = [...formData.variants];
-        updated[i][field] = value;
-        setFormData({ ...formData, variants: updated });
+    // ── Derived ───────────────────────────────────────────────────────────────
+    const validAttrs = useMemo(
+        () => attributes.filter(a => a.name.trim() && a.options.length > 0),
+        [attributes]
+    );
+    const combinations = useMemo(
+        () => (validAttrs.length > 0 ? cartesian(validAttrs) : []),
+        [validAttrs]
+    );
+
+    // ── AI Generator Handler ──────────────────────────────────────────────────
+    const handleGenerateDescription = async () => {
+        if (!formData.title) {
+            toast.error("Please enter a product title first!");
+            return;
+        }
+
+        setIsGenerating(true);
+        try {
+            // Calls the new endpoint you added to the backend
+            const response = await API.post('/admin/generate-description', {
+                title: formData.title,
+                category: formData.category
+            });
+
+            if (response.data.success) {
+                setFormData(prev => ({ ...prev, description: response.data.description }));
+                toast.success("Description generated successfully!");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || "Failed to generate description.");
+            console.error(error);
+        } finally {
+            setIsGenerating(false);
+        }
     };
-    const handleAttributeChange = (v, a, field, value) => {
-        const updated = [...formData.variants];
-        updated[v].attributes[a][field] = value;
-        setFormData({ ...formData, variants: updated });
+
+    // ── Attribute dimension handlers ──────────────────────────────────────────
+
+    const setAttrName = (i, name) => {
+        const updated = [...attributes];
+        updated[i] = { ...updated[i], name: name.toLowerCase().trim() };
+        setAttributes(updated);
     };
-    const addVariant = () => setFormData({ ...formData, variants: [...formData.variants, { attributes: [{ name: '', value: '' }], stock: 0 }] });
-    const removeVariant = (i) => setFormData({ ...formData, variants: formData.variants.filter((_, index) => index !== i) });
+
+    const addAttribute = () => {
+        setAttributes([...attributes, { name: '', options: [] }]);
+        setOptionInputs([...optionInputs, '']);
+    };
+
+    const removeAttribute = (i) => {
+        if (attributes.length === 1) return;
+        setAttributes(attributes.filter((_, idx) => idx !== i));
+        setOptionInputs(optionInputs.filter((_, idx) => idx !== i));
+    };
+
+    const commitOption = (attrIdx, raw) => {
+        const val = raw.trim().toLowerCase();
+        if (!val) return;
+        const updated = [...attributes];
+        if (updated[attrIdx].options.includes(val)) {
+            const inputs = [...optionInputs];
+            inputs[attrIdx] = '';
+            setOptionInputs(inputs);
+            return;
+        }
+        updated[attrIdx] = { ...updated[attrIdx], options: [...updated[attrIdx].options, val] };
+        setAttributes(updated);
+        const inputs = [...optionInputs];
+        inputs[attrIdx] = '';
+        setOptionInputs(inputs);
+    };
+
+    const removeOption = (attrIdx, optVal) => {
+        const updated = [...attributes];
+        updated[attrIdx] = {
+            ...updated[attrIdx],
+            options: updated[attrIdx].options.filter(o => o !== optVal)
+        };
+        setAttributes(updated);
+    };
+
+    const handleOptionKeyDown = (e, attrIdx) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            commitOption(attrIdx, optionInputs[attrIdx]);
+        }
+        if (e.key === 'Backspace' && optionInputs[attrIdx] === '') {
+            const opts = attributes[attrIdx].options;
+            if (opts.length > 0) removeOption(attrIdx, opts[opts.length - 1]);
+        }
+    };
+
+    // ── Stock override handlers ───────────────────────────────────────────────
+
+    const getStock = (combo) => {
+        const key = makePipeKey(combo);
+        return stockOverrides[key] !== undefined ? stockOverrides[key] : defaultStock;
+    };
+
+    const setStock = (combo, val) => {
+        const key = makePipeKey(combo);
+        setStockOverrides(prev => ({ ...prev, [key]: Number(val) }));
+    };
+
+    const handleDefaultStockChange = (val) => {
+        const n = Number(val);
+        setDefaultStock(n);
+        setStockOverrides(prev => {
+            const cleaned = { ...prev };
+            for (const key of Object.keys(cleaned)) {
+                if (cleaned[key] === n) delete cleaned[key];
+            }
+            return cleaned;
+        });
+    };
+
+    const setAllStock = (val) => {
+        const n = Number(val);
+        setDefaultStock(n);
+        setStockOverrides({});
+    };
+
+    // ── Scalar handlers ───────────────────────────────────────────────────────
+
+    const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
+    const handlePricing = (e) => setFormData({
+        ...formData,
+        pricing: { ...formData.pricing, [e.target.id]: Number(e.target.value) }
+    });
 
     const handleKVChange = (type, index, field, value) => {
         const updated = [...formData[type]];
         updated[index][field] = value;
         setFormData({ ...formData, [type]: updated });
     };
-    const addKV = (type) => setFormData({ ...formData, [type]: [...formData[type], { title: '', value: '' }] });
+    const addKV    = (type) => setFormData({ ...formData, [type]: [...formData[type], { title: '', value: '' }] });
     const removeKV = (type, index) => setFormData({ ...formData, [type]: formData[type].filter((_, i) => i !== index) });
 
     const finalPrice = formData.pricing.sellingPrice - (formData.pricing.sellingPrice * formData.pricing.discount) / 100;
-    const profit = (finalPrice || 0) - (Number(formData.pricing.buyingPrice) || 0);
+    const profit     = (finalPrice || 0) - (Number(formData.pricing.buyingPrice) || 0);
 
-    // 2️⃣ UPDATED: Submit handler using FormData
+    // ── Submit ────────────────────────────────────────────────────────────────
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (validAttrs.length === 0) {
+            toast.error('Add at least one attribute with options (e.g. color: black, white)');
+            return;
+        }
+        if (combinations.length === 0) {
+            toast.error('No variant combinations generated. Check your attributes.');
+            return;
+        }
+
+        const overrides = {};
+        for (const combo of combinations) {
+            const key = makePipeKey(combo);
+            const stock = stockOverrides[key];
+            if (stock !== undefined && stock !== defaultStock) {
+                overrides[key] = { stock };
+            }
+        }
+
         setIsLoading(true);
-
         try {
-            // Create a new FormData instance
             const data = new FormData();
-
-            // Append basic strings
-            data.append('title', formData.title);
-            data.append('description', formData.description);
-            data.append('category', formData.category);
-
-            // Append nested objects as JSON strings (required for multipart/form-data)
-            data.append('pricing', JSON.stringify(formData.pricing));
-            data.append('variants', JSON.stringify(formData.variants));
-            data.append('features', JSON.stringify(formData.features));
+            data.append('title',          formData.title);
+            data.append('description',    formData.description);
+            data.append('category',       formData.category);
+            data.append('pricing',        JSON.stringify(formData.pricing));
+            data.append('variantMatrix',  JSON.stringify({
+                attributes:   validAttrs,
+                defaultStock: Number(defaultStock),
+                ...(Object.keys(overrides).length > 0 && { overrides })
+            }));
+            data.append('features',       JSON.stringify(formData.features));
             data.append('specifications', JSON.stringify(formData.specifications));
-            data.append('comments', JSON.stringify(formData.comments));
+            data.append('comments',       JSON.stringify(formData.comments));
 
-            // Append Images (matches upload.fields name: 'images')
-            imageFiles.forEach((file) => {
-                data.append('images', file);
-            });
+            imageFiles.forEach(file => data.append('images', file));
+            videoFiles.forEach(file => data.append('videos', file));
 
-            // Append Videos (matches upload.fields name: 'videos')
-            videoFiles.forEach((file) => {
-                data.append('videos', file);
-            });
-
-            // Send to backend with correct Content-Type headers
             await API.post('/admin/products', data, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            toast.success("Product added successfully!");
+            toast.success('Product added successfully!');
             navigate('/dashboard/products');
         } catch (err) {
-            toast.error(err.response?.data?.error || "Failed to add product");
+            toast.error(err.response?.data?.error || 'Failed to add product');
         } finally {
             setIsLoading(false);
         }
     };
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -107,157 +257,292 @@ const AddProduct = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
 
-                {/* BASIC */}
+                {/* ── BASIC ─────────────────────────────────────────────── */}
                 <div className="bg-white p-5 rounded-xl border space-y-4">
+                    <h2 className="font-semibold text-gray-700">Basic Info</h2>
+
                     <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
-                    <textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        className="w-full border rounded p-2"
-                        placeholder="Description"
-                        required
-                    />
+
                     <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
+
+                    {/* ✨ AI Description Section */}
+                    <div className="space-y-1">
+                        <div className="flex justify-between items-end mb-1">
+                            <label className="block text-sm font-medium text-gray-700">Description</label>
+
+                            <button
+                                type="button"
+                                onClick={handleGenerateDescription}
+                                disabled={isGenerating || !formData.title}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isGenerating ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                    <Sparkles size={14} />
+                                )}
+                                {isGenerating ? 'Generating...' : 'Auto-Write with AI'}
+                            </button>
+                        </div>
+                        <textarea
+                            id="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-shadow"
+                            placeholder="Describe your product here..."
+                            rows={4}
+                            required
+                        />
+                    </div>
                 </div>
 
-                {/* 3️⃣ ADDED: MEDIA UPLOAD SECTION */}
+                {/* ── MEDIA ─────────────────────────────────────────────── */}
                 <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <h2 className="font-semibold flex items-center"><ImageIcon size={18} className="mr-2"/> Media</h2>
-
+                    <h2 className="font-semibold flex items-center gap-2">
+                        <ImageIcon size={16} /> Media
+                    </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Image Input */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">Images (Max 5)</label>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-600">Images (max 10)</label>
                             <input
-                                type="file"
-                                accept="image/png, image/jpeg, image/webp"
-                                multiple
+                                type="file" accept="image/*" multiple
                                 onChange={(e) => setImageFiles(Array.from(e.target.files))}
-                                className="w-full border rounded p-2 text-sm"
+                                className="w-full border rounded-lg p-2 text-sm bg-gray-50"
                             />
                             {imageFiles.length > 0 && (
-                                <p className="text-xs text-indigo-600">{imageFiles.length} image(s) selected</p>
+                                <p className="text-xs text-indigo-600 font-medium">{imageFiles.length} image(s) selected</p>
                             )}
                         </div>
-
-                        {/* Video Input */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 flex items-center">
-                                <Video size={16} className="mr-1"/> Videos (Max 2)
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                                <Video size={14} /> Videos (max 2)
                             </label>
                             <input
-                                type="file"
-                                accept="video/mp4, video/quicktime, video/webm"
-                                multiple
+                                type="file" accept="video/*" multiple
                                 onChange={(e) => setVideoFiles(Array.from(e.target.files))}
-                                className="w-full border rounded p-2 text-sm"
+                                className="w-full border rounded-lg p-2 text-sm bg-gray-50"
                             />
                             {videoFiles.length > 0 && (
-                                <p className="text-xs text-indigo-600">{videoFiles.length} video(s) selected</p>
+                                <p className="text-xs text-indigo-600 font-medium">{videoFiles.length} video(s) selected</p>
                             )}
                         </div>
                     </div>
                 </div>
 
-                {/* PRICING */}
+                {/* ── PRICING ───────────────────────────────────────────── */}
                 <div className="bg-white p-5 rounded-xl border space-y-4">
+                    <h2 className="font-semibold text-gray-700">Pricing</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Input id="buyingPrice" label="Buying" type="number" onChange={handlePricing} required/>
-                        <Input id="sellingPrice" label="Selling" type="number" onChange={handlePricing} required/>
-                        <Input id="discount" label="Discount %" type="number" onChange={handlePricing} />
+                        <Input id="buyingPrice"  label="Buying Price"     type="number" onChange={handlePricing} required />
+                        <Input id="sellingPrice" label="Selling Price"    type="number" onChange={handlePricing} required />
+                        <Input id="discount"     label="Discount %" type="number" onChange={handlePricing} />
                     </div>
-
-                    <div className={`p-4 rounded-lg border space-y-2 ${
-                        profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Final Price:</span>
+                    <div className={`p-4 rounded-lg border text-sm space-y-1 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Final Price:</span>
                             <span className="font-bold text-indigo-600">৳ {Math.round(finalPrice || 0)}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Estimated Profit:</span>
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Estimated Profit:</span>
                             <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                ৳ {profit} {profit < 0 && '(Loss!)'}
+                                ৳ {profit.toFixed(2)} {profit < 0 && '(Loss!)'}
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* VARIANTS (Unchanged) */}
-                <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <div className="flex justify-between">
-                        <h2 className="font-semibold">Variants</h2>
-                        <button type="button" onClick={addVariant} className="text-indigo-600 text-sm flex items-center">
-                            <Plus size={14} className="mr-1" /> Add
-                        </button>
+                {/* ── VARIANT MATRIX ────────────────────────────────────── */}
+                <div className="bg-white p-5 rounded-xl border space-y-5">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h2 className="font-semibold text-gray-700">Variants</h2>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                Define dimensions → options are auto-combined into variants
+                            </p>
+                        </div>
+                        {combinations.length > 0 && (
+                            <span className="text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-1 rounded-full font-medium">
+                                {combinations.length} combo{combinations.length !== 1 ? 's' : ''}
+                            </span>
+                        )}
                     </div>
 
-                    {formData.variants.map((v, i) => (
-                        <div key={i} className="border p-3 rounded relative space-y-2">
-                            {formData.variants.length > 1 && (
-                                <button onClick={() => removeVariant(i)} type="button" className="absolute top-2 right-2 text-red-500">
-                                    <Trash2 size={14} />
-                                </button>
-                            )}
-                            {v.attributes.map((a, ai) => (
-                                <div key={ai} className="grid grid-cols-2 gap-2">
+                    {/* Attribute rows */}
+                    <div className="space-y-3">
+                        {attributes.map((attr, i) => (
+                            <div key={i} className="flex gap-2 items-start">
+                                {/* Dimension name */}
+                                <input
+                                    className="w-28 shrink-0 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                    placeholder="e.g. color"
+                                    value={attr.name}
+                                    onChange={(e) => setAttrName(i, e.target.value)}
+                                />
+
+                                {/* Options tag input */}
+                                <div className="flex-1 flex flex-wrap items-center gap-1.5 border rounded-lg px-2 py-1.5 min-h-[36px] focus-within:ring-2 focus-within:ring-indigo-300">
+                                    {attr.options.map(opt => (
+                                        <span
+                                            key={opt}
+                                            className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded-full"
+                                        >
+                                            {opt}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeOption(i, opt)}
+                                                className="hover:text-red-500 transition-colors"
+                                            >
+                                                <X size={11} />
+                                            </button>
+                                        </span>
+                                    ))}
                                     <input
-                                        className="border rounded p-1"
-                                        value={a.name}
-                                        placeholder="Attribute (e.g. Size)"
-                                        onChange={(e) => handleAttributeChange(i, ai, 'name', e.target.value)}
-                                    />
-                                    <input
-                                        className="border rounded p-1"
-                                        value={a.value}
-                                        placeholder="Value (e.g. XL)"
-                                        onChange={(e) => handleAttributeChange(i, ai, 'value', e.target.value)}
+                                        className="flex-1 min-w-[80px] text-sm outline-none bg-transparent"
+                                        placeholder={attr.options.length === 0 ? 'Type option, press Enter' : 'Add more…'}
+                                        value={optionInputs[i]}
+                                        onChange={(e) => {
+                                            const inputs = [...optionInputs];
+                                            inputs[i] = e.target.value;
+                                            setOptionInputs(inputs);
+                                        }}
+                                        onKeyDown={(e) => handleOptionKeyDown(e, i)}
+                                        onBlur={() => commitOption(i, optionInputs[i])}
                                     />
                                 </div>
-                            ))}
-                            <Input
-                                label="Stock"
-                                type="number"
-                                value={v.stock}
-                                onChange={(e) => handleVariantChange(i, 'stock', Number(e.target.value))}
-                            />
-                        </div>
-                    ))}
-                </div>
 
-                {/* DYNAMIC KV SECTION (Unchanged) */}
-                {['features', 'specifications', 'comments'].map((type) => (
-                    <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
-                        <div className="flex justify-between items-center">
-                            <h2 className="font-semibold capitalize">{type}</h2>
-                            <button type="button" onClick={() => addKV(type)} className="text-indigo-600 text-sm flex items-center">
-                                <Plus size={14} className="mr-1" /> Add
-                            </button>
-                        </div>
-
-                        {formData[type].map((item, index) => (
-                            <div key={index} className="grid grid-cols-2 gap-2 relative">
-                                <input
-                                    className="border rounded p-2 text-sm"
-                                    placeholder="Title"
-                                    value={item.title}
-                                    onChange={(e) => handleKVChange(type, index, 'title', e.target.value)}
-                                />
-                                <input
-                                    className="border rounded p-2 text-sm"
-                                    placeholder="Value"
-                                    value={item.value}
-                                    onChange={(e) => handleKVChange(type, index, 'value', e.target.value)}
-                                />
-                                <button type="button" onClick={() => removeKV(type, index)} className="absolute right-0 top-2 text-red-500 bg-white px-1">
-                                    <Trash2 size={14} />
+                                {/* Remove attribute row */}
+                                <button
+                                    type="button"
+                                    onClick={() => removeAttribute(i)}
+                                    disabled={attributes.length === 1}
+                                    className="mt-1.5 text-gray-300 hover:text-red-500 disabled:opacity-20 transition-colors"
+                                >
+                                    <Trash2 size={15} />
                                 </button>
                             </div>
                         ))}
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={addAttribute}
+                        className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-medium"
+                    >
+                        <Plus size={14} /> Add attribute
+                    </button>
+
+                    {/* Default stock + bulk set */}
+                    <div className="flex items-center gap-3">
+                        <label className="text-sm font-medium text-gray-600 whitespace-nowrap">
+                            Default stock
+                        </label>
+                        <input
+                            type="number" min={0}
+                            value={defaultStock}
+                            onChange={(e) => handleDefaultStockChange(e.target.value)}
+                            className="w-24 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        />
+                        {Object.keys(stockOverrides).length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setAllStock(defaultStock)}
+                                className="text-xs text-gray-400 hover:text-gray-600 underline"
+                            >
+                                Reset all to {defaultStock}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Generated combination table */}
+                    {combinations.length > 0 && (
+                        <div className="border rounded-xl overflow-hidden mt-4">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                                <tr>
+                                    <th className="text-left px-4 py-2.5 font-medium">Variant</th>
+                                    <th className="text-right px-4 py-2.5 font-medium w-32">Stock</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                {combinations.map((combo, ci) => {
+                                    const key       = makePipeKey(combo);
+                                    const isOverride = stockOverrides[key] !== undefined && stockOverrides[key] !== defaultStock;
+                                    return (
+                                        <tr key={key} className="hover:bg-gray-50/60">
+                                            <td className="px-4 py-2 flex flex-wrap gap-1.5">
+                                                {combo.map(a => (
+                                                    <span key={a.name} className="text-gray-700">
+                                                        <span className="text-gray-400 text-xs mr-0.5">{a.name}:</span>
+                                                        <span className="font-medium">{a.value}</span>
+                                                    </span>
+                                                ))}
+                                            </td>
+                                            <td className="px-4 py-2 text-right">
+                                                <input
+                                                    type="number" min={0}
+                                                    value={getStock(combo)}
+                                                    onChange={(e) => setStock(combo, e.target.value)}
+                                                    className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
+                                                        isOverride ? 'border-indigo-300 bg-indigo-50/50' : ''
+                                                    }`}
+                                                />
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {validAttrs.length === 0 && (
+                        <p className="text-xs text-gray-400 text-center py-2">
+                            Add an attribute name and at least one option to see generated variants
+                        </p>
+                    )}
+                </div>
+
+                {/* ── FEATURES / SPECS / COMMENTS ───────────────────────── */}
+                {['features', 'specifications', 'comments'].map((type) => (
+                    <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
+                        <div className="flex justify-between items-center">
+                            <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                            <button
+                                type="button" onClick={() => addKV(type)}
+                                className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700 font-medium"
+                            >
+                                <Plus size={14} /> Add
+                            </button>
+                        </div>
+                        {formData[type].map((item, index) => (
+                            <div key={index} className="grid grid-cols-2 gap-2 relative pr-6">
+                                <input
+                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                    placeholder="Title (e.g. Material)"
+                                    value={item.title}
+                                    onChange={(e) => handleKVChange(type, index, 'title', e.target.value)}
+                                />
+                                <input
+                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                    placeholder="Value (e.g. Cotton)"
+                                    value={item.value}
+                                    onChange={(e) => handleKVChange(type, index, 'value', e.target.value)}
+                                />
+                                <button
+                                    type="button" onClick={() => removeKV(type, index)}
+                                    className="absolute right-0 top-2.5 text-gray-300 hover:text-red-500 transition-colors"
+                                >
+                                    <Trash2 size={15} />
+                                </button>
+                            </div>
+                        ))}
+                        {formData[type].length === 0 && (
+                            <p className="text-xs text-gray-400">None added</p>
+                        )}
+                    </div>
                 ))}
 
-                <Button type="submit" isLoading={isLoading}>
+                <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">
                     Save Product
                 </Button>
 
