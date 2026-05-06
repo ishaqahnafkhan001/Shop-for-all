@@ -1,8 +1,10 @@
 const Shop = require('../models/Shop'); // Or wherever your Shop model is
 const Product = require('../models/Product');
+const bcrypt = require('bcryptjs');
 
-
+const mongoose = require('mongoose');
 const Order = require('../models/Order');
+const InventoryLog = require('../models/InventoryLog');
 const User = require('../models/User'); // We need this to create Guest customers
 
 exports.createPublicOrder = async (req, res) => {
@@ -11,10 +13,54 @@ exports.createPublicOrder = async (req, res) => {
     session.startTransaction();
 
     try {
-        const { subdomain, customer, shippingAddress, shippingZone, items, shippingCost } = req.body;
+        const { subdomain, customer, shippingAddress, shippingZone, items, shippingCost, shipping } = req.body;
+
+        if (!subdomain) throw new Error('Subdomain is required');
+        if (!customer?.email || !customer?.fullName || !customer?.phone) {
+            throw new Error('Customer fullName, email and phone are required');
+        }
+        if (!Array.isArray(items) || items.length === 0) {
+            throw new Error('Order must contain at least one item');
+        }
 
         const shop = await Shop.findOne({ subdomain }).session(session);
         if (!shop) throw new Error("Shop not found");
+
+        const requestedZone = shipping?.zone || shippingZone;
+        if (!requestedZone) throw new Error('Shipping zone is required');
+
+        const normalizedShippingCost = Number.isFinite(Number(shipping?.cost))
+            ? Number(shipping.cost)
+            : (Number.isFinite(Number(shippingCost))
+                ? Number(shippingCost)
+                : (requestedZone === 'Inside Dhaka' ? 60 : 120));
+
+        let normalizedAddress = shipping?.address;
+        if (!normalizedAddress && shippingAddress && typeof shippingAddress === 'object') {
+            normalizedAddress = {
+                fullName: shippingAddress.fullName || customer.fullName,
+                phone: shippingAddress.phone || customer.phone,
+                addressLine: shippingAddress.addressLine || shippingAddress.address,
+                city: shippingAddress.city,
+            };
+        }
+
+        if (!normalizedAddress && typeof shippingAddress === 'string') {
+            const parts = shippingAddress.split(',').map(p => p.trim()).filter(Boolean);
+            const city = parts.length > 1 ? parts[parts.length - 1] : 'Dhaka';
+            const addressLine = parts.length > 1 ? parts.slice(0, -1).join(', ') : parts[0];
+
+            normalizedAddress = {
+                fullName: customer.fullName,
+                phone: customer.phone,
+                addressLine,
+                city,
+            };
+        }
+
+        if (!normalizedAddress?.fullName || !normalizedAddress?.phone || !normalizedAddress?.addressLine || !normalizedAddress?.city) {
+            throw new Error('Shipping address is incomplete. fullName, phone, addressLine and city are required.');
+        }
 
         // 🔥 THE FIX: Secure Guest User Creation
         let orderCustomer = await User.findOne({ email: customer.email }).session(session);
@@ -41,43 +87,79 @@ exports.createPublicOrder = async (req, res) => {
         let logsToInsert = [];
 
         for (const item of items) {
-            const product = await Product.findById(item.product).session(session);
+            const productId = item.productId || item.product;
+            const quantity = Number(item.quantity);
+
+            if (!productId) throw new Error('Each item must include product or productId');
+            if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Each item must include a valid quantity');
+
+            const product = await Product.findOne({ _id: productId, shop_id: shop._id }).session(session);
 
             if (!product) throw new Error(`Product not found.`);
-            if (product.stock < item.quantity) {
+
+            const variant = item.variantId
+                ? product.variants.id(item.variantId)
+                : product.variants.find(v => v.isActive && v.stock >= quantity)
+                    || product.variants.find(v => v.stock >= quantity)
+                    || product.variants.find(v => v.isActive)
+                    || product.variants[0];
+
+            if (!variant) throw new Error(`Variant not found for ${product.title}`);
+
+            if (variant.stock < quantity) {
                 throw new Error(`Insufficient stock for ${product.title}`);
             }
 
-            const beforeStock = product.stock;
+            const beforeStock = variant.stock;
+            const basePrice = Number.isFinite(Number(variant.priceOverride))
+                ? Number(variant.priceOverride)
+                : Number(product.pricing?.sellingPrice);
+            const discount = Number(product.pricing?.discount) || 0;
+            const unitPrice = Math.round(basePrice - (basePrice * discount) / 100);
+            const buyingPrice = Number(product.pricing?.buyingPrice);
+            const itemTotal = unitPrice * quantity;
+
+            if (!Number.isFinite(unitPrice) || !Number.isFinite(itemTotal)) {
+                throw new Error(`Invalid pricing data for ${product.title}`);
+            }
+            if (!Number.isFinite(buyingPrice)) {
+                throw new Error(`Invalid buying price for ${product.title}`);
+            }
 
             itemsWithSecurePrices.push({
                 productId: product._id, // Fixed mapping to match your Order schema
-                variantId: item.variantId, // Assuming you pass this from frontend
+                variantId: variant._id,
                 title: product.title,
-                quantity: item.quantity,
-                price: product.sellingPrice,
-                buyingPrice: product.pricing.buyingPrice,
-                total: product.sellingPrice * item.quantity
+                sku: variant.sku,
+                attributes: variant.attributes,
+                quantity,
+                price: unitPrice,
+                buyingPrice,
+                total: itemTotal
             });
 
-            calculatedSubtotal += (product.sellingPrice * item.quantity);
+            calculatedSubtotal += itemTotal;
 
             // Deduct stock
-            product.stock -= item.quantity;
+            variant.stock -= quantity;
             await product.save({ session });
 
             // 🔥 THE FIX: Sync with Admin Inventory Logs
             logsToInsert.push({
                 shop_id: shop._id,
                 productId: product._id,
-                variantId: item.variantId, // Requires variantId from frontend
-                change: -item.quantity,
+                variantId: variant._id,
+                change: -quantity,
                 type: 'ORDER',
                 beforeStock,
-                afterStock: product.stock,
+                afterStock: variant.stock,
                 user: orderCustomer._id,
                 note: 'Public Storefront Order'
             });
+        }
+
+        if (!Number.isFinite(calculatedSubtotal)) {
+            throw new Error('Unable to calculate subtotal for this order');
         }
 
         const [newOrder] = await Order.create([{
@@ -86,15 +168,15 @@ exports.createPublicOrder = async (req, res) => {
             items: itemsWithSecurePrices,
             pricing: {
                 subtotal: calculatedSubtotal,
-                shipping: shippingCost,
-                total: calculatedSubtotal + shippingCost
+                shipping: normalizedShippingCost,
+                total: calculatedSubtotal + normalizedShippingCost
             },
             shipping: {
-                zone: shippingZone,
-                cost: shippingCost,
-                address: shippingAddress
+                zone: requestedZone,
+                cost: normalizedShippingCost,
+                address: normalizedAddress
             },
-            payment: { method: req.body.paymentMethod || 'COD' },
+            payment: { method: req.body.payment?.method || req.body.paymentMethod || 'COD' },
             status: 'Pending'
         }], { session });
 

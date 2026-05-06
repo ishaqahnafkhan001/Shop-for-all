@@ -1,41 +1,28 @@
 const mongoose = require('mongoose');
-
 const { Schema } = mongoose;
 
-/**
- * 🔹 Key-Value Schema (Reusable)
- */
+// 🔹 Key-Value Schema (Reusable)
 const keyValueSchema = new Schema({
     title: { type: String, required: true, trim: true },
     value: { type: String, required: true, trim: true }
 }, { _id: false });
 
-/**
- * 🔹 Variant Schema (CRITICAL)
- */
+// 🔹 Variant Schema
 const variantSchema = new Schema({
     sku: { type: String, trim: true },
-
     attributes: [
         {
             name: { type: String, required: true }, // e.g. color, size
             value: { type: String, required: true } // e.g. white, M
         }
     ],
-
     stock: { type: Number, required: true, min: 0 },
-
-    priceOverride: { type: Number }, // optional per variant price
-
+    priceOverride: { type: Number }, // Optional variant-specific price
     image: String,
-
     isActive: { type: Boolean, default: true }
-
 }, { _id: true });
 
-/**
- * 🔹 Main Product Schema
- */
+// 🔹 Main Product Schema
 const productSchema = new Schema({
     shop_id: {
         type: Schema.Types.ObjectId,
@@ -43,26 +30,21 @@ const productSchema = new Schema({
         required: true,
         index: true
     },
-
     title: {
         type: String,
         required: true,
         trim: true,
         index: true
     },
-
     description: {
         type: String,
         required: true
     },
-
     category: {
         type: String,
         index: true
     },
-
     images: [String],
-
     pricing: {
         buyingPrice: { type: Number, required: true },
         sellingPrice: { type: Number, required: true },
@@ -73,25 +55,17 @@ const productSchema = new Schema({
             max: 100
         }
     },
-
-    /**
-     * ✅ VARIANTS (Stock lives here)
-     */
+    // ✅ VARIANTS (Stock lives here)
     variants: {
         type: [variantSchema],
-        validate: v => v.length > 0 // at least one variant required
+        validate: [v => v.length > 0, 'A product must have at least one variant']
     },
-
-    /**
-     * ✅ DYNAMIC FIELDS
-     */
+    // ✅ DYNAMIC FIELDS
     features: [keyValueSchema],
     specifications: [keyValueSchema],
     comments: [keyValueSchema],
 
-    /**
-     * ✅ STATUS CONTROL
-     */
+    // ✅ STATUS CONTROL
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
 
@@ -101,14 +75,9 @@ const productSchema = new Schema({
     toObject: { virtuals: true }
 });
 
-
-
-
-/**
- * 💰 Final Price (Product level)
- */
+// 💰 Virtual: Final Price
 productSchema.virtual('finalPrice').get(function () {
-    if (!this.pricing) return undefined;  // same guard
+    if (!this.pricing) return undefined;
     const discount = this.pricing.discount || 0;
     const price = this.pricing.sellingPrice;
     if (discount > 0) {
@@ -117,32 +86,21 @@ productSchema.virtual('finalPrice').get(function () {
     return price;
 });
 
-/**
- * 📦 Total Stock (sum of variants)
- */
+// 📦 Virtual: Total Stock
 productSchema.virtual('totalStock').get(function () {
-    if (!this.variants) return undefined;  // guard: field not selected in this query
-    return this.variants.reduce((sum, v) => sum + v.stock, 0);
+    if (!this.variants) return undefined;
+    return this.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
 });
 
-
-
+// 🔍 Indexes
 productSchema.index({ shop_id: 1, category: 1 });
 productSchema.index({ title: "text", description: "text" });
 
-
-/**
- * Ensure no negative stock
- */
+// 🛡️ Pre-save Hook: Ensure no negative stock
 productSchema.pre('save', async function () {
-
-    const invalid = this.variants.some(v => v.stock < 0);
-
-    if (invalid) {
+    if (this.variants && this.variants.some(v => v.stock < 0)) {
         throw new Error("Stock cannot be negative");
     }
-
 });
-
 
 module.exports = mongoose.model('Product', productSchema);

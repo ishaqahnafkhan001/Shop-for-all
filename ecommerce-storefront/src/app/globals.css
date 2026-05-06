@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --sf-accent: #4f46e5;
+  --sf-accent-hover: #4338ca;
+  --sf-accent-soft: #c7d2fe;
+  --sf-accent-bg: #eef2ff;
+  --sf-accent-strong: #3730a3;
+  --sf-accent-muted: #818cf8;
+  --sf-accent-light: #a5b4fc;
+  --sf-accent-ring: #e0e7ff;
 }
 
 @theme inline {

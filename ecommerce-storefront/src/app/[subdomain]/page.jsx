@@ -40,7 +40,7 @@ export default function VendorHomePage({ params }) {
                     </h1>
                     {/* ✨ NEW: Storewide Sale Announcement ✨ */}
                     {shop?.storewideDiscount > 0 && (
-                        <div className="mb-6 inline-block bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest animate-bounce">
+                        <div className="mb-6 inline-block bg-[var(--sf-accent)] text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest animate-bounce">
                             🔥 {shop.storewideDiscount}% Storewide Sale Active!
                         </div>
                     )}
@@ -72,9 +72,9 @@ export default function VendorHomePage({ params }) {
                         <div>
                             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Price Range</h3>
                             <div className="flex items-center gap-2 mb-3">
-                                <input type="number" placeholder="Min" value={priceInput.min} onChange={(e) => setPriceInput({...priceInput, min: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-600/20 outline-none" />
+                                <input type="number" placeholder="Min" value={priceInput.min} onChange={(e) => setPriceInput({...priceInput, min: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--sf-accent-ring)] outline-none" />
                                 <span className="text-gray-400">-</span>
-                                <input type="number" placeholder="Max" value={priceInput.max} onChange={(e) => setPriceInput({...priceInput, max: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-600/20 outline-none" />
+                                <input type="number" placeholder="Max" value={priceInput.max} onChange={(e) => setPriceInput({...priceInput, max: e.target.value})} className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--sf-accent-ring)] outline-none" />
                             </div>
                             <button onClick={handlePriceApply} className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-semibold rounded-lg transition-colors">Apply Price</button>
                         </div>
@@ -150,7 +150,7 @@ export default function VendorHomePage({ params }) {
 
                                             <div className="flex flex-col flex-grow px-1">
                                                 <h3 className="text-base font-semibold text-gray-900 mb-1 leading-snug">
-                                                    <Link href={`/products/${product._id}`} className="hover:text-indigo-600 transition-colors relative z-10">
+                                                    <Link href={`/products/${product._id}`} className="hover:text-[var(--sf-accent)] transition-colors relative z-10">
                                                         {product.title}
                                                     </Link>
                                                 </h3>
@@ -165,10 +165,10 @@ export default function VendorHomePage({ params }) {
                                                 </div>
 
                                                 <div className="flex items-center gap-2 mt-auto relative z-20">
-                                                    <button onClick={(e) => { e.preventDefault(); addToCart(product); }} disabled={product.stock <= 0} className="p-3 border border-gray-200 rounded-xl text-gray-600 hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all disabled:opacity-50">
+                                                    <button onClick={(e) => { e.preventDefault(); addToCart(product); }} disabled={product.stock <= 0} className="p-3 border border-gray-200 rounded-xl text-gray-600 hover:border-[var(--sf-accent)] hover:text-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)] transition-all disabled:opacity-50">
                                                         <ShoppingBag size={18} />
                                                     </button>
-                                                    <button onClick={(e) => { e.preventDefault(); addToCart(product); router.push('/checkout'); }} disabled={product.stock <= 0} className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-indigo-600 transition-colors disabled:bg-gray-300">
+                                                    <button onClick={(e) => { e.preventDefault(); addToCart(product); router.push('/checkout'); }} disabled={product.stock <= 0} className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-[var(--sf-accent)] transition-colors disabled:bg-gray-300">
                                                         <span>Buy Now</span>
                                                         <ArrowRight size={16} />
                                                     </button>

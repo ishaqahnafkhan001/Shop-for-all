@@ -20,6 +20,17 @@ export default function AccountPage({ params }) {
     const [passForm, setPassForm] = useState({ oldPassword: '', newPassword: '' });
     const [orders, setOrders] = useState([]);
 
+    const fetchMyOrders = async (token) => {
+        try {
+            const { data } = await API.get(`/storefront/${subdomain}/my-orders`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setOrders(data);
+        } catch (error) {
+            console.error("Failed to fetch orders");
+        }
+    };
+
     useEffect(() => {
         const checkAuth = async () => {
             const token = localStorage.getItem('shopforall_token');
@@ -35,16 +46,6 @@ export default function AccountPage({ params }) {
         checkAuth();
     }, []);
 
-    const fetchMyOrders = async (token) => {
-        try {
-            const { data } = await API.get('/public/my-orders', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setOrders(data);
-        } catch (error) {
-            console.error("Failed to fetch orders");
-        }
-    };
 
     const handleAuthSubmit = async (e) => {
         e.preventDefault();

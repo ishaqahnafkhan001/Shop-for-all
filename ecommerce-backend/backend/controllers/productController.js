@@ -160,6 +160,18 @@ exports.updateProduct = async (req, res) => {
             product.pricing = { ...product.pricing.toObject(), ...value.pricing };
         }
 
+        if (value.features !== undefined) {
+            product.features = value.features;
+        }
+
+        if (value.specifications !== undefined) {
+            product.specifications = value.specifications;
+        }
+
+        if (value.comments !== undefined) {
+            product.comments = value.comments;
+        }
+
         // ✅ Smart variant update: patch existing, append new — never silently drop
         if (value.variants) {
             const updatedVariants = [];

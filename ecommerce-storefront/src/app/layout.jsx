@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { CartProvider } from "@/context/CartContext";
+import StorefrontThemeProvider from "@/components/storefront/StorefrontThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,25 +25,27 @@ export default function RootLayout({ children }) {
             lang="en"
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
-        <body className="min-h-full flex flex-col bg-white text-gray-900">
-        {/* ✨ Wrap everything in CartProvider so the cart works across all pages */}
-        <CartProvider>
-            {children}
+            <body className="min-h-full flex flex-col bg-white text-gray-900">
+                <StorefrontThemeProvider>
+                    {/* ✨ Wrap everything in CartProvider so the cart works across all pages */}
+                    <CartProvider>
+                        {children}
 
-            {/* ✨ Toast notifications for 'Added to Cart' or 'Error' messages */}
-            <Toaster
-                position="bottom-right"
-                toastOptions={{
-                    duration: 3000,
-                    style: {
-                        background: '#333',
-                        color: '#fff',
-                        borderRadius: '10px',
-                    },
-                }}
-            />
-        </CartProvider>
-        </body>
+                        {/* ✨ Toast notifications for 'Added to Cart' or 'Error' messages */}
+                        <Toaster
+                            position="bottom-right"
+                            toastOptions={{
+                                duration: 3000,
+                                style: {
+                                    background: '#333',
+                                    color: '#fff',
+                                    borderRadius: '10px',
+                                },
+                            }}
+                        />
+                    </CartProvider>
+                </StorefrontThemeProvider>
+            </body>
         </html>
     );
 }

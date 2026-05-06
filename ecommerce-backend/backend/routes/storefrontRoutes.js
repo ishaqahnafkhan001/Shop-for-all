@@ -17,7 +17,7 @@ const { getMyOrders, trackPublicOrder } = require('../controllers/publicControll
 router.get('/:subdomain/info', resolveTenant, getStoreInfo);
 router.get('/:subdomain/products', resolveTenant, getStoreProducts);
 router.get('/:subdomain/products/:id', resolveTenant, getSingleProduct);
-router.post('/:subdomain/orders', resolveTenant, createOrder); // Allow guest checkout (no 'protect')
+router.post('/:subdomain/orders', resolveTenant, protect, createOrder);
 
 // Added from the old public routes
 router.get('/:subdomain/track-order/:orderId', resolveTenant, trackPublicOrder);

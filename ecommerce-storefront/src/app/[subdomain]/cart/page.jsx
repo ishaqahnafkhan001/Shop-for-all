@@ -26,7 +26,7 @@ export default function CartPage() {
                 </p>
                 <Link
                     href="/"
-                    className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-indigo-500/30"
+                    className="bg-[var(--sf-accent)] text-white px-8 py-3 rounded-xl font-bold hover:bg-[var(--sf-accent-hover)] transition shadow-lg hover:shadow-[0_12px_30px_-14px_var(--sf-accent)]"
                 >
                     Continue Shopping
                 </Link>
@@ -38,7 +38,7 @@ export default function CartPage() {
     return (
         <div className="container mx-auto px-4 py-12 max-w-6xl">
             <div className="flex items-center mb-8">
-                <Link href="/" className="text-gray-500 hover:text-indigo-600 transition mr-4">
+                <Link href="/" className="text-gray-500 hover:text-[var(--sf-accent)] transition mr-4">
                     <ArrowLeft size={24} />
                 </Link>
                 <h1 className="text-3xl font-extrabold text-gray-900">Your Cart</h1>
@@ -58,7 +58,7 @@ export default function CartPage() {
                                 <div>
                                     <h3 className="font-bold text-gray-900 line-clamp-1">{item.title}</h3>
                                     <p className="text-sm text-gray-500 mb-1">{item.category}</p>
-                                    <p className="font-bold text-indigo-600">৳ {item.sellingPrice}</p>
+                                    <p className="font-bold text-[var(--sf-accent)]">৳ {item.sellingPrice}</p>
                                 </div>
                             </div>
 
@@ -114,10 +114,13 @@ export default function CartPage() {
 
                         <div className="flex justify-between items-center border-t border-gray-200 pt-4 mb-8">
                             <span className="font-bold text-gray-900">Total</span>
-                            <span className="text-2xl font-extrabold text-indigo-600">৳ {total}</span>
+                            <span className="text-2xl font-extrabold text-[color:var(--sf-accent)]">৳ {total}</span>
+                        </div>
+                        <div className="bg-black text-[color:var(--sf-accent)] p-4">
+                            TEST
                         </div>
 
-                        <Link href="/checkout" className="w-full flex items-center justify-center bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-indigo-600 transition-colors shadow-lg hover:shadow-indigo-500/30">
+                        <Link href="/checkout" className="w-full flex items-center justify-center bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-[var(--sf-accent)] transition-colors shadow-lg hover:shadow-[0_12px_30px_-14px_var(--sf-accent)]">
                             Proceed to Checkout
                         </Link>
                     </div>

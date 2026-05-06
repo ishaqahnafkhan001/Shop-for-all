@@ -21,7 +21,7 @@ exports.createOrder = async (req, res) => {
         if (error) {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
-
+        console.log(JSON.stringify(req.body.items, null, 2));
         const { items, shipping, payment } = value;
         const shopId = req.tenantId;
         const userId = req.user?._id;

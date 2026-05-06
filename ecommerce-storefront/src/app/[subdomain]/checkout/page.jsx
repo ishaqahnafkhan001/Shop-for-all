@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
-import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { ShieldCheck, Truck, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -10,7 +9,6 @@ import API from '@/api/api';
 export default function CheckoutPage({ params }) {
     const { subdomain } = React.use(params);
     const { cartItems, cartTotal, clearCart } = useCart();
-    const router = useRouter();
 
     const [loading, setLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -54,12 +52,33 @@ export default function CheckoutPage({ params }) {
                 // 🚪 DOOR 1: LOGGED-IN USER CHECKOUT
                 // ==========================================
                 const securePayload = {
-                    items: cartItems.map(item => ({
-                        product: item._id,
-                        quantity: item.quantity
-                    })),
-                    shippingZone: formData.zone,
-                    shippingAddress: `${formData.address}, ${formData.city}`
+                    items: cartItems.map(item => {
+                        const selectedVariantId = item.variantId
+                            || item.variants?.find((variant) => variant.isActive)?._id
+                            || item.variants?.[0]?._id;
+
+                        if (!selectedVariantId) {
+                            throw new Error(`No variant available for ${item.title}`);
+                        }
+
+                        return {
+                            productId: item._id,
+                            variantId: selectedVariantId,
+                            quantity: item.quantity,
+                        };
+                    }),
+                    shipping: {
+                        zone: formData.zone,
+                        address: {
+                            fullName: formData.fullName,
+                            phone: formData.phone,
+                            addressLine: formData.address,
+                            city: formData.city,
+                        },
+                    },
+                    payment: {
+                        method: 'COD',
+                    },
                 };
 
                 // Send to the secure route
@@ -68,7 +87,9 @@ export default function CheckoutPage({ params }) {
                 });
 
                 // Your secure route returns { success: true, order: {...} }
-                savedOrderData = response.data.order;
+                savedOrderData = {
+                    _id: response.data.orderId,
+                };
 
             } else {
                 // ==========================================
@@ -117,9 +138,9 @@ export default function CheckoutPage({ params }) {
                 <CheckCircle size={80} className="text-green-500 mb-6" />
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Order Confirmed!</h1>
                 <p className="text-lg text-gray-600 mb-8 max-w-md">
-                    Thank you for your purchase. Your order <span className="font-mono font-bold text-indigo-600">#{orderId?.slice(-6).toUpperCase()}</span> is currently being processed.
+                    Thank you for your purchase. Your order <span className="font-mono font-bold text-[var(--sf-accent)]">#{orderId?.slice(-6).toUpperCase()}</span> is currently being processed.
                 </p>
-                <Link href="/" className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg">
+                <Link href="/" className="bg-[var(--sf-accent)] text-white px-8 py-4 rounded-xl font-bold hover:bg-[var(--sf-accent-hover)] transition shadow-lg">
                     Continue Shopping
                 </Link>
             </div>
@@ -131,7 +152,7 @@ export default function CheckoutPage({ params }) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center text-center">
                 <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
-                <Link href="/" className="text-indigo-600 hover:underline">Go back to shop</Link>
+                <Link href="/" className="text-[var(--sf-accent)] hover:underline">Go back to shop</Link>
             </div>
         );
     }
@@ -139,7 +160,7 @@ export default function CheckoutPage({ params }) {
     // --- CHECKOUT FORM ---
     return (
         <div className="container mx-auto px-4 py-10 max-w-6xl">
-            <Link href="/cart" className="inline-flex items-center text-sm text-gray-500 hover:text-indigo-600 mb-8 transition">
+            <Link href="/cart" className="inline-flex items-center text-sm text-gray-500 hover:text-[var(--sf-accent)] mb-8 transition">
                 <ArrowLeft size={16} className="mr-2" /> Back to Cart
             </Link>
 
@@ -154,15 +175,15 @@ export default function CheckoutPage({ params }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                                <input required type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-600 outline-none transition" placeholder="John Doe" />
+                                <input required type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none transition" placeholder="John Doe" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
-                                <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-600 outline-none transition" placeholder="john@example.com" />
+                                <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none transition" placeholder="john@example.com" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                                <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-600 outline-none transition" placeholder="+880 1..." />
+                                <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none transition" placeholder="+880 1..." />
                             </div>
                         </div>
 
@@ -170,15 +191,15 @@ export default function CheckoutPage({ params }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
-                                <input required type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-600 outline-none transition" placeholder="House 12, Road 5, Block C" />
+                                <input required type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none transition" placeholder="House 12, Road 5, Block C" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                                <input required type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-600 outline-none transition" />
+                                <input required type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none transition" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Zone</label>
-                                <select name="zone" value={formData.zone} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-600 outline-none transition bg-white">
+                                <select name="zone" value={formData.zone} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none transition bg-white">
                                     <option value="Inside Dhaka">Inside Dhaka (৳ 60)</option>
                                     <option value="Outside Dhaka">Outside Dhaka (৳ 120)</option>
                                 </select>
@@ -188,7 +209,7 @@ export default function CheckoutPage({ params }) {
 
                     {/* Payment Method Info */}
                     <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 border-dashed flex items-center">
-                        <Truck className="text-indigo-600 mr-4" size={32} />
+                        <Truck className="text-[var(--sf-accent)] mr-4" size={32} />
                         <div>
                             <h3 className="font-bold text-gray-900">Cash on Delivery</h3>
                             <p className="text-sm text-gray-500">Pay with cash when your order arrives.</p>
@@ -228,13 +249,13 @@ export default function CheckoutPage({ params }) {
 
                         <div className="flex justify-between items-center border-t border-gray-200 pt-4 mb-8">
                             <span className="font-bold text-gray-900 text-lg">Total</span>
-                            <span className="text-2xl font-extrabold text-indigo-600">৳ {totalAmount}</span>
+                            <span className="text-2xl font-extrabold text-[var(--sf-accent)]">৳ {totalAmount}</span>
                         </div>
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full flex items-center justify-center bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-indigo-600 transition-colors shadow-lg hover:shadow-indigo-500/30 disabled:opacity-50"
+                            className="w-full flex items-center justify-center bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-[var(--sf-accent)] transition-colors shadow-lg hover:shadow-[0_12px_30px_-14px_var(--sf-accent)] disabled:opacity-50"
                         >
                             {loading ? 'Processing...' : 'Place Order'}
                         </button>

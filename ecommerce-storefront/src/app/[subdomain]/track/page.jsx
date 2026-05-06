@@ -4,7 +4,8 @@ import { Search, Package, Truck, CheckCircle, MapPin, Box, Calendar, XCircle } f
 import API from '@/api/api';
 import { toast } from 'react-hot-toast';
 
-export default function TrackOrderPage() {
+export default function TrackOrderPage({ params }) {
+    const { subdomain } = React.use(params);
     const [trackingId, setTrackingId] = useState('');
     const [loading, setLoading] = useState(false);
     const [order, setOrder] = useState(null);
@@ -15,7 +16,7 @@ export default function TrackOrderPage() {
 
         setLoading(true);
         try {
-            const { data } = await API.get(`/public/track-order/${trackingId.trim()}`);
+            const { data } = await API.get(`/storefront/${subdomain}/track-order/${trackingId.trim()}`);
             setOrder(data);
             toast.success("Order found!");
         } catch (error) {
@@ -42,7 +43,7 @@ export default function TrackOrderPage() {
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Track Your Order</h1>
                 <p className="text-gray-500 mb-8 max-w-lg mx-auto">
-                    Enter your Order ID below to get real-time updates on your package's location and delivery status.
+                    Enter your Order ID below to get real-time updates on your package&apos;s location and delivery status.
                 </p>
 
                 <form onSubmit={handleTrackOrder} className="max-w-xl mx-auto relative">
@@ -54,12 +55,12 @@ export default function TrackOrderPage() {
                         value={trackingId}
                         onChange={(e) => setTrackingId(e.target.value)}
                         placeholder="e.g. 69eb382c2f37b0acbf14832e"
-                        className="w-full pl-12 pr-32 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-indigo-600 outline-none text-gray-900 font-mono shadow-sm"
+                        className="w-full pl-12 pr-32 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none text-gray-900 font-mono shadow-sm"
                     />
                     <button
                         type="submit"
                         disabled={loading}
-                        className="absolute right-2 top-2 bottom-2 bg-gray-900 text-white px-6 rounded-xl font-bold hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                        className="absolute right-2 top-2 bottom-2 bg-gray-900 text-white px-6 rounded-xl font-bold hover:bg-[var(--sf-accent)] transition-colors disabled:opacity-50"
                     >
                         {loading ? 'Searching...' : 'Track'}
                     </button>
@@ -74,7 +75,7 @@ export default function TrackOrderPage() {
                     <div className="bg-gray-50 px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Order ID</p>
-                            <p className="text-lg font-mono font-bold text-indigo-600">#{order._id.slice(-8).toUpperCase()}</p>
+                            <p className="text-lg font-mono font-bold text-[var(--sf-accent)]">#{order._id.slice(-8).toUpperCase()}</p>
                         </div>
                         <div className="text-left sm:text-right">
                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Order Date</p>
@@ -99,7 +100,7 @@ export default function TrackOrderPage() {
                                 <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-100 -translate-y-1/2 rounded-full overflow-hidden">
                                     {/* The Animated Colored Line */}
                                     <div
-                                        className="h-full bg-indigo-600 transition-all duration-1000 ease-out"
+                                        className="h-full bg-[var(--sf-accent)] transition-all duration-1000 ease-out"
                                         style={{ width: progressWidth }}
                                     ></div>
                                 </div>
@@ -113,8 +114,8 @@ export default function TrackOrderPage() {
                                         return (
                                             <div key={step} className="flex flex-col items-center bg-white px-2">
                                                 <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm border-4 border-white
-                                                    ${isCompleted ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-gray-100 text-gray-400'}
-                                                    ${isCurrent ? 'ring-4 ring-indigo-100 scale-110' : ''}
+                                                    ${isCompleted ? 'bg-[var(--sf-accent)] text-white shadow-[0_6px_16px_-8px_var(--sf-accent)]' : 'bg-gray-100 text-gray-400'}
+                                                    ${isCurrent ? 'ring-4 ring-[var(--sf-accent-ring)] scale-110' : ''}
                                                 `}>
                                                     {index === 0 && <Box size={20} />}
                                                     {index === 1 && <Package size={20} />}
@@ -167,7 +168,7 @@ export default function TrackOrderPage() {
                                 </div>
                                 <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
                                     <span className="font-bold text-gray-900">Total Paid</span>
-                                    <span className="text-xl font-extrabold text-indigo-600">৳ {order.totalAmount}</span>
+                                    <span className="text-xl font-extrabold text-[var(--sf-accent)]">৳ {order.totalAmount}</span>
                                 </div>
                             </div>
                         </div>

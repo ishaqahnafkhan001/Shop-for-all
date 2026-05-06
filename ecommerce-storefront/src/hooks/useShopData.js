@@ -1,6 +1,24 @@
 import { useState, useEffect } from 'react';
 import API from '../api/api';
 
+const normalizeProduct = (product) => {
+    const sellingPrice = product?.pricing?.sellingPrice ?? product?.sellingPrice ?? 0;
+    const discount = product?.pricing?.discount ?? product?.discount ?? 0;
+    const finalPrice = product?.finalPrice ?? Math.round(sellingPrice - (sellingPrice * discount) / 100);
+    const stock = product?.totalStock ?? product?.stock ?? (Array.isArray(product?.variants)
+        ? product.variants.reduce((sum, variant) => sum + (variant?.stock || 0), 0)
+        : 0);
+
+    return {
+        ...product,
+        sellingPrice,
+        discount,
+        finalPrice,
+        stock,
+        imageUrl: product?.imageUrl || product?.images?.[0] || null,
+    };
+};
+
 export const useShopData = (subdomain, filters = {}) => {
     const [shop, setShop] = useState(null);
     const [products, setProducts] = useState([]);
@@ -26,11 +44,18 @@ export const useShopData = (subdomain, filters = {}) => {
         const getInitialData = async () => {
             setLoading(true);
             try {
-                const { data } = await API.get(`/public/shop/${subdomain}${buildQueryString(1)}`);
-                setShop(data.shop);
-                setProducts(data.products);
-                setHasMore(data.hasMore);
-                setCategories(data.categories || []);
+                const [shopRes, productsRes] = await Promise.all([
+                    API.get(`/storefront/${subdomain}/info`),
+                    API.get(`/storefront/${subdomain}/products${buildQueryString(1)}`),
+                ]);
+
+                const normalizedProducts = (productsRes.data?.products || []).map(normalizeProduct);
+                const derivedCategories = Array.from(new Set(normalizedProducts.map((item) => item.category).filter(Boolean)));
+
+                setShop(shopRes.data || null);
+                setProducts(normalizedProducts);
+                setHasMore(false);
+                setCategories(derivedCategories);
                 setPage(1);
             } catch (err) {
                 setError("Shop not found");
@@ -46,16 +71,8 @@ export const useShopData = (subdomain, filters = {}) => {
     const loadMore = async () => {
         if (loadingMore || !hasMore) return;
         setLoadingMore(true);
-        const nextPage = page + 1;
-
         try {
-            const { data } = await API.get(`/public/shop/${subdomain}${buildQueryString(nextPage)}`);
-            setProducts((prevProducts) => {
-                const combined = [...prevProducts, ...data.products];
-                return Array.from(new Map(combined.map(item => [item._id, item])).values());
-            });
-            setHasMore(data.hasMore);
-            setPage(nextPage);
+            setHasMore(false);
         } catch (err) {
             console.error("Failed to load more products");
         } finally {

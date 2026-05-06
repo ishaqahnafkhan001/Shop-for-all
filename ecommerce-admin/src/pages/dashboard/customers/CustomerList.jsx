@@ -12,10 +12,7 @@ const CustomerList = () => {
         const fetchCustomers = async () => {
             try {
                 const { data } = await API.get('/admin/customers');
-                // FIX: backend returns { success, data: [...] }
-                // previous code did setCustomers(data) which set state to the full
-                // response object { success, data }, not the array inside it
-                console.log("API RESPONSE:", data);
+                // console.log("API RESPONSE:", data);
                 setCustomers(Array.isArray(data) ? data : []);
             } catch (err) {
                 toast.error("Failed to load customers");
