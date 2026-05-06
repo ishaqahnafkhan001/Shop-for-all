@@ -14,29 +14,36 @@ exports.getShopProducts = async (req, res) => {
         const shopId = req.tenantId;
         const { search, category } = req.query;
 
-        // ✅ Convert early so both skip() and limit() get Numbers
-        const page  = Math.max(Number(req.query.page)  || 1, 1);
-        const limit = Math.min(Number(req.query.limit) || 10, 100); // cap at 100
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 10;
 
+        // Product query (filtered)
         const query = {
             shop_id: shopId,
             isDeleted: false
         };
 
         if (category) query.category = category;
-        if (search)   query.$text = { $search: search };
+        if (search) query.$text = { $search: search };
 
-        const [products, total] = await Promise.all([
+        const skip = (page - 1) * limit;
+
+        // ✨ THE FIX: Add Product.distinct to fetch all categories for this shop
+        const [products, total, uniqueCategories] = await Promise.all([
             Product.find(query)
                 .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)  // ✅ Both are Numbers now
+                .skip(skip)
                 .limit(limit),
-            Product.countDocuments(query)
+            Product.countDocuments(query),
+            // Notice we don't use 'query' here, because we want ALL categories
+            // for the shop, not just the ones matching the current search filter
+            Product.distinct('category', { shop_id: shopId, isDeleted: false })
         ]);
 
         res.status(200).json({
             success: true,
             data: products,
+            categories: uniqueCategories, // ✨ Send the categories back to the frontend
             pagination: {
                 total,
                 page,
@@ -49,7 +56,6 @@ exports.getShopProducts = async (req, res) => {
         res.status(500).json({ success: false, error: "Failed to fetch products" });
     }
 };
-
 
 /**
  * @desc    Get a single product by ID

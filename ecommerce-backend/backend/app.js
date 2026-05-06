@@ -3,6 +3,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const allowedOrigins = process.env.CORS_ORIGINS.split(',');
 
 // Import Middlewares
 const { errorHandler } = require('./middlewares/error');
@@ -26,15 +27,32 @@ app.use(cookieParser()); // Parses cookies so we can read the JWT
 
 // Configure CORS
 // In production, replace '*' with your actual domains for security
-app.use(cors({
-    origin: [
-        'http://localhost:3000', // Next.js Storefront
-        'http://localhost:5173', // React Admin (Vite)
-        /\.localhost:3000$/
-        // Allows all subdomains on localhost
-    ],
-    credentials: true // Crucial: Allows cookies to be sent back and forth
-}));
+
+
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            // allow requests with no origin (mobile apps, postman, curl)
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            // exact matches from .env
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            // allow localhost subdomains
+            if (/\.localhost:3000$/.test(origin)) {
+                return callback(null, true);
+            }
+
+            return callback(new Error('Not allowed by CORS'));
+        },
+
+        credentials: true,
+    })
+);
 
 // 3. Mount Routes
 app.use('/api/auth', authRoutes);           // Registration, Login, Logout

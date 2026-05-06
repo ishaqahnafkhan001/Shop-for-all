@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useShopData } from '@/hooks/useShopData';
 import { useCart } from '@/context/CartContext';
-import { ShoppingCart, PackageX, ShoppingBag, ArrowRight, Filter } from 'lucide-react';
+import { ShoppingCart, PackageX, ShoppingBag, ArrowRight, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -11,13 +11,22 @@ export default function VendorHomePage({ params }) {
     const { addToCart } = useCart();
     const router = useRouter();
 
-    const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', sort: 'newest' });
+    // ✨ Added page to filters, default to 1
+    const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', sort: 'newest', page: 1 });
     const [priceInput, setPriceInput] = useState({ min: '', max: '' });
 
-    const { shop, products, categories, loading, error, hasMore, loadingMore, loadMore } = useShopData(subdomain, filters);
+    // ✨ Expecting pagination object from your custom hook instead of loadMore/hasMore
+    const { shop, products, categories, loading, error, pagination } = useShopData(subdomain, filters);
 
     const handlePriceApply = () => {
-        setFilters({ ...filters, minPrice: priceInput.min, maxPrice: priceInput.max });
+        // Reset to page 1 when applying new filters
+        setFilters({ ...filters, minPrice: priceInput.min, maxPrice: priceInput.max, page: 1 });
+    };
+
+    const handlePageChange = (newPage) => {
+        setFilters({ ...filters, page: newPage });
+        // Scroll to top of product grid smoothly
+        window.scrollTo({ top: 300, behavior: 'smooth' });
     };
 
     if (error) return (
@@ -38,7 +47,6 @@ export default function VendorHomePage({ params }) {
                     <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 capitalize">
                         {shop?.shopName || subdomain}
                     </h1>
-                    {/* ✨ NEW: Storewide Sale Announcement ✨ */}
                     {shop?.storewideDiscount > 0 && (
                         <div className="mb-6 inline-block bg-[var(--sf-accent)] text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest animate-bounce">
                             🔥 {shop.storewideDiscount}% Storewide Sale Active!
@@ -62,9 +70,10 @@ export default function VendorHomePage({ params }) {
                         <div className="mb-8">
                             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Categories</h3>
                             <div className="flex flex-col gap-2">
-                                <button onClick={() => setFilters({ ...filters, category: 'All' })} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${filters.category === 'All' ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>All Products</button>
+                                {/* Reset to page 1 on category change */}
+                                <button onClick={() => setFilters({ ...filters, category: 'All', page: 1 })} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${filters.category === 'All' ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>All Products</button>
                                 {categories?.map(cat => (
-                                    <button key={cat} onClick={() => setFilters({ ...filters, category: cat })} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${filters.category === cat ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>{cat}</button>
+                                    <button key={cat} onClick={() => setFilters({ ...filters, category: cat, page: 1 })} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${filters.category === cat ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>{cat}</button>
                                 ))}
                             </div>
                         </div>
@@ -84,9 +93,10 @@ export default function VendorHomePage({ params }) {
                 {/* ➡️ PRODUCT GRID */}
                 <main className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 bg-gray-50 border border-gray-100 p-3 rounded-2xl">
+                        {/* Reset to page 1 on sort change */}
                         <div className="flex items-center">
                             <label className="text-sm font-semibold text-gray-500 mr-3 hidden sm:block">Price Sort:</label>
-                            <select value={['priceAsc', 'priceDesc'].includes(filters.sort) ? filters.sort : 'default'} onChange={(e) => setFilters({ ...filters, sort: e.target.value })} className="w-full sm:w-auto bg-white border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2 outline-none">
+                            <select value={['priceAsc', 'priceDesc'].includes(filters.sort) ? filters.sort : 'default'} onChange={(e) => setFilters({ ...filters, sort: e.target.value, page: 1 })} className="w-full sm:w-auto bg-white border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2 outline-none">
                                 <option value="default" disabled>Select Price</option>
                                 <option value="priceAsc">Low to High</option>
                                 <option value="priceDesc">High to Low</option>
@@ -94,7 +104,7 @@ export default function VendorHomePage({ params }) {
                         </div>
                         <div className="flex items-center">
                             <label className="text-sm font-semibold text-gray-500 mr-3 hidden sm:block">A-Z Sort:</label>
-                            <select value={['nameAsc', 'nameDesc'].includes(filters.sort) ? filters.sort : 'default'} onChange={(e) => setFilters({ ...filters, sort: e.target.value })} className="w-full sm:w-auto bg-white border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2 outline-none">
+                            <select value={['nameAsc', 'nameDesc'].includes(filters.sort) ? filters.sort : 'default'} onChange={(e) => setFilters({ ...filters, sort: e.target.value, page: 1 })} className="w-full sm:w-auto bg-white border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2 outline-none">
                                 <option value="default" disabled>Select Name</option>
                                 <option value="nameAsc">A to Z</option>
                                 <option value="nameDesc">Z to A</option>
@@ -114,75 +124,111 @@ export default function VendorHomePage({ params }) {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                                {products?.map((product, index) => {
-                                    // ✨ Logic: Calculate active discount (Product override Shop)
-                                    const activeDiscount = product.discount > 0 ? product.discount : (shop?.storewideDiscount || 0);
-                                    const hasDiscount = activeDiscount > 0;
+                            {products?.length === 0 ? (
+                                <div className="text-center py-20">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">No products found</h3>
+                                    <p className="text-gray-500">Try adjusting your filters or search criteria.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                                    {products?.map((product, index) => {
+                                        const activeDiscount = product.discount > 0 ? product.discount : (shop?.storewideDiscount || 0);
+                                        const hasDiscount = activeDiscount > 0;
 
-                                    return (
-                                        <div
-                                            key={product._id}
-                                            className="group flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
-                                            style={{ animationDelay: `${(index % 16) * 50}ms` }}
-                                        >
-                                            <div className="aspect-square relative overflow-hidden bg-gray-50 rounded-2xl mb-6">
-                                                <Link href={`/products/${product._id}`} className="absolute inset-0 z-10" />
-                                                <img
-                                                    src={product.imageUrl || 'https://via.placeholder.com/400'}
-                                                    alt={product.title}
-                                                    className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105 mix-blend-multiply"
-                                                />
+                                        return (
+                                            <div
+                                                key={product._id}
+                                                className="group flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
+                                                style={{ animationDelay: `${(index % 16) * 50}ms` }}
+                                            >
+                                                <div className="aspect-square relative overflow-hidden bg-gray-50 rounded-2xl mb-6">
+                                                    <Link href={`/products/${product._id}`} className="absolute inset-0 z-10" />
+                                                    <img
+                                                        src={product.imageUrl || 'https://via.placeholder.com/400'}
+                                                        alt={product.title}
+                                                        className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105 mix-blend-multiply"
+                                                    />
 
-                                                {/* ✨ DISCOUNT BADGE ✨ */}
-                                                {hasDiscount && product.stock > 0 && (
-                                                    <div className="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest z-20 shadow-lg shadow-red-200">
-                                                        {activeDiscount}% OFF
-                                                    </div>
-                                                )}
+                                                    {hasDiscount && product.stock > 0 && (
+                                                        <div className="absolute top-4 right-4 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest z-20 shadow-lg shadow-red-200">
+                                                            {activeDiscount}% OFF
+                                                        </div>
+                                                    )}
 
-                                                {product.stock <= 0 && (
-                                                    <div className="absolute top-4 left-4 bg-white/90 backdrop-blur text-gray-900 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest z-20">
-                                                        Sold Out
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="flex flex-col flex-grow px-1">
-                                                <h3 className="text-base font-semibold text-gray-900 mb-1 leading-snug">
-                                                    <Link href={`/products/${product._id}`} className="hover:text-[var(--sf-accent)] transition-colors relative z-10">
-                                                        {product.title}
-                                                    </Link>
-                                                </h3>
-                                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">{product.category}</p>
-
-                                                {/* ✨ PRICING BLOCK ✨ */}
-                                                <div className="flex items-baseline gap-2 mb-6">
-                                                    <span className="text-xl font-black text-gray-900">৳ {product.finalPrice}</span>
-                                                    {hasDiscount && (
-                                                        <span className="text-sm text-gray-400 line-through font-medium">৳ {product.sellingPrice}</span>
+                                                    {product.stock <= 0 && (
+                                                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur text-gray-900 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest z-20">
+                                                            Sold Out
+                                                        </div>
                                                     )}
                                                 </div>
 
-                                                <div className="flex items-center gap-2 mt-auto relative z-20">
-                                                    <button onClick={(e) => { e.preventDefault(); addToCart(product); }} disabled={product.stock <= 0} className="p-3 border border-gray-200 rounded-xl text-gray-600 hover:border-[var(--sf-accent)] hover:text-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)] transition-all disabled:opacity-50">
-                                                        <ShoppingBag size={18} />
-                                                    </button>
-                                                    <button onClick={(e) => { e.preventDefault(); addToCart(product); router.push('/checkout'); }} disabled={product.stock <= 0} className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-[var(--sf-accent)] transition-colors disabled:bg-gray-300">
-                                                        <span>Buy Now</span>
-                                                        <ArrowRight size={16} />
-                                                    </button>
+                                                <div className="flex flex-col flex-grow px-1">
+                                                    <h3 className="text-base font-semibold text-gray-900 mb-1 leading-snug">
+                                                        <Link href={`/products/${product._id}`} className="hover:text-[var(--sf-accent)] transition-colors relative z-10">
+                                                            {product.title}
+                                                        </Link>
+                                                    </h3>
+                                                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">{product.category}</p>
+
+                                                    <div className="flex items-baseline gap-2 mb-6">
+                                                        <span className="text-xl font-black text-gray-900">৳ {product.finalPrice}</span>
+                                                        {hasDiscount && (
+                                                            <span className="text-sm text-gray-400 line-through font-medium">৳ {product.sellingPrice}</span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 mt-auto relative z-20">
+                                                        <button onClick={(e) => { e.preventDefault(); addToCart(product); }} disabled={product.stock <= 0} className="p-3 border border-gray-200 rounded-xl text-gray-600 hover:border-[var(--sf-accent)] hover:text-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)] transition-all disabled:opacity-50">
+                                                            <ShoppingBag size={18} />
+                                                        </button>
+                                                        <button onClick={(e) => { e.preventDefault(); addToCart(product); router.push('/checkout'); }} disabled={product.stock <= 0} className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white py-3 px-4 rounded-xl text-sm font-bold hover:bg-[var(--sf-accent)] transition-colors disabled:bg-gray-300">
+                                                            <span>Buy Now</span>
+                                                            <ArrowRight size={16} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
-                            {hasMore && (
-                                <div className="flex justify-center mt-20 mb-8">
-                                    <button onClick={loadMore} disabled={loadingMore} className="px-10 py-4 bg-white border-2 border-gray-200 text-gray-900 text-sm font-bold rounded-2xl hover:border-gray-900 transition-colors disabled:opacity-50">
-                                        {loadingMore ? 'Loading...' : 'Load More'}
+                            {/* ✨ PAGINATION CONTROLS ✨ */}
+                            {pagination?.pages > 1 && (
+                                <div className="flex items-center justify-center gap-2 mt-16 mb-8">
+                                    <button
+                                        onClick={() => handlePageChange(filters.page - 1)}
+                                        disabled={filters.page === 1}
+                                        className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(pagination.pages)].map((_, i) => {
+                                            const pageNumber = i + 1;
+                                            return (
+                                                <button
+                                                    key={pageNumber}
+                                                    onClick={() => handlePageChange(pageNumber)}
+                                                    className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                                                        filters.page === pageNumber
+                                                            ? 'bg-gray-900 text-white'
+                                                            : 'text-gray-600 hover:bg-gray-100'
+                                                    }`}
+                                                >
+                                                    {pageNumber}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <button
+                                        onClick={() => handlePageChange(filters.page + 1)}
+                                        disabled={filters.page === pagination.pages}
+                                        className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronRight size={20} />
                                     </button>
                                 </div>
                             )}

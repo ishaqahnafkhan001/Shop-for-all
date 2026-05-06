@@ -35,6 +35,7 @@ export default function ProductDetails({ params }) {
 
     const { addToCart } = useCart();
     const [product, setProduct] = useState(null);
+    const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -43,8 +44,9 @@ export default function ProductDetails({ params }) {
     const [selectedAttributes, setSelectedAttributes] = useState({});
 
     useEffect(() => {
-        const fetchProduct = async () => {
+        const fetchProductAndRelated = async () => {
             try {
+                // 1. Fetch Main Product
                 const { data } = await API.get(`/storefront/${subdomain}/products/${id}`);
                 const normalized = normalizeProduct(data);
                 setProduct(normalized);
@@ -58,6 +60,29 @@ export default function ProductDetails({ params }) {
                     });
                     setSelectedAttributes(initialAttrs);
                 }
+
+                // 2. Fetch Related Products (same category)
+                if (normalized.category) {
+                    try {
+                        const { data: relatedData } = await API.get(`/storefront/${subdomain}/products`, {
+                            params: { category: normalized.category }
+                        });
+
+                        // Handle standard API response structures (array directly, or inside 'data'/'products' property)
+                        const allProducts = Array.isArray(relatedData) ? relatedData : (relatedData.products || relatedData.data || []);
+
+                        // Filter to match category (just in case backend doesn't filter), exclude current product, and limit to 5
+                        const filteredRelated = allProducts
+                            .filter(p => p.category === normalized.category && p._id !== id)
+                            .map(normalizeProduct)
+                            .slice(0, 5);
+
+                        setRelatedProducts(filteredRelated);
+                    } catch (err) {
+                        console.error("Failed to fetch related products:", err);
+                    }
+                }
+
             } catch (err) {
                 setError(true);
             } finally {
@@ -65,7 +90,7 @@ export default function ProductDetails({ params }) {
             }
         };
 
-        if (id) fetchProduct();
+        if (id) fetchProductAndRelated();
     }, [id, subdomain]);
 
     // Group available attributes (e.g., all colors, all sizes)
@@ -79,7 +104,6 @@ export default function ProductDetails({ params }) {
                 attrs[attr.name].add(attr.value);
             });
         });
-        // Convert sets back to arrays for rendering
         return Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, Array.from(v)]));
     }, [product]);
 
@@ -136,12 +160,11 @@ export default function ProductDetails({ params }) {
             {/* Breadcrumb Navigation */}
             <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-[var(--sf-accent)] mb-8 transition">
                 <ArrowLeft size={16} className="mr-2" />
-                Back to {subdomain}&apos;s Shop
+                Back to Shop
             </Link>
 
             {/* Top Section: Images and Add to Cart */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-
                 {/* Left Column: Image Gallery */}
                 <div className="flex flex-col space-y-4">
                     <div className="bg-gray-50 rounded-3xl overflow-hidden border border-gray-100 aspect-square flex items-center justify-center p-8 relative">
@@ -162,7 +185,7 @@ export default function ProductDetails({ params }) {
                     </div>
                     {/* Thumbnails */}
                     {product.images.length > 1 && (
-                        <div className="flex space-x-4 overflow-x-auto py-2">
+                        <div className="flex space-x-4 overflow-x-auto py-2 scrollbar-hide">
                             {product.images.map((img, idx) => (
                                 <button
                                     key={idx}
@@ -267,16 +290,11 @@ export default function ProductDetails({ params }) {
 
             {/* Bottom Section: Features, Specifications, Comments */}
             <div className="mt-20 flex flex-col lg:flex-row gap-12 lg:gap-20 pt-16 border-t border-gray-200">
-
-                {/* Main Content Area: Features & Specs */}
                 <div className="flex-1 space-y-16">
-
                     {/* Features Section */}
                     {product.features?.length > 0 && (
                         <section>
-                            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 tracking-tight">
-                                Key Features
-                            </h2>
+                            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 tracking-tight">Key Features</h2>
                             <ul className="space-y-4">
                                 {product.features.map((feature, idx) => (
                                     <li key={idx} className="flex flex-col sm:flex-row sm:items-baseline group">
@@ -285,9 +303,7 @@ export default function ProductDetails({ params }) {
                                         </span>
                                         <div className="flex-1 flex items-center">
                                             <span className="hidden sm:inline-block w-4 border-b border-gray-300 mr-4 group-hover:border-[var(--sf-accent-muted)] transition-colors"></span>
-                                            <span className="text-base text-gray-600">
-                                                {feature.value}
-                                            </span>
+                                            <span className="text-base text-gray-600">{feature.value}</span>
                                         </div>
                                     </li>
                                 ))}
@@ -298,21 +314,14 @@ export default function ProductDetails({ params }) {
                     {/* Specifications Section */}
                     {product.specifications?.length > 0 && (
                         <section>
-                            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 tracking-tight">
-                                Specifications
-                            </h2>
+                            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 tracking-tight">Specifications</h2>
                             <dl className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
                                 {product.specifications.map((spec, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex flex-col sm:flex-row px-6 py-4 border-b border-gray-200/60 last:border-0 hover:bg-gray-100/50 transition-colors"
-                                    >
+                                    <div key={idx} className="flex flex-col sm:flex-row px-6 py-4 border-b border-gray-200/60 last:border-0 hover:bg-gray-100/50 transition-colors">
                                         <dt className="text-sm font-bold text-gray-800 sm:w-1/3 uppercase tracking-wider mb-1 sm:mb-0">
                                             {spec.title}
                                         </dt>
-                                        <dd className="text-base text-gray-700 sm:w-2/3">
-                                            {spec.value}
-                                        </dd>
+                                        <dd className="text-base text-gray-700 sm:w-2/3">{spec.value}</dd>
                                     </div>
                                 ))}
                             </dl>
@@ -334,9 +343,7 @@ export default function ProductDetails({ params }) {
                                         <strong className="block text-[var(--sf-accent-light)] font-bold mb-2 text-sm uppercase tracking-wide">
                                             {comment.title}
                                         </strong>
-                                        <span className="text-gray-300 text-sm leading-relaxed block">
-                                            {comment.value}
-                                        </span>
+                                        <span className="text-gray-300 text-sm leading-relaxed block">{comment.value}</span>
                                     </div>
                                 ))}
                             </div>
@@ -344,6 +351,58 @@ export default function ProductDetails({ params }) {
                     </div>
                 )}
             </div>
+
+            {/* ✨ NEW: Related Products Section ✨ */}
+            {relatedProducts.length > 0 && (
+                <div className="mt-24 pt-16 border-t border-gray-200">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">You May Also Like</h2>
+                    </div>
+
+                    {/* Horizontal Scroll Container */}
+                    <div
+                        className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} // Hides scrollbar on Firefox/IE
+                    >
+                        {/* Hides scrollbar on Chrome/Safari */}
+                        <style jsx>{`
+                            div::-webkit-scrollbar { display: none; }
+                        `}</style>
+
+                        {relatedProducts.map((item) => (
+                            <Link
+                                href={`/${subdomain}/product/${item._id}`}
+                                key={item._id}
+                                className="group w-64 flex-shrink-0 snap-start bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                            >
+                                <div className="aspect-square bg-gray-50 rounded-xl mb-4 overflow-hidden relative">
+                                    <img
+                                        src={item.images[0]}
+                                        alt={item.title}
+                                        className="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                    {item.discount > 0 && (
+                                        <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-md text-[10px] font-bold shadow-sm">
+                                            -{item.discount}%
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-gray-900 line-clamp-1 group-hover:text-[var(--sf-accent)] transition-colors">
+                                        {item.title}
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-bold text-[var(--sf-accent)]">৳ {item.finalPrice}</p>
+                                        {item.discount > 0 && (
+                                            <p className="text-xs text-gray-400 line-through">৳ {item.sellingPrice}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

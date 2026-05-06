@@ -23,62 +23,64 @@ export const useShopData = (subdomain, filters = {}) => {
     const [shop, setShop] = useState(null);
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
+    const buildParams = () => {
+        const params = {
+            page: filters.page || 1,
+            limit: 9, // You can set this back to 9 or whatever grid size you want
+        };
 
-    const buildQueryString = (pageToFetch) => {
-        let q = `?page=${pageToFetch}&limit=16`;
-        if (filters.category && filters.category !== 'All') q += `&category=${encodeURIComponent(filters.category)}`;
-        if (filters.minPrice) q += `&minPrice=${filters.minPrice}`;
-        if (filters.maxPrice) q += `&maxPrice=${filters.maxPrice}`;
-        // ✨ NEW: Add sort to the URL
-        if (filters.sort) q += `&sort=${filters.sort}`;
-        return q;
+        if (filters.category && filters.category !== 'All') params.category = filters.category;
+        if (filters.minPrice) params.minPrice = filters.minPrice;
+        if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+        if (filters.sort) params.sort = filters.sort;
+
+        return params;
     };
 
     useEffect(() => {
-        const getInitialData = async () => {
+        const fetchShopData = async () => {
             setLoading(true);
             try {
+                const shopPromise = shop
+                    ? Promise.resolve({ data: shop })
+                    : API.get(`/storefront/${subdomain}/info`);
+
                 const [shopRes, productsRes] = await Promise.all([
-                    API.get(`/storefront/${subdomain}/info`),
-                    API.get(`/storefront/${subdomain}/products${buildQueryString(1)}`),
+                    shopPromise,
+                    API.get(`/storefront/${subdomain}/products`, { params: buildParams() }),
                 ]);
 
-                const normalizedProducts = (productsRes.data?.products || []).map(normalizeProduct);
-                const derivedCategories = Array.from(new Set(normalizedProducts.map((item) => item.category).filter(Boolean)));
+                const rawProducts = productsRes.data?.data || productsRes.data?.products || [];
+                const normalizedProducts = rawProducts.map(normalizeProduct);
 
-                setShop(shopRes.data || null);
+                setShop(shopRes.data || shop);
                 setProducts(normalizedProducts);
-                setHasMore(false);
-                setCategories(derivedCategories);
-                setPage(1);
+
+                if (productsRes.data?.pagination) {
+                    setPagination(productsRes.data.pagination);
+                }
+
+                // ✨ THE FIX: Use the actual categories sent from the backend
+                if (productsRes.data?.categories) {
+                    // Filter out any null/empty strings just in case bad data exists in the DB
+                    const cleanCategories = productsRes.data.categories.filter(Boolean);
+                    setCategories(cleanCategories);
+                }
+
             } catch (err) {
                 setError("Shop not found");
+                console.error("Fetch Error:", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        if (subdomain) getInitialData();
-        // ✨ NEW: Tell useEffect to re-run whenever 'sort' changes
-    }, [subdomain, filters.category, filters.minPrice, filters.maxPrice, filters.sort]);
+        if (subdomain) fetchShopData();
+    }, [subdomain, filters.category, filters.minPrice, filters.maxPrice, filters.sort, filters.page]);
 
-    const loadMore = async () => {
-        if (loadingMore || !hasMore) return;
-        setLoadingMore(true);
-        try {
-            setHasMore(false);
-        } catch (err) {
-            console.error("Failed to load more products");
-        } finally {
-            setLoadingMore(false);
-        }
-    };
-
-    return { shop, products, categories, loading, error, hasMore, loadingMore, loadMore };
+    return { shop, products, categories, loading, error, pagination };
 };

@@ -33,7 +33,6 @@ export const CartProvider = ({ children, subdomain }) => {
     // --- CART ACTIONS --- //
 
     const addToCart = (product, quantity = 1) => {
-        // ✨ THE FIX: We trigger the Toast notifications OUTSIDE the state updater
         const isExisting = cartItems.some((item) => item._id === product._id);
 
         if (isExisting) {
@@ -42,7 +41,6 @@ export const CartProvider = ({ children, subdomain }) => {
             toast.success(`${product.title} added to cart!`);
         }
 
-        // ✨ We do the actual state update purely, with no side effects inside
         setCartItems((prev) => {
             if (prev.some((item) => item._id === product._id)) {
                 return prev.map((item) =>
@@ -56,7 +54,6 @@ export const CartProvider = ({ children, subdomain }) => {
     };
 
     const removeFromCart = (productId) => {
-        // Toasts are safe here because they aren't inside the setCartItems function
         toast.success("Item removed from cart");
         setCartItems((prev) => prev.filter((item) => item._id !== productId));
     };
@@ -78,7 +75,12 @@ export const CartProvider = ({ children, subdomain }) => {
     // --- DERIVED STATE (Calculated on the fly) --- //
 
     const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-    const cartTotal = cartItems.reduce((total, item) => total + (item.sellingPrice * item.quantity), 0);
+
+    // ✨ THE FIX: Check for finalPrice first, fallback to sellingPrice
+    const cartTotal = cartItems.reduce((total, item) => {
+        const activePrice = item.finalPrice || item.sellingPrice || 0;
+        return total + (activePrice * item.quantity);
+    }, 0);
 
     return (
         <CartContext.Provider
