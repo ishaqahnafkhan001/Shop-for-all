@@ -26,6 +26,18 @@ const shopSchema = new mongoose.Schema({
         default: 0, // 0 means no sale is active
         min: [0, 'Discount cannot be negative'],
         max: [100, 'Discount cannot exceed 100%']
+    },
+    // 🚚 NEW: Pathao Courier Integration
+    pathaoStoreId: {
+        type: Number,
+        default: null // Null means the vendor hasn't set up their Pathao shipping location yet
+    },
+    pathaoCredentials: {
+        client_id: { type: String, default: null },
+        client_secret: { type: String, default: null },
+        username: { type: String, default: null },
+        password: { type: String, default: null },
+        isLive: { type: Boolean, default: false } // True for Hermes (Live), False for Sandbox
     }
 }, { timestamps: true });
 

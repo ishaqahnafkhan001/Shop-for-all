@@ -1,9 +1,8 @@
 import {
     X, MapPin, User, Package, Calendar,
-    CreditCard, FileText, Truck, Tag, Receipt
+    CreditCard, FileText, Truck, Tag, Receipt, CheckCircle
 } from 'lucide-react';
 
-// Helper for Order Status Colors
 const getOrderStatusColor = (status) => {
     switch (status) {
         case 'Delivered': return 'bg-green-100 text-green-700';
@@ -16,7 +15,6 @@ const getOrderStatusColor = (status) => {
     }
 };
 
-// Helper for Payment Status Colors
 const getPaymentStatusColor = (status) => {
     switch (status) {
         case 'Paid': return 'text-green-600 bg-green-50';
@@ -44,8 +42,14 @@ const OrderDetailsModal = ({ order, onClose }) => {
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white z-10 rounded-t-2xl">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h2 className="text-2xl font-black text-gray-900">
+                            <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
                                 Order #{order._id.slice(-6).toUpperCase()}
+                                {/* Modal Header Green Checkmark */}
+                                {order.isPathaoSynced && (
+                                    <span title="Synced to Pathao" className="text-green-500 bg-green-50 rounded-full p-1">
+                                        <CheckCircle size={22} />
+                                    </span>
+                                )}
                             </h2>
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getOrderStatusColor(order.status)}`}>
                                 {order.status}
@@ -69,7 +73,6 @@ const OrderDetailsModal = ({ order, onClose }) => {
                 {/* --- BODY --- */}
                 <div className="p-6 overflow-y-auto space-y-6 bg-gray-50/50">
 
-                    {/* Info Grid: Customer, Shipping, Payment */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                         {/* Customer Info */}
@@ -96,11 +99,15 @@ const OrderDetailsModal = ({ order, onClose }) => {
                                     <p>{order.shipping.address.phone}</p>
                                     <p>{order.shipping.address.addressLine}, {order.shipping.address.city}</p>
 
-                                    {/* Courier Details if available */}
-                                    {(order.shipping.courier || order.shipping.trackingId) && (
-                                        <div className="mt-3 pt-3 border-t border-gray-50 space-y-1">
-                                            {order.shipping.courier && <p className="text-xs flex items-center text-gray-500"><Truck size={12} className="mr-1"/> {order.shipping.courier}</p>}
-                                            {order.shipping.trackingId && <p className="text-[10px] font-mono text-indigo-600 bg-indigo-50 inline-block px-1.5 py-0.5 rounded">Tracking: {order.shipping.trackingId}</p>}
+                                    {/* Courier Details & Pathao Consignment ID */}
+                                    {order.isPathaoSynced && order.pathaoConsignmentId && (
+                                        <div className="mt-3 pt-3 border-t border-gray-50 space-y-2">
+                                            <p className="text-xs flex items-center font-bold text-red-600">
+                                                <Truck size={14} className="mr-1.5"/> Pathao Courier
+                                            </p>
+                                            <p className="text-xs font-mono text-gray-600 bg-gray-50 inline-block px-2.5 py-1.5 rounded border border-gray-200">
+                                                ID: {order.pathaoConsignmentId}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -137,7 +144,6 @@ const OrderDetailsModal = ({ order, onClose }) => {
 
                     {/* Order Items & Financials Layout */}
                     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-
                         <div className="p-5 border-b border-gray-100 bg-gray-50/50">
                             <h3 className="text-sm font-bold text-gray-900 flex items-center">
                                 <Package size={16} className="mr-2 text-indigo-600" /> Items in Order
@@ -159,7 +165,6 @@ const OrderDetailsModal = ({ order, onClose }) => {
                                     <tr key={index} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-5 py-4">
                                             <p className="text-sm font-bold text-gray-900">{item.title}</p>
-                                            {/* Variant Attributes */}
                                             {item.attributes && item.attributes.length > 0 && (
                                                 <div className="flex gap-2 mt-1">
                                                     {item.attributes.map((attr, i) => (
@@ -171,15 +176,9 @@ const OrderDetailsModal = ({ order, onClose }) => {
                                             )}
                                             {item.sku && <p className="text-[10px] font-mono text-gray-400 mt-1.5 flex items-center"><Tag size={10} className="mr-1"/>{item.sku}</p>}
                                         </td>
-                                        <td className="px-5 py-4 text-sm font-bold text-gray-700 text-center">
-                                            x{item.quantity}
-                                        </td>
-                                        <td className="px-5 py-4 text-sm font-medium text-gray-600 text-right">
-                                            ৳ {item.price}
-                                        </td>
-                                        <td className="px-5 py-4 text-sm font-black text-gray-900 text-right">
-                                            ৳ {item.total}
-                                        </td>
+                                        <td className="px-5 py-4 text-sm font-bold text-gray-700 text-center">x{item.quantity}</td>
+                                        <td className="px-5 py-4 text-sm font-medium text-gray-600 text-right">৳ {item.price}</td>
+                                        <td className="px-5 py-4 text-sm font-black text-gray-900 text-right">৳ {item.total}</td>
                                     </tr>
                                 ))}
                                 </tbody>
@@ -217,7 +216,6 @@ const OrderDetailsModal = ({ order, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Order Notes */}
                     {order.notes && (
                         <div className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-100">
                             <h3 className="text-xs font-black text-yellow-800 uppercase tracking-wider mb-2 flex items-center">
@@ -229,7 +227,6 @@ const OrderDetailsModal = ({ order, onClose }) => {
 
                 </div>
 
-                {/* --- FOOTER --- */}
                 <div className="p-4 border-t border-gray-100 bg-white rounded-b-2xl flex justify-end">
                     <button
                         onClick={onClose}

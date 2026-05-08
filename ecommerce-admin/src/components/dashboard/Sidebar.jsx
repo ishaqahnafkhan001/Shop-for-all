@@ -6,7 +6,8 @@ import {
     Users,
     Settings,
     X,
-    Megaphone // Import the new icon
+    Megaphone,
+    Truck // 🚚 NEW: Import the Truck icon
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -15,8 +16,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Products', path: '/dashboard/products', icon: Package },
         { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
-        // Added the Promotional Banner link here
         { name: 'Promotional Banner', path: '/dashboard/promotions', icon: Megaphone },
+
+        // 🚚 NEW: Added the Shipping link here
+        { name: 'Shipping', path: '/dashboard/shipping', icon: Truck },
+
         { name: 'Settings', path: '/dashboard/settings', icon: Settings },
     ];
 

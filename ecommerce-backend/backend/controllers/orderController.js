@@ -5,43 +5,64 @@ const mongoose = require('mongoose');
 const { createOrderSchema, updateOrderStatusSchema } = require('../validations/orderValidation');
 const InventoryLog = require('../models/InventoryLog');
 const { getPathaoToken, createPathaoOrder } = require('../services/pathaoService');
+const Shop = require('../models/Shop'); // Make sure to import your Shop model
+
 
 
 exports.syncOrderToPathao = async (req, res) => {
     try {
         const { id } = req.params;
         const { recipient_name, recipient_phone, recipient_address, item_weight, amount_to_collect, special_instruction } = req.body;
-        const shopId = req.tenantId;
 
+        // 1. Identify the Vendor Shop
+        const shopId = req.tenantId;
+        const shop = await Shop.findById(shopId);
+
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+
+        if (!shop.pathaoStoreId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please set up your Pathao Store Location in your Shipping Settings first.'
+            });
+        }
+
+        // 2. Fetch the specific Order
         const order = await Order.findOne({ _id: id, shop_id: shopId, isDeleted: false });
         if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
         if (order.isPathaoSynced) return res.status(400).json({ success: false, error: 'Order already synced to Pathao' });
 
-        // Generate Pathao Sandbox Token
-        const token = await getPathaoToken();
+        // 3. Determine Credentials (BYOC or Platform Default)
+        const customCreds = shop.pathaoCredentials && shop.pathaoCredentials.client_id ? shop.pathaoCredentials : null;
 
-        // Prepare Pathao Payload
+        // Generate token using the appropriate credentials
+        const token = await getPathaoToken(customCreds);
+
+        // 4. Prepare the Pathao Payload
         const pathaoPayload = {
-            store_id: process.env.PATHAO_STORE_ID || 12345, // IMPORTANT: Put your Pathao Store ID here
+            store_id: shop.pathaoStoreId, // Vendor's specific physical location ID
             merchant_order_id: order._id.toString(),
             recipient_name,
             recipient_phone,
             recipient_address,
-            delivery_type: 48, // Normal Delivery
-            item_type: 2, // Parcel
+            delivery_type: 48, // 48 Hours Normal Delivery
+            item_type: 2,      // 2 = Parcel
             special_instruction: special_instruction || '',
             item_quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
             item_weight: item_weight || "0.5",
             amount_to_collect: amount_to_collect !== undefined ? amount_to_collect : (order.payment?.method === 'COD' ? order.pricing.total : 0)
         };
 
-        // Create Order in Pathao
-        const pathaoRes = await createPathaoOrder(token, pathaoPayload);
+        // 5. Create the Order in Pathao (Pass the isLive flag if they are using custom credentials)
+        const isLive = customCreds ? customCreds.isLive : false;
+        const pathaoRes = await createPathaoOrder(token, pathaoPayload, isLive);
 
+        // 6. Update Local Database on Success
         if (pathaoRes.type === 'success') {
             order.pathaoConsignmentId = pathaoRes.data.consignment_id;
             order.isPathaoSynced = true;
-            // Ensure status is at least confirmed
+
+            // Auto-update status to Confirmed if it was still Pending
             if (order.status === 'Pending') order.status = 'Confirmed';
             await order.save();
 
@@ -58,9 +79,7 @@ exports.syncOrderToPathao = async (req, res) => {
         console.error("Pathao Sync Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
-};
-
-exports.getMyOrders = async (req, res) => {
+};exports.getMyOrders = async (req, res) => {
     try {
         // req.user._id comes from your JWT auth middleware
         const customerId = req.user._id;

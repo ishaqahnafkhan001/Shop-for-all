@@ -4,14 +4,13 @@ import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
 import OrderDetailsModal from '../../../components/dashboard/OrderDetailsModal';
-import PathaoSyncModal from './PathaoSyncModal'; // We will create this below
+import PathaoSyncModal from './PathaoSyncModal';
 
 const OrderList = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
-    // Pathao Sync State
     const [pathaoModalOpen, setPathaoModalOpen] = useState(false);
     const [orderToSync, setOrderToSync] = useState(null);
 
@@ -29,15 +28,12 @@ const OrderList = () => {
         fetchOrders();
     }, []);
 
-    // Handles standard status changes (Pending, Processing, Delivered, etc.)
     const handleStatusChange = async (order, newStatus) => {
-        // Intercept 'Confirmed' status to open the Pathao modal
         if (newStatus === 'Confirmed' && !order.isPathaoSynced) {
             setOrderToSync(order);
             setPathaoModalOpen(true);
             return;
         }
-
         updateStatusInDB(order._id, newStatus);
     };
 
@@ -57,7 +53,6 @@ const OrderList = () => {
         setOrders(orders.map(o => o._id === updatedOrder._id ? updatedOrder : o));
     };
 
-    // Styling helpers
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Pending':    return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -142,7 +137,7 @@ const OrderList = () => {
     const renderActions = (row) => (
         <div className="flex items-center justify-end space-x-3">
 
-            {/* Show 'Send to Pathao' button if order is confirmed but NOT synced */}
+            {/* This ensures the button ONLY shows if the order is Confirmed AND NOT Synced */}
             {row.status === 'Confirmed' && !row.isPathaoSynced && (
                 <button
                     onClick={() => { setOrderToSync(row); setPathaoModalOpen(true); }}
@@ -192,7 +187,50 @@ const OrderList = () => {
                     <div className="hidden md:block">
                         <Table columns={columns} data={orders} actions={renderActions} />
                     </div>
-                    {/* ... (Mobile rendering logic remains the same, just update renderActions reference) ... */}
+
+                    <div className="md:hidden space-y-4">
+                        {orders.length === 0 ? (
+                            <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
+                                No orders yet. Time to do some marketing!
+                            </div>
+                        ) : (
+                            orders.map((order) => (
+                                <div key={order._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-sm font-bold text-indigo-600">
+                                                    #{order._id.slice(-6).toUpperCase()}
+                                                </span>
+                                                {/* Mobile Pathao Green Checkmark */}
+                                                {order.isPathaoSynced && (
+                                                    <span title="Synced to Pathao" className="text-green-500 bg-green-50 rounded-full p-0.5">
+                                                        <CheckCircle size={16} />
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-bold text-gray-900 mt-1">{order.customer?.fullName}</p>
+                                            <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString('en-GB')}</p>
+                                        </div>
+                                        <span className={`flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getStatusStyle(order.status)}`}>
+                                            {getStatusIcon(order.status)}
+                                            {order.status}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                                        <div>
+                                            <p className="text-xs text-gray-500 uppercase tracking-wider">Total</p>
+                                            <p className="font-bold text-gray-900 text-lg">৳ {order.pricing?.total}</p>
+                                        </div>
+                                        <div className="flex flex-col items-end space-y-2">
+                                            {renderActions(order)}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </>
             )}
 
@@ -201,7 +239,6 @@ const OrderList = () => {
                 onClose={() => setSelectedOrder(null)}
             />
 
-            {/* Pathao Confirmation Modal */}
             <PathaoSyncModal
                 isOpen={pathaoModalOpen}
                 onClose={() => setPathaoModalOpen(false)}

@@ -13,9 +13,9 @@ import ProductList from './pages/dashboard/products/ProductList';
 import AddProduct from './pages/dashboard/products/AddProduct';
 import OrderList from './pages/dashboard/orders/OrderList';
 import ShopSettings from './pages/dashboard/settings/ShopSettings';
+import ShippingSettings from './pages/dashboard/ShippingSettings/ShippingSettings.jsx'; // 🚚 NEW: Import Shipping Settings
 import EditProduct from './pages/dashboard/products/EditProduct';
 import CustomerList from "./pages/dashboard/customers/CustomerList.jsx";
-// 1. Import the new Promotional Banner component
 import PromotionalBanner from './pages/dashboard/Promotional Banner/promotionalBanner.jsx';
 
 function App() {
@@ -37,11 +37,12 @@ function App() {
                     <Route path="products/add" element={<AddProduct />} />
                     <Route path="products/edit/:id" element={<EditProduct />} />
                     <Route path="orders" element={<OrderList />} />
-
-                    {/* 2. Added the Promotional Banner Route */}
                     <Route path="promotions" element={<PromotionalBanner />} />
-
                     <Route path="customers" element={<CustomerList />} />
+
+                    {/* 🚚 NEW: Added Shipping Settings Route */}
+                    <Route path="shipping" element={<ShippingSettings />} />
+
                     <Route path="settings" element={<ShopSettings />} />
                 </Route>
 

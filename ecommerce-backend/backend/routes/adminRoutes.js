@@ -19,7 +19,7 @@ const {
     getShopOrders,
     updateOrderStatus,
     getDashboardStats,
-    getRevenueAnalytics,
+
     syncOrderToPathao
 } = require('../controllers/orderController');
 
@@ -31,8 +31,23 @@ const {
 } = require('../controllers/userController');
 
 
-// --- PRODUCT MANAGEMENT ---
+const {
+    setupVendorPathaoStore,
+    getCities,
+    getZones,
+    getAreas,
+    linkExistingPathaoAccount
+} = require('../controllers/storeController');
 
+
+router.post('/settings/pathao-link', protect, authorize('VendorAdmin'), linkExistingPathaoAccount);
+// Location Dropdown Routes (Used by the frontend form)
+router.get('/pathao/cities', protect, authorize('VendorAdmin'), getCities);
+router.get('/pathao/cities/:cityId/zones', protect, authorize('VendorAdmin'), getZones);
+router.get('/pathao/zones/:zoneId/areas', protect, authorize('VendorAdmin'), getAreas);
+
+// Create Store Route (From our previous conversation)
+router.post('/settings/pathao-store', protect, authorize('VendorAdmin'), setupVendorPathaoStore);
 
 router.post('/generate-description', generateDescription);
 
@@ -43,7 +58,7 @@ router.get(
     getShopProducts
 );
 
-router.post('/:id/pathao', protect, authorize('VendorAdmin', 'VendorStaff'), syncOrderToPathao)
+router.post('/orders/:id/pathao', protect, authorize('VendorAdmin', 'VendorStaff'), syncOrderToPathao)
 
 router.post(
     '/products',
