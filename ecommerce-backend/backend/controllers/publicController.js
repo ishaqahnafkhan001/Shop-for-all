@@ -256,23 +256,23 @@ exports.getPublicProduct = async (req, res) => {
     }
 };
 
-exports.getMyOrders = async (req, res) => {
-    try {
-        const customerId = req.user.id || req.user.userId;
-
-        // ✨ ADD THESE LOGS
-        console.log("🔍 Search requested by Customer ID:", customerId);
-
-        const orders = await Order.find({ customer: customerId })
-            .sort({ createdAt: -1 });
-
-        console.log(`📦 Found ${orders.length} orders for this ID.`);
-        res.status(200).json(orders);
-    } catch (err) {
-        console.error("Fetch Orders Error:", err);
-        res.status(500).json({ error: "Failed to fetch order history." });
-    }
-};
+// exports.getMyOrders = async (req, res) => {
+//     try {
+//         const customerId = req.user.id || req.user.userId;
+//
+//         // ✨ ADD THESE LOGS
+//         console.log("🔍 Search requested by Customer ID:", customerId);
+//
+//         const orders = await Order.find({ customer: customerId })
+//             .sort({ createdAt: -1 });
+//
+//         console.log(`📦 Found ${orders.length} orders for this ID.`);
+//         res.status(200).json(orders);
+//     } catch (err) {
+//         console.error("Fetch Orders Error:", err);
+//         res.status(500).json({ error: "Failed to fetch order history." });
+//     }
+// };
 
 // Add this to your public controller
 exports.trackPublicOrder = async (req, res) => {

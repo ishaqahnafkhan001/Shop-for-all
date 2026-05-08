@@ -4,13 +4,122 @@ const User = require('../models/User');
 const mongoose = require('mongoose');
 const { createOrderSchema, updateOrderStatusSchema } = require('../validations/orderValidation');
 const InventoryLog = require('../models/InventoryLog');
+const { getPathaoToken, createPathaoOrder } = require('../services/pathaoService');
 
 
-/**
- * @desc    Create a new order (Storefront)
- * @route   POST /api/orders
- * @access  Private (Customer)
- */
+exports.syncOrderToPathao = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { recipient_name, recipient_phone, recipient_address, item_weight, amount_to_collect, special_instruction } = req.body;
+        const shopId = req.tenantId;
+
+        const order = await Order.findOne({ _id: id, shop_id: shopId, isDeleted: false });
+        if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+        if (order.isPathaoSynced) return res.status(400).json({ success: false, error: 'Order already synced to Pathao' });
+
+        // Generate Pathao Sandbox Token
+        const token = await getPathaoToken();
+
+        // Prepare Pathao Payload
+        const pathaoPayload = {
+            store_id: process.env.PATHAO_STORE_ID || 12345, // IMPORTANT: Put your Pathao Store ID here
+            merchant_order_id: order._id.toString(),
+            recipient_name,
+            recipient_phone,
+            recipient_address,
+            delivery_type: 48, // Normal Delivery
+            item_type: 2, // Parcel
+            special_instruction: special_instruction || '',
+            item_quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
+            item_weight: item_weight || "0.5",
+            amount_to_collect: amount_to_collect !== undefined ? amount_to_collect : (order.payment?.method === 'COD' ? order.pricing.total : 0)
+        };
+
+        // Create Order in Pathao
+        const pathaoRes = await createPathaoOrder(token, pathaoPayload);
+
+        if (pathaoRes.type === 'success') {
+            order.pathaoConsignmentId = pathaoRes.data.consignment_id;
+            order.isPathaoSynced = true;
+            // Ensure status is at least confirmed
+            if (order.status === 'Pending') order.status = 'Confirmed';
+            await order.save();
+
+            return res.status(200).json({
+                success: true,
+                data: order,
+                message: 'Successfully synced to Pathao!'
+            });
+        } else {
+            throw new Error('Pathao sync failed');
+        }
+
+    } catch (err) {
+        console.error("Pathao Sync Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+exports.getMyOrders = async (req, res) => {
+    try {
+        // req.user._id comes from your JWT auth middleware
+        const customerId = req.user._id;
+
+        // Find all orders for this customer, sorted by newest first
+        const orders = await Order.find({
+            customer: customerId
+            // If you want to strictly tie it to the current shop, add:
+            // shop_id: req.tenant._id
+        })
+            .sort({ createdAt: -1 }); // -1 means descending (newest at the top)
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            data: orders
+        });
+    } catch (error) {
+        console.error("Error fetching customer orders:", error);
+        res.status(500).json({
+            success: false,
+            error: 'Could not fetch orders at this time.'
+        });
+    }
+};
+
+// @desc    Get a single order by its ID (for the invoice view)
+// @route   GET /api/v1/storefront/:subdomain/my-orders/:orderId
+// @access  Private (Customer only)
+exports.getOrderById = async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const customerId = req.user._id;
+
+        const order = await Order.findOne({
+            _id: orderId,
+            customer: customerId // Security check: Ensure they own this order!
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                error: 'Order not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: order
+        });
+    } catch (error) {
+        console.error("Error fetching single order:", error);
+        res.status(500).json({
+            success: false,
+            error: 'Could not fetch order details.'
+        });
+    }
+};
+
 exports.createOrder = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();

@@ -31,7 +31,8 @@ const shopRegistrationSchema = Joi.object({
     // We include password and email here because they usually come in the same registration request
     email: Joi.string().email().required(),
     password: Joi.string().min(6).required(),
-    fullName: Joi.string().required()
+    fullName: Joi.string().required(),
+    otp: Joi.string().length(6).required()
 });
 
 module.exports = { shopRegistrationSchema };

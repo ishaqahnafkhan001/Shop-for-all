@@ -1,4 +1,3 @@
-// config/cloudinary.js
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
@@ -13,10 +12,20 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'shop_products',
-        // 🚨 CRITICAL: 'auto' allows both images and videos to be uploaded
         resource_type: 'auto',
-        // Add video formats like mp4, mov, or webm
         allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov'],
+
+        // 👇 ADD THIS TRANSFORMATION BLOCK 👇
+        transformation: [
+            // 1. Resize massive images: 'limit' only shrinks images larger than 1200px, ignores smaller ones
+            { width: 1200, height: 1200, crop: 'limit' },
+
+            // 2. The Magic: 'auto' tells Cloudinary's AI to compress as much as possible without visible loss
+            { quality: 'auto' },
+
+            // 3. (Optional but recommended) Automatically convert heavy PNGs/JPGs to lightweight WebP
+            { fetch_format: 'auto' }
+        ]
     },
 });
 

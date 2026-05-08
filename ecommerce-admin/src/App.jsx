@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast'; // For clean error/success popups
+import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 
 // Layouts
@@ -15,6 +15,8 @@ import OrderList from './pages/dashboard/orders/OrderList';
 import ShopSettings from './pages/dashboard/settings/ShopSettings';
 import EditProduct from './pages/dashboard/products/EditProduct';
 import CustomerList from "./pages/dashboard/customers/CustomerList.jsx";
+// 1. Import the new Promotional Banner component
+import PromotionalBanner from './pages/dashboard/Promotional Banner/promotionalBanner.jsx';
 
 function App() {
     const { user, loading } = useAuth();
@@ -36,10 +38,10 @@ function App() {
                     <Route path="products/edit/:id" element={<EditProduct />} />
                     <Route path="orders" element={<OrderList />} />
 
-                    {/* Add the new route here! */}
+                    {/* 2. Added the Promotional Banner Route */}
+                    <Route path="promotions" element={<PromotionalBanner />} />
 
                     <Route path="customers" element={<CustomerList />} />
-
                     <Route path="settings" element={<ShopSettings />} />
                 </Route>
 

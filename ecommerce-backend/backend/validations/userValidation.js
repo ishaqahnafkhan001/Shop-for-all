@@ -31,7 +31,15 @@ const baseUserObj = {
 
     role: Joi.string()
         .valid('VendorAdmin', 'VendorStaff', 'Customer')
-        .default('Customer')
+        .default('Customer'),
+
+    orders: Joi.array().items(
+        Joi.string().hex().length(24).messages({
+            'string.length': 'Invalid Order ID format',
+            'string.hex': 'Order ID must be a valid hex string'
+        })
+    ).optional()
+
 };
 
 // 🔥 Schema for public customer registration (Requires subdomain)
@@ -39,7 +47,8 @@ const registerCustomerSchema = Joi.object({
     ...baseUserObj,
     subdomain: Joi.string().required().messages({
         'any.required': 'Subdomain context is missing for customer registration'
-    })
+    }),
+    otp: Joi.string().length(6).required()
 }).required();
 
 // 🔥 Schema for an Admin creating a Staff member (Does NOT require subdomain, accepts shop_id)

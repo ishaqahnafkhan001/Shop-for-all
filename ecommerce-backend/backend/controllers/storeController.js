@@ -20,6 +20,9 @@ exports.getStoreInfo = async (req, res) => {
     }
 };
 
+
+
+
 /**
  * @desc    Get all products for a specific storefront
  * @route   GET /api/storefront/:subdomain/products

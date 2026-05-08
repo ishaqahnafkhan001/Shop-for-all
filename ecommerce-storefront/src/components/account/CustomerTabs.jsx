@@ -13,17 +13,31 @@ export function OrderHistoryTab({ orders }) {
             ) : (
                 <div className="space-y-4">
                     {orders.map(order => (
-                        <div key={order._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-gray-200 rounded-2xl gap-4 hover:border-gray-300 transition-colors">
+                        <div key={order._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-gray-200 rounded-2xl gap-4 hover:border-gray-300 transition-colors bg-white">
                             <div>
-                                <p className="font-bold text-gray-900">Order #{order._id.slice(-6).toUpperCase()}</p>
-                                <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <p className="font-bold text-gray-900">Order #{order._id.slice(-6).toUpperCase()}</p>
+                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+                                        {new Date(order.createdAt).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                {/* Show the first item they bought, and note if there are more */}
+                                <p className="text-sm text-gray-500">
+                                    {order.items[0]?.title}
+                                    {order.items.length > 1 && <span className="italic"> + {order.items.length - 1} more item(s)</span>}
+                                </p>
                             </div>
-                            <div className="flex items-center gap-6">
+
+                            <div className="flex items-center gap-6 sm:justify-end">
                                 <div className="text-right">
-                                    <p className="font-bold text-gray-900">৳{order.totalAmount}</p>
-                                    <span className={`text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wider ${order.status === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
-                                        order.status === 'Shipped' ? 'bg-blue-50 text-blue-600' :
-                                            'bg-green-50 text-green-600'
+                                    {/* Updated to use your exact JSON structure: order.pricing.total */}
+                                    <p className="font-bold text-gray-900 text-lg mb-1">৳{order.pricing.total}</p>
+
+                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
+                                        order.status === 'Pending' ? 'bg-yellow-50 text-yellow-600 border border-yellow-100' :
+                                            order.status === 'Shipped' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                                                order.status === 'Delivered' ? 'bg-green-50 text-green-600 border border-green-100' :
+                                                    'bg-gray-50 text-gray-600'
                                     }`}>
                                         {order.status}
                                     </span>

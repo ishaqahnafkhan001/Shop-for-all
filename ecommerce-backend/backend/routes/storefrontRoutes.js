@@ -10,9 +10,9 @@ const {
     getStoreProducts,
     getSingleProduct
 } = require('../controllers/storeController');
-const { createOrder } = require('../controllers/orderController');
+const { getMyOrders,getOrderById,createOrder } = require('../controllers/orderController');
 // Import the missing features you need from the old public controller
-const { getMyOrders, trackPublicOrder } = require('../controllers/publicController');
+const {  trackPublicOrder } = require('../controllers/publicController');
 const { getShopProducts } = require('../controllers/productController');
 
 router.get('/:subdomain/info', resolveTenant, getStoreInfo);
@@ -23,5 +23,11 @@ router.post('/:subdomain/orders', resolveTenant, protect, createOrder);
 // Added from the old public routes
 router.get('/:subdomain/track-order/:orderId', resolveTenant, trackPublicOrder);
 router.get('/:subdomain/my-orders', resolveTenant, protect, getMyOrders);
+
+
+router.get('/my-orders', resolveTenant, protect, getMyOrders);
+
+router.get('/my-orders/:orderId', resolveTenant, protect, getOrderById);
+
 
 module.exports = router;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import API from '../api/api';
 
 const normalizeProduct = (p) => {
@@ -20,12 +20,13 @@ export const useShopData = (subdomain, filters) => {
         shop: null,
         products: [],
         categories: [],
+        banners: [], // ✨ 1. Added banners to the initial state
         pagination: { page: 1, pages: 1, total: 0 },
         loading: true,
         error: null
     });
 
-    // Use a ref to prevent unnecessary fetches if filters haven't actually changed
+    // Use a stringified key to prevent unnecessary fetches if filters haven't actually changed
     const filterKey = JSON.stringify(filters);
 
     useEffect(() => {
@@ -43,33 +44,43 @@ export const useShopData = (subdomain, filters) => {
                     ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
                 };
 
-                const [shopRes, prodRes] = await Promise.all([
+                // ✨ 2. Fetch Shop, Products, and Banners concurrently
+                const [shopRes, prodRes, bannersRes] = await Promise.all([
                     API.get(`/storefront/${subdomain}/info`),
-                    API.get(`/storefront/${subdomain}/products`, { params })
+                    API.get(`/storefront/${subdomain}/products`, { params }),
+                    // 🛡️ Safe fallback: If banners fail, return empty array so it doesn't break the whole store
+                    API.get(`/banners/storefront/${subdomain}/active`).catch(() => ({ data: [] }))
                 ]);
 
                 if (!isMounted) return;
 
                 const prodData = prodRes.data;
-                // Handle different possible API response structures
                 const rawProducts = prodData?.products || prodData?.data || [];
+
+                // ✨ 3. Safely extract banner data
+                const bannerData = Array.isArray(bannersRes.data)
+                    ? bannersRes.data
+                    : bannersRes.data?.data || [];
 
                 setData({
                     shop: shopRes.data,
                     products: rawProducts.map(normalizeProduct),
                     categories: prodData?.categories?.filter(Boolean) || [],
+                    banners: bannerData, // ✨ 4. Populate banners in state
                     pagination: prodData?.pagination || { page: 1, pages: 1 },
                     loading: false,
                     error: null
                 });
             } catch (err) {
+                console.error("Storefront Fetch Error:", err);
                 if (isMounted) setData(prev => ({ ...prev, loading: false, error: "Store not found" }));
             }
         };
 
         if (subdomain) fetchData();
+
         return () => { isMounted = false; };
     }, [subdomain, filterKey]);
 
-    return data;
+    return data; // Returns { shop, products, categories, banners, pagination, loading, error }
 };

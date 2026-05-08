@@ -10,5 +10,5 @@ router.get('/products/:id', getPublicProduct);
 // Add this line to your public routes
 router.get('/track-order/:orderId', trackPublicOrder);
 router.post('/orders', createPublicOrder);
-router.get('/my-orders', protect,getMyOrders);
+// router.get('/my-orders', protect,getMyOrders);
 module.exports = router;

@@ -19,7 +19,8 @@ const {
     getShopOrders,
     updateOrderStatus,
     getDashboardStats,
-    getRevenueAnalytics
+    getRevenueAnalytics,
+    syncOrderToPathao
 } = require('../controllers/orderController');
 
 const {
@@ -41,6 +42,8 @@ router.get(
     authorize('VendorAdmin', 'VendorStaff'),
     getShopProducts
 );
+
+router.post('/:id/pathao', protect, authorize('VendorAdmin', 'VendorStaff'), syncOrderToPathao)
 
 router.post(
     '/products',

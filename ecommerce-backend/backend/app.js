@@ -14,6 +14,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const storefrontRoutes = require('./routes/storefrontRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const inventory = require('./routes/inventory');
+const bannerRoutes = require('./routes/bannerRoutes');
+
 
 
 // 1. Initialize Database
@@ -60,7 +62,7 @@ app.use('/api/admin', adminRoutes);         // Product & Staff management (Prote
 app.use('/api/storefront', storefrontRoutes); // Public Storefront data (Subdomain-based)
 app.use('/api/public', publicRoutes);
 app.use('/api/admin/inventory', inventory);
-
+app.use('/api/banners', bannerRoutes);
 
 // 4. Base Health Check Route
 app.get('/', (req, res) => {

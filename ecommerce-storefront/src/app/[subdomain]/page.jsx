@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShopData } from '@/hooks/useShopData';
 import { useCart } from '@/context/CartContext';
 import { ShoppingCart, PackageX, ShoppingBag, ArrowRight, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -11,21 +11,50 @@ export default function VendorHomePage({ params }) {
     const { addToCart } = useCart();
     const router = useRouter();
 
-    // ✨ Added page to filters, default to 1
+    // Filters and pagination state
     const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', sort: 'newest', page: 1 });
     const [priceInput, setPriceInput] = useState({ min: '', max: '' });
 
-    // ✨ Expecting pagination object from your custom hook instead of loadMore/hasMore
-    const { shop, products, categories, loading, error, pagination } = useShopData(subdomain, filters);
+    // Slider state
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    const { shop, products, categories, banners, loading, error, pagination } = useShopData(subdomain, filters);
+
+    // Safe access to active banners
+    const activeBanners = banners || shop?.banners || [];
+
+    // ✨ NEW LOGIC: Flatten all images from all banners into a single array of slides
+    const allSlides = activeBanners.flatMap((banner) => {
+        // Fallback to support both string 'image' or array 'images'
+        const imagesToUse = banner.images && banner.images.length > 0
+            ? banner.images
+            : (banner.image ? [banner.image] : []);
+
+        return imagesToUse.map((imgUrl, index) => ({
+            id: `${banner._id || 'banner'}-${index}`, // Unique key for React
+            imgUrl,
+            title: banner.title,
+            link: banner.link
+        }));
+    });
+
+    // ✨ Auto-slider effect: Changes slide every 2 seconds through ALL images
+    useEffect(() => {
+        if (allSlides.length <= 1) return; // No need to slide if 0 or 1 total image
+
+        const timer = setInterval(() => {
+            setCurrentSlide((prevSlide) => (prevSlide + 1) % allSlides.length);
+        }, 3000); // 2000ms = 2 seconds
+
+        return () => clearInterval(timer);
+    }, [allSlides.length]);
 
     const handlePriceApply = () => {
-        // Reset to page 1 when applying new filters
         setFilters({ ...filters, minPrice: priceInput.min, maxPrice: priceInput.max, page: 1 });
     };
 
     const handlePageChange = (newPage) => {
         setFilters({ ...filters, page: newPage });
-        // Scroll to top of product grid smoothly
         window.scrollTo({ top: 300, behavior: 'smooth' });
     };
 
@@ -40,23 +69,76 @@ export default function VendorHomePage({ params }) {
     return (
         <div className="container mx-auto px-4 py-8 sm:px-6 mb-24 max-w-7xl">
 
-            {/* HERO SECTION */}
-            <section className="relative bg-gray-900 text-white rounded-[2rem] py-16 px-6 md:py-24 mb-12 overflow-hidden flex flex-col items-center text-center shadow-xl shadow-gray-900/10">
-                <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                <div className="relative z-10 max-w-3xl">
-                    <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 capitalize">
-                        {shop?.shopName || subdomain}
-                    </h1>
-                    {shop?.storewideDiscount > 0 && (
-                        <div className="mb-6 inline-block bg-[var(--sf-accent)] text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest animate-bounce">
-                            🔥 {shop.storewideDiscount}% Storewide Sale Active!
+            {/* ✨ HERO SECTION WITH FLATTENED MULTI-IMAGE SLIDER ✨ */}
+            {allSlides.length > 0 ? (
+                <section className="relative w-full h-[350px] md:h-[500px] rounded-[2rem] overflow-hidden mb-12 shadow-xl group">
+                    {allSlides.map((slide, index) => (
+                        <div
+                            key={slide.id}
+                            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                                index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                            }`}
+                        >
+                            <img
+                                src={slide.imgUrl}
+                                alt={slide.title || 'Promotional Banner'}
+                                className="w-full h-full object-cover"
+                            />
+                            {/* Dark overlay to make text pop */}
+                            {/*<div className="absolute inset-0 bg-black/30"></div>*/}
+
+                            {/* Banner Content overlay */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                                {/*<h2 className="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg tracking-tight">*/}
+                                {/*    {slide.title}*/}
+                                {/*</h2>*/}
+                                {slide.link && (
+                                    <Link
+                                        href={slide.link}
+                                        className="bg-white text-gray-900 px-8 py-3 rounded-full font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg"
+                                    >
+                                        Shop Now
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* Navigation Dots */}
+                    {allSlides.length > 1 && (
+                        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+                            {allSlides.map((_, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setCurrentSlide(index)}
+                                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                                        index === currentSlide ? 'bg-white w-8' : 'bg-white/50 w-2.5 hover:bg-white/80'
+                                    }`}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                />
+                            ))}
                         </div>
                     )}
-                    <p className="text-gray-400 text-lg md:text-xl font-light">
-                        {shop?.description || "Curated essentials for the modern lifestyle. Discover the latest collection."}
-                    </p>
-                </div>
-            </section>
+                </section>
+            ) : (
+                // Fallback Original Hero Section
+                <section className="relative bg-gray-900 text-white rounded-[2rem] py-16 px-6 md:py-24 mb-12 overflow-hidden flex flex-col items-center text-center shadow-xl shadow-gray-900/10">
+                    <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                    <div className="relative z-10 max-w-3xl">
+                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 capitalize">
+                            {shop?.shopName || subdomain}
+                        </h1>
+                        {shop?.storewideDiscount > 0 && (
+                            <div className="mb-6 inline-block bg-[var(--sf-accent)] text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest animate-bounce">
+                                🔥 {shop.storewideDiscount}% Storewide Sale Active!
+                            </div>
+                        )}
+                        <p className="text-gray-400 text-lg md:text-xl font-light">
+                            {shop?.description || "Curated essentials for the modern lifestyle. Discover the latest collection."}
+                        </p>
+                    </div>
+                </section>
+            )}
 
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
                 {/* ⬅️ SIDEBAR */}
@@ -70,7 +152,6 @@ export default function VendorHomePage({ params }) {
                         <div className="mb-8">
                             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Categories</h3>
                             <div className="flex flex-col gap-2">
-                                {/* Reset to page 1 on category change */}
                                 <button onClick={() => setFilters({ ...filters, category: 'All', page: 1 })} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${filters.category === 'All' ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>All Products</button>
                                 {categories?.map(cat => (
                                     <button key={cat} onClick={() => setFilters({ ...filters, category: cat, page: 1 })} className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${filters.category === cat ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'}`}>{cat}</button>
@@ -93,7 +174,6 @@ export default function VendorHomePage({ params }) {
                 {/* ➡️ PRODUCT GRID */}
                 <main className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 bg-gray-50 border border-gray-100 p-3 rounded-2xl">
-                        {/* Reset to page 1 on sort change */}
                         <div className="flex items-center">
                             <label className="text-sm font-semibold text-gray-500 mr-3 hidden sm:block">Price Sort:</label>
                             <select value={['priceAsc', 'priceDesc'].includes(filters.sort) ? filters.sort : 'default'} onChange={(e) => setFilters({ ...filters, sort: e.target.value, page: 1 })} className="w-full sm:w-auto bg-white border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2 outline-none">
