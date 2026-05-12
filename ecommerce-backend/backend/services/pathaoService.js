@@ -44,7 +44,7 @@ exports.createPathaoOrder = async (token, payload, isLive = false) => {
 };
 exports.getPathaoStores = async (token) => {
     try {
-        const { data } = await axios.get(`${PATHAO_BASE_URL}/aladdin/api/v1/stores`, {
+        const { data } = await axios.get(`${process.env.PATHAO_BASE_URL}/aladdin/api/v1/stores`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -60,7 +60,7 @@ exports.getPathaoStores = async (token) => {
 
 exports.getPathaoCities = async (token) => {
     try {
-        const { data } = await axios.get(`${PATHAO_BASE_URL}/aladdin/api/v1/city-list`, {
+        const { data } = await axios.get(`${process.env.PATHAO_BASE_URL}/aladdin/api/v1/city-list`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         // Safely extract the array no matter how Pathao wraps it
@@ -73,7 +73,7 @@ exports.getPathaoCities = async (token) => {
 
 exports.getPathaoZones = async (token, cityId) => {
     try {
-        const { data } = await axios.get(`${PATHAO_BASE_URL}/aladdin/api/v1/cities/${cityId}/zone-list`, {
+        const { data } = await axios.get(`${process.env.PATHAO_BASE_URL}/aladdin/api/v1/cities/${cityId}/zone-list`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return data?.data?.data || data?.data || [];
@@ -85,7 +85,7 @@ exports.getPathaoZones = async (token, cityId) => {
 
 exports.getPathaoAreas = async (token, zoneId) => {
     try {
-        const { data } = await axios.get(`${PATHAO_BASE_URL}/aladdin/api/v1/zones/${zoneId}/area-list`, {
+        const { data } = await axios.get(`${process.env.PATHAO_BASE_URL}/aladdin/api/v1/zones/${zoneId}/area-list`, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -111,7 +111,7 @@ exports.getPathaoAreas = async (token, zoneId) => {
 
 exports.createPathaoStore = async (token, payload) => {
     try {
-        const { data } = await axios.post(`${PATHAO_BASE_URL}/aladdin/api/v1/stores`, payload, {
+        const { data } = await axios.post(`${process.env.PATHAO_BASE_URL}/aladdin/api/v1/stores`, payload, {
             headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'

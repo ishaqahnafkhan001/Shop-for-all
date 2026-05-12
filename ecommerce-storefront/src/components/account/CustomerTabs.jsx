@@ -1,6 +1,9 @@
+"use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronUp, Package, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp, Package, ExternalLink, Lock } from 'lucide-react';
+import API from '@/api/api'; // Added API import for password reset
+import { toast } from 'react-hot-toast'; // Added toast for notifications
 
 export function OrderHistoryTab({ orders, subdomain = "" }) {
     // State to track which order is currently expanded
@@ -19,10 +22,10 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
             <h2 className="text-xl font-bold text-gray-900 mb-6">Order History</h2>
 
             {orders.length === 0 ? (
-                <div className="text-center py-10 bg-gray-50 rounded-2xl">
+                <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                     <Package size={48} className="mx-auto text-gray-300 mb-4" />
                     <p className="text-gray-500 mb-4">You haven't placed any orders yet.</p>
-                    <Link href="/" className="text-gray-900 font-bold underline hover:text-[var(--sf-accent,blue-600)] transition-colors">
+                    <Link href="/" className="text-[var(--sf-accent,blue-600)] font-bold underline hover:opacity-80 transition-opacity">
                         Start Shopping
                     </Link>
                 </div>
@@ -78,7 +81,6 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Order Items</h4>
                                         <div className="space-y-4">
                                             {order.items.map((item, index) => {
-
                                                 const productId = item.productId || item.product?._id || item.product || item._id;
                                                 const productUrl = subdomain ? `/${subdomain}/products/${productId}` : `/products/${productId}`;
 
@@ -161,38 +163,90 @@ export function ProfileTab({ user }) {
         <div>
             <h2 className="text-xl font-bold text-gray-900 mb-6">Profile Details</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Full Name</label>
-                    <p className="font-semibold text-gray-900">{user.fullName || 'Not provided'}</p>
+                    <p className="font-semibold text-gray-900 text-lg">{user.fullName || 'Not provided'}</p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Email Address</label>
-                    <p className="font-semibold text-gray-900">{user.email}</p>
+                    <p className="font-semibold text-gray-900 text-lg">{user.email}</p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Account Role</label>
-                    <span className="bg-gray-200 text-gray-800 text-xs font-bold px-3 py-1 rounded-full uppercase">{user.role}</span>
+                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Account Role</label>
+                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-sm">
+                        {user.role}
+                    </span>
                 </div>
             </div>
         </div>
     );
 }
 
-export function SecurityTab({ passForm, setPassForm, handlePasswordReset }) {
+// 🌟 UPDATED: SecurityTab now handles its own state and API requests
+export function SecurityTab() {
+    const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '' });
+    const [loading, setLoading] = useState(false);
+
+    const handlePasswordReset = async (e) => {
+        e.preventDefault();
+
+        if (passForm.newPassword.length < 6) {
+            return toast.error("New password must be at least 6 characters long");
+        }
+
+        setLoading(true);
+        try {
+            // Adjust this route to match your actual backend update-password endpoint
+            const { data } = await API.put('/auth/update-password', {
+                currentPassword: passForm.currentPassword,
+                newPassword: passForm.newPassword
+            });
+
+            toast.success("Password updated successfully!");
+            setPassForm({ currentPassword: '', newPassword: '' }); // Clear form
+
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.response?.data?.error || "Failed to update password");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Reset Password</h2>
-            <form onSubmit={handlePasswordReset} className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <Lock size={20} className="text-gray-400" />
+                Change Password
+            </h2>
+            <form onSubmit={handlePasswordReset} className="space-y-5 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                    <input required type="password" value={passForm.oldPassword} onChange={(e) => setPassForm({ ...passForm, oldPassword: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-900 outline-none" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Current Password</label>
+                    <input
+                        required
+                        type="password"
+                        value={passForm.currentPassword}
+                        onChange={(e) => setPassForm({ ...passForm, currentPassword: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent,blue-600)] focus:border-transparent outline-none transition-all"
+                        placeholder="Enter current password"
+                    />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                    <input required type="password" value={passForm.newPassword} onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-900 outline-none" />
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">New Password</label>
+                    <input
+                        required
+                        type="password"
+                        value={passForm.newPassword}
+                        onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent,blue-600)] focus:border-transparent outline-none transition-all"
+                        placeholder="Enter new password"
+                    />
                 </div>
-                <button type="submit" className="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors mt-2">
-                    Update Password
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gray-900 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-black transition-colors mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                    {loading ? 'Updating...' : 'Update Password'}
                 </button>
             </form>
         </div>

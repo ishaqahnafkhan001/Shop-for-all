@@ -1,16 +1,67 @@
 // routes/authRoutes.js
+
 const express = require('express');
 const router = express.Router();
-const { registerVendor,registerCustomer, login, logout, getMe,sendOTP } = require('../controllers/authController');
+
+// =========================
+// Middlewares
+// =========================
 const { protect } = require('../middlewares/auth');
 
-router.post('/register', registerVendor);
-// Add this to your authRoutes.js
-router.post('/register-customer', registerCustomer);
+// =========================
+// Controllers
+// =========================
+const {
+    registerVendor,
+    registerCustomer,
+    login,
+    logout,
+    getMe,
+    sendOTP
+} = require('../controllers/authController');
 
-router.post('/send-otp', sendOTP);
-router.post('/login', login);
-router.post('/logout', logout);
-router.get('/me', protect, getMe); // Protecting this ensures only valid tokens can check sessions
+// ======================================================
+// AUTH ROUTES
+// ======================================================
 
+// Vendor Registration
+router.post(
+    '/register',
+    registerVendor
+);
+
+// Customer Registration
+router.post(
+    '/register-customer',
+    registerCustomer
+);
+
+// Send OTP
+router.post(
+    '/send-otp',
+    sendOTP
+);
+
+// Login
+router.post(
+    '/login',
+    login
+);
+
+// Logout
+router.post(
+    '/logout',
+    logout
+);
+
+// Get Current Logged In User
+router.get(
+    '/me',
+    protect,
+    getMe
+);
+
+// =========================
+// Export Router
+// =========================
 module.exports = router;

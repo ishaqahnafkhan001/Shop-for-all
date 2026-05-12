@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
 
+// =========================
 // Middlewares
+// =========================
 const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { upload } = require('../config/cloudinary');
+
+// =========================
 // Controllers
+// =========================
+
+// Product Controllers
 const {
     getShopProducts,
     createProduct,
@@ -15,14 +22,15 @@ const {
     generateDescription
 } = require('../controllers/productController');
 
+// Order Controllers
 const {
     getShopOrders,
     updateOrderStatus,
     getDashboardStats,
-
     syncOrderToPathao
 } = require('../controllers/orderController');
 
+// User / Customer Controllers
 const {
     getShopCustomers,
     getShopUsers,
@@ -30,7 +38,7 @@ const {
     toggleCustomerStatus
 } = require('../controllers/userController');
 
-
+// Store / Pathao Controllers
 const {
     setupVendorPathaoStore,
     getCities,
@@ -38,19 +46,91 @@ const {
     getAreas,
     linkExistingPathaoAccount
 } = require('../controllers/storeController');
-const {sendEmailToCustomer} = require('../controllers/emailController');
 
-router.post('/customers/send-email', protect, authorize('VendorAdmin'), sendEmailToCustomer);
-router.post('/settings/pathao-link', protect, authorize('VendorAdmin'), linkExistingPathaoAccount);
-// Location Dropdown Routes (Used by the frontend form)
-router.get('/pathao/cities', protect, authorize('VendorAdmin'), getCities);
-router.get('/pathao/cities/:cityId/zones', protect, authorize('VendorAdmin'), getZones);
-router.get('/pathao/zones/:zoneId/areas', protect, authorize('VendorAdmin'), getAreas);
+// Email Controllers
+const {
+    sendEmailToCustomer,
+    sendOrderStatusEmail
+} = require('../controllers/emailController');
 
-// Create Store Route (From our previous conversation)
-router.post('/settings/pathao-store', protect, authorize('VendorAdmin'), setupVendorPathaoStore);
+// =========================
+// Upload Config
+// =========================
+const productMediaUpload = upload.fields([
+    { name: 'images', maxCount: 5 },
+    { name: 'videos', maxCount: 2 }
+]);
 
-router.post('/generate-description', generateDescription);
+// ======================================================
+// EMAIL ROUTES
+// ======================================================
+
+router.post(
+    '/customers/send-email',
+    protect,
+    authorize('VendorAdmin'),
+    sendEmailToCustomer
+);
+
+router.post(
+    '/orders/send-email',
+    protect,
+    authorize('VendorAdmin', 'SuperAdmin'),
+    sendOrderStatusEmail
+);
+
+// ======================================================
+// PATHAO / STORE SETTINGS
+// ======================================================
+
+router.post(
+    '/settings/pathao-link',
+    protect,
+    authorize('VendorAdmin'),
+    linkExistingPathaoAccount
+);
+
+router.post(
+    '/settings/pathao-store',
+    protect,
+    authorize('VendorAdmin'),
+    setupVendorPathaoStore
+);
+
+// Location APIs
+router.get(
+    '/pathao/cities',
+    protect,
+    authorize('VendorAdmin'),
+    getCities
+);
+
+router.get(
+    '/pathao/cities/:cityId/zones',
+    protect,
+    authorize('VendorAdmin'),
+    getZones
+);
+
+router.get(
+    '/pathao/zones/:zoneId/areas',
+    protect,
+    authorize('VendorAdmin'),
+    getAreas
+);
+
+// ======================================================
+// AI / UTILITIES
+// ======================================================
+
+router.post(
+    '/generate-description',
+    generateDescription
+);
+
+// ======================================================
+// PRODUCT MANAGEMENT
+// ======================================================
 
 router.get(
     '/products',
@@ -59,17 +139,18 @@ router.get(
     getShopProducts
 );
 
-router.post('/orders/:id/pathao', protect, authorize('VendorAdmin', 'VendorStaff'), syncOrderToPathao)
+router.get(
+    '/products/:id',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getSingleProduct
+);
 
 router.post(
     '/products',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    // 👇 Use .fields() to accept multiple images and multiple videos
-    upload.fields([
-        { name: 'images', maxCount: 5 }, // Accepts up to 5 files under the 'images' field
-        { name: 'videos', maxCount: 2 }  // Accepts up to 2 files under the 'videos' field
-    ]),
+    productMediaUpload,
     createProduct
 );
 
@@ -77,11 +158,7 @@ router.patch(
     '/products/:id',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    // 👇 Apply the same logic to updates if users can add/change media later
-    upload.fields([
-        { name: 'images', maxCount: 5 },
-        { name: 'videos', maxCount: 2 }
-    ]),
+    productMediaUpload,
     updateProduct
 );
 
@@ -91,7 +168,53 @@ router.delete(
     authorize('VendorAdmin'),
     deleteProduct
 );
-// --- USER / STAFF MANAGEMENT ---
+
+// ======================================================
+// ORDER MANAGEMENT
+// ======================================================
+
+router.get(
+    '/orders',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getShopOrders
+);
+
+router.patch(
+    '/orders/:id/status',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    updateOrderStatus
+);
+
+router.post(
+    '/orders/:id/pathao',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    syncOrderToPathao
+);
+
+// ======================================================
+// CUSTOMER MANAGEMENT
+// ======================================================
+
+router.get(
+    '/customers',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getShopCustomers
+);
+
+router.patch(
+    '/customers/:id/status',
+    protect,
+    authorize('VendorAdmin'),
+    toggleCustomerStatus
+);
+
+// ======================================================
+// USER / STAFF MANAGEMENT
+// ======================================================
 
 router.get(
     '/users',
@@ -107,52 +230,10 @@ router.post(
     createShopUser
 );
 
+// ======================================================
+// DASHBOARD / ANALYTICS
+// ======================================================
 
-// --- ORDER MANAGEMENT ---
-
-// FIX: All three order routes were missing authorize() — any authenticated
-// user (including Customers) could read or mutate orders for any shop
-router.get(
-    '/orders',
-    protect,
-    authorize('VendorAdmin', 'VendorStaff'),
-    getShopOrders
-);
-
-router.patch(
-    '/orders/:id/status',
-    protect,
-    authorize('VendorAdmin', 'VendorStaff'),
-    updateOrderStatus
-);
-
-
-// --- CUSTOMER MANAGEMENT ---
-
-// FIX: Both customer routes were missing authorize()
-router.get(
-    '/customers',
-    protect,
-    authorize('VendorAdmin', 'VendorStaff'),
-    getShopCustomers
-);
-
-router.patch(
-    '/customers/:id/status',
-    protect,
-    authorize('VendorAdmin'), // Status toggle is a destructive action — Admin only
-    toggleCustomerStatus
-);
-router.get(
-    '/products/:id',
-    protect,
-    authorize('VendorAdmin', 'VendorStaff'),
-    getSingleProduct
-);
-
-// --- DASHBOARD / ANALYTICS ---
-
-// FIX: dashboard-stats was missing authorize()
 router.get(
     '/dashboard-stats',
     protect,
@@ -160,5 +241,7 @@ router.get(
     getDashboardStats
 );
 
-
+// =========================
+// Export Router
+// =========================
 module.exports = router;

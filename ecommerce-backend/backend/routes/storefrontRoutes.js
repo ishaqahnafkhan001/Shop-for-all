@@ -1,33 +1,126 @@
-// The newly consolidated storefrontRoutes.js
+// storefrontRoutes.js
+
 const express = require('express');
 const router = express.Router();
 
+// =========================
+// Middlewares
+// =========================
 const { resolveTenant } = require('../middlewares/tenant');
 const { protect } = require('../middlewares/auth');
 
+// =========================
+// Controllers
+// =========================
+
+// Store Controllers
 const {
     getStoreInfo,
-    getStoreProducts,
     getSingleProduct
 } = require('../controllers/storeController');
-const { getMyOrders,getOrderById,createOrder } = require('../controllers/orderController');
-// Import the missing features you need from the old public controller
-const {  trackPublicOrder } = require('../controllers/publicController');
-const { getShopProducts } = require('../controllers/productController');
 
-router.get('/:subdomain/info', resolveTenant, getStoreInfo);
-router.get('/:subdomain/products', resolveTenant, getShopProducts);
-router.get('/:subdomain/products/:id', resolveTenant, getSingleProduct);
-router.post('/:subdomain/orders', resolveTenant, protect, createOrder);
+// Product Controllers
+const {
+    getShopProducts
+} = require('../controllers/productController');
 
-// Added from the old public routes
-router.get('/:subdomain/track-order/:orderId', resolveTenant, trackPublicOrder);
-router.get('/:subdomain/my-orders', resolveTenant, protect, getMyOrders);
+// Order Controllers
+const {
+    getMyOrders,
+    getOrderById,
+    createOrder
+} = require('../controllers/orderController');
 
+// Review Controllers
+const {
+    getProductReviews,
+    addProductReview
+} = require('../controllers/reviewController');
 
-router.get('/my-orders', resolveTenant, protect, getMyOrders);
+// Public Controllers
+const {
+    trackPublicOrder
+} = require('../controllers/publicController');
 
-router.get('/my-orders/:orderId', resolveTenant, protect, getOrderById);
+// ======================================================
+// STORE INFO
+// ======================================================
 
+router.get(
+    '/:subdomain/info',
+    resolveTenant,
+    getStoreInfo
+);
 
+// ======================================================
+// PRODUCT ROUTES
+// ======================================================
+
+router.get(
+    '/:subdomain/products',
+    resolveTenant,
+    getShopProducts
+);
+
+router.get(
+    '/:subdomain/products/:id',
+    resolveTenant,
+    getSingleProduct
+);
+
+// ======================================================
+// REVIEW ROUTES
+// ======================================================
+
+router.get(
+    '/:subdomain/products/:id/reviews',
+    resolveTenant,
+    getProductReviews
+);
+
+router.post(
+    '/:subdomain/products/:id/reviews',
+    resolveTenant,
+    protect,
+    addProductReview
+);
+
+// ======================================================
+// ORDER ROUTES
+// ======================================================
+
+router.post(
+    '/:subdomain/orders',
+    resolveTenant,
+    protect,
+    createOrder
+);
+
+router.get(
+    '/:subdomain/my-orders',
+    resolveTenant,
+    protect,
+    getMyOrders
+);
+
+router.get(
+    '/:subdomain/my-orders/:orderId',
+    resolveTenant,
+    protect,
+    getOrderById
+);
+
+// ======================================================
+// PUBLIC TRACKING
+// ======================================================
+
+router.get(
+    '/:subdomain/track-order/:orderId',
+    resolveTenant,
+    trackPublicOrder
+);
+
+// =========================
+// Export Router
+// =========================
 module.exports = router;

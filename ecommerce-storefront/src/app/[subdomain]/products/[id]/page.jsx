@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext'; // 🌟 1. Imported the Auth Context
 import API from '@/api/api';
 import Link from 'next/link';
-import { ArrowLeft, ShoppingCart, Truck, ShieldCheck, Tag, Zap, Star } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Add this import
+import { ArrowLeft, ShoppingCart, Truck, ShieldCheck, Tag, Zap, Star, MessageSquare, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const normalizeProduct = (raw) => {
     if (!raw) return null;
@@ -22,6 +23,8 @@ const normalizeProduct = (raw) => {
         discount,
         finalPrice,
         stock,
+        averageRating: raw?.averageRating || 0,
+        numReviews: raw?.numReviews || 0,
         images: raw?.images?.length > 0 ? raw.images : [raw?.imageUrl || 'https://via.placeholder.com/600'],
         variants: raw?.variants || [],
         features: raw?.features || [],
@@ -33,17 +36,37 @@ const normalizeProduct = (raw) => {
 export default function ProductDetails({ params }) {
     const { subdomain, id } = React.use(params);
     const { addToCart } = useCart();
-    const router = useRouter(); // Initialize router
+
+    // 🌟 2. Grab the user session directly from the Context
+    const { user } = useAuth();
+    const isLoggedIn = !!user;
+
+    const router = useRouter();
 
     const [product, setProduct] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
+    // Reviews State
+    const [reviews, setReviews] = useState([]);
+    const [newReview, setNewReview] = useState({ rating: 0, comment: "" });
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [reviewMessage, setReviewMessage] = useState({ type: '', text: '' });
+
     // UI State
     const [activeImageIdx, setActiveImageIdx] = useState(0);
     const [selectedAttributes, setSelectedAttributes] = useState({});
     const [isImageZoomed, setIsImageZoomed] = useState(false);
+
+    const fetchReviews = async () => {
+        try {
+            const { data } = await API.get(`/storefront/${subdomain}/products/${id}/reviews`);
+            setReviews(data.data || []);
+        } catch (err) {
+            console.error("Failed to fetch reviews:", err);
+        }
+    };
 
     useEffect(() => {
         const fetchProductAndRelated = async () => {
@@ -60,6 +83,9 @@ export default function ProductDetails({ params }) {
                     });
                     setSelectedAttributes(initialAttrs);
                 }
+
+                // Fetch Reviews
+                await fetchReviews();
 
                 if (normalized.category) {
                     try {
@@ -125,9 +151,51 @@ export default function ProductDetails({ params }) {
         };
         addToCart(itemToAdd);
     };
+
     const handleBuyNow = () => {
-        handleAddToCart(); // Add the item to cart first
-        router.push('/checkout'); // Then redirect to checkout
+        handleAddToCart();
+        router.push('/checkout');
+    };
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+        if (newReview.rating === 0) {
+            setReviewMessage({ type: 'error', text: 'Please select a star rating.' });
+            return;
+        }
+        if (!newReview.comment.trim()) {
+            setReviewMessage({ type: 'error', text: 'Please write a comment.' });
+            return;
+        }
+
+        setSubmittingReview(true);
+        setReviewMessage({ type: '', text: '' });
+
+        try {
+            await API.post(`/storefront/${subdomain}/products/${id}/reviews`, {
+                rating: newReview.rating,
+                comment: newReview.comment
+            });
+
+            setReviewMessage({ type: 'success', text: 'Review submitted successfully!' });
+            setNewReview({ rating: 0, comment: "" });
+
+            const { data } = await API.get(`/storefront/${subdomain}/products/${id}`);
+            setProduct(prev => ({
+                ...prev,
+                averageRating: data.averageRating || prev.averageRating,
+                numReviews: data.numReviews || prev.numReviews
+            }));
+            fetchReviews();
+
+        } catch (err) {
+            setReviewMessage({
+                type: 'error',
+                text: err.response?.data?.message || 'Failed to submit review. You might have already reviewed this item.'
+            });
+        } finally {
+            setSubmittingReview(false);
+        }
     };
 
     if (loading) {
@@ -157,12 +225,10 @@ export default function ProductDetails({ params }) {
 
     return (
         <div className="relative overflow-hidden bg-white">
-            {/* Background decorative blobs */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gradient-to-br from-[var(--sf-accent)]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
             <div className="absolute top-[20%] right-[-5%] w-[30%] h-[30%] bg-gradient-to-bl from-purple-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
             <div className="container mx-auto px-4 py-12 max-w-7xl relative z-10">
-                {/* Breadcrumb Navigation */}
                 <Link href="/" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-[var(--sf-accent)] mb-8 transition-colors group">
                     <div className="bg-gray-100 p-2 rounded-full mr-3 group-hover:bg-[var(--sf-accent)] group-hover:text-white transition-colors">
                         <ArrowLeft size={16} />
@@ -172,7 +238,6 @@ export default function ProductDetails({ params }) {
 
                 {/* Top Section: Images and Actions */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-
                     {/* Left Column: Image Gallery */}
                     <div className="flex flex-col space-y-6">
                         <div
@@ -185,7 +250,6 @@ export default function ProductDetails({ params }) {
                                 alt={`${product.title} - Main Image`}
                                 className={`w-full h-full object-contain transition-transform duration-700 ease-out ${isImageZoomed ? 'scale-110' : 'scale-100'}`}
                             />
-                            {/* Badges */}
                             <div className="absolute top-6 left-6 flex flex-col gap-2">
                                 <span className="bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-gray-800 shadow-sm border border-white/50">
                                     {product.category}
@@ -222,9 +286,18 @@ export default function ProductDetails({ params }) {
                     <div className="flex flex-col justify-start py-2">
                         <div className="mb-2 flex items-center gap-2">
                             <div className="flex text-yellow-400">
-                                {[...Array(5)].map((_, i) => <Star key={i} size={16} fill="currentColor" />)}
+                                {[...Array(5)].map((_, i) => (
+                                    <Star
+                                        key={i}
+                                        size={16}
+                                        fill={i < Math.round(product.averageRating) ? "currentColor" : "none"}
+                                        className={i < Math.round(product.averageRating) ? "" : "text-gray-300"}
+                                    />
+                                ))}
                             </div>
-                            <span className="text-sm text-gray-500 font-medium">(4.8/5 Reviews)</span>
+                            <span className="text-sm text-gray-500 font-medium">
+                                ({product.averageRating} / 5 from {product.numReviews} Reviews)
+                            </span>
                         </div>
 
                         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 tracking-tight leading-tight">
@@ -289,24 +362,23 @@ export default function ProductDetails({ params }) {
                         )}
 
                         {/* Action Area */}
-                        <div className="mt-auto space-y-4"> {/* Added vertical spacing between buttons */}
+                        <div className="mt-auto space-y-4">
                             <div className="mb-6 flex items-center justify-between">
                                 {displayStock > 0 ? (
                                     <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-green-50 text-green-700 border border-green-200/50 shadow-sm">
-                <span className="relative flex h-2.5 w-2.5 mr-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                </span>
-                In Stock ({displayStock} units ready)
-            </span>
+                                        <span className="relative flex h-2.5 w-2.5 mr-2.5">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                                        </span>
+                                        In Stock ({displayStock} units ready)
+                                    </span>
                                 ) : (
                                     <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-red-50 text-red-700 border border-red-200/50">
-                Out of Stock
-            </span>
+                                        Out of Stock
+                                    </span>
                                 )}
                             </div>
 
-                            {/* Primary Action: Add to Cart */}
                             <button
                                 onClick={handleAddToCart}
                                 disabled={displayStock <= 0}
@@ -316,7 +388,6 @@ export default function ProductDetails({ params }) {
                                 <span>{displayStock > 0 ? 'Add to Cart' : 'Currently Unavailable'}</span>
                             </button>
 
-                            {/* Secondary Action: Direct Checkout */}
                             {displayStock > 0 && (
                                 <button
                                     onClick={handleBuyNow}
@@ -327,7 +398,7 @@ export default function ProductDetails({ params }) {
                             )}
                         </div>
 
-                        {/* Trust Badges - Modern Cards */}
+                        {/* Trust Badges */}
                         <div className="grid grid-cols-2 gap-4 mt-8">
                             <div className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 flex flex-col items-start gap-2 hover:bg-gray-50 transition-colors">
                                 <div className="bg-white p-2 rounded-xl shadow-sm text-[var(--sf-accent)]">
@@ -348,7 +419,6 @@ export default function ProductDetails({ params }) {
                 {/* Bottom Section: Features & Specs */}
                 <div className="mt-24 flex flex-col lg:flex-row gap-12 lg:gap-20 pt-16 border-t border-gray-100">
                     <div className="flex-1 space-y-20">
-
                         {/* Features List */}
                         {product.features?.length > 0 && (
                             <section>
@@ -416,6 +486,123 @@ export default function ProductDetails({ params }) {
                     )}
                 </div>
 
+                {/* Reviews Section */}
+                <div className="mt-24 pt-16 border-t border-gray-100">
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-10 flex items-center tracking-tight">
+                        <MessageSquare className="mr-4 text-[var(--sf-accent)]" size={32} />
+                        Customer Reviews
+                    </h2>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                        {/* Write a Review Form */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
+                                <h3 className="text-xl font-bold text-gray-900 mb-6">Write a Review</h3>
+
+                                {isLoggedIn ? (
+                                    <form onSubmit={handleReviewSubmit} className="space-y-6">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Rating</label>
+                                            <div className="flex gap-2">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        key={star}
+                                                        type="button"
+                                                        onClick={() => setNewReview({ ...newReview, rating: star })}
+                                                        className="focus:outline-none transition-transform hover:scale-110"
+                                                    >
+                                                        <Star
+                                                            size={28}
+                                                            className={newReview.rating >= star ? "text-yellow-400 fill-current" : "text-gray-300"}
+                                                        />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Comment</label>
+                                            <textarea
+                                                rows="4"
+                                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] focus:border-[var(--sf-accent)] outline-none transition-all resize-none"
+                                                placeholder="Share your experience with this product..."
+                                                value={newReview.comment}
+                                                onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                            />
+                                        </div>
+
+                                        {reviewMessage.text && (
+                                            <p className={`text-sm font-medium ${reviewMessage.type === 'error' ? 'text-red-500' : 'text-green-600'}`}>
+                                                {reviewMessage.text}
+                                            </p>
+                                        )}
+
+                                        <button
+                                            type="submit"
+                                            disabled={submittingReview}
+                                            className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                                        >
+                                            {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                        </button>
+                                    </form>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <User size={48} className="mx-auto text-gray-300 mb-4" />
+                                        {/* 🌟 3. Updated specific messaging for unauthenticated users */}
+                                        <p className="text-gray-600 mb-4">Log in to submit a comment and share your thoughts.</p>
+                                        {/* 🌟 4. Dynamic routing to point directly to the tenant's account page */}
+                                        <Link href={`/${subdomain}/account`} className="inline-block bg-[var(--sf-accent)] text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:-translate-y-0.5 transition-all">
+                                            Log In / Register
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Reviews List */}
+                        <div className="lg:col-span-2">
+                            {reviews.length > 0 ? (
+                                <div className="space-y-6">
+                                    {reviews.map((review) => (
+                                        <div key={review._id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-600 font-bold uppercase">
+                                                        {review.name?.charAt(0) || 'U'}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-gray-900">{review.name}</h4>
+                                                        <span className="text-xs text-gray-500">
+                                                            {new Date(review.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex text-yellow-400">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star
+                                                            key={i}
+                                                            size={14}
+                                                            fill={i < review.rating ? "currentColor" : "none"}
+                                                            className={i < review.rating ? "" : "text-gray-200"}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full py-12 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                                    <MessageSquare size={48} className="text-gray-300 mb-4" />
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">No reviews yet</h3>
+                                    <p className="text-gray-500 text-center max-w-sm">Be the first to share your experience with this product!</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Related Products Carousel */}
                 {relatedProducts.length > 0 && (
                     <div className="mt-32 pt-16 border-t border-gray-100">
@@ -430,7 +617,7 @@ export default function ProductDetails({ params }) {
 
                             {relatedProducts.map((item) => (
                                 <Link
-                                    href={`/${subdomain}/product/${item._id}`}
+                                    href={`/${subdomain}/products/${item._id}`}
                                     key={item._id}
                                     className="group w-72 flex-shrink-0 snap-start bg-white border border-gray-100 rounded-3xl p-5 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-2"
                                 >

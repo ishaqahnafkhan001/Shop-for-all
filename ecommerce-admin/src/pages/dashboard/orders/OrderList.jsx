@@ -5,15 +5,23 @@ import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
 import OrderDetailsModal from '../../../components/dashboard/OrderDetailsModal';
 import PathaoSyncModal from './PathaoSyncModal';
+import EmailNotificationModal from '../../../components/order/EmailNotificationModal.jsx';
+import {useAuth} from "../../../context/AuthContext.jsx"; // <-- Import the new modal
 
 const OrderList = () => {
+    const { user } = useAuth();
+    // console.log(user.shopName)
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
-    const [searchQuery, setSearchQuery] = useState(''); // Added search state
+    const [searchQuery, setSearchQuery] = useState('');
 
     const [pathaoModalOpen, setPathaoModalOpen] = useState(false);
     const [orderToSync, setOrderToSync] = useState(null);
+
+    // --- NEW STATES FOR EMAIL MODAL ---
+    const [emailModalOpen, setEmailModalOpen] = useState(false);
+    const [pendingStatusUpdate, setPendingStatusUpdate] = useState({ order: null, newStatus: '' });
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -29,12 +37,43 @@ const OrderList = () => {
         fetchOrders();
     }, []);
 
-    const handleStatusChange = async (order, newStatus) => {
+    // Intercept the status change to show the modal
+    const handleStatusChangeClick = (order, newStatus) => {
         if (newStatus === 'Confirmed' && !order.isPathaoSynced) {
             setOrderToSync(order);
             setPathaoModalOpen(true);
             return;
         }
+
+        // Open the email modal and save the pending update
+        setPendingStatusUpdate({ order, newStatus });
+        setEmailModalOpen(true);
+    };
+
+    // Process the decision from the Email Modal
+    const handleEmailModalDecision = async (shouldSendEmail, emailData = null) => {
+        const { order, newStatus } = pendingStatusUpdate;
+        setEmailModalOpen(false); // Close modal immediately
+
+        // 1. Send the email if the user clicked "Yes"
+        if (shouldSendEmail && emailData) {
+            try {
+                // Ensure the route matches your backend (e.g., /admin/orders/send-email)
+                await API.post('/admin/orders/send-email', {
+                    email: order.customer?.email,
+                    name: order.customer?.fullName,
+                    subject: emailData.subject,
+                    message: emailData.message,
+                    shopName:  user.shopName// Replace dynamically if needed
+                });
+                toast.success("Email sent to customer");
+            } catch (error) {
+                toast.error(error.response?.data?.error || "Failed to send email");
+                // We still proceed to update the status even if the email fails
+            }
+        }
+
+        // 2. Update the status in the DB
         updateStatusInDB(order._id, newStatus);
     };
 
@@ -88,7 +127,6 @@ const OrderList = () => {
                     <span className="font-mono text-sm font-semibold text-indigo-600">
                         #{row._id.slice(-6).toUpperCase()}
                     </span>
-                    {/* Pathao Green Checkmark Indicator */}
                     {row.isPathaoSynced && (
                         <span title="Synced to Pathao" className="text-green-500 bg-green-50 rounded-full p-0.5">
                             <CheckCircle size={16} />
@@ -138,7 +176,6 @@ const OrderList = () => {
     const renderActions = (row) => (
         <div className="flex items-center justify-end space-x-3">
 
-            {/* This ensures the button ONLY shows if the order is Confirmed AND NOT Synced */}
             {row.status === 'Confirmed' && !row.isPathaoSynced && (
                 <button
                     onClick={() => { setOrderToSync(row); setPathaoModalOpen(true); }}
@@ -157,9 +194,10 @@ const OrderList = () => {
                 <Eye size={18} className="mr-1.5" /> View
             </button>
 
+            {/* Changed onChange to trigger the modal instead of direct DB update */}
             <select
                 value={['Cancelled', 'Returned'].includes(row.status) ? row.status : row.status}
-                onChange={(e) => handleStatusChange(row, e.target.value)}
+                onChange={(e) => handleStatusChangeClick(row, e.target.value)}
                 disabled={['Cancelled', 'Returned', 'Delivered'].includes(row.status)}
                 className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -174,7 +212,6 @@ const OrderList = () => {
         </div>
     );
 
-    // Filter orders based on the search query
     const filteredOrders = orders.filter((order) =>
         order._id.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -224,7 +261,6 @@ const OrderList = () => {
                                                 <span className="font-mono text-sm font-bold text-indigo-600">
                                                     #{order._id.slice(-6).toUpperCase()}
                                                 </span>
-                                                {/* Mobile Pathao Green Checkmark */}
                                                 {order.isPathaoSynced && (
                                                     <span title="Synced to Pathao" className="text-green-500 bg-green-50 rounded-full p-0.5">
                                                         <CheckCircle size={16} />
@@ -270,6 +306,18 @@ const OrderList = () => {
                     updateStatusInDB(orderToSync._id, 'Confirmed');
                     setPathaoModalOpen(false);
                 }}
+            />
+
+            {/* --- NEW EMAIL NOTIFICATION MODAL --- */}
+            <EmailNotificationModal
+                isOpen={emailModalOpen}
+                onClose={() => {
+                    setEmailModalOpen(false);
+                    setPendingStatusUpdate({ order: null, newStatus: '' });
+                }}
+                onConfirm={handleEmailModalDecision}
+                order={pendingStatusUpdate.order}
+                newStatus={pendingStatusUpdate.newStatus}
             />
         </div>
     );
