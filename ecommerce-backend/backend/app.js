@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
-app.set('trust proxy', 1);
+
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
@@ -17,7 +17,7 @@ const inventoryRoutes = require('./routes/inventory');
 const bannerRoutes = require('./routes/bannerRoutes');
 
 const app = express();
-
+app.set('trust proxy', 1);
 connectDB();
 
 const allowedOrigins = process.env.CORS_ORIGINS.split(',');
