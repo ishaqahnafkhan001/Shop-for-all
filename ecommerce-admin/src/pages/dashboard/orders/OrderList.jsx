@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Truck, CheckCircle, XCircle, Clock, Eye, Send } from 'lucide-react';
+import { Package, Truck, CheckCircle, XCircle, Clock, Eye, Send, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
@@ -10,6 +10,7 @@ const OrderList = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [searchQuery, setSearchQuery] = useState(''); // Added search state
 
     const [pathaoModalOpen, setPathaoModalOpen] = useState(false);
     const [orderToSync, setOrderToSync] = useState(null);
@@ -173,11 +174,32 @@ const OrderList = () => {
         </div>
     );
 
+    // Filter orders based on the search query
+    const filteredOrders = orders.filter((order) =>
+        order._id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className="space-y-6 relative">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-                <p className="mt-1 text-sm text-gray-500">Track and fulfill your customer orders.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
+                    <p className="mt-1 text-sm text-gray-500">Track and fulfill your customer orders.</p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-64">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search size={18} className="text-gray-400" />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search by Order ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm outline-none transition"
+                    />
+                </div>
             </div>
 
             {loading ? (
@@ -185,16 +207,16 @@ const OrderList = () => {
             ) : (
                 <>
                     <div className="hidden md:block">
-                        <Table columns={columns} data={orders} actions={renderActions} />
+                        <Table columns={columns} data={filteredOrders} actions={renderActions} />
                     </div>
 
                     <div className="md:hidden space-y-4">
-                        {orders.length === 0 ? (
+                        {filteredOrders.length === 0 ? (
                             <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
-                                No orders yet. Time to do some marketing!
+                                {searchQuery ? 'No orders match your search.' : 'No orders yet. Time to do some marketing!'}
                             </div>
                         ) : (
-                            orders.map((order) => (
+                            filteredOrders.map((order) => (
                                 <div key={order._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>

@@ -153,9 +153,6 @@ exports.getStockMovement = async (req, res) => {
  */
 exports.getTopProducts = async (req, res) => {
     try {
-        // FIX: Use req.tenantId (set by auth middleware) instead of req.user?.shopId
-        // to be consistent with every other function in this file and avoid a 400
-        // on requests where shopId is only on the token via tenantId, not re-exposed on req.user
         const shopId = new mongoose.Types.ObjectId(req.tenantId);
 
         const topProducts = await InventoryLog.aggregate([
@@ -189,8 +186,9 @@ exports.getTopProducts = async (req, res) => {
                         {
                             $project: {
                                 title: 1,
-                                price: 1,
-                                thumbnail: 1
+                                pricing: 1, // <-- FIX 1: Project the entire pricing object (or 'pricing.sellingPrice': 1)
+                                thumbnail: 1,
+                                sellingPrice: 1 // Just in case it's saved at the root level instead
                             }
                         }
                     ],
@@ -208,7 +206,13 @@ exports.getTopProducts = async (req, res) => {
                     _id: 0,
                     productId: '$_id',
                     title: { $ifNull: ['$product.title', 'Unknown Product'] },
-                    price: '$product.price',
+                    // <-- FIX 2: Map to the correct nested field, with fallbacks
+                    price: {
+                        $ifNull: [
+                            '$product.pricing.sellingPrice',
+                            { $ifNull: ['$product.sellingPrice', 0] }
+                        ]
+                    },
                     thumbnail: '$product.thumbnail',
                     totalSold: 1
                 }
@@ -229,7 +233,6 @@ exports.getTopProducts = async (req, res) => {
         });
     }
 };
-
 
 /**
  * @desc    Products with stock at or below threshold

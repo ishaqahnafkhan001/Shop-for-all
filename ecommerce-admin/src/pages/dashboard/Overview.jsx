@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   DollarSign, Package, ShoppingCart, TrendingUp, AlertTriangle,
-  BarChart2, ArrowUpDown, SlidersHorizontal
+  BarChart2, ArrowUpDown, SlidersHorizontal, ChevronRight
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import API from '../../api/api';
+// Keeping your import, but you can replace its usage with the inline modern card design below if you prefer
 import StatCard from '../../components/dashboard/StatCard';
 
 const Overview = () => {
@@ -38,8 +39,6 @@ const Overview = () => {
           API.get('/admin/inventory/low-stock').catch(() => ({ data: { data: [] } }))
         ]);
 
-        // FIX: was setStats(statsRes.data) which set stats to { success, data:{...} }
-        // making stats.activeOrders always undefined. Must unwrap the inner data object.
         setStats(statsRes.data.data || {});
         setRevenue(revenueRes.data.data || {});
         setMovement(movementRes.data.data || []);
@@ -57,10 +56,29 @@ const Overview = () => {
     fetchData();
   }, []);
 
+  // ---------------------------------------------------------
+  // SKELETON LOADING STATE (Modern UI UX)
+  // ---------------------------------------------------------
   if (loading) {
     return (
-        <div className="flex h-64 items-center justify-center">
-          <div className="animate-pulse text-indigo-500 font-medium">Loading dashboard...</div>
+        <div className="space-y-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8 animate-pulse">
+          <div className="h-8 bg-gray-200 rounded-md w-64 mb-2"></div>
+          <div className="h-4 bg-gray-100 rounded-md w-48 mb-8"></div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 h-32"></div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 h-96"></div>
+            <div className="flex flex-col gap-6">
+              {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 h-40"></div>
+              ))}
+            </div>
+          </div>
         </div>
     );
   }
@@ -77,147 +95,222 @@ const Overview = () => {
   });
 
   const statCards = [
-    { title: 'Revenue',     value: `৳ ${overview.totalRevenue?.toLocaleString() || 0}`,  icon: DollarSign  },
-    { title: 'Profit',      value: `৳ ${overview.netProfit?.toLocaleString() || 0}`,      icon: TrendingUp  },
-    { title: 'Items Sold',  value: overview.totalItemsSold || 0,                           icon: Package     },
-    // FIX: was stats?.activeOrders which was always undefined because stats was the
-    // full { success, data } envelope. Now stats is correctly set to data.data.
-    { title: 'Active Orders', value: stats?.activeOrders || 0,                            icon: ShoppingCart }
+    { title: 'Total Revenue', value: `৳ ${overview.totalRevenue?.toLocaleString() || 0}`, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { title: 'Net Profit',    value: `৳ ${overview.netProfit?.toLocaleString() || 0}`,     icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { title: 'Items Sold',    value: overview.totalItemsSold || 0,                         icon: Package,    color: 'text-purple-600', bg: 'bg-purple-50' },
+    { title: 'Active Orders', value: stats?.activeOrders || 0,                             icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50' }
   ];
 
+  // Custom Tooltip for Recharts
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+          <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-100">
+            <p className="text-sm font-semibold text-gray-800 mb-2">{label}</p>
+            {payload.map((entry, index) => (
+                <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
+                  {entry.name}: <span className="font-bold">৳{entry.value.toLocaleString()}</span>
+                </p>
+            ))}
+          </div>
+      );
+    }
+    return null;
+  };
+
   return (
-      <div className="space-y-6 px-3 sm:px-0">
+      <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8 pb-12 bg-gray-50/30 min-h-screen">
 
         {/* HEADER */}
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-          <p className="text-sm text-gray-500">Real-time business insights</p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
+            <p className="text-sm text-gray-500 mt-1">Monitor your real-time business performance.</p>
+          </div>
         </div>
 
-        {/* STAT CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* STAT CARDS - Custom Inline Styling for Modern Look */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {statCards.map((s, i) => (
-              <div key={i} className="transition transform hover:-translate-y-1 hover:shadow-lg duration-300">
-                <StatCard {...s} />
+              <div
+                  key={i}
+                  className="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-1"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">{s.title}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mt-2 tracking-tight">{s.value}</h3>
+                  </div>
+                  <div className={`p-3 rounded-xl ${s.bg} transition-colors duration-300 group-hover:scale-110`}>
+                    <s.icon size={24} className={s.color} strokeWidth={2} />
+                  </div>
+                </div>
               </div>
           ))}
         </div>
 
         {/* MAIN GRID: Chart (2/3) + Side Panel (1/3) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* CHART */}
-          <div className="bg-white rounded-xl p-5 border shadow-sm lg:col-span-2 transition hover:shadow-md">
-            <h2 className="font-semibold mb-4">Financial Performance</h2>
+          {/* CHART SECTION */}
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm lg:col-span-2 flex flex-col hover:shadow-md transition-shadow duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-gray-800">Financial Performance</h2>
+            </div>
+
             {chartData.length > 0 ? (
-                <div className="h-72">
+                <div className="h-[350px] w-full flex-grow">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="Revenue" fill="#6366f1" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="Profit"  fill="#10b981" radius={[6, 6, 0, 0]} />
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                      <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#6B7280', fontSize: 12 }}
+                          dy={10}
+                      />
+                      <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#6B7280', fontSize: 12 }}
+                          tickFormatter={(value) => `৳${value}`}
+                      />
+                      <Tooltip cursor={{ fill: '#F3F4F6' }} content={<CustomTooltip />} />
+                      <Bar dataKey="Revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                      <Bar dataKey="Profit"  fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={40} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
             ) : (
-                <div className="text-center text-gray-400 py-20">No revenue data yet</div>
+                <div className="flex-grow flex flex-col items-center justify-center text-gray-400 py-20">
+                  <BarChart2 size={48} className="mb-4 text-gray-200" strokeWidth={1.5} />
+                  <p>No revenue data available yet</p>
+                </div>
             )}
           </div>
 
-          {/* SIDE PANEL
-                    FIX: was 3 raw JSX blocks floating directly inside the grid div with no
-                    card wrappers, no titles, and no structural container — completely broken layout.
-                    Now each section is a proper self-contained card. */}
-          <div className="flex flex-col gap-4">
+          {/* SIDE PANEL */}
+          <div className="flex flex-col gap-6">
 
             {/* Low Stock */}
-            <div className="bg-white rounded-xl p-5 border shadow-sm transition hover:shadow-md">
-              <h2 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                <AlertTriangle size={15} className="text-red-500" /> Low Stock
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                <div className="p-1.5 bg-red-50 rounded-lg">
+                  <AlertTriangle size={16} className="text-red-500" />
+                </div>
+                Low Stock Alerts
               </h2>
-              {lowStock.length > 0 ? (
-                  lowStock.slice(0, 5).map((p, i) => {
-                    const totalStock = p.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
-                    return (
-                        <div key={i} className="flex justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
-                          <span className="text-gray-700 truncate pr-2">{p.title}</span>
-                          <span className="text-red-500 font-bold flex-shrink-0">{totalStock} left</span>
-                        </div>
-                    );
-                  })
-              ) : (
-                  <p className="text-gray-400 text-sm">All good</p>
-              )}
+              <div className="space-y-1">
+                {lowStock.length > 0 ? (
+                    lowStock.slice(0, 5).map((p, i) => {
+                      const totalStock = p.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+                      return (
+                          <div key={i} className="group flex justify-between items-center text-sm p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                            <span className="text-gray-700 font-medium truncate pr-3 group-hover:text-indigo-600 transition-colors">{p.title}</span>
+                            <span className="bg-red-100 text-red-700 py-0.5 px-2 rounded-full text-xs font-bold flex-shrink-0">
+                        {totalStock} left
+                      </span>
+                          </div>
+                      );
+                    })
+                ) : (
+                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">Inventory levels are optimal</div>
+                )}
+              </div>
             </div>
 
             {/* Stock Movement */}
-            <div className="bg-white rounded-xl p-5 border shadow-sm transition hover:shadow-md">
-              <h2 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                <ArrowUpDown size={15} className="text-indigo-500" /> Stock Movement
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                <div className="p-1.5 bg-indigo-50 rounded-lg">
+                  <ArrowUpDown size={16} className="text-indigo-600" />
+                </div>
+                Recent Movements
               </h2>
-              {movement.length > 0 ? (
-                  movement.slice(0, 5).map((m, i) => (
-                      <div key={i} className="flex justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
-                        <span className="text-gray-500">{m.date}</span>
-                        <span>
-                                        <span className="text-green-600 font-medium">+{m.stockIn}</span>
-                                        <span className="text-gray-300 mx-1">|</span>
-                                        <span className="text-red-500 font-medium">{m.stockOut}</span>
-                                    </span>
-                      </div>
-                  ))
-              ) : (
-                  <p className="text-gray-400 text-sm">No activity</p>
-              )}
+              <div className="space-y-1">
+                {movement.length > 0 ? (
+                    movement.slice(0, 5).map((m, i) => (
+                        <div key={i} className="flex justify-between items-center text-sm p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors">
+                          <span className="text-gray-500 text-xs font-medium">{m.date}</span>
+                          <div className="flex items-center bg-gray-50 px-2 py-1 rounded-md">
+                            <span className="text-emerald-600 font-bold">+{m.stockIn}</span>
+                            <span className="text-gray-300 mx-2">/</span>
+                            <span className="text-rose-500 font-bold">-{m.stockOut}</span>
+                          </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">No recent movement activity</div>
+                )}
+              </div>
             </div>
 
             {/* Stock Adjustments */}
-            <div className="bg-white rounded-xl p-5 border shadow-sm transition hover:shadow-md">
-              <h2 className="font-semibold mb-3 flex items-center gap-2 text-sm">
-                <SlidersHorizontal size={15} className="text-purple-500" /> Adjustments
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
+                <div className="p-1.5 bg-purple-50 rounded-lg">
+                  <SlidersHorizontal size={16} className="text-purple-600" />
+                </div>
+                Adjustments
               </h2>
-              {adjustments.length > 0 ? (
-                  adjustments.slice(0, 5).map((a, i) => (
-                      <div key={i} className="flex justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
-                        <span className="text-gray-700 truncate pr-2">{a.title}</span>
-                        <span className={`font-bold flex-shrink-0 ${a.totalAdjustment >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                        {a.totalAdjustment > 0 ? '+' : ''}{a.totalAdjustment}
-                                    </span>
-                      </div>
-                  ))
-              ) : (
-                  <p className="text-gray-400 text-sm">No adjustments</p>
-              )}
+              <div className="space-y-1">
+                {adjustments.length > 0 ? (
+                    adjustments.slice(0, 5).map((a, i) => (
+                        <div key={i} className="flex justify-between items-center text-sm p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group">
+                          <span className="text-gray-700 font-medium truncate pr-2 group-hover:text-purple-600">{a.title}</span>
+                          <span className={`px-2 py-1 rounded-md text-xs font-bold flex-shrink-0 ${a.totalAdjustment >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                      {a.totalAdjustment > 0 ? '+' : ''}{a.totalAdjustment}
+                    </span>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">No manual adjustments</div>
+                )}
+              </div>
             </div>
 
           </div>
         </div>
 
-        {/* TOP PRODUCTS */}
+        {/* TOP PRODUCTS TABLE */}
         {topProducts.length > 0 && (
-            <div className="bg-white rounded-xl p-5 border shadow-sm">
-              <h2 className="font-semibold mb-4 flex items-center gap-2">
-                <BarChart2 size={16} className="text-indigo-500" /> Top Selling Products
-              </h2>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-50 rounded-lg">
+                    <BarChart2 size={18} className="text-amber-500" />
+                  </div>
+                  Top Selling Products
+                </h2>
+                <button className="text-sm text-blue-600 font-medium hover:text-blue-700 flex items-center gap-1 transition-colors">
+                  View All <ChevronRight size={16} />
+                </button>
+              </div>
+
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                  <tr className="text-left text-xs text-gray-400 uppercase border-b">
-                    <th className="pb-2 pr-4">Product</th>
-                    <th className="pb-2 pr-4 text-right">Price</th>
-                    <th className="pb-2 text-right">Units Sold</th>
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th className="py-4 px-6 font-semibold">Product Name</th>
+                    <th className="py-4 px-6 font-semibold text-right">Unit Price</th>
+                    <th className="py-4 px-6 font-semibold text-right">Total Units Sold</th>
                   </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                   {topProducts.map((p, i) => (
-                      <tr key={i} className="border-b border-gray-50 last:border-0">
-                        <td className="py-2 pr-4 font-medium text-gray-900">{p.title}</td>
-                        <td className="py-2 pr-4 text-right text-gray-500">৳ {p.price}</td>
-                        <td className="py-2 text-right font-bold text-indigo-600">{p.totalSold}</td>
+                      <tr key={i} className="hover:bg-blue-50/30 transition-colors duration-200 group">
+                        <td className="py-4 px-6 font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                          {p.title}
+                        </td>
+                        <td className="py-4 px-6 text-right text-gray-500 font-medium">
+                          ৳{p.price.toLocaleString()}
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                        {p.totalSold} sold
+                      </span>
+                        </td>
                       </tr>
                   ))}
                   </tbody>

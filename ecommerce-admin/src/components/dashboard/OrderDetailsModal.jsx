@@ -43,7 +43,7 @@ const OrderDetailsModal = ({ order, onClose }) => {
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                                Order #{order._id.slice(-6).toUpperCase()}
+                                Order #{order._id}
                                 {/* Modal Header Green Checkmark */}
                                 {order.isPathaoSynced && (
                                     <span title="Synced to Pathao" className="text-green-500 bg-green-50 rounded-full p-1">

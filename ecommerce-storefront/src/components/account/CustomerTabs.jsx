@@ -1,50 +1,155 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { ChevronDown, ChevronUp, Package, ExternalLink } from 'lucide-react';
 
-export function OrderHistoryTab({ orders }) {
+export function OrderHistoryTab({ orders, subdomain = "" }) {
+    // State to track which order is currently expanded
+    const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+    const toggleOrderDetails = (orderId) => {
+        if (expandedOrderId === orderId) {
+            setExpandedOrderId(null); // Close if already open
+        } else {
+            setExpandedOrderId(orderId); // Open clicked order
+        }
+    };
+
     return (
         <div>
             <h2 className="text-xl font-bold text-gray-900 mb-6">Order History</h2>
+
             {orders.length === 0 ? (
                 <div className="text-center py-10 bg-gray-50 rounded-2xl">
+                    <Package size={48} className="mx-auto text-gray-300 mb-4" />
                     <p className="text-gray-500 mb-4">You haven't placed any orders yet.</p>
-                    <Link href="/" className="text-gray-900 font-bold underline">Start Shopping</Link>
+                    <Link href="/" className="text-gray-900 font-bold underline hover:text-[var(--sf-accent,blue-600)] transition-colors">
+                        Start Shopping
+                    </Link>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {orders.map(order => (
-                        <div key={order._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border border-gray-200 rounded-2xl gap-4 hover:border-gray-300 transition-colors bg-white">
-                            <div>
-                                <div className="flex items-center gap-3 mb-1">
-                                    <p className="font-bold text-gray-900">Order #{order._id.slice(-6).toUpperCase()}</p>
-                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
-                                        {new Date(order.createdAt).toLocaleDateString()}
-                                    </span>
-                                </div>
-                                {/* Show the first item they bought, and note if there are more */}
-                                <p className="text-sm text-gray-500">
-                                    {order.items[0]?.title}
-                                    {order.items.length > 1 && <span className="italic"> + {order.items.length - 1} more item(s)</span>}
-                                </p>
-                            </div>
+                    {orders.map(order => {
+                        const isExpanded = expandedOrderId === order._id;
 
-                            <div className="flex items-center gap-6 sm:justify-end">
-                                <div className="text-right">
-                                    {/* Updated to use your exact JSON structure: order.pricing.total */}
-                                    <p className="font-bold text-gray-900 text-lg mb-1">৳{order.pricing.total}</p>
+                        return (
+                            <div key={order._id} className="border border-gray-200 rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:border-gray-300 shadow-sm">
 
-                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
-                                        order.status === 'Pending' ? 'bg-yellow-50 text-yellow-600 border border-yellow-100' :
-                                            order.status === 'Shipped' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                                                order.status === 'Delivered' ? 'bg-green-50 text-green-600 border border-green-100' :
-                                                    'bg-gray-50 text-gray-600'
-                                    }`}>
-                                        {order.status}
-                                    </span>
+                                {/* Main Order Row (Clickable) */}
+                                <div
+                                    onClick={() => toggleOrderDetails(order._id)}
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-5 cursor-pointer gap-4 group"
+                                >
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <p className="font-bold text-gray-900">Order #{order._id.slice(-6).toUpperCase()}</p>
+                                            <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
+                                                {new Date(order.createdAt).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-500">
+                                            {order.items[0]?.title || 'Product'}
+                                            {order.items.length > 1 && <span className="font-medium italic"> + {order.items.length - 1} more item(s)</span>}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
+                                        <div className="text-left sm:text-right">
+                                            <p className="font-black text-gray-900 text-lg mb-1">৳ {order.pricing?.total}</p>
+                                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
+                                                order.status === 'Pending' ? 'bg-yellow-50 text-yellow-600 border border-yellow-200/50' :
+                                                    order.status === 'Shipped' ? 'bg-blue-50 text-blue-600 border border-blue-200/50' :
+                                                        order.status === 'Delivered' ? 'bg-green-50 text-green-600 border border-green-200/50' :
+                                                            'bg-gray-50 text-gray-600 border border-gray-200/50'
+                                            }`}>
+                                                {order.status}
+                                            </span>
+                                        </div>
+
+                                        <button className="flex items-center gap-1 text-sm font-bold text-[var(--sf-accent,blue-600)] bg-blue-50 group-hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors">
+                                            {isExpanded ? 'Hide' : 'View'}
+                                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                        </button>
+                                    </div>
                                 </div>
+
+                                {/* Expanded Order Details */}
+                                {isExpanded && (
+                                    <div className="border-t border-gray-100 bg-gray-50/50 p-5">
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Order Items</h4>
+                                        <div className="space-y-4">
+                                            {order.items.map((item, index) => {
+
+                                                const productId = item.productId || item.product?._id || item.product || item._id;
+                                                const productUrl = subdomain ? `/${subdomain}/products/${productId}` : `/products/${productId}`;
+
+                                                return (
+                                                    <div key={index} className="flex justify-between items-start bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                                        <div className="flex gap-4">
+                                                            {/* Clickable Image */}
+                                                            {item.imageUrl && (
+                                                                <Link href={productUrl} className="shrink-0">
+                                                                    <img
+                                                                        src={item.imageUrl}
+                                                                        alt={item.title}
+                                                                        className="w-16 h-16 object-cover rounded-lg border border-gray-100 hover:opacity-80 transition-opacity"
+                                                                    />
+                                                                </Link>
+                                                            )}
+                                                            <div>
+                                                                {/* Clickable Title */}
+                                                                <Link href={productUrl} className="group/link flex items-center gap-1.5 w-fit">
+                                                                    <p className="font-bold text-gray-900 mb-1 group-hover/link:text-[var(--sf-accent,blue-600)] transition-colors">
+                                                                        {item.title}
+                                                                    </p>
+                                                                    <ExternalLink size={12} className="text-gray-300 opacity-0 group-hover/link:opacity-100 transition-opacity mb-1" />
+                                                                </Link>
+
+                                                                {/* Render Variants if they exist */}
+                                                                {item.variant?.attributes && (
+                                                                    <div className="flex flex-wrap gap-2 mb-2">
+                                                                        {item.variant.attributes.map((attr, idx) => (
+                                                                            <span key={idx} className="text-[10px] uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold border border-gray-200">
+                                                                                {attr.name}: {attr.value}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                <p className="text-sm text-gray-500 font-medium">Qty: {item.quantity}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <p className="font-bold text-gray-900">৳ {item.price}</p>
+                                                            {item.quantity > 1 && (
+                                                                <p className="text-xs text-gray-400 mt-1">৳ {item.price * item.quantity} total</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Order Summary Footer */}
+                                        <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col items-end text-sm">
+                                            <div className="flex justify-between w-full sm:w-64 mb-2 text-gray-600">
+                                                <span>Subtotal</span>
+                                                <span className="font-medium">৳ {order.pricing?.subtotal || order.pricing?.total}</span>
+                                            </div>
+                                            {order.pricing?.shipping > 0 && (
+                                                <div className="flex justify-between w-full sm:w-64 mb-3 text-gray-600">
+                                                    <span>Shipping</span>
+                                                    <span className="font-medium">৳ {order.pricing.shipping}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between w-full sm:w-64 text-gray-900 font-black text-lg">
+                                                <span>Total</span>
+                                                <span className="text-[var(--sf-accent,blue-600)]">৳ {order.pricing?.total}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

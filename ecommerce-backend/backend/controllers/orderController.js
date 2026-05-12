@@ -79,7 +79,9 @@ exports.syncOrderToPathao = async (req, res) => {
         console.error("Pathao Sync Error:", err);
         res.status(500).json({ success: false, error: err.message });
     }
-};exports.getMyOrders = async (req, res) => {
+};
+
+exports.getMyOrders = async (req, res) => {
     try {
         // req.user._id comes from your JWT auth middleware
         const customerId = req.user._id;

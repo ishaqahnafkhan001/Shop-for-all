@@ -94,13 +94,21 @@ exports.registerVendor = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, {
+        // 1. Define base cookie options
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            domain: process.env.NODE_ENV === 'production' ? '.scaleup.codes' : 'localhost',
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        };
+
+// 2. Only add the domain explicitly if in production
+        if (process.env.NODE_ENV === 'production') {
+            cookieOptions.domain = '.scaleup.codes';
+        }
+
+// 3. Set the cookie
+        res.cookie('token', token, cookieOptions);
 
         res.status(201).json({
             message: "Shop and Vendor account created successfully",
@@ -158,13 +166,21 @@ exports.registerCustomer = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, {
+        // 1. Define base cookie options
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            domain: process.env.NODE_ENV === 'production' ? '.scaleup.codes' : 'localhost',
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        };
+
+// 2. Only add the domain explicitly if in production
+        if (process.env.NODE_ENV === 'production') {
+            cookieOptions.domain = '.scaleup.codes';
+        }
+
+// 3. Set the cookie
+        res.cookie('token', token, cookieOptions);
 
         res.status(201).json({
             success: true,
@@ -201,14 +217,22 @@ exports.login = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        res.cookie('token', token, {
+        // 1. Define base cookie options
+        const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            domain: process.env.NODE_ENV === 'production' ? '.scaleup.codes' : 'localhost',
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        };
 
+// 2. Only add the domain explicitly if in production
+        if (process.env.NODE_ENV === 'production') {
+            cookieOptions.domain = '.scaleup.codes';
+        }
+
+// 3. Set the cookie
+        res.cookie('token', token, cookieOptions);
+        console.log(token)
         res.status(200).json({
             message: "Login successful",
             token: token,
@@ -221,21 +245,51 @@ exports.login = async (req, res) => {
 };
 
 // --- GET ME ---
+// Make sure this is at the top of your file
+// const Shop = require('../models/Shop');
+
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
+        const userId = req.user._id || req.user.id;
+
+        if (!userId) {
+            return res.status(400).json({ error: "User ID missing from request" });
+        }
+
+        // 1. Fetch user. Use .lean() to return a plain JS object instead of a Mongoose document.
+        // This allows us to easily inject new properties (like shopName) into it.
+        const user = await User.findById(userId).select('-password').lean();
+
         if (!user) return res.status(404).json({ error: "User not found" });
+
+        // 2. Look up the shop using the user's shop_id
+        if (user.shop_id) {
+            const shop = await Shop.findById(user.shop_id).select('shopName subdomain').lean();
+
+            // 3. Attach the shop data directly to the user object
+            if (shop) {
+                user.shopName = shop.shopName;
+                user.subdomain = shop.subdomain;
+            }
+        }
+
+        // Return the user (now containing shopName and subdomain) so the frontend can restore the session
         res.status(200).json({ success: true, user });
     } catch (err) {
+        console.error("GetMe Error:", err);
         res.status(500).json({ error: "Error fetching user session" });
     }
-};
-
-// --- LOGOUT ---
+};// --- LOGOUT ---
 exports.logout = (req, res) => {
-    res.cookie('token', 'none', {
-        expires: new Date(Date.now() + 1000),
-        httpOnly: true
-    });
+    const cookieOptions = {
+        httpOnly: true,
+        expires: new Date(0) // Set to a date in the past to delete immediately
+    };
+
+    if (process.env.NODE_ENV === 'production') {
+        cookieOptions.domain = '.scaleup.codes';
+    }
+
+    res.cookie('token', 'none', cookieOptions);
     res.status(200).json({ message: "Logged out successfully" });
 };

@@ -1,18 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Mail, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
+import SendMailModal from './SendMailModal';
+
+// 👇 1. Import your auth hook (adjust the path if necessary)
+import { useAuth } from '../../../context/AuthContext';
 
 const CustomerList = () => {
+    // 👇 2. Extract the current user from context
+    const { user } = useAuth();
+    // console.log(user.shopName)
+
+    // --- State ---
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
+    // Modal State
+    const [isMailModalOpen, setIsMailModalOpen] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+    // --- Fetch Data ---
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
                 const { data } = await API.get('/admin/customers');
-                // console.log("API RESPONSE:", data);
                 setCustomers(Array.isArray(data) ? data : []);
             } catch (err) {
                 toast.error("Failed to load customers");
@@ -23,6 +37,7 @@ const CustomerList = () => {
         fetchCustomers();
     }, []);
 
+    // --- Handlers ---
     const handleToggleStatus = async (id, currentStatus) => {
         const action = currentStatus === 'Active' ? 'ban' : 'unban';
         if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
@@ -38,6 +53,20 @@ const CustomerList = () => {
         }
     };
 
+    const openMailModal = (customer) => {
+        setSelectedCustomer(customer);
+        setIsMailModalOpen(true);
+    };
+
+    // --- Filter Logic ---
+    const filteredCustomers = useMemo(() => {
+        return customers.filter(cust =>
+            cust.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            cust.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [customers, searchQuery]);
+
+    // --- Table Configuration ---
     const columns = [
         {
             label: 'Customer',
@@ -89,59 +118,52 @@ const CustomerList = () => {
     const renderActions = (row) => (
         <div className="flex justify-end space-x-2">
             <button
-                onClick={() => window.location.href = `mailto:${row.email}`}
+                onClick={() => openMailModal(row)}
                 className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                title="Email Customer"
+                title="Send Email to Customer"
             >
                 <Mail size={18} />
-            </button>
-            <button
-                onClick={() => handleToggleStatus(row._id, row.status || 'Active')}
-                className={`p-1.5 rounded transition-colors ${
-                    row.status === 'Suspended'
-                        ? 'text-green-600 hover:bg-green-50'
-                        : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
-                }`}
-                title={row.status === 'Suspended' ? "Reactivate Account" : "Suspend Account"}
-            >
-                {row.status === 'Suspended' ? <ShieldCheck size={18} /> : <ShieldAlert size={18} />}
             </button>
         </div>
     );
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
                 <p className="mt-1 text-sm text-gray-500">Manage your store's registered users.</p>
             </div>
 
+            {/* Search Bar */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 flex flex-col sm:flex-row gap-3">
                 <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search customers by name or email..."
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-                <button className="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition">
-                    Filter
-                </button>
             </div>
 
+            {/* Data Rendering */}
             {loading ? (
                 <div className="py-10 text-center text-gray-500">Loading your customers...</div>
             ) : (
                 <>
+                    {/* Desktop View */}
                     <div className="hidden md:block">
-                        <Table columns={columns} data={customers} actions={renderActions} />
+                        <Table columns={columns} data={filteredCustomers} actions={renderActions} />
                     </div>
 
+                    {/* Mobile View */}
                     <div className="md:hidden space-y-4">
-                        {customers.length === 0 ? (
+                        {filteredCustomers.length === 0 ? (
                             <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
                                 No customers found.
                             </div>
                         ) : (
-                            customers.map((cust) => (
+                            filteredCustomers.map((cust) => (
                                 <div key={cust._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center space-x-3">
@@ -178,6 +200,15 @@ const CustomerList = () => {
                     </div>
                 </>
             )}
+
+            {/* Email Modal Component */}
+            <SendMailModal
+                isOpen={isMailModalOpen}
+                onClose={() => setIsMailModalOpen(false)}
+                customer={selectedCustomer}
+                // 👇 3. Pass the dynamic shop name straight to the modal!
+                shopName={user?.shopName}
+            />
         </div>
     );
 };

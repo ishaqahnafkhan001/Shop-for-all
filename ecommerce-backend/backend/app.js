@@ -34,22 +34,34 @@ app.use(cookieParser()); // Parses cookies so we can read the JWT
 app.use(
     cors({
         origin: (origin, callback) => {
-            // allow requests with no origin (mobile apps, postman, curl)
+
+            console.log("Incoming Origin:", origin);
+
+            // Mobile apps / Postman
             if (!origin) {
                 return callback(null, true);
             }
 
-            // exact matches from .env
+            // Exact origins from env
             if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             }
 
-            // allow localhost subdomains
-            if (/\.localhost:3000$/.test(origin)) {
+            // Localhost + subdomains
+            if (
+                /^https?:\/\/([a-z0-9-]+\.)?localhost:(3000|5173)$/.test(origin)
+            ) {
                 return callback(null, true);
             }
 
-            return callback(new Error('Not allowed by CORS'));
+            // Production tenant subdomains
+            if (
+                /^https?:\/\/([a-z0-9-]+)\.scaleup\.codes$/.test(origin)
+            ) {
+                return callback(null, true);
+            }
+
+            return callback(new Error(`CORS blocked: ${origin}`));
         },
 
         credentials: true,

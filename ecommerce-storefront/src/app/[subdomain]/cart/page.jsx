@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { useCart } from '@/context/CartContext';
-import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, ShieldCheck, Truck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CartPage() {
@@ -54,68 +54,107 @@ export default function CartPage() {
                 {/* Left Side: Items */}
                 <div className="lg:col-span-2 space-y-4">
                     {cartItems.map((item) => (
-                        <div key={item._id} className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                        <div key={item._id} className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
 
-                                <div className="flex items-center space-x-4 mb-4 sm:mb-0">
-                                    <div className="w-24 h-24 bg-gray-50 rounded-xl flex-shrink-0 border overflow-hidden">
+                                <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0 w-full">
+                                    {/* Product Image */}
+                                    <div className="w-full sm:w-28 sm:h-28 aspect-square bg-gray-50 rounded-xl flex-shrink-0 border border-gray-100 overflow-hidden">
                                         <img
                                             src={item.imageUrl || (item.images && item.images[0]) || 'https://via.placeholder.com/150'}
                                             alt={item.title}
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-gray-900 line-clamp-1">{item.title}</h3>
+
+                                    {/* Product Details */}
+                                    <div className="flex flex-col flex-1 min-w-0 w-full">
+
+                                        {/* Category & SKU */}
+                                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                            {item.category && (
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--sf-accent,blue-600)]">
+                                                    {item.category}
+                                                </span>
+                                            )}
+                                            {(item.sku || item.selectedVariant?.sku) && (
+                                                <span className="text-[10px] text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                                                    SKU: {item.selectedVariant?.sku || item.sku}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <h3 className="font-bold text-lg text-gray-900 line-clamp-1 mb-1" title={item.title}>
+                                            {item.title}
+                                        </h3>
+
+                                        {/* Description Snippet */}
+                                        {(item.shortDescription || item.description) && (
+                                            <p className="text-xs text-gray-500 line-clamp-2 mb-2 leading-relaxed">
+                                                {item.shortDescription || item.description}
+                                            </p>
+                                        )}
 
                                         {/* RENDER VARIANTS (JSX Safe) */}
                                         {item.selectedVariant && item.selectedVariant.attributes && (
-                                            <div className="flex flex-wrap gap-2 mt-1">
+                                            <div className="flex flex-wrap gap-2 mb-2">
                                                 {item.selectedVariant.attributes.map((attr, idx) => (
-                                                    <span key={idx} className="text-[10px] uppercase tracking-wider bg-gray-100 px-2 py-1 rounded text-gray-600 font-bold">
-                                                        {attr.name}: {attr.value}
+                                                    <span key={idx} className="text-[11px] uppercase tracking-wider border border-gray-200 bg-gray-50 px-2 py-1 rounded-md text-gray-700 font-semibold">
+                                                        <span className="text-gray-400 mr-1">{attr.name}:</span>
+                                                        {attr.value}
                                                     </span>
                                                 ))}
                                             </div>
                                         )}
 
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <p className="font-bold text-blue-600">৳ {item.finalPrice || item.sellingPrice}</p>
+                                        {/* Pricing */}
+                                        <div className="mt-auto flex items-center gap-2">
+                                            <p className="font-extrabold text-[var(--sf-accent,blue-600)] text-lg">
+                                                ৳ {item.finalPrice || item.sellingPrice}
+                                            </p>
                                             {item.pricing?.discount > 0 && (
-                                                <p className="text-xs text-gray-400 line-through">৳ {item.pricing.sellingPrice}</p>
+                                                <p className="text-sm text-gray-400 line-through">
+                                                    ৳ {item.pricing.sellingPrice}
+                                                </p>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-6 w-full sm:w-auto justify-between">
-                                    <div className="flex flex-col items-end">
-                                        <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50">
+                                {/* Controls */}
+                                <div className="flex items-center space-x-6 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-gray-100 pt-4 sm:pt-0">
+                                    <div className="flex flex-col items-center sm:items-end">
+                                        <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 overflow-hidden shadow-sm">
                                             <button
                                                 onClick={() => updateQuantity(item._id, item.quantity - 1)}
                                                 disabled={item.quantity <= 1}
-                                                className="p-2 text-gray-500 hover:text-gray-900 disabled:opacity-30"
+                                                className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                                             >
                                                 <Minus size={14} />
                                             </button>
-                                            <span className="w-8 text-center font-semibold text-sm">{item.quantity}</span>
+                                            <span className="w-10 text-center font-bold text-sm bg-white py-2">
+                                                {item.quantity}
+                                            </span>
                                             <button
                                                 onClick={() => updateQuantity(item._id, item.quantity + 1)}
                                                 disabled={item.quantity >= (item.selectedVariant?.stock || item.stock || 99)}
-                                                className="p-2 text-gray-500 hover:text-gray-900 disabled:opacity-30"
+                                                className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                                             >
                                                 <Plus size={14} />
                                             </button>
                                         </div>
                                         {/* Stock Alert logic */}
                                         {item.quantity >= (item.selectedVariant?.stock || item.stock) && (
-                                            <span className="text-[10px] text-orange-600 mt-1 font-bold">Limit reached</span>
+                                            <span className="text-[10px] text-orange-600 mt-1 font-bold flex items-center">
+                                                Limit reached
+                                            </span>
                                         )}
                                     </div>
 
                                     <button
                                         onClick={() => removeFromCart(item._id)}
-                                        className="text-gray-400 hover:text-red-600 p-2 transition"
+                                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-lg transition-colors"
+                                        title="Remove item"
                                     >
                                         <Trash2 size={20} />
                                     </button>
@@ -141,31 +180,31 @@ export default function CartPage() {
                             </div>
 
                             {totalSavings > 0 && (
-                                <div className="flex justify-between text-green-600 font-bold bg-green-100/50 p-2 rounded-lg">
+                                <div className="flex justify-between text-green-700 font-bold bg-green-100/50 p-3 rounded-xl border border-green-200/50">
                                     <span>Total Savings</span>
                                     <span>- ৳ {totalSavings}</span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex justify-between items-center border-t border-gray-200 pt-4 mb-8">
-                            <span className="font-bold text-gray-900">Total</span>
-                            <span className="text-2xl font-black text-gray-900">৳ {total}</span>
+                        <div className="flex justify-between items-center border-t border-gray-200 pt-5 mb-8">
+                            <span className="font-bold text-gray-900 text-lg">Total</span>
+                            <span className="text-3xl font-black text-[var(--sf-accent,gray-900)]">৳ {total}</span>
                         </div>
 
-                        <Link href="/checkout" className="w-full block text-center bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg">
+                        <Link href="/checkout" className="w-full block text-center bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-[var(--sf-accent,black)] hover:-translate-y-0.5 transition-all shadow-lg">
                             Proceed to Checkout
                         </Link>
 
                         {/* Trust Info */}
                         <div className="mt-8 space-y-4 pt-6 border-t border-gray-200">
-                            <div className="flex items-center gap-3 text-xs text-gray-500">
-                                <ShieldCheck size={16} className="text-green-600" />
+                            <div className="flex items-center gap-3 text-sm text-gray-600 font-medium bg-white p-3 rounded-xl border border-gray-100">
+                                <ShieldCheck size={18} className="text-green-600 flex-shrink-0" />
                                 <span>Authentic Products Guaranteed</span>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-500">
-                                <Truck size={16} className="text-gray-400" />
-                                <span>Delivery within 2-3 business days</span>
+                            <div className="flex items-center gap-3 text-sm text-gray-600 font-medium bg-white p-3 rounded-xl border border-gray-100">
+                                <Truck size={18} className="text-[var(--sf-accent,blue-600)] flex-shrink-0" />
+                                <span>Fast & secure delivery</span>
                             </div>
                         </div>
                     </div>

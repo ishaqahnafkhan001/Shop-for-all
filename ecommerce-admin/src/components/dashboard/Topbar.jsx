@@ -1,13 +1,19 @@
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, Menu, ExternalLink } from 'lucide-react';
 
-// 1. Accept the onOpenMenu prop
 const Topbar = ({ onOpenMenu }) => {
     const { user, logout } = useAuth();
 
+    const subdomain = user?.shop?.subdomain || user?.subdomain || 'demo';
+
+    let baseDomain = import.meta.env.VITE_API_DOMAIN ;
+    baseDomain = baseDomain.replace(/^https?:\/\//, '');
+
+    const protocol = baseDomain.includes('localhost') ? 'http://' : 'https://';
+    const liveStoreUrl = `${protocol}${subdomain}.${baseDomain}`;
+
     return (
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-10 shadow-sm">
-            {/* 2. Attach the onClick event to the button */}
             <button
                 onClick={onOpenMenu}
                 className="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
@@ -18,10 +24,17 @@ const Topbar = ({ onOpenMenu }) => {
             <div className="hidden md:block"></div>
 
             <div className="flex items-center space-x-4">
-                <button className="hidden sm:flex items-center text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors">
+
+                {/* Changed from <button> to <a> tag to open the URL in a new tab */}
+                <a
+                    href={liveStoreUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hidden sm:flex items-center text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors"
+                >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Live Store
-                </button>
+                </a>
 
                 <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
 

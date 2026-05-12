@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-// ✨ Added Sparkles and Loader2 for the AI button
-import { Plus, Trash2, X, Image as ImageIcon, Video, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Trash2, X, Image as ImageIcon, Video, Sparkles, Loader2, Eye } from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
@@ -34,6 +33,7 @@ const AddProduct = () => {
     // Multi-media states
     const [imageFiles, setImageFiles] = useState([]);
     const [videoFiles, setVideoFiles] = useState([]);
+    const [previewImageUrl, setPreviewImageUrl] = useState(null);
 
     // ── Scalar fields ─────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
@@ -62,6 +62,20 @@ const AddProduct = () => {
         [validAttrs]
     );
 
+    const finalPrice = formData.pricing.sellingPrice - (formData.pricing.sellingPrice * formData.pricing.discount) / 100;
+    const profit     = (finalPrice || 0) - (Number(formData.pricing.buyingPrice) || 0);
+
+    // Live Image Preview Effect
+    useEffect(() => {
+        if (imageFiles.length > 0) {
+            const url = URL.createObjectURL(imageFiles[0]);
+            setPreviewImageUrl(url);
+            return () => URL.revokeObjectURL(url); // cleanup
+        } else {
+            setPreviewImageUrl(null);
+        }
+    }, [imageFiles]);
+
     // ── AI Generator Handler ──────────────────────────────────────────────────
     const handleGenerateDescription = async () => {
         if (!formData.title) {
@@ -71,7 +85,6 @@ const AddProduct = () => {
 
         setIsGenerating(true);
         try {
-            // Calls the new endpoint you added to the backend
             const response = await API.post('/admin/generate-description', {
                 title: formData.title,
                 category: formData.category
@@ -191,9 +204,6 @@ const AddProduct = () => {
     const addKV    = (type) => setFormData({ ...formData, [type]: [...formData[type], { title: '', value: '' }] });
     const removeKV = (type, index) => setFormData({ ...formData, [type]: formData[type].filter((_, i) => i !== index) });
 
-    const finalPrice = formData.pricing.sellingPrice - (formData.pricing.sellingPrice * formData.pricing.discount) / 100;
-    const profit     = (finalPrice || 0) - (Number(formData.pricing.buyingPrice) || 0);
-
     // ── Submit ────────────────────────────────────────────────────────────────
 
     const handleSubmit = async (e) => {
@@ -252,301 +262,376 @@ const AddProduct = () => {
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        /* Increased max-width to accommodate the right sidebar preview */
+        <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
             <h1 className="text-xl sm:text-2xl font-bold">Add Product</h1>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                {/* ── BASIC ─────────────────────────────────────────────── */}
-                <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <h2 className="font-semibold text-gray-700">Basic Info</h2>
+                {/* ── LEFT COLUMN: FORM ────────────────────────────────────────── */}
+                <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
 
-                    <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
+                    {/* ── BASIC ─────────────────────────────────────────────── */}
+                    <div className="bg-white p-5 rounded-xl border space-y-4">
+                        <h2 className="font-semibold text-gray-700">Basic Info</h2>
 
-                    <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
+                        <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
 
-                    {/* ✨ AI Description Section */}
-                    <div className="space-y-1">
-                        <div className="flex justify-between items-end mb-1">
-                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                        <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
 
-                            <button
-                                type="button"
-                                onClick={handleGenerateDescription}
-                                disabled={isGenerating || !formData.title}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isGenerating ? (
-                                    <Loader2 size={14} className="animate-spin" />
-                                ) : (
-                                    <Sparkles size={14} />
-                                )}
-                                {isGenerating ? 'Generating...' : 'Auto-Write with AI'}
-                            </button>
-                        </div>
-                        <textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-shadow"
-                            placeholder="Describe your product here..."
-                            rows={4}
-                            required
-                        />
-                    </div>
-                </div>
-
-                {/* ── MEDIA ─────────────────────────────────────────────── */}
-                <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <h2 className="font-semibold flex items-center gap-2">
-                        <ImageIcon size={16} /> Media
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* ✨ AI Description Section */}
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-600">Images (max 10)</label>
-                            <input
-                                type="file" accept="image/*" multiple
-                                onChange={(e) => setImageFiles(Array.from(e.target.files))}
-                                className="w-full border rounded-lg p-2 text-sm bg-gray-50"
-                            />
-                            {imageFiles.length > 0 && (
-                                <p className="text-xs text-indigo-600 font-medium">{imageFiles.length} image(s) selected</p>
-                            )}
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
-                                <Video size={14} /> Videos (max 2)
-                            </label>
-                            <input
-                                type="file" accept="video/*" multiple
-                                onChange={(e) => setVideoFiles(Array.from(e.target.files))}
-                                className="w-full border rounded-lg p-2 text-sm bg-gray-50"
-                            />
-                            {videoFiles.length > 0 && (
-                                <p className="text-xs text-indigo-600 font-medium">{videoFiles.length} video(s) selected</p>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                            <div className="flex justify-between items-end mb-1">
+                                <label className="block text-sm font-medium text-gray-700">Description</label>
 
-                {/* ── PRICING ───────────────────────────────────────────── */}
-                <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <h2 className="font-semibold text-gray-700">Pricing</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Input id="buyingPrice"  label="Buying Price"     type="number" onChange={handlePricing} required />
-                        <Input id="sellingPrice" label="Selling Price"    type="number" onChange={handlePricing} required />
-                        <Input id="discount"     label="Discount %" type="number" onChange={handlePricing} />
-                    </div>
-                    <div className={`p-4 rounded-lg border text-sm space-y-1 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Final Price:</span>
-                            <span className="font-bold text-indigo-600">৳ {Math.round(finalPrice || 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Estimated Profit:</span>
-                            <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                ৳ {profit.toFixed(2)} {profit < 0 && '(Loss!)'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── VARIANT MATRIX ────────────────────────────────────── */}
-                <div className="bg-white p-5 rounded-xl border space-y-5">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h2 className="font-semibold text-gray-700">Variants</h2>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                                Define dimensions → options are auto-combined into variants
-                            </p>
-                        </div>
-                        {combinations.length > 0 && (
-                            <span className="text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-1 rounded-full font-medium">
-                                {combinations.length} combo{combinations.length !== 1 ? 's' : ''}
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Attribute rows */}
-                    <div className="space-y-3">
-                        {attributes.map((attr, i) => (
-                            <div key={i} className="flex gap-2 items-start">
-                                {/* Dimension name */}
-                                <input
-                                    className="w-28 shrink-0 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                    placeholder="e.g. color"
-                                    value={attr.name}
-                                    onChange={(e) => setAttrName(i, e.target.value)}
-                                />
-
-                                {/* Options tag input */}
-                                <div className="flex-1 flex flex-wrap items-center gap-1.5 border rounded-lg px-2 py-1.5 min-h-[36px] focus-within:ring-2 focus-within:ring-indigo-300">
-                                    {attr.options.map(opt => (
-                                        <span
-                                            key={opt}
-                                            className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded-full"
-                                        >
-                                            {opt}
-                                            <button
-                                                type="button"
-                                                onClick={() => removeOption(i, opt)}
-                                                className="hover:text-red-500 transition-colors"
-                                            >
-                                                <X size={11} />
-                                            </button>
-                                        </span>
-                                    ))}
-                                    <input
-                                        className="flex-1 min-w-[80px] text-sm outline-none bg-transparent"
-                                        placeholder={attr.options.length === 0 ? 'Type option, press Enter' : 'Add more…'}
-                                        value={optionInputs[i]}
-                                        onChange={(e) => {
-                                            const inputs = [...optionInputs];
-                                            inputs[i] = e.target.value;
-                                            setOptionInputs(inputs);
-                                        }}
-                                        onKeyDown={(e) => handleOptionKeyDown(e, i)}
-                                        onBlur={() => commitOption(i, optionInputs[i])}
-                                    />
-                                </div>
-
-                                {/* Remove attribute row */}
                                 <button
                                     type="button"
-                                    onClick={() => removeAttribute(i)}
-                                    disabled={attributes.length === 1}
-                                    className="mt-1.5 text-gray-300 hover:text-red-500 disabled:opacity-20 transition-colors"
+                                    onClick={handleGenerateDescription}
+                                    disabled={isGenerating || !formData.title}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <Trash2 size={15} />
+                                    {isGenerating ? (
+                                        <Loader2 size={14} className="animate-spin" />
+                                    ) : (
+                                        <Sparkles size={14} />
+                                    )}
+                                    {isGenerating ? 'Generating...' : 'Auto-Write with AI'}
                                 </button>
                             </div>
-                        ))}
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={addAttribute}
-                        className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-medium"
-                    >
-                        <Plus size={14} /> Add attribute
-                    </button>
-
-                    {/* Default stock + bulk set */}
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                            Default stock
-                        </label>
-                        <input
-                            type="number" min={0}
-                            value={defaultStock}
-                            onChange={(e) => handleDefaultStockChange(e.target.value)}
-                            className="w-24 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                        />
-                        {Object.keys(stockOverrides).length > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => setAllStock(defaultStock)}
-                                className="text-xs text-gray-400 hover:text-gray-600 underline"
-                            >
-                                Reset all to {defaultStock}
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Generated combination table */}
-                    {combinations.length > 0 && (
-                        <div className="border rounded-xl overflow-hidden mt-4">
-                            <table className="w-full text-sm">
-                                <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
-                                <tr>
-                                    <th className="text-left px-4 py-2.5 font-medium">Variant</th>
-                                    <th className="text-right px-4 py-2.5 font-medium w-32">Stock</th>
-                                </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                {combinations.map((combo, ci) => {
-                                    const key       = makePipeKey(combo);
-                                    const isOverride = stockOverrides[key] !== undefined && stockOverrides[key] !== defaultStock;
-                                    return (
-                                        <tr key={key} className="hover:bg-gray-50/60">
-                                            <td className="px-4 py-2 flex flex-wrap gap-1.5">
-                                                {combo.map(a => (
-                                                    <span key={a.name} className="text-gray-700">
-                                                        <span className="text-gray-400 text-xs mr-0.5">{a.name}:</span>
-                                                        <span className="font-medium">{a.value}</span>
-                                                    </span>
-                                                ))}
-                                            </td>
-                                            <td className="px-4 py-2 text-right">
-                                                <input
-                                                    type="number" min={0}
-                                                    value={getStock(combo)}
-                                                    onChange={(e) => setStock(combo, e.target.value)}
-                                                    className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
-                                                        isOverride ? 'border-indigo-300 bg-indigo-50/50' : ''
-                                                    }`}
-                                                />
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                </tbody>
-                            </table>
+                            <textarea
+                                id="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-shadow"
+                                placeholder="Describe your product here..."
+                                rows={4}
+                                required
+                            />
                         </div>
-                    )}
+                    </div>
 
-                    {validAttrs.length === 0 && (
-                        <p className="text-xs text-gray-400 text-center py-2">
-                            Add an attribute name and at least one option to see generated variants
-                        </p>
-                    )}
-                </div>
+                    {/* ── MEDIA ─────────────────────────────────────────────── */}
+                    <div className="bg-white p-5 rounded-xl border space-y-4">
+                        <h2 className="font-semibold flex items-center gap-2">
+                            <ImageIcon size={16} /> Media
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-600">Images (max 10)</label>
+                                <input
+                                    type="file" accept="image/*" multiple
+                                    onChange={(e) => setImageFiles(Array.from(e.target.files))}
+                                    className="w-full border rounded-lg p-2 text-sm bg-gray-50"
+                                />
+                                {imageFiles.length > 0 && (
+                                    <p className="text-xs text-indigo-600 font-medium">{imageFiles.length} image(s) selected</p>
+                                )}
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                                    <Video size={14} /> Videos (max 2)
+                                </label>
+                                <input
+                                    type="file" accept="video/*" multiple
+                                    onChange={(e) => setVideoFiles(Array.from(e.target.files))}
+                                    className="w-full border rounded-lg p-2 text-sm bg-gray-50"
+                                />
+                                {videoFiles.length > 0 && (
+                                    <p className="text-xs text-indigo-600 font-medium">{videoFiles.length} video(s) selected</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
 
-                {/* ── FEATURES / SPECS / COMMENTS ───────────────────────── */}
-                {['features', 'specifications', 'comments'].map((type) => (
-                    <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
+                    {/* ── PRICING ───────────────────────────────────────────── */}
+                    <div className="bg-white p-5 rounded-xl border space-y-4">
+                        <h2 className="font-semibold text-gray-700">Pricing</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <Input id="buyingPrice"  label="Buying Price"     type="number" onChange={handlePricing} required />
+                            <Input id="sellingPrice" label="Selling Price"    type="number" onChange={handlePricing} required />
+                            <Input id="discount"     label="Discount %" type="number" onChange={handlePricing} />
+                        </div>
+                        <div className={`p-4 rounded-lg border text-sm space-y-1 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Final Price:</span>
+                                <span className="font-bold text-indigo-600">৳ {Math.round(finalPrice || 0)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Estimated Profit:</span>
+                                <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    ৳ {profit.toFixed(2)} {profit < 0 && '(Loss!)'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── VARIANT MATRIX ────────────────────────────────────── */}
+                    <div className="bg-white p-5 rounded-xl border space-y-5">
                         <div className="flex justify-between items-center">
-                            <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
-                            <button
-                                type="button" onClick={() => addKV(type)}
-                                className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700 font-medium"
-                            >
-                                <Plus size={14} /> Add
-                            </button>
-                        </div>
-                        {formData[type].map((item, index) => (
-                            <div key={index} className="grid grid-cols-2 gap-2 relative pr-6">
-                                <input
-                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                    placeholder="Title (e.g. Material)"
-                                    value={item.title}
-                                    onChange={(e) => handleKVChange(type, index, 'title', e.target.value)}
-                                />
-                                <input
-                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                    placeholder="Value (e.g. Cotton)"
-                                    value={item.value}
-                                    onChange={(e) => handleKVChange(type, index, 'value', e.target.value)}
-                                />
-                                <button
-                                    type="button" onClick={() => removeKV(type, index)}
-                                    className="absolute right-0 top-2.5 text-gray-300 hover:text-red-500 transition-colors"
-                                >
-                                    <Trash2 size={15} />
-                                </button>
+                            <div>
+                                <h2 className="font-semibold text-gray-700">Variants</h2>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    Define dimensions → options are auto-combined into variants
+                                </p>
                             </div>
-                        ))}
-                        {formData[type].length === 0 && (
-                            <p className="text-xs text-gray-400">None added</p>
+                            {combinations.length > 0 && (
+                                <span className="text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-1 rounded-full font-medium">
+                                    {combinations.length} combo{combinations.length !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Attribute rows */}
+                        <div className="space-y-3">
+                            {attributes.map((attr, i) => (
+                                <div key={i} className="flex gap-2 items-start">
+                                    <input
+                                        className="w-28 shrink-0 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                        placeholder="e.g. color"
+                                        value={attr.name}
+                                        onChange={(e) => setAttrName(i, e.target.value)}
+                                    />
+
+                                    <div className="flex-1 flex flex-wrap items-center gap-1.5 border rounded-lg px-2 py-1.5 min-h-[36px] focus-within:ring-2 focus-within:ring-indigo-300">
+                                        {attr.options.map(opt => (
+                                            <span
+                                                key={opt}
+                                                className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded-full"
+                                            >
+                                                {opt}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeOption(i, opt)}
+                                                    className="hover:text-red-500 transition-colors"
+                                                >
+                                                    <X size={11} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                        <input
+                                            className="flex-1 min-w-[80px] text-sm outline-none bg-transparent"
+                                            placeholder={attr.options.length === 0 ? 'Type option, press Enter' : 'Add more…'}
+                                            value={optionInputs[i]}
+                                            onChange={(e) => {
+                                                const inputs = [...optionInputs];
+                                                inputs[i] = e.target.value;
+                                                setOptionInputs(inputs);
+                                            }}
+                                            onKeyDown={(e) => handleOptionKeyDown(e, i)}
+                                            onBlur={() => commitOption(i, optionInputs[i])}
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => removeAttribute(i)}
+                                        disabled={attributes.length === 1}
+                                        className="mt-1.5 text-gray-300 hover:text-red-500 disabled:opacity-20 transition-colors"
+                                    >
+                                        <Trash2 size={15} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={addAttribute}
+                            className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1 font-medium"
+                        >
+                            <Plus size={14} /> Add attribute
+                        </button>
+
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-gray-600 whitespace-nowrap">
+                                Default stock
+                            </label>
+                            <input
+                                type="number" min={0}
+                                value={defaultStock}
+                                onChange={(e) => handleDefaultStockChange(e.target.value)}
+                                className="w-24 border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            />
+                            {Object.keys(stockOverrides).length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setAllStock(defaultStock)}
+                                    className="text-xs text-gray-400 hover:text-gray-600 underline"
+                                >
+                                    Reset all to {defaultStock}
+                                </button>
+                            )}
+                        </div>
+
+                        {combinations.length > 0 && (
+                            <div className="border rounded-xl overflow-hidden mt-4">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+                                    <tr>
+                                        <th className="text-left px-4 py-2.5 font-medium">Variant</th>
+                                        <th className="text-right px-4 py-2.5 font-medium w-32">Stock</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                    {combinations.map((combo, ci) => {
+                                        const key       = makePipeKey(combo);
+                                        const isOverride = stockOverrides[key] !== undefined && stockOverrides[key] !== defaultStock;
+                                        return (
+                                            <tr key={key} className="hover:bg-gray-50/60">
+                                                <td className="px-4 py-2 flex flex-wrap gap-1.5">
+                                                    {combo.map(a => (
+                                                        <span key={a.name} className="text-gray-700">
+                                                            <span className="text-gray-400 text-xs mr-0.5">{a.name}:</span>
+                                                            <span className="font-medium">{a.value}</span>
+                                                        </span>
+                                                    ))}
+                                                </td>
+                                                <td className="px-4 py-2 text-right">
+                                                    <input
+                                                        type="number" min={0}
+                                                        value={getStock(combo)}
+                                                        onChange={(e) => setStock(combo, e.target.value)}
+                                                        className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
+                                                            isOverride ? 'border-indigo-300 bg-indigo-50/50' : ''
+                                                        }`}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {validAttrs.length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-2">
+                                Add an attribute name and at least one option to see generated variants
+                            </p>
                         )}
                     </div>
-                ))}
 
-                <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">
-                    Save Product
-                </Button>
+                    {/* ── FEATURES / SPECS / COMMENTS ───────────────────────── */}
+                    {['features', 'specifications', 'comments'].map((type) => (
+                        <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
+                            <div className="flex justify-between items-center">
+                                <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                                <button
+                                    type="button" onClick={() => addKV(type)}
+                                    className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700 font-medium"
+                                >
+                                    <Plus size={14} /> Add
+                                </button>
+                            </div>
+                            {formData[type].map((item, index) => (
+                                <div key={index} className="grid grid-cols-2 gap-2 relative pr-6">
+                                    <input
+                                        className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                        placeholder="Title (e.g. Material)"
+                                        value={item.title}
+                                        onChange={(e) => handleKVChange(type, index, 'title', e.target.value)}
+                                    />
+                                    <input
+                                        className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                        placeholder="Value (e.g. Cotton)"
+                                        value={item.value}
+                                        onChange={(e) => handleKVChange(type, index, 'value', e.target.value)}
+                                    />
+                                    <button
+                                        type="button" onClick={() => removeKV(type, index)}
+                                        className="absolute right-0 top-2.5 text-gray-300 hover:text-red-500 transition-colors"
+                                    >
+                                        <Trash2 size={15} />
+                                    </button>
+                                </div>
+                            ))}
+                            {formData[type].length === 0 && (
+                                <p className="text-xs text-gray-400">None added</p>
+                            )}
+                        </div>
+                    ))}
 
-            </form>
+                    <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">
+                        Save Product
+                    </Button>
+                </form>
+
+                {/* ── RIGHT COLUMN: LIVE PREVIEW ───────────────────────────────── */}
+                <div className="lg:col-span-1">
+                    <div className="sticky top-6 space-y-4">
+                        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                            <Eye size={16} /> Live Storefront Preview
+                        </h2>
+
+                        <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group">
+                            {/* Image Section */}
+                            <div className="relative aspect-[4/5] bg-gray-50 flex items-center justify-center p-6 border-b border-gray-50 overflow-hidden">
+                                {previewImageUrl ? (
+                                    <img
+                                        src={previewImageUrl}
+                                        alt="Preview"
+                                        className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-gray-300">
+                                        <ImageIcon size={48} className="mb-2 opacity-50" />
+                                        <span className="text-xs font-medium">No Image</span>
+                                    </div>
+                                )}
+
+                                {/* Discount Badge */}
+                                {formData.pricing.discount > 0 && (
+                                    <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md">
+                                        -{formData.pricing.discount}%
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Details Section */}
+                            <div className="p-6">
+                                <div className="min-h-[20px] mb-2">
+                                    {formData.category ? (
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
+                                            {formData.category}
+                                        </span>
+                                    ) : (
+                                        <span className="text-[10px] text-gray-300 uppercase tracking-wider bg-gray-50 px-2 py-1 rounded-md">
+                                            Category
+                                        </span>
+                                    )}
+                                </div>
+
+                                <h3 className="font-bold text-gray-900 text-lg mb-2 line-clamp-2 leading-tight min-h-[50px]">
+                                    {formData.title || 'Your Product Title Will Appear Here'}
+                                </h3>
+
+                                <div className="flex items-center gap-3 mb-4">
+                                    <p className="font-extrabold text-indigo-600 text-2xl">
+                                        ৳ {Math.round(finalPrice || 0)}
+                                    </p>
+                                    {formData.pricing.discount > 0 && (
+                                        <p className="text-sm text-gray-400 line-through font-medium">
+                                            ৳ {formData.pricing.sellingPrice || 0}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed min-h-[40px] mb-6">
+                                    {formData.description || 'Start typing a description or use the AI tool to auto-generate one...'}
+                                </p>
+
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="w-full bg-gray-900 text-white py-3.5 rounded-xl text-sm font-bold opacity-50 cursor-not-allowed"
+                                >
+                                    Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

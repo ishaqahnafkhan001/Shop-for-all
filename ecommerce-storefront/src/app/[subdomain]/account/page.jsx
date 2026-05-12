@@ -1,28 +1,66 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import API from '@/api/api';
 import { toast } from 'react-hot-toast';
 
-// IMPORT YOUR VIEW COMPONENTS
 import AuthView from '@/components/account/AuthView';
 import VendorView from '@/components/account/VendorView';
 import CustomerDashboard from '@/components/account/CustomerDashboard';
 
 export default function AccountPage({ params }) {
-    // React.use() unwraps the params promise in Next.js 15+
     const { subdomain } = React.use(params);
     const router = useRouter();
 
-    // --- STATE ---
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isRegistering, setIsRegistering] = useState(false);
-    const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '' });
+
+    const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '', otp: '' });
+    const [otpSent, setOtpSent] = useState(false);
+
+    // NEW: Timer state (in seconds)
+    const [otpTimer, setOtpTimer] = useState(0);
+
     const [passForm, setPassForm] = useState({ oldPassword: '', newPassword: '' });
     const [orders, setOrders] = useState([]);
 
-    // --- LIFECYCLE / SESSION CHECK ---
+    // Check for existing timer on mount so a page refresh doesn't bypass the lock
+    useEffect(() => {
+        const expiry = localStorage.getItem('otp_expiry');
+        if (expiry) {
+            const remaining = Math.floor((parseInt(expiry) - Date.now()) / 1000);
+            if (remaining > 0) {
+                setOtpTimer(remaining);
+                setOtpSent(true); // If there's a timer, the OTP was already sent
+            } else {
+                localStorage.removeItem('otp_expiry');
+            }
+        }
+    }, []);
+
+    // Timer countdown logic
+    useEffect(() => {
+        let interval;
+        if (otpTimer > 0) {
+            interval = setInterval(() => {
+                setOtpTimer((prev) => {
+                    if (prev <= 1) {
+                        localStorage.removeItem('otp_expiry');
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [otpTimer]);
+
+    useEffect(() => {
+        setOtpSent(false);
+        setAuthForm({ fullName: '', email: '', password: '', otp: '' });
+    }, [isRegistering]);
+
     useEffect(() => {
         const checkAuth = async () => {
             const token = localStorage.getItem('shopforall_token');
@@ -32,14 +70,12 @@ export default function AccountPage({ params }) {
                 const parsedUser = JSON.parse(savedUser);
                 setUser(parsedUser);
 
-                // If it's a customer, fetch their orders immediately
                 if (parsedUser.role === 'Customer') {
                     try {
                         const { data } = await API.get(`/storefront/${subdomain}/my-orders`, {
                             headers: { Authorization: `Bearer ${token}` }
                         });
                         setOrders(data.data || []);
-                        // setOrders(data);
                     } catch (error) {
                         console.error("Failed to fetch orders");
                     }
@@ -49,9 +85,31 @@ export default function AccountPage({ params }) {
         };
 
         checkAuth();
-    }, [subdomain]); // Added subdomain to dependencies to satisfy the React linter
+    }, [subdomain]);
 
-    // --- HANDLERS ---
+    const handleSendOTP = async () => {
+        if (!authForm.fullName || !authForm.email || !authForm.password) {
+            return toast.error("Please fill in all details first");
+        }
+
+        // Prevent sending if timer is active
+        if (otpTimer > 0) return;
+
+        try {
+            const { data } = await API.post('/auth/send-otp', { email: authForm.email });
+            if (data.success) {
+                setOtpSent(true);
+                toast.success("Verification code sent to your email!");
+
+                // NEW: Start 3-minute (180s) timer and save to localStorage
+                setOtpTimer(180);
+                localStorage.setItem('otp_expiry', Date.now() + 180000);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.response?.data?.error || "Failed to send OTP");
+        }
+    };
+
     const handleAuthSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -62,15 +120,15 @@ export default function AccountPage({ params }) {
 
             const { data } = await API.post(endpoint, payload);
 
-            // Save session
-            localStorage.setItem('shopforall_token', data.token);
+            localStorage.setItem('shopforall_token', data.token || data.user?.token);
             localStorage.setItem('shopforall_user', JSON.stringify(data.user));
 
-            setUser(data.user);
-            toast.success(`Welcome back!`);
+            // Clean up timer on successful registration
+            localStorage.removeItem('otp_expiry');
+            setOtpTimer(0);
 
-            // Note: Removed the router.push('/') here so customers can see their account page immediately
-            // If they are a vendor, you could optionally redirect them to the admin panel URL here
+            setUser(data.user);
+            toast.success(isRegistering ? "Registration successful!" : "Welcome back!");
         } catch (error) {
             toast.error(error.response?.data?.error || "Authentication failed");
         }
@@ -80,33 +138,20 @@ export default function AccountPage({ params }) {
         localStorage.removeItem('shopforall_token');
         localStorage.removeItem('shopforall_user');
         setUser(null);
-        setOrders([]); // Clear orders on logout
+        setOrders([]);
         toast.success("Logged out successfully");
     };
 
     const handlePasswordReset = async (e) => {
         e.preventDefault();
-        // TODO: Wire up actual API call
-        // const token = localStorage.getItem('shopforall_token');
-        // await API.put('/auth/update-password', passForm, { headers: { Authorization: `Bearer ${token}` } });
-
         toast.success("Password reset functionality would trigger here!");
         setPassForm({ oldPassword: '', newPassword: '' });
     };
 
-    // --- RENDER LOGIC ---
     if (loading) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="animate-pulse flex flex-col items-center gap-4">
-                    <div className="h-8 w-32 bg-gray-200 rounded-lg"></div>
-                    <div className="text-gray-400 font-medium">Loading your account...</div>
-                </div>
-            </div>
-        );
+        return <div className="min-h-[60vh] flex items-center justify-center">Loading...</div>;
     }
 
-    // Traffic Control 1: User is NOT logged in
     if (!user) {
         return (
             <AuthView
@@ -115,16 +160,17 @@ export default function AccountPage({ params }) {
                 authForm={authForm}
                 setAuthForm={setAuthForm}
                 handleAuthSubmit={handleAuthSubmit}
+                otpSent={otpSent}
+                handleSendOTP={handleSendOTP}
+                otpTimer={otpTimer} // Pass the timer down to the view
             />
         );
     }
 
-    // Traffic Control 2: User is a Vendor/Admin
     if (user.role === 'VendorAdmin' || user.role === 'VendorStaff') {
         return <VendorView user={user} handleLogout={handleLogout} />;
     }
 
-    // Traffic Control 3: User is a Customer
     return (
         <CustomerDashboard
             user={user}

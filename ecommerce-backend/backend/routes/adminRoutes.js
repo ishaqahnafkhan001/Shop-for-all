@@ -38,8 +38,9 @@ const {
     getAreas,
     linkExistingPathaoAccount
 } = require('../controllers/storeController');
+const {sendEmailToCustomer} = require('../controllers/emailController');
 
-
+router.post('/customers/send-email', protect, authorize('VendorAdmin'), sendEmailToCustomer);
 router.post('/settings/pathao-link', protect, authorize('VendorAdmin'), linkExistingPathaoAccount);
 // Location Dropdown Routes (Used by the frontend form)
 router.get('/pathao/cities', protect, authorize('VendorAdmin'), getCities);
