@@ -12,19 +12,37 @@ const {
     registerCustomerSchema
 } = require('../validations/userValidation');
 
+// const getCookieOptions = () => {
+//     const options = {
+//         httpOnly: true,
+//         secure: process.env.NODE_ENV === 'production',
+//         sameSite: 'lax',
+//         maxAge: 7 * 24 * 60 * 60 * 1000
+//     };
+//
+//     if (process.env.NODE_ENV === 'production') {
+//         options.domain = '.scaleup.codes';
+//     }
+//
+//     return options;
+// };
 const getCookieOptions = () => {
-    const options = {
+    return {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        // MUST be true for 'none' to work.
+        // Railway and Vercel both provide HTTPS, so keep this true.
+        secure: true,
+
+        // MUST be 'none' to allow cross-site (Vercel <-> Railway)
+        sameSite: 'none',
+
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+
+        // REMOVE or comment out the domain line for now.
+        // Only add this back once BOTH your frontend and backend
+        // are running on subdomains of scaleup.codes.
+        // domain: process.env.NODE_ENV === 'production' ? '.scaleup.codes' : undefined
     };
-
-    if (process.env.NODE_ENV === 'production') {
-        options.domain = '.scaleup.codes';
-    }
-
-    return options;
 };
 
 exports.sendOTP = async (req, res) => {

@@ -1,60 +1,54 @@
 require('dotenv').config();
+
 const express = require('express');
+app.set('trust proxy', 1);
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const connectDB = require('./config/db');
-const allowedOrigins = process.env.CORS_ORIGINS.split(',');
 
-// Import Middlewares
+const connectDB = require('./config/db');
+
 const { errorHandler } = require('./middlewares/error');
 
-// Import Routes
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const storefrontRoutes = require('./routes/storefrontRoutes');
 const publicRoutes = require('./routes/publicRoutes');
-const inventory = require('./routes/inventory');
+const inventoryRoutes = require('./routes/inventory');
 const bannerRoutes = require('./routes/bannerRoutes');
-
-
-
-// 1. Initialize Database
-connectDB();
 
 const app = express();
 
-// 2. Global Middlewares
-app.use(express.json()); // Parses incoming JSON requests
-app.use(cookieParser()); // Parses cookies so we can read the JWT
+connectDB();
 
-// Configure CORS
-// In production, replace '*' with your actual domains for security
+const allowedOrigins = process.env.CORS_ORIGINS.split(',');
 
+app.use(express.json());
+app.use(cookieParser());
 
 app.use(
     cors({
         origin: (origin, callback) => {
 
-            console.log("Incoming Origin:", origin);
-
-            // Mobile apps / Postman
             if (!origin) {
                 return callback(null, true);
             }
 
-            // Exact origins from env
             if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             }
 
-            // Localhost + subdomains
             if (
                 /^https?:\/\/([a-z0-9-]+\.)?localhost:(3000|5173)$/.test(origin)
             ) {
                 return callback(null, true);
             }
 
-            // Production tenant subdomains
+            if (
+                /^https?:\/\/192\.168\.\d+\.\d+:(3000|5173)$/.test(origin)
+            ) {
+                return callback(null, true);
+            }
+
             if (
                 /^https?:\/\/([a-z0-9-]+)\.scaleup\.codes$/.test(origin)
             ) {
@@ -64,30 +58,31 @@ app.use(
             return callback(new Error(`CORS blocked: ${origin}`));
         },
 
-        credentials: true,
+        credentials: true
     })
 );
 
-// 3. Mount Routes
-app.use('/api/auth', authRoutes);           // Registration, Login, Logout
-app.use('/api/admin', adminRoutes);         // Product & Staff management (Protected)
-app.use('/api/storefront', storefrontRoutes); // Public Storefront data (Subdomain-based)
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/storefront', storefrontRoutes);
 app.use('/api/public', publicRoutes);
-app.use('/api/admin/inventory', inventory);
+app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/banners', bannerRoutes);
 
-// 4. Base Health Check Route
 app.get('/', (req, res) => {
     res.send('API is running successfully...');
 });
 
-// 5. Global Error Handler (MUST be the last middleware)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(
+        `🚀 Server running in ${
+            process.env.NODE_ENV || 'development'
+        } mode on port ${PORT}`
+    );
 });
 
 module.exports = app;
