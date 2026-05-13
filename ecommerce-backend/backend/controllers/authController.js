@@ -27,24 +27,35 @@ const {
 //     return options;
 // };
 const getCookieOptions = () => {
+    const isProduction = process.env.NODE_ENV === "production";
+
     return {
+        // Prevents client-side scripts from accessing the cookie (XSS protection)
         httpOnly: true,
-        // MUST be true for 'none' to work.
-        // Railway and Vercel both provide HTTPS, so keep this true.
-        secure: true,
 
-        // MUST be 'none' to allow cross-site (Vercel <-> Railway)
-        sameSite: 'none',
+        // Must be true in production because SameSite: 'none' requires HTTPS
+        // In local dev, this is usually false unless you use an SSL proxy
+        secure: isProduction,
 
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        // 'none' is required for cross-site (Vercel domain vs Railway domain)
+        // 'lax' is better once you move both to subdomains of the same root domain
+        sameSite: 'lax',
+        // CHIPS (Cookies Having Independent Partitioned State)
+        // This helps the cookie work in Incognito/Third-party contexts in modern browsers
+        partitioned: isProduction,
 
-        // REMOVE or comment out the domain line for now.
-        // Only add this back once BOTH your frontend and backend
-        // are running on subdomains of scaleup.codes.
-        // domain: process.env.NODE_ENV === 'production' ? '.scaleup.codes' : undefined
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+
+        path: '/',
+
+        /*
+           UNCOMMENT THIS once your frontend is shop.scaleup.codes
+           and backend is api.scaleup.codes.
+           The dot prefix allows the cookie to be shared across all subdomains.
+        */
+        domain: isProduction ? '.scaleup.codes' : undefined,
     };
 };
-
 exports.sendOTP = async (req, res) => {
     try {
         const { email } = req.body;
