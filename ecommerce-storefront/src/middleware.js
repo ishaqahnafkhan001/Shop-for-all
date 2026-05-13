@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 
-// 1. Tell Next.js which paths the middleware should run on.
-// We exclude static files, images, and the Next.js internal API so it stays fast.
 export const config = {
     matcher: [
         '/((?!api|_next/static|_next/image|favicon.ico).*)',
@@ -10,22 +8,23 @@ export const config = {
 
 export default function middleware(req) {
     const url = req.nextUrl;
-
-    // 2. Get the hostname (e.g., 'localhost:3000' or 'apple.localhost:3000')
     const hostname = req.headers.get('host') || '';
 
-    // 3. Extract the subdomain by removing the base domain
-    // (When you go to production, you will add your real domain string here like `.yourdomain.com`)
+    // 🌟 Safely extract the subdomain for BOTH Local and Production 🌟
     let subdomain = hostname
-        .replace('.localhost:3000', '')
-        .replace('localhost:3000', '');
+        .replace('.scaleup.codes', '') // Removes production domain
+        .replace('scaleup.codes', '')  // Failsafe for root production domain
+        .replace('.localhost:3000', '') // Removes local domain
+        .replace('localhost:3000', ''); // Failsafe for root local domain
 
-    // 4. If there is no subdomain (or it's just 'www'), let them view the main Platform Landing Page
-    if (subdomain === '' || subdomain === 'www') {
+    // 🛑 Bypass for your main platform pages
+    // If the hostname is empty, 'www', or your main 'shop' frontend, render normally.
+    if (subdomain === '' || subdomain === 'www' || subdomain === 'shop' || subdomain === 'admin') {
         return NextResponse.next();
     }
 
-    // 5. If a subdomain EXISTS, magically rewrite the URL to point to our hidden `[subdomain]` folder!
-    // Example: apple.localhost:3000/cart -> /apple/cart
+    // ✨ The Magic Rewrite
+    // example: user visits 'nike.scaleup.codes/cart'
+    // Next.js secretly loads the code from '/app/nike/cart' (or pages/nike/cart)
     return NextResponse.rewrite(new URL(`/${subdomain}${url.pathname}`, req.url));
 }
