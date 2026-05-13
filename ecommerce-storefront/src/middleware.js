@@ -11,11 +11,14 @@ export default function middleware(req) {
     const hostname = req.headers.get('host') || '';
 
     // 🌟 Safely extract the subdomain for BOTH Local and Production 🌟
+    // 🌟 Safely extract the subdomain for BOTH Local and Production 🌟
     let subdomain = hostname
         .replace('.scaleup.codes', '') // Removes production domain
         .replace('scaleup.codes', '')  // Failsafe for root production domain
         .replace('.localhost:3000', '') // Removes local domain
         .replace('localhost:3000', ''); // Failsafe for root local domain
+
+    // 🛑 Bypass for your main platform pages
 
     // 🛑 Bypass for your main platform pages
     // If the hostname is empty, 'www', or your main 'shop' frontend, render normally.

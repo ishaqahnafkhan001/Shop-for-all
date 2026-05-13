@@ -50,7 +50,8 @@ app.use(
             }
 
             if (
-                /^https?:\/\/([a-z0-9-]+)\.scaleup\.codes$/.test(origin)
+                // ✨ FIX: Added '\.' inside the brackets to allow 'www.'
+                /^https?:\/\/([a-z0-9-\.]+)\.scaleup\.codes$/.test(origin)
             ) {
                 return callback(null, true);
             }
