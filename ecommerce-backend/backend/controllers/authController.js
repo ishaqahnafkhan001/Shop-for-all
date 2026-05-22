@@ -12,20 +12,7 @@ const {
     registerCustomerSchema
 } = require('../validations/userValidation');
 
-// const getCookieOptions = () => {
-//     const options = {
-//         httpOnly: true,
-//         secure: process.env.NODE_ENV === 'production',
-//         sameSite: 'lax',
-//         maxAge: 7 * 24 * 60 * 60 * 1000
-//     };
-//
-//     if (process.env.NODE_ENV === 'production') {
-//         options.domain = '.scaleup.codes';
-//     }
-//
-//     return options;
-// };
+
 const getCookieOptions = () => {
     const isProduction = process.env.NODE_ENV === "production";
 
