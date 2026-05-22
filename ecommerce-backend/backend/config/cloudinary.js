@@ -10,22 +10,27 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: {
-        folder: 'shop_products',
-        resource_type: 'auto',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov'],
 
-        // 👇 ADD THIS TRANSFORMATION BLOCK 👇
-        transformation: [
-            // 1. Resize massive images: 'limit' only shrinks images larger than 1200px, ignores smaller ones
-            { width: 1200, height: 1200, crop: 'limit' },
+    params: async (req, file) => {
 
-            // 2. The Magic: 'auto' tells Cloudinary's AI to compress as much as possible without visible loss
-            { quality: 'auto' },
+        const isVideo = file.mimetype.startsWith('video/');
 
-            // 3. (Optional but recommended) Automatically convert heavy PNGs/JPGs to lightweight WebP
-            { fetch_format: 'auto' }
-        ]
+        return {
+            folder: 'shop_products',
+            resource_type: 'auto',
+            allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov'],
+
+
+            ...( !isVideo && { format: 'webp' } ),
+
+            transformation: [
+
+                { width: 1200, height: 1200, crop: 'limit' },
+
+
+                { quality: 'auto' }
+            ]
+        };
     },
 });
 

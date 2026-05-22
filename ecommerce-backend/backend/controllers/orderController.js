@@ -146,8 +146,8 @@ exports.createOrder = async (req, res) => {
     session.startTransaction();
 
     try {
-        // ✅ Validate request body first
         const { error, value } = createOrderSchema.validate(req.body);
+        console.log("Validation Result:", { error, value });
         if (error) {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
@@ -253,6 +253,7 @@ exports.createOrder = async (req, res) => {
             },
             status: 'Pending'
         }], { session });
+        console.log("Order Created:", order);
 
         // ✅ Link inventory logs to the new order
         const logsWithRef = inventoryLogs.map(log => ({
