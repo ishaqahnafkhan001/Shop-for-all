@@ -1,5 +1,25 @@
-import { useEffect, useState } from 'react';
-import { Save, Palette, Globe, Link as LinkIcon, FileText, LayoutTemplate, ShoppingBag, Smartphone, CreditCard, Star, ShieldCheck, Upload, RotateCcw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+    ChevronDown,
+    ChevronUp,
+    Copy,
+    CreditCard,
+    FileText,
+    Globe,
+    LayoutTemplate,
+    Link as LinkIcon,
+    Monitor,
+    Palette,
+    Plus,
+    RotateCcw,
+    Save,
+    ShieldCheck,
+    ShoppingBag,
+    Smartphone,
+    Star,
+    Tablet,
+    Upload
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 
@@ -70,6 +90,36 @@ const defaultTheme = {
     homepageSections: []
 };
 
+const sampleProducts = [
+    { title: 'Signature Product', category: 'Featured', price: 1490 },
+    { title: 'Customer Favorite', category: 'Best Seller', price: 2190 },
+    { title: 'New Arrival', category: 'Latest', price: 990 }
+];
+
+const settingsGroups = [
+    { id: 'brand', label: 'Brand', icon: Palette, description: 'Logo and store identity' },
+    { id: 'colors', label: 'Colors', icon: Palette, description: 'Brand colors and page surfaces' },
+    { id: 'typography', label: 'Typography', icon: LayoutTemplate, description: 'Fonts and heading weight' },
+    { id: 'layout', label: 'Layout', icon: LayoutTemplate, description: 'Width, spacing, and product grid' },
+    { id: 'navigation', label: 'Header and navigation', icon: LinkIcon, description: 'Top menu links' },
+    { id: 'hero', label: 'Hero', icon: LayoutTemplate, description: 'Homepage opening banner' },
+    { id: 'products', label: 'Product cards', icon: ShoppingBag, description: 'Product grid appearance' },
+    { id: 'sections', label: 'Homepage sections', icon: LayoutTemplate, description: 'Order and visibility' },
+    { id: 'checkout', label: 'Checkout', icon: CreditCard, description: 'Checkout trust and branding' },
+    { id: 'mobile', label: 'Mobile', icon: Smartphone, description: 'Small-screen controls' },
+    { id: 'footer', label: 'Footer', icon: FileText, description: 'Footer text and links' },
+    { id: 'policies', label: 'Policies', icon: FileText, description: 'Refund, shipping, privacy, terms' },
+    { id: 'domain', label: 'Domain', icon: Globe, description: 'Custom domain status' }
+];
+
+const colorFields = [
+    { key: 'accent', label: 'Accent', help: 'Main button and link color.' },
+    { key: 'accentBg', label: 'Accent background', help: 'Soft background used in previews and highlights.' },
+    { key: 'background', label: 'Page background', help: 'Main storefront background color.' },
+    { key: 'foreground', label: 'Text color', help: 'Default text color for the storefront.' },
+    { key: 'headerBackground', label: 'Header background', help: 'Navigation bar background color.' }
+];
+
 const mergeTheme = (base, incoming = {}) => ({
     ...base,
     ...incoming,
@@ -86,11 +136,17 @@ const mergeTheme = (base, incoming = {}) => ({
     homepageSections: incoming.homepageSections || base.homepageSections
 });
 
-const sampleProducts = [
-    { title: 'Signature Product', category: 'Featured', price: 1490 },
-    { title: 'Customer Favorite', category: 'Best Seller', price: 2190 },
-    { title: 'New Arrival', category: 'Latest', price: 990 }
-];
+const sortForSnapshot = (value) => {
+    if (Array.isArray(value)) return value.map(sortForSnapshot);
+    if (!value || typeof value !== 'object') return value;
+
+    return Object.keys(value).sort().reduce((acc, key) => {
+        acc[key] = sortForSnapshot(value[key]);
+        return acc;
+    }, {});
+};
+const stableStringify = (value) => JSON.stringify(sortForSnapshot(value));
+const isHexColor = (value) => /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(String(value || ''));
 
 const productRadiusClass = {
     Soft: 'rounded-lg',
@@ -105,199 +161,130 @@ const productShadowClass = {
 };
 
 const heroHeightClass = {
-    Compact: 'min-h-44',
-    Medium: 'min-h-56',
-    Tall: 'min-h-72'
+    Compact: 'min-h-36',
+    Medium: 'min-h-48',
+    Tall: 'min-h-64'
 };
 
-const sectionSpacingClass = {
-    Compact: 'space-y-4',
-    Comfortable: 'space-y-6',
-    Spacious: 'space-y-8'
+const deviceClasses = {
+    desktop: 'w-full max-w-5xl',
+    tablet: 'w-[760px] max-w-full',
+    mobile: 'w-[360px] max-w-full'
 };
 
-const maxWidthClass = {
-    Contained: 'max-w-3xl',
-    Wide: 'max-w-5xl',
-    Full: 'max-w-none'
-};
-
-const StorefrontPreview = ({ theme, storewideDiscount, shopName }) => {
-    const colors = theme.colors || defaultTheme.colors;
-    const typography = theme.typography || defaultTheme.typography;
-    const hero = theme.hero || defaultTheme.hero;
-    const layout = theme.layout || defaultTheme.layout;
-    const productCard = theme.productCard || defaultTheme.productCard;
-    const checkoutBranding = theme.checkoutBranding || defaultTheme.checkoutBranding;
-    const navItems = (theme.navigation || []).filter(item => item.label).slice(0, 4);
-    const enabledSections = (theme.homepageSections || []).filter(section => section.isEnabled !== false).slice(0, 4);
-    const radius = productRadiusClass[productCard.borderRadius] || productRadiusClass.Rounded;
-    const shadow = productShadowClass[productCard.shadow] || productShadowClass.Soft;
-    const previewStyle = {
-        color: colors.foreground,
-        backgroundColor: colors.background,
-        fontFamily: typography.bodyFont || theme.fontFamily || 'Inter'
-    };
-    const heroStyle = {
-        backgroundColor: colors.accentBg,
-        ...(hero.imageUrl ? {
-            backgroundImage: `linear-gradient(rgba(0,0,0,${Number(hero.overlayOpacity || 25) / 100}), rgba(0,0,0,${Number(hero.overlayOpacity || 25) / 100})), url(${hero.imageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            color: '#ffffff'
-        } : {})
+const BuilderButton = ({ children, variant = 'primary', className = '', ...props }) => {
+    const variants = {
+        primary: 'bg-slate-950 text-white hover:bg-slate-800 border-slate-950',
+        secondary: 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200',
+        subtle: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-100',
+        danger: 'bg-white text-red-600 hover:bg-red-50 border-red-200'
     };
 
     return (
-        <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <button
+            className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
+            {...props}
+        >
+            {children}
+        </button>
+    );
+};
+
+const HelpText = ({ children, tone = 'neutral' }) => (
+    <p className={`text-xs leading-5 ${tone === 'error' ? 'text-red-600' : 'text-slate-500'}`}>{children}</p>
+);
+
+const FieldShell = ({ label, help, error, children }) => (
+    <label className="block space-y-1.5">
+        <span className="text-sm font-semibold text-slate-800">{label}</span>
+        {children}
+        {error ? <HelpText tone="error">{error}</HelpText> : help ? <HelpText>{help}</HelpText> : null}
+    </label>
+);
+
+const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 disabled:text-slate-400';
+
+const BuilderInput = ({ label, help, error, ...props }) => (
+    <FieldShell label={label} help={help} error={error}>
+        <input className={inputClass} {...props} />
+    </FieldShell>
+);
+
+const BuilderTextarea = ({ label, help, error, ...props }) => (
+    <FieldShell label={label} help={help} error={error}>
+        <textarea className={`${inputClass} min-h-24 resize-y`} {...props} />
+    </FieldShell>
+);
+
+const BuilderSelect = ({ label, help, error, children, ...props }) => (
+    <FieldShell label={label} help={help} error={error}>
+        <select className={inputClass} {...props}>{children}</select>
+    </FieldShell>
+);
+
+const BuilderToggle = ({ label, help, checked, onChange }) => (
+    <label className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3">
+        <span>
+            <span className="block text-sm font-semibold text-slate-800">{label}</span>
+            {help && <span className="mt-1 block text-xs leading-5 text-slate-500">{help}</span>}
+        </span>
+        <input
+            type="checkbox"
+            checked={checked}
+            onChange={onChange}
+            className="mt-0.5 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
+        />
+    </label>
+);
+
+const BuilderCard = ({ title, description, icon: Icon, children, actions }) => (
+    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-4 flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+                {Icon && (
+                    <span className="rounded-lg bg-slate-100 p-2 text-slate-700">
+                        <Icon size={18} />
+                    </span>
+                )}
                 <div>
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                        <LayoutTemplate size={18} />
-                        Live Storefront Preview
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">Preview updates instantly from the current editor values, before saving.</p>
-                </div>
-                <div className="text-xs font-semibold text-slate-500 rounded-full border border-slate-200 px-3 py-1">
-                    Desktop + mobile snapshot
+                    <h2 className="text-base font-bold text-slate-950">{title}</h2>
+                    {description && <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>}
                 </div>
             </div>
+            {actions}
+        </div>
+        <div className="space-y-4">{children}</div>
+    </section>
+);
 
-            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-5">
-                <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-100">
-                    <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-red-300"></span>
-                        <span className="h-2.5 w-2.5 rounded-full bg-amber-300"></span>
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300"></span>
-                        <span className="ml-2 truncate text-xs text-slate-500">store-preview</span>
-                    </div>
-                    <div style={previewStyle} className="p-4">
-                        <div className={`mx-auto ${maxWidthClass[layout.maxWidth] || maxWidthClass.Wide} ${sectionSpacingClass[layout.sectionSpacing] || sectionSpacingClass.Comfortable}`}>
-                            <header style={{ backgroundColor: colors.headerBackground }} className="flex items-center justify-between rounded-lg px-4 py-3 border border-black/5">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    {theme.logoUrl ? (
-                                        <div className="h-8 w-8 rounded bg-center bg-cover border border-black/10" style={{ backgroundImage: `url(${theme.logoUrl})` }} />
-                                    ) : (
-                                        <div className="h-8 w-8 rounded flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: colors.accent }}>S</div>
-                                    )}
-                                    <span className="truncate text-sm font-bold">{shopName || 'Your Store'}</span>
-                                </div>
-                                <nav className="hidden sm:flex items-center gap-4 text-xs font-semibold">
-                                    {(navItems.length ? navItems : defaultTheme.navigation).map((item, index) => (
-                                        <span key={`${item.label}-${index}`}>{item.label}</span>
-                                    ))}
-                                </nav>
-                            </header>
+const DeviceSwitcher = ({ value, onChange }) => {
+    const devices = [
+        { id: 'desktop', label: 'Desktop', icon: Monitor },
+        { id: 'tablet', label: 'Tablet', icon: Tablet },
+        { id: 'mobile', label: 'Mobile', icon: Smartphone }
+    ];
 
-                            <section style={heroStyle} className={`${heroHeightClass[hero.height] || heroHeightClass.Medium} rounded-xl p-6 flex items-center`}>
-                                <div className="max-w-xl">
-                                    <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: hero.imageUrl ? '#ffffff' : colors.accent }}>
-                                        {storewideDiscount > 0 ? `${storewideDiscount}% storewide offer` : 'Featured collection'}
-                                    </p>
-                                    <h2 className="text-3xl font-black leading-tight" style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
-                                        {hero.title || 'Build a storefront customers trust'}
-                                    </h2>
-                                    <p className="mt-3 text-sm opacity-80">{hero.subtitle || 'Your homepage hero, colors, font, product cards, and navigation preview here.'}</p>
-                                    <button className="mt-5 rounded-lg px-4 py-2 text-sm font-bold text-white" style={{ backgroundColor: colors.accent }}>
-                                        {hero.ctaLabel || 'Shop Now'}
-                                    </button>
-                                </div>
-                            </section>
-
-                            <section>
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-lg font-black" style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
-                                        Latest products
-                                    </h3>
-                                    {productCard.showQuickBuy && <span className="text-xs font-bold" style={{ color: colors.accent }}>Quick buy enabled</span>}
-                                </div>
-                                <div className={`grid gap-4 ${layout.productColumnsDesktop >= 4 ? 'grid-cols-4' : layout.productColumnsDesktop === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                                    {sampleProducts.map((product) => (
-                                        <article key={product.title} className={`bg-white border border-black/5 p-3 ${radius} ${shadow}`}>
-                                            <div className={`aspect-square ${radius} ${productCard.imageFit === 'Cover' ? '' : 'p-6'} flex items-center justify-center`} style={{ backgroundColor: colors.accentBg }}>
-                                                <ShoppingBag size={36} style={{ color: colors.accent }} />
-                                            </div>
-                                            {productCard.showCategory && <p className="mt-3 text-[11px] uppercase font-bold opacity-50">{product.category}</p>}
-                                            <h4 className="mt-1 text-sm font-bold line-clamp-1">{product.title}</h4>
-                                            {productCard.showRating && (
-                                                <div className="mt-1 flex items-center gap-1 text-amber-400">
-                                                    {[1, 2, 3, 4, 5].map(star => <Star key={star} size={12} fill="currentColor" />)}
-                                                </div>
-                                            )}
-                                            <div className="mt-2 flex items-center justify-between">
-                                                <span className="text-sm font-black">৳ {product.price}</span>
-                                                {storewideDiscount > 0 && <span className="text-xs font-bold text-red-500">-{storewideDiscount}%</span>}
-                                            </div>
-                                        </article>
-                                    ))}
-                                </div>
-                            </section>
-
-                            {enabledSections.length > 0 && (
-                                <section className="rounded-xl border border-black/5 p-4">
-                                    <h3 className="text-sm font-black mb-3">Homepage sections</h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {enabledSections.map((section, index) => (
-                                            <div key={`${section.type}-${index}`} className="rounded-lg px-3 py-2 text-xs font-semibold" style={{ backgroundColor: colors.accentBg }}>
-                                                {section.title || section.type}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            <footer className="rounded-lg border border-black/5 p-4 text-xs opacity-70">
-                                {theme.footer?.text || 'Footer text and policy links will appear here.'}
-                            </footer>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="rounded-[2rem] border-8 border-slate-900 bg-slate-900 overflow-hidden max-w-[320px] mx-auto w-full">
-                    <div style={previewStyle} className="min-h-[560px] p-3">
-                        <header className="flex items-center justify-between rounded-xl px-3 py-2 border border-black/5" style={{ backgroundColor: colors.headerBackground }}>
-                            <span className="text-sm font-black truncate">{shopName || 'Your Store'}</span>
-                            <ShoppingBag size={18} style={{ color: colors.accent }} />
-                        </header>
-                        <section style={heroStyle} className="mt-3 rounded-2xl min-h-44 p-4 flex items-end">
-                            <div>
-                                <h3 className="text-xl font-black leading-tight" style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
-                                    {hero.title || 'Mobile preview'}
-                                </h3>
-                                <button className="mt-3 rounded-lg px-3 py-2 text-xs font-bold text-white" style={{ backgroundColor: colors.accent }}>
-                                    {hero.ctaLabel || 'Shop Now'}
-                                </button>
-                            </div>
-                        </section>
-                        <div className={`mt-3 grid gap-3 ${layout.productColumnsMobile === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            {sampleProducts.slice(0, 2).map(product => (
-                                <article key={product.title} className={`bg-white border border-black/5 p-2 ${radius} ${shadow}`}>
-                                    <div className={`${radius} aspect-square flex items-center justify-center`} style={{ backgroundColor: colors.accentBg }}>
-                                        <ShoppingBag size={24} style={{ color: colors.accent }} />
-                                    </div>
-                                    <h4 className="mt-2 text-xs font-bold line-clamp-1">{product.title}</h4>
-                                    <p className="text-xs font-black">৳ {product.price}</p>
-                                </article>
-                            ))}
-                        </div>
-                        <div className="mt-3 rounded-2xl border border-black/5 p-3 text-xs">
-                            <div className="flex items-center gap-2 font-bold">
-                                <ShieldCheck size={14} style={{ color: colors.accent }} />
-                                {checkoutBranding.trustMessage || 'Secure checkout'}
-                            </div>
-                            {checkoutBranding.bannerText && <p className="mt-2 opacity-70">{checkoutBranding.bannerText}</p>}
-                        </div>
-                        {theme.mobile?.showBottomNavigation && (
-                            <div className="mt-3 rounded-2xl px-3 py-2 flex justify-around text-[10px] font-bold" style={{ backgroundColor: colors.accentBg }}>
-                                <span>Shop</span>
-                                <span>Cart</span>
-                                <span>Track</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </section>
+    return (
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
+            {devices.map((device) => {
+                const Icon = device.icon;
+                const active = value === device.id;
+                return (
+                    <button
+                        key={device.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => onChange(device.id)}
+                        className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                            active ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                    >
+                        <Icon size={15} />
+                        <span className="hidden sm:inline">{device.label}</span>
+                    </button>
+                );
+            })}
+        </div>
     );
 };
 
@@ -323,7 +310,7 @@ const CheckoutBrandingPreview = ({ theme, shopName }) => {
                 <CreditCard size={16} />
                 Checkout preview
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" style={{ color: colors.foreground }}>
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" style={{ color: colors.foreground }}>
                 {(checkoutBranding.logoUrl || checkoutBranding.bannerText) && (
                     <div className="mb-4 rounded-lg border border-slate-100 bg-white p-3 text-center">
                         {checkoutBranding.logoUrl && (
@@ -353,9 +340,9 @@ const CheckoutBrandingPreview = ({ theme, shopName }) => {
                         <ShieldCheck size={14} style={{ color: colors.accent }} />
                         {checkoutBranding.trustMessage || 'Secure checkout'}
                     </p>
-                    {visiblePolicies.length > 0 && (
+                    {visiblePolicies.length > 0 ? (
                         <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                            <p className="mb-2 font-bold text-slate-900">Store Policies</p>
+                            <p className="mb-2 font-bold text-slate-900">Visible checkout policies</p>
                             <div className="space-y-1">
                                 {visiblePolicies.map(([key, label]) => (
                                     <div key={key} className="rounded bg-white px-3 py-2 font-semibold text-slate-600">
@@ -364,7 +351,144 @@ const CheckoutBrandingPreview = ({ theme, shopName }) => {
                                 ))}
                             </div>
                         </div>
+                    ) : (
+                        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            No checkout policies are visible yet. Add policy text to show them.
+                        </p>
                     )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const StorefrontPreview = ({ theme, storewideDiscount, shopName, activeGroup, device }) => {
+    const colors = theme.colors || defaultTheme.colors;
+    const typography = theme.typography || defaultTheme.typography;
+    const hero = theme.hero || defaultTheme.hero;
+    const layout = theme.layout || defaultTheme.layout;
+    const productCard = theme.productCard || defaultTheme.productCard;
+    const navItems = (theme.navigation || []).filter(item => item.label).slice(0, 4);
+    const enabledSections = (theme.homepageSections || []).filter(section => section.isEnabled !== false).slice(0, 4);
+    const radius = productRadiusClass[productCard.borderRadius] || productRadiusClass.Rounded;
+    const shadow = productShadowClass[productCard.shadow] || productShadowClass.Soft;
+    const gridColumns = device === 'mobile'
+        ? (layout.productColumnsMobile === 1 ? 'grid-cols-1' : 'grid-cols-2')
+        : layout.productColumnsDesktop >= 4
+            ? 'grid-cols-4'
+            : layout.productColumnsDesktop === 2
+                ? 'grid-cols-2'
+                : 'grid-cols-3';
+    const previewStyle = {
+        color: colors.foreground,
+        backgroundColor: colors.background,
+        fontFamily: typography.bodyFont || theme.fontFamily || 'Inter'
+    };
+    const heroStyle = {
+        backgroundColor: colors.accentBg,
+        ...(hero.imageUrl ? {
+            backgroundImage: `linear-gradient(rgba(0,0,0,${Number(hero.overlayOpacity || 25) / 100}), rgba(0,0,0,${Number(hero.overlayOpacity || 25) / 100})), url(${hero.imageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            color: '#ffffff'
+        } : {})
+    };
+    const highlight = (groups) => (groups.includes(activeGroup) ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-100' : '');
+
+    return (
+        <div className="rounded-lg border border-slate-200 bg-slate-100 p-3">
+            <div className={`mx-auto transition-all duration-300 ${deviceClasses[device]}`}>
+                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                        <span className="ml-2 truncate text-xs text-slate-500">{device} preview</span>
+                    </div>
+                    <div style={previewStyle} className="p-4">
+                        <div className={`mx-auto space-y-5 ${layout.maxWidth === 'Contained' ? 'max-w-3xl' : layout.maxWidth === 'Full' ? 'max-w-none' : 'max-w-5xl'}`}>
+                            <header style={{ backgroundColor: colors.headerBackground }} className={`flex items-center justify-between rounded-lg border border-black/5 px-4 py-3 ${highlight(['brand', 'navigation', 'colors'])}`}>
+                                <div className="flex min-w-0 items-center gap-2">
+                                    {theme.logoUrl ? (
+                                        <div className="h-8 w-8 rounded bg-center bg-cover border border-black/10" style={{ backgroundImage: `url(${theme.logoUrl})` }} />
+                                    ) : (
+                                        <div className="flex h-8 w-8 items-center justify-center rounded text-xs font-bold text-white" style={{ backgroundColor: colors.accent }}>S</div>
+                                    )}
+                                    <span className="truncate text-sm font-bold">{shopName || 'Your Store'}</span>
+                                </div>
+                                {device !== 'mobile' && (
+                                    <nav className="flex items-center gap-4 text-xs font-semibold">
+                                        {(navItems.length ? navItems : defaultTheme.navigation).map((item, index) => (
+                                            <span key={`${item.label}-${index}`}>{item.label}</span>
+                                        ))}
+                                    </nav>
+                                )}
+                            </header>
+
+                            <section style={heroStyle} className={`${heroHeightClass[hero.height] || heroHeightClass.Medium} rounded-lg p-6 flex items-center ${highlight(['hero', 'layout'])}`}>
+                                <div className="max-w-xl">
+                                    <p className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: hero.imageUrl ? '#ffffff' : colors.accent }}>
+                                        {storewideDiscount > 0 ? `${storewideDiscount}% storewide offer` : 'Featured collection'}
+                                    </p>
+                                    <h2 className={`${device === 'mobile' ? 'text-xl' : 'text-3xl'} font-black leading-tight`} style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
+                                        {hero.title || 'Build a storefront customers trust'}
+                                    </h2>
+                                    <p className="mt-3 text-sm opacity-80">{hero.subtitle || 'Your homepage hero, colors, font, product cards, and navigation preview here.'}</p>
+                                    <button className="mt-5 rounded-lg px-4 py-2 text-sm font-bold text-white" style={{ backgroundColor: colors.accent }}>
+                                        {hero.ctaLabel || 'Shop Now'}
+                                    </button>
+                                </div>
+                            </section>
+
+                            <section className={highlight(['products', 'layout'])}>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <h3 className="text-lg font-black" style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
+                                        Latest products
+                                    </h3>
+                                    {productCard.showQuickBuy && <span className="text-xs font-bold" style={{ color: colors.accent }}>Quick buy enabled</span>}
+                                </div>
+                                <div className={`grid gap-4 ${gridColumns}`}>
+                                    {sampleProducts.slice(0, device === 'mobile' ? 2 : 3).map((product) => (
+                                        <article key={product.title} className={`bg-white border border-black/5 p-3 ${radius} ${shadow}`}>
+                                            <div className={`aspect-square ${radius} ${productCard.imageFit === 'Cover' ? '' : 'p-6'} flex items-center justify-center`} style={{ backgroundColor: colors.accentBg }}>
+                                                <ShoppingBag size={device === 'mobile' ? 24 : 36} style={{ color: colors.accent }} />
+                                            </div>
+                                            {productCard.showCategory && <p className="mt-3 text-[11px] uppercase font-bold opacity-50">{product.category}</p>}
+                                            <h4 className="mt-1 text-sm font-bold line-clamp-1">{product.title}</h4>
+                                            {productCard.showRating && (
+                                                <div className="mt-1 flex items-center gap-1 text-amber-400">
+                                                    {[1, 2, 3, 4, 5].map(star => <Star key={star} size={12} fill="currentColor" />)}
+                                                </div>
+                                            )}
+                                            <div className="mt-2 flex items-center justify-between">
+                                                <span className="text-sm font-black">৳ {product.price}</span>
+                                                {storewideDiscount > 0 && <span className="text-xs font-bold text-red-500">-{storewideDiscount}%</span>}
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <section className={`rounded-lg border border-black/5 p-4 ${highlight(['sections'])}`}>
+                                <h3 className="mb-3 text-sm font-black">Homepage sections</h3>
+                                {enabledSections.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        {enabledSections.map((section, index) => (
+                                            <div key={`${section.type}-${index}`} className="rounded-lg px-3 py-2 text-xs font-semibold" style={{ backgroundColor: colors.accentBg }}>
+                                                {section.title || section.type}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-slate-500">No custom homepage sections yet.</p>
+                                )}
+                            </section>
+
+                            <footer className={`rounded-lg border border-black/5 p-4 text-xs opacity-70 ${highlight(['footer', 'policies'])}`}>
+                                {theme.footer?.text || 'Footer text and policy links will appear here.'}
+                            </footer>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -379,16 +503,41 @@ const StoreBuilder = () => {
     const [theme, setTheme] = useState(defaultTheme);
     const [customDomain, setCustomDomain] = useState({ domain: '' });
     const [storewideDiscount, setStorewideDiscount] = useState(0);
+    const [activeGroup, setActiveGroup] = useState('brand');
+    const [device, setDevice] = useState('desktop');
+    const [initialSnapshot, setInitialSnapshot] = useState('');
+
+    const currentSnapshot = useMemo(() => stableStringify({ theme, customDomain, storewideDiscount: Number(storewideDiscount) || 0 }), [theme, customDomain, storewideDiscount]);
+    const hasUnsavedChanges = initialSnapshot && initialSnapshot !== currentSnapshot;
+
+    const validation = useMemo(() => {
+        const colorErrors = colorFields
+            .filter(field => !isHexColor(theme.colors?.[field.key]))
+            .map(field => `${field.label} must be a valid hex color.`);
+        const discountNumber = Number(storewideDiscount);
+        const discountErrors = Number.isNaN(discountNumber) || discountNumber < 0 || discountNumber > 100
+            ? ['Storewide discount must be between 0 and 100.']
+            : [];
+        const navErrors = (theme.navigation || [])
+            .filter(item => item?.url && !item?.label)
+            .map(() => 'Navigation links with a URL need a label.');
+
+        return [...colorErrors, ...discountErrors, ...navErrors];
+    }, [theme.colors, theme.navigation, storewideDiscount]);
 
     useEffect(() => {
         const fetchSettings = async () => {
             try {
                 const { data } = await API.get('/store-builder/admin');
                 const shop = data.data || {};
+                const nextTheme = mergeTheme(defaultTheme, shop.theme || {});
+                const nextDomain = shop.customDomain || { domain: '' };
+                const nextDiscount = shop.storewideDiscount || 0;
                 setShopName(shop.shopName || '');
-                setTheme(mergeTheme(defaultTheme, shop.theme || {}));
-                setCustomDomain(shop.customDomain || { domain: '' });
-                setStorewideDiscount(shop.storewideDiscount || 0);
+                setTheme(nextTheme);
+                setCustomDomain(nextDomain);
+                setStorewideDiscount(nextDiscount);
+                setInitialSnapshot(stableStringify({ theme: nextTheme, customDomain: nextDomain, storewideDiscount: Number(nextDiscount) || 0 }));
             } catch {
                 toast.error('Failed to load store builder');
             } finally {
@@ -398,6 +547,17 @@ const StoreBuilder = () => {
 
         fetchSettings();
     }, []);
+
+    useEffect(() => {
+        const handleBeforeUnload = (event) => {
+            if (!hasUnsavedChanges) return;
+            event.preventDefault();
+            event.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
 
     const setColor = (key, value) => {
         setTheme(prev => ({
@@ -429,10 +589,37 @@ const StoreBuilder = () => {
         }));
     };
 
+    const normalizeSectionOrder = (sections) => sections.map((section, index) => ({ ...section, sortOrder: index }));
+
+    const moveHomepageSection = (index, direction) => {
+        setTheme(prev => {
+            const sections = [...(prev.homepageSections || [])];
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= sections.length) return prev;
+            [sections[index], sections[targetIndex]] = [sections[targetIndex], sections[index]];
+            return { ...prev, homepageSections: normalizeSectionOrder(sections) };
+        });
+    };
+
+    const duplicateHomepageSection = (index) => {
+        setTheme(prev => {
+            const sections = [...(prev.homepageSections || [])];
+            const source = sections[index];
+            if (!source) return prev;
+            sections.splice(index + 1, 0, {
+                ...source,
+                _id: undefined,
+                title: `${source.title || source.type} copy`,
+                sortOrder: index + 1
+            });
+            return { ...prev, homepageSections: normalizeSectionOrder(sections) };
+        });
+    };
+
     const addHomepageSection = () => {
         setTheme(prev => ({
             ...prev,
-            homepageSections: [
+            homepageSections: normalizeSectionOrder([
                 ...(prev.homepageSections || []),
                 {
                     type: 'FeaturedProducts',
@@ -441,14 +628,14 @@ const StoreBuilder = () => {
                     sortOrder: prev.homepageSections?.length || 0,
                     settings: {}
                 }
-            ]
+            ])
         }));
     };
 
     const updateNavigation = (index, field, value) => {
         setTheme(prev => ({
             ...prev,
-            navigation: prev.navigation.map((item, i) => (
+            navigation: (prev.navigation || []).map((item, i) => (
                 i === index ? { ...item, [field]: value } : item
             ))
         }));
@@ -468,6 +655,38 @@ const StoreBuilder = () => {
         setTheme(prev => ({
             ...prev,
             policies: { ...prev.policies, [key]: value }
+        }));
+    };
+
+    const updateFooter = (key, value) => {
+        setTheme(prev => ({
+            ...prev,
+            footer: { ...(prev.footer || {}), [key]: value }
+        }));
+    };
+
+    const updateFooterLink = (index, field, value) => {
+        setTheme(prev => ({
+            ...prev,
+            footer: {
+                ...(prev.footer || {}),
+                links: (prev.footer?.links || []).map((item, i) => (
+                    i === index ? { ...item, [field]: value } : item
+                ))
+            }
+        }));
+    };
+
+    const addFooterLink = () => {
+        setTheme(prev => ({
+            ...prev,
+            footer: {
+                ...(prev.footer || {}),
+                links: [
+                    ...(prev.footer?.links || []),
+                    { label: 'New link', url: '/', isExternal: false, sortOrder: prev.footer?.links?.length || 0 }
+                ]
+            }
         }));
     };
 
@@ -513,13 +732,20 @@ const StoreBuilder = () => {
     };
 
     const handleSave = async () => {
+        if (validation.length > 0) {
+            toast.error(validation[0]);
+            return;
+        }
+
         setSaving(true);
         try {
-            await API.patch('/store-builder/admin', {
+            const payload = {
                 theme,
                 customDomain,
-                storewideDiscount
-            });
+                storewideDiscount: Math.max(0, Math.min(100, Number(storewideDiscount) || 0))
+            };
+            await API.patch('/store-builder/admin', payload);
+            setInitialSnapshot(stableStringify({ theme, customDomain, storewideDiscount: payload.storewideDiscount }));
             toast.success('Store design saved. Refresh your storefront to see the latest changes.');
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to save store builder');
@@ -528,374 +754,387 @@ const StoreBuilder = () => {
         }
     };
 
-    if (loading) {
-        return <div className="p-8 text-sm text-slate-500">Loading store builder...</div>;
-    }
-
-    return (
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Store Builder</h1>
-                    <p className="text-sm text-slate-500 mt-1">Control your storefront look without code. Save changes when you are ready to publish them.</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    <button
-                        onClick={resetStyling}
-                        disabled={saving}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                    >
-                        <RotateCcw size={18} />
-                        Reset styling
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                    >
-                        <Save size={18} />
-                        {saving ? 'Saving...' : 'Save changes'}
-                    </button>
-                </div>
-            </div>
-
-            <StorefrontPreview
-                theme={theme}
-                storewideDiscount={storewideDiscount}
-                shopName={shopName}
-            />
-
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <section className="xl:col-span-2 bg-white border border-slate-200 rounded-lg p-5 space-y-5">
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                        <Palette size={18} />
-                        Brand and Theme
-                    </div>
-                    <p className="text-xs text-slate-500">Logo, colors, fonts, and discount settings apply across header, product grids, buttons, and checkout.</p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <label className="space-y-1 text-sm">
-                            <span className="font-medium text-slate-700">Logo URL</span>
-                            <input
-                                value={theme.logoUrl || ''}
-                                onChange={e => setTheme(prev => ({ ...prev, logoUrl: e.target.value }))}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                                placeholder="https://..."
-                                title="Public image URL for your store logo"
-                            />
-                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                                <Upload size={14} />
-                                {uploadingLogo ? 'Uploading...' : 'Upload logo'}
-                                <input
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp"
-                                    className="hidden"
-                                    disabled={uploadingLogo}
-                                    onChange={event => handleLogoUpload(event, 'storefront')}
-                                />
-                            </label>
-                        </label>
-                        <label className="space-y-1 text-sm">
-                            <span className="font-medium text-slate-700">Font Family</span>
-                            <select
-                                value={theme.fontFamily || 'Inter'}
-                                onChange={e => setTheme(prev => ({ ...prev, fontFamily: e.target.value }))}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                                title="Applies the main storefront font"
-                            >
-                                <option>Inter</option>
-                                <option>Arial</option>
-                                <option>Georgia</option>
-                                <option>Roboto</option>
-                            </select>
-                        </label>
-                        <label className="space-y-1 text-sm">
-                            <span className="font-medium text-slate-700">Product Grid Style</span>
-                            <select
-                                value={theme.productGridStyle || 'Comfortable'}
-                                onChange={e => setTheme(prev => ({ ...prev, productGridStyle: e.target.value }))}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                                title="Changes product grid spacing and presentation"
-                            >
-                                <option>Comfortable</option>
-                                <option>Compact</option>
-                                <option>Editorial</option>
-                            </select>
-                        </label>
-                        <label className="space-y-1 text-sm">
-                            <span className="font-medium text-slate-700">Storewide Discount</span>
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={storewideDiscount}
-                                onChange={e => setStorewideDiscount(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                                title="Simple storewide percentage discount shown on products"
-                            />
-                        </label>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {['accent', 'background', 'foreground', 'headerBackground'].map(key => (
-                            <label key={key} className="space-y-1 text-sm">
-                                <span className="font-medium text-slate-700 capitalize">{key}</span>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="color"
-                                        value={theme.colors?.[key] || '#ffffff'}
-                                        onChange={e => setColor(key, e.target.value)}
-                                        className="h-10 w-12 rounded border border-slate-200"
-                                    />
-                                    <input
-                                        value={theme.colors?.[key] || ''}
-                                        onChange={e => setColor(key, e.target.value)}
-                                        className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-2"
-                                    />
-                                </div>
-                            </label>
-                        ))}
-                    </div>
-
-                    <div className="border-t border-slate-100 pt-5 space-y-4">
-                        <div className="flex items-center gap-2 font-semibold text-slate-900">
-                            <LayoutTemplate size={18} />
-                            Typography and Layout
-                        </div>
-                        <p className="text-xs text-slate-500">Use layout settings to make the storefront feel compact, spacious, or wider on desktop.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <label className="space-y-1 text-sm">
-                                <span className="font-medium text-slate-700">Heading Font</span>
-                                <select value={theme.typography?.headingFont || 'Inter'} onChange={e => setThemeGroup('typography', 'headingFont', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                                    <option>Inter</option>
-                                    <option>Arial</option>
-                                    <option>Georgia</option>
-                                    <option>Roboto</option>
-                                </select>
-                            </label>
-                            <label className="space-y-1 text-sm">
-                                <span className="font-medium text-slate-700">Body Font</span>
-                                <select value={theme.typography?.bodyFont || 'Inter'} onChange={e => setThemeGroup('typography', 'bodyFont', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                                    <option>Inter</option>
-                                    <option>Arial</option>
-                                    <option>Georgia</option>
-                                    <option>Roboto</option>
-                                </select>
-                            </label>
-                            <label className="space-y-1 text-sm">
-                                <span className="font-medium text-slate-700">Max Width</span>
-                                <select value={theme.layout?.maxWidth || 'Wide'} onChange={e => setThemeGroup('layout', 'maxWidth', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                                    <option>Contained</option>
-                                    <option>Wide</option>
-                                    <option>Full</option>
-                                </select>
-                            </label>
-                            <label className="space-y-1 text-sm">
-                                <span className="font-medium text-slate-700">Spacing</span>
-                                <select value={theme.layout?.sectionSpacing || 'Comfortable'} onChange={e => setThemeGroup('layout', 'sectionSpacing', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                                    <option>Compact</option>
-                                    <option>Comfortable</option>
-                                    <option>Spacious</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                        <Globe size={18} />
-                        Domain
-                    </div>
-                    <p className="text-xs text-slate-500">Use this after your domain DNS points to the platform.</p>
-                    <label className="space-y-1 text-sm">
-                        <span className="font-medium text-slate-700">Custom Domain</span>
-                        <input
-                            value={customDomain.domain || ''}
-                            onChange={e => setCustomDomain(prev => ({ ...prev, domain: e.target.value }))}
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                            placeholder="www.example.com"
-                            title="Custom domain shoppers can use instead of the default subdomain"
+    const renderPanel = () => {
+        switch (activeGroup) {
+            case 'brand':
+                return (
+                    <BuilderCard title="Brand" description="Set the core identity customers see in your storefront header." icon={Palette}>
+                        <BuilderInput
+                            label="Logo URL"
+                            value={theme.logoUrl || ''}
+                            onChange={e => setTheme(prev => ({ ...prev, logoUrl: e.target.value }))}
+                            placeholder="https://..."
+                            help="Paste a public image URL or upload a logo file."
                         />
-                    </label>
-                    <p className="text-xs text-slate-500">Status: {customDomain.status || 'NotConfigured'}</p>
-                </section>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <section className="xl:col-span-2 bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                        <LayoutTemplate size={18} />
-                        Hero Banner
-                    </div>
-                    <p className="text-xs text-slate-500">This is the first section shoppers see. Use one clear offer and one button.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input value={theme.hero?.title || ''} onChange={e => setThemeGroup('hero', 'title', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Hero title" title="Main headline on the homepage hero" />
-                        <input value={theme.hero?.subtitle || ''} onChange={e => setThemeGroup('hero', 'subtitle', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Hero subtitle" title="Short supporting message below the headline" />
-                        <input value={theme.hero?.imageUrl || ''} onChange={e => setThemeGroup('hero', 'imageUrl', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Hero image URL" title="Wide image URL for the homepage hero background" />
-                        <input value={theme.hero?.ctaUrl || '/'} onChange={e => setThemeGroup('hero', 'ctaUrl', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2" placeholder="CTA URL" title="Where the hero button sends shoppers" />
-                        <input value={theme.hero?.ctaLabel || 'Shop Now'} onChange={e => setThemeGroup('hero', 'ctaLabel', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2" placeholder="CTA label" title="Text shown inside the hero button" />
-                        <select value={theme.hero?.height || 'Medium'} onChange={e => setThemeGroup('hero', 'height', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2">
-                            <option>Compact</option>
-                            <option>Medium</option>
-                            <option>Tall</option>
-                        </select>
-                    </div>
-                </section>
-
-                <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                        <ShoppingBag size={18} />
-                        Product Cards
-                    </div>
-                    <p className="text-xs text-slate-500">Choose how products appear in grids across desktop and mobile.</p>
-                    <select value={theme.productCard?.imageFit || 'Contain'} onChange={e => setThemeGroup('productCard', 'imageFit', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                        <option>Contain</option>
-                        <option>Cover</option>
-                    </select>
-                    <select value={theme.productCard?.borderRadius || 'Rounded'} onChange={e => setThemeGroup('productCard', 'borderRadius', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                        <option>Soft</option>
-                        <option>Rounded</option>
-                        <option>Square</option>
-                    </select>
-                    <select value={theme.productCard?.shadow || 'Soft'} onChange={e => setThemeGroup('productCard', 'shadow', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                        <option>None</option>
-                        <option>Soft</option>
-                        <option>Elevated</option>
-                    </select>
-                    {['showCategory', 'showRating', 'showQuickBuy'].map(key => (
-                        <label key={key} className="flex items-center justify-between text-sm text-slate-700">
-                            <span>{key}</span>
-                            <input type="checkbox" checked={theme.productCard?.[key] !== false} onChange={() => toggleThemeGroup('productCard', key)} />
-                        </label>
-                    ))}
-                </section>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 font-semibold text-slate-900">
-                            <LayoutTemplate size={18} />
-                            Homepage Sections
-                        </div>
-                        <button onClick={addHomepageSection} className="text-sm font-semibold text-indigo-600">Add section</button>
-                    </div>
-                    <p className="text-xs text-slate-500">Disable a section to hide it without deleting its settings.</p>
-                    {(theme.homepageSections || []).length === 0 && (
-                        <div className="rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-500">No custom homepage sections yet. Add a section for featured products, collections, or banners.</div>
-                    )}
-                    {(theme.homepageSections || []).map((section, index) => (
-                        <div key={section._id || index} className="grid grid-cols-1 sm:grid-cols-4 gap-3 rounded-lg border border-slate-100 p-3">
-                            <select value={section.type || 'FeaturedProducts'} onChange={e => updateHomepageSection(index, 'type', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2">
-                                <option>Hero</option>
-                                <option>FeaturedProducts</option>
-                                <option>Collection</option>
-                                <option>TextBlock</option>
-                                <option>BannerGrid</option>
-                                <option>CategoryList</option>
-                            </select>
-                            <input value={section.title || ''} onChange={e => updateHomepageSection(index, 'title', e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 sm:col-span-2" placeholder="Section title" />
-                            <label className="flex items-center gap-2 text-sm text-slate-700">
-                                <input type="checkbox" checked={section.isEnabled !== false} onChange={() => updateHomepageSection(index, 'isEnabled', section.isEnabled === false)} />
-                                Enabled
-                            </label>
-                        </div>
-                    ))}
-                </section>
-
-                <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                        <CreditCard size={18} />
-                        Checkout Branding
-                    </div>
-                    <p className="text-xs text-slate-500">These messages help shoppers feel safe before placing an order.</p>
-                    <div className="space-y-2">
-                        <input value={theme.checkoutBranding?.logoUrl || ''} onChange={e => setThemeGroup('checkoutBranding', 'logoUrl', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Checkout logo URL" />
-                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                            <Upload size={14} />
-                            {uploadingLogo ? 'Uploading...' : 'Upload checkout logo'}
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                            <Upload size={16} />
+                            {uploadingLogo ? 'Uploading...' : 'Upload storefront logo'}
                             <input
                                 type="file"
                                 accept="image/png,image/jpeg,image/webp"
                                 className="hidden"
                                 disabled={uploadingLogo}
-                                onChange={event => handleLogoUpload(event, 'checkout')}
+                                onChange={event => handleLogoUpload(event, 'storefront')}
                             />
                         </label>
-                    </div>
-                    <input value={theme.checkoutBranding?.bannerText || ''} onChange={e => setThemeGroup('checkoutBranding', 'bannerText', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Checkout banner text" />
-                    <input value={theme.checkoutBranding?.trustMessage || ''} onChange={e => setThemeGroup('checkoutBranding', 'trustMessage', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Trust message" />
-                    <select value={theme.checkoutBranding?.buttonStyle || 'Rounded'} onChange={e => setThemeGroup('checkoutBranding', 'buttonStyle', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                        <option>Solid</option>
-                        <option>Rounded</option>
-                        <option>Pill</option>
-                    </select>
-
-                    <CheckoutBrandingPreview theme={theme} shopName={shopName} />
-
-                    <div className="flex items-center gap-2 font-semibold text-slate-900 pt-3 border-t border-slate-100">
-                        <Smartphone size={18} />
-                        Mobile
-                    </div>
-                    <p className="text-xs text-slate-500">Mobile settings affect small screens where most shoppers browse and checkout.</p>
-                    {['stickyCheckoutButton', 'compactHeader', 'showBottomNavigation'].map(key => (
-                        <label key={key} className="flex items-center justify-between text-sm text-slate-700">
-                            <span>{key}</span>
-                            <input type="checkbox" checked={Boolean(theme.mobile?.[key])} onChange={() => toggleThemeGroup('mobile', key)} />
+                        <BuilderInput
+                            label="Storewide discount"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={storewideDiscount}
+                            onChange={e => setStorewideDiscount(e.target.value)}
+                            help="Optional percentage discount shown on products. Use 0 when no storewide sale is active."
+                            error={Number(storewideDiscount) < 0 || Number(storewideDiscount) > 100 ? 'Use a value from 0 to 100.' : ''}
+                        />
+                    </BuilderCard>
+                );
+            case 'colors':
+                return (
+                    <BuilderCard title="Colors" description="Use a small set of consistent colors so the store feels intentional." icon={Palette}>
+                        <div className="grid grid-cols-1 gap-4">
+                            {colorFields.map(field => (
+                                <FieldShell
+                                    key={field.key}
+                                    label={field.label}
+                                    help={field.help}
+                                    error={!isHexColor(theme.colors?.[field.key]) ? 'Enter a valid hex color, for example #4f46e5.' : ''}
+                                >
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="color"
+                                            value={isHexColor(theme.colors?.[field.key]) ? theme.colors[field.key] : '#000000'}
+                                            onChange={e => setColor(field.key, e.target.value)}
+                                            className="h-10 w-12 rounded-lg border border-slate-200 bg-white"
+                                        />
+                                        <input
+                                            value={theme.colors?.[field.key] || ''}
+                                            onChange={e => setColor(field.key, e.target.value)}
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                </FieldShell>
+                            ))}
+                        </div>
+                    </BuilderCard>
+                );
+            case 'typography':
+                return (
+                    <BuilderCard title="Typography" description="Choose readable fonts and heading weight for a polished storefront." icon={LayoutTemplate}>
+                        <BuilderSelect label="Heading font" value={theme.typography?.headingFont || 'Inter'} onChange={e => setThemeGroup('typography', 'headingFont', e.target.value)} help="Used for hero, product section headings, and important titles.">
+                            <option>Inter</option><option>Arial</option><option>Georgia</option><option>Roboto</option>
+                        </BuilderSelect>
+                        <BuilderSelect label="Body font" value={theme.typography?.bodyFont || 'Inter'} onChange={e => setThemeGroup('typography', 'bodyFont', e.target.value)} help="Used for product names, descriptions, filters, and checkout text.">
+                            <option>Inter</option><option>Arial</option><option>Georgia</option><option>Roboto</option>
+                        </BuilderSelect>
+                        <BuilderSelect label="Heading weight" value={theme.typography?.headingWeight || '800'} onChange={e => setThemeGroup('typography', 'headingWeight', e.target.value)}>
+                            <option value="600">Semi bold</option><option value="700">Bold</option><option value="800">Extra bold</option><option value="900">Black</option>
+                        </BuilderSelect>
+                    </BuilderCard>
+                );
+            case 'layout':
+                return (
+                    <BuilderCard title="Layout" description="Control page width, section rhythm, and product grid density." icon={LayoutTemplate}>
+                        <BuilderSelect label="Max width" value={theme.layout?.maxWidth || 'Wide'} onChange={e => setThemeGroup('layout', 'maxWidth', e.target.value)}>
+                            <option>Contained</option><option>Wide</option><option>Full</option>
+                        </BuilderSelect>
+                        <BuilderSelect label="Section spacing" value={theme.layout?.sectionSpacing || 'Comfortable'} onChange={e => setThemeGroup('layout', 'sectionSpacing', e.target.value)}>
+                            <option>Compact</option><option>Comfortable</option><option>Spacious</option>
+                        </BuilderSelect>
+                        <BuilderSelect label="Desktop product columns" value={theme.layout?.productColumnsDesktop || 3} onChange={e => setThemeGroup('layout', 'productColumnsDesktop', Number(e.target.value))}>
+                            <option value={2}>2 columns</option><option value={3}>3 columns</option><option value={4}>4 columns</option><option value={5}>5 columns</option>
+                        </BuilderSelect>
+                        <BuilderSelect label="Mobile product columns" value={theme.layout?.productColumnsMobile || 2} onChange={e => setThemeGroup('layout', 'productColumnsMobile', Number(e.target.value))}>
+                            <option value={1}>1 column</option><option value={2}>2 columns</option>
+                        </BuilderSelect>
+                    </BuilderCard>
+                );
+            case 'navigation':
+                return (
+                    <BuilderCard
+                        title="Header and navigation"
+                        description="Keep navigation short so customers can find the important pages quickly."
+                        icon={LinkIcon}
+                        actions={<BuilderButton type="button" variant="secondary" onClick={addNavigation}><Plus size={16} /> Add link</BuilderButton>}
+                    >
+                        {(theme.navigation || []).map((item, index) => (
+                            <div key={index} className="rounded-lg border border-slate-200 p-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <BuilderInput
+                                        label="Label"
+                                        value={item.label || ''}
+                                        onChange={e => updateNavigation(index, 'label', e.target.value)}
+                                        placeholder="Shop"
+                                        error={item.url && !item.label ? 'Add a label for this link.' : ''}
+                                    />
+                                    <BuilderInput
+                                        label="URL"
+                                        value={item.url || ''}
+                                        onChange={e => updateNavigation(index, 'url', e.target.value)}
+                                        placeholder="/products"
+                                        help="Use an internal path like /track or a full external URL."
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </BuilderCard>
+                );
+            case 'hero':
+                return (
+                    <BuilderCard title="Hero" description="The first section shoppers see. Use one clear offer and one button." icon={LayoutTemplate}>
+                        <BuilderInput label="Hero title" value={theme.hero?.title || ''} onChange={e => setThemeGroup('hero', 'title', e.target.value)} placeholder="Summer sale is live" />
+                        <BuilderInput label="Hero subtitle" value={theme.hero?.subtitle || ''} onChange={e => setThemeGroup('hero', 'subtitle', e.target.value)} placeholder="Short supporting message" />
+                        <BuilderInput label="Hero image URL" value={theme.hero?.imageUrl || ''} onChange={e => setThemeGroup('hero', 'imageUrl', e.target.value)} placeholder="https://..." help="Use a wide image so desktop and mobile cropping looks good." />
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <BuilderInput label="Button label" value={theme.hero?.ctaLabel || ''} onChange={e => setThemeGroup('hero', 'ctaLabel', e.target.value)} />
+                            <BuilderInput label="Button URL" value={theme.hero?.ctaUrl || '/'} onChange={e => setThemeGroup('hero', 'ctaUrl', e.target.value)} />
+                        </div>
+                        <BuilderSelect label="Hero height" value={theme.hero?.height || 'Medium'} onChange={e => setThemeGroup('hero', 'height', e.target.value)}>
+                            <option>Compact</option><option>Medium</option><option>Tall</option>
+                        </BuilderSelect>
+                    </BuilderCard>
+                );
+            case 'products':
+                return (
+                    <BuilderCard title="Product cards" description="Control how products appear in grids across desktop and mobile." icon={ShoppingBag}>
+                        <BuilderSelect label="Image fit" value={theme.productCard?.imageFit || 'Contain'} onChange={e => setThemeGroup('productCard', 'imageFit', e.target.value)}>
+                            <option>Contain</option><option>Cover</option>
+                        </BuilderSelect>
+                        <BuilderSelect label="Corners" value={theme.productCard?.borderRadius || 'Rounded'} onChange={e => setThemeGroup('productCard', 'borderRadius', e.target.value)}>
+                            <option>Soft</option><option>Rounded</option><option>Square</option>
+                        </BuilderSelect>
+                        <BuilderSelect label="Shadow" value={theme.productCard?.shadow || 'Soft'} onChange={e => setThemeGroup('productCard', 'shadow', e.target.value)}>
+                            <option>None</option><option>Soft</option><option>Elevated</option>
+                        </BuilderSelect>
+                        <BuilderToggle label="Show category" help="Shows the product category above the product name." checked={theme.productCard?.showCategory !== false} onChange={() => toggleThemeGroup('productCard', 'showCategory')} />
+                        <BuilderToggle label="Show rating" help="Shows star rating when a product has reviews." checked={theme.productCard?.showRating !== false} onChange={() => toggleThemeGroup('productCard', 'showRating')} />
+                        <BuilderToggle label="Show quick buy" help="Adds add-to-cart and buy-now buttons in product cards." checked={theme.productCard?.showQuickBuy !== false} onChange={() => toggleThemeGroup('productCard', 'showQuickBuy')} />
+                    </BuilderCard>
+                );
+            case 'sections':
+                return (
+                    <BuilderCard
+                        title="Homepage sections"
+                        description="Control which homepage blocks are visible and their order."
+                        icon={LayoutTemplate}
+                        actions={<BuilderButton type="button" variant="secondary" onClick={addHomepageSection}><Plus size={16} /> Add section</BuilderButton>}
+                    >
+                        {(theme.homepageSections || []).length === 0 && (
+                            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                                No custom homepage sections yet. Add a section for featured products, collections, or banners.
+                            </div>
+                        )}
+                        {(theme.homepageSections || []).map((section, index) => (
+                            <div key={section._id || index} className="rounded-lg border border-slate-200 p-3">
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-900">{section.title || section.type}</p>
+                                        <p className="text-xs text-slate-500">{section.type}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button type="button" onClick={() => moveHomepageSection(index, -1)} disabled={index === 0} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-30" title="Move section up">
+                                            <ChevronUp size={16} />
+                                        </button>
+                                        <button type="button" onClick={() => moveHomepageSection(index, 1)} disabled={index === (theme.homepageSections || []).length - 1} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-30" title="Move section down">
+                                            <ChevronDown size={16} />
+                                        </button>
+                                        <button type="button" onClick={() => duplicateHomepageSection(index)} className="rounded-md p-2 text-slate-500 hover:bg-slate-100" title="Duplicate section">
+                                            <Copy size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <BuilderSelect label="Section type" value={section.type || 'FeaturedProducts'} onChange={e => updateHomepageSection(index, 'type', e.target.value)}>
+                                        <option>Hero</option><option>FeaturedProducts</option><option>Collection</option><option>TextBlock</option><option>BannerGrid</option><option>CategoryList</option>
+                                    </BuilderSelect>
+                                    <BuilderInput label="Section title" value={section.title || ''} onChange={e => updateHomepageSection(index, 'title', e.target.value)} />
+                                </div>
+                                <div className="mt-3">
+                                    <BuilderToggle label="Visible on storefront" checked={section.isEnabled !== false} onChange={() => updateHomepageSection(index, 'isEnabled', section.isEnabled === false)} />
+                                </div>
+                            </div>
+                        ))}
+                    </BuilderCard>
+                );
+            case 'checkout':
+                return (
+                    <BuilderCard title="Checkout" description="Build trust at the moment customers place an order." icon={CreditCard}>
+                        <BuilderInput label="Checkout logo URL" value={theme.checkoutBranding?.logoUrl || ''} onChange={e => setThemeGroup('checkoutBranding', 'logoUrl', e.target.value)} placeholder="https://..." />
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                            <Upload size={16} />
+                            {uploadingLogo ? 'Uploading...' : 'Upload checkout logo'}
+                            <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" disabled={uploadingLogo} onChange={event => handleLogoUpload(event, 'checkout')} />
                         </label>
-                    ))}
-                </section>
+                        <BuilderInput label="Checkout banner text" value={theme.checkoutBranding?.bannerText || ''} onChange={e => setThemeGroup('checkoutBranding', 'bannerText', e.target.value)} placeholder="Free returns for 7 days" />
+                        <BuilderInput label="Trust message" value={theme.checkoutBranding?.trustMessage || ''} onChange={e => setThemeGroup('checkoutBranding', 'trustMessage', e.target.value)} placeholder="Secure checkout" />
+                        <BuilderSelect label="Button style" value={theme.checkoutBranding?.buttonStyle || 'Rounded'} onChange={e => setThemeGroup('checkoutBranding', 'buttonStyle', e.target.value)}>
+                            <option>Solid</option><option>Rounded</option><option>Pill</option>
+                        </BuilderSelect>
+                        <CheckoutBrandingPreview theme={theme} shopName={shopName} />
+                    </BuilderCard>
+                );
+            case 'mobile':
+                return (
+                    <BuilderCard title="Mobile" description="Tune storefront controls for small screens." icon={Smartphone}>
+                        <BuilderToggle label="Sticky checkout button" help="Keeps checkout easy to reach on cart and checkout flows." checked={Boolean(theme.mobile?.stickyCheckoutButton)} onChange={() => toggleThemeGroup('mobile', 'stickyCheckoutButton')} />
+                        <BuilderToggle label="Compact header" help="Reduces header height on mobile." checked={Boolean(theme.mobile?.compactHeader)} onChange={() => toggleThemeGroup('mobile', 'compactHeader')} />
+                        <BuilderToggle label="Bottom navigation" help="Shows a mobile bottom bar with key actions." checked={Boolean(theme.mobile?.showBottomNavigation)} onChange={() => toggleThemeGroup('mobile', 'showBottomNavigation')} />
+                    </BuilderCard>
+                );
+            case 'footer':
+                return (
+                    <BuilderCard
+                        title="Footer"
+                        description="Add footer copy and links for policies, support, or important pages."
+                        icon={FileText}
+                        actions={<BuilderButton type="button" variant="secondary" onClick={addFooterLink}><Plus size={16} /> Add link</BuilderButton>}
+                    >
+                        <BuilderTextarea
+                            label="Footer text"
+                            value={theme.footer?.text || ''}
+                            onChange={e => updateFooter('text', e.target.value)}
+                            help="Shown at the bottom of the storefront. Keep it short and trustworthy."
+                        />
+                        {(theme.footer?.links || []).length === 0 && (
+                            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                                No footer links yet. Add links for policies, contact, or collections.
+                            </div>
+                        )}
+                        {(theme.footer?.links || []).map((item, index) => (
+                            <div key={index} className="rounded-lg border border-slate-200 p-3">
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <BuilderInput
+                                        label="Label"
+                                        value={item.label || ''}
+                                        onChange={e => updateFooterLink(index, 'label', e.target.value)}
+                                        placeholder="Refund policy"
+                                    />
+                                    <BuilderInput
+                                        label="URL"
+                                        value={item.url || ''}
+                                        onChange={e => updateFooterLink(index, 'url', e.target.value)}
+                                        placeholder="/policy/refund"
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </BuilderCard>
+                );
+            case 'policies':
+                return (
+                    <BuilderCard title="Policies" description="Policies appear on checkout when text is added. Empty policies stay hidden." icon={FileText}>
+                        {['refund', 'shipping', 'privacy', 'terms'].map(key => (
+                            <BuilderTextarea key={key} label={`${key.charAt(0).toUpperCase()}${key.slice(1)} policy`} value={theme.policies?.[key] || ''} onChange={e => updatePolicy(key, e.target.value)} help={theme.policies?.[key]?.trim() ? 'Visible on checkout.' : 'Hidden on checkout until text is added.'} />
+                        ))}
+                    </BuilderCard>
+                );
+            case 'domain':
+                return (
+                    <BuilderCard title="Domain" description="Use this after your domain DNS points to the platform." icon={Globe}>
+                        <BuilderInput label="Custom domain" value={customDomain.domain || ''} onChange={e => setCustomDomain(prev => ({ ...prev, domain: e.target.value }))} placeholder="www.example.com" help="Customers can use this instead of the default subdomain after verification." />
+                        <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                            Status: <span className="font-semibold text-slate-900">{customDomain.status || 'NotConfigured'}</span>
+                        </div>
+                    </BuilderCard>
+                );
+            default:
+                return null;
+        }
+    };
+
+    if (loading) {
+        return <div className="p-8 text-sm text-slate-500">Loading store builder...</div>;
+    }
+
+    return (
+        <div className="min-h-full bg-slate-50">
+            <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+                <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-xl font-bold text-slate-950">Store Builder</h1>
+                            {hasUnsavedChanges && (
+                                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+                                    Unsaved changes
+                                </span>
+                            )}
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500">Customize your storefront without code. Preview changes, then save when ready.</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <DeviceSwitcher value={device} onChange={setDevice} />
+                        <BuilderButton type="button" variant="secondary" onClick={resetStyling} disabled={saving}>
+                            <RotateCcw size={16} />
+                            Reset styling
+                        </BuilderButton>
+                        <BuilderButton type="button" onClick={handleSave} disabled={saving || validation.length > 0}>
+                            <Save size={16} />
+                            {saving ? 'Saving...' : 'Save changes'}
+                        </BuilderButton>
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 font-semibold text-slate-900">
-                            <LinkIcon size={18} />
-                            Navigation
+            <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+                <aside className="space-y-4 xl:sticky xl:top-28 xl:self-start">
+                    <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
+                        <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-400">Settings</p>
+                        <div className="space-y-1">
+                            {settingsGroups.map(group => {
+                                const Icon = group.icon;
+                                const active = activeGroup === group.id;
+                                return (
+                                    <button
+                                        key={group.id}
+                                        type="button"
+                                        onClick={() => setActiveGroup(group.id)}
+                                        className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                            active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+                                        }`}
+                                    >
+                                        <Icon size={18} className={active ? 'mt-0.5 text-indigo-600' : 'mt-0.5 text-slate-400'} />
+                                        <span>
+                                            <span className="block text-sm font-semibold">{group.label}</span>
+                                            <span className="mt-0.5 block text-xs leading-4 opacity-75">{group.description}</span>
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <button onClick={addNavigation} className="text-sm font-semibold text-indigo-600">Add link</button>
                     </div>
-                    <p className="text-xs text-slate-500">Keep navigation short. Link to your most important pages or collections.</p>
-                    {(theme.navigation || []).map((item, index) => (
-                        <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <input
-                                value={item.label || ''}
-                                onChange={e => updateNavigation(index, 'label', e.target.value)}
-                                className="rounded-lg border border-slate-200 px-3 py-2"
-                                placeholder="Label"
-                                title="Menu text shoppers will see"
-                            />
-                            <input
-                                value={item.url || ''}
-                                onChange={e => updateNavigation(index, 'url', e.target.value)}
-                                className="rounded-lg border border-slate-200 px-3 py-2"
-                                placeholder="/products"
-                                title="Internal path or full external URL"
-                            />
+                    {validation.length > 0 && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            <p className="font-bold">Fix before saving</p>
+                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                                {validation.map((error, index) => <li key={`${error}-${index}`}>{error}</li>)}
+                            </ul>
                         </div>
-                    ))}
-                </section>
+                    )}
+                </aside>
 
-                <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                        <FileText size={18} />
-                        Policies
+                <main className="grid grid-cols-1 gap-4 2xl:grid-cols-[420px_minmax(0,1fr)]">
+                    <div className="order-2 2xl:order-1">
+                        {renderPanel()}
                     </div>
-                    <p className="text-xs text-slate-500">Clear policies reduce support questions and help shoppers trust checkout.</p>
-                    {['refund', 'shipping', 'privacy', 'terms'].map(key => (
-                        <label key={key} className="space-y-1 text-sm block">
-                            <span className="font-medium text-slate-700 capitalize">{key}</span>
-                            <textarea
-                                value={theme.policies?.[key] || ''}
-                                onChange={e => updatePolicy(key, e.target.value)}
-                                rows={3}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                            />
-                        </label>
-                    ))}
-                </section>
+                    <section className="order-1 rounded-lg border border-slate-200 bg-white p-4 shadow-sm 2xl:order-2">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="text-base font-bold text-slate-950">Live preview</h2>
+                                <p className="mt-1 text-sm text-slate-500">The highlighted area shows what you are editing now.</p>
+                            </div>
+                            <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-600">
+                                {device}
+                            </div>
+                        </div>
+                        <StorefrontPreview
+                            theme={theme}
+                            storewideDiscount={Number(storewideDiscount) || 0}
+                            shopName={shopName}
+                            activeGroup={activeGroup}
+                            device={device}
+                        />
+                    </section>
+                </main>
             </div>
         </div>
     );

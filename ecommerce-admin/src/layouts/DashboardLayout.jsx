@@ -2,10 +2,61 @@ import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import Topbar from '../components/dashboard/Topbar';
+import { CircleHelp } from 'lucide-react';
+
+const helpTextByPath = [
+    {
+        match: '/dashboard/products',
+        title: 'Products',
+        body: 'Add products with clear names, real photos, correct stock, and selling prices. Draft products stay hidden from customers.'
+    },
+    {
+        match: '/dashboard/orders',
+        title: 'Orders',
+        body: 'Start from Pending orders. Confirm, process, ship, then deliver. Open View before changing status if you need customer or delivery details.'
+    },
+    {
+        match: '/dashboard/customers',
+        title: 'Customers',
+        body: 'This page shows shoppers for this store only. Use it to review customer history and contact customers when needed.'
+    },
+    {
+        match: '/dashboard/promotions',
+        title: 'Promotions',
+        body: 'Create coupons for discounts or free shipping. Always set an expiry date so old offers do not stay active by mistake.'
+    },
+    {
+        match: '/dashboard/banners',
+        title: 'Banners',
+        body: 'Upload one desktop image and one mobile image for each banner. Use short text in the image and link it to the right product or collection.'
+    },
+    {
+        match: '/dashboard/store-builder',
+        title: 'Store Builder',
+        body: 'Change colors, logo, homepage sections, checkout branding, policies, and navigation. Preview first, then save to publish.'
+    },
+    {
+        match: '/dashboard/shipping',
+        title: 'Shipping',
+        body: 'Connect courier settings before sending confirmed orders. Keep pickup address and phone number accurate.'
+    },
+    {
+        match: '/dashboard',
+        title: 'Dashboard',
+        body: 'Use this page to check sales, orders, stock warnings, and store activity before deciding what to work on.'
+    }
+];
+
+const getHelpText = (pathname) => (
+    helpTextByPath.find(item => item.match === '/dashboard'
+        ? pathname === '/dashboard'
+        : pathname.startsWith(item.match)) || helpTextByPath[helpTextByPath.length - 1]
+);
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
+    const helpText = getHelpText(location.pathname);
 
     // UX Improvement: Auto-close the mobile sidebar whenever the route changes.
     // This prevents the user from having to manually close the menu after clicking a link.
@@ -15,7 +66,7 @@ const DashboardLayout = () => {
 
     return (
 
-    <div className="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden selection:bg-blue-100 selection:text-blue-900">
+    <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
 
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
@@ -37,6 +88,17 @@ const DashboardLayout = () => {
                       to use the full width of the screen if they need to.
                     */}
                 <div className="w-full h-full animate-in fade-in duration-500">
+                    <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+                        <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+                            <div className="mt-0.5 rounded-lg bg-indigo-50 p-1.5 text-indigo-600">
+                                <CircleHelp size={16} />
+                            </div>
+                            <div>
+                                <strong className="font-semibold text-slate-950">{helpText.title} guide</strong>
+                                <p className="mt-0.5 leading-5">{helpText.body}</p>
+                            </div>
+                        </div>
+                    </div>
                     <Outlet />
                 </div>
             </main>

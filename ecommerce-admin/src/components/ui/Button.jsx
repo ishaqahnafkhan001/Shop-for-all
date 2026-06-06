@@ -1,12 +1,34 @@
-const Button = ({ children, type = "button", isLoading = false, onClick }) => {
+const variantClasses = {
+    primary: 'border-transparent bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500',
+    secondary: 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-400',
+    danger: 'border-transparent bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500',
+    ghost: 'border-transparent bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-slate-400',
+};
+
+const sizeClasses = {
+    sm: 'px-3 py-2 text-xs',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-5 py-3 text-sm',
+};
+
+const Button = ({
+    children,
+    type = "button",
+    isLoading = false,
+    disabled = false,
+    onClick,
+    variant = 'primary',
+    size = 'md',
+    className = '',
+}) => {
+    const isDisabled = isLoading || disabled;
+
     return (
         <button
             type={type}
             onClick={onClick}
-            disabled={isLoading}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
-                ${isLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} 
-                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors`}
+            disabled={isDisabled}
+            className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border font-semibold shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${variantClasses[variant] || variantClasses.primary} ${sizeClasses[size] || sizeClasses.md} ${className}`}
         >
             {isLoading ? (
                 <span className="flex items-center">

@@ -1,28 +1,22 @@
 const nodemailer = require('nodemailer');
 
+const smtpPort = Number(process.env.ORDER_SMTP_PORT || process.env.SMTP_PORT || 465);
+
 const orderTransporter = nodemailer.createTransport({
-    host: 'mail.spacemail.com',
-    port: 587,
-    secure: false, // Must be false for 587
+    host: process.env.ORDER_SMTP_HOST || process.env.SMTP_HOST || 'mail.spacemail.com',
+    port: smtpPort,
+    secure: smtpPort === 465,
     auth: {
         user: process.env.ORDER_MAIL,
         pass: process.env.ORDER_MAIL_PASS,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 15000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 15000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 15000),
     tls: {
-        // This helps if the server has certificate issues
-        rejectUnauthorized: false,
-        // Explicitly require TLS
+        rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED === 'true',
         minVersion: 'TLSv1.2'
     }
 });
-orderTransporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ Order Mailer Connection Error:", error);
-    } else {
-        console.log("✅ Order Mailer is ready to send emails");
-    }
-});
+
 module.exports = orderTransporter;

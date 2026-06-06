@@ -55,7 +55,7 @@ export default function CartPage() {
                 {/* Left Side: Items */}
                 <div className="lg:col-span-2 space-y-4">
                     {cartItems.map((item) => (
-                        <div key={item._id} className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <div key={item.cartItemId || item._id} className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
 
                                 <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0 w-full">
@@ -113,7 +113,7 @@ export default function CartPage() {
                                         {/* Pricing */}
                                         <div className="mt-auto flex items-center gap-2">
                                             <p className="font-extrabold text-[var(--sf-accent,blue-600)] text-lg">
-                                                ৳ {item.finalPrice || item.sellingPrice}
+                                                ৳ {item.cartPrice || item.finalPrice || item.sellingPrice}
                                             </p>
                                             {item.pricing?.discount > 0 && (
                                                 <p className="text-sm text-gray-400 line-through">
@@ -129,7 +129,7 @@ export default function CartPage() {
                                     <div className="flex flex-col items-center sm:items-end">
                                         <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 overflow-hidden shadow-sm">
                                             <button
-                                                onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                                                onClick={() => updateQuantity(item.cartItemId || item._id, item.quantity - 1)}
                                                 disabled={item.quantity <= 1}
                                                 className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                                             >
@@ -139,7 +139,7 @@ export default function CartPage() {
                                                 {item.quantity}
                                             </span>
                                             <button
-                                                onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                                                onClick={() => updateQuantity(item.cartItemId || item._id, item.quantity + 1)}
                                                 disabled={item.quantity >= (item.selectedVariant?.stock || item.stock || 99)}
                                                 className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                                             >
@@ -155,7 +155,7 @@ export default function CartPage() {
                                     </div>
 
                                     <button
-                                        onClick={() => removeFromCart(item._id)}
+                                        onClick={() => removeFromCart(item.cartItemId || item._id)}
                                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-lg transition-colors"
                                         title="Remove item"
                                     >

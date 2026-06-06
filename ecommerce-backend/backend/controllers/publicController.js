@@ -224,8 +224,9 @@ exports.createPublicOrder = async (req, res) => {
 
             const beforeStock = variant.stock;
 
-            const basePrice = Number.isFinite(Number(variant.priceOverride))
-                ? Number(variant.priceOverride)
+            const variantPrice = variant.pricing?.price ?? variant.priceOverride;
+            const basePrice = Number.isFinite(Number(variantPrice))
+                ? Number(variantPrice)
                 : Number(product.pricing?.sellingPrice);
 
             const discount = Number(product.pricing?.discount) || 0;
@@ -234,7 +235,7 @@ exports.createPublicOrder = async (req, res) => {
                 basePrice - ((basePrice * discount) / 100)
             );
 
-            const buyingPrice = Number(product.pricing?.buyingPrice);
+            const buyingPrice = Number(variant.pricing?.costPrice ?? product.pricing?.buyingPrice);
             const itemTotal = unitPrice * quantity;
 
             if (!Number.isFinite(unitPrice) || !Number.isFinite(itemTotal)) {

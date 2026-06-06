@@ -19,6 +19,14 @@ const bannerSchema = new Schema({
         type: [String],
         validate: [v => v.length > 0, 'At least one banner image is required']
     },
+    desktopImages: {
+        type: [String],
+        default: []
+    },
+    mobileImages: {
+        type: [String],
+        default: []
+    },
     link: {
         type: String,
         default: '' // Optional: Redirect users to a specific product/category

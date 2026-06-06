@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
     LayoutDashboard,
@@ -19,6 +19,8 @@ import {
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user } = useAuth();
+    const location = useLocation();
+    const navigate = useNavigate();
     const isSuperAdmin = user?.role === 'SuperAdmin';
 
     const vendorNavItems = [
@@ -46,32 +48,37 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const navItems = isSuperAdmin
         ? superAdminNavItems
         : vendorNavItems.filter(item => !item.adminOnly || user?.role === 'VendorAdmin');
+    const activeItem = navItems
+        .filter(item => item.path === '/dashboard' ? location.pathname === item.path : location.pathname.startsWith(item.path))
+        .sort((a, b) => b.path.length - a.path.length)[0] || navItems[0];
+    const ActiveIcon = activeItem?.icon;
 
     return (
         <>
             {/* Mobile Dark Overlay Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
+                    className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm transition-opacity md:hidden"
                     onClick={() => setIsOpen(false)}
                 />
             )}
 
             {/* The Sidebar itself */}
             <div className={`
-                fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 h-screen flex flex-col 
+                fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white
                 transform transition-transform duration-300 ease-in-out
                 md:static md:translate-x-0 
                 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
-                <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-                    <span className="text-2xl font-black text-indigo-600 tracking-tight">
+                <div className="flex h-16 items-center justify-between border-b border-slate-200 px-6">
+                    <span className="text-2xl font-black tracking-tight text-slate-950">
                         {isSuperAdmin ? 'Platform.' : 'ScaleUp.'}
                     </span>
 
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="md:hidden p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+                        className="rounded-lg p-2 -mr-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 md:hidden"
+                        aria-label="Close navigation"
                     >
                         <X className="h-5 w-5" />
                     </button>
@@ -79,33 +86,42 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
                 <div className="flex-1 overflow-y-auto py-6">
                     <nav className="space-y-1.5 px-4">
-                        {navItems.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <NavLink
-                                    key={item.name}
-                                    to={item.path}
-                                    end={item.path === '/dashboard'}
-                                    onClick={() => setIsOpen(false)}
-                                    className={({ isActive }) =>
-                                        `group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                                            isActive
-                                                ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                        }`
-                                    }
-                                >
-                                    {({ isActive }) => (
-                                        <>
-                                            <Icon className={`flex-shrink-0 mr-3 h-5 w-5 transition-colors ${
-                                                isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'
-                                            }`} />
-                                            <span>{item.name}</span>
-                                        </>
-                                    )}
-                                </NavLink>
-                            );
-                        })}
+                        <p className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                            Current page
+                        </p>
+                        {activeItem && (
+                            <NavLink
+                                to={activeItem.path}
+                                end={activeItem.path === '/dashboard'}
+                                onClick={() => setIsOpen(false)}
+                                className="group flex items-center rounded-lg bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm ring-1 ring-indigo-100"
+                            >
+                                <ActiveIcon className="flex-shrink-0 mr-3 h-5 w-5 text-indigo-600" />
+                                <span>{activeItem.name}</span>
+                            </NavLink>
+                        )}
+                        <div className="pt-4">
+                            <label className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                                Go to another page
+                            </label>
+                            <select
+                                value={activeItem?.path || ''}
+                                onChange={(event) => {
+                                    navigate(event.target.value);
+                                    setIsOpen(false);
+                                }}
+                                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                            >
+                                {navItems.map((item) => (
+                                    <option key={item.name} value={item.path}>
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="mt-3 px-3 text-xs leading-5 text-slate-500">
+                                Only the selected page is shown here to keep the dashboard simple. Use this menu when you want to move somewhere else.
+                            </p>
+                        </div>
                     </nav>
                 </div>
             </div>

@@ -6,17 +6,60 @@ const keyValueSchema = new Schema({
     value: { type: String, required: true, trim: true }
 }, { _id: false });
 
+const productOptionSchema = new Schema({
+    name: { type: String, required: true, trim: true, lowercase: true },
+    values: [{
+        value: { type: String, required: true, trim: true },
+        label: { type: String, trim: true, default: '' },
+        swatch: { type: String, trim: true, default: '' },
+        sortOrder: { type: Number, default: 0 }
+    }],
+    sortOrder: { type: Number, default: 0 }
+}, { _id: true });
+
 const variantSchema = new Schema({
     sku: { type: String, trim: true },
+    barcode: { type: String, trim: true, default: '' },
     attributes: [
         {
             name: { type: String, required: true },
             value: { type: String, required: true }
         }
     ],
+    optionKey: { type: String, trim: true, index: true },
     stock: { type: Number, required: true, min: 0 },
     priceOverride: { type: Number },
+    pricing: {
+        price: { type: Number, min: 0 },
+        compareAtPrice: { type: Number, min: 0 },
+        costPrice: { type: Number, min: 0 }
+    },
+    inventory: {
+        stock: { type: Number, min: 0, default: 0 },
+        reservedStock: { type: Number, min: 0, default: 0 },
+        lowStockThreshold: { type: Number, min: 0, default: 5 },
+        trackQuantity: { type: Boolean, default: true },
+        allowOversell: { type: Boolean, default: false }
+    },
     image: String,
+    weight: { type: Number, min: 0 },
+    dimensions: {
+        length: { type: Number, min: 0 },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
+        unit: { type: String, enum: ['cm', 'in'], default: 'cm' }
+    },
+    status: {
+        type: String,
+        enum: ['active', 'draft', 'archived'],
+        default: 'active',
+        index: true
+    },
+    tax: {
+        taxable: { type: Boolean, default: true },
+        taxCode: { type: String, trim: true, default: '' },
+        rate: { type: Number, min: 0, max: 100 }
+    },
     isActive: { type: Boolean, default: true }
 }, { _id: true });
 
@@ -32,6 +75,7 @@ const productSchema = new Schema({
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection', index: true }],
     images: [String],
     videos: [String],
+    options: [productOptionSchema],
     status: {
         type: String,
         enum: ['Draft', 'Published', 'Archived'],
@@ -90,6 +134,8 @@ productSchema.index({ shop_id: 1, status: 1, isActive: 1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, status: 1, isActive: 1, createdAt: -1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, category: 1, createdAt: -1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, 'pricing.sellingPrice': 1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, 'variants.sku': 1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, 'variants.optionKey': 1 });
 productSchema.index({ shop_id: 1, slug: 1 }, {
     unique: true,
     partialFilterExpression: { slug: { $type: 'string' }, isDeleted: false }
@@ -108,8 +154,39 @@ productSchema.pre('save', async function () {
 
     this.isActive = this.status === 'Published';
 
-    if (this.variants && this.variants.some(v => v.stock < 0)) {
-        throw new Error("Stock cannot be negative");
+    if (this.variants) {
+        for (const variant of this.variants) {
+            const attributes = Array.isArray(variant.attributes) ? variant.attributes : [];
+            variant.optionKey = [...attributes]
+                .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+                .map(a => `${String(a.name).toLowerCase()}:${String(a.value).trim()}`)
+                .join('|');
+
+            if (!variant.status) variant.status = variant.isActive === false ? 'draft' : 'active';
+            variant.isActive = variant.status === 'active' && variant.isActive !== false;
+
+            const inventoryStock = variant.inventory?.stock;
+            if (variant.stock === undefined || variant.stock === null) {
+                variant.stock = inventoryStock || 0;
+            }
+            variant.inventory = {
+                ...(variant.inventory?.toObject ? variant.inventory.toObject() : variant.inventory || {}),
+                stock: variant.stock || 0
+            };
+
+            if (variant.priceOverride !== undefined && variant.priceOverride !== null) {
+                variant.pricing = {
+                    ...(variant.pricing?.toObject ? variant.pricing.toObject() : variant.pricing || {}),
+                    price: variant.priceOverride
+                };
+            } else if (variant.pricing?.price !== undefined) {
+                variant.priceOverride = variant.pricing.price;
+            }
+        }
+
+        if (this.variants.some(v => v.stock < 0 || v.inventory?.stock < 0 || v.inventory?.reservedStock < 0)) {
+            throw new Error("Stock cannot be negative");
+        }
     }
 });
 

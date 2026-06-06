@@ -189,7 +189,8 @@ const HomepageCustomSection = memo(function HomepageCustomSection({ section, cat
         return (
             <section className="grid gap-4 sm:grid-cols-2">
                 {visibleBanners.map((banner) => {
-                    const imageUrl = banner.images?.[0] || banner.image;
+                    const imageUrl = banner.desktopImages?.[0] || banner.images?.[0] || banner.image;
+                    const mobileImageUrl = banner.mobileImages?.[0] || imageUrl;
                     if (!imageUrl) return null;
                     return (
                         <Link
@@ -197,12 +198,21 @@ const HomepageCustomSection = memo(function HomepageCustomSection({ section, cat
                             href={banner.link || '/'}
                             className="group relative aspect-[16/9] overflow-hidden rounded-3xl bg-gray-100"
                         >
+                            {mobileImageUrl !== imageUrl && (
+                                <Image
+                                    src={mobileImageUrl}
+                                    alt={banner.title || section.title || 'Store banner'}
+                                    fill
+                                    sizes="100vw"
+                                    className="object-cover transition-transform duration-500 group-hover:scale-105 md:hidden"
+                                />
+                            )}
                             <Image
                                 src={imageUrl}
                                 alt={banner.title || section.title || 'Store banner'}
                                 fill
                                 sizes="(max-width: 768px) 100vw, 50vw"
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                className={`${mobileImageUrl !== imageUrl ? 'hidden md:block' : ''} object-cover transition-transform duration-500 group-hover:scale-105`}
                             />
                             {banner.title && (
                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 text-lg font-black text-white">
@@ -292,10 +302,16 @@ export default function VendorHomePage({ params }) {
         }] : []),
         ...activeBanners
     ].flatMap((banner) => {
-        const images = banner.images?.length ? banner.images : (banner.image ? [banner.image] : []);
+        const images = banner.desktopImages?.length
+            ? banner.desktopImages
+            : banner.images?.length
+                ? banner.images
+                : (banner.image ? [banner.image] : []);
+        const mobileImages = banner.mobileImages || [];
         return images.map((imgUrl, i) => ({
             id: `${banner._id || 'banner'}-${i}`,
             imgUrl,
+            mobileImgUrl: mobileImages[i] || mobileImages[0] || imgUrl,
             title: banner.title,
             link: banner.link,
         }));
@@ -370,12 +386,23 @@ export default function VendorHomePage({ params }) {
                                 index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
                             }`}
                         >
+                            {slide.mobileImgUrl && slide.mobileImgUrl !== slide.imgUrl && (
+                                <Image
+                                    src={slide.mobileImgUrl}
+                                    alt={slide.title || 'Promotional Banner'}
+                                    fill
+                                    sizes="100vw"
+                                    className="object-cover transition-transform duration-[10s] ease-linear hover:scale-105 md:hidden"
+                                    priority={index === 0}
+                                    loading={index === 0 ? 'eager' : 'lazy'}
+                                />
+                            )}
                             <Image
                                 src={slide.imgUrl}
                                 alt={slide.title || 'Promotional Banner'}
                                 fill
                                 sizes="100vw"
-                                className="object-cover transition-transform duration-[10s] ease-linear hover:scale-105"
+                                className={`${slide.mobileImgUrl && slide.mobileImgUrl !== slide.imgUrl ? 'hidden md:block' : ''} object-cover transition-transform duration-[10s] ease-linear hover:scale-105`}
                                 priority={index === 0}
                                 loading={index === 0 ? 'eager' : 'lazy'}
                             />

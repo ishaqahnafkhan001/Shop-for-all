@@ -1,4 +1,9 @@
 const Banner = require('../models/Banner');
+const cache = require('../services/cacheService');
+
+const invalidateStorefrontBannerCache = async (shopId) => {
+    if (shopId) await cache.delPattern(`storefront:bootstrap:${shopId}:*`);
+};
 
 // @desc    Create new banner with multiple images (Admin Only)
 exports.createBanner = async (req, res) => {
@@ -13,20 +18,25 @@ exports.createBanner = async (req, res) => {
             return res.status(401).json({ success: false, message: "Unauthorized: Shop ID missing" });
         }
 
+        const filesByField = req.files || {};
+        const desktopImages = (filesByField.desktopImages || filesByField.images || []).map(file => file.path);
+        const mobileImages = (filesByField.mobileImages || []).map(file => file.path);
+
         // Check if files exist
-        if (!req.files || req.files.length === 0) {
+        if (desktopImages.length === 0) {
             return res.status(400).json({ success: false, message: "No images uploaded" });
         }
-
-        const imageUrls = req.files.map(file => file.path);
 
         const newBanner = await Banner.create({
             shop_id, // ✅ Save the banner to this specific shop
             title,
             link,
-            images: imageUrls,
+            images: desktopImages,
+            desktopImages,
+            mobileImages,
             isActive: true
         });
+        await invalidateStorefrontBannerCache(shop_id);
 
         res.status(201).json({
             success: true,
@@ -88,6 +98,7 @@ exports.deleteBanner = async (req, res) => {
             return res.status(404).json({ success: false, message: "Banner not found or unauthorized" });
         }
 
+        await invalidateStorefrontBannerCache(shop_id);
         res.status(200).json({ success: true, message: "Banner removed successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -111,6 +122,7 @@ exports.toggleBannerStatus = async (req, res) => {
 
         banner.isActive = !banner.isActive;
         await banner.save();
+        await invalidateStorefrontBannerCache(shop_id);
 
         res.status(200).json({
             success: true,

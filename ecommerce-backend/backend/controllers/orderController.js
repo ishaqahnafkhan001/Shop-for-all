@@ -198,10 +198,11 @@ exports.createOrder = async (req, res) => {
             const afterStock = variant.stock;
 
             // ✅ Price calculation: variant override takes priority over base price
-            const basePrice = variant.priceOverride || product.pricing.sellingPrice;
+            const basePrice = variant.pricing?.price ?? variant.priceOverride ?? product.pricing.sellingPrice;
             const discount = product.pricing.discount || 0;
             const unitPrice = Math.round(basePrice - (basePrice * discount / 100));
             const totalItemPrice = unitPrice * item.quantity;
+            const buyingPrice = variant.pricing?.costPrice ?? product.pricing.buyingPrice;
 
             subtotal += totalItemPrice;
             promotionItems.push({
@@ -222,7 +223,7 @@ exports.createOrder = async (req, res) => {
                 attributes: variant.attributes,
                 quantity: item.quantity,
                 price: unitPrice,
-                buyingPrice: product.pricing.buyingPrice,
+                buyingPrice,
                 total: totalItemPrice
             });
 

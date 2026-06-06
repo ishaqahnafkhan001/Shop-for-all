@@ -40,7 +40,7 @@ export function useProductData(subdomain, id) {
 
                 // Pre-select first active variant attributes
                 if (normalized.variants?.length > 0) {
-                    const first = normalized.variants.find(v => v.isActive) || normalized.variants[0];
+                    const first = normalized.variants.find(v => v.isActive && v.status !== 'archived') || normalized.variants[0];
                     const init  = Object.fromEntries(first.attributes.map(a => [a.name, a.value]));
                     setSelectedAttributes(init);
                 }
@@ -75,10 +75,24 @@ export function useProductData(subdomain, id) {
 
     /* ---------- derived: attribute options ---------- */
     const availableAttributes = useMemo(() => {
+        if (product?.options?.length > 0) {
+            return Object.fromEntries(
+                product.options
+                    .slice()
+                    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                    .map(option => [
+                        option.name,
+                        (option.values || [])
+                            .slice()
+                            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                            .map(value => value.value)
+                    ])
+            );
+        }
         if (!product?.variants) return {};
         const attrs = {};
         product.variants.forEach(variant => {
-            if (!variant.isActive) return;
+            if (!variant.isActive || variant.status === 'archived') return;
             variant.attributes.forEach(({ name, value }) => {
                 if (!attrs[name]) attrs[name] = new Set();
                 attrs[name].add(value);
@@ -91,13 +105,17 @@ export function useProductData(subdomain, id) {
     const currentVariant = useMemo(() => {
         if (!product?.variants?.length) return null;
         return product.variants.find(variant =>
+            variant.isActive !== false &&
+            variant.status !== 'archived' &&
             variant.attributes.every(attr => selectedAttributes[attr.name] === attr.value)
         ) ?? null;
     }, [product, selectedAttributes]);
 
     /* ---------- derived: display pricing / stock ---------- */
-    const displayStock      = currentVariant ? currentVariant.stock : (product?.stock ?? 0);
-    const baseOriginalPrice = currentVariant?.priceOverride ?? product?.sellingPrice ?? 0;
+    const displayStock      = currentVariant
+        ? (currentVariant.inventory?.stock ?? currentVariant.stock ?? 0)
+        : (product?.stock ?? 0);
+    const baseOriginalPrice = currentVariant?.pricing?.price ?? currentVariant?.priceOverride ?? product?.sellingPrice ?? 0;
     const displayDiscount   = product?.discount ?? 0;
     const displayFinalPrice = displayDiscount > 0
         ? Math.round(baseOriginalPrice - (baseOriginalPrice * displayDiscount) / 100)

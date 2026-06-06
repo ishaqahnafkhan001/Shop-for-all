@@ -20,6 +20,7 @@ export default function AccountPage({ params }) {
     const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '', otp: '' });
     const [otpSent, setOtpSent] = useState(false);
     const [otpTimer, setOtpTimer] = useState(0);
+    const [otpLoading, setOtpLoading] = useState(false);
 
     const [passForm, setPassForm] = useState({ oldPassword: '', newPassword: '' });
     const [orders, setOrders] = useState([]);
@@ -93,6 +94,7 @@ export default function AccountPage({ params }) {
 
         if (otpTimer > 0) return;
 
+        setOtpLoading(true);
         try {
             const { data } = await API.post('/auth/send-otp', { email: authForm.email });
             if (data.success) {
@@ -103,6 +105,8 @@ export default function AccountPage({ params }) {
             }
         } catch (error) {
             toast.error(error.response?.data?.message || error.response?.data?.error || "Failed to send OTP");
+        } finally {
+            setOtpLoading(false);
         }
     };
 
@@ -119,6 +123,7 @@ export default function AccountPage({ params }) {
                 await checkAuthStatus();
 
                 toast.success("Registration successful!");
+                router.push('/');
             } else {
                 // 2. Login Flow (Using Context)
                 const result = await login(authForm.email, authForm.password, subdomain);
@@ -174,6 +179,7 @@ export default function AccountPage({ params }) {
                 otpSent={otpSent}
                 handleSendOTP={handleSendOTP}
                 otpTimer={otpTimer}
+                otpLoading={otpLoading}
             />
         );
     }

@@ -5,7 +5,8 @@ const mongoose = require('mongoose');
 const {
     expandMatrix,
     makeVariantKey,
-    generateNewOptionCombos
+    generateNewOptionCombos,
+    normalizeProductOptions
 } = require('../helpers/variantMatrix');
 
 const slugify = (value = '') =>
@@ -55,6 +56,7 @@ const parseProductPayload = (body) => {
         'pricing',
         'variants',
         'variantMatrix',
+        'options',
         'features',
         'specifications',
         'comments',
@@ -86,6 +88,30 @@ const parseProductPayload = (body) => {
 };
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+const normalizeIncomingVariant = (variant) => {
+    const stock = Number(variant.inventory?.stock ?? variant.stock ?? 0);
+    const status = variant.status || (variant.isActive === false ? 'draft' : 'active');
+
+    return {
+        ...variant,
+        stock,
+        inventory: {
+            trackQuantity: true,
+            allowOversell: false,
+            reservedStock: 0,
+            lowStockThreshold: 5,
+            ...(variant.inventory || {}),
+            stock
+        },
+        pricing: {
+            ...(variant.priceOverride !== undefined ? { price: variant.priceOverride } : {}),
+            ...(variant.pricing || {})
+        },
+        status,
+        isActive: status === 'active' && variant.isActive !== false
+    };
+};
 
 
 // ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...
@@ -310,7 +336,10 @@ exports.createProduct = async (req, res) => {
         // ── 5. Expand matrix → flat variants ──────────────────────────────────
         if (value.variantMatrix) {
             value.variants = expandMatrix(value.variantMatrix);
+            value.options = value.options || normalizeProductOptions(value.variantMatrix.attributes);
             delete value.variantMatrix;
+        } else if (value.variants) {
+            value.variants = value.variants.map(normalizeIncomingVariant);
         }
 
         value.slug = value.slug || slugify(value.title);
@@ -385,11 +414,11 @@ exports.updateProduct = async (req, res) => {
 
         // ── 4. Snapshot current stock for inventory logging ───────────────────
         const oldStockById  = new Map(); // variantId  → stock
-        const oldStockByKey = new Map(); // stableKey  → stock  (for matrix matching)
+        const oldVariantByKey = new Map(); // stableKey → variant snapshot (for matrix matching)
 
         for (const v of product.variants) {
             oldStockById.set(v._id.toString(), v.stock);
-            oldStockByKey.set(makeVariantKey(v.attributes), v.stock);
+            oldVariantByKey.set(makeVariantKey(v.attributes), v.toObject ? v.toObject() : v);
         }
 
         // ── 5. Update scalar fields ───────────────────────────────────────────
@@ -405,6 +434,7 @@ exports.updateProduct = async (req, res) => {
             'lowStockThreshold',
             'images',
             'videos',
+            'options',
             'features',
             'specifications',
             'comments'
@@ -425,7 +455,8 @@ exports.updateProduct = async (req, res) => {
         if (value.variantMatrix) {
             // ── Op B: matrix regeneration ─────────────────────────────────────
             // Existing stock is preserved wherever attribute combos match.
-            product.variants = expandMatrix(value.variantMatrix, oldStockByKey);
+            product.options = value.options || normalizeProductOptions(value.variantMatrix.attributes);
+            product.variants = expandMatrix(value.variantMatrix, oldVariantByKey);
 
         } else if (value.addAttributeOption) {
             // ── Op C: add one new option to an existing dimension ─────────────
@@ -471,14 +502,22 @@ exports.updateProduct = async (req, res) => {
                             `Variant not found: ${incoming._id}. Omit _id to create a new variant.`
                         );
                     }
-                    existing.stock         = incoming.stock;
-                    existing.attributes    = incoming.attributes;
-                    existing.priceOverride = incoming.priceOverride;
-                    existing.image         = incoming.image;
-                    existing.isActive      = incoming.isActive ?? true;
+                    const normalized = normalizeIncomingVariant(incoming);
+                    existing.stock         = normalized.stock;
+                    existing.attributes    = normalized.attributes;
+                    existing.priceOverride = normalized.priceOverride ?? normalized.pricing?.price;
+                    existing.pricing       = normalized.pricing;
+                    existing.inventory     = normalized.inventory;
+                    existing.image         = normalized.image;
+                    existing.barcode       = normalized.barcode;
+                    existing.weight        = normalized.weight;
+                    existing.dimensions    = normalized.dimensions;
+                    existing.tax           = normalized.tax;
+                    existing.status        = normalized.status;
+                    existing.isActive      = normalized.isActive;
                     if (incoming.sku !== undefined) existing.sku = incoming.sku;
                 } else {
-                    product.variants.push(incoming);
+                    product.variants.push(normalizeIncomingVariant(incoming));
                 }
             }
         }

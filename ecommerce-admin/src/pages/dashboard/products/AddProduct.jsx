@@ -56,6 +56,7 @@ const AddProduct = () => {
     const [optionInputs,  setOptionInputs]  = useState(['']);
     const [defaultStock,  setDefaultStock]  = useState(0);
     const [stockOverrides, setStockOverrides] = useState({});
+    const [variantDetails, setVariantDetails] = useState({});
 
     // ── Derived ───────────────────────────────────────────────────────────────
     const validAttrs = useMemo(
@@ -127,10 +128,10 @@ const AddProduct = () => {
     };
 
     const commitOption = (attrIdx, raw) => {
-        const val = raw.trim().toLowerCase();
+        const val = raw.trim();
         if (!val) return;
         const updated = [...attributes];
-        if (updated[attrIdx].options.includes(val)) {
+        if (updated[attrIdx].options.some(option => option.toLowerCase() === val.toLowerCase())) {
             const inputs = [...optionInputs];
             inputs[attrIdx] = '';
             setOptionInputs(inputs);
@@ -175,6 +176,22 @@ const AddProduct = () => {
         setStockOverrides(prev => ({ ...prev, [key]: Number(val) }));
     };
 
+    const getVariantField = (combo, field, fallback = '') => {
+        const key = makePipeKey(combo);
+        return variantDetails[key]?.[field] ?? fallback;
+    };
+
+    const setVariantField = (combo, field, value) => {
+        const key = makePipeKey(combo);
+        setVariantDetails(prev => ({
+            ...prev,
+            [key]: {
+                ...(prev[key] || {}),
+                [field]: value
+            }
+        }));
+    };
+
     const handleDefaultStockChange = (val) => {
         const n = Number(val);
         setDefaultStock(n);
@@ -184,6 +201,13 @@ const AddProduct = () => {
                 if (cleaned[key] === n) delete cleaned[key];
             }
             return cleaned;
+        });
+        setVariantDetails(prev => {
+            const next = { ...prev };
+            for (const key of Object.keys(next)) {
+                next[key] = { ...next[key], stock: n };
+            }
+            return next;
         });
     };
 
@@ -227,9 +251,44 @@ const AddProduct = () => {
         for (const combo of combinations) {
             const key = makePipeKey(combo);
             const stock = stockOverrides[key];
-            if (stock !== undefined && stock !== defaultStock) {
-                overrides[key] = { stock };
+            const details = variantDetails[key] || {};
+            const cleanNumber = (value) => value === '' || value === undefined || value === null ? undefined : Number(value);
+            const override = {};
+            const effectiveStock = stock !== undefined ? Number(stock) : Number(defaultStock);
+
+            override.stock = effectiveStock;
+            override.inventory = {
+                stock: effectiveStock,
+                lowStockThreshold: cleanNumber(details.lowStockThreshold) ?? Number(formData.lowStockThreshold || 5)
+            };
+
+            const price = cleanNumber(details.price);
+            const compareAtPrice = cleanNumber(details.compareAtPrice);
+            const costPrice = cleanNumber(details.costPrice);
+            if (price !== undefined || compareAtPrice !== undefined || costPrice !== undefined) {
+                override.pricing = {
+                    ...(price !== undefined && { price }),
+                    ...(compareAtPrice !== undefined && { compareAtPrice }),
+                    ...(costPrice !== undefined && { costPrice })
+                };
+                if (price !== undefined) override.priceOverride = price;
             }
+            if (details.sku) override.sku = details.sku;
+            if (details.barcode) override.barcode = details.barcode;
+            if (details.image) override.image = details.image;
+            if (details.weight !== '' && details.weight !== undefined) override.weight = Number(details.weight);
+            if (details.length || details.width || details.height) {
+                override.dimensions = {
+                    length: cleanNumber(details.length),
+                    width: cleanNumber(details.width),
+                    height: cleanNumber(details.height),
+                    unit: 'cm'
+                };
+            }
+            override.status = details.status || 'active';
+            override.isActive = override.status === 'active';
+            override.tax = { taxable: details.taxable !== false };
+            overrides[key] = override;
         }
 
         setIsLoading(true);
@@ -247,7 +306,7 @@ const AddProduct = () => {
             data.append('variantMatrix',  JSON.stringify({
                 attributes:   validAttrs,
                 defaultStock: Number(defaultStock),
-                ...(Object.keys(overrides).length > 0 && { overrides })
+                overrides
             }));
             data.append('features',       JSON.stringify(formData.features));
             data.append('specifications', JSON.stringify(formData.specifications));
@@ -521,12 +580,23 @@ const AddProduct = () => {
                         </div>
 
                         {combinations.length > 0 && (
-                            <div className="border rounded-xl overflow-hidden mt-4">
-                                <table className="w-full text-sm">
+                            <div className="border rounded-xl overflow-x-auto mt-4">
+                                <table className="min-w-[1180px] w-full text-sm">
                                     <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                                     <tr>
                                         <th className="text-left px-4 py-2.5 font-medium">Variant</th>
-                                        <th className="text-right px-4 py-2.5 font-medium w-32">Stock</th>
+                                        <th className="text-left px-3 py-2.5 font-medium w-32">SKU</th>
+                                        <th className="text-right px-3 py-2.5 font-medium w-28">Price</th>
+                                        <th className="text-right px-3 py-2.5 font-medium w-28">Compare</th>
+                                        <th className="text-right px-3 py-2.5 font-medium w-28">Cost</th>
+                                        <th className="text-right px-3 py-2.5 font-medium w-24">Stock</th>
+                                        <th className="text-right px-3 py-2.5 font-medium w-24">Low</th>
+                                        <th className="text-left px-3 py-2.5 font-medium w-32">Barcode</th>
+                                        <th className="text-right px-3 py-2.5 font-medium w-24">Weight</th>
+                                        <th className="text-left px-3 py-2.5 font-medium w-36">Dimensions</th>
+                                        <th className="text-left px-3 py-2.5 font-medium w-44">Image URL</th>
+                                        <th className="text-left px-3 py-2.5 font-medium w-28">Status</th>
+                                        <th className="text-center px-3 py-2.5 font-medium w-20">Tax</th>
                                     </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -543,7 +613,42 @@ const AddProduct = () => {
                                                         </span>
                                                     ))}
                                                 </td>
-                                                <td className="px-4 py-2 text-right">
+                                                <td className="px-3 py-2">
+                                                    <input
+                                                        value={getVariantField(combo, 'sku')}
+                                                        onChange={(e) => setVariantField(combo, 'sku', e.target.value.toUpperCase())}
+                                                        placeholder="SKU"
+                                                        className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <input
+                                                        type="number" min={0}
+                                                        value={getVariantField(combo, 'price')}
+                                                        onChange={(e) => setVariantField(combo, 'price', e.target.value)}
+                                                        placeholder={formData.pricing.sellingPrice || '0'}
+                                                        className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <input
+                                                        type="number" min={0}
+                                                        value={getVariantField(combo, 'compareAtPrice')}
+                                                        onChange={(e) => setVariantField(combo, 'compareAtPrice', e.target.value)}
+                                                        placeholder="0"
+                                                        className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <input
+                                                        type="number" min={0}
+                                                        value={getVariantField(combo, 'costPrice')}
+                                                        onChange={(e) => setVariantField(combo, 'costPrice', e.target.value)}
+                                                        placeholder={formData.pricing.buyingPrice || '0'}
+                                                        className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
                                                     <input
                                                         type="number" min={0}
                                                         value={getStock(combo)}
@@ -551,6 +656,73 @@ const AddProduct = () => {
                                                         className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
                                                             isOverride ? 'border-indigo-300 bg-indigo-50/50' : ''
                                                         }`}
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <input
+                                                        type="number" min={0}
+                                                        value={getVariantField(combo, 'lowStockThreshold', formData.lowStockThreshold || 5)}
+                                                        onChange={(e) => setVariantField(combo, 'lowStockThreshold', e.target.value)}
+                                                        className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <input
+                                                        value={getVariantField(combo, 'barcode')}
+                                                        onChange={(e) => setVariantField(combo, 'barcode', e.target.value)}
+                                                        placeholder="Barcode"
+                                                        className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <input
+                                                        type="number" min={0}
+                                                        value={getVariantField(combo, 'weight')}
+                                                        onChange={(e) => setVariantField(combo, 'weight', e.target.value)}
+                                                        placeholder="kg"
+                                                        className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <div className="grid grid-cols-3 gap-1">
+                                                        {['length', 'width', 'height'].map(field => (
+                                                            <input
+                                                                key={field}
+                                                                type="number"
+                                                                min={0}
+                                                                value={getVariantField(combo, field)}
+                                                                onChange={(e) => setVariantField(combo, field, e.target.value)}
+                                                                placeholder={field[0].toUpperCase()}
+                                                                className="w-full border rounded-lg px-1.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <input
+                                                        value={getVariantField(combo, 'image')}
+                                                        onChange={(e) => setVariantField(combo, 'image', e.target.value)}
+                                                        placeholder="https://..."
+                                                        className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <select
+                                                        value={getVariantField(combo, 'status', 'active')}
+                                                        onChange={(e) => setVariantField(combo, 'status', e.target.value)}
+                                                        className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                                                    >
+                                                        <option value="active">Active</option>
+                                                        <option value="draft">Draft</option>
+                                                        <option value="archived">Archived</option>
+                                                    </select>
+                                                </td>
+                                                <td className="px-3 py-2 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={getVariantField(combo, 'taxable', true)}
+                                                        onChange={(e) => setVariantField(combo, 'taxable', e.target.checked)}
+                                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-300"
                                                     />
                                                 </td>
                                             </tr>

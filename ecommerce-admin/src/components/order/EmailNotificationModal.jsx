@@ -1,6 +1,33 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, Send, Check } from 'lucide-react';
 
+const formatMoney = (value) => `৳ ${Number(value || 0).toLocaleString('en-BD')}`;
+
+const buildOrderDetails = (order) => {
+    const items = Array.isArray(order?.items) ? order.items : [];
+    const itemLines = items.length
+        ? items.map((item, index) => {
+            const title = item.title || item.productId?.title || `Item ${index + 1}`;
+            const quantity = item.quantity || 1;
+            const total = item.total || (Number(item.price || 0) * quantity);
+            return `${index + 1}. ${title} x ${quantity} - ${formatMoney(total)}`;
+        }).join('\n')
+        : 'No item details available.';
+
+    return `Order details
+Order ID: #${order?._id?.slice(-6)?.toUpperCase()}
+Full order ID: ${order?._id}
+Items:
+${itemLines}
+
+Subtotal: ${formatMoney(order?.pricing?.subtotal)}
+Shipping: ${formatMoney(order?.pricing?.shipping)}
+Discount: ${formatMoney(order?.pricing?.discount)}
+Total: ${formatMoney(order?.pricing?.total)}
+Delivery zone: ${order?.shipping?.zone || 'Not set'}
+Delivery address: ${order?.shipping?.address?.addressLine || ''}${order?.shipping?.address?.city ? `, ${order.shipping.address.city}` : ''}`;
+};
+
 const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }) => {
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
@@ -18,6 +45,7 @@ const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }
                 defaultMessage += "Your package has been successfully delivered. We hope you enjoy your purchase!\n\n";
             }
 
+            defaultMessage += `${buildOrderDetails(order)}\n\n`;
             defaultMessage += `Thank you for shopping with us!`;
 
             queueMicrotask(() => {
@@ -31,7 +59,7 @@ const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }
 
     const handleYes = async () => {
         setIsProcessing(true);
-        await onConfirm(true, { subject, message });
+        await onConfirm(true, { subject, message, orderDetails: buildOrderDetails(order) });
         setIsProcessing(false);
     };
 

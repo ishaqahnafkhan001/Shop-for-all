@@ -8,7 +8,8 @@ export default function AuthView({
                                      handleAuthSubmit,
                                      otpSent,
                                      handleSendOTP,
-                                     otpTimer // <-- Receive the new prop
+                                     otpTimer,
+                                     otpLoading
                                  }) {
 
     // Helper to format seconds into MM:SS
@@ -82,10 +83,10 @@ export default function AuthView({
                                 <button
                                     type="button"
                                     onClick={handleSendOTP}
-                                    disabled={otpTimer > 0}
+                                    disabled={otpTimer > 0 || otpLoading}
                                     className={`text-xs font-semibold ${otpTimer > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-800'}`}
                                 >
-                                    {otpTimer > 0 ? `Resend in ${formatTime(otpTimer)}` : 'Resend Code'}
+                                    {otpLoading ? 'Sending...' : otpTimer > 0 ? `Resend in ${formatTime(otpTimer)}` : 'Resend Code'}
                                 </button>
                             </div>
                         </div>
@@ -95,10 +96,11 @@ export default function AuthView({
                         <button
                             type="button"
                             onClick={handleSendOTP}
-                            disabled={otpTimer > 0}
-                            className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold hover:bg-gray-800 transition-colors mt-4 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            disabled={otpTimer > 0 || otpLoading}
+                            className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold hover:bg-gray-800 transition-colors mt-4 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {otpTimer > 0 ? `Please wait ${formatTime(otpTimer)}` : 'Send Verification Code'}
+                            {otpLoading && <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
+                            {otpLoading ? 'Sending code...' : otpTimer > 0 ? `Please wait ${formatTime(otpTimer)}` : 'Send Verification Code'}
                         </button>
                     ) : (
                         <button

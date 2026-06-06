@@ -71,6 +71,7 @@ const OrderList = () => {
                     name: order.customer?.fullName,
                     subject: emailData.subject,
                     message: emailData.message,
+                    orderDetails: emailData.orderDetails,
                     shopName:  user.shopName// Replace dynamically if needed
                 });
                 toast.success("Email sent to customer");

@@ -11,6 +11,13 @@
   --sf-accent-muted: #818cf8;
   --sf-accent-light: #a5b4fc;
   --sf-accent-ring: #e0e7ff;
+  --sf-surface: #ffffff;
+  --sf-surface-subtle: #f8fafc;
+  --sf-border: #e5e7eb;
+  --sf-text-muted: #6b7280;
+  --sf-radius: 14px;
+  --sf-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -20,15 +27,88 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--sf-accent);
+  outline-offset: 3px;
+}
+
+.sf-container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+
+@media (min-width: 640px) {
+  .sf-container {
+    padding-inline: 24px;
+  }
+}
+
+.sf-card {
+  border: 1px solid var(--sf-border);
+  border-radius: var(--sf-radius);
+  background: var(--sf-surface);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.sf-input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--sf-border);
+  background: #fff;
+  padding: 12px 14px;
+  color: #111827;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.sf-input:focus {
+  border-color: var(--sf-accent);
+  box-shadow: 0 0 0 4px var(--sf-accent-ring);
+  outline: none;
+}
+
+.sf-button-primary {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: var(--sf-checkout-button-radius, 12px);
+  background: var(--sf-accent);
+  padding: 12px 18px;
+  color: #fff;
+  font-weight: 800;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.sf-button-primary:hover {
+  background: var(--sf-accent-hover);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  transform: translateY(-1px);
+}
+
+.sf-button-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
 }

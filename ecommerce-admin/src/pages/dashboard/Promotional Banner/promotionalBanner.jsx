@@ -14,7 +14,8 @@ const PromotionalBanner = () => {
     // Form State
     const [title, setTitle] = useState('');
     const [link, setLink] = useState('');
-    const [images, setImages] = useState([]); // Changed to Array
+    const [desktopImages, setDesktopImages] = useState([]);
+    const [mobileImages, setMobileImages] = useState([]);
 
     // 1. Fetch Banners on Component Load
     const fetchBanners = async () => {
@@ -37,18 +38,17 @@ const PromotionalBanner = () => {
     }, []);
 
     // 2. Handle File Selection (Multiple Files)
-    const handleFileChange = (e) => {
+    const handleFileChange = (e, target) => {
         if (e.target.files) {
-            // Convert FileList to an array.
-            // Optional: You can slice it if you want to strictly enforce the limit on the frontend
             const selectedFiles = Array.from(e.target.files);
 
             if (selectedFiles.length > 5) {
                 toast.error("You can upload a maximum of 5 banner images.");
-                setImages(selectedFiles.slice(0, 5));
-            } else {
-                setImages(selectedFiles);
             }
+
+            const nextFiles = selectedFiles.slice(0, 5);
+            if (target === 'mobile') setMobileImages(nextFiles);
+            else setDesktopImages(nextFiles);
         }
     };
 
@@ -56,8 +56,8 @@ const PromotionalBanner = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (images.length === 0) {
-            toast.error("Select at least one banner image before uploading.");
+        if (desktopImages.length === 0) {
+            toast.error("Select at least one desktop banner image before uploading.");
             return;
         }
 
@@ -66,9 +66,12 @@ const PromotionalBanner = () => {
         formData.append('title', title);
         formData.append('link', link);
 
-        // Loop through the selected files and append them to formData using the key 'images'
-        images.forEach((file) => {
-            formData.append('images', file);
+        desktopImages.forEach((file) => {
+            formData.append('desktopImages', file);
+        });
+
+        mobileImages.forEach((file) => {
+            formData.append('mobileImages', file);
         });
 
         try {
@@ -79,7 +82,8 @@ const PromotionalBanner = () => {
             // Reset Form Fields after successful upload
             setTitle('');
             setLink('');
-            setImages([]);
+            setDesktopImages([]);
+            setMobileImages([]);
 
             // Refresh the banner list
             fetchBanners();
@@ -159,28 +163,51 @@ const PromotionalBanner = () => {
                         </div>
                     </div>
 
-                    {/* Multiple Image File Input */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Banner Images (Max 5)</label>
-                        <p className="text-xs text-gray-500 mb-2">Recommended: wide images around 1600x600 so the banner looks sharp on desktop and mobile.</p>
-                        <div className="flex items-center justify-center w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Desktop Banner Images (Required)</label>
+                            <p className="text-xs text-gray-500 mb-2">Use landscape images. Recommended size: 1600 x 600 px. These show on laptop and big screens.</p>
+                            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                                <p className="text-sm text-gray-500">
+                                    {desktopImages.length > 0 ? (
+                                        <span className="text-indigo-600 font-semibold">{desktopImages.length} desktop file(s) selected</span>
+                                    ) : (
+                                        "Click to select desktop images"
+                                    )}
+                                </p>
+                            </div>
+                            <input
+                                type="file"
+                                className="hidden"
+                                onChange={(event) => handleFileChange(event, 'desktop')}
+                                accept="image/*"
+                                multiple
+                            />
+                        </label>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Banner Images</label>
+                            <p className="text-xs text-gray-500 mb-2">Use portrait images. Recommended size: 900 x 1200 px. These show on mobile only.</p>
                             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                                     <p className="text-sm text-gray-500">
-                                        {images.length > 0 ? (
-                                            <span className="text-indigo-600 font-semibold">{images.length} file(s) selected</span>
+                                        {mobileImages.length > 0 ? (
+                                            <span className="text-indigo-600 font-semibold">{mobileImages.length} mobile file(s) selected</span>
                                         ) : (
-                                            "Click to select banner images"
+                                            "Click to select mobile images"
                                         )}
                                     </p>
                                 </div>
                                 <input
                                     type="file"
                                     className="hidden"
-                                    onChange={handleFileChange}
+                                    onChange={(event) => handleFileChange(event, 'mobile')}
                                     accept="image/*"
-                                    multiple // Added multiple attribute here
+                                    multiple
                                 />
                             </label>
                         </div>
@@ -223,18 +250,23 @@ const PromotionalBanner = () => {
 
                                 {/* Image Preview (Shows the first image in the array as cover) */}
                                 <div className="aspect-video w-full bg-gray-100 overflow-hidden relative border-b border-gray-100">
-                                    {banner.images && banner.images.length > 0 ? (
+                                    {(banner.desktopImages?.length > 0 || banner.images?.length > 0) ? (
                                         <>
                                             <img
-                                                src={banner.images[0]}
+                                                src={banner.desktopImages?.[0] || banner.images[0]}
                                                 alt={banner.title}
                                                 className={`w-full h-full object-cover transition-all duration-300 ${!banner.isActive ? 'opacity-50 grayscale' : ''}`}
                                             />
                                             {/* Badge showing multiple images exist */}
-                                            {banner.images.length > 1 && (
+                                            {(banner.desktopImages?.length || banner.images?.length || 0) > 1 && (
                                                 <div className="absolute top-2 right-2 bg-gray-900/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center shadow">
                                                     <Layers className="w-3 h-3 mr-1" />
-                                                    {banner.images.length}
+                                                    {banner.desktopImages?.length || banner.images?.length}
+                                                </div>
+                                            )}
+                                            {banner.mobileImages?.length > 0 && (
+                                                <div className="absolute top-2 left-2 bg-indigo-600/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md shadow">
+                                                    Mobile ready
                                                 </div>
                                             )}
                                         </>

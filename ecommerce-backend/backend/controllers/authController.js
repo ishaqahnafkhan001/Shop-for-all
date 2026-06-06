@@ -7,7 +7,7 @@ const ShopMembership = require('../models/ShopMembership');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const { sendMail } = require('../services/mail/mailService');
 
 const { shopRegistrationSchema } = require('../validations/shopValidation');
 const {
@@ -79,22 +79,11 @@ exports.sendOTP = async (req, res) => {
             }
         );
 
-        const transporter = nodemailer.createTransport({
-            host: 'mail.spacemail.com',
-            port: 465,
-            secure: true,
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-            tls: {
-                rejectUnauthorized: false
-            }
-        });
-
-        await transporter.sendMail({
-            from: `"ScaleUp" <${process.env.EMAIL_USER}>`,
+        await sendMail({
+            type: 'admin',
             to: email,
+            senderName: 'ScaleUp',
+            recipientName: 'Customer',
             subject: 'Verification Code',
             html: `
                 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">

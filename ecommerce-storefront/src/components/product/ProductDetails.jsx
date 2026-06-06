@@ -47,7 +47,15 @@ export default function ProductDetails({ params }) {
 
     /* Stable cart handlers — won't cause child re-renders */
     const handleAddToCart = useCallback(() => {
-        addToCart({ ...product, selectedVariant: currentVariant, cartPrice: displayFinalPrice });
+        addToCart({
+            ...product,
+            selectedVariant: currentVariant,
+            variantId: currentVariant?._id,
+            sku: currentVariant?.sku,
+            finalPrice: displayFinalPrice,
+            cartPrice: displayFinalPrice,
+            imageUrl: currentVariant?.image || product.images?.[0]
+        });
     }, [addToCart, product, currentVariant, displayFinalPrice]);
 
     const handleBuyNow = useCallback(() => {
@@ -91,7 +99,7 @@ export default function ProductDetails({ params }) {
                 {/* ── ABOVE THE FOLD: images + product details ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
                     <ProductImageGallery
-                        images={product.images}
+                        images={currentVariant?.image ? [currentVariant.image, ...product.images.filter(image => image !== currentVariant.image)] : product.images}
                         category={product.category}
                         displayDiscount={displayDiscount}
                     />
@@ -111,6 +119,7 @@ export default function ProductDetails({ params }) {
                         <VariantSelector
                             availableAttributes={availableAttributes}
                             selectedAttributes={selectedAttributes}
+                            variants={product.variants}
                             onSelect={handleAttributeSelect}
                         />
 

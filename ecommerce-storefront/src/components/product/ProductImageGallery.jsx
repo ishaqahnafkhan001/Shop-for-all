@@ -1,11 +1,16 @@
 "use client";
-import React, { useState, memo } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import Image from 'next/image';
 import { Zap } from 'lucide-react';
 
 const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount }) {
     const [activeIdx,    setActiveIdx]    = useState(0);
     const [isZoomed,     setIsZoomed]     = useState(false);
+    const primaryImage = images?.[0];
+
+    useEffect(() => {
+        setActiveIdx(0);
+    }, [primaryImage]);
 
     return (
         <div className="flex flex-col space-y-6">

@@ -84,6 +84,115 @@ function makePipeKey(attributes) {
     return attributes.map(a => a.value).join('|');
 }
 
+function normalizeOptionText(value) {
+    return String(value || '').trim();
+}
+
+function normalizeOptionName(value) {
+    return normalizeOptionText(value).toLowerCase();
+}
+
+function normalizeAttributes(attributes = []) {
+    return attributes
+        .map(attr => ({
+            name: normalizeOptionName(attr.name),
+            value: normalizeOptionText(attr.value)
+        }))
+        .filter(attr => attr.name && attr.value);
+}
+
+function normalizeProductOptions(attributeDefs = []) {
+    return attributeDefs
+        .map((attr, attrIndex) => {
+            const name = normalizeOptionName(attr.name);
+            const rawOptions = attr.options || attr.values || [];
+            const seen = new Set();
+            const values = rawOptions
+                .map((option, valueIndex) => {
+                    const rawValue = typeof option === 'string' ? option : option.value;
+                    const value = normalizeOptionText(rawValue);
+                    const key = value.toLowerCase();
+                    if (!value || seen.has(key)) return null;
+                    seen.add(key);
+                    return {
+                        value,
+                        label: typeof option === 'object' ? option.label || value : value,
+                        swatch: typeof option === 'object' ? option.swatch || '' : '',
+                        sortOrder: typeof option === 'object' && Number.isFinite(Number(option.sortOrder))
+                            ? Number(option.sortOrder)
+                            : valueIndex
+                    };
+                })
+                .filter(Boolean);
+
+            if (!name || values.length === 0) return null;
+            return {
+                name,
+                values,
+                sortOrder: Number.isFinite(Number(attr.sortOrder)) ? Number(attr.sortOrder) : attrIndex
+            };
+        })
+        .filter(Boolean);
+}
+
+function resolveVariantStock(override = {}, existing, defaultStock = 0) {
+    if (override.stock !== undefined) return Number(override.stock);
+    if (override.inventory?.stock !== undefined) return Number(override.inventory.stock);
+    if (typeof existing === 'number') return existing;
+    if (existing?.inventory?.stock !== undefined) return Number(existing.inventory.stock);
+    if (existing?.stock !== undefined) return Number(existing.stock);
+    return Number(defaultStock);
+}
+
+function buildVariantRecord(attrCombo, override = {}, existing, defaults = {}) {
+    const stock = resolveVariantStock(override, existing, defaults.defaultStock);
+    const priceOverride = override.priceOverride
+        ?? override.pricing?.price
+        ?? existing?.priceOverride
+        ?? existing?.pricing?.price
+        ?? defaults.defaultPrice;
+
+    const pricing = {
+        ...(existing?.pricing || {}),
+        ...(override.pricing || {})
+    };
+    if (priceOverride !== undefined) pricing.price = Number(priceOverride);
+
+    const inventory = {
+        trackQuantity: true,
+        allowOversell: false,
+        reservedStock: 0,
+        lowStockThreshold: existing?.inventory?.lowStockThreshold ?? override.lowStockThreshold ?? defaults.lowStockThreshold ?? 5,
+        ...(existing?.inventory || {}),
+        ...(override.inventory || {}),
+        stock
+    };
+
+    const status = override.status || existing?.status || ((override.isActive ?? existing?.isActive ?? true) ? 'active' : 'draft');
+
+    return {
+        ...(existing && typeof existing === 'object' ? existing : {}),
+        attributes: normalizeAttributes(attrCombo),
+        optionKey: makeVariantKey(attrCombo),
+        stock,
+        inventory,
+        ...(Object.keys(pricing).length > 0 && { pricing }),
+        ...(priceOverride !== undefined && { priceOverride: Number(priceOverride) }),
+        sku: override.sku ?? existing?.sku ?? '',
+        barcode: override.barcode ?? existing?.barcode ?? '',
+        image: override.image ?? existing?.image ?? '',
+        weight: override.weight ?? existing?.weight ?? undefined,
+        dimensions: override.dimensions ?? existing?.dimensions ?? undefined,
+        tax: {
+            taxable: true,
+            ...(existing?.tax || {}),
+            ...(override.tax || {})
+        },
+        status,
+        isActive: status === 'active' && (override.isActive ?? existing?.isActive ?? true) !== false
+    };
+}
+
 // ─── Matrix expansion ─────────────────────────────────────────────────────────
 
 /**
@@ -118,25 +227,10 @@ function expandMatrix(matrix, existingStockMap = new Map()) {
 
         const override = overrides[pipeKey] || {};
 
-        // Stock priority: explicit override → existing DB stock → defaultStock
-        const stock =
-            override.stock !== undefined      ? override.stock :
-                existingStockMap.has(stableKey)   ? existingStockMap.get(stableKey) :
-                    defaultStock;
-
-        const variant = {
-            attributes: attrCombo,
-            stock,
-            isActive: override.isActive ?? true
-        };
-
-        // Only set optional fields when they have a value
-        const priceOverride = override.priceOverride ?? defaultPrice;
-        if (priceOverride !== undefined) variant.priceOverride = priceOverride;
-        if (override.image)              variant.image         = override.image;
-        if (override.sku)                variant.sku           = override.sku;
-
-        return variant;
+        return buildVariantRecord(attrCombo, override, existingStockMap.get(stableKey), {
+            defaultStock,
+            defaultPrice
+        });
     });
 }
 
@@ -200,9 +294,7 @@ function generateNewOptionCombos(existingVariants, attrName, attrValue, defaultS
     }
 
     const newVariants = newCombos.map(attrCombo => {
-        const variant = { attributes: attrCombo, stock: defaultStock, isActive: true };
-        if (defaultPrice !== undefined) variant.priceOverride = defaultPrice;
-        return variant;
+        return buildVariantRecord(attrCombo, {}, null, { defaultStock, defaultPrice });
     });
 
     return { newVariants, error: null };
@@ -212,6 +304,9 @@ module.exports = {
     cartesian,
     makeVariantKey,
     makePipeKey,
+    normalizeAttributes,
+    normalizeProductOptions,
+    buildVariantRecord,
     expandMatrix,
     generateNewOptionCombos
 };

@@ -104,7 +104,7 @@ export default function CheckoutPage({ params }) {
 
             try {
 
-                const ids = cartItems.map(item => item._id).join(',');
+                const ids = [...new Set(cartItems.map(item => item._id))].join(',');
                 const { data } = await API.get(
                     `/storefront/${subdomain}/products/batch`,
                     { params: { ids } }
@@ -158,7 +158,7 @@ export default function CheckoutPage({ params }) {
                     subtotal,
                     customerEmail: formData.email,
                     items: cartItems.map((item) => {
-                        const unitPrice = item.finalPrice || item.sellingPrice || 0;
+                        const unitPrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
                         return {
                             productId: item._id,
                             category: item.category,
@@ -177,6 +177,16 @@ export default function CheckoutPage({ params }) {
             setPromotionPreview(null);
             toast.error(error.response?.data?.error || "Coupon is not valid");
         }
+    };
+
+    const resolveCartVariantId = (item) => {
+        if (item.variantId || item.selectedVariant?._id) {
+            return item.variantId || item.selectedVariant._id;
+        }
+
+        const product = productsDetails[item._id];
+        return product?.variants?.find((variant) => variant.isActive !== false && variant.status !== "archived")?._id
+            || product?.variants?.[0]?._id;
     };
 
     // =========================================
@@ -206,13 +216,7 @@ export default function CheckoutPage({ params }) {
 
                     items: cartItems.map((item) => {
 
-                        const selectedVariantId =
-                            item.variantId ||
-                            item.variants?.find(
-                                (variant) =>
-                                    variant.isActive
-                            )?._id ||
-                            item.variants?.[0]?._id;
+                        const selectedVariantId = resolveCartVariantId(item);
 
                         if (!selectedVariantId) {
 
@@ -293,8 +297,10 @@ export default function CheckoutPage({ params }) {
 
                     items: cartItems.map((item) => ({
                         product: item._id,
+                        variantId: resolveCartVariantId(item),
                         quantity: item.quantity,
                         price:
+                            item.cartPrice ||
                             item.finalPrice ||
                             item.sellingPrice,
                     })),
@@ -314,8 +320,9 @@ export default function CheckoutPage({ params }) {
                         guestPayload
                     );
 
-                savedOrderData =
-                    response.data;
+                savedOrderData = {
+                    _id: response.data.orderId || response.data.order?._id || response.data._id,
+                };
             }
 
             setOrderId(savedOrderData._id);
@@ -351,7 +358,7 @@ export default function CheckoutPage({ params }) {
     if (isSuccess) {
 
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#fafafa] px-4">
+            <div className="min-h-screen flex items-center justify-center bg-[var(--sf-background)] px-4">
 
                 <div className="bg-white border border-gray-100 rounded-3xl shadow-xl max-w-lg w-full p-10 text-center">
 
@@ -371,7 +378,7 @@ export default function CheckoutPage({ params }) {
                     <div className="mt-7 bg-gray-50 rounded-2xl border border-gray-100 p-5">
 
                         <p className="text-sm text-gray-500 mb-2">
-                            ORDER ID
+                            ORDER ID FOR TRACKING
                         </p>
 
                         <p className="text-2xl font-black text-[var(--sf-accent)] tracking-wider">
@@ -379,6 +386,12 @@ export default function CheckoutPage({ params }) {
                             {orderId
                                 ?.slice(-6)
                                 ?.toUpperCase()}
+                        </p>
+                        <p className="mt-2 break-all text-xs text-gray-500">
+                            Full ID: {orderId}
+                        </p>
+                        <p className="mt-3 text-xs text-gray-500">
+                            Use the short ID and your delivery phone number on the Track Order page.
                         </p>
 
                     </div>

@@ -113,6 +113,89 @@ const EditProduct = () => {
     // ── Stock handler ─────────────────────────────────────────────────────────
     const handleStockChange = (variantId, value) => {
         setChangedStocks(prev => ({ ...prev, [variantId]: Number(value) }));
+        setFormData(prev => ({
+            ...prev,
+            variants: prev.variants.map(variant => {
+                const vid = variant._id?.toString() || variant._tempId;
+                if (vid !== variantId) return variant;
+                return {
+                    ...variant,
+                    stock: Number(value),
+                    inventory: {
+                        ...(variant.inventory || {}),
+                        stock: Number(value)
+                    }
+                };
+            })
+        }));
+    };
+
+    const handleVariantFieldChange = (variantId, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            variants: prev.variants.map(variant => {
+                const vid = variant._id?.toString() || variant._tempId;
+                if (vid !== variantId) return variant;
+
+                if (['price', 'compareAtPrice', 'costPrice'].includes(field)) {
+                    const pricing = { ...(variant.pricing || {}), [field]: value === '' ? undefined : Number(value) };
+                    return {
+                        ...variant,
+                        pricing,
+                        ...(field === 'price' && { priceOverride: pricing.price })
+                    };
+                }
+
+                if (field === 'lowStockThreshold') {
+                    return {
+                        ...variant,
+                        inventory: {
+                            ...(variant.inventory || {}),
+                            lowStockThreshold: Number(value)
+                        }
+                    };
+                }
+
+                if (['length', 'width', 'height'].includes(field)) {
+                    return {
+                        ...variant,
+                        dimensions: {
+                            unit: 'cm',
+                            ...(variant.dimensions || {}),
+                            [field]: value === '' ? undefined : Number(value)
+                        }
+                    };
+                }
+
+                if (field === 'taxable') {
+                    return {
+                        ...variant,
+                        tax: {
+                            taxable: Boolean(value),
+                            ...(variant.tax || {})
+                        }
+                    };
+                }
+
+                if (field === 'status') {
+                    return {
+                        ...variant,
+                        status: value,
+                        isActive: value === 'active'
+                    };
+                }
+
+                if (field === 'weight') {
+                    return { ...variant, weight: value === '' ? undefined : Number(value) };
+                }
+
+                return { ...variant, [field]: value };
+            })
+        }));
+        setChangedStocks(prev => ({
+            ...prev,
+            [variantId]: prev[variantId] ?? getDisplayStock(formData.variants.find(v => (v._id?.toString() || v._tempId) === variantId) || {})
+        }));
     };
 
     const getDisplayStock = (variant) => {
@@ -274,9 +357,17 @@ const EditProduct = () => {
                         const vid = v._id?.toString() || v._tempId;
                         const payload = {
                             attributes:    v.attributes,
-                            stock:         changedStocks[vid],
-                            priceOverride: v.priceOverride,
+                            stock:         changedStocks[vid] ?? v.stock,
+                            priceOverride: v.pricing?.price ?? v.priceOverride,
+                            pricing:       v.pricing,
+                            inventory:     { ...(v.inventory || {}), stock: changedStocks[vid] ?? v.stock },
                             image:         v.image,
+                            sku:           v.sku,
+                            barcode:       v.barcode,
+                            weight:        v.weight,
+                            dimensions:    v.dimensions,
+                            status:        v.status || (v.isActive === false ? 'draft' : 'active'),
+                            tax:           v.tax,
                             isActive:      v.isActive !== undefined ? v.isActive : true
                         };
                         // Only attach _id if it's a pre-existing variant.
@@ -426,12 +517,23 @@ const EditProduct = () => {
                     </div>
 
                     {/* Variant table */}
-                    <div className="border rounded-xl overflow-hidden">
-                        <table className="w-full text-sm">
+                    <div className="border rounded-xl overflow-x-auto">
+                        <table className="min-w-[1280px] w-full text-sm">
                             <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-wide">
                             <tr>
                                 <th className="text-left px-4 py-2.5 font-medium">Combination</th>
-                                <th className="text-right px-4 py-2.5 font-medium w-32">Stock</th>
+                                <th className="text-left px-3 py-2.5 font-medium w-32">SKU</th>
+                                <th className="text-right px-3 py-2.5 font-medium w-28">Price</th>
+                                <th className="text-right px-3 py-2.5 font-medium w-28">Compare</th>
+                                <th className="text-right px-3 py-2.5 font-medium w-28">Cost</th>
+                                <th className="text-right px-3 py-2.5 font-medium w-24">Stock</th>
+                                <th className="text-right px-3 py-2.5 font-medium w-24">Low</th>
+                                <th className="text-left px-3 py-2.5 font-medium w-32">Barcode</th>
+                                <th className="text-right px-3 py-2.5 font-medium w-24">Weight</th>
+                                <th className="text-left px-3 py-2.5 font-medium w-36">Dimensions</th>
+                                <th className="text-left px-3 py-2.5 font-medium w-44">Image URL</th>
+                                <th className="text-left px-3 py-2.5 font-medium w-28">Status</th>
+                                <th className="text-center px-3 py-2.5 font-medium w-20">Tax</th>
                                 <th className="w-10" />
                             </tr>
                             </thead>
@@ -454,7 +556,42 @@ const EditProduct = () => {
                                                 {isNew && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase font-bold">New</span>}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-2.5 text-right">
+                                        <td className="px-3 py-2.5">
+                                            <input
+                                                value={v.sku || ''}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'sku', e.target.value.toUpperCase())}
+                                                placeholder="SKU"
+                                                className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right">
+                                            <input
+                                                type="number" min={0}
+                                                value={v.pricing?.price ?? v.priceOverride ?? ''}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'price', e.target.value)}
+                                                placeholder={formData.pricing.sellingPrice}
+                                                className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right">
+                                            <input
+                                                type="number" min={0}
+                                                value={v.pricing?.compareAtPrice ?? ''}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'compareAtPrice', e.target.value)}
+                                                placeholder="0"
+                                                className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right">
+                                            <input
+                                                type="number" min={0}
+                                                value={v.pricing?.costPrice ?? ''}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'costPrice', e.target.value)}
+                                                placeholder={formData.pricing.buyingPrice}
+                                                className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right">
                                             <input
                                                 type="number" min={0}
                                                 value={getDisplayStock(v)}
@@ -462,6 +599,73 @@ const EditProduct = () => {
                                                 className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-colors ${
                                                     isModified ? 'border-amber-300 bg-amber-50/60' : ''
                                                 }`}
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right">
+                                            <input
+                                                type="number" min={0}
+                                                value={v.inventory?.lowStockThreshold ?? formData.lowStockThreshold ?? 5}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'lowStockThreshold', e.target.value)}
+                                                className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5">
+                                            <input
+                                                value={v.barcode || ''}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'barcode', e.target.value)}
+                                                placeholder="Barcode"
+                                                className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right">
+                                            <input
+                                                type="number" min={0}
+                                                value={v.weight ?? ''}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'weight', e.target.value)}
+                                                placeholder="kg"
+                                                className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5">
+                                            <div className="grid grid-cols-3 gap-1">
+                                                {['length', 'width', 'height'].map(field => (
+                                                    <input
+                                                        key={field}
+                                                        type="number"
+                                                        min={0}
+                                                        value={v.dimensions?.[field] ?? ''}
+                                                        onChange={(e) => handleVariantFieldChange(vid, field, e.target.value)}
+                                                        placeholder={field[0].toUpperCase()}
+                                                        className="w-full border rounded-lg px-1.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                    />
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-3 py-2.5">
+                                            <input
+                                                value={v.image || ''}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'image', e.target.value)}
+                                                placeholder="https://..."
+                                                className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </td>
+                                        <td className="px-3 py-2.5">
+                                            <select
+                                                value={v.status || (v.isActive === false ? 'draft' : 'active')}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'status', e.target.value)}
+                                                className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                                            >
+                                                <option value="active">Active</option>
+                                                <option value="draft">Draft</option>
+                                                <option value="archived">Archived</option>
+                                            </select>
+                                        </td>
+                                        <td className="px-3 py-2.5 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={v.tax?.taxable !== false}
+                                                onChange={(e) => handleVariantFieldChange(vid, 'taxable', e.target.checked)}
+                                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-300"
                                             />
                                         </td>
                                         <td className="px-2 py-2.5 text-center">

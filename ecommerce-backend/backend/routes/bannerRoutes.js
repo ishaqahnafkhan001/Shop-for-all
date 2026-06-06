@@ -26,7 +26,11 @@ router.use(requirePermission('storeBuilder'));
 
 router.get('/', getAllBanners);
 
-router.post('/', upload.array('images', 5), createBanner);
+router.post('/', upload.fields([
+    { name: 'desktopImages', maxCount: 5 },
+    { name: 'mobileImages', maxCount: 5 },
+    { name: 'images', maxCount: 5 }
+]), createBanner);
 
 router.delete('/:id', authorize('VendorAdmin'), deleteBanner);
 

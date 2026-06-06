@@ -8,9 +8,14 @@ export const normalizeProduct = (raw) => {
     const sellingPrice = raw?.pricing?.sellingPrice ?? raw?.sellingPrice ?? 0;
     const discount     = raw?.pricing?.discount     ?? raw?.discount     ?? 0;
     const finalPrice   = raw?.finalPrice ?? Math.round(sellingPrice - (sellingPrice * discount) / 100);
+    const normalizedVariants = (raw?.variants || []).map(variant => ({
+        ...variant,
+        stock: variant?.inventory?.stock ?? variant?.stock ?? 0,
+        priceOverride: variant?.pricing?.price ?? variant?.priceOverride
+    }));
     const stock        = raw?.totalStock ?? raw?.stock ?? (
-        Array.isArray(raw?.variants)
-            ? raw.variants.reduce((sum, v) => sum + (v?.stock || 0), 0)
+        Array.isArray(normalizedVariants)
+            ? normalizedVariants.reduce((sum, v) => sum + (v?.stock || 0), 0)
             : 0
     );
 
@@ -23,7 +28,8 @@ export const normalizeProduct = (raw) => {
         averageRating : raw?.averageRating ?? 0,
         numReviews    : raw?.numReviews    ?? 0,
         images        : raw?.images?.length > 0 ? raw.images : [raw?.imageUrl || 'https://via.placeholder.com/600'],
-        variants      : raw?.variants      || [],
+        options       : raw?.options       || [],
+        variants      : normalizedVariants,
         features      : raw?.features      || [],
         specifications: raw?.specifications || [],
         comments      : raw?.comments      || [],

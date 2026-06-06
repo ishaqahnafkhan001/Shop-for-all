@@ -10,7 +10,7 @@ const { customerMessageTemplate } = require('../services/mail/templates/customMe
 // ============================================================================
 exports.sendEmailToCustomer = async (req, res) => {
     try {
-        const { email, name, subject, message, shopName } = req.body;
+        const { email, name, subject, message, shopName, orderDetails } = req.body;
 
         console.log(email, name, subject, message, shopName);
 
@@ -58,7 +58,7 @@ exports.sendEmailToCustomer = async (req, res) => {
 // ============================================================================
 exports.sendOrderStatusEmail = async (req, res) => {
     try {
-        const { email, name, subject, message, shopName } = req.body;
+        const { email, name, subject, message, shopName, orderDetails } = req.body;
         console.log("Order Email Payload:", { email, name, subject, message, shopName });
         if (!email || !subject || !message) {
             return res.status(400).json({
@@ -73,6 +73,9 @@ exports.sendOrderStatusEmail = async (req, res) => {
             "Subject in Order Email Controller:", subject,
             "Message in Order Email Controller:", message);
         const senderName = shopName || "Store Administration";
+        const content = orderDetails && !String(message).includes('Order details')
+            ? `${message}\n\n${orderDetails}`
+            : message;
 
         await sendMail({
             type: 'order',
@@ -80,7 +83,7 @@ exports.sendOrderStatusEmail = async (req, res) => {
             subject: subject,
             senderName: senderName,
             recipientName: name,    // This enters sendMail as recipientName
-            content: message        // This enters sendMail as content
+            content
         });
 
         return res.status(200).json({

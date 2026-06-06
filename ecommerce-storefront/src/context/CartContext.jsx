@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast';
 
 const CartContext = createContext();
 
+const getCartItemKey = (item) => `${item._id}:${item.variantId || item.selectedVariant?._id || 'default'}`;
+
 export const CartProvider = ({ children, subdomain }) => {
     const [cartItems, setCartItems] = useState([]);
     const [isMounted, setIsMounted] = useState(false);
@@ -17,7 +19,10 @@ export const CartProvider = ({ children, subdomain }) => {
             setIsMounted(true);
             if (savedCart) {
                 try {
-                    setCartItems(JSON.parse(savedCart));
+                    setCartItems(JSON.parse(savedCart).map(item => ({
+                        ...item,
+                        cartItemId: item.cartItemId || getCartItemKey(item)
+                    })));
                 } catch {
                     console.error("Failed to parse cart data");
                 }
@@ -35,7 +40,13 @@ export const CartProvider = ({ children, subdomain }) => {
     // --- CART ACTIONS --- //
 
     const addToCart = (product, quantity = 1) => {
-        const isExisting = cartItems.some((item) => item._id === product._id);
+        const cartItem = {
+            ...product,
+            variantId: product.variantId || product.selectedVariant?._id,
+            quantity,
+        };
+        cartItem.cartItemId = getCartItemKey(cartItem);
+        const isExisting = cartItems.some((item) => item.cartItemId === cartItem.cartItemId);
 
         if (isExisting) {
             toast.success(`Increased ${product.title} quantity!`);
@@ -44,28 +55,28 @@ export const CartProvider = ({ children, subdomain }) => {
         }
 
         setCartItems((prev) => {
-            if (prev.some((item) => item._id === product._id)) {
+            if (prev.some((item) => item.cartItemId === cartItem.cartItemId)) {
                 return prev.map((item) =>
-                    item._id === product._id
+                    item.cartItemId === cartItem.cartItemId
                         ? { ...item, quantity: item.quantity + quantity }
                         : item
                 );
             }
-            return [...prev, { ...product, quantity }];
+            return [...prev, cartItem];
         });
     };
 
-    const removeFromCart = (productId) => {
+    const removeFromCart = (cartItemId) => {
         toast.success("Item removed from cart");
-        setCartItems((prev) => prev.filter((item) => item._id !== productId));
+        setCartItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId && item._id !== cartItemId));
     };
 
-    const updateQuantity = (productId, newQuantity) => {
-        if (newQuantity < 1) return removeFromCart(productId);
+    const updateQuantity = (cartItemId, newQuantity) => {
+        if (newQuantity < 1) return removeFromCart(cartItemId);
 
         setCartItems((prev) =>
             prev.map((item) =>
-                item._id === productId ? { ...item, quantity: newQuantity } : item
+                item.cartItemId === cartItemId || item._id === cartItemId ? { ...item, quantity: newQuantity } : item
             )
         );
     };
@@ -80,7 +91,7 @@ export const CartProvider = ({ children, subdomain }) => {
 
     // ✨ THE FIX: Check for finalPrice first, fallback to sellingPrice
     const cartTotal = cartItems.reduce((total, item) => {
-        const activePrice = item.finalPrice || item.sellingPrice || 0;
+        const activePrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
         return total + (activePrice * item.quantity);
     }, 0);
 
