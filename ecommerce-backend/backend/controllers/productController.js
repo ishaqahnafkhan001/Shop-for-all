@@ -17,6 +17,38 @@ const slugify = (value = '') =>
         .replace(/^-+|-+$/g, '')
         .slice(0, 80);
 
+const productCategoryCache = new Map();
+const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
+
+const getCachedCategories = async (shopId, categoryQuery) => {
+    const key = `${shopId}:${JSON.stringify(categoryQuery)}`;
+    const cached = productCategoryCache.get(key);
+
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.value;
+    }
+
+    const value = await Product.distinct('category', categoryQuery);
+    productCategoryCache.set(key, {
+        value,
+        expiresAt: Date.now() + CATEGORY_CACHE_TTL
+    });
+
+    return value;
+};
+
+const addComputedProductFields = (product) => {
+    const sellingPrice = Number(product.pricing?.sellingPrice) || 0;
+    const discount = Number(product.pricing?.discount) || 0;
+
+    return {
+        ...product,
+        finalPrice: discount > 0
+            ? Math.round(sellingPrice - ((sellingPrice * discount) / 100))
+            : sellingPrice
+    };
+};
+
 const parseProductPayload = (body) => {
     const parsedBody = { ...body };
     const jsonFields = [
@@ -103,6 +135,7 @@ exports.generateDescription = async (req, res) => {
 exports.getShopProducts = async (req, res) => {
     try {
         const shopId = req.tenantId;
+        const shopObjectId = new mongoose.Types.ObjectId(shopId);
         const {
             search,
             category,
@@ -121,7 +154,7 @@ exports.getShopProducts = async (req, res) => {
 
         // Product query (filtered)
         const query = {
-            shop_id: shopId,
+            shop_id: shopObjectId,
             isDeleted: false
         };
 
@@ -159,26 +192,45 @@ exports.getShopProducts = async (req, res) => {
 
         const skip = (page - 1) * limit;
         const categoryQuery = {
-            shop_id: shopId,
+            shop_id: shopObjectId,
             isDeleted: false,
             ...(isStorefrontRequest ? { isActive: true, status: 'Published' } : {})
         };
 
         // ✨ THE FIX: Add Product.distinct to fetch all categories for this shop
+        const summaryProjection = {
+            title: 1,
+            slug: 1,
+            category: 1,
+            tags: 1,
+            collections: 1,
+            images: { $slice: ['$images', 1] },
+            status: 1,
+            isActive: 1,
+            pricing: 1,
+            averageRating: 1,
+            numReviews: 1,
+            lowStockThreshold: 1,
+            createdAt: 1,
+            totalStock: { $sum: '$variants.stock' },
+            variantCount: { $size: { $ifNull: ['$variants', []] } }
+        };
+
         const [products, total, uniqueCategories] = await Promise.all([
-            Product.find(query)
-                .sort(sortQuery)
-                .skip(skip)
-                .limit(limit),
+            Product.aggregate([
+                { $match: query },
+                { $sort: sortQuery },
+                { $skip: skip },
+                { $limit: limit },
+                { $project: summaryProjection }
+            ]),
             Product.countDocuments(query),
-            // Notice we don't use 'query' here, because we want ALL categories
-            // for the shop, not just the ones matching the current search filter
-            Product.distinct('category', categoryQuery)
+            getCachedCategories(shopId, categoryQuery)
         ]);
 
         res.status(200).json({
             success: true,
-            data: products,
+            data: products.map(addComputedProductFields),
             categories: uniqueCategories, // ✨ Send the categories back to the frontend
             pagination: {
                 total,

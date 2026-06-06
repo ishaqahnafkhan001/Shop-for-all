@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, memo } from 'react';
+import Image from 'next/image';
 import { Zap } from 'lucide-react';
 
 const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount }) {
@@ -14,12 +15,13 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                 onMouseEnter={() => setIsZoomed(true)}
                 onMouseLeave={() => setIsZoomed(false)}
             >
-                <img
+                <Image
                     src={images[activeIdx]}
                     alt="Product"
-                    className={`w-full h-full object-contain transition-transform duration-700 ease-out ${isZoomed ? 'scale-110' : 'scale-100'}`}
-                    // Preload first image eagerly; rest lazily
-                    loading={activeIdx === 0 ? 'eager' : 'lazy'}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority={activeIdx === 0}
+                    className={`object-contain transition-transform duration-700 ease-out ${isZoomed ? 'scale-110' : 'scale-100'}`}
                 />
 
                 <div className="absolute top-6 left-6 flex flex-col gap-2">
@@ -49,7 +51,7 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                                 : 'border border-gray-200 hover:border-[var(--sf-accent)]/50 hover:scale-105 opacity-70 hover:opacity-100'
                             }`}
                         >
-                            <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            <Image src={img} alt="" fill sizes="80px" className="object-cover" />
                         </button>
                     ))}
                 </div>

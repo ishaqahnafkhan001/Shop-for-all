@@ -1,4 +1,5 @@
 const Shop = require('../models/Shop');
+const cache = require('../services/cacheService');
 
 const allowedThemeKeys = [
     'logoUrl',
@@ -6,6 +7,12 @@ const allowedThemeKeys = [
     'fontFamily',
     'productGridStyle',
     'colors',
+    'typography',
+    'hero',
+    'layout',
+    'productCard',
+    'checkoutBranding',
+    'mobile',
     'homepageSections',
     'navigation',
     'footer',
@@ -62,6 +69,8 @@ exports.updateStoreBuilderSettings = async (req, res) => {
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
+        await cache.del(`storefront:settings:${req.tenantId}`);
+
         res.status(200).json({
             success: true,
             message: 'Store settings updated',
@@ -75,13 +84,19 @@ exports.updateStoreBuilderSettings = async (req, res) => {
 
 exports.getPublicStorefrontSettings = async (req, res) => {
     try {
+        const cacheKey = `storefront:settings:${req.tenantId}`;
+        const cached = await cache.get(cacheKey);
+        if (cached) return res.status(200).json(cached);
+
         const shop = await Shop.findById(req.tenantId)
             .select('shopName subdomain theme storewideDiscount')
             .lean();
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        res.status(200).json({ success: true, data: shop });
+        const response = { success: true, data: shop };
+        await cache.set(cacheKey, response, 60);
+        res.status(200).json(response);
     } catch (err) {
         console.error('Get public storefront settings error:', err);
         res.status(500).json({ success: false, error: 'Failed to load storefront settings' });

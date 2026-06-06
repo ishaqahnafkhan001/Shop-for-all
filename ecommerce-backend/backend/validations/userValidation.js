@@ -21,6 +21,11 @@ const baseUserObj = {
             'any.required': 'Email is required'
         }),
 
+    phone: Joi.string()
+        .trim()
+        .allow('')
+        .optional(),
+
     password: Joi.string()
         .min(6)
         .required()
@@ -78,7 +83,8 @@ const loginUserSchema = Joi.object({
     }),
     password: Joi.string().required().messages({
         'string.empty': 'Password is required'
-    })
+    }),
+    subdomain: Joi.string().trim().lowercase().optional()
 }).required();
 
 module.exports = {

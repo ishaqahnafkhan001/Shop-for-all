@@ -74,10 +74,10 @@ const AddProduct = () => {
     useEffect(() => {
         if (imageFiles.length > 0) {
             const url = URL.createObjectURL(imageFiles[0]);
-            setPreviewImageUrl(url);
+            queueMicrotask(() => setPreviewImageUrl(url));
             return () => URL.revokeObjectURL(url); // cleanup
         } else {
-            setPreviewImageUrl(null);
+            queueMicrotask(() => setPreviewImageUrl(null));
         }
     }, [imageFiles]);
 
@@ -97,7 +97,7 @@ const AddProduct = () => {
 
             if (response.data.success) {
                 setFormData(prev => ({ ...prev, description: response.data.description }));
-                toast.success("Description generated successfully!");
+                toast.success("Description generated. Review it before publishing.");
             }
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to generate description.");
@@ -260,7 +260,7 @@ const AddProduct = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            toast.success('Product added successfully!');
+            toast.success(formData.status === 'Draft' ? 'Product saved as draft.' : 'Product published to your store.');
             navigate('/dashboard/products');
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to add product');
@@ -274,7 +274,10 @@ const AddProduct = () => {
     return (
         /* Increased max-width to accommodate the right sidebar preview */
         <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-            <h1 className="text-xl sm:text-2xl font-bold">Add Product</h1>
+            <div>
+                <h1 className="text-xl sm:text-2xl font-bold">Add Product</h1>
+                <p className="text-sm text-gray-500 mt-1">Add the product details shoppers need to compare, trust, and buy.</p>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -283,7 +286,10 @@ const AddProduct = () => {
 
                     {/* ── BASIC ─────────────────────────────────────────────── */}
                     <div className="bg-white p-5 rounded-xl border space-y-4">
-                        <h2 className="font-semibold text-gray-700">Basic Info</h2>
+                        <div>
+                            <h2 className="font-semibold text-gray-700">Basic Info</h2>
+                            <p className="text-xs text-gray-500 mt-1">Title, category, slug, and SEO text affect how shoppers find this product.</p>
+                        </div>
 
                         <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
 
@@ -348,7 +354,7 @@ const AddProduct = () => {
                                 value={formData.description}
                                 onChange={handleChange}
                                 className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-shadow"
-                                placeholder="Describe your product here..."
+                                placeholder="Explain what it is, who it is for, key benefits, and what comes in the box."
                                 rows={4}
                                 required
                             />
@@ -357,9 +363,12 @@ const AddProduct = () => {
 
                     {/* ── MEDIA ─────────────────────────────────────────────── */}
                     <div className="bg-white p-5 rounded-xl border space-y-4">
-                        <h2 className="font-semibold flex items-center gap-2">
-                            <ImageIcon size={16} /> Media
-                        </h2>
+                        <div>
+                            <h2 className="font-semibold flex items-center gap-2">
+                                <ImageIcon size={16} /> Media
+                            </h2>
+                            <p className="text-xs text-gray-500 mt-1">Use clear product images from multiple angles. The first image becomes the product card cover.</p>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-gray-600">Images (max 10)</label>
@@ -390,7 +399,10 @@ const AddProduct = () => {
 
                     {/* ── PRICING ───────────────────────────────────────────── */}
                     <div className="bg-white p-5 rounded-xl border space-y-4">
-                        <h2 className="font-semibold text-gray-700">Pricing</h2>
+                        <div>
+                            <h2 className="font-semibold text-gray-700">Pricing</h2>
+                            <p className="text-xs text-gray-500 mt-1">Buying price is private. Selling price and discount are visible to shoppers.</p>
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <Input id="buyingPrice"  label="Buying Price"     type="number" onChange={handlePricing} required />
                             <Input id="sellingPrice" label="Selling Price"    type="number" onChange={handlePricing} required />
@@ -416,7 +428,7 @@ const AddProduct = () => {
                             <div>
                                 <h2 className="font-semibold text-gray-700">Variants</h2>
                                 <p className="text-xs text-gray-400 mt-0.5">
-                                    Define dimensions → options are auto-combined into variants
+                                    Add options like color or size. They are combined into sellable variants.
                                 </p>
                             </div>
                             {combinations.length > 0 && (
@@ -518,7 +530,7 @@ const AddProduct = () => {
                                     </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                    {combinations.map((combo, ci) => {
+                                    {combinations.map((combo) => {
                                         const key       = makePipeKey(combo);
                                         const isOverride = stockOverrides[key] !== undefined && stockOverrides[key] !== defaultStock;
                                         return (
@@ -551,7 +563,7 @@ const AddProduct = () => {
 
                         {validAttrs.length === 0 && (
                             <p className="text-xs text-gray-400 text-center py-2">
-                                Add an attribute name and at least one option to see generated variants
+                                Add an attribute name and at least one option, e.g. color: black, white.
                             </p>
                         )}
                     </div>
@@ -560,7 +572,12 @@ const AddProduct = () => {
                     {['features', 'specifications', 'comments'].map((type) => (
                         <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
                             <div className="flex justify-between items-center">
-                                <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                                <div>
+                                    <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {type === 'features' ? 'Short selling points shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
+                                    </p>
+                                </div>
                                 <button
                                     type="button" onClick={() => addKV(type)}
                                     className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700 font-medium"
@@ -591,7 +608,7 @@ const AddProduct = () => {
                                 </div>
                             ))}
                             {formData[type].length === 0 && (
-                                <p className="text-xs text-gray-400">None added</p>
+                                <p className="text-xs text-gray-400">Nothing added yet. Add details if they help shoppers decide.</p>
                             )}
                         </div>
                     ))}

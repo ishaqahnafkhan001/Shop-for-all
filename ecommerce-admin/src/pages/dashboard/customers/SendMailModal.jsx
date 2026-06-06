@@ -12,8 +12,10 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
 
     useEffect(() => {
         if (isOpen) {
-            setSubject('');
-            setMessage('');
+            queueMicrotask(() => {
+                setSubject('');
+                setMessage('');
+            });
         }
     }, [isOpen, customer]);
 

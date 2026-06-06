@@ -1,7 +1,10 @@
 const Shop = require('../models/Shop');
 const User = require('../models/User');
 const OTP = require('../models/OTP');
+const Account = require('../models/Account');
+const ShopMembership = require('../models/ShopMembership');
 
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -11,6 +14,24 @@ const {
     loginUserSchema,
     registerCustomerSchema
 } = require('../validations/userValidation');
+const {
+    normalizeEmail,
+    createMembershipArtifacts,
+    createAccountForLegacyUser,
+    createMembershipForLegacyUser
+} = require('../services/identityService');
+
+const signSessionToken = ({ account, membership, user }) => jwt.sign(
+    {
+        id: user._id,
+        accountId: account._id,
+        membershipId: membership?._id || null,
+        role: user.role,
+        shopId: user.shop_id || null
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+);
 
 
 const getCookieOptions = () => {
@@ -35,17 +56,14 @@ const getCookieOptions = () => {
 
         path: '/',
 
-        /*
-           UNCOMMENT THIS once your frontend is shop.scaleup.codes
-           and backend is api.scaleup.codes.
-           The dot prefix allows the cookie to be shared across all subdomains.
-        */
-        domain: isProduction ? '.scaleup.codes' : undefined,
+        // Keep the session cookie scoped to the API host. A shared root-domain
+        // cookie lets any tenant subdomain initiate credentialed requests.
+        domain: undefined,
     };
 };
 exports.sendOTP = async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = normalizeEmail(req.body.email);
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -106,10 +124,14 @@ exports.sendOTP = async (req, res) => {
 };
 
 exports.registerVendor = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
         const { error, value } = shopRegistrationSchema.validate(req.body);
 
         if (error) {
+            await session.abortTransaction();
             return res.status(400).json({
                 error: error.details[0].message
             });
@@ -123,61 +145,64 @@ exports.registerVendor = async (req, res) => {
             fullName,
             otp
         } = value;
+        const cleanEmail = normalizeEmail(email);
 
-        const otpRecord = await OTP.findOne({ email });
+        const otpRecord = await OTP.findOne({ email: cleanEmail }).session(session);
 
         if (!otpRecord || String(otpRecord.otp) !== String(otp)) {
+            await session.abortTransaction();
             return res.status(400).json({
                 error: 'Invalid or expired verification code.'
             });
         }
 
-        const existingShop = await Shop.findOne({ subdomain });
+        const existingShop = await Shop.findOne({ subdomain }).session(session);
 
         if (existingShop) {
+            await session.abortTransaction();
             return res.status(400).json({
                 error: 'Subdomain already taken.'
             });
         }
 
-        const existingUser = await User.findOne({ email });
+        const existingAccount = await Account.findOne({ email: cleanEmail }).session(session);
 
-        if (existingUser) {
+        if (existingAccount) {
+            await session.abortTransaction();
             return res.status(400).json({
-                error: 'Email already registered.'
+                error: 'This email already has a platform account. Use a different owner email for this shop.'
             });
         }
 
-        const newShop = await Shop.create({
+        const [newShop] = await Shop.create([{
             shopName,
             subdomain
-        });
+        }], { session });
 
         const salt = await bcrypt.genSalt(10);
 
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newAdmin = await User.create({
+        const [account] = await Account.create([{
             fullName,
-            email,
-            password: hashedPassword,
+            email: cleanEmail,
+            passwordHash: hashedPassword
+        }], { session });
+
+        const { legacyUser: newAdmin, membership } = await createMembershipArtifacts({
+            account,
+            shopId: newShop._id,
             role: 'VendorAdmin',
-            shop_id: newShop._id
+            fullName,
+            passwordHash: hashedPassword,
+            session
         });
 
-        await OTP.deleteOne({ email });
+        await OTP.deleteOne({ email: cleanEmail }).session(session);
 
-        const token = jwt.sign(
-            {
-                id: newAdmin._id,
-                role: newAdmin.role,
-                shopId: newAdmin.shop_id
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '7d'
-            }
-        );
+        await session.commitTransaction();
+
+        const token = signSessionToken({ account, membership, user: newAdmin });
 
         res.cookie('token', token, getCookieOptions());
 
@@ -191,20 +216,27 @@ exports.registerVendor = async (req, res) => {
         });
 
     } catch (err) {
+        await session.abortTransaction();
         console.error('Register Vendor Error:', err);
 
         res.status(500).json({
             error: 'Registration failed',
             dev_details: err.message
         });
+    } finally {
+        session.endSession();
     }
 };
 
 exports.registerCustomer = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
         const { error, value } = registerCustomerSchema.validate(req.body);
 
         if (error) {
+            await session.abortTransaction();
             return res.status(400).json({
                 error: error.details[0].message
             });
@@ -217,56 +249,116 @@ exports.registerCustomer = async (req, res) => {
             subdomain,
             otp
         } = value;
+        const cleanEmail = normalizeEmail(email);
 
-        const otpRecord = await OTP.findOne({ email });
+        const otpRecord = await OTP.findOne({ email: cleanEmail }).session(session);
 
         if (!otpRecord || String(otpRecord.otp) !== String(otp)) {
+            await session.abortTransaction();
             return res.status(400).json({
                 error: 'Invalid or expired verification code.'
             });
         }
 
-        const targetShop = await Shop.findOne({ subdomain });
+        const targetShop = await Shop.findOne({ subdomain }).session(session);
 
         if (!targetShop) {
+            await session.abortTransaction();
             return res.status(404).json({
                 error: 'Storefront not found.'
             });
         }
 
-        const existingUser = await User.findOne({ email });
+        let account = await Account.findOne({ email: cleanEmail }).session(session);
+        const existingShopCustomer = await User.findOne({
+            email: cleanEmail,
+            shop_id: targetShop._id,
+            role: 'Customer'
+        }).session(session);
 
-        if (existingUser) {
+        if (account) {
+            const passwordMatches = await bcrypt.compare(password, account.passwordHash);
+            if (!passwordMatches) {
+                await session.abortTransaction();
+                return res.status(401).json({
+                    error: 'This email already has an account. Use the account password to join this shop.'
+                });
+            }
+        }
+
+        if (existingShopCustomer?.account_id) {
+            await session.abortTransaction();
             return res.status(400).json({
-                error: 'Email already registered.'
+                error: 'This account is already registered in this shop.'
             });
         }
 
         const salt = await bcrypt.genSalt(10);
+        const hashedPassword = account?.passwordHash || await bcrypt.hash(password, salt);
 
-        const hashedPassword = await bcrypt.hash(password, salt);
+        if (!account) {
+            const [newAccount] = await Account.create([{
+                fullName,
+                email: cleanEmail,
+                passwordHash: hashedPassword
+            }], { session });
+            account = newAccount;
+        }
 
-        const newCustomer = await User.create({
-            fullName,
-            email,
-            password: hashedPassword,
+        if (existingShopCustomer) {
+            existingShopCustomer.fullName = fullName;
+            existingShopCustomer.password = hashedPassword;
+            existingShopCustomer.phone = value.phone || existingShopCustomer.phone || '';
+            existingShopCustomer.status = 'Active';
+
+            const membership = await createMembershipForLegacyUser(existingShopCustomer, account, session);
+
+            await OTP.deleteOne({ email: cleanEmail }).session(session);
+            await session.commitTransaction();
+
+            const token = signSessionToken({ account, membership, user: existingShopCustomer });
+
+            res.cookie('token', token, getCookieOptions());
+
+            return res.status(201).json({
+                success: true,
+                user: {
+                    id: existingShopCustomer._id,
+                    fullName: existingShopCustomer.fullName,
+                    role: existingShopCustomer.role
+                }
+            });
+        }
+
+        const existingMembership = account
+            ? await ShopMembership.findOne({
+                account_id: account._id,
+                shop_id: targetShop._id
+            }).session(session)
+            : null;
+
+        if (existingMembership) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                error: 'This account is already registered in this shop.'
+            });
+        }
+
+        const { legacyUser: newCustomer, membership } = await createMembershipArtifacts({
+            account,
+            shopId: targetShop._id,
             role: 'Customer',
-            shop_id: targetShop._id
+            fullName,
+            phone: value.phone || '',
+            passwordHash: hashedPassword,
+            session
         });
 
-        await OTP.deleteOne({ email });
+        await OTP.deleteOne({ email: cleanEmail }).session(session);
 
-        const token = jwt.sign(
-            {
-                id: newCustomer._id,
-                role: newCustomer.role,
-                shopId: newCustomer.shop_id
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '7d'
-            }
-        );
+        await session.commitTransaction();
+
+        const token = signSessionToken({ account, membership, user: newCustomer });
 
         res.cookie('token', token, getCookieOptions());
 
@@ -280,11 +372,15 @@ exports.registerCustomer = async (req, res) => {
         });
 
     } catch (err) {
+        await session.abortTransaction();
         console.error('Register Customer Error:', err);
 
         res.status(500).json({
-            error: 'Registration failed.'
+            error: 'Registration failed.',
+            dev_details: err.message
         });
+    } finally {
+        session.endSession();
     }
 };
 
@@ -298,17 +394,53 @@ exports.login = async (req, res) => {
             });
         }
 
-        const { email, password } = value;
+        const { email, password, subdomain } = value;
+        const cleanEmail = normalizeEmail(email);
 
-        const user = await User.findOne({ email }).lean();
+        let account = await Account.findOne({ email: cleanEmail });
 
-        if (!user) {
-            return res.status(401).json({
-                error: 'Invalid email or password'
+        if (!account) {
+            let legacyShop = null;
+            if (subdomain) {
+                legacyShop = await Shop.findOne({ subdomain }).select('_id');
+            }
+
+            const legacyUsers = await User.find({
+                email: cleanEmail,
+                ...(legacyShop ? { shop_id: legacyShop._id } : {})
+            });
+
+            if (legacyUsers.length > 1) {
+                return res.status(409).json({
+                    error: 'Multiple legacy users found. Please login from the specific shop.'
+                });
+            }
+
+            const legacyUser = legacyUsers[0];
+            if (!legacyUser) {
+                return res.status(401).json({
+                    error: 'Invalid email or password'
+                });
+            }
+
+            const isLegacyMatch = await bcrypt.compare(password, legacyUser.password);
+            if (!isLegacyMatch) {
+                return res.status(401).json({
+                    error: 'Invalid email or password'
+                });
+            }
+
+            account = await createAccountForLegacyUser(legacyUser);
+            await createMembershipForLegacyUser(legacyUser, account);
+        }
+
+        if (account.status !== 'Active') {
+            return res.status(403).json({
+                error: 'Account is suspended'
             });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await bcrypt.compare(password, account.passwordHash);
 
         if (!isMatch) {
             return res.status(401).json({
@@ -316,17 +448,84 @@ exports.login = async (req, res) => {
             });
         }
 
-        const token = jwt.sign(
-            {
-                id: user._id,
-                role: user.role,
-                shopId: user.shop_id
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '7d'
+        if (account.platformRole === 'SuperAdmin' && !subdomain) {
+            let superUser = await User.findOne({
+                account_id: account._id,
+                role: 'SuperAdmin'
+            });
+
+            if (!superUser) {
+                superUser = await User.findOne({
+                    email: cleanEmail,
+                    role: 'SuperAdmin'
+                });
             }
-        );
+
+            if (!superUser) {
+                return res.status(403).json({ error: 'Super admin user record is missing' });
+            }
+
+            const token = signSessionToken({ account, membership: null, user: superUser });
+
+            res.cookie('token', token, getCookieOptions());
+
+            return res.status(200).json({
+                message: 'Login successful',
+                token,
+                user: {
+                    id: superUser._id,
+                    fullName: superUser.fullName,
+                    role: superUser.role,
+                    shopId: null,
+                    email: superUser.email
+                }
+            });
+        }
+
+        let shop = null;
+
+        if (subdomain) {
+            shop = await Shop.findOne({ subdomain }).select('_id shopName subdomain isActive approvalStatus');
+            if (!shop) return res.status(404).json({ error: 'Shop not found' });
+        }
+
+        let memberships = await ShopMembership.find({
+            account_id: account._id,
+            status: 'Active',
+            ...(shop ? { shop_id: shop._id } : {})
+        }).populate('legacyUser_id').populate('shop_id', 'shopName subdomain isActive approvalStatus');
+
+        memberships = memberships.filter(item => {
+            const user = item.legacyUser_id;
+            const memberShop = item.shop_id;
+            return user &&
+                user.status === 'Active' &&
+                memberShop?.isActive !== false &&
+                memberShop?.approvalStatus !== 'Suspended';
+        });
+
+        if (memberships.length === 0) {
+            return res.status(401).json({ error: 'No active membership found for this account.' });
+        }
+
+        if (memberships.length > 1 && !shop) {
+            const adminMemberships = memberships.filter(item => {
+                return ['VendorAdmin', 'VendorStaff'].includes(item.role);
+            });
+
+            if (adminMemberships.length === 1) {
+                memberships = adminMemberships;
+            } else {
+                return res.status(409).json({
+                    error: 'Multiple shop memberships found. Please login from the specific shop.'
+                });
+            }
+        }
+
+        const membership = memberships[0];
+        const user = membership.legacyUser_id;
+        const userShop = membership.shop_id;
+        const token = signSessionToken({ account, membership, user });
 
         res.cookie('token', token, getCookieOptions());
 
@@ -338,7 +537,9 @@ exports.login = async (req, res) => {
                 fullName: user.fullName,
                 role: user.role,
                 shopId: user.shop_id,
-                email: user.email
+                email: user.email,
+                subdomain: userShop?.subdomain,
+                shopName: userShop?.shopName
             }
         });
 
@@ -383,6 +584,9 @@ exports.getMe = async (req, res) => {
             }
         }
 
+        user.accountId = req.user?.accountId || user.account_id;
+        user.membershipId = req.user?.membershipId || user.membership_id;
+
         res.status(200).json({
             success: true,
             authenticated: true,
@@ -400,14 +604,9 @@ exports.getMe = async (req, res) => {
 
 exports.logout = (req, res) => {
     const cookieOptions = {
-        httpOnly: true,
+        ...getCookieOptions(),
         expires: new Date(0)
     };
-
-    if (process.env.NODE_ENV === 'production') {
-        cookieOptions.domain = '.scaleup.codes';
-    }
-
     res.cookie('token', 'none', cookieOptions);
 
     res.status(200).json({

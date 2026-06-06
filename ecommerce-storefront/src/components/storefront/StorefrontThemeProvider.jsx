@@ -12,6 +12,9 @@ const FALLBACK_THEME = {
     accentMuted: '#818cf8',
     accentLight: '#a5b4fc',
     accentRing: '#e0e7ff',
+    background: '#ffffff',
+    foreground: '#111827',
+    headerBackground: '#ffffff',
 };
 
 const THEME_KEYS = Object.keys(FALLBACK_THEME);
@@ -24,7 +27,15 @@ const sanitizeTheme = (themeCandidate = {}) => {
         acc[key] = HEX_COLOR_REGEX.test(value) ? value : FALLBACK_THEME[key];
         return acc;
     }, {});
-    safe.fontFamily = themeCandidate.fontFamily || 'Arial, Helvetica, sans-serif';
+    safe.fontFamily = themeCandidate.typography?.bodyFont || themeCandidate.fontFamily || 'Arial, Helvetica, sans-serif';
+    safe.headingFont = themeCandidate.typography?.headingFont || themeCandidate.fontFamily || 'Arial, Helvetica, sans-serif';
+    safe.baseSize = Number(themeCandidate.typography?.baseSize) || 16;
+    safe.headingWeight = themeCandidate.typography?.headingWeight || '800';
+    safe.checkoutButtonRadius = themeCandidate.checkoutBranding?.buttonStyle === 'Pill'
+        ? '999px'
+        : themeCandidate.checkoutBranding?.buttonStyle === 'Solid'
+            ? '10px'
+            : '16px';
     return safe;
 };
 
@@ -67,7 +78,17 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         '--sf-accent-muted': theme.accentMuted,
         '--sf-accent-light': theme.accentLight,
         '--sf-accent-ring': theme.accentRing,
+        '--sf-background': theme.background,
+        '--sf-foreground': theme.foreground,
+        '--sf-header-background': theme.headerBackground,
+        '--sf-heading-font': theme.headingFont,
+        '--sf-heading-weight': theme.headingWeight,
+        '--sf-base-size': `${theme.baseSize}px`,
+        '--sf-checkout-radius': theme.checkoutButtonRadius,
         fontFamily: theme.fontFamily,
+        fontSize: `${theme.baseSize}px`,
+        color: theme.foreground,
+        backgroundColor: theme.background,
     }), [theme]);
 
     return <div style={style}>{children}</div>;

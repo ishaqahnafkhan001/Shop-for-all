@@ -11,7 +11,6 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, 'Email is required'],
-        unique: true,
         lowercase: true,
         trim: true,
         match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address']
@@ -48,11 +47,34 @@ const userSchema = new mongoose.Schema({
         },
         index: true
     },
+    account_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Account',
+        index: true
+    },
+    membership_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ShopMembership',
+        index: true
+    },
+    phone: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     // 🔥 NEW: Array to keep track of the user's orders
     orders: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Order' // Make sure this matches the exact name of your Order model
     }]
 }, { timestamps: true });
+
+userSchema.index(
+    { shop_id: 1, email: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { shop_id: { $exists: true } }
+    }
+);
 
 module.exports = mongoose.model('User', userSchema);

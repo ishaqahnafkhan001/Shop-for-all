@@ -1,5 +1,7 @@
 const Shop = require('../models/Shop');
-// const redis = require('../config/redis'); // Enable when ready for Redis
+const cache = require('../services/cacheService');
+const tenantCache = new Map();
+const TENANT_CACHE_TTL = 5 * 60 * 1000;
 
 exports.resolveTenant = async (req, res, next) => {
     try {
@@ -9,14 +11,20 @@ exports.resolveTenant = async (req, res, next) => {
             return res.status(400).json({ error: "Subdomain is required to fetch store data." });
         }
 
-        // 🚀 1. REDIS CACHE (Uncomment to enable zero-latency lookups)
-        // const cachedTenant = await redis.get(`tenant:${subdomain}`);
-        // if (cachedTenant) {
-        //     const parsedTenant = JSON.parse(cachedTenant);
-        //     req.tenantId = parsedTenant._id;
-        //     req.tenantName = parsedTenant.shopName;
-        //     return next();
-        // }
+        const cacheKey = `tenant:${subdomain}`;
+        const sharedCachedTenant = await cache.get(cacheKey);
+        if (sharedCachedTenant) {
+            req.tenantId = sharedCachedTenant._id;
+            req.tenantName = sharedCachedTenant.shopName;
+            return next();
+        }
+
+        const cachedTenant = tenantCache.get(subdomain);
+        if (cachedTenant && cachedTenant.expiresAt > Date.now()) {
+            req.tenantId = cachedTenant.shop._id;
+            req.tenantName = cachedTenant.shop.shopName;
+            return next();
+        }
 
         // 🐌 2. DATABASE QUERY (Fast lean query)
         const shop = await Shop.findOne({
@@ -28,13 +36,14 @@ exports.resolveTenant = async (req, res, next) => {
             return res.status(404).json({ error: "Store not found or deactivated." });
         }
 
-        // 📦 3. SAVE TO CACHE (Uncomment to cache for 1 hour)
-        // await redis.setex(`tenant:${subdomain}`, 3600, JSON.stringify({
-        //     _id: shop._id,
-        //     shopName: shop.shopName
-        // }));
+        await cache.set(cacheKey, shop, TENANT_CACHE_TTL / 1000);
 
         // 4. ATTACH TENANT CONTEXT
+        tenantCache.set(subdomain, {
+            shop,
+            expiresAt: Date.now() + TENANT_CACHE_TTL
+        });
+
         req.tenantId = shop._id;
         req.tenantName = shop.shopName;
 

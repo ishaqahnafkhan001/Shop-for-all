@@ -11,6 +11,8 @@ const {
 
 const { resolveTenant } = require('../middlewares/tenant');
 const { protect } = require("../middlewares/auth");
+const { authorize } = require('../middlewares/role');
+const { requirePermission } = require('../middlewares/permission');
 
 // --- PUBLIC ROUTES (Storefront) ---
 // Uses resolveTenant because it reads the subdomain from the URL
@@ -18,12 +20,16 @@ router.get('/storefront/:subdomain/active', resolveTenant, getActiveBanners);
 
 
 
-router.get('/', protect, getAllBanners);
+router.use(protect);
+router.use(authorize('VendorAdmin', 'VendorStaff'));
+router.use(requirePermission('storeBuilder'));
 
-router.post('/', protect, upload.array('images', 5), createBanner);
+router.get('/', getAllBanners);
 
-router.delete('/:id', protect, deleteBanner);
+router.post('/', upload.array('images', 5), createBanner);
 
-router.patch('/:id/toggle', protect, toggleBannerStatus);
+router.delete('/:id', authorize('VendorAdmin'), deleteBanner);
+
+router.patch('/:id/toggle', toggleBannerStatus);
 
 module.exports = router;

@@ -10,7 +10,7 @@ const DashboardLayout = () => {
     // UX Improvement: Auto-close the mobile sidebar whenever the route changes.
     // This prevents the user from having to manually close the menu after clicking a link.
     useEffect(() => {
-        setIsSidebarOpen(false);
+        queueMicrotask(() => setIsSidebarOpen(false));
     }, [location.pathname]);
 
     return (

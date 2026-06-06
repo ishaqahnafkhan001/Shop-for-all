@@ -1,4 +1,8 @@
 const jwt = require('jsonwebtoken');
+const Account = require('../models/Account');
+const User = require('../models/User');
+const Shop = require('../models/Shop');
+const ShopMembership = require('../models/ShopMembership');
 
 const getTokenFromRequest = (req) => {
     if (req.cookies && req.cookies.token) return req.cookies.token;
@@ -10,19 +14,72 @@ const getTokenFromRequest = (req) => {
     return null;
 };
 
-const attachUserFromToken = (req, token) => {
+const attachUserFromToken = async (req, token) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.accountId) {
+        const account = await Account.findById(decoded.accountId).select('status platformRole').lean();
+
+        if (!account || account.status !== 'Active') {
+            throw new Error('Account inactive');
+        }
+
+        const legacyUser = await User.findById(decoded.id)
+            .select('role shop_id status account_id membership_id permissions')
+            .lean();
+
+        if (!legacyUser || legacyUser.status !== 'Active') {
+            throw new Error('User inactive');
+        }
+
+        if (legacyUser.role === 'SuperAdmin') {
+            if (account.platformRole !== 'SuperAdmin') throw new Error('Invalid platform role');
+        } else {
+            const membership = await ShopMembership.findOne({
+                _id: decoded.membershipId,
+                account_id: decoded.accountId,
+                legacyUser_id: decoded.id,
+                status: 'Active'
+            }).lean();
+
+            if (!membership) throw new Error('Membership inactive');
+
+            const shop = await Shop.findById(membership.shop_id)
+                .select('isActive approvalStatus')
+                .lean();
+
+            if (!shop || shop.isActive === false || shop.approvalStatus === 'Suspended') {
+                throw new Error('Shop inactive');
+            }
+        }
+
+        req.user = {
+            _id: decoded.id,
+            id: decoded.id,
+            accountId: decoded.accountId,
+            membershipId: decoded.membershipId,
+            role: legacyUser.role,
+            shopId: legacyUser.shop_id,
+            shop_id: legacyUser.shop_id,
+            permissions: legacyUser.permissions
+        };
+
+        req.tenantId = legacyUser.shop_id;
+        return;
+    }
 
     req.user = {
         _id: decoded.id,
+        id: decoded.id,
         role: decoded.role,
-        shopId: decoded.shopId
+        shopId: decoded.shopId,
+        shop_id: decoded.shopId
     };
 
     req.tenantId = decoded.shopId;
 };
 
-exports.protect = (req, res, next) => {
+exports.protect = async (req, res, next) => {
     try {
         const token = getTokenFromRequest(req);
 
@@ -38,7 +95,7 @@ exports.protect = (req, res, next) => {
         }
 
         // 4. Verify & Decode
-        attachUserFromToken(req, token);
+        await attachUserFromToken(req, token);
 
         next();
 
@@ -52,7 +109,7 @@ exports.protect = (req, res, next) => {
     }
 };
 
-exports.optionalAuth = (req, res, next) => {
+exports.optionalAuth = async (req, res, next) => {
     try {
         const token = getTokenFromRequest(req);
 
@@ -63,7 +120,7 @@ exports.optionalAuth = (req, res, next) => {
             return res.status(500).json({ error: "Internal server error." });
         }
 
-        attachUserFromToken(req, token);
+        await attachUserFromToken(req, token);
         next();
     } catch (err) {
         req.user = null;

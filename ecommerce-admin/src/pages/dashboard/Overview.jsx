@@ -8,8 +8,22 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import API from '../../api/api';
-// Keeping your import, but you can replace its usage with the inline modern card design below if you prefer
-import StatCard from '../../components/dashboard/StatCard';
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+        <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-100">
+          <p className="text-sm font-semibold text-gray-800 mb-2">{label}</p>
+          {payload.map((entry, index) => (
+              <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
+                {entry.name}: <span className="font-bold">৳{entry.value.toLocaleString()}</span>
+              </p>
+          ))}
+        </div>
+    );
+  }
+  return null;
+};
 
 const Overview = () => {
   const [loading, setLoading] = useState(true);
@@ -20,33 +34,20 @@ const Overview = () => {
   const [topProducts, setTopProducts] = useState([]);
   const [lowStock, setLowStock] = useState([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [
-          statsRes,
-          revenueRes,
-          movementRes,
-          adjustmentRes,
-          topRes,
-          lowRes
-        ] = await Promise.all([
-          API.get('/admin/dashboard-stats').catch(() => ({ data: { data: {} } })),
-          API.get('/admin/inventory/revenue/analytics').catch(() => ({ data: { data: {} } })),
-          API.get('/admin/inventory/movement').catch(() => ({ data: { data: [] } })),
-          API.get('/admin/inventory/adjustments').catch(() => ({ data: { data: [] } })),
-          API.get('/admin/inventory/top-products').catch(() => ({ data: { data: [] } })),
-          API.get('/admin/inventory/low-stock').catch(() => ({ data: { data: [] } }))
-        ]);
+	useEffect(() => {
+	    const fetchData = async () => {
+	      try {
+	        const overviewRes = await API.get('/admin/dashboard-overview');
+	        const overviewData = overviewRes.data.data || {};
 
-        setStats(statsRes.data.data || {});
-        setRevenue(revenueRes.data.data || {});
-        setMovement(movementRes.data.data || []);
-        setAdjustments(adjustmentRes.data.data || []);
-        setTopProducts(topRes.data.data || []);
-        setLowStock(lowRes.data.data || []);
+	        setStats(overviewData.stats || {});
+	        setRevenue(overviewData.revenue || {});
+	        setMovement(overviewData.movement || []);
+	        setAdjustments(overviewData.adjustments || []);
+	        setTopProducts(overviewData.topProducts || []);
+	        setLowStock(overviewData.lowStock || []);
 
-      } catch (err) {
+	      } catch {
         toast.error("Dashboard load failed");
       } finally {
         setLoading(false);
@@ -101,23 +102,6 @@ const Overview = () => {
     { title: 'Active Orders', value: stats?.activeOrders || 0,                             icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50' }
   ];
 
-  // Custom Tooltip for Recharts
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-          <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-100">
-            <p className="text-sm font-semibold text-gray-800 mb-2">{label}</p>
-            {payload.map((entry, index) => (
-                <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
-                  {entry.name}: <span className="font-bold">৳{entry.value.toLocaleString()}</span>
-                </p>
-            ))}
-          </div>
-      );
-    }
-    return null;
-  };
-
   return (
       <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8 pb-12 bg-gray-50/30 min-h-screen">
 
@@ -125,7 +109,7 @@ const Overview = () => {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
-            <p className="text-sm text-gray-500 mt-1">Monitor your real-time business performance.</p>
+            <p className="text-sm text-gray-500 mt-1">Start here each day: review sales, active orders, low stock, and recent inventory changes.</p>
           </div>
         </div>
 
@@ -185,7 +169,7 @@ const Overview = () => {
             ) : (
                 <div className="flex-grow flex flex-col items-center justify-center text-gray-400 py-20">
                   <BarChart2 size={48} className="mb-4 text-gray-200" strokeWidth={1.5} />
-                  <p>No revenue data available yet</p>
+                  <p>No delivered orders yet. Revenue and profit trends appear after orders are delivered.</p>
                 </div>
             )}
           </div>
@@ -215,7 +199,7 @@ const Overview = () => {
                       );
                     })
                 ) : (
-                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">Inventory levels are optimal</div>
+                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">No products are below their low-stock alert level.</div>
                 )}
               </div>
             </div>
@@ -241,7 +225,7 @@ const Overview = () => {
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">No recent movement activity</div>
+                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">Stock movement appears after orders, returns, or manual updates.</div>
                 )}
               </div>
             </div>
@@ -265,7 +249,7 @@ const Overview = () => {
                         </div>
                     ))
                 ) : (
-                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">No manual adjustments</div>
+                    <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">Manual stock changes will appear here after you adjust inventory.</div>
                 )}
               </div>
             </div>

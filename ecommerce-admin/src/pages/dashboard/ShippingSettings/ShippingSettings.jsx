@@ -48,7 +48,7 @@ const ShippingSettings = () => {
             try {
                 const { data } = await API.get('/admin/pathao/cities');
                 setCities(data.data);
-            } catch (err) {
+            } catch {
                 toast.error('Failed to load Pathao cities');
             }
         };
@@ -60,7 +60,10 @@ const ShippingSettings = () => {
     // --- CASCADING DROPDOWNS ---
     useEffect(() => {
         if (!createData.city_id) {
-            setZones([]); setAreas([]);
+            queueMicrotask(() => {
+                setZones([]);
+                setAreas([]);
+            });
             return;
         }
         const fetchZones = async () => {
@@ -74,7 +77,7 @@ const ShippingSettings = () => {
 
     useEffect(() => {
         if (!createData.zone_id) {
-            setAreas([]);
+            queueMicrotask(() => setAreas([]));
             return;
         }
         const fetchAreas = async () => {
@@ -99,7 +102,7 @@ const ShippingSettings = () => {
         setLoading(true);
         try {
             const { data } = await API.post('/admin/settings/pathao-store', createData);
-            toast.success(data.message);
+            toast.success(data.message || 'Pathao shop connected. You can now send confirmed orders to courier.');
             setIsLinked(true);
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to connect to Pathao');
@@ -113,7 +116,7 @@ const ShippingSettings = () => {
         setLoading(true);
         try {
             const { data } = await API.post('/admin/settings/pathao-link', linkData);
-            toast.success(data.message);
+            toast.success(data.message || 'Pathao account linked. You can now send confirmed orders to courier.');
             setIsLinked(true);
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to verify Pathao credentials');
@@ -128,7 +131,7 @@ const ShippingSettings = () => {
         <div className="max-w-3xl mx-auto space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Shipping Settings</h1>
-                <p className="mt-1 text-sm text-gray-500">Manage your courier integrations and pickup locations.</p>
+                <p className="mt-1 text-sm text-gray-500">Connect your courier account once, then send confirmed orders to delivery from the Orders page.</p>
             </div>
 
             {isLinked ? (
@@ -139,7 +142,7 @@ const ShippingSettings = () => {
                     </div>
                     <h2 className="text-xl font-bold text-gray-900">Pathao Courier Connected</h2>
                     <p className="text-gray-500 mt-2 max-w-md">
-                        Your store is successfully linked to Pathao. You can now automatically dispatch orders to the courier directly from your Orders page.
+                        Your store is successfully linked to Pathao. Confirmed orders can now be sent to courier from the Orders page.
                     </p>
                 </div>
             ) : (
@@ -167,23 +170,23 @@ const ShippingSettings = () => {
                         <form onSubmit={handleCreateShop} className="p-6 space-y-5 animate-in fade-in duration-200">
                             <div className="bg-red-50 p-4 rounded-xl flex items-start text-sm text-red-800 border border-red-100">
                                 <Info className="shrink-0 mr-3 mt-0.5" size={18} />
-                                <p>We will automatically create a sub-store under our platform account. Just enter the physical address where the Pathao delivery agent should pick up your parcels.</p>
+                                <p>Use this if you do not have your own Pathao merchant credentials. Enter the pickup address where delivery agents should collect parcels.</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700">Contact Person Name</label>
-                                    <input required type="text" name="contact_name" value={createData.contact_name} onChange={handleCreateChange} className={inputClass} placeholder="e.g. John Doe" />
+                                    <input required type="text" name="contact_name" value={createData.contact_name} onChange={handleCreateChange} className={inputClass} placeholder="e.g. Adi Rahman" title="Person courier agents should contact for pickup" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700">Contact Number</label>
-                                    <input required type="text" name="contact_number" value={createData.contact_number} onChange={handleCreateChange} className={inputClass} placeholder="017XXXXXXXX (11 digits)" minLength="11" maxLength="11" />
+                                    <input required type="text" name="contact_number" value={createData.contact_number} onChange={handleCreateChange} className={inputClass} placeholder="017XXXXXXXX (11 digits)" minLength="11" maxLength="11" title="Use an active phone number for pickup calls" />
                                 </div>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700">Full Address</label>
-                                <textarea required name="address" rows="2" value={createData.address} onChange={handleCreateChange} className={`${inputClass} resize-none`} placeholder="House, Road, Block, Details..." />
+                                <textarea required name="address" rows="2" value={createData.address} onChange={handleCreateChange} className={`${inputClass} resize-none`} placeholder="House, Road, Block, pickup instructions..." title="Add enough detail so riders can find your pickup location" />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-gray-100 pt-5 mt-5">
@@ -229,7 +232,7 @@ const ShippingSettings = () => {
                         <form onSubmit={handleLinkAccount} className="p-6 space-y-5 animate-in fade-in duration-200">
                             <div className="bg-indigo-50 p-4 rounded-xl flex items-start text-sm text-indigo-800 border border-indigo-100">
                                 <Info className="shrink-0 mr-3 mt-0.5" size={18} />
-                                <p>Already have a Pathao Merchant account? Enter your API credentials here to connect your live store.</p>
+                                <p>Already have a Pathao Merchant account? Enter API credentials from your merchant dashboard. Keep these credentials private.</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -239,7 +242,7 @@ const ShippingSettings = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700">Client Secret</label>
-                                    <input required type="password" name="client_secret" value={linkData.client_secret} onChange={handleLinkChange} className={inputClass} />
+                                    <input required type="password" name="client_secret" value={linkData.client_secret} onChange={handleLinkChange} className={inputClass} title="Private API secret from Pathao" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700">Pathao Login Email</label>
@@ -251,7 +254,7 @@ const ShippingSettings = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700">Pathao Store ID</label>
-                                    <input required type="number" name="store_id" value={linkData.store_id} onChange={handleLinkChange} className={inputClass} placeholder="e.g. 12345" />
+                                    <input required type="number" name="store_id" value={linkData.store_id} onChange={handleLinkChange} className={inputClass} placeholder="e.g. 12345" title="Pathao store ID that should receive orders" />
                                 </div>
                             </div>
 

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ChevronDown, ChevronUp, Package, ExternalLink, Lock } from 'lucide-react';
 import API from '@/api/api'; // Added API import for password reset
 import { toast } from 'react-hot-toast'; // Added toast for notifications
@@ -24,7 +25,7 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
             {orders.length === 0 ? (
                 <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                     <Package size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500 mb-4">You haven't placed any orders yet.</p>
+	                    <p className="text-gray-500 mb-4">You haven&apos;t placed any orders yet.</p>
                     <Link href="/" className="text-[var(--sf-accent,blue-600)] font-bold underline hover:opacity-80 transition-opacity">
                         Start Shopping
                     </Link>
@@ -90,10 +91,12 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                                             {/* Clickable Image */}
                                                             {item.imageUrl && (
                                                                 <Link href={productUrl} className="shrink-0">
-                                                                    <img
+                                                                    <Image
                                                                         src={item.imageUrl}
                                                                         alt={item.title}
-                                                                        className="w-16 h-16 object-cover rounded-lg border border-gray-100 hover:opacity-80 transition-opacity"
+                                                                        width={64}
+                                                                        height={64}
+                                                                        className="h-16 w-16 object-cover rounded-lg border border-gray-100 hover:opacity-80 transition-opacity"
                                                                     />
                                                                 </Link>
                                                             )}

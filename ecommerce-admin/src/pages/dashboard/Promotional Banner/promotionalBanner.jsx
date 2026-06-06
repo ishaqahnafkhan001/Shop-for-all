@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Trash2, Image as ImageIcon, Loader2, RefreshCcw, Layers } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 // Make sure this path correctly points to your custom Axios instance file
 import API from '../../../api/api.js';
@@ -31,7 +32,8 @@ const PromotionalBanner = () => {
     };
 
     useEffect(() => {
-        fetchBanners();
+        const timer = setTimeout(fetchBanners, 0);
+        return () => clearTimeout(timer);
     }, []);
 
     // 2. Handle File Selection (Multiple Files)
@@ -42,7 +44,7 @@ const PromotionalBanner = () => {
             const selectedFiles = Array.from(e.target.files);
 
             if (selectedFiles.length > 5) {
-                alert("You can only upload a maximum of 5 images.");
+                toast.error("You can upload a maximum of 5 banner images.");
                 setImages(selectedFiles.slice(0, 5));
             } else {
                 setImages(selectedFiles);
@@ -55,7 +57,8 @@ const PromotionalBanner = () => {
         e.preventDefault();
 
         if (images.length === 0) {
-            return alert("Please select at least one image file to upload.");
+            toast.error("Select at least one banner image before uploading.");
+            return;
         }
 
         setUploading(true);
@@ -80,9 +83,10 @@ const PromotionalBanner = () => {
 
             // Refresh the banner list
             fetchBanners();
+            toast.success("Banner uploaded and added to your storefront.");
         } catch (err) {
             console.error("Upload error:", err);
-            alert("Upload failed. Please try again.");
+            toast.error("Upload failed. Please try again.");
         } finally {
             setUploading(false);
         }
@@ -90,14 +94,15 @@ const PromotionalBanner = () => {
 
     // 4. Handle Delete Banner
     const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this banner?")) return;
+        if (!window.confirm("Delete this banner? It will disappear from your storefront.")) return;
 
         try {
             await API.delete(`/banners/${id}`);
             setBanners(prev => prev.filter(b => b._id !== id));
+            toast.success("Banner deleted from storefront.");
         } catch (err) {
             console.error("Delete error:", err);
-            alert("Failed to delete banner.");
+            toast.error("Failed to delete banner.");
         }
     };
 
@@ -107,9 +112,10 @@ const PromotionalBanner = () => {
             const res = await API.patch(`/banners/${id}/toggle`);
             const updatedBanner = res.data.data || res.data;
             setBanners(prev => prev.map(b => b._id === id ? updatedBanner : b));
+            toast.success(updatedBanner.isActive ? "Banner is now visible on your storefront." : "Banner is now hidden from your storefront.");
         } catch (err) {
             console.error("Toggle error:", err);
-            alert("Failed to update banner status.");
+            toast.error("Failed to update banner status.");
         }
     };
 
@@ -118,7 +124,7 @@ const PromotionalBanner = () => {
             {/* Page Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Promotional Banners</h1>
-                <p className="text-gray-500 text-sm">Upload and manage banners for your storefront.</p>
+                <p className="text-gray-500 text-sm">Banners appear near the top of your storefront. Use clear campaign images and link them to products or collections.</p>
             </div>
 
             {/* Upload Form Section */}
@@ -133,7 +139,8 @@ const PromotionalBanner = () => {
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
-                                placeholder="e.g., Summer Sale 2024"
+                                placeholder="e.g., Eid Sale 2026"
+                                title="Internal label for this banner campaign"
                                 required
                             />
                         </div>
@@ -146,7 +153,8 @@ const PromotionalBanner = () => {
                                 value={link}
                                 onChange={(e) => setLink(e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
-                                placeholder="e.g., /shop/summer-collection"
+                                placeholder="e.g., /products or /collections/eid-sale"
+                                title="Where shoppers go after clicking the banner"
                             />
                         </div>
                     </div>
@@ -154,6 +162,7 @@ const PromotionalBanner = () => {
                     {/* Multiple Image File Input */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Banner Images (Max 5)</label>
+                        <p className="text-xs text-gray-500 mb-2">Recommended: wide images around 1600x600 so the banner looks sharp on desktop and mobile.</p>
                         <div className="flex items-center justify-center w-full">
                             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -162,7 +171,7 @@ const PromotionalBanner = () => {
                                         {images.length > 0 ? (
                                             <span className="text-indigo-600 font-semibold">{images.length} file(s) selected</span>
                                         ) : (
-                                            "Click to select image files"
+                                            "Click to select banner images"
                                         )}
                                     </p>
                                 </div>
@@ -260,14 +269,14 @@ const PromotionalBanner = () => {
                                                     ? 'text-amber-500 hover:bg-amber-50'
                                                     : 'text-indigo-500 hover:bg-indigo-50'
                                             }`}
-                                            title={banner.isActive ? "Deactivate Banner" : "Activate Banner"}
+                                            title={banner.isActive ? "Hide this banner from the storefront" : "Show this banner on the storefront"}
                                         >
                                             <RefreshCcw className="h-5 w-5" />
                                         </button>
                                         <button
                                             onClick={() => handleDelete(banner._id)}
                                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Delete Banner"
+                                            title="Delete this banner permanently"
                                         >
                                             <Trash2 className="h-5 w-5" />
                                         </button>
@@ -282,8 +291,8 @@ const PromotionalBanner = () => {
                 {!loading && Array.isArray(banners) && banners.length === 0 && (
                     <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
                         <ImageIcon className="mx-auto h-12 w-12 text-gray-300" />
-                        <h3 className="mt-4 text-sm font-semibold text-gray-900">No banners</h3>
-                        <p className="mt-1 text-sm text-gray-500">Get started by uploading a new banner above.</p>
+                        <h3 className="mt-4 text-sm font-semibold text-gray-900">No storefront banners yet</h3>
+                        <p className="mt-1 text-sm text-gray-500">Upload one campaign banner with a clear offer and a link to the right products.</p>
                     </div>
                 )}
             </div>

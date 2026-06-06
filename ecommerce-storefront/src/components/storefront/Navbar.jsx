@@ -17,12 +17,26 @@ export default function Navbar({ subdomain }) {
     const [shopSettings, setShopSettings] = useState(null);
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchSettings = async () => {
             try {
-                const [productsRes, settingsRes] = await Promise.all([
-                    API.get(`/storefront/${subdomain}/products`),
-                    API.get(`/store-builder/storefront/${subdomain}`).catch(() => ({ data: null }))
-                ]);
+                const settingsRes = await API.get(`/store-builder/storefront/${subdomain}`).catch(() => ({ data: null }));
+                setShopSettings(settingsRes.data?.data || null);
+            } catch (err) {
+                console.error("Storefront settings fetch failed:", err);
+            }
+        };
+
+        if (subdomain) {
+            fetchSettings();
+        }
+    }, [subdomain]);
+
+    useEffect(() => {
+        const fetchSearchProducts = async () => {
+            try {
+                const productsRes = await API.get(`/storefront/${subdomain}/products`, {
+                    params: { limit: 12 }
+                });
 
                 const rawProducts =
                     productsRes.data?.products ||
@@ -30,46 +44,29 @@ export default function Navbar({ subdomain }) {
                     [];
 
                 const normalized = rawProducts.map((p) => {
-                    const sellingPrice =
-                        p?.pricing?.sellingPrice ??
-                        p?.sellingPrice ??
-                        0;
-
-                    const discount =
-                        p?.pricing?.discount ??
-                        p?.discount ??
-                        0;
-
-                    const finalPrice =
-                        p?.finalPrice ??
-                        Math.round(
-                            sellingPrice -
-                            (sellingPrice * (discount / 100))
-                        );
+                    const sellingPrice = p?.pricing?.sellingPrice ?? p?.sellingPrice ?? 0;
+                    const discount = p?.pricing?.discount ?? p?.discount ?? 0;
+                    const finalPrice = p?.finalPrice ?? Math.round(sellingPrice - (sellingPrice * (discount / 100)));
 
                     return {
                         ...p,
                         sellingPrice,
                         discount,
                         finalPrice,
-                        imageUrl:
-                            p?.imageUrl ||
-                            p?.images?.[0] ||
-                            'https://via.placeholder.com/400',
+                        imageUrl: p?.imageUrl || p?.images?.[0] || 'https://via.placeholder.com/400',
                     };
                 });
 
                 setProducts(normalized);
-                setShopSettings(settingsRes.data?.data || null);
             } catch (err) {
                 console.error("Search products fetch failed:", err);
             }
         };
 
-        if (subdomain) {
-            fetchProducts();
+        if (searchOpen && subdomain && products.length === 0) {
+            fetchSearchProducts();
         }
-    }, [subdomain]);
+    }, [searchOpen, subdomain, products.length]);
 
     const theme = shopSettings?.theme || {};
     const navLinks = (theme.navigation || [])

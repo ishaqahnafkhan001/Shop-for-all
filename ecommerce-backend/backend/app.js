@@ -4,6 +4,8 @@ const express = require('express');
 
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const connectDB = require('./config/db');
 
@@ -26,9 +28,58 @@ app.set('trust proxy', 1);
 connectDB();
 
 const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
+const isProduction = process.env.NODE_ENV === 'production';
+const tenantOriginPattern = /^https?:\/\/([a-z0-9-]+\.)?localhost:(3000|5173)$/;
+const lanDevOriginPattern = /^https?:\/\/192\.168\.\d+\.\d+:(3000|5173)$/;
+const scaleupOriginPattern = /^https:\/\/([a-z0-9-]+\.)?scaleup\.codes$/;
 
-app.use(express.json());
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProduction ? 1000 : 5000,
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProduction ? 30 : 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many authentication attempts. Please try again later.' }
+});
+
+const publicWriteLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProduction ? 60 : 600,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please try again later.' }
+});
+
+const sanitizeMongoOperators = (value) => {
+    if (!value || typeof value !== 'object') return;
+
+    for (const key of Object.keys(value)) {
+        if (key.startsWith('$') || key.includes('.')) {
+            delete value[key];
+            continue;
+        }
+
+        sanitizeMongoOperators(value[key]);
+    }
+};
+
+const sanitizeRequest = (req, res, next) => {
+    sanitizeMongoOperators(req.body);
+    sanitizeMongoOperators(req.params);
+    sanitizeMongoOperators(req.query);
+    next();
+};
+
+app.use(helmet());
+app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
+app.use(sanitizeRequest);
 
 app.use(
     cors({
@@ -42,22 +93,15 @@ app.use(
                 return callback(null, true);
             }
 
-            if (
-                /^https?:\/\/([a-z0-9-]+\.)?localhost:(3000|5173)$/.test(origin)
-            ) {
+            if (tenantOriginPattern.test(origin)) {
                 return callback(null, true);
             }
 
-            if (
-                /^https?:\/\/192\.168\.\d+\.\d+:(3000|5173)$/.test(origin)
-            ) {
+            if (lanDevOriginPattern.test(origin)) {
                 return callback(null, true);
             }
 
-            if (
-                // ✨ FIX: Added '\.' inside the brackets to allow 'www.'
-                /^https?:\/\/([a-z0-9-\.]+)\.scaleup\.codes$/.test(origin)
-            ) {
+            if (scaleupOriginPattern.test(origin)) {
                 return callback(null, true);
             }
 
@@ -67,11 +111,12 @@ app.use(
         credentials: true
     })
 );
+app.use(generalLimiter);
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/storefront', storefrontRoutes);
-app.use('/api/public', publicRoutes);
+app.use('/api/public', publicWriteLimiter, publicRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/store-builder', storeBuilderRoutes);

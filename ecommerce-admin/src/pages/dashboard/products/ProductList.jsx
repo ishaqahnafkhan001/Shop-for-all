@@ -1,14 +1,14 @@
-"use client";
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Plus, Edit, Trash2, Package, Layers,
-    TrendingDown, Eye, AlertCircle, Search
+    TrendingDown, Eye, AlertCircle
 } from 'lucide-react';
 
 // UI Components
 import Table from '../../../components/ui/Table';
 import ProductDetailModal from '../../../components/products/ProductDetailModal.jsx';
+import API from '../../../api/api';
 
 // Hooks
 import { useProducts } from '../../../hooks/useProducts';
@@ -26,9 +26,16 @@ const ProductList = () => {
         navigate(`/dashboard/products/edit/${product._id}`, { state: { product } });
     };
 
-    const handleOpenDetails = (product) => {
+    const handleOpenDetails = async (product) => {
         setSelectedProduct(product);
         setIsModalOpen(true);
+
+        try {
+            const { data } = await API.get(`/admin/products/${product._id}`);
+            setSelectedProduct(data.data || product);
+        } catch {
+            setSelectedProduct(product);
+        }
     };
 
     const handleCloseDetails = () => {
@@ -60,7 +67,7 @@ const ProductList = () => {
                                 {row.category || 'General'}
                             </span>
                             <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
-                                <Layers size={12} className="text-slate-400"/> {row.variants?.length || 0} Variants
+                                <Layers size={12} className="text-slate-400"/> {row.variantCount ?? row.variants?.length ?? 0} Variants
                             </span>
                         </div>
                     </div>
@@ -133,21 +140,21 @@ const ProductList = () => {
             <button
                 onClick={(e) => { e.stopPropagation(); handleOpenDetails(row); }}
                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all duration-200"
-                title="Quick View"
+                title="Preview product details without leaving this page"
             >
                 <Eye size={18} strokeWidth={1.5} />
             </button>
             <button
                 onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
                 className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-all duration-200"
-                title="Edit Product"
+                title="Change pricing, stock, images, variants, and SEO"
             >
                 <Edit size={18} strokeWidth={1.5} />
             </button>
             <button
                 onClick={(e) => { e.stopPropagation(); deleteProduct(row._id); }}
                 className="p-2 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all duration-200"
-                title="Delete Product"
+                title="Remove this product from your store"
             >
                 <Trash2 size={18} strokeWidth={1.5} />
             </button>
@@ -161,7 +168,7 @@ const ProductList = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Product Catalog</h1>
-                    <p className="text-slate-500 text-sm mt-1">Manage inventory, variations, and pricing configurations.</p>
+                    <p className="text-slate-500 text-sm mt-1">Add products customers can buy. Keep prices, stock, images, and publish status up to date.</p>
                 </div>
                 <Link
                     to="/dashboard/products/add"
@@ -200,7 +207,7 @@ const ProductList = () => {
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">No products found</h3>
                     <p className="text-slate-500 max-w-sm mx-auto mb-8">
-                        Your inventory is currently empty. Start building your catalog by adding your first product.
+                        Add your first product with images, price, stock, and at least one variant. Draft products stay hidden until published.
                     </p>
                     <Link
                         to="/dashboard/products/add"
@@ -258,7 +265,7 @@ const ProductList = () => {
 
                                 <div className="pt-3 border-t border-slate-50 flex justify-between items-center">
                                     <span className="text-xs font-medium text-slate-400 flex items-center gap-1">
-                                        <Layers size={14} /> {p.variants?.length || 0} variants
+                                        <Layers size={14} /> {p.variantCount ?? p.variants?.length ?? 0} variants
                                     </span>
                                     <div className="flex gap-1.5">
                                         <button onClick={() => handleOpenDetails(p)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors">

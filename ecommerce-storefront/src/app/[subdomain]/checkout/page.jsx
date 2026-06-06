@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+import Image from "next/image";
 
 import { toast } from "react-hot-toast";
 
@@ -63,6 +64,26 @@ export default function CheckoutPage({ params }) {
 
     const [promotionCode, setPromotionCode] = useState("");
     const [promotionPreview, setPromotionPreview] = useState(null);
+    const [checkoutBranding, setCheckoutBranding] = useState({});
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchBranding = async () => {
+            try {
+                const { data } = await API.get(`/store-builder/storefront/${subdomain}`);
+                if (isMounted) setCheckoutBranding(data.data?.theme?.checkoutBranding || {});
+            } catch {
+                if (isMounted) setCheckoutBranding({});
+            }
+        };
+
+        if (subdomain) fetchBranding();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [subdomain]);
 
     // =========================================
     // SHIPPING LOGIC
@@ -90,25 +111,16 @@ export default function CheckoutPage({ params }) {
 
             try {
 
-                const results = await Promise.all(
-                    cartItems.map(async (item) => {
-
-                        const { data } =
-                            await API.get(
-                                `/storefront/${subdomain}/products/${item._id}`
-                            );
-
-                        return {
-                            id: item._id,
-                            product: data?.product || data,
-                        };
-                    })
+                const ids = cartItems.map(item => item._id).join(',');
+                const { data } = await API.get(
+                    `/storefront/${subdomain}/products/batch`,
+                    { params: { ids } }
                 );
 
                 const mapped = {};
 
-                results.forEach((item) => {
-                    mapped[item.id] = item.product;
+                (data?.data || []).forEach((product) => {
+                    mapped[product._id] = product;
                 });
 
                 setProductsDetails(mapped);
@@ -431,6 +443,23 @@ export default function CheckoutPage({ params }) {
 
             <div className="container mx-auto max-w-7xl px-4 py-10">
 
+                {(checkoutBranding.logoUrl || checkoutBranding.bannerText) && (
+                    <div className="mb-8 rounded-3xl border border-gray-100 bg-white p-6 text-center shadow-sm">
+                        {checkoutBranding.logoUrl && (
+                            <Image
+                                src={checkoutBranding.logoUrl}
+                                alt=""
+                                width={180}
+                                height={48}
+                                className="mx-auto mb-3 h-12 w-auto object-contain"
+                            />
+                        )}
+                        {checkoutBranding.bannerText && (
+                            <p className="text-sm font-semibold text-gray-700">{checkoutBranding.bannerText}</p>
+                        )}
+                    </div>
+                )}
+
                 <Link
                     href="/cart"
                     className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-[var(--sf-accent)] transition mb-8"
@@ -626,14 +655,16 @@ export default function CheckoutPage({ params }) {
 
                                             <div className="flex gap-4">
 
-                                                <img
+                                                <Image
                                                     src={
                                                         product?.thumbnail ||
                                                         product?.images?.[0] ||
                                                         "/placeholder.png"
                                                     }
                                                     alt={item.title}
-                                                    className="w-24 h-24 rounded-2xl object-cover border"
+                                                    width={96}
+                                                    height={96}
+                                                    className="h-24 w-24 rounded-2xl object-cover border"
                                                 />
 
                                                 <div className="flex-1">
@@ -817,7 +848,8 @@ export default function CheckoutPage({ params }) {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full mt-7 bg-gray-900 hover:bg-[var(--sf-accent)] text-white py-5 rounded-2xl font-black text-lg transition disabled:opacity-50"
+                                    className="w-full mt-7 bg-gray-900 hover:bg-[var(--sf-accent)] text-white py-5 font-black text-lg transition disabled:opacity-50"
+                                    style={{ borderRadius: 'var(--sf-checkout-radius)' }}
                                 >
                                     {loading
                                         ? "Processing..."
@@ -831,7 +863,7 @@ export default function CheckoutPage({ params }) {
                                         className="text-green-500"
                                     />
 
-                                    Secure Checkout
+                                    {checkoutBranding.trustMessage || 'Secure Checkout'}
 
                                 </p>
 

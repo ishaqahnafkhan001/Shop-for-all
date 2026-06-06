@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const StaffPermission = require('../models/StaffPermission');
 
 exports.requirePermission = (permissionName) => {
     return async (req, res, next) => {
@@ -15,15 +16,30 @@ exports.requirePermission = (permissionName) => {
                 return res.status(403).json({ error: 'Permission denied' });
             }
 
-            const user = await User.findById(req.user._id)
-                .select('permissions status')
-                .lean();
+            let permissions = null;
 
-            if (!user || user.status !== 'Active') {
-                return res.status(403).json({ error: 'Staff account is inactive' });
+            if (req.user.membershipId) {
+                const staffPermission = await StaffPermission.findOne({
+                    membership_id: req.user.membershipId,
+                    shop_id: req.tenantId
+                }).select('permissions').lean();
+
+                permissions = staffPermission?.permissions;
             }
 
-            if (!user.permissions?.[permissionName]) {
+            if (!permissions) {
+                const user = await User.findById(req.user._id)
+                    .select('permissions status')
+                    .lean();
+
+                if (!user || user.status !== 'Active') {
+                    return res.status(403).json({ error: 'Staff account is inactive' });
+                }
+
+                permissions = user.permissions;
+            }
+
+            if (!permissions?.[permissionName]) {
                 return res.status(403).json({
                     error: `Missing staff permission: ${permissionName}`
                 });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Mail, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
@@ -28,7 +28,7 @@ const CustomerList = () => {
             try {
                 const { data } = await API.get('/admin/customers');
                 setCustomers(Array.isArray(data) ? data : []);
-            } catch (err) {
+            } catch {
                 toast.error("Failed to load customers");
             } finally {
                 setLoading(false);
@@ -38,21 +38,6 @@ const CustomerList = () => {
     }, []);
 
     // --- Handlers ---
-    const handleToggleStatus = async (id, currentStatus) => {
-        const action = currentStatus === 'Active' ? 'ban' : 'unban';
-        if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
-
-        try {
-            const res = await API.patch(`/admin/customers/${id}/status`);
-            setCustomers(customers.map(cust =>
-                cust._id === id ? { ...cust, status: res.data.status } : cust
-            ));
-            toast.success(res.data.message);
-        } catch (err) {
-            toast.error(err.response?.data?.error || "Failed to update status");
-        }
-    };
-
     const openMailModal = (customer) => {
         setSelectedCustomer(customer);
         setIsMailModalOpen(true);
@@ -120,7 +105,7 @@ const CustomerList = () => {
             <button
                 onClick={() => openMailModal(row)}
                 className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                title="Send Email to Customer"
+                title="Email this customer about orders, offers, or support"
             >
                 <Mail size={18} />
             </button>
@@ -132,7 +117,7 @@ const CustomerList = () => {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-                <p className="mt-1 text-sm text-gray-500">Manage your store's registered users.</p>
+                <p className="mt-1 text-sm text-gray-500">View shop customers, contact them, and suspend accounts only when necessary.</p>
             </div>
 
             {/* Search Bar */}
@@ -160,7 +145,7 @@ const CustomerList = () => {
                     <div className="md:hidden space-y-4">
                         {filteredCustomers.length === 0 ? (
                             <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
-                                No customers found.
+                                {searchQuery ? 'No customers match your search.' : 'Customers appear here after they sign up or place an order.'}
                             </div>
                         ) : (
                             filteredCustomers.map((cust) => (

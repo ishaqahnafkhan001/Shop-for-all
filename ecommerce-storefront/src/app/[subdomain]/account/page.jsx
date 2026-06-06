@@ -31,8 +31,10 @@ export default function AccountPage({ params }) {
         if (expiry) {
             const remaining = Math.floor((parseInt(expiry) - Date.now()) / 1000);
             if (remaining > 0) {
-                setOtpTimer(remaining);
-                setOtpSent(true);
+                queueMicrotask(() => {
+                    setOtpTimer(remaining);
+                    setOtpSent(true);
+                });
             } else {
                 localStorage.removeItem('otp_expiry');
             }
@@ -58,8 +60,10 @@ export default function AccountPage({ params }) {
 
     // Reset form when switching between Login & Register
     useEffect(() => {
-        setOtpSent(false);
-        setAuthForm({ fullName: '', email: '', password: '', otp: '' });
+        queueMicrotask(() => {
+            setOtpSent(false);
+            setAuthForm({ fullName: '', email: '', password: '', otp: '' });
+        });
     }, [isRegistering]);
 
     // 🌟 Fetch orders automatically if the user is a logged-in customer
@@ -117,7 +121,7 @@ export default function AccountPage({ params }) {
                 toast.success("Registration successful!");
             } else {
                 // 2. Login Flow (Using Context)
-                const result = await login(authForm.email, authForm.password);
+                const result = await login(authForm.email, authForm.password, subdomain);
                 if (result.success) {
                     toast.success("Welcome back!");
                 } else {

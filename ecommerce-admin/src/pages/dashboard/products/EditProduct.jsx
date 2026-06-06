@@ -297,7 +297,7 @@ const EditProduct = () => {
             setFormData(prev => ({ ...prev, variants: freshProduct.variants || [] }));
             setChangedStocks({});
 
-            toast.success('Product updated successfully');
+            toast.success(formData.status === 'Draft' ? 'Product saved as draft.' : 'Product updated on your store.');
             navigate('/dashboard/products');
         } catch (err) {
             // 1. Log the full error to your browser console for debugging
@@ -305,21 +305,14 @@ const EditProduct = () => {
             console.error("BACKEND RESPONSE:", err.response?.data);
 
             // 2. Create a much more specific error message
-            let errorMessage = "Update failed. Please try again.";
-
-            if (err.response) {
-                // The backend sent a response, but it was an error (e.g., 400 or 500)
-                errorMessage = err.response.data?.error
+            const errorMessage = err.response
+                ? err.response.data?.error
                     || err.response.data?.message
                     || err.response.data?.details
-                    || `Server Error: ${err.response.status}`;
-            } else if (err.request) {
-                // The request was sent but no response was received (Server down / CORS)
-                errorMessage = "Network error: Could not reach the server.";
-            } else {
-                // Something else happened while setting up the request
-                errorMessage = err.message;
-            }
+                    || `Server Error: ${err.response.status}`
+                : err.request
+                    ? "Network error: Could not reach the server."
+                    : err.message || "Update failed. Please try again.";
 
             toast.error(errorMessage);
         } finally {
@@ -335,7 +328,10 @@ const EditProduct = () => {
 
             {/* Header */}
             <div className="flex justify-between items-center">
-                <h1 className="text-xl sm:text-2xl font-bold">Edit Product</h1>
+                <div>
+                    <h1 className="text-xl sm:text-2xl font-bold">Edit Product</h1>
+                    <p className="text-sm text-gray-500 mt-1">Update storefront details carefully. Pricing, status, and stock changes can affect live orders.</p>
+                </div>
                 <button onClick={() => navigate(-1)} className="text-sm text-gray-400 hover:text-gray-600">
                     Cancel
                 </button>
@@ -345,7 +341,10 @@ const EditProduct = () => {
 
                 {/* ── BASIC ─────────────────────────────────────────────── */}
                 <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <h2 className="font-semibold text-gray-700">Basic Info</h2>
+                    <div>
+                        <h2 className="font-semibold text-gray-700">Basic Info</h2>
+                        <p className="text-xs text-gray-500 mt-1">Published products are visible to shoppers. Draft products stay hidden.</p>
+                    </div>
                     <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Input id="slug" label="Product Slug" value={formData.slug} onChange={handleChange} />
@@ -391,7 +390,10 @@ const EditProduct = () => {
 
                 {/* ── PRICING ───────────────────────────────────────────── */}
                 <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <h2 className="font-semibold text-gray-700">Pricing</h2>
+                    <div>
+                        <h2 className="font-semibold text-gray-700">Pricing</h2>
+                        <p className="text-xs text-gray-500 mt-1">Selling price and discount update the live storefront after saving.</p>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Input id="buyingPrice"  label="Buying"     type="number" value={buying}   onChange={handlePricing} />
                         <Input id="sellingPrice" label="Selling"    type="number" value={selling}  onChange={handlePricing} />
@@ -416,7 +418,7 @@ const EditProduct = () => {
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="font-semibold text-gray-700">Variants</h2>
-                            <p className="text-xs text-gray-400 mt-0.5">Edit stock directly. Use the panels below to add new dimensions.</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Edit stock directly. Pending changes are saved only when you update the product.</p>
                         </div>
                         <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
                             {formData.variants.length} variants
@@ -468,7 +470,7 @@ const EditProduct = () => {
                                                 onClick={() => handleRemoveVariant(vid)}
                                                 disabled={formData.variants.length <= 1}
                                                 className="text-gray-300 hover:text-red-500 disabled:opacity-20 transition-colors"
-                                                title="Remove variant"
+                                                title="Remove this sellable option from the product"
                                             >
                                                 <Trash2 size={14} />
                                             </button>
@@ -502,7 +504,7 @@ const EditProduct = () => {
                         {showAddOption && (
                             <div className="px-4 pb-4 pt-1 border-t bg-gray-50/40 space-y-3">
                                 <p className="text-xs text-gray-400">
-                                    e.g. add "red" to the color attribute → auto-creates combos
+                                    Add a value to an existing attribute, e.g. red under color. New combinations are created automatically.
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div className="space-y-1">
@@ -572,7 +574,7 @@ const EditProduct = () => {
                         {showAddVariant && (
                             <div className="px-4 pb-4 pt-1 border-t bg-gray-50/40 space-y-3">
                                 <p className="text-xs text-gray-400">
-                                    Manually define a completely new combination of attributes.
+                                    Use this only for one-off combinations that should not generate every possible option.
                                 </p>
 
                                 {newVariantForm.attributes.map((attr, idx) => (
@@ -631,7 +633,12 @@ const EditProduct = () => {
                 {['features', 'specifications', 'comments'].map((type) => (
                     <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
                         <div className="flex justify-between items-center">
-                            <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                            <div>
+                                <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {type === 'features' ? 'Short selling points shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
+                                </p>
+                            </div>
                             <button
                                 type="button" onClick={() => addKV(type)}
                                 className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700"
@@ -662,7 +669,7 @@ const EditProduct = () => {
                             </div>
                         ))}
                         {formData[type].length === 0 && (
-                            <p className="text-xs text-gray-400">None added</p>
+                            <p className="text-xs text-gray-400">Nothing added yet. Add details if they help shoppers decide.</p>
                         )}
                     </div>
                 ))}

@@ -8,6 +8,7 @@ const { getPathaoToken, createPathaoOrder } = require('../services/pathaoService
 const Shop = require('../models/Shop'); // Make sure to import your Shop model
 const Promotion = require('../models/Promotion');
 const { evaluatePromotion } = require('../services/promotionService');
+const cache = require('../services/cacheService');
 
 
 
@@ -422,13 +423,31 @@ exports.cancelOrder = async (req, res) => {
 exports.getShopOrders = async (req, res) => {
     try {
         const shopId = req.tenantId;
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
+        const skip = (page - 1) * limit;
 
-        const orders = await Order.find({ shop_id: shopId, isDeleted: false })
-            .populate('customer', 'fullName email')
-            .populate('items.productId', 'title')
-            .sort({ createdAt: -1 });
+        const query = { shop_id: shopId, isDeleted: false };
+        const [orders, total] = await Promise.all([
+            Order.find(query)
+                .select('customer items.title items.productId pricing payment shipping status source isPathaoSynced pathaoConsignmentId createdAt updatedAt')
+                .populate('customer', 'fullName email')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            Order.countDocuments(query)
+        ]);
 
-        res.status(200).json({ success: true, data: orders });
+        res.status(200).json({
+            success: true,
+            data: orders,
+            pagination: {
+                total,
+                page,
+                pages: Math.ceil(total / limit)
+            }
+        });
 
     } catch (err) {
         console.error("Error fetching orders:", err);
@@ -647,6 +666,171 @@ exports.getDashboardStats = async (req, res) => {
             success: false,
             error: "Failed to fetch dashboard statistics"
         });
+    }
+};
+
+exports.getDashboardOverview = async (req, res) => {
+    try {
+        const shopId = new mongoose.Types.ObjectId(req.tenantId);
+        const cacheKey = `admin:dashboard-overview:${shopId}`;
+        const cached = await cache.get(cacheKey);
+        if (cached) return res.status(200).json(cached);
+
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const orderMatch = { shop_id: shopId, isDeleted: false };
+        const deliveredMatch = { ...orderMatch, status: 'Delivered' };
+
+        const [
+            deliveredSummary,
+            activeOrders,
+            totalProducts,
+            totalCustomers,
+            revenueAnalytics,
+            movement,
+            adjustments,
+            topProducts,
+            lowStock
+        ] = await Promise.all([
+            Order.aggregate([
+                { $match: deliveredMatch },
+                { $unwind: '$items' },
+                {
+                    $group: {
+                        _id: null,
+                        totalRevenue: { $sum: '$pricing.total' },
+                        totalItemsSold: { $sum: '$items.quantity' },
+                        totalCost: { $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] } },
+                        itemsRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        totalRevenue: 1,
+                        totalItemsSold: 1,
+                        netProfit: { $subtract: ['$itemsRevenue', '$totalCost'] }
+                    }
+                }
+            ]),
+            Order.countDocuments({
+                ...orderMatch,
+                status: { $in: ['Pending', 'Processing', 'Shipped'] }
+            }),
+            Product.countDocuments({ shop_id: shopId, isDeleted: false }),
+            User.countDocuments({ shop_id: shopId, role: 'Customer' }),
+            Order.aggregate([
+                { $match: deliveredMatch },
+                { $unwind: '$items' },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: '$createdAt' },
+                            month: { $month: '$createdAt' }
+                        },
+                        revenue: { $sum: '$pricing.total' },
+                        totalCost: { $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] } }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        year: '$_id.year',
+                        month: '$_id.month',
+                        revenue: 1,
+                        profit: { $subtract: ['$revenue', '$totalCost'] }
+                    }
+                },
+                { $sort: { year: 1, month: 1 } },
+                { $limit: 12 }
+            ]),
+            InventoryLog.aggregate([
+                { $match: { shop_id: shopId, createdAt: { $gte: thirtyDaysAgo } } },
+                {
+                    $group: {
+                        _id: { date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } } },
+                        stockIn: { $sum: { $cond: [{ $gt: ['$change', 0] }, '$change', 0] } },
+                        stockOut: { $sum: { $cond: [{ $lt: ['$change', 0] }, '$change', 0] } }
+                    }
+                },
+                { $project: { _id: 0, date: '$_id.date', stockIn: 1, stockOut: 1 } },
+                { $sort: { date: 1 } }
+            ]),
+            InventoryLog.aggregate([
+                { $match: { shop_id: shopId, type: 'MANUAL', createdAt: { $gte: thirtyDaysAgo } } },
+                { $group: { _id: '$productId', totalAdjustment: { $sum: '$change' } } },
+                { $sort: { totalAdjustment: -1 } },
+                { $limit: 10 },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                { $unwind: '$product' },
+                { $project: { _id: 0, productId: '$_id', title: '$product.title', totalAdjustment: 1 } }
+            ]),
+            InventoryLog.aggregate([
+                { $match: { shop_id: shopId, type: 'ORDER', change: { $lt: 0 }, createdAt: { $gte: thirtyDaysAgo } } },
+                { $group: { _id: '$productId', totalSold: { $sum: { $multiply: ['$change', -1] } } } },
+                { $sort: { totalSold: -1 } },
+                { $limit: 10 },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: '_id',
+                        foreignField: '_id',
+                        as: 'product'
+                    }
+                },
+                { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        _id: 0,
+                        productId: '$_id',
+                        title: { $ifNull: ['$product.title', 'Unknown Product'] },
+                        price: { $ifNull: ['$product.pricing.sellingPrice', 0] },
+                        thumbnail: '$product.thumbnail',
+                        totalSold: 1
+                    }
+                }
+            ]),
+            Product.find({
+                shop_id: shopId,
+                isDeleted: false,
+                'variants.stock': { $lte: 5 }
+            }).select('title variants').limit(15).lean()
+        ]);
+
+        const stats = {
+            totalRevenue: deliveredSummary[0]?.totalRevenue || 0,
+            totalItemsSold: deliveredSummary[0]?.totalItemsSold || 0,
+            netProfit: deliveredSummary[0]?.netProfit || 0,
+            activeOrders,
+            totalProducts,
+            totalCustomers
+        };
+        const response = {
+            success: true,
+            data: {
+                stats,
+                revenue: {
+                    overview: stats,
+                    monthlyData: revenueAnalytics
+                },
+                movement,
+                adjustments,
+                topProducts,
+                lowStock
+            }
+        };
+
+        await cache.set(cacheKey, response, 30);
+        res.status(200).json(response);
+    } catch (err) {
+        console.error("Dashboard overview error:", err);
+        res.status(500).json({ success: false, error: "Failed to fetch dashboard overview" });
     }
 };
 

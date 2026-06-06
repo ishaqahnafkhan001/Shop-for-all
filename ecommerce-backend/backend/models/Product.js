@@ -87,6 +87,9 @@ productSchema.virtual('totalStock').get(function () {
 
 productSchema.index({ shop_id: 1, category: 1 });
 productSchema.index({ shop_id: 1, status: 1, isActive: 1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, status: 1, isActive: 1, createdAt: -1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, category: 1, createdAt: -1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, 'pricing.sellingPrice': 1 });
 productSchema.index({ shop_id: 1, slug: 1 }, {
     unique: true,
     partialFilterExpression: { slug: { $type: 'string' }, isDeleted: false }

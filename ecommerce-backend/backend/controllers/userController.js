@@ -1,7 +1,13 @@
 const User = require('../models/User');
+const Account = require('../models/Account');
+const ShopMembership = require('../models/ShopMembership');
+const StaffPermission = require('../models/StaffPermission');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { createUserSchema } = require('../validations/userValidation');
+const {
+    normalizeEmail,
+    createMembershipArtifacts
+} = require('../services/identityService');
 
 
 /**
@@ -27,6 +33,12 @@ exports.toggleCustomerStatus = async (req, res) => {
         // 2. Toggle the status
         customer.status = customer.status === 'Active' ? 'Suspended' : 'Active';
         await customer.save();
+
+        if (customer.membership_id) {
+            await ShopMembership.findByIdAndUpdate(customer.membership_id, {
+                status: customer.status
+            });
+        }
 
         res.status(200).json({
             success: true,
@@ -70,19 +82,46 @@ exports.createShopUser = async (req, res) => {
         const { error, value } = createUserSchema.validate(req.body);
         if (error) return res.status(400).json({ error: error.details[0].message });
 
-        const existingUser = await User.findOne({ email: value.email });
-        if (existingUser) return res.status(400).json({ error: "Email already registered" });
-
-        // Pull shop_id from the authenticated vendor's token (req.user)
         const currentShopId = req.user.shopId;
+        const cleanEmail = normalizeEmail(value.email);
+
+        const existingMembership = await User.findOne({
+            email: cleanEmail,
+            shop_id: currentShopId
+        });
+
+        if (existingMembership) {
+            return res.status(400).json({ error: "Email already registered in this shop" });
+        }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(value.password, salt);
 
-        const newUser = await User.create({
-            ...value,
-            password: hashedPassword,
-            shop_id: currentShopId
+        let account = await Account.findOne({ email: cleanEmail });
+
+        if (account) {
+            const passwordMatches = await bcrypt.compare(value.password, account.passwordHash);
+            if (!passwordMatches) {
+                return res.status(409).json({
+                    error: 'This email belongs to an existing account. Use the account password to add it to this shop.'
+                });
+            }
+        } else {
+            account = await Account.create({
+                email: cleanEmail,
+                fullName: value.fullName,
+                passwordHash: hashedPassword
+            });
+        }
+
+        const { legacyUser: newUser } = await createMembershipArtifacts({
+            account,
+            shopId: currentShopId,
+            role: value.role,
+            fullName: value.fullName,
+            passwordHash: account.passwordHash || hashedPassword,
+            permissions: value.permissions,
+            session: null
         });
 
         res.status(201).json({
@@ -127,8 +166,30 @@ exports.updateShopUserPermissions = async (req, res) => {
             ...req.body.permissions
         };
 
+        if (user.membership_id) {
+            await StaffPermission.findOneAndUpdate(
+                {
+                    membership_id: user.membership_id,
+                    shop_id: req.user.shopId
+                },
+                {
+                    $set: {
+                        permissions: user.permissions,
+                        account_id: user.account_id,
+                        legacyUser_id: user._id
+                    }
+                },
+                { upsert: true, new: true }
+            );
+        }
+
         if (req.body.status && ['Active', 'Suspended'].includes(req.body.status)) {
             user.status = req.body.status;
+            if (user.membership_id) {
+                await ShopMembership.findByIdAndUpdate(user.membership_id, {
+                    status: req.body.status
+                });
+            }
         }
 
         await user.save();

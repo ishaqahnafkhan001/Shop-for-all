@@ -16,7 +16,9 @@ const { protect } = require('../middlewares/auth');
 // Store Controllers
 const {
     getStoreInfo,
-    getSingleProduct
+    getStorefrontBootstrap,
+    getSingleProduct,
+    getBatchProducts
 } = require('../controllers/storeController');
 
 // Product Controllers
@@ -47,6 +49,12 @@ const {
 // ======================================================
 
 router.get(
+    '/:subdomain/bootstrap',
+    resolveTenant,
+    getStorefrontBootstrap
+);
+
+router.get(
     '/:subdomain/info',
     resolveTenant,
     getStoreInfo
@@ -60,6 +68,12 @@ router.get(
     '/:subdomain/products',
     resolveTenant,
     getShopProducts
+);
+
+router.get(
+    '/:subdomain/products/batch',
+    resolveTenant,
+    getBatchProducts
 );
 
 router.get(

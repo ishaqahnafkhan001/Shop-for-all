@@ -17,13 +17,15 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm 
     // Populate form when order changes
     useEffect(() => {
         if (order) {
-            setFormData({
-                recipient_name: order.shipping?.address?.fullName || order.customer?.fullName || '',
-                recipient_phone: order.shipping?.address?.phone || '',
-                recipient_address: `${order.shipping?.address?.addressLine || ''}, ${order.shipping?.address?.city || ''}`.trim().replace(/^,|,$/g, ''),
-                amount_to_collect: order.payment?.method === 'COD' ? order.pricing?.total : 0,
-                item_weight: '0.5',
-                special_instruction: order.notes || ''
+            queueMicrotask(() => {
+                setFormData({
+                    recipient_name: order.shipping?.address?.fullName || order.customer?.fullName || '',
+                    recipient_phone: order.shipping?.address?.phone || '',
+                    recipient_address: `${order.shipping?.address?.addressLine || ''}, ${order.shipping?.address?.city || ''}`.trim().replace(/^,|,$/g, ''),
+                    amount_to_collect: order.payment?.method === 'COD' ? order.pricing?.total : 0,
+                    item_weight: '0.5',
+                    special_instruction: order.notes || ''
+                });
             });
         }
     }, [order]);

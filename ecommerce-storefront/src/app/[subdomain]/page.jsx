@@ -7,11 +7,30 @@ import { useShopData } from '@/hooks/useShopData';
 import { useCart } from '@/context/CartContext';
 import {
     ShoppingCart, PackageX, ShoppingBag, ArrowRight,
-    Filter, ChevronLeft, ChevronRight, SlidersHorizontal
+    Filter, ChevronLeft, ChevronRight, SlidersHorizontal, Star
 } from 'lucide-react';
 
 // ─── Extracted & memoised product card ───────────────────────────────────────
-const ProductCard = memo(function ProductCard({ product, index, storewideDiscount, addToCart }) {
+const getCardRadius = (radius) => {
+    if (radius === 'Square') return 'rounded-none';
+    if (radius === 'Soft') return 'rounded-lg';
+    return 'rounded-2xl sm:rounded-3xl';
+};
+
+const getCardShadow = (shadow) => {
+    if (shadow === 'None') return 'shadow-none';
+    if (shadow === 'Elevated') return 'shadow-lg hover:shadow-xl';
+    return 'hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]';
+};
+
+const desktopGridClasses = {
+    2: 'md:grid-cols-2 lg:grid-cols-2',
+    3: 'md:grid-cols-3 lg:grid-cols-3',
+    4: 'md:grid-cols-4 lg:grid-cols-4',
+    5: 'md:grid-cols-5 lg:grid-cols-5'
+};
+
+const ProductCard = memo(function ProductCard({ product, index, storewideDiscount, addToCart, cardTheme }) {
     const router = useRouter();
 
     const activeDiscount = product.discount > 0 ? product.discount : (storewideDiscount || 0);
@@ -28,12 +47,17 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
         router.push('/checkout');
     }, [product, addToCart, router]);
 
+    const radiusClass = getCardRadius(cardTheme?.borderRadius);
+    const shadowClass = getCardShadow(cardTheme?.shadow);
+    const imageFitClass = cardTheme?.imageFit === 'Cover' ? 'object-cover p-0' : 'object-contain p-3 sm:p-5 mix-blend-multiply';
+    const showQuickBuy = cardTheme?.showQuickBuy !== false;
+
     return (
         <div
-            className="group flex flex-col bg-white rounded-2xl sm:rounded-3xl hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow duration-300 animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
+            className={`group flex flex-col bg-white ${radiusClass} ${shadowClass} transition-shadow duration-300 animate-in fade-in slide-in-from-bottom-4 fill-mode-both`}
             style={{ animationDelay: `${(index % 12) * 40}ms` }}
         >
-            <div className="aspect-square relative overflow-hidden bg-gray-50 sm:bg-gray-50/50 rounded-2xl sm:rounded-3xl mb-3 sm:mb-5">
+            <div className={`aspect-square relative overflow-hidden bg-gray-50 sm:bg-gray-50/50 ${radiusClass} mb-3 sm:mb-5`}>
                 <Link href={`/products/${product._id}`} className="absolute inset-0 z-10" />
 
                 <Image
@@ -41,7 +65,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     alt={product.title}
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    className="object-contain p-3 sm:p-5 transition-transform duration-500 group-hover:scale-105 mix-blend-multiply"
+                    className={`${imageFitClass} transition-transform duration-500 group-hover:scale-105`}
                     loading={index < 6 ? 'eager' : 'lazy'}
                 />
 
@@ -59,14 +83,23 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
             </div>
 
             <div className="flex flex-col flex-grow px-1 sm:px-2 pb-2 sm:pb-4">
-                <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mb-1 line-clamp-1">
-                    {product.category}
-                </p>
+                {cardTheme?.showCategory !== false && (
+                    <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mb-1 line-clamp-1">
+                        {product.category}
+                    </p>
+                )}
                 <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 leading-snug line-clamp-2 min-h-[40px] sm:min-h-[44px]">
                     <Link href={`/products/${product._id}`} className="hover:text-[var(--sf-accent)] transition-colors relative z-10">
                         {product.title}
                     </Link>
                 </h3>
+
+                {cardTheme?.showRating !== false && product.averageRating > 0 && (
+                    <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-500">
+                        <Star size={13} fill="currentColor" />
+                        <span>{Number(product.averageRating).toFixed(1)}</span>
+                    </div>
+                )}
 
                 <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6 mt-auto">
                     <span className="text-base sm:text-xl font-black text-gray-900">৳ {product.finalPrice}</span>
@@ -75,6 +108,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     )}
                 </div>
 
+                {showQuickBuy && (
                 <div className="flex items-center gap-2 relative z-20">
                     <button
                         onClick={handleAddToCart}
@@ -92,6 +126,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                         <ArrowRight size={14} className="sm:w-4 sm:h-4" />
                     </button>
                 </div>
+                )}
             </div>
         </div>
     );
@@ -125,6 +160,24 @@ export default function VendorHomePage({ params }) {
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const { shop, products, categories, banners, loading, error, pagination } = useShopData(subdomain, filters);
+    const theme = shop?.theme || {};
+    const hero = theme.hero || {};
+    const layout = theme.layout || {};
+    const productCard = theme.productCard || {};
+    const enabledSections = (theme.homepageSections || []).filter(section => section.isEnabled !== false);
+    const containerClass = layout.maxWidth === 'Full'
+        ? 'w-full px-4 sm:px-6'
+        : layout.maxWidth === 'Contained'
+            ? 'container mx-auto px-4 py-6 sm:py-8 sm:px-6 mb-24 max-w-5xl'
+            : 'container mx-auto px-4 py-6 sm:py-8 sm:px-6 mb-24 max-w-7xl';
+    const heroHeightClass = hero.height === 'Compact'
+        ? 'h-[220px] sm:h-[280px] md:h-[360px]'
+        : hero.height === 'Tall'
+            ? 'h-[320px] sm:h-[480px] md:h-[640px]'
+            : 'h-[250px] sm:h-[350px] md:h-[500px]';
+    const desktopColumns = Math.min(Math.max(layout.productColumnsDesktop || 3, 2), 5);
+    const gridClass = `${layout.productColumnsMobile === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
+    const showHero = enabledSections.length === 0 || enabledSections.some(section => section.type === 'Hero');
 
     // ── Derived state ──────────────────────────────────────────────────────────
     const activeBanners = useMemo(
@@ -133,7 +186,15 @@ export default function VendorHomePage({ params }) {
     );
 
     const allSlides = useMemo(() =>
-            activeBanners.flatMap((banner) => {
+            [
+                ...(hero.imageUrl ? [{
+                    _id: 'theme-hero',
+                    image: hero.imageUrl,
+                    title: hero.title,
+                    link: hero.ctaUrl
+                }] : []),
+                ...activeBanners
+            ].flatMap((banner) => {
                 const images = banner.images?.length ? banner.images : (banner.image ? [banner.image] : []);
                 return images.map((imgUrl, i) => ({
                     id: `${banner._id || 'banner'}-${i}`,
@@ -142,7 +203,7 @@ export default function VendorHomePage({ params }) {
                     link: banner.link,
                 }));
             }),
-        [activeBanners]
+        [activeBanners, hero.ctaUrl, hero.imageUrl, hero.title]
     );
 
     // ── Auto-slider ────────────────────────────────────────────────────────────
@@ -202,11 +263,11 @@ export default function VendorHomePage({ params }) {
     );
 
     return (
-        <div className="container mx-auto px-4 py-6 sm:py-8 sm:px-6 mb-24 max-w-7xl">
+        <div className={containerClass}>
 
             {/* ✨ HERO / BANNER SLIDER ✨ */}
-            {allSlides.length > 0 ? (
-                <section className="relative w-full h-[250px] sm:h-[350px] md:h-[500px] rounded-3xl sm:rounded-[2rem] overflow-hidden mb-8 sm:mb-12 shadow-xl group">
+            {showHero && allSlides.length > 0 ? (
+                <section className={`relative w-full ${heroHeightClass} rounded-3xl sm:rounded-[2rem] overflow-hidden mb-8 sm:mb-12 shadow-xl group`}>
                     {allSlides.map((slide, index) => (
                         <div
                             key={slide.id}
@@ -223,13 +284,19 @@ export default function VendorHomePage({ params }) {
                                 priority={index === 0}
                                 loading={index === 0 ? 'eager' : 'lazy'}
                             />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 sm:p-6 bg-black/20">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 sm:p-6" style={{ backgroundColor: `rgba(0,0,0,${(hero.overlayOpacity ?? 25) / 100})` }}>
+                                {(slide.title || hero.subtitle) && (
+                                    <div className="mt-auto mb-6 text-white">
+                                        {slide.title && <h1 className="text-3xl sm:text-5xl font-black" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>{slide.title}</h1>}
+                                        {hero.subtitle && <p className="mt-3 text-sm sm:text-lg text-white/90">{hero.subtitle}</p>}
+                                    </div>
+                                )}
                                 {slide.link && (
                                     <Link
                                         href={slide.link}
                                         className="bg-white text-gray-900 px-6 py-2.5 sm:px-8 sm:py-3 rounded-full text-sm sm:text-base font-bold hover:bg-gray-100 active:scale-95 transition-all shadow-lg mt-auto mb-8 sm:mb-12"
                                     >
-                                        Shop Now
+                                        {hero.ctaLabel || 'Shop Now'}
                                     </Link>
                                 )}
                             </div>
@@ -251,12 +318,12 @@ export default function VendorHomePage({ params }) {
                         </div>
                     )}
                 </section>
-            ) : (
+            ) : showHero ? (
                 <section className="relative bg-gray-900 text-white rounded-3xl sm:rounded-[2rem] py-12 px-4 sm:py-16 sm:px-6 md:py-24 mb-8 sm:mb-12 overflow-hidden flex flex-col items-center text-center shadow-xl shadow-gray-900/10">
                     <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
                     <div className="relative z-10 max-w-3xl">
-                        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 sm:mb-6 capitalize">
-                            {shop?.shopName || subdomain}
+                        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 sm:mb-6 capitalize" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
+                            {hero.title || shop?.shopName || subdomain}
                         </h1>
                         {storewideDiscount > 0 && (
                             <div className="mb-4 sm:mb-6 inline-block bg-[var(--sf-accent)] text-white text-[10px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full uppercase tracking-widest animate-pulse">
@@ -264,11 +331,11 @@ export default function VendorHomePage({ params }) {
                             </div>
                         )}
                         <p className="text-gray-400 text-base sm:text-lg md:text-xl font-light px-2">
-                            {shop?.description || "Curated essentials for the modern lifestyle. Discover the latest collection."}
+                            {hero.subtitle || shop?.description || "Curated essentials for the modern lifestyle. Discover the latest collection."}
                         </p>
                     </div>
                 </section>
-            )}
+            ) : null}
 
             <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
 
@@ -388,7 +455,7 @@ export default function VendorHomePage({ params }) {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
+                                <div className={`grid ${gridClass} gap-3 sm:gap-6 lg:gap-8`}>
                                     {products.map((product, index) => (
                                         <ProductCard
                                             key={product._id}
@@ -396,6 +463,7 @@ export default function VendorHomePage({ params }) {
                                             index={index}
                                             storewideDiscount={storewideDiscount}
                                             addToCart={addToCart}
+                                            cardTheme={productCard}
                                         />
                                     ))}
                                 </div>

@@ -1,29 +1,27 @@
-import React from 'react';
 import { X, Tag, ShieldCheck, List, Layers, Package, Star } from 'lucide-react';
+
+const DetailSection = ({ icon: Icon, title, data }) => (
+    data && data.length > 0 && (
+        <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3 pb-1 border-b border-gray-100">
+                <Icon size={18} className="text-indigo-600" />
+                <h3 className="font-bold text-gray-900">{title}</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {data.map((item, idx) => (
+                    <div key={idx} className="bg-gray-50 p-2 rounded-lg">
+                        <p className="text-[10px] uppercase text-gray-400 font-bold">{item.title}</p>
+                        <p className="text-sm text-gray-700">{item.value}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+);
 
 const ProductDetailModal = ({ product, isOpen, onClose }) => {
     // Early return if not open
     if (!isOpen || !product) return null;
-
-    // Helper component for Features/Specifications sections
-    const DetailSection = ({ icon: Icon, title, data }) => (
-        data && data.length > 0 && (
-            <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3 pb-1 border-b border-gray-100">
-                    <Icon size={18} className="text-indigo-600" />
-                    <h3 className="font-bold text-gray-900">{title}</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {data.map((item, idx) => (
-                        <div key={idx} className="bg-gray-50 p-2 rounded-lg">
-                            <p className="text-[10px] uppercase text-gray-400 font-bold">{item.title}</p>
-                            <p className="text-sm text-gray-700">{item.value}</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )
-    );
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">

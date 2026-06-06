@@ -10,7 +10,7 @@ const linkSchema = new mongoose.Schema({
 const homepageSectionSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['Hero', 'FeaturedProducts', 'Collection', 'TextBlock', 'Newsletter', 'Reviews'],
+        enum: ['Hero', 'FeaturedProducts', 'Collection', 'TextBlock', 'Newsletter', 'Reviews', 'BannerGrid', 'CategoryList'],
         default: 'FeaturedProducts'
     },
     title: { type: String, trim: true, maxlength: 120 },
@@ -87,6 +87,78 @@ const shopSchema = new mongoose.Schema({
             background: { type: String, default: '#ffffff' },
             foreground: { type: String, default: '#111827' },
             headerBackground: { type: String, default: '#ffffff' }
+        },
+        typography: {
+            headingFont: { type: String, default: 'Inter' },
+            bodyFont: { type: String, default: 'Inter' },
+            baseSize: { type: Number, default: 16, min: 12, max: 20 },
+            headingWeight: {
+                type: String,
+                enum: ['600', '700', '800', '900'],
+                default: '800'
+            }
+        },
+        hero: {
+            title: { type: String, default: '' },
+            subtitle: { type: String, default: '' },
+            imageUrl: { type: String, default: '' },
+            ctaLabel: { type: String, default: 'Shop Now' },
+            ctaUrl: { type: String, default: '/' },
+            overlayOpacity: { type: Number, default: 25, min: 0, max: 80 },
+            height: {
+                type: String,
+                enum: ['Compact', 'Medium', 'Tall'],
+                default: 'Medium'
+            }
+        },
+        layout: {
+            maxWidth: {
+                type: String,
+                enum: ['Contained', 'Wide', 'Full'],
+                default: 'Wide'
+            },
+            sectionSpacing: {
+                type: String,
+                enum: ['Compact', 'Comfortable', 'Spacious'],
+                default: 'Comfortable'
+            },
+            productColumnsDesktop: { type: Number, default: 3, min: 2, max: 5 },
+            productColumnsMobile: { type: Number, default: 2, min: 1, max: 2 }
+        },
+        productCard: {
+            imageFit: {
+                type: String,
+                enum: ['Contain', 'Cover'],
+                default: 'Contain'
+            },
+            showCategory: { type: Boolean, default: true },
+            showRating: { type: Boolean, default: true },
+            showQuickBuy: { type: Boolean, default: true },
+            borderRadius: {
+                type: String,
+                enum: ['Soft', 'Rounded', 'Square'],
+                default: 'Rounded'
+            },
+            shadow: {
+                type: String,
+                enum: ['None', 'Soft', 'Elevated'],
+                default: 'Soft'
+            }
+        },
+        checkoutBranding: {
+            logoUrl: { type: String, default: '' },
+            bannerText: { type: String, default: '' },
+            buttonStyle: {
+                type: String,
+                enum: ['Solid', 'Rounded', 'Pill'],
+                default: 'Rounded'
+            },
+            trustMessage: { type: String, default: 'Secure checkout' }
+        },
+        mobile: {
+            stickyCheckoutButton: { type: Boolean, default: true },
+            compactHeader: { type: Boolean, default: true },
+            showBottomNavigation: { type: Boolean, default: false }
         },
         homepageSections: {
             type: [homepageSectionSchema],

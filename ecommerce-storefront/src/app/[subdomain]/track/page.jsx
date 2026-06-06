@@ -7,16 +7,20 @@ import { toast } from 'react-hot-toast';
 export default function TrackOrderPage({ params }) {
     const { subdomain } = React.use(params);
     const [trackingId, setTrackingId] = useState('');
+    const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
     const [order, setOrder] = useState(null);
 
     const handleTrackOrder = async (e) => {
         e.preventDefault();
         if (!trackingId.trim()) return toast.error("Please enter an Order ID");
+        if (!phone.trim()) return toast.error("Please enter the delivery phone number");
 
         setLoading(true);
         try {
-            const { data } = await API.get(`/storefront/${subdomain}/track-order/${trackingId.trim()}`);
+            const { data } = await API.get(`/storefront/${subdomain}/track-order/${trackingId.trim()}`, {
+                params: { phone: phone.trim() }
+            });
             setOrder(data);
             toast.success("Order found!");
         } catch (error) {
@@ -43,24 +47,33 @@ export default function TrackOrderPage({ params }) {
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Track Your Order</h1>
                 <p className="text-gray-500 mb-8 max-w-lg mx-auto">
-                    Enter your Order ID below to get real-time updates on your package&apos;s location and delivery status.
+                    Enter your Order ID and delivery phone number to get real-time delivery updates.
                 </p>
 
-                <form onSubmit={handleTrackOrder} className="max-w-xl mx-auto relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
+                <form onSubmit={handleTrackOrder} className="max-w-xl mx-auto space-y-3">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            value={trackingId}
+                            onChange={(e) => setTrackingId(e.target.value)}
+                            placeholder="Order ID"
+                            className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none text-gray-900 font-mono shadow-sm"
+                        />
                     </div>
                     <input
-                        type="text"
-                        value={trackingId}
-                        onChange={(e) => setTrackingId(e.target.value)}
-                        placeholder="e.g. 69eb382c2f37b0acbf14832e"
-                        className="w-full pl-12 pr-32 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none text-gray-900 font-mono shadow-sm"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Delivery phone number"
+                        className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none text-gray-900 shadow-sm"
                     />
                     <button
                         type="submit"
                         disabled={loading}
-                        className="absolute right-2 top-2 bottom-2 bg-gray-900 text-white px-6 rounded-xl font-bold hover:bg-[var(--sf-accent)] transition-colors disabled:opacity-50"
+                        className="w-full bg-gray-900 text-white px-6 py-4 rounded-xl font-bold hover:bg-[var(--sf-accent)] transition-colors disabled:opacity-50"
                     >
                         {loading ? 'Searching...' : 'Track'}
                     </button>

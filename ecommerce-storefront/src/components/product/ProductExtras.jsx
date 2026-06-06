@@ -9,7 +9,7 @@ export const ProductFeatures = memo(function ProductFeatures({ features }) {
         <section>
             <h2 className="text-3xl font-extrabold text-gray-900 mb-10 flex items-center">
                 <Zap className="mr-4 text-[var(--sf-accent)]" size={28} />
-                Why You'll Love It
+	                Why You&apos;ll Love It
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {features.map((feature, idx) => (

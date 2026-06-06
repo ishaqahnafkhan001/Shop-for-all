@@ -16,6 +16,13 @@ const normalizeProduct = (p) => {
 };
 
 export const useShopData = (subdomain, filters) => {
+    const {
+        page = 1,
+        sort,
+        category,
+        minPrice,
+        maxPrice
+    } = filters;
     const [data, setData] = useState({
         shop: null,
         products: [],
@@ -27,60 +34,48 @@ export const useShopData = (subdomain, filters) => {
     });
 
     // Use a stringified key to prevent unnecessary fetches if filters haven't actually changed
-    const filterKey = JSON.stringify(filters);
-
     useEffect(() => {
         let isMounted = true;
 
-        const fetchData = async () => {
+        const fetchBootstrap = async () => {
             setData(prev => ({ ...prev, loading: true }));
             try {
                 const params = {
-                    page: filters.page || 1,
+                    page,
                     limit: 9,
-                    sort: filters.sort,
-                    ...(filters.category !== 'All' && { category: filters.category }),
-                    ...(filters.minPrice && { minPrice: filters.minPrice }),
-                    ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
+                    sort,
+                    ...(category !== 'All' && { category }),
+                    ...(minPrice && { minPrice }),
+                    ...(maxPrice && { maxPrice }),
                 };
 
-                // ✨ 2. Fetch Shop, Products, and Banners concurrently
-                const [shopRes, prodRes, bannersRes] = await Promise.all([
-                    API.get(`/storefront/${subdomain}/info`),
-                    API.get(`/storefront/${subdomain}/products`, { params }),
-                    // 🛡️ Safe fallback: If banners fail, return empty array so it doesn't break the whole store
-                    API.get(`/banners/storefront/${subdomain}/active`).catch(() => ({ data: [] }))
-                ]);
+                const bootstrapRes = await API.get(`/storefront/${subdomain}/bootstrap`, { params });
 
                 if (!isMounted) return;
 
-                const prodData = prodRes.data;
-                const rawProducts = prodData?.products || prodData?.data || [];
+                const bootstrapData = bootstrapRes.data?.data || {};
+                const rawProducts = bootstrapData.products || [];
 
-                // ✨ 3. Safely extract banner data
-                const bannerData = Array.isArray(bannersRes.data)
-                    ? bannersRes.data
-                    : bannersRes.data?.data || [];
-
-                setData({
-                    shop: shopRes.data,
+                setData(prev => ({
+                    ...prev,
+                    shop: bootstrapData.shop || null,
+                    banners: bootstrapData.banners || [],
                     products: rawProducts.map(normalizeProduct),
-                    categories: prodData?.categories?.filter(Boolean) || [],
-                    banners: bannerData, // ✨ 4. Populate banners in state
-                    pagination: prodData?.pagination || { page: 1, pages: 1 },
+                    categories: bootstrapData.categories?.filter(Boolean) || [],
+                    pagination: bootstrapData.pagination || { page: 1, pages: 1 },
                     loading: false,
                     error: null
-                });
+                }));
             } catch (err) {
-                console.error("Storefront Fetch Error:", err);
+                console.error("Storefront Bootstrap Fetch Error:", err);
                 if (isMounted) setData(prev => ({ ...prev, loading: false, error: "Store not found" }));
             }
         };
 
-        if (subdomain) fetchData();
+        if (subdomain) fetchBootstrap();
 
         return () => { isMounted = false; };
-    }, [subdomain, filterKey]);
+    }, [subdomain, page, sort, category, minPrice, maxPrice]);
 
     return data; // Returns { shop, products, categories, banners, pagination, loading, error }
 };

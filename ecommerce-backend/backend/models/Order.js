@@ -71,7 +71,6 @@ const orderItemSchema = new Schema({
 /**
  * 🔹 Promotion Snapshot
  * Stores applied coupon state at order time.
- * This prevents old orders from changing if promotion rules change later.
  */
 const orderPromotionSchema = new Schema({
     code: {
@@ -224,15 +223,14 @@ const orderSchema = new Schema({
     items: {
         type: [orderItemSchema],
         required: true,
-        validate: [
-            items => Array.isArray(items) && items.length > 0,
-            'Order must contain at least one item'
-        ]
+        validate: {
+            validator: function (items) {
+                return Array.isArray(items) && items.length > 0;
+            },
+            message: 'Order must contain at least one item'
+        }
     },
 
-    /**
-     * 💰 Pricing Breakdown
-     */
     pricing: {
         subtotal: {
             type: Number,
@@ -266,7 +264,6 @@ const orderSchema = new Schema({
     },
 
     /**
-     * 🎟 Promotion Snapshot
      * Must be null when no coupon is applied.
      */
     promotion: {
@@ -274,25 +271,16 @@ const orderSchema = new Schema({
         default: null
     },
 
-    /**
-     * 💳 Payment
-     */
     payment: {
         type: paymentSchema,
         required: true
     },
 
-    /**
-     * 🚚 Shipping
-     */
     shipping: {
         type: shippingSchema,
         required: true
     },
 
-    /**
-     * 🔄 Order Status
-     */
     status: {
         type: String,
         enum: [
@@ -308,9 +296,6 @@ const orderSchema = new Schema({
         index: true
     },
 
-    /**
-     * 📝 Extra
-     */
     notes: {
         type: String,
         trim: true,
@@ -340,32 +325,38 @@ orderSchema.index({ shop_id: 1, createdAt: -1 });
 orderSchema.index({ shop_id: 1, status: 1 });
 orderSchema.index({ customer: 1, createdAt: -1 });
 orderSchema.index({ shop_id: 1, isDeleted: 1 });
+orderSchema.index({ 'payment.status': 1, updatedAt: -1 });
+orderSchema.index({ shop_id: 1, isDeleted: 1, createdAt: -1 });
+orderSchema.index({ shop_id: 1, isDeleted: 1, status: 1, createdAt: -1 });
 
 /**
- * 🔒 Safety check before save
+ * 🔒 Safety check before validation
+ * No next() used here.
  */
-orderSchema.pre('validate', function (next) {
+orderSchema.pre('validate', function () {
     if (!this.items || this.items.length === 0) {
-        return next(new Error('Order must contain at least one item'));
+        throw new Error('Order must contain at least one item');
     }
 
-    const expectedTotal =
-        Math.max(
-            0,
-            (this.pricing.subtotal || 0) -
-            (this.pricing.discount || 0) +
-            (this.pricing.tax || 0)
-        ) + (this.pricing.shipping || 0);
-
-    if (this.pricing.total < 0) {
-        return next(new Error('Order total cannot be negative'));
+    if (!this.pricing) {
+        throw new Error('Order pricing is required');
     }
+
+    const subtotal = Number(this.pricing.subtotal || 0);
+    const discount = Number(this.pricing.discount || 0);
+    const shipping = Number(this.pricing.shipping || 0);
+    const tax = Number(this.pricing.tax || 0);
+    const total = Number(this.pricing.total || 0);
+
+    const expectedTotal = Math.max(0, subtotal - discount + tax) + shipping;
 
     if (!Number.isFinite(expectedTotal)) {
-        return next(new Error('Invalid order pricing'));
+        throw new Error('Invalid order pricing');
     }
 
-    next();
+    if (!Number.isFinite(total) || total < 0) {
+        throw new Error('Order total cannot be negative');
+    }
 });
 
 module.exports = mongoose.model('Order', orderSchema);

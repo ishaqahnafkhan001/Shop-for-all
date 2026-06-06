@@ -47,7 +47,7 @@ const Promotions = () => {
                 expiresAt: form.expiresAt || undefined
             };
             await API.post('/promotions/admin', payload);
-            toast.success('Promotion created');
+            toast.success('Promotion created. Customers can use this code at checkout while it is active.');
             setForm(emptyForm);
             loadPromotions();
         } catch (err) {
@@ -65,7 +65,7 @@ const Promotions = () => {
     };
 
     const remove = async (promotion) => {
-        if (!window.confirm(`Delete ${promotion.code}?`)) return;
+        if (!window.confirm(`Delete ${promotion.code}? Customers will no longer be able to use this code.`)) return;
         try {
             await API.delete(`/promotions/admin/${promotion._id}`);
             toast.success('Promotion deleted');
@@ -79,7 +79,7 @@ const Promotions = () => {
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">Discounts and Promotions</h1>
-                <p className="text-sm text-slate-500 mt-1">Create coupons, first-order offers, free shipping, and buy-x-get-y campaigns.</p>
+                <p className="text-sm text-slate-500 mt-1">Create checkout codes with clear limits so customers understand when an offer applies.</p>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -88,20 +88,22 @@ const Promotions = () => {
                         <Plus size={18} />
                         New Promotion
                     </div>
+                    <p className="text-xs text-slate-500">Use short, memorable codes. Set expiry and usage limits for seasonal offers.</p>
 
                     <input
                         value={form.name}
                         onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
                         required
                         className="w-full rounded-lg border border-slate-200 px-3 py-2"
-                        placeholder="Promotion name"
+                        placeholder="Promotion name, e.g. Eid sale"
                     />
                     <input
                         value={form.code}
                         onChange={e => setForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
                         required
                         className="w-full rounded-lg border border-slate-200 px-3 py-2 uppercase"
-                        placeholder="CODE"
+                        placeholder="CODE, e.g. SAVE10"
+                        title="Customers enter this code at checkout"
                     />
                     <select
                         value={form.type}
@@ -128,9 +130,9 @@ const Promotions = () => {
 
                     {form.type === 'BUY_X_GET_Y' && (
                         <div className="grid grid-cols-3 gap-2">
-                            <input type="number" min="1" value={form.buyXGetY.buyQuantity} onChange={e => setForm(prev => ({ ...prev, buyXGetY: { ...prev.buyXGetY, buyQuantity: Number(e.target.value) } }))} className="rounded-lg border border-slate-200 px-3 py-2" />
-                            <input type="number" min="1" value={form.buyXGetY.getQuantity} onChange={e => setForm(prev => ({ ...prev, buyXGetY: { ...prev.buyXGetY, getQuantity: Number(e.target.value) } }))} className="rounded-lg border border-slate-200 px-3 py-2" />
-                            <input type="number" min="0" max="100" value={form.buyXGetY.getDiscountPercent} onChange={e => setForm(prev => ({ ...prev, buyXGetY: { ...prev.buyXGetY, getDiscountPercent: Number(e.target.value) } }))} className="rounded-lg border border-slate-200 px-3 py-2" />
+                            <input type="number" min="1" value={form.buyXGetY.buyQuantity} onChange={e => setForm(prev => ({ ...prev, buyXGetY: { ...prev.buyXGetY, buyQuantity: Number(e.target.value) } }))} className="rounded-lg border border-slate-200 px-3 py-2" title="Customer must buy this quantity" />
+                            <input type="number" min="1" value={form.buyXGetY.getQuantity} onChange={e => setForm(prev => ({ ...prev, buyXGetY: { ...prev.buyXGetY, getQuantity: Number(e.target.value) } }))} className="rounded-lg border border-slate-200 px-3 py-2" title="Customer receives this quantity" />
+                            <input type="number" min="0" max="100" value={form.buyXGetY.getDiscountPercent} onChange={e => setForm(prev => ({ ...prev, buyXGetY: { ...prev.buyXGetY, getDiscountPercent: Number(e.target.value) } }))} className="rounded-lg border border-slate-200 px-3 py-2" title="Discount on the free or discounted item" />
                         </div>
                     )}
 
@@ -174,7 +176,7 @@ const Promotions = () => {
                     {loading ? (
                         <div className="p-5 text-sm text-slate-500">Loading promotions...</div>
                     ) : promotions.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-slate-500">No promotions yet.</div>
+                        <div className="p-8 text-center text-sm text-slate-500">No promotions yet. Create a percentage, free-shipping, or first-order coupon to encourage checkout.</div>
                     ) : (
                         <div className="divide-y divide-slate-100">
                             {promotions.map(promotion => (
@@ -194,12 +196,14 @@ const Promotions = () => {
                                         <button
                                             onClick={() => toggle(promotion)}
                                             className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                                            title={promotion.isActive ? 'Pause this code without deleting it' : 'Make this code available at checkout'}
                                         >
                                             {promotion.isActive ? 'Pause' : 'Activate'}
                                         </button>
                                         <button
                                             onClick={() => remove(promotion)}
                                             className="rounded-lg border border-rose-100 px-3 py-2 text-rose-600 hover:bg-rose-50"
+                                            title="Delete this promotion permanently"
                                         >
                                             <Trash2 size={16} />
                                         </button>

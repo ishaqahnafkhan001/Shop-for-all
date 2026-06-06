@@ -12,15 +12,17 @@ export const CartProvider = ({ children, subdomain }) => {
 
     // Load cart from LocalStorage on first render
     useEffect(() => {
-        setIsMounted(true);
         const savedCart = localStorage.getItem(storageKey);
-        if (savedCart) {
-            try {
-                setCartItems(JSON.parse(savedCart));
-            } catch (e) {
-                console.error("Failed to parse cart data");
+        queueMicrotask(() => {
+            setIsMounted(true);
+            if (savedCart) {
+                try {
+                    setCartItems(JSON.parse(savedCart));
+                } catch {
+                    console.error("Failed to parse cart data");
+                }
             }
-        }
+        });
     }, [storageKey]);
 
     // Save cart to LocalStorage whenever it changes

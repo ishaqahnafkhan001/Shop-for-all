@@ -92,7 +92,7 @@ const CatalogTools = () => {
                 return;
             }
             await API.post('/admin/products/bulk-import', { products: imported });
-            toast.success('Products imported');
+            toast.success(`${imported.length} products imported. Review them before publishing changes.`);
             loadData();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Import failed');
@@ -103,7 +103,7 @@ const CatalogTools = () => {
 
     const applyBulkUpdate = async () => {
         if (selectedCount === 0) {
-            toast.error('Select products first');
+            toast.error('Select at least one product before applying a bulk update.');
             return;
         }
 
@@ -116,7 +116,7 @@ const CatalogTools = () => {
 
         try {
             await API.patch('/admin/products/bulk', { productIds: selected, updates });
-            toast.success('Bulk update applied');
+            toast.success('Bulk update applied to selected products. Review your storefront if prices or stock changed.');
             setSelected([]);
             loadData();
         } catch (err) {
@@ -131,7 +131,7 @@ const CatalogTools = () => {
                 ...collectionForm,
                 productIds: selected
             });
-            toast.success('Collection created');
+            toast.success('Collection created from selected products.');
             setCollectionForm({ title: '', slug: '', description: '' });
             loadData();
         } catch (err) {
@@ -144,14 +144,14 @@ const CatalogTools = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Catalog Tools</h1>
-                    <p className="text-sm text-slate-500 mt-1">Bulk import, export, edit products, and organize collections.</p>
+                    <p className="text-sm text-slate-500 mt-1">Use bulk tools when you need to update many products at once. Review selections before applying changes.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Download your current catalog as a CSV backup">
                         <Download size={17} />
                         Export CSV
                     </button>
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700" title="Upload a CSV to create or update products in bulk">
                         <Upload size={17} />
                         Import CSV
                         <input type="file" accept=".csv" onChange={importCsv} className="hidden" />
@@ -162,12 +162,17 @@ const CatalogTools = () => {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <section className="xl:col-span-2 bg-white border border-slate-200 rounded-lg overflow-hidden">
                     <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                        <div className="font-semibold text-slate-900">Products</div>
+                        <div>
+                            <div className="font-semibold text-slate-900">Products</div>
+                            <p className="text-xs text-slate-500 mt-1">Select products first, then apply bulk edits or create a collection.</p>
+                        </div>
                         <div className="text-sm text-slate-500">{selectedCount} selected</div>
                     </div>
                     <div className="divide-y divide-slate-100 max-h-[620px] overflow-auto">
-                        {products.map(product => {
-                            const totalStock = product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) || 0;
+                        {products.length === 0 ? (
+                            <div className="p-8 text-center text-sm text-slate-500">No products available for bulk actions yet. Add products before using catalog tools.</div>
+                        ) : products.map(product => {
+                            const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
                             return (
                                 <label key={product._id} className="flex items-center gap-4 p-4 hover:bg-slate-50">
                                     <input
@@ -198,6 +203,7 @@ const CatalogTools = () => {
                             <Wand2 size={18} />
                             Bulk Edit
                         </div>
+                        <p className="text-xs text-slate-500">Only filled fields are changed. Blank fields keep current product values.</p>
                         <input value={bulk.category} onChange={e => setBulk(prev => ({ ...prev, category: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Category" />
                         <select value={bulk.status} onChange={e => setBulk(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2">
                             <option value="">Keep status</option>
@@ -208,7 +214,7 @@ const CatalogTools = () => {
                         <input type="number" value={bulk.stock} onChange={e => setBulk(prev => ({ ...prev, stock: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Set stock" />
                         <input type="number" value={bulk.discount} onChange={e => setBulk(prev => ({ ...prev, discount: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Discount percent" />
                         <input type="number" value={bulk.lowStockThreshold} onChange={e => setBulk(prev => ({ ...prev, lowStockThreshold: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Low stock threshold" />
-                        <button onClick={applyBulkUpdate} className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                        <button onClick={applyBulkUpdate} className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800" title="Apply the filled bulk fields to selected products">
                             Apply to {selectedCount} products
                         </button>
                     </section>
@@ -218,6 +224,7 @@ const CatalogTools = () => {
                             <Layers size={18} />
                             Collection
                         </div>
+                        <p className="text-xs text-slate-500">Collections group selected products for storefront sections or navigation links.</p>
                         <input required value={collectionForm.title} onChange={e => setCollectionForm(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Collection title" />
                         <input value={collectionForm.slug} onChange={e => setCollectionForm(prev => ({ ...prev, slug: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Slug" />
                         <textarea value={collectionForm.description} onChange={e => setCollectionForm(prev => ({ ...prev, description: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" rows={3} placeholder="Description" />
@@ -228,7 +235,9 @@ const CatalogTools = () => {
 
                     <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-3">
                         <div className="font-semibold text-slate-900">Collections</div>
-                        {collections.map(collection => (
+                        {collections.length === 0 ? (
+                            <div className="rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-500">No collections yet. Select products and create your first collection.</div>
+                        ) : collections.map(collection => (
                             <div key={collection._id} className="rounded-lg bg-slate-50 px-3 py-2">
                                 <div className="text-sm font-semibold text-slate-800">{collection.title}</div>
                                 <div className="text-xs text-slate-500">{collection.slug}</div>

@@ -1,11 +1,18 @@
 const Shop = require('../models/Shop');
 const Product = require('../models/Product');
+const Banner = require('../models/Banner');
+const cache = require('../services/cacheService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
+
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
+const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 
 exports.getStoreInfo = async (req, res) => {
     try {
-        const shop = await Shop.findById(req.tenantId).select('-__v');
+        const shop = await Shop.findById(req.tenantId)
+            .select(PUBLIC_SHOP_FIELDS)
+            .lean();
 
         if (!shop) {
             return res.status(404).json({ error: "Shop details not found." });
@@ -14,6 +21,109 @@ exports.getStoreInfo = async (req, res) => {
         res.status(200).json(shop);
     } catch (err) {
         res.status(500).json({ error: "Error fetching shop info." });
+    }
+};
+
+exports.getStorefrontBootstrap = async (req, res) => {
+    try {
+        const shopId = req.tenantId;
+        const {
+            page = 1,
+            sort,
+            category,
+            minPrice,
+            maxPrice
+        } = req.query;
+        const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+        const limit = 9;
+        const skip = (currentPage - 1) * limit;
+        const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
+            page: currentPage,
+            sort,
+            category,
+            minPrice,
+            maxPrice
+        })}`;
+
+        const cached = await cache.get(cacheKey);
+        if (cached) return res.status(200).json(cached);
+
+        const query = {
+            shop_id: shopId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        };
+
+        if (category && category !== 'All') query.category = category;
+        if (minPrice || maxPrice) {
+            query['pricing.sellingPrice'] = {};
+            if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
+            if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
+        }
+
+        let sortQuery = { createdAt: -1, _id: 1 };
+        if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
+        else if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
+        else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
+        else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
+
+        const [shop, banners, products, totalProducts, categories] = await Promise.all([
+            Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
+            Banner.find({ shop_id: shopId, isActive: true }).sort({ createdAt: -1 }).lean(),
+            Product.aggregate([
+                { $match: query },
+                { $sort: sortQuery },
+                { $skip: skip },
+                { $limit: limit },
+                {
+                    $project: {
+                        title: 1,
+                        slug: 1,
+                        category: 1,
+                        collections: 1,
+                        images: { $slice: ['$images', 1] },
+                        pricing: 1,
+                        averageRating: 1,
+                        numReviews: 1,
+                        totalStock: { $sum: '$variants.stock' },
+                        variantCount: { $size: { $ifNull: ['$variants', []] } }
+                    }
+                }
+            ]),
+            Product.countDocuments(query),
+            Product.distinct('category', {
+                shop_id: shopId,
+                isDeleted: false,
+                isActive: true,
+                status: 'Published'
+            })
+        ]);
+
+        if (!shop) {
+            return res.status(404).json({ error: "Shop details not found." });
+        }
+
+        const response = {
+            success: true,
+            data: {
+                shop,
+                banners,
+                products,
+                categories: categories.filter(Boolean),
+                pagination: {
+                    page: currentPage,
+                    pages: Math.ceil(totalProducts / limit) || 1,
+                    total: totalProducts
+                }
+            }
+        };
+
+        await cache.set(cacheKey, response, BOOTSTRAP_CACHE_TTL_SECONDS);
+        res.status(200).json(response);
+    } catch (err) {
+        console.error("Storefront bootstrap error:", err);
+        res.status(500).json({ error: "Error loading storefront data." });
     }
 };
 
@@ -49,6 +159,33 @@ exports.getSingleProduct = async (req, res) => {
         res.status(200).json(product);
     } catch (err) {
         res.status(500).json({ error: "Error fetching product details." });
+    }
+};
+
+exports.getBatchProducts = async (req, res) => {
+    try {
+        const ids = String(req.query.ids || '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
+
+        if (ids.length === 0) {
+            return res.status(200).json({ success: true, data: [] });
+        }
+
+        const products = await Product.find({
+            _id: { $in: ids },
+            shop_id: req.tenantId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        })
+            .select('title slug category collections images pricing variants averageRating numReviews')
+            .lean({ virtuals: true });
+
+        res.status(200).json({ success: true, data: products });
+    } catch (err) {
+        res.status(500).json({ success: false, error: "Error fetching products." });
     }
 };
 

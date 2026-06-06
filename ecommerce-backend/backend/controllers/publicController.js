@@ -9,6 +9,22 @@ const User = require('../models/User'); // We need this to create Guest customer
 const Promotion = require('../models/Promotion');
 const { evaluatePromotion } = require('../services/promotionService');
 
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
+const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
+
+const getPublicShopBySubdomain = async (subdomain, session = null) => {
+    if (!subdomain) return null;
+
+    const query = Shop.findOne({
+        subdomain: String(subdomain).trim().toLowerCase(),
+        isActive: true
+    }).select('_id subdomain');
+
+    if (session) query.session(session);
+
+    return query.lean();
+};
+
 exports.createPublicOrder = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -116,7 +132,9 @@ exports.createPublicOrder = async (req, res) => {
         // CUSTOMER / GUEST USER
         // =========================
         let orderCustomer = await User.findOne({
-            email: customer.email
+            email: customer.email,
+            shop_id: shop._id,
+            role: 'Customer'
         }).session(session);
 
         if (!orderCustomer) {
@@ -391,11 +409,18 @@ exports.getPublicShopDetails = async (req, res) => {
         const limit = parseInt(req.query.limit) || 16;
         const skip = (page - 1) * limit;
 
-        const shop = await Shop.findOne({ subdomain });
+        const shop = await Shop.findOne({ subdomain })
+            .select(PUBLIC_SHOP_FIELDS)
+            .lean();
         if (!shop) return res.status(404).json({ error: "Shop not found" });
 
         const { category, minPrice, maxPrice, sort } = req.query; // ✨ ADDED 'sort'
-        let query = { shop_id: shop._id };
+        let query = {
+            shop_id: shop._id,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        };
 
         if (category && category !== 'All') query.category = category;
 
@@ -412,15 +437,36 @@ exports.getPublicShopDetails = async (req, res) => {
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 
-        // Fetch products using the new query and sort parameters
-        const products = await Product.find(query)
-            .sort(sortQuery)
-            .skip(skip)
-            .limit(limit);
-
-        const totalProducts = await Product.countDocuments(query);
+        const [products, totalProducts, categories] = await Promise.all([
+            Product.aggregate([
+                { $match: query },
+                { $sort: sortQuery },
+                { $skip: skip },
+                { $limit: limit },
+                {
+                    $project: {
+                        title: 1,
+                        slug: 1,
+                        category: 1,
+                        collections: 1,
+                        images: { $slice: ['$images', 1] },
+                        pricing: 1,
+                        averageRating: 1,
+                        numReviews: 1,
+                        totalStock: { $sum: '$variants.stock' },
+                        variantCount: { $size: { $ifNull: ['$variants', []] } }
+                    }
+                }
+            ]),
+            Product.countDocuments(query),
+            Product.distinct('category', {
+                shop_id: shop._id,
+                isDeleted: false,
+                isActive: true,
+                status: 'Published'
+            })
+        ]);
         const hasMore = totalProducts > (page * limit);
-        const categories = await Product.distinct('category', { shop_id: shop._id });
 
         res.status(200).json({ shop, products, hasMore, categories });
     } catch (err) {
@@ -432,7 +478,24 @@ exports.getPublicShopDetails = async (req, res) => {
 
 exports.getPublicProduct = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const shop = await getPublicShopBySubdomain(req.query.subdomain);
+
+        if (!shop) {
+            return res.status(400).json({ error: "Valid shop subdomain is required." });
+        }
+
+        if (!isObjectId(req.params.id)) {
+            return res.status(400).json({ error: "Invalid product ID format." });
+        }
+
+        const product = await Product.findOne({
+            _id: req.params.id,
+            shop_id: shop._id,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        }).lean();
+
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
@@ -465,21 +528,50 @@ exports.getPublicProduct = async (req, res) => {
 exports.trackPublicOrder = async (req, res) => {
     try {
         const { orderId } = req.params;
+        const phone = String(req.query.phone || '').trim();
+        let shopId = req.tenantId;
 
         // Verify it's a valid MongoDB ObjectId to prevent server crashes
-        if (!orderId.match(/^[0-9a-fA-F]{24}$/)) {
+        if (!isObjectId(orderId)) {
             return res.status(400).json({ error: "Invalid Order ID format." });
         }
 
-        const order = await Order.findById(orderId)
+        if (!phone) {
+            return res.status(400).json({ error: "Phone number is required to track this order." });
+        }
+
+        if (!shopId) {
+            const shop = await getPublicShopBySubdomain(req.query.subdomain);
+            if (!shop) {
+                return res.status(400).json({ error: "Valid shop subdomain is required." });
+            }
+            shopId = shop._id;
+        }
+
+        const order = await Order.findOne({
+            _id: orderId,
+            shop_id: shopId,
+            'shipping.address.phone': phone
+        })
             // Optional: Populating product titles/images makes the tracking page look better!
-            .populate('items.product', 'title imageUrl category');
+            .populate('items.productId', 'title images category')
+            .select('items pricing shipping status createdAt')
+            .lean();
 
         if (!order) {
             return res.status(404).json({ error: "Order not found. Please check your ID." });
         }
 
-        res.status(200).json(order);
+        res.status(200).json({
+            _id: order._id,
+            status: order.status,
+            createdAt: order.createdAt,
+            items: order.items,
+            shippingAddress: order.shipping?.address?.city || order.shipping?.zone || '',
+            shippingZone: order.shipping?.zone,
+            shippingCost: order.pricing?.shipping || order.shipping?.cost || 0,
+            totalAmount: order.pricing?.total || 0
+        });
     } catch (err) {
         console.error("Tracking Error:", err);
         res.status(500).json({ error: "Server error while tracking order." });

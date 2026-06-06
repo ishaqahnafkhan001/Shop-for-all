@@ -51,7 +51,8 @@ export const useProducts = (initialLimit = 10) => {
 
   // 4. Automatically fetch when queryParams change
   useEffect(() => {
-    fetchProducts();
+    const timer = setTimeout(fetchProducts, 0);
+    return () => clearTimeout(timer);
   }, [fetchProducts]);
 
   // --- ACTIONS ---

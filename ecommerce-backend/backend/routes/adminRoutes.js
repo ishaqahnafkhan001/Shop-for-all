@@ -31,6 +31,7 @@ const {
     getShopOrders,
     updateOrderStatus,
     getDashboardStats,
+    getDashboardOverview,
     syncOrderToPathao
 } = require('../controllers/orderController');
 
@@ -130,6 +131,9 @@ router.get(
 
 router.post(
     '/generate-description',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('products'),
     generateDescription
 );
 
@@ -276,6 +280,14 @@ router.patch(
 // ======================================================
 // DASHBOARD / ANALYTICS
 // ======================================================
+
+router.get(
+    '/dashboard-overview',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('analytics'),
+    getDashboardOverview
+);
 
 router.get(
     '/dashboard-stats',

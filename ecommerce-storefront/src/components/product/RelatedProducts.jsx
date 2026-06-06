@@ -1,6 +1,7 @@
 "use client";
 import React, { memo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const RelatedProducts = memo(function RelatedProducts({ subdomain, products }) {
     if (!products?.length) return null;
@@ -19,12 +20,13 @@ const RelatedProducts = memo(function RelatedProducts({ subdomain, products }) {
                         className="group w-72 flex-shrink-0 snap-start bg-white border border-gray-100 rounded-3xl p-5 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-2"
                     >
                         <div className="aspect-[4/5] bg-gray-50/50 rounded-2xl mb-5 overflow-hidden relative flex items-center justify-center p-4">
-                            <img
-                                src={item.images[0]}
-                                alt={item.title}
-                                loading="lazy"
-                                className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700"
-                            />
+	                            <Image
+	                                src={item.images[0]}
+	                                alt={item.title}
+	                                fill
+	                                sizes="288px"
+	                                className="object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700"
+	                            />
                             {item.discount > 0 && (
                                 <div className="absolute top-3 right-3 bg-red-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold shadow-md shadow-red-500/30">
                                     -{item.discount}%

@@ -9,8 +9,6 @@ const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }
     // Pre-fill the email template based on the status change
     useEffect(() => {
         if (order && newStatus) {
-            setSubject(`Order Update: Your order is now ${newStatus}`);
-
             let defaultMessage = `Hello ${order.customer?.fullName || 'Customer'},\n\n`;
             defaultMessage += `We wanted to let you know that the status of your order (#${order._id}) has been updated to: ${newStatus}.\n\n`;
 
@@ -22,7 +20,10 @@ const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }
 
             defaultMessage += `Thank you for shopping with us!`;
 
-            setMessage(defaultMessage);
+            queueMicrotask(() => {
+                setSubject(`Order Update: Your order is now ${newStatus}`);
+                setMessage(defaultMessage);
+            });
         }
     }, [order, newStatus]);
 

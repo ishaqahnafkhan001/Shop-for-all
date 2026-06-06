@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Search, X } from "lucide-react";
 
 export default function SearchModal({
@@ -13,7 +14,7 @@ export default function SearchModal({
 
     useEffect(() => {
         if (!isOpen) {
-            setQuery("");
+            queueMicrotask(() => setQuery(""));
         }
     }, [isOpen]);
 
@@ -81,11 +82,13 @@ export default function SearchModal({
                                 onClick={onClose}
                                 className="flex items-center gap-4 p-4 hover:bg-gray-50 transition"
                             >
-                                <img
-                                    src={product.imageUrl}
-                                    alt={product.title}
-                                    className="w-16 h-16 rounded-xl object-cover bg-gray-100"
-                                />
+	                                <Image
+	                                    src={product.imageUrl}
+	                                    alt={product.title}
+	                                    width={64}
+	                                    height={64}
+	                                    className="h-16 w-16 rounded-xl object-cover bg-gray-100"
+	                                />
 
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-sm text-gray-900 line-clamp-1">

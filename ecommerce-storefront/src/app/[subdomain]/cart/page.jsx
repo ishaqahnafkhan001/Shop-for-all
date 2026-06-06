@@ -3,6 +3,7 @@ import React from 'react';
 import { useCart } from '@/context/CartContext';
 import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, ShieldCheck, Truck } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CartPage() {
     const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart();
@@ -29,7 +30,7 @@ export default function CartPage() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
                 <p className="text-gray-500 mb-8 max-w-md">
-                    Looks like you haven't added anything to your cart yet.
+                    Looks like you haven&apos;t added anything to your cart yet.
                 </p>
                 <Link
                     href="/"
@@ -59,11 +60,13 @@ export default function CartPage() {
 
                                 <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0 w-full">
                                     {/* Product Image */}
-                                    <div className="w-full sm:w-28 sm:h-28 aspect-square bg-gray-50 rounded-xl flex-shrink-0 border border-gray-100 overflow-hidden">
-                                        <img
+                                    <div className="relative w-full sm:w-28 sm:h-28 aspect-square bg-gray-50 rounded-xl flex-shrink-0 border border-gray-100 overflow-hidden">
+                                        <Image
                                             src={item.imageUrl || (item.images && item.images[0]) || 'https://via.placeholder.com/150'}
                                             alt={item.title}
-                                            className="w-full h-full object-cover"
+                                            fill
+                                            sizes="(max-width: 640px) 100vw, 112px"
+                                            className="object-cover"
                                         />
                                     </div>
 

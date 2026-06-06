@@ -26,14 +26,15 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        checkAuthStatus();
+        const timer = setTimeout(checkAuthStatus, 0);
+        return () => clearTimeout(timer);
     }, []);
 
     // 🔓 Login Function
-    const login = async (email, password) => {
+    const login = async (email, password, subdomain) => {
         try {
             // The backend MUST respond by setting a Set-Cookie header with HttpOnly
-            const { data } = await API.post('/auth/login', { email, password });
+            const { data } = await API.post('/auth/login', { email, password, subdomain });
             setUser(data.user);
             return { success: true };
         } catch (error) {

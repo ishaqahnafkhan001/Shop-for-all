@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Package, Truck, CheckCircle, XCircle, Clock, Eye, Send, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
@@ -15,6 +15,7 @@ const OrderList = () => {
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
 
     const [pathaoModalOpen, setPathaoModalOpen] = useState(false);
     const [orderToSync, setOrderToSync] = useState(null);
@@ -23,19 +24,25 @@ const OrderList = () => {
     const [emailModalOpen, setEmailModalOpen] = useState(false);
     const [pendingStatusUpdate, setPendingStatusUpdate] = useState({ order: null, newStatus: '' });
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const { data } = await API.get('/admin/orders');
-                setOrders(data.data);
-            } catch (err) {
-                toast.error("Failed to load orders");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchOrders();
+    const fetchOrders = useCallback(async (page = 1) => {
+        setLoading(true);
+        try {
+            const { data } = await API.get('/admin/orders', {
+                params: { page, limit: 25 }
+            });
+            setOrders(data.data || []);
+            setPagination(data.pagination || { page, pages: 1, total: data.data?.length || 0 });
+        } catch {
+            toast.error("Failed to load orders");
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(fetchOrders, 0);
+        return () => clearTimeout(timer);
+    }, [fetchOrders]);
 
     // Intercept the status change to show the modal
     const handleStatusChangeClick = (order, newStatus) => {
@@ -79,18 +86,17 @@ const OrderList = () => {
 
     const updateStatusInDB = async (orderId, newStatus) => {
         try {
-            setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+            setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
             await API.patch(`/admin/orders/${orderId}/status`, { status: newStatus });
-            toast.success(`Order marked as ${newStatus}`);
+            toast.success(`Order status updated to ${newStatus}`);
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to update status");
-            const { data } = await API.get('/admin/orders').catch(() => ({ data: { data: orders } }));
-            setOrders(data.data);
+            fetchOrders();
         }
     };
 
     const handlePathaoSuccess = (updatedOrder) => {
-        setOrders(orders.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+        setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
     };
 
     const getStatusStyle = (status) => {
@@ -180,7 +186,7 @@ const OrderList = () => {
                 <button
                     onClick={() => { setOrderToSync(row); setPathaoModalOpen(true); }}
                     className="flex items-center text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition px-2 py-1.5 rounded-md"
-                    title="Send to Pathao"
+                    title="Create a courier delivery for this confirmed order"
                 >
                     <Send size={14} className="mr-1.5" /> Send to Pathao
                 </button>
@@ -189,7 +195,7 @@ const OrderList = () => {
             <button
                 onClick={() => setSelectedOrder(row)}
                 className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 transition px-2 py-1.5 rounded-md hover:bg-indigo-50"
-                title="View Details"
+                title="View customer, items, payment, and delivery details"
             >
                 <Eye size={18} className="mr-1.5" /> View
             </button>
@@ -199,6 +205,7 @@ const OrderList = () => {
                 value={['Cancelled', 'Returned'].includes(row.status) ? row.status : row.status}
                 onChange={(e) => handleStatusChangeClick(row, e.target.value)}
                 disabled={['Cancelled', 'Returned', 'Delivered'].includes(row.status)}
+                title="Changing status can notify the customer and affect dashboard revenue"
                 className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <option value="Pending">Pending</option>
@@ -221,7 +228,7 @@ const OrderList = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-                    <p className="mt-1 text-sm text-gray-500">Track and fulfill your customer orders.</p>
+                    <p className="mt-1 text-sm text-gray-500">Process orders from pending to delivered. Delivered orders count toward revenue.</p>
                 </div>
 
                 {/* Search Bar */}
@@ -231,7 +238,7 @@ const OrderList = () => {
                     </div>
                     <input
                         type="text"
-                        placeholder="Search by Order ID..."
+                        placeholder="Search by last 6 characters of order ID..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm outline-none transition"
@@ -250,7 +257,7 @@ const OrderList = () => {
                     <div className="md:hidden space-y-4">
                         {filteredOrders.length === 0 ? (
                             <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
-                                {searchQuery ? 'No orders match your search.' : 'No orders yet. Time to do some marketing!'}
+                                {searchQuery ? 'No orders match your search.' : 'No orders yet. Share your store link or create a promotion to bring shoppers in.'}
                             </div>
                         ) : (
                             filteredOrders.map((order) => (
@@ -290,6 +297,30 @@ const OrderList = () => {
                         )}
                     </div>
                 </>
+            )}
+
+            {pagination.pages > 1 && (
+                <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-600">
+                    <span>
+                        Page {pagination.page} of {pagination.pages} · {pagination.total} orders
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => fetchOrders(pagination.page - 1)}
+                            disabled={pagination.page <= 1}
+                            className="rounded-lg border border-gray-200 px-3 py-1.5 font-medium disabled:opacity-40"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => fetchOrders(pagination.page + 1)}
+                            disabled={pagination.page >= pagination.pages}
+                            className="rounded-lg border border-gray-200 px-3 py-1.5 font-medium disabled:opacity-40"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
             )}
 
             <OrderDetailsModal
