@@ -469,6 +469,7 @@ exports.updateOrderStatus = async (req, res) => {
         if (error) {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
+        console.log("hello")
 
         const shopId = req.tenantId;
         const { status } = value;

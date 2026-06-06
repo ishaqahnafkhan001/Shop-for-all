@@ -1,5 +1,3 @@
-const adminTransporter = require('../mail/transporters/adminTransporter');
-const orderTransporter = require('../mail/transporters/orderTransporter');
 const { baseTemplate } = require('../mail/templates/baseTemplate');
 const { isResendEnabled, sendResendMail } = require('../mail/providers/resendProvider');
 
@@ -21,6 +19,14 @@ const formatFrom = (senderName, fromEmail) => {
     return senderName ? `"${escapeFromName(senderName)}" <${fromEmail}>` : fromEmail;
 };
 
+const getSmtpTransporter = (type) => {
+    if (type === 'order') {
+        return require('../mail/transporters/orderTransporter');
+    }
+
+    return require('../mail/transporters/adminTransporter');
+};
+
 exports.sendMail = async ({
                               type = 'admin',
                               to,
@@ -33,7 +39,6 @@ exports.sendMail = async ({
                               replyTo
                           }) => {
     try {
-        const transporter = type === 'order' ? orderTransporter : adminTransporter;
         const fromEmail = getFromEmail(type);
         const from = formatFrom(senderName, fromEmail);
 
@@ -56,6 +61,8 @@ exports.sendMail = async ({
                 replyTo
             });
         }
+
+        const transporter = getSmtpTransporter(type);
 
         return await transporter.sendMail({
             from,
