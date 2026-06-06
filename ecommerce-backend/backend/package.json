@@ -15,6 +15,7 @@
   "type": "commonjs",
   "main": "app.js",
   "scripts": {
+    "start": "node app.js",
     "test": "node --test tests/*.test.js",
     "migrate:identity": "node scripts/migrate-accounts-memberships.js"
   },

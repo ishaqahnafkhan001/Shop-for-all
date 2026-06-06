@@ -27,6 +27,29 @@ const app = express();
 app.set('trust proxy', 1);
 connectDB();
 
+const buildInfo = {
+    version: 'mail-resend-2026-06-07-02',
+    commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || 'local',
+    nodeEnv: process.env.NODE_ENV || 'development'
+};
+
+const getMailDiagnostics = () => {
+    const emailProvider = String(process.env.EMAIL_PROVIDER || 'smtp').toLowerCase();
+
+    return {
+        provider: emailProvider,
+        resendEnabled: emailProvider === 'resend',
+        hasResendApiKey: Boolean(process.env.RESEND_API_KEY),
+        resendFrom: process.env.RESEND_FROM || null,
+        adminEmailUser: process.env.ADMIN_EMAIL_USER || null,
+        orderMail: process.env.ORDER_MAIL || null,
+        smtpFallbackConfigured: Boolean(
+            (process.env.ADMIN_EMAIL_USER || process.env.EMAIL_USER) &&
+            (process.env.ADMIN_EMAIL_PASS || process.env.EMAIL_PASS)
+        )
+    };
+};
+
 const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
 const isProduction = process.env.NODE_ENV === 'production';
 const tenantOriginPattern = /^https?:\/\/([a-z0-9-]+\.)?localhost:(3000|5173)$/;
@@ -113,6 +136,15 @@ app.use(
 );
 app.use(generalLimiter);
 
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        success: true,
+        status: 'ok',
+        build: buildInfo,
+        mail: getMailDiagnostics()
+    });
+});
+
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/storefront', storefrontRoutes);
@@ -134,10 +166,17 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, '0.0.0.0', () => {
+    const mailDiagnostics = getMailDiagnostics();
     console.log(
         `🚀 Server running in ${
             process.env.NODE_ENV || 'development'
         } mode on port ${PORT}`
+    );
+    console.log(
+        `[Build] version=${buildInfo.version} commit=${buildInfo.commit}`
+    );
+    console.log(
+        `[Mail] provider=${mailDiagnostics.provider} resendEnabled=${mailDiagnostics.resendEnabled} hasResendApiKey=${mailDiagnostics.hasResendApiKey} from=${mailDiagnostics.resendFrom || mailDiagnostics.adminEmailUser || 'not-configured'}`
     );
 });
 
