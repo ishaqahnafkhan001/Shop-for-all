@@ -1,22 +1,47 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute'; // 🛡️ NEW: Import the wrapper
 
 // Layouts
-import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 
 // Pages
-import Login from './pages/Login';
-import Overview from './pages/dashboard/Overview';
-import ProductList from './pages/dashboard/products/ProductList';
-import AddProduct from './pages/dashboard/products/AddProduct';
-import OrderList from './pages/dashboard/orders/OrderList';
-import ShopSettings from './pages/dashboard/settings/ShopSettings';
-import ShippingSettings from './pages/dashboard/ShippingSettings/ShippingSettings.jsx'; // 🚚 NEW: Import Shipping Settings
-import EditProduct from './pages/dashboard/products/EditProduct';
-import CustomerList from "./pages/dashboard/customers/CustomerList.jsx";
-import PromotionalBanner from './pages/dashboard/Promotional Banner/promotionalBanner.jsx';
+const Login = lazy(() => import('./pages/Login'));
+const Overview = lazy(() => import('./pages/dashboard/Overview'));
+const ProductList = lazy(() => import('./pages/dashboard/products/ProductList'));
+const AddProduct = lazy(() => import('./pages/dashboard/products/AddProduct'));
+const OrderList = lazy(() => import('./pages/dashboard/orders/OrderList'));
+const ShopSettings = lazy(() => import('./pages/dashboard/settings/ShopSettings'));
+const ShippingSettings = lazy(() => import('./pages/dashboard/ShippingSettings/ShippingSettings.jsx'));
+const EditProduct = lazy(() => import('./pages/dashboard/products/EditProduct'));
+const CustomerList = lazy(() => import("./pages/dashboard/customers/CustomerList.jsx"));
+const PromotionalBanner = lazy(() => import('./pages/dashboard/Promotional Banner/promotionalBanner.jsx'));
+const StoreBuilder = lazy(() => import('./pages/dashboard/StoreBuilder.jsx'));
+const Promotions = lazy(() => import('./pages/dashboard/Promotions.jsx'));
+const CatalogTools = lazy(() => import('./pages/dashboard/CatalogTools.jsx'));
+const AdvancedAnalytics = lazy(() => import('./pages/dashboard/AdvancedAnalytics.jsx'));
+const StaffPermissions = lazy(() => import('./pages/dashboard/StaffPermissions.jsx'));
+const SuperAdminPanel = lazy(() => import('./pages/superadmin/SuperAdminPanel.jsx'));
+
+// Helper to determine where logged-in users should go if they hit /login or a 404
+const getRedirectPath = (role) => {
+    if (role === 'Customer') return '/store';
+    if (role === 'SuperAdmin') return '/super-admin';
+    if (role === 'VendorStaff') return '/dashboard/products';
+    return '/dashboard'; // VendorAdmin default
+};
+
+const PageFallback = () => (
+    <div className="flex h-[50vh] items-center justify-center text-sm text-slate-500">
+        Loading...
+    </div>
+);
+
+const withSuspense = (element) => (
+    <Suspense fallback={<PageFallback />}>{element}</Suspense>
+);
 
 function App() {
     const { user, loading } = useAuth();
@@ -28,26 +53,49 @@ function App() {
             <Toaster position="top-right" />
             <Routes>
                 {/* Public / Auth Routes */}
-                <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+                <Route
+                    path="/login"
+                    element={!user ? withSuspense(<Login />) : <Navigate to={getRedirectPath(user?.role)} />}
+                />
 
-                {/* Protected Dashboard Routes */}
-                <Route path="/dashboard" element={user ? <DashboardLayout /> : <Navigate to="/login" />}>
-                    <Route index element={<Overview />} />
-                    <Route path="products" element={<ProductList />} />
-                    <Route path="products/add" element={<AddProduct />} />
-                    <Route path="products/edit/:id" element={<EditProduct />} />
-                    <Route path="orders" element={<OrderList />} />
-                    <Route path="promotions" element={<PromotionalBanner />} />
-                    <Route path="customers" element={<CustomerList />} />
+                <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
+                    <Route path="/super-admin" element={<DashboardLayout />}>
+                        <Route index element={withSuspense(<SuperAdminPanel />)} />
+                    </Route>
+                </Route>
 
-                    {/* 🚚 NEW: Added Shipping Settings Route */}
-                    <Route path="shipping" element={<ShippingSettings />} />
+                {/* 🛡️ Protected Dashboard Wrapper (Allows both Admin & Staff) */}
+                <Route element={<ProtectedRoute allowedRoles={['VendorAdmin', 'VendorStaff']} />}>
+                    <Route path="/dashboard" element={<DashboardLayout />}>
 
-                    <Route path="settings" element={<ShopSettings />} />
+                        {/* 🔴 ADMIN ONLY ROUTES */}
+                        <Route element={<ProtectedRoute allowedRoles={['VendorAdmin']} />}>
+                            <Route index element={withSuspense(<Overview />)} />
+                            {/* Note: You might want to move 'settings' here too depending on your business logic */}
+                            <Route path="store-builder" element={withSuspense(<StoreBuilder />)} />
+                            <Route path="staff" element={withSuspense(<StaffPermissions />)} />
+                        </Route>
+
+                        {/* 🟢 ADMIN & STAFF ROUTES */}
+                        <Route path="products" element={withSuspense(<ProductList />)} />
+                        <Route path="products/add" element={withSuspense(<AddProduct />)} />
+                        <Route path="products/edit/:id" element={withSuspense(<EditProduct />)} />
+                        <Route path="catalog-tools" element={withSuspense(<CatalogTools />)} />
+                        <Route path="orders" element={withSuspense(<OrderList />)} />
+                        <Route path="promotions" element={withSuspense(<Promotions />)} />
+                        <Route path="banners" element={withSuspense(<PromotionalBanner />)} />
+                        <Route path="customers" element={withSuspense(<CustomerList />)} />
+                        <Route path="analytics" element={withSuspense(<AdvancedAnalytics />)} />
+                        <Route path="shipping" element={withSuspense(<ShippingSettings />)} />
+                        <Route path="settings" element={withSuspense(<ShopSettings />)} />
+                    </Route>
                 </Route>
 
                 {/* Fallback */}
-                <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+                <Route
+                    path="*"
+                    element={!user ? <Navigate to="/login" /> : <Navigate to={getRedirectPath(user?.role)} />}
+                />
             </Routes>
         </Router>
     );

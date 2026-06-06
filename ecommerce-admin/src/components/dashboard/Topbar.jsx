@@ -6,7 +6,7 @@ const Topbar = ({ onOpenMenu }) => {
 
     const subdomain = user?.shop?.subdomain || user?.subdomain || 'demo';
 
-    let baseDomain = import.meta.env.VITE_API_DOMAIN ;
+    let baseDomain = import.meta.env.VITE_API_DOMAIN || 'localhost:3000';
     baseDomain = baseDomain.replace(/^https?:\/\//, '');
 
     const protocol = baseDomain.includes('localhost') ? 'http://' : 'https://';
@@ -25,18 +25,21 @@ const Topbar = ({ onOpenMenu }) => {
 
             <div className="flex items-center space-x-4">
 
-                {/* Changed from <button> to <a> tag to open the URL in a new tab */}
-                <a
-                    href={liveStoreUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hidden sm:flex items-center text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors"
-                >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Live Store
-                </a>
+                {user?.role !== 'SuperAdmin' && (
+                    <>
+                        <a
+                            href={liveStoreUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hidden sm:flex items-center text-sm font-medium text-gray-500 hover:text-indigo-600 transition-colors"
+                        >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Live Store
+                        </a>
 
-                <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
+                        <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
+                    </>
+                )}
 
                 <div className="flex items-center space-x-3">
                     <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shadow-inner uppercase">

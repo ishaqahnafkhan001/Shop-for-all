@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ShoppingBag, Search, User, Truck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useEffect, useState } from 'react';
@@ -13,15 +14,19 @@ export default function Navbar({ subdomain }) {
 
     const [searchOpen, setSearchOpen] = useState(false);
     const [products, setProducts] = useState([]);
+    const [shopSettings, setShopSettings] = useState(null);
 
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const res = await API.get(`/storefront/${subdomain}/products`);
+                const [productsRes, settingsRes] = await Promise.all([
+                    API.get(`/storefront/${subdomain}/products`),
+                    API.get(`/store-builder/storefront/${subdomain}`).catch(() => ({ data: null }))
+                ]);
 
                 const rawProducts =
-                    res.data?.products ||
-                    res.data?.data ||
+                    productsRes.data?.products ||
+                    productsRes.data?.data ||
                     [];
 
                 const normalized = rawProducts.map((p) => {
@@ -55,6 +60,7 @@ export default function Navbar({ subdomain }) {
                 });
 
                 setProducts(normalized);
+                setShopSettings(settingsRes.data?.data || null);
             } catch (err) {
                 console.error("Search products fetch failed:", err);
             }
@@ -65,6 +71,12 @@ export default function Navbar({ subdomain }) {
         }
     }, [subdomain]);
 
+    const theme = shopSettings?.theme || {};
+    const navLinks = (theme.navigation || [])
+        .filter(item => item?.label && item?.url)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .slice(0, 4);
+
     return (
         <>
             <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md shadow-sm">
@@ -72,10 +84,21 @@ export default function Navbar({ subdomain }) {
 
                     <Link
                         href="/"
-                        className="text-xl font-extrabold tracking-tight text-gray-900 capitalize hover:text-[var(--sf-accent)] transition"
+                        className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-gray-900 capitalize hover:text-[var(--sf-accent)] transition"
                     >
-                        {subdomain}
+                        {theme.logoUrl && (
+                            <Image src={theme.logoUrl} alt="" width={32} height={32} className="h-8 w-8 rounded object-cover" />
+                        )}
+                        <span>{shopSettings?.shopName || subdomain}</span>
                     </Link>
+
+                    <nav className="hidden md:flex items-center gap-5 text-sm font-semibold text-gray-600">
+                        {navLinks.map((item, index) => (
+                            <Link key={`${item.label}-${index}`} href={item.url} className="hover:text-[var(--sf-accent)] transition">
+                                {item.label}
+                            </Link>
+                        ))}
+                    </nav>
 
                     <div className="flex items-center space-x-5 sm:space-x-7">
 

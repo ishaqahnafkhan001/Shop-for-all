@@ -24,6 +24,7 @@ import { toast } from "react-hot-toast";
 import API from "@/api/api";
 
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function CheckoutPage({ params }) {
 
@@ -39,6 +40,7 @@ export default function CheckoutPage({ params }) {
         updateQuantity,
         removeFromCart,
     } = useCart();
+    const { user } = useAuth();
 
     // =========================================
     // STATES
@@ -59,6 +61,9 @@ export default function CheckoutPage({ params }) {
         city: "",
     });
 
+    const [promotionCode, setPromotionCode] = useState("");
+    const [promotionPreview, setPromotionPreview] = useState(null);
+
     // =========================================
     // SHIPPING LOGIC
     // =========================================
@@ -72,7 +77,9 @@ export default function CheckoutPage({ params }) {
 
     const subtotal = cartTotal;
 
-    const totalAmount = subtotal + shippingCost;
+    const promotionDiscount = promotionPreview?.discountAmount || 0;
+    const finalShippingCost = promotionPreview?.freeShipping ? 0 : shippingCost;
+    const totalAmount = Math.max(0, subtotal - promotionDiscount) + finalShippingCost;
 
     // =========================================
     // FETCH PRODUCTS
@@ -132,6 +139,41 @@ export default function CheckoutPage({ params }) {
         });
     };
 
+    const handleApplyPromotion = async () => {
+        if (!promotionCode.trim()) {
+            toast.error("Enter a coupon code");
+            return;
+        }
+
+        try {
+            const { data } = await API.post(
+                `/promotions/storefront/${subdomain}/validate`,
+                {
+                    code: promotionCode,
+                    subtotal,
+                    customerEmail: formData.email,
+                    items: cartItems.map((item) => {
+                        const unitPrice = item.finalPrice || item.sellingPrice || 0;
+                        return {
+                            productId: item._id,
+                            category: item.category,
+                            collections: item.collections || [],
+                            quantity: item.quantity,
+                            price: unitPrice,
+                            total: unitPrice * item.quantity,
+                        };
+                    }),
+                }
+            );
+
+            setPromotionPreview(data.data);
+            toast.success("Coupon applied");
+        } catch (error) {
+            setPromotionPreview(null);
+            toast.error(error.response?.data?.error || "Coupon is not valid");
+        }
+    };
+
     // =========================================
     // PLACE ORDER
     // =========================================
@@ -148,17 +190,12 @@ export default function CheckoutPage({ params }) {
 
         try {
 
-            const token =
-                localStorage.getItem(
-                    "shopforall_token"
-                );
-
             let savedOrderData;
 
             // =====================================
             // LOGGED IN USER
             // =====================================
-            if (token) {
+            if (user?.role === "Customer") {
 
                 const securePayload = {
 
@@ -208,18 +245,16 @@ export default function CheckoutPage({ params }) {
                     payment: {
                         method: "COD",
                     },
+
+                    promotionCode: promotionPreview?.code || promotionCode,
+
+                    source: "storefront",
                 };
 
                 const response =
                     await API.post(
                         `/storefront/${subdomain}/orders`,
-                        securePayload,
-                        {
-                            headers: {
-                                Authorization:
-                                    `Bearer ${token}`,
-                            },
-                        }
+                        securePayload
                     );
 
                 savedOrderData = {
@@ -262,6 +297,10 @@ export default function CheckoutPage({ params }) {
                     shippingCost,
 
                     totalAmount,
+
+                    promotionCode: promotionPreview?.code || promotionCode,
+
+                    source: "storefront",
                 };
 
                 const response =
@@ -699,6 +738,28 @@ export default function CheckoutPage({ params }) {
                             {/* TOTALS */}
                             <div className="border-t border-gray-100 p-7">
 
+                                <div className="mb-6">
+                                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                        Coupon Code
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={promotionCode}
+                                            onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
+                                            placeholder="SAVE10"
+                                            className="min-w-0 flex-1 px-4 py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none uppercase"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleApplyPromotion}
+                                            className="px-4 py-3 rounded-2xl bg-gray-900 text-white font-bold hover:bg-[var(--sf-accent)]"
+                                        >
+                                            Apply
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="space-y-4 text-sm">
 
                                     <div className="flex justify-between">
@@ -720,10 +781,24 @@ export default function CheckoutPage({ params }) {
                                         </span>
 
                                         <span className="font-bold text-gray-900">
-                                            ৳ {shippingCost}
+                                            ৳ {finalShippingCost}
                                         </span>
 
                                     </div>
+
+                                    {promotionDiscount > 0 && (
+                                        <div className="flex justify-between text-green-700">
+
+                                            <span>
+                                                Coupon Discount
+                                            </span>
+
+                                            <span className="font-bold">
+                                                - ৳ {promotionDiscount}
+                                            </span>
+
+                                        </div>
+                                    )}
 
                                 </div>
 

@@ -6,69 +6,123 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const InventoryLog = require('../models/InventoryLog');
 const User = require('../models/User'); // We need this to create Guest customers
+const Promotion = require('../models/Promotion');
+const { evaluatePromotion } = require('../services/promotionService');
 
 exports.createPublicOrder = async (req, res) => {
-    // 🔥 THE FIX: Start a database transaction
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const { subdomain, customer, shippingAddress, shippingZone, items, shippingCost, shipping } = req.body;
+        const {
+            subdomain,
+            customer,
+            shippingAddress,
+            shippingZone,
+            shipping,
+            items,
+            shippingCost,
+            promotionCode,
+            source
+        } = req.body;
 
-        if (!subdomain) throw new Error('Subdomain is required');
+        // =========================
+        // BASIC VALIDATION
+        // =========================
+        if (!subdomain) {
+            throw new Error('Subdomain is required');
+        }
+
         if (!customer?.email || !customer?.fullName || !customer?.phone) {
             throw new Error('Customer fullName, email and phone are required');
         }
+
         if (!Array.isArray(items) || items.length === 0) {
             throw new Error('Order must contain at least one item');
         }
 
+        // =========================
+        // SHOP CHECK
+        // =========================
         const shop = await Shop.findOne({ subdomain }).session(session);
-        if (!shop) throw new Error("Shop not found");
 
+        if (!shop) {
+            throw new Error('Shop not found');
+        }
+
+        // =========================
+        // SHIPPING NORMALIZATION
+        // =========================
         const requestedZone = shipping?.zone || shippingZone;
-        if (!requestedZone) throw new Error('Shipping zone is required');
+
+        if (!requestedZone) {
+            throw new Error('Shipping zone is required');
+        }
+
+        if (!['Inside Dhaka', 'Outside Dhaka'].includes(requestedZone)) {
+            throw new Error('Invalid shipping zone');
+        }
 
         const normalizedShippingCost = Number.isFinite(Number(shipping?.cost))
             ? Number(shipping.cost)
-            : (Number.isFinite(Number(shippingCost))
+            : Number.isFinite(Number(shippingCost))
                 ? Number(shippingCost)
-                : (requestedZone === 'Inside Dhaka' ? 60 : 120));
+                : requestedZone === 'Inside Dhaka'
+                    ? 80
+                    : 120;
 
         let normalizedAddress = shipping?.address;
+
         if (!normalizedAddress && shippingAddress && typeof shippingAddress === 'object') {
             normalizedAddress = {
                 fullName: shippingAddress.fullName || customer.fullName,
                 phone: shippingAddress.phone || customer.phone,
                 addressLine: shippingAddress.addressLine || shippingAddress.address,
-                city: shippingAddress.city,
+                city: shippingAddress.city
             };
         }
 
         if (!normalizedAddress && typeof shippingAddress === 'string') {
-            const parts = shippingAddress.split(',').map(p => p.trim()).filter(Boolean);
+            const parts = shippingAddress
+                .split(',')
+                .map(part => part.trim())
+                .filter(Boolean);
+
             const city = parts.length > 1 ? parts[parts.length - 1] : 'Dhaka';
-            const addressLine = parts.length > 1 ? parts.slice(0, -1).join(', ') : parts[0];
+            const addressLine = parts.length > 1
+                ? parts.slice(0, -1).join(', ')
+                : parts[0];
 
             normalizedAddress = {
                 fullName: customer.fullName,
                 phone: customer.phone,
                 addressLine,
-                city,
+                city
             };
         }
 
-        if (!normalizedAddress?.fullName || !normalizedAddress?.phone || !normalizedAddress?.addressLine || !normalizedAddress?.city) {
-            throw new Error('Shipping address is incomplete. fullName, phone, addressLine and city are required.');
+        if (
+            !normalizedAddress?.fullName ||
+            !normalizedAddress?.phone ||
+            !normalizedAddress?.addressLine ||
+            !normalizedAddress?.city
+        ) {
+            throw new Error(
+                'Shipping address is incomplete. fullName, phone, addressLine and city are required.'
+            );
         }
 
-        // 🔥 THE FIX: Secure Guest User Creation
-        let orderCustomer = await User.findOne({ email: customer.email }).session(session);
+        // =========================
+        // CUSTOMER / GUEST USER
+        // =========================
+        let orderCustomer = await User.findOne({
+            email: customer.email
+        }).session(session);
 
         if (!orderCustomer) {
             const rawPassword = 'GuestUser_' + Math.random().toString(36).slice(-8);
             const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(rawPassword, salt); // Hashed!
+            const hashedPassword = await bcrypt.hash(rawPassword, salt);
 
             const [newUser] = await User.create([{
                 shop_id: shop._id,
@@ -82,52 +136,89 @@ exports.createPublicOrder = async (req, res) => {
             orderCustomer = newUser;
         }
 
-        let itemsWithSecurePrices = [];
+        if (orderCustomer.status === 'Suspended') {
+            throw new Error('This customer account is suspended.');
+        }
+
+        // =========================
+        // SECURE ITEM PROCESSING
+        // =========================
+        const itemsWithSecurePrices = [];
+        const promotionItems = [];
+        const logsToInsert = [];
+
         let calculatedSubtotal = 0;
-        let logsToInsert = [];
 
         for (const item of items) {
             const productId = item.productId || item.product;
             const quantity = Number(item.quantity);
 
-            if (!productId) throw new Error('Each item must include product or productId');
-            if (!Number.isFinite(quantity) || quantity <= 0) throw new Error('Each item must include a valid quantity');
+            if (!productId) {
+                throw new Error('Each item must include product or productId');
+            }
 
-            const product = await Product.findOne({ _id: productId, shop_id: shop._id }).session(session);
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+                throw new Error('Each item must include a valid quantity');
+            }
 
-            if (!product) throw new Error(`Product not found.`);
+            const product = await Product.findOne({
+                _id: productId,
+                shop_id: shop._id,
+                isDeleted: false
+            }).session(session);
+
+            if (!product) {
+                throw new Error('Product not found.');
+            }
+
+            if (!product.isActive || product.status !== 'Published') {
+                throw new Error(`Product "${product.title}" is not available.`);
+            }
 
             const variant = item.variantId
                 ? product.variants.id(item.variantId)
                 : product.variants.find(v => v.isActive && v.stock >= quantity)
-                    || product.variants.find(v => v.stock >= quantity)
-                    || product.variants.find(v => v.isActive)
-                    || product.variants[0];
+                || product.variants.find(v => v.stock >= quantity)
+                || product.variants.find(v => v.isActive)
+                || product.variants[0];
 
-            if (!variant) throw new Error(`Variant not found for ${product.title}`);
+            if (!variant) {
+                throw new Error(`Variant not found for ${product.title}`);
+            }
+
+            if (!variant.isActive) {
+                throw new Error(`Selected variant for ${product.title} is not available.`);
+            }
 
             if (variant.stock < quantity) {
                 throw new Error(`Insufficient stock for ${product.title}`);
             }
 
             const beforeStock = variant.stock;
+
             const basePrice = Number.isFinite(Number(variant.priceOverride))
                 ? Number(variant.priceOverride)
                 : Number(product.pricing?.sellingPrice);
+
             const discount = Number(product.pricing?.discount) || 0;
-            const unitPrice = Math.round(basePrice - (basePrice * discount) / 100);
+
+            const unitPrice = Math.round(
+                basePrice - ((basePrice * discount) / 100)
+            );
+
             const buyingPrice = Number(product.pricing?.buyingPrice);
             const itemTotal = unitPrice * quantity;
 
             if (!Number.isFinite(unitPrice) || !Number.isFinite(itemTotal)) {
                 throw new Error(`Invalid pricing data for ${product.title}`);
             }
+
             if (!Number.isFinite(buyingPrice)) {
                 throw new Error(`Invalid buying price for ${product.title}`);
             }
 
             itemsWithSecurePrices.push({
-                productId: product._id, // Fixed mapping to match your Order schema
+                productId: product._id,
                 variantId: variant._id,
                 title: product.title,
                 sku: variant.sku,
@@ -138,13 +229,21 @@ exports.createPublicOrder = async (req, res) => {
                 total: itemTotal
             });
 
+            promotionItems.push({
+                productId: product._id,
+                category: product.category,
+                collections: product.collections || [],
+                quantity,
+                price: unitPrice,
+                total: itemTotal
+            });
+
             calculatedSubtotal += itemTotal;
 
             // Deduct stock
             variant.stock -= quantity;
             await product.save({ session });
 
-            // 🔥 THE FIX: Sync with Admin Inventory Logs
             logsToInsert.push({
                 shop_id: shop._id,
                 productId: product._id,
@@ -162,37 +261,125 @@ exports.createPublicOrder = async (req, res) => {
             throw new Error('Unable to calculate subtotal for this order');
         }
 
+        // =========================
+        // PROMOTION / COUPON
+        // =========================
+        let discountAmount = 0;
+        let finalShippingCost = normalizedShippingCost;
+        let promotionSnapshot = null;
+
+        const cleanPromotionCode = promotionCode?.trim()?.toUpperCase();
+
+        if (cleanPromotionCode) {
+            const promotionResult = await evaluatePromotion({
+                shopId: shop._id,
+                code: cleanPromotionCode,
+                subtotal: calculatedSubtotal,
+                items: promotionItems,
+                customerId: orderCustomer._id,
+                customerEmail: customer.email,
+                session
+            });
+
+            if (!promotionResult.valid) {
+                throw new Error(promotionResult.error || 'Coupon is not valid');
+            }
+
+            discountAmount = promotionResult.discountAmount || 0;
+
+            if (promotionResult.freeShipping) {
+                finalShippingCost = 0;
+            }
+
+            promotionSnapshot = {
+                code: promotionResult.promotion.code,
+                type: promotionResult.promotion.type,
+                discountAmount,
+                freeShipping: Boolean(promotionResult.freeShipping)
+            };
+        }
+
+        // =========================
+        // FINAL TOTAL
+        // =========================
+        const totalAmount =
+            Math.max(0, calculatedSubtotal - discountAmount) + finalShippingCost;
+
+        // =========================
+        // CREATE ORDER
+        // =========================
         const [newOrder] = await Order.create([{
             shop_id: shop._id,
             customer: orderCustomer._id,
             items: itemsWithSecurePrices,
             pricing: {
                 subtotal: calculatedSubtotal,
-                shipping: normalizedShippingCost,
-                total: calculatedSubtotal + normalizedShippingCost
+                discount: discountAmount,
+                shipping: finalShippingCost,
+                tax: 0,
+                total: totalAmount
             },
+            promotion: promotionSnapshot,
             shipping: {
                 zone: requestedZone,
-                cost: normalizedShippingCost,
+                cost: finalShippingCost,
                 address: normalizedAddress
             },
-            payment: { method: req.body.payment?.method || req.body.paymentMethod || 'COD' },
-            status: 'Pending'
+            payment: {
+                method: req.body.payment?.method || req.body.paymentMethod || 'COD',
+                status: 'Pending'
+            },
+            status: 'Pending',
+            source: source || 'storefront'
         }], { session });
 
-        // Link logs to the new order and insert
+        // =========================
+        // PROMOTION USAGE COUNT
+        // =========================
+        if (promotionSnapshot?.code) {
+            await Promotion.updateOne(
+                {
+                    shop_id: shop._id,
+                    code: promotionSnapshot.code
+                },
+                {
+                    $inc: { usageCount: 1 }
+                }
+            ).session(session);
+        }
+
+        // =========================
+        // INVENTORY LOGS
+        // =========================
         if (logsToInsert.length > 0) {
-            const logsWithRef = logsToInsert.map(log => ({ ...log, referenceId: newOrder._id }));
+            const logsWithRef = logsToInsert.map(log => ({
+                ...log,
+                referenceId: newOrder._id
+            }));
+
             await InventoryLog.insertMany(logsWithRef, { session });
         }
 
         await session.commitTransaction();
-        res.status(201).json(newOrder);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Order placed successfully',
+            orderId: newOrder._id,
+            total: totalAmount,
+            order: newOrder
+        });
 
     } catch (err) {
         await session.abortTransaction();
-        console.error("Order Creation Error:", err);
-        res.status(400).json({ error: err.message || "Server error while placing order." });
+
+        console.error('Public Order Creation Error:', err);
+
+        return res.status(400).json({
+            success: false,
+            error: err.message || 'Server error while placing order.'
+        });
+
     } finally {
         session.endSession();
     }

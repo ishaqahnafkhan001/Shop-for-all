@@ -38,8 +38,13 @@ const AddProduct = () => {
     // ── Scalar fields ─────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
         title:          '',
+        slug:           '',
         description:    '',
         category:       '',
+        tags:           '',
+        status:         'Published',
+        lowStockThreshold: 5,
+        seo:            { title: '', description: '' },
         pricing:        { buyingPrice: '', sellingPrice: '', discount: 0 },
         features:       [],
         specifications: [],
@@ -231,8 +236,13 @@ const AddProduct = () => {
         try {
             const data = new FormData();
             data.append('title',          formData.title);
+            if (formData.slug) data.append('slug', formData.slug);
             data.append('description',    formData.description);
             data.append('category',       formData.category);
+            data.append('tags',           formData.tags);
+            data.append('status',         formData.status);
+            data.append('lowStockThreshold', String(formData.lowStockThreshold || 5));
+            data.append('seo',            JSON.stringify(formData.seo));
             data.append('pricing',        JSON.stringify(formData.pricing));
             data.append('variantMatrix',  JSON.stringify({
                 attributes:   validAttrs,
@@ -278,6 +288,41 @@ const AddProduct = () => {
                         <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
 
                         <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <Input id="slug" label="Product Slug" value={formData.slug} onChange={handleChange} />
+                            <Input id="tags" label="Tags" value={formData.tags} onChange={handleChange} />
+                            <Input id="lowStockThreshold" label="Low Stock Alert" type="number" value={formData.lowStockThreshold} onChange={handleChange} />
+                        </div>
+
+                        <label className="block text-sm font-medium text-gray-700">
+                            Status
+                            <select
+                                id="status"
+                                value={formData.status}
+                                onChange={handleChange}
+                                className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            >
+                                <option>Published</option>
+                                <option>Draft</option>
+                                <option>Archived</option>
+                            </select>
+                        </label>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input
+                                id="seoTitle"
+                                label="SEO Title"
+                                value={formData.seo.title}
+                                onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, title: e.target.value } }))}
+                            />
+                            <Input
+                                id="seoDescription"
+                                label="SEO Description"
+                                value={formData.seo.description}
+                                onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, description: e.target.value } }))}
+                            />
+                        </div>
 
                         {/* ✨ AI Description Section */}
                         <div className="space-y-1">

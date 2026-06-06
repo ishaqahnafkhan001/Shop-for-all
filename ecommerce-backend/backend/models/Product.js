@@ -25,10 +25,23 @@ const productSchema = new Schema({
     shop_id: { type: Schema.Types.ObjectId, ref: 'Shop', required: true, index: true },
 
     title: { type: String, required: true, trim: true, index: true },
+    slug: { type: String, trim: true, lowercase: true },
     description: { type: String, required: true },
     category: { type: String, index: true },
+    tags: [{ type: String, trim: true, lowercase: true, index: true }],
+    collections: [{ type: Schema.Types.ObjectId, ref: 'Collection', index: true }],
     images: [String],
     videos: [String],
+    status: {
+        type: String,
+        enum: ['Draft', 'Published', 'Archived'],
+        default: 'Published',
+        index: true
+    },
+    seo: {
+        title: { type: String, trim: true, maxlength: 70, default: '' },
+        description: { type: String, trim: true, maxlength: 170, default: '' }
+    },
 
     pricing: {
         buyingPrice: { type: Number, required: true },
@@ -48,6 +61,7 @@ const productSchema = new Schema({
     // 🌟 FAST REVIEW METADATA
     averageRating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
+    lowStockThreshold: { type: Number, default: 5, min: 0 },
 
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
@@ -72,9 +86,25 @@ productSchema.virtual('totalStock').get(function () {
 });
 
 productSchema.index({ shop_id: 1, category: 1 });
+productSchema.index({ shop_id: 1, status: 1, isActive: 1 });
+productSchema.index({ shop_id: 1, slug: 1 }, {
+    unique: true,
+    partialFilterExpression: { slug: { $type: 'string' }, isDeleted: false }
+});
 productSchema.index({ title: "text", description: "text" });
 
 productSchema.pre('save', async function () {
+    if (!this.slug && this.title) {
+        this.slug = this.title
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 80);
+    }
+
+    this.isActive = this.status === 'Published';
+
     if (this.variants && this.variants.some(v => v.stock < 0)) {
         throw new Error("Stock cannot be negative");
     }

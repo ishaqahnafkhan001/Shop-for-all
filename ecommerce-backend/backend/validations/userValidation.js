@@ -33,6 +33,17 @@ const baseUserObj = {
         .valid('VendorAdmin', 'VendorStaff', 'Customer')
         .default('Customer'),
 
+    permissions: Joi.object({
+        products: Joi.boolean().optional(),
+        orders: Joi.boolean().optional(),
+        customers: Joi.boolean().optional(),
+        promotions: Joi.boolean().optional(),
+        analytics: Joi.boolean().optional(),
+        storeBuilder: Joi.boolean().optional(),
+        settings: Joi.boolean().optional(),
+        staff: Joi.boolean().optional()
+    }).optional(),
+
     orders: Joi.array().items(
         Joi.string().hex().length(24).messages({
             'string.length': 'Invalid Order ID format',
@@ -72,6 +83,7 @@ const loginUserSchema = Joi.object({
 
 module.exports = {
     registerCustomerSchema,
+    createUserSchema: createStaffSchema,
     createStaffSchema,
     loginUserSchema
 };

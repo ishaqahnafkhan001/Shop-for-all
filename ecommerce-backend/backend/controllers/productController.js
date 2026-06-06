@@ -8,7 +8,50 @@ const {
     generateNewOptionCombos
 } = require('../helpers/variantMatrix');
 
+const slugify = (value = '') =>
+    value
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 80);
 
+const parseProductPayload = (body) => {
+    const parsedBody = { ...body };
+    const jsonFields = [
+        'pricing',
+        'variants',
+        'variantMatrix',
+        'features',
+        'specifications',
+        'comments',
+        'collections',
+        'seo',
+        'addAttributeOption',
+        'removeVariants'
+    ];
+
+    for (const field of jsonFields) {
+        if (typeof parsedBody[field] === 'string') {
+            try {
+                parsedBody[field] = JSON.parse(parsedBody[field]);
+            } catch {
+                throw new Error(`Invalid JSON in field: "${field}"`);
+            }
+        }
+    }
+
+    if (typeof parsedBody.tags === 'string') {
+        if (parsedBody.tags.trim().startsWith('[')) {
+            parsedBody.tags = JSON.parse(parsedBody.tags);
+        } else {
+            parsedBody.tags = parsedBody.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+        }
+    }
+
+    return parsedBody;
+};
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -60,10 +103,21 @@ exports.generateDescription = async (req, res) => {
 exports.getShopProducts = async (req, res) => {
     try {
         const shopId = req.tenantId;
-        const { search, category } = req.query;
+        const {
+            search,
+            category,
+            collection,
+            tag,
+            status,
+            minPrice,
+            maxPrice,
+            sort,
+            lowStock
+        } = req.query;
 
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
+        const isStorefrontRequest = !req.user || req.user.role === 'Customer';
 
         // Product query (filtered)
         const query = {
@@ -71,21 +125,55 @@ exports.getShopProducts = async (req, res) => {
             isDeleted: false
         };
 
-        if (category) query.category = category;
+        if (isStorefrontRequest) {
+            query.isActive = true;
+            query.status = 'Published';
+        } else if (status && status !== 'All') {
+            query.status = status;
+        }
+
+        if (category && category !== 'All') query.category = category;
+        if (collection) query.collections = collection;
+        if (tag) query.tags = tag.toLowerCase();
         if (search) query.$text = { $search: search };
+        if (minPrice || maxPrice) {
+            query['pricing.sellingPrice'] = {};
+            if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
+            if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
+        }
+        if (lowStock === 'true') {
+            query.$expr = {
+                $lt: [
+                    { $sum: '$variants.stock' },
+                    '$lowStockThreshold'
+                ]
+            };
+        }
+
+        let sortQuery = { createdAt: -1, _id: 1 };
+        if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
+        if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
+        if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
+        if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
+        if (sort === 'oldest') sortQuery = { createdAt: 1, _id: 1 };
 
         const skip = (page - 1) * limit;
+        const categoryQuery = {
+            shop_id: shopId,
+            isDeleted: false,
+            ...(isStorefrontRequest ? { isActive: true, status: 'Published' } : {})
+        };
 
         // ✨ THE FIX: Add Product.distinct to fetch all categories for this shop
         const [products, total, uniqueCategories] = await Promise.all([
             Product.find(query)
-                .sort({ createdAt: -1 })
+                .sort(sortQuery)
                 .skip(skip)
                 .limit(limit),
             Product.countDocuments(query),
             // Notice we don't use 'query' here, because we want ALL categories
             // for the shop, not just the ones matching the current search filter
-            Product.distinct('category', { shop_id: shopId, isDeleted: false })
+            Product.distinct('category', categoryQuery)
         ]);
 
         res.status(200).json({
@@ -147,24 +235,19 @@ exports.createProduct = async (req, res) => {
 
         // ── 2. Parse JSON fields from FormData ────────────────────────────────
         //    When sent as multipart/form-data, JSON objects arrive as strings.
-        const parsedBody   = { ...req.body };
-        const JSON_FIELDS  = ['pricing', 'variants', 'variantMatrix', 'features', 'specifications', 'comments'];
-
-        for (const field of JSON_FIELDS) {
-            if (typeof parsedBody[field] === 'string') {
-                try {
-                    parsedBody[field] = JSON.parse(parsedBody[field]);
-                } catch {
-                    return res.status(400).json({
-                        success: false,
-                        error: `Invalid JSON in field: "${field}"`
-                    });
-                }
-            }
+        let parsedBody;
+        try {
+            parsedBody = parseProductPayload(req.body);
+        } catch (parseError) {
+            return res.status(400).json({ success: false, error: parseError.message });
         }
 
         // ── 3. Merge media into payload ───────────────────────────────────────
-        const payload = { ...parsedBody, images: imageUrls, videos: videoUrls };
+        const payload = {
+            ...parsedBody,
+            ...(imageUrls.length > 0 && { images: imageUrls }),
+            ...(videoUrls.length > 0 && { videos: videoUrls })
+        };
 
         // ── 4. Validate ───────────────────────────────────────────────────────
         const { error, value } = createProductSchema.validate(payload, { abortEarly: true });
@@ -177,6 +260,8 @@ exports.createProduct = async (req, res) => {
             value.variants = expandMatrix(value.variantMatrix);
             delete value.variantMatrix;
         }
+
+        value.slug = value.slug || slugify(value.title);
 
         // ── 6. Save ───────────────────────────────────────────────────────────
         const product = await Product.create({
@@ -211,17 +296,27 @@ exports.updateProduct = async (req, res) => {
 
     try {
         const shopId = req.tenantId;
+        let parsedBody;
+        try {
+            parsedBody = parseProductPayload(req.body);
+        } catch (parseError) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: parseError.message });
+        }
+
+        if (req.files?.images?.length) parsedBody.images = req.files.images.map(f => f.path);
+        if (req.files?.videos?.length) parsedBody.videos = req.files.videos.map(f => f.path);
 
         // ── 1. Sanitize attributes in incoming flat variants ──────────────────
-        if (req.body.variants) {
-            req.body.variants = req.body.variants.map(v => ({
+        if (parsedBody.variants) {
+            parsedBody.variants = parsedBody.variants.map(v => ({
                 ...v,
                 attributes: (v.attributes || []).map(a => ({ name: a.name, value: a.value }))
             }));
         }
 
         // ── 2. Validate ───────────────────────────────────────────────────────
-        const { error, value } = updateProductSchema.validate(req.body, { abortEarly: true });
+        const { error, value } = updateProductSchema.validate(parsedBody, { abortEarly: true });
         if (error) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
@@ -246,7 +341,22 @@ exports.updateProduct = async (req, res) => {
         }
 
         // ── 5. Update scalar fields ───────────────────────────────────────────
-        const SCALAR = ['title', 'description', 'category', 'images', 'videos', 'features', 'specifications', 'comments'];
+        const SCALAR = [
+            'title',
+            'slug',
+            'description',
+            'category',
+            'tags',
+            'collections',
+            'status',
+            'seo',
+            'lowStockThreshold',
+            'images',
+            'videos',
+            'features',
+            'specifications',
+            'comments'
+        ];
         for (const field of SCALAR) {
             if (value[field] !== undefined) product[field] = value[field];
         }
@@ -394,5 +504,178 @@ exports.deleteProduct = async (req, res) => {
     } catch (err) {
         console.error("Delete product error:", err);
         res.status(500).json({ success: false, error: "Failed to delete product" });
+    }
+};
+
+exports.exportProductsCsv = async (req, res) => {
+    try {
+        const products = await Product.find({
+            shop_id: req.tenantId,
+            isDeleted: false
+        }).sort({ createdAt: -1 });
+
+        const headers = [
+            'id',
+            'title',
+            'slug',
+            'status',
+            'category',
+            'tags',
+            'buyingPrice',
+            'sellingPrice',
+            'discount',
+            'totalStock',
+            'lowStockThreshold',
+            'seoTitle',
+            'seoDescription'
+        ];
+
+        const escapeCsv = (value) => {
+            const raw = value === undefined || value === null ? '' : String(value);
+            return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
+        };
+
+        const rows = products.map(product => [
+            product._id,
+            product.title,
+            product.slug,
+            product.status,
+            product.category,
+            (product.tags || []).join('|'),
+            product.pricing?.buyingPrice,
+            product.pricing?.sellingPrice,
+            product.pricing?.discount,
+            product.totalStock,
+            product.lowStockThreshold,
+            product.seo?.title,
+            product.seo?.description
+        ].map(escapeCsv).join(','));
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="products.csv"');
+        res.status(200).send([headers.join(','), ...rows].join('\n'));
+    } catch (err) {
+        console.error('Export products error:', err);
+        res.status(500).json({ success: false, error: 'Failed to export products' });
+    }
+};
+
+exports.bulkUpdateProducts = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { productIds, updates = {} } = req.body;
+
+        if (!Array.isArray(productIds) || productIds.length === 0) {
+            return res.status(400).json({ success: false, error: 'productIds are required' });
+        }
+
+        const products = await Product.find({
+            _id: { $in: productIds },
+            shop_id: req.tenantId,
+            isDeleted: false
+        }).session(session);
+
+        const allowedStatus = ['Draft', 'Published', 'Archived'];
+
+        for (const product of products) {
+            if (updates.category !== undefined) product.category = updates.category;
+            if (updates.tags !== undefined) product.tags = updates.tags;
+            if (updates.status !== undefined && allowedStatus.includes(updates.status)) {
+                product.status = updates.status;
+            }
+            if (updates.lowStockThreshold !== undefined) {
+                product.lowStockThreshold = Number(updates.lowStockThreshold);
+            }
+            if (updates.seo) {
+                product.seo = { ...(product.seo?.toObject?.() || product.seo || {}), ...updates.seo };
+            }
+
+            if (updates.pricing) {
+                product.pricing = { ...product.pricing.toObject(), ...updates.pricing };
+            }
+
+            if (updates.stock !== undefined) {
+                product.variants.forEach(variant => {
+                    variant.stock = Number(updates.stock);
+                });
+            }
+
+            await product.save({ session });
+        }
+
+        await session.commitTransaction();
+
+        res.status(200).json({
+            success: true,
+            message: `${products.length} products updated`,
+            count: products.length
+        });
+    } catch (err) {
+        await session.abortTransaction();
+        console.error('Bulk update products error:', err);
+        res.status(400).json({ success: false, error: err.message || 'Bulk update failed' });
+    } finally {
+        session.endSession();
+    }
+};
+
+exports.bulkImportProducts = async (req, res) => {
+    try {
+        const { products } = req.body;
+
+        if (!Array.isArray(products) || products.length === 0) {
+            return res.status(400).json({ success: false, error: 'products array is required' });
+        }
+
+        const docs = products.slice(0, 200).map(item => {
+            const sellingPrice = Number(item.sellingPrice || item.pricing?.sellingPrice || 0);
+            const buyingPrice = Number(item.buyingPrice || item.pricing?.buyingPrice || 0);
+            const stock = Number(item.stock || item.totalStock || 0);
+
+            return {
+                shop_id: req.tenantId,
+                title: item.title,
+                slug: item.slug || slugify(item.title),
+                description: item.description || 'Imported product. Please update the product description.',
+                category: item.category || 'General',
+                tags: Array.isArray(item.tags)
+                    ? item.tags
+                    : String(item.tags || '').split('|').map(tag => tag.trim()).filter(Boolean),
+                status: item.status || 'Draft',
+                images: item.image ? [item.image] : ['https://via.placeholder.com/400'],
+                pricing: {
+                    buyingPrice,
+                    sellingPrice: Math.max(sellingPrice, buyingPrice),
+                    discount: Number(item.discount || 0)
+                },
+                variants: [{
+                    sku: item.sku || '',
+                    attributes: [{ name: 'default', value: 'default' }],
+                    stock,
+                    isActive: true
+                }],
+                seo: {
+                    title: item.seoTitle || '',
+                    description: item.seoDescription || ''
+                },
+                lowStockThreshold: Number(item.lowStockThreshold || 5)
+            };
+        });
+
+        const created = await Product.insertMany(docs, { ordered: false });
+
+        res.status(201).json({
+            success: true,
+            message: `${created.length} products imported`,
+            count: created.length
+        });
+    } catch (err) {
+        console.error('Bulk import products error:', err);
+        res.status(400).json({
+            success: false,
+            error: err.message || 'Bulk import failed'
+        });
     }
 };

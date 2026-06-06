@@ -26,8 +26,13 @@ const EditProduct = () => {
     // ── Scalar + variant state ────────────────────────────────────────────────
     const [formData, setFormData] = useState({
         title:          '',
+        slug:           '',
         description:    '',
         category:       '',
+        tags:           '',
+        status:         'Published',
+        lowStockThreshold: 5,
+        seo:            { title: '', description: '' },
         pricing:        { buyingPrice: 0, sellingPrice: 0, discount: 0 },
         variants:       [],    // live variant list (reflects DB state + local additions)
         features:       [],
@@ -71,8 +76,13 @@ const EditProduct = () => {
                 }
                 setFormData({
                     title:          product.title          || '',
+                    slug:           product.slug           || '',
                     description:    product.description    || '',
                     category:       product.category       || '',
+                    tags:           (product.tags || []).join(', '),
+                    status:         product.status         || (product.isActive ? 'Published' : 'Draft'),
+                    lowStockThreshold: product.lowStockThreshold || 5,
+                    seo:            product.seo || { title: '', description: '' },
                     pricing: {
                         buyingPrice:  product.pricing?.buyingPrice  || 0,
                         sellingPrice: product.pricing?.sellingPrice || 0,
@@ -240,8 +250,13 @@ const EditProduct = () => {
         try {
             const body = {
                 title:          formData.title,
+                ...(formData.slug && { slug: formData.slug }),
                 description:    formData.description,
                 category:       formData.category,
+                tags:           formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+                status:         formData.status,
+                lowStockThreshold: Number(formData.lowStockThreshold || 5),
+                seo:            formData.seo,
                 pricing:        formData.pricing,
                 features:       formData.features,
                 specifications: formData.specifications,
@@ -332,6 +347,11 @@ const EditProduct = () => {
                 <div className="bg-white p-5 rounded-xl border space-y-4">
                     <h2 className="font-semibold text-gray-700">Basic Info</h2>
                     <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Input id="slug" label="Product Slug" value={formData.slug} onChange={handleChange} />
+                        <Input id="tags" label="Tags" value={formData.tags} onChange={handleChange} />
+                        <Input id="lowStockThreshold" label="Low Stock Alert" type="number" value={formData.lowStockThreshold} onChange={handleChange} />
+                    </div>
                     <textarea
                         id="description"
                         value={formData.description}
@@ -340,6 +360,33 @@ const EditProduct = () => {
                         rows={3}
                     />
                     <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
+                    <label className="block text-sm font-medium text-gray-700">
+                        Status
+                        <select
+                            id="status"
+                            value={formData.status}
+                            onChange={handleChange}
+                            className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        >
+                            <option>Published</option>
+                            <option>Draft</option>
+                            <option>Archived</option>
+                        </select>
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                            id="seoTitle"
+                            label="SEO Title"
+                            value={formData.seo.title}
+                            onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, title: e.target.value } }))}
+                        />
+                        <Input
+                            id="seoDescription"
+                            label="SEO Description"
+                            value={formData.seo.description}
+                            onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, description: e.target.value } }))}
+                        />
+                    </div>
                 </div>
 
                 {/* ── PRICING ───────────────────────────────────────────── */}

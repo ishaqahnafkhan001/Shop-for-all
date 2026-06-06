@@ -36,7 +36,10 @@ exports.getSingleProduct = async (req, res) => {
     try {
         const product = await Product.findOne({
             _id: req.params.id,
-            shop_id: req.tenantId
+            shop_id: req.tenantId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
         });
 
         if (!product) {

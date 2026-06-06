@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
     LayoutDashboard,
     Package,
@@ -7,22 +8,44 @@ import {
     Settings,
     X,
     Megaphone,
-    Truck // 🚚 NEW: Import the Truck icon
+    Truck,
+    Palette,
+    TicketPercent,
+    BarChart3,
+    Shield,
+    Crown,
+    Boxes
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
-    const navItems = [
+    const { user } = useAuth();
+    const isSuperAdmin = user?.role === 'SuperAdmin';
+
+    const vendorNavItems = [
         { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Products', path: '/dashboard/products', icon: Package },
+        { name: 'Catalog Tools', path: '/dashboard/catalog-tools', icon: Boxes },
         { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
-        { name: 'Promotional Banner', path: '/dashboard/promotions', icon: Megaphone },
+        { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent },
+        { name: 'Banners', path: '/dashboard/banners', icon: Megaphone },
+        { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+        { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, adminOnly: true },
+        { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true },
 
         // 🚚 NEW: Added the Shipping link here
         { name: 'Shipping', path: '/dashboard/shipping', icon: Truck },
 
         { name: 'Settings', path: '/dashboard/settings', icon: Settings },
     ];
+
+    const superAdminNavItems = [
+        { name: 'Super Admin', path: '/super-admin', icon: Crown }
+    ];
+
+    const navItems = isSuperAdmin
+        ? superAdminNavItems
+        : vendorNavItems.filter(item => !item.adminOnly || user?.role === 'VendorAdmin');
 
     return (
         <>
@@ -42,7 +65,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
             `}>
                 <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-                    <span className="text-2xl font-black text-indigo-600 tracking-tight">ScaleUp.</span>
+                    <span className="text-2xl font-black text-indigo-600 tracking-tight">
+                        {isSuperAdmin ? 'Platform.' : 'ScaleUp.'}
+                    </span>
 
                     <button
                         onClick={() => setIsOpen(false)}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
+import API from '@/api/api';
 
 const FALLBACK_THEME = {
     accent: '#4f46e5',
@@ -17,11 +18,14 @@ const THEME_KEYS = Object.keys(FALLBACK_THEME);
 const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
 
 const sanitizeTheme = (themeCandidate = {}) => {
-    return THEME_KEYS.reduce((acc, key) => {
-        const value = themeCandidate[key];
+    const colors = themeCandidate.colors || themeCandidate;
+    const safe = THEME_KEYS.reduce((acc, key) => {
+        const value = colors[key];
         acc[key] = HEX_COLOR_REGEX.test(value) ? value : FALLBACK_THEME[key];
         return acc;
     }, {});
+    safe.fontFamily = themeCandidate.fontFamily || 'Arial, Helvetica, sans-serif';
+    return safe;
 };
 
 export default function StorefrontThemeProvider({ subdomain, children }) {
@@ -31,13 +35,15 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         let isMounted = true;
 
         const loadTheme = async () => {
-            try {
-                const response = await fetch('/storefront-colors.json', { cache: 'no-store' });
-                if (!response.ok) throw new Error('Theme file could not be loaded');
+            if (!subdomain) {
+                setTheme(FALLBACK_THEME);
+                return;
+            }
 
-                const colorMap = await response.json();
-                const themeFromFile = colorMap?.[subdomain] || colorMap?.default || {};
-                const safeTheme = sanitizeTheme(themeFromFile);
+            try {
+                const response = await API.get(`/store-builder/storefront/${subdomain}`);
+                const themeFromApi = response.data?.data?.theme || {};
+                const safeTheme = sanitizeTheme(themeFromApi);
 
                 if (isMounted) setTheme(safeTheme);
             } catch (error) {
@@ -61,6 +67,7 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         '--sf-accent-muted': theme.accentMuted,
         '--sf-accent-light': theme.accentLight,
         '--sf-accent-ring': theme.accentRing,
+        fontFamily: theme.fontFamily,
     }), [theme]);
 
     return <div style={style}>{children}</div>;

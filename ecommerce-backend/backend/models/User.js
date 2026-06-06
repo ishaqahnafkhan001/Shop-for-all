@@ -30,6 +30,16 @@ const userSchema = new mongoose.Schema({
         enum: ['Active', 'Suspended'],
         default: 'Active'
     },
+    permissions: {
+        products: { type: Boolean, default: true },
+        orders: { type: Boolean, default: true },
+        customers: { type: Boolean, default: false },
+        promotions: { type: Boolean, default: false },
+        analytics: { type: Boolean, default: false },
+        storeBuilder: { type: Boolean, default: false },
+        settings: { type: Boolean, default: false },
+        staff: { type: Boolean, default: false }
+    },
     shop_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Shop',

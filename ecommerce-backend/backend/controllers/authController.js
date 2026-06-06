@@ -353,11 +353,12 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
     try {
-        const userId = req.user._id || req.user.id;
-
+        const userId = req.user?._id || req.user?.id;
         if (!userId) {
-            return res.status(400).json({
-                error: 'User ID missing from request'
+            return res.status(200).json({
+                success: true,
+                authenticated: false,
+                user: null
             });
         }
 
@@ -384,6 +385,7 @@ exports.getMe = async (req, res) => {
 
         res.status(200).json({
             success: true,
+            authenticated: true,
             user
         });
 

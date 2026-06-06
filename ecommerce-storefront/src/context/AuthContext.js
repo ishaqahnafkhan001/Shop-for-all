@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
         try {
             // The browser automatically attaches the HttpOnly cookie to this request
             const { data } = await API.get('/auth/me');
+            console.log(data)
             setUser(data.user); // Assuming backend returns { user: { _id, name, email } }
         } catch (error) {
             // If 401 Unauthorized, it means no cookie or expired cookie

@@ -65,9 +65,11 @@ const createOrderSchema = Joi.object({
         .messages({
             'array.min': 'Order must contain at least one item',
             'any.required': 'Items are required'
-        }),
+    }),
     shipping: shippingSchema.required(),
-    payment:  paymentSchema.required()
+    payment:  paymentSchema.required(),
+    promotionCode: Joi.string().trim().max(40).allow('').optional(),
+    source: Joi.string().trim().max(80).allow('').optional()
 });
 
 /**

@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { createUserSchema, loginUserSchema } = require('../validations/userValidation');
+const { createUserSchema } = require('../validations/userValidation');
 
 
 /**
@@ -107,5 +107,46 @@ exports.getShopUsers = async (req, res) => {
         res.status(200).json(users);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch users" });
+    }
+};
+
+exports.updateShopUserPermissions = async (req, res) => {
+    try {
+        const user = await User.findOne({
+            _id: req.params.id,
+            shop_id: req.user.shopId,
+            role: 'VendorStaff'
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Staff member not found' });
+        }
+
+        user.permissions = {
+            ...(user.permissions?.toObject?.() || user.permissions || {}),
+            ...req.body.permissions
+        };
+
+        if (req.body.status && ['Active', 'Suspended'].includes(req.body.status)) {
+            user.status = req.body.status;
+        }
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Staff permissions updated',
+            user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                status: user.status,
+                permissions: user.permissions
+            }
+        });
+    } catch (err) {
+        console.error('Update staff permissions error:', err);
+        res.status(500).json({ error: 'Failed to update staff permissions' });
     }
 };

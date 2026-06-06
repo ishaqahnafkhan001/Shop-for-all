@@ -114,13 +114,24 @@ const contentFields = {
     comments:       Joi.array().items(keyValueSchema).max(20).optional()
 };
 
+const seoSchema = Joi.object({
+    title: Joi.string().trim().max(70).allow('').optional(),
+    description: Joi.string().trim().max(170).allow('').optional()
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CREATE PRODUCT SCHEMA
 // ═══════════════════════════════════════════════════════════════════════════════
 const createProductSchema = Joi.object({
     title:       Joi.string().trim().min(3).max(100).required(),
+    slug:        Joi.string().trim().lowercase().pattern(/^[a-z0-9-]+$/).max(100).optional(),
     description: Joi.string().trim().min(10).max(3000).required(),
     category:    Joi.string().trim().max(100).optional(),
+    tags:        Joi.array().items(Joi.string().trim().lowercase().max(50)).max(30).optional(),
+    collections: Joi.array().items(Joi.string().hex().length(24)).max(20).optional(),
+    status:      Joi.string().valid('Draft', 'Published', 'Archived').default('Published'),
+    seo:         seoSchema.optional(),
+    lowStockThreshold: Joi.number().integer().min(0).default(5),
     images:      Joi.array().items(Joi.string().uri()).min(1).max(10).required(),
     videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
     pricing:     pricingCreateSchema,
@@ -140,8 +151,14 @@ const createProductSchema = Joi.object({
 // ═══════════════════════════════════════════════════════════════════════════════
 const updateProductSchema = Joi.object({
     title:       Joi.string().trim().min(3).max(100).optional(),
+    slug:        Joi.string().trim().lowercase().pattern(/^[a-z0-9-]+$/).max(100).optional(),
     description: Joi.string().trim().min(10).max(3000).optional(),
     category:    Joi.string().trim().max(100).optional(),
+    tags:        Joi.array().items(Joi.string().trim().lowercase().max(50)).max(30).optional(),
+    collections: Joi.array().items(Joi.string().hex().length(24)).max(20).optional(),
+    status:      Joi.string().valid('Draft', 'Published', 'Archived').optional(),
+    seo:         seoSchema.optional(),
+    lowStockThreshold: Joi.number().integer().min(0).optional(),
     images:      Joi.array().items(Joi.string().uri()).max(10).optional(),
     videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
     pricing:     pricingUpdateSchema,

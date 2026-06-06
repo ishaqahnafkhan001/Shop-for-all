@@ -6,7 +6,7 @@ const router = express.Router();
 // =========================
 // Middlewares
 // =========================
-const { protect } = require('../middlewares/auth');
+const { optionalAuth } = require('../middlewares/auth');
 
 // =========================
 // Controllers
@@ -57,7 +57,7 @@ router.post(
 // Get Current Logged In User
 router.get(
     '/me',
-    protect,
+    optionalAuth,
     getMe
 );
 

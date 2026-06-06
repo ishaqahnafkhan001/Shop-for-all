@@ -6,6 +6,8 @@ const { createOrderSchema, updateOrderStatusSchema } = require('../validations/o
 const InventoryLog = require('../models/InventoryLog');
 const { getPathaoToken, createPathaoOrder } = require('../services/pathaoService');
 const Shop = require('../models/Shop'); // Make sure to import your Shop model
+const Promotion = require('../models/Promotion');
+const { evaluatePromotion } = require('../services/promotionService');
 
 
 
@@ -88,9 +90,8 @@ exports.getMyOrders = async (req, res) => {
 
         // Find all orders for this customer, sorted by newest first
         const orders = await Order.find({
-            customer: customerId
-            // If you want to strictly tie it to the current shop, add:
-            // shop_id: req.tenant._id
+            customer: customerId,
+            shop_id: req.tenantId
         })
             .sort({ createdAt: -1 }); // -1 means descending (newest at the top)
 
@@ -118,7 +119,8 @@ exports.getOrderById = async (req, res) => {
 
         const order = await Order.findOne({
             _id: orderId,
-            customer: customerId // Security check: Ensure they own this order!
+            customer: customerId,
+            shop_id: req.tenantId
         });
 
         if (!order) {
@@ -149,10 +151,11 @@ exports.createOrder = async (req, res) => {
         const { error, value } = createOrderSchema.validate(req.body);
         console.log("Validation Result:", { error, value });
         if (error) {
+            await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
         console.log(JSON.stringify(req.body.items, null, 2));
-        const { items, shipping, payment } = value;
+        const { items, shipping, payment, promotionCode, source } = value;
         const shopId = req.tenantId;
         const userId = req.user?._id;
 
@@ -165,6 +168,7 @@ exports.createOrder = async (req, res) => {
 
         let subtotal = 0;
         const orderItems = [];
+        const promotionItems = [];
         const inventoryLogs = [];
 
         // ✅ Process each item
@@ -199,6 +203,14 @@ exports.createOrder = async (req, res) => {
             const totalItemPrice = unitPrice * item.quantity;
 
             subtotal += totalItemPrice;
+            promotionItems.push({
+                productId: product._id,
+                category: product.category,
+                collections: product.collections,
+                quantity: item.quantity,
+                price: unitPrice,
+                total: totalItemPrice
+            });
 
             // ✅ Snapshot item for order (prices locked at time of purchase)
             orderItems.push({
@@ -229,8 +241,35 @@ exports.createOrder = async (req, res) => {
         }
 
         // ✅ Shipping cost (Dhaka-based)
-        const shippingCost = shipping.zone === 'Inside Dhaka' ? 80 : 130;
-        const totalAmount = subtotal + shippingCost;
+        let shippingCost = shipping.zone === 'Inside Dhaka' ? 80 : 130;
+        let discountAmount = 0;
+        let promotionSnapshot = {};
+
+        if (promotionCode) {
+            const promotionResult = await evaluatePromotion({
+                shopId,
+                code: promotionCode,
+                subtotal,
+                items: promotionItems,
+                customerId: userId,
+                session
+            });
+
+            if (!promotionResult.valid) {
+                throw new Error(promotionResult.error || 'Coupon is not valid');
+            }
+
+            discountAmount = promotionResult.discountAmount;
+            if (promotionResult.freeShipping) shippingCost = 0;
+            promotionSnapshot = {
+                code: promotionResult.promotion.code,
+                type: promotionResult.promotion.type,
+                discountAmount,
+                freeShipping: promotionResult.freeShipping
+            };
+        }
+
+        const totalAmount = Math.max(0, subtotal - discountAmount) + shippingCost;
 
         // ✅ Create order
         const [order] = await Order.create([{
@@ -239,9 +278,11 @@ exports.createOrder = async (req, res) => {
             items: orderItems,
             pricing: {
                 subtotal,
+                discount: discountAmount,
                 shipping: shippingCost,
                 total: totalAmount
             },
+            promotion: promotionSnapshot,
             payment: {
                 method: payment.method,
                 status: 'Pending'
@@ -251,9 +292,17 @@ exports.createOrder = async (req, res) => {
                 cost: shippingCost,
                 address: shipping.address
             },
-            status: 'Pending'
+            status: 'Pending',
+            source: source || 'direct'
         }], { session });
         console.log("Order Created:", order);
+
+        if (promotionSnapshot.code) {
+            await Promotion.updateOne(
+                { shop_id: shopId, code: promotionSnapshot.code },
+                { $inc: { usageCount: 1 } }
+            ).session(session);
+        }
 
         // ✅ Link inventory logs to the new order
         const logsWithRef = inventoryLogs.map(log => ({

@@ -15,12 +15,17 @@ const storefrontRoutes = require('./routes/storefrontRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const inventoryRoutes = require('./routes/inventory');
 const bannerRoutes = require('./routes/bannerRoutes');
+const storeBuilderRoutes = require('./routes/storeBuilderRoutes');
+const promotionRoutes = require('./routes/promotionRoutes');
+const collectionRoutes = require('./routes/collectionRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const superAdminRoutes = require('./routes/superAdminRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
 connectDB();
 
-const allowedOrigins = process.env.CORS_ORIGINS.split(',');
+const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -69,6 +74,11 @@ app.use('/api/storefront', storefrontRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/banners', bannerRoutes);
+app.use('/api/store-builder', storeBuilderRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/admin/collections', collectionRoutes);
+app.use('/api/admin/analytics', analyticsRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running successfully...');
