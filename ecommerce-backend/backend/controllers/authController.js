@@ -375,6 +375,13 @@ exports.registerCustomer = async (req, res) => {
         await session.abortTransaction();
         console.error('Register Customer Error:', err);
 
+        if (err.code === 11000 && err.keyPattern?.email) {
+            return res.status(409).json({
+                error: 'Customer email uniqueness is still using a legacy global index. Restart the backend so the tenant-scoped email index migration can run, then try again.',
+                dev_details: err.message
+            });
+        }
+
         res.status(500).json({
             error: 'Registration failed.',
             dev_details: err.message
