@@ -65,8 +65,36 @@ const del = async (key) => {
     memoryCache.delete(key);
 };
 
+const delPattern = async (pattern) => {
+    if (redisClient) {
+        try {
+            const stream = redisClient.scanStream({ match: pattern, count: 100 });
+            const pipeline = redisClient.pipeline();
+            let count = 0;
+
+            for await (const keys of stream) {
+                keys.forEach((key) => {
+                    pipeline.del(key);
+                    count += 1;
+                });
+            }
+
+            if (count > 0) await pipeline.exec();
+            return;
+        } catch (error) {
+            console.error('Redis cache pattern delete failed:', error.message);
+        }
+    }
+
+    const regex = new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
+    for (const key of memoryCache.keys()) {
+        if (regex.test(key)) memoryCache.delete(key);
+    }
+};
+
 module.exports = {
     get,
     set,
-    del
+    del,
+    delPattern
 };

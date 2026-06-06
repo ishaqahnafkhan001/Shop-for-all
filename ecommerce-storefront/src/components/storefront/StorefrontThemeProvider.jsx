@@ -1,64 +1,34 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import API from '@/api/api';
+import { FALLBACK_THEME, getThemeCssVars, normalizeTheme } from '@/lib/theme';
 
-const FALLBACK_THEME = {
-    accent: '#4f46e5',
-    accentHover: '#4338ca',
-    accentSoft: '#c7d2fe',
-    accentBg: '#eef2ff',
-    accentStrong: '#3730a3',
-    accentMuted: '#818cf8',
-    accentLight: '#a5b4fc',
-    accentRing: '#e0e7ff',
-    background: '#ffffff',
-    foreground: '#111827',
-    headerBackground: '#ffffff',
-};
+const StorefrontThemeContext = createContext({
+    settings: null,
+    theme: FALLBACK_THEME,
+    cssTheme: getThemeCssVars(FALLBACK_THEME),
+});
 
-const THEME_KEYS = Object.keys(FALLBACK_THEME);
-const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
-
-const sanitizeTheme = (themeCandidate = {}) => {
-    const colors = themeCandidate.colors || themeCandidate;
-    const safe = THEME_KEYS.reduce((acc, key) => {
-        const value = colors[key];
-        acc[key] = HEX_COLOR_REGEX.test(value) ? value : FALLBACK_THEME[key];
-        return acc;
-    }, {});
-    safe.fontFamily = themeCandidate.typography?.bodyFont || themeCandidate.fontFamily || 'Arial, Helvetica, sans-serif';
-    safe.headingFont = themeCandidate.typography?.headingFont || themeCandidate.fontFamily || 'Arial, Helvetica, sans-serif';
-    safe.baseSize = Number(themeCandidate.typography?.baseSize) || 16;
-    safe.headingWeight = themeCandidate.typography?.headingWeight || '800';
-    safe.checkoutButtonRadius = themeCandidate.checkoutBranding?.buttonStyle === 'Pill'
-        ? '999px'
-        : themeCandidate.checkoutBranding?.buttonStyle === 'Solid'
-            ? '10px'
-            : '16px';
-    return safe;
-};
+export const useStorefrontTheme = () => useContext(StorefrontThemeContext);
 
 export default function StorefrontThemeProvider({ subdomain, children }) {
-    const [theme, setTheme] = useState(FALLBACK_THEME);
+    const [settings, setSettings] = useState(null);
 
     useEffect(() => {
         let isMounted = true;
 
         const loadTheme = async () => {
             if (!subdomain) {
-                setTheme(FALLBACK_THEME);
+                setSettings(null);
                 return;
             }
 
             try {
                 const response = await API.get(`/store-builder/storefront/${subdomain}`);
-                const themeFromApi = response.data?.data?.theme || {};
-                const safeTheme = sanitizeTheme(themeFromApi);
-
-                if (isMounted) setTheme(safeTheme);
+                if (isMounted) setSettings(response.data?.data || null);
             } catch (error) {
-                if (isMounted) setTheme(FALLBACK_THEME);
+                if (isMounted) setSettings(null);
             }
         };
 
@@ -69,27 +39,41 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         };
     }, [subdomain]);
 
-    const style = useMemo(() => ({
-        '--sf-accent': theme.accent,
-        '--sf-accent-hover': theme.accentHover,
-        '--sf-accent-soft': theme.accentSoft,
-        '--sf-accent-bg': theme.accentBg,
-        '--sf-accent-strong': theme.accentStrong,
-        '--sf-accent-muted': theme.accentMuted,
-        '--sf-accent-light': theme.accentLight,
-        '--sf-accent-ring': theme.accentRing,
-        '--sf-background': theme.background,
-        '--sf-foreground': theme.foreground,
-        '--sf-header-background': theme.headerBackground,
-        '--sf-heading-font': theme.headingFont,
-        '--sf-heading-weight': theme.headingWeight,
-        '--sf-base-size': `${theme.baseSize}px`,
-        '--sf-checkout-radius': theme.checkoutButtonRadius,
-        fontFamily: theme.fontFamily,
-        fontSize: `${theme.baseSize}px`,
-        color: theme.foreground,
-        backgroundColor: theme.background,
-    }), [theme]);
+    const theme = useMemo(() => normalizeTheme(settings?.theme || {}), [settings?.theme]);
+    const cssTheme = useMemo(() => getThemeCssVars(theme), [theme]);
 
-    return <div style={style}>{children}</div>;
+    const style = useMemo(() => ({
+        '--sf-accent': cssTheme.accent,
+        '--sf-accent-hover': cssTheme.accentHover,
+        '--sf-accent-soft': cssTheme.accentSoft,
+        '--sf-accent-bg': cssTheme.accentBg,
+        '--sf-accent-strong': cssTheme.accentStrong,
+        '--sf-accent-muted': cssTheme.accentMuted,
+        '--sf-accent-light': cssTheme.accentLight,
+        '--sf-accent-ring': cssTheme.accentRing,
+        '--sf-background': cssTheme.background,
+        '--sf-foreground': cssTheme.foreground,
+        '--sf-header-background': cssTheme.headerBackground,
+        '--sf-heading-font': cssTheme.headingFont,
+        '--sf-heading-weight': cssTheme.headingWeight,
+        '--sf-base-size': `${cssTheme.baseSize}px`,
+        '--sf-checkout-radius': cssTheme.checkoutButtonRadius,
+        fontFamily: cssTheme.fontFamily,
+        fontSize: `${cssTheme.baseSize}px`,
+        color: cssTheme.foreground,
+        backgroundColor: cssTheme.background,
+        minHeight: '100vh',
+    }), [cssTheme]);
+
+    const contextValue = useMemo(() => ({
+        settings,
+        theme,
+        cssTheme,
+    }), [settings, theme, cssTheme]);
+
+    return (
+        <StorefrontThemeContext.Provider value={contextValue}>
+            <div style={style}>{children}</div>
+        </StorefrontThemeContext.Provider>
+    );
 }

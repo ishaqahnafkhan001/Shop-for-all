@@ -11,6 +11,16 @@ const { evaluatePromotion } = require('../services/promotionService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
+const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const normalizePhone = (value) => String(value || '').replace(/\D/g, '');
+
+const phonesMatch = (savedPhone, submittedPhone) => {
+    const saved = normalizePhone(savedPhone);
+    const submitted = normalizePhone(submittedPhone);
+    if (!saved || !submitted) return false;
+
+    return saved === submitted || saved.endsWith(submitted) || submitted.endsWith(saved);
+};
 
 const getPublicShopBySubdomain = async (subdomain, session = null) => {
     if (!subdomain) return null;
@@ -527,12 +537,11 @@ exports.getPublicProduct = async (req, res) => {
 // Add this to your public controller
 exports.trackPublicOrder = async (req, res) => {
     try {
-        const { orderId } = req.params;
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
         const phone = String(req.query.phone || '').trim();
         let shopId = req.tenantId;
 
-        // Verify it's a valid MongoDB ObjectId to prevent server crashes
-        if (!isObjectId(orderId)) {
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
             return res.status(400).json({ error: "Invalid Order ID format." });
         }
 
@@ -548,17 +557,28 @@ exports.trackPublicOrder = async (req, res) => {
             shopId = shop._id;
         }
 
-        const order = await Order.findOne({
-            _id: orderId,
+        const orderQuery = {
             shop_id: shopId,
-            'shipping.address.phone': phone
-        })
+            ...(isObjectId(orderLookup)
+                ? { _id: orderLookup }
+                : {
+                    $expr: {
+                        $regexMatch: {
+                            input: { $toString: '$_id' },
+                            regex: `${escapeRegex(orderLookup)}$`,
+                            options: 'i'
+                        }
+                    }
+                })
+        };
+
+        const order = await Order.findOne(orderQuery)
             // Optional: Populating product titles/images makes the tracking page look better!
             .populate('items.productId', 'title images category')
             .select('items pricing shipping status createdAt')
             .lean();
 
-        if (!order) {
+        if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
             return res.status(404).json({ error: "Order not found. Please check your ID." });
         }
 

@@ -47,7 +47,7 @@ export default function TrackOrderPage({ params }) {
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Track Your Order</h1>
                 <p className="text-gray-500 mb-8 max-w-lg mx-auto">
-                    Enter your Order ID and delivery phone number to get real-time delivery updates.
+                    Enter the short Order ID from your confirmation screen and delivery phone number to get real-time delivery updates.
                 </p>
 
                 <form onSubmit={handleTrackOrder} className="max-w-xl mx-auto space-y-3">
@@ -59,7 +59,7 @@ export default function TrackOrderPage({ params }) {
                             type="text"
                             value={trackingId}
                             onChange={(e) => setTrackingId(e.target.value)}
-                            placeholder="Order ID"
+                            placeholder="Order ID, for example A1B2C3"
                             className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none text-gray-900 font-mono shadow-sm"
                         />
                     </div>

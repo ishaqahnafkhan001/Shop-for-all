@@ -69,7 +69,10 @@ exports.updateStoreBuilderSettings = async (req, res) => {
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        await cache.del(`storefront:settings:${req.tenantId}`);
+        await Promise.all([
+            cache.del(`storefront:settings:${req.tenantId}`),
+            cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
+        ]);
 
         res.status(200).json({
             success: true,
@@ -79,6 +82,40 @@ exports.updateStoreBuilderSettings = async (req, res) => {
     } catch (err) {
         console.error('Update store builder settings error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update store builder settings' });
+    }
+};
+
+exports.uploadStoreBuilderLogo = async (req, res) => {
+    try {
+        if (!req.file?.path) {
+            return res.status(400).json({ success: false, error: 'Logo image is required' });
+        }
+
+        const target = req.body?.target === 'checkout' ? 'theme.checkoutBranding.logoUrl' : 'theme.logoUrl';
+        const shop = await Shop.findByIdAndUpdate(
+            req.tenantId,
+            { $set: { [target]: req.file.path } },
+            { new: true, runValidators: true }
+        ).select('shopName subdomain theme customDomain plan featureFlags storewideDiscount');
+
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+
+        await Promise.all([
+            cache.del(`storefront:settings:${req.tenantId}`),
+            cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            message: 'Logo uploaded',
+            data: {
+                url: req.file.path,
+                shop
+            }
+        });
+    } catch (err) {
+        console.error('Upload store builder logo error:', err);
+        res.status(400).json({ success: false, error: err.message || 'Failed to upload logo' });
     }
 };
 

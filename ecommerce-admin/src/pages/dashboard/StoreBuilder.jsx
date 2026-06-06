@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save, Palette, Globe, Link as LinkIcon, FileText, LayoutTemplate, ShoppingBag, Smartphone, CreditCard, Star, ShieldCheck } from 'lucide-react';
+import { Save, Palette, Globe, Link as LinkIcon, FileText, LayoutTemplate, ShoppingBag, Smartphone, CreditCard, Star, ShieldCheck, Upload, RotateCcw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 
@@ -301,9 +301,80 @@ const StorefrontPreview = ({ theme, storewideDiscount, shopName }) => {
     );
 };
 
+const CheckoutBrandingPreview = ({ theme, shopName }) => {
+    const colors = theme.colors || defaultTheme.colors;
+    const checkoutBranding = theme.checkoutBranding || defaultTheme.checkoutBranding;
+    const policies = theme.policies || defaultTheme.policies;
+    const visiblePolicies = [
+        ['refund', 'Refund policy'],
+        ['shipping', 'Shipping policy'],
+        ['privacy', 'Privacy policy'],
+        ['terms', 'Terms of service']
+    ].filter(([key]) => policies[key]?.trim());
+    const buttonRadius = checkoutBranding.buttonStyle === 'Pill'
+        ? '999px'
+        : checkoutBranding.buttonStyle === 'Solid'
+            ? '10px'
+            : '16px';
+
+    return (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <CreditCard size={16} />
+                Checkout preview
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" style={{ color: colors.foreground }}>
+                {(checkoutBranding.logoUrl || checkoutBranding.bannerText) && (
+                    <div className="mb-4 rounded-lg border border-slate-100 bg-white p-3 text-center">
+                        {checkoutBranding.logoUrl && (
+                            <div
+                                className="mx-auto mb-2 h-10 w-32 rounded bg-contain bg-center bg-no-repeat"
+                                style={{ backgroundImage: `url(${checkoutBranding.logoUrl})` }}
+                            />
+                        )}
+                        <p className="text-xs font-semibold text-slate-600">
+                            {checkoutBranding.bannerText || shopName || 'Checkout'}
+                        </p>
+                    </div>
+                )}
+                <div className="grid grid-cols-1 gap-3 text-xs">
+                    <div className="rounded-lg border border-slate-100 p-3">
+                        <p className="font-bold text-slate-900">Order Summary</p>
+                        <div className="mt-3 space-y-2 text-slate-500">
+                            <div className="flex justify-between"><span>Subtotal</span><span>৳ 2,190</span></div>
+                            <div className="flex justify-between"><span>Delivery Charge</span><span>৳ 80</span></div>
+                            <div className="flex justify-between border-t border-dashed border-slate-200 pt-2 font-black text-slate-900"><span>Total</span><span style={{ color: colors.accent }}>৳ 2,270</span></div>
+                        </div>
+                    </div>
+                    <button className="w-full py-3 text-sm font-black text-white" style={{ backgroundColor: colors.accent, borderRadius: buttonRadius }}>
+                        Place Order
+                    </button>
+                    <p className="flex items-center justify-center gap-2 text-xs text-slate-500">
+                        <ShieldCheck size={14} style={{ color: colors.accent }} />
+                        {checkoutBranding.trustMessage || 'Secure checkout'}
+                    </p>
+                    {visiblePolicies.length > 0 && (
+                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                            <p className="mb-2 font-bold text-slate-900">Store Policies</p>
+                            <div className="space-y-1">
+                                {visiblePolicies.map(([key, label]) => (
+                                    <div key={key} className="rounded bg-white px-3 py-2 font-semibold text-slate-600">
+                                        {label}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const StoreBuilder = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
     const [shopName, setShopName] = useState('');
     const [theme, setTheme] = useState(defaultTheme);
     const [customDomain, setCustomDomain] = useState({ domain: '' });
@@ -400,6 +471,47 @@ const StoreBuilder = () => {
         }));
     };
 
+    const resetStyling = () => {
+        setTheme(prev => mergeTheme(defaultTheme, {
+            navigation: prev.navigation,
+            footer: prev.footer,
+            policies: prev.policies,
+            homepageSections: prev.homepageSections
+        }));
+        setStorewideDiscount(0);
+        toast.success('Default styling restored. Save changes to publish it.');
+    };
+
+    const handleLogoUpload = async (event, target = 'storefront') => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('logo', file);
+        formData.append('target', target);
+        setUploadingLogo(true);
+
+        try {
+            const { data } = await API.post('/store-builder/admin/logo', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const url = data.data?.url;
+            if (!url) throw new Error('Upload did not return a logo URL');
+
+            if (target === 'checkout') {
+                setThemeGroup('checkoutBranding', 'logoUrl', url);
+            } else {
+                setTheme(prev => ({ ...prev, logoUrl: url }));
+            }
+            toast.success('Logo uploaded');
+        } catch (err) {
+            toast.error(err.response?.data?.error || err.message || 'Failed to upload logo');
+        } finally {
+            setUploadingLogo(false);
+            event.target.value = '';
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -427,14 +539,24 @@ const StoreBuilder = () => {
                     <h1 className="text-2xl font-bold text-slate-900">Store Builder</h1>
                     <p className="text-sm text-slate-500 mt-1">Control your storefront look without code. Save changes when you are ready to publish them.</p>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-                >
-                    <Save size={18} />
-                    {saving ? 'Saving...' : 'Save changes'}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                        onClick={resetStyling}
+                        disabled={saving}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                        <RotateCcw size={18} />
+                        Reset styling
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                    >
+                        <Save size={18} />
+                        {saving ? 'Saving...' : 'Save changes'}
+                    </button>
+                </div>
             </div>
 
             <StorefrontPreview
@@ -461,6 +583,17 @@ const StoreBuilder = () => {
                                 placeholder="https://..."
                                 title="Public image URL for your store logo"
                             />
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                                <Upload size={14} />
+                                {uploadingLogo ? 'Uploading...' : 'Upload logo'}
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    className="hidden"
+                                    disabled={uploadingLogo}
+                                    onChange={event => handleLogoUpload(event, 'storefront')}
+                                />
+                            </label>
                         </label>
                         <label className="space-y-1 text-sm">
                             <span className="font-medium text-slate-700">Font Family</span>
@@ -677,7 +810,20 @@ const StoreBuilder = () => {
                         Checkout Branding
                     </div>
                     <p className="text-xs text-slate-500">These messages help shoppers feel safe before placing an order.</p>
-                    <input value={theme.checkoutBranding?.logoUrl || ''} onChange={e => setThemeGroup('checkoutBranding', 'logoUrl', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Checkout logo URL" />
+                    <div className="space-y-2">
+                        <input value={theme.checkoutBranding?.logoUrl || ''} onChange={e => setThemeGroup('checkoutBranding', 'logoUrl', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Checkout logo URL" />
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                            <Upload size={14} />
+                            {uploadingLogo ? 'Uploading...' : 'Upload checkout logo'}
+                            <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                className="hidden"
+                                disabled={uploadingLogo}
+                                onChange={event => handleLogoUpload(event, 'checkout')}
+                            />
+                        </label>
+                    </div>
                     <input value={theme.checkoutBranding?.bannerText || ''} onChange={e => setThemeGroup('checkoutBranding', 'bannerText', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Checkout banner text" />
                     <input value={theme.checkoutBranding?.trustMessage || ''} onChange={e => setThemeGroup('checkoutBranding', 'trustMessage', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Trust message" />
                     <select value={theme.checkoutBranding?.buttonStyle || 'Rounded'} onChange={e => setThemeGroup('checkoutBranding', 'buttonStyle', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2">
@@ -685,6 +831,8 @@ const StoreBuilder = () => {
                         <option>Rounded</option>
                         <option>Pill</option>
                     </select>
+
+                    <CheckoutBrandingPreview theme={theme} shopName={shopName} />
 
                     <div className="flex items-center gap-2 font-semibold text-slate-900 pt-3 border-t border-slate-100">
                         <Smartphone size={18} />

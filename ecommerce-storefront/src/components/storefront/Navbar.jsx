@@ -8,28 +8,15 @@ import { useEffect, useState } from 'react';
 
 import SearchModal from '@/components/search/SearchModal';
 import API from '@/api/api';
+import { getSortedNavigation } from '@/lib/theme';
+import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
 
 export default function Navbar({ subdomain }) {
     const { cartCount } = useCart();
+    const { settings: shopSettings, theme } = useStorefrontTheme();
 
     const [searchOpen, setSearchOpen] = useState(false);
     const [products, setProducts] = useState([]);
-    const [shopSettings, setShopSettings] = useState(null);
-
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const settingsRes = await API.get(`/store-builder/storefront/${subdomain}`).catch(() => ({ data: null }));
-                setShopSettings(settingsRes.data?.data || null);
-            } catch (err) {
-                console.error("Storefront settings fetch failed:", err);
-            }
-        };
-
-        if (subdomain) {
-            fetchSettings();
-        }
-    }, [subdomain]);
 
     useEffect(() => {
         const fetchSearchProducts = async () => {
@@ -68,15 +55,11 @@ export default function Navbar({ subdomain }) {
         }
     }, [searchOpen, subdomain, products.length]);
 
-    const theme = shopSettings?.theme || {};
-    const navLinks = (theme.navigation || [])
-        .filter(item => item?.label && item?.url)
-        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-        .slice(0, 4);
+    const navLinks = getSortedNavigation(theme).slice(0, 4);
 
     return (
         <>
-            <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md shadow-sm">
+            <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-[var(--sf-header-background)]/80 backdrop-blur-md shadow-sm">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
 
                     <Link

@@ -25,7 +25,7 @@ test('public order tracking requires tenant and phone verification', () => {
     const block = source.slice(start);
 
     assert.match(block, /shop_id:\s*shopId/);
-    assert.match(block, /'shipping\.address\.phone':\s*phone/);
+    assert.match(block, /phonesMatch\(order\.shipping\?\.address\?\.phone,\s*phone\)/);
     assert.match(block, /Phone number is required/);
     assert.match(block, /\.select\('items pricing shipping status createdAt'\)/);
 });

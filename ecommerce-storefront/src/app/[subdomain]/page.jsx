@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useShopData } from '@/hooks/useShopData';
 import { useCart } from '@/context/CartContext';
+import { getEnabledHomepageSections, normalizeTheme } from '@/lib/theme';
 import {
     ShoppingCart, PackageX, ShoppingBag, ArrowRight,
     Filter, ChevronLeft, ChevronRight, SlidersHorizontal, Star
@@ -21,6 +22,18 @@ const getCardShadow = (shadow) => {
     if (shadow === 'None') return 'shadow-none';
     if (shadow === 'Elevated') return 'shadow-lg hover:shadow-xl';
     return 'hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]';
+};
+
+const sectionSpacingClasses = {
+    Compact: 'mb-6 sm:mb-8',
+    Comfortable: 'mb-8 sm:mb-12',
+    Spacious: 'mb-12 sm:mb-16'
+};
+
+const productGridGapClasses = {
+    Compact: 'gap-2 sm:gap-4 lg:gap-5',
+    Comfortable: 'gap-3 sm:gap-6 lg:gap-8',
+    Editorial: 'gap-5 sm:gap-8 lg:gap-10'
 };
 
 const desktopGridClasses = {
@@ -88,7 +101,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                         {product.category}
                     </p>
                 )}
-                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 leading-snug line-clamp-2 min-h-[40px] sm:min-h-[44px]">
+                <h3 className="text-sm sm:text-base font-semibold text-[var(--sf-foreground)] mb-2 leading-snug line-clamp-2 min-h-[40px] sm:min-h-[44px]">
                     <Link href={`/products/${product._id}`} className="hover:text-[var(--sf-accent)] transition-colors relative z-10">
                         {product.title}
                     </Link>
@@ -102,7 +115,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                 )}
 
                 <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6 mt-auto">
-                    <span className="text-base sm:text-xl font-black text-gray-900">৳ {product.finalPrice}</span>
+                    <span className="text-base sm:text-xl font-black text-[var(--sf-foreground)]">৳ {product.finalPrice}</span>
                     {hasDiscount && (
                         <span className="text-xs sm:text-sm text-gray-400 line-through font-medium">৳ {product.sellingPrice}</span>
                     )}
@@ -147,6 +160,80 @@ const SkeletonGrid = memo(function SkeletonGrid() {
     );
 });
 
+const HomepageCustomSection = memo(function HomepageCustomSection({ section, categories, banners }) {
+    if (section.type === 'CategoryList') {
+        return (
+            <section className="rounded-3xl border border-gray-100 bg-white p-5 sm:p-7">
+                <h2 className="mb-4 text-xl sm:text-2xl font-black text-[var(--sf-foreground)]" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
+                    {section.title || 'Shop by category'}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                    {(categories || []).slice(0, 10).map((category) => (
+                        <Link
+                            key={category}
+                            href={`/?category=${encodeURIComponent(category)}`}
+                            className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:border-[var(--sf-accent)] hover:text-[var(--sf-accent)]"
+                        >
+                            {category}
+                        </Link>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+
+    if (section.type === 'BannerGrid') {
+        const visibleBanners = (banners || []).slice(0, 2);
+        if (visibleBanners.length === 0) return null;
+
+        return (
+            <section className="grid gap-4 sm:grid-cols-2">
+                {visibleBanners.map((banner) => {
+                    const imageUrl = banner.images?.[0] || banner.image;
+                    if (!imageUrl) return null;
+                    return (
+                        <Link
+                            key={banner._id}
+                            href={banner.link || '/'}
+                            className="group relative aspect-[16/9] overflow-hidden rounded-3xl bg-gray-100"
+                        >
+                            <Image
+                                src={imageUrl}
+                                alt={banner.title || section.title || 'Store banner'}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            {banner.title && (
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 text-lg font-black text-white">
+                                    {banner.title}
+                                </div>
+                            )}
+                        </Link>
+                    );
+                })}
+            </section>
+        );
+    }
+
+    if (section.type === 'TextBlock' || section.type === 'Newsletter' || section.type === 'Reviews') {
+        return (
+            <section className="rounded-3xl border border-gray-100 bg-[var(--sf-accent-bg)] p-6 text-center sm:p-10">
+                <h2 className="text-xl sm:text-3xl font-black text-[var(--sf-foreground)]" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
+                    {section.title || 'Store update'}
+                </h2>
+                {section.settings?.text && (
+                    <p className="mx-auto mt-3 max-w-2xl text-sm sm:text-base text-gray-600">
+                        {section.settings.text}
+                    </p>
+                )}
+            </section>
+        );
+    }
+
+    return null;
+});
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function VendorHomePage({ params }) {
     const { subdomain } = React.use(params);
@@ -160,11 +247,17 @@ export default function VendorHomePage({ params }) {
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const { shop, products, categories, banners, loading, error, pagination } = useShopData(subdomain, filters);
-    const theme = shop?.theme || {};
+    const theme = normalizeTheme(shop?.theme || {});
     const hero = theme.hero || {};
     const layout = theme.layout || {};
     const productCard = theme.productCard || {};
-    const enabledSections = (theme.homepageSections || []).filter(section => section.isEnabled !== false);
+    const heroImageUrl = hero.imageUrl;
+    const heroTitle = hero.title;
+    const heroSubtitle = hero.subtitle;
+    const heroCtaUrl = hero.ctaUrl;
+    const heroCtaLabel = hero.ctaLabel;
+    const heroOverlayOpacity = hero.overlayOpacity;
+    const enabledSections = getEnabledHomepageSections(theme);
     const containerClass = layout.maxWidth === 'Full'
         ? 'w-full px-4 sm:px-6'
         : layout.maxWidth === 'Contained'
@@ -177,7 +270,12 @@ export default function VendorHomePage({ params }) {
             : 'h-[250px] sm:h-[350px] md:h-[500px]';
     const desktopColumns = Math.min(Math.max(layout.productColumnsDesktop || 3, 2), 5);
     const gridClass = `${layout.productColumnsMobile === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
+    const gridGapClass = productGridGapClasses[theme.productGridStyle] || productGridGapClasses.Comfortable;
+    const sectionSpacingClass = sectionSpacingClasses[layout.sectionSpacing] || sectionSpacingClasses.Comfortable;
     const showHero = enabledSections.length === 0 || enabledSections.some(section => section.type === 'Hero');
+    const showProducts = enabledSections.length === 0 || enabledSections.some(section => ['FeaturedProducts', 'Collection'].includes(section.type));
+    const productSection = enabledSections.find(section => ['FeaturedProducts', 'Collection'].includes(section.type));
+    const customSections = enabledSections.filter(section => !['Hero', 'FeaturedProducts', 'Collection'].includes(section.type));
 
     // ── Derived state ──────────────────────────────────────────────────────────
     const activeBanners = useMemo(
@@ -185,26 +283,23 @@ export default function VendorHomePage({ params }) {
         [banners, shop?.banners]
     );
 
-    const allSlides = useMemo(() =>
-            [
-                ...(hero.imageUrl ? [{
-                    _id: 'theme-hero',
-                    image: hero.imageUrl,
-                    title: hero.title,
-                    link: hero.ctaUrl
-                }] : []),
-                ...activeBanners
-            ].flatMap((banner) => {
-                const images = banner.images?.length ? banner.images : (banner.image ? [banner.image] : []);
-                return images.map((imgUrl, i) => ({
-                    id: `${banner._id || 'banner'}-${i}`,
-                    imgUrl,
-                    title: banner.title,
-                    link: banner.link,
-                }));
-            }),
-        [activeBanners, hero.ctaUrl, hero.imageUrl, hero.title]
-    );
+    const allSlides = [
+        ...(heroImageUrl ? [{
+            _id: 'theme-hero',
+            image: heroImageUrl,
+            title: heroTitle,
+            link: heroCtaUrl
+        }] : []),
+        ...activeBanners
+    ].flatMap((banner) => {
+        const images = banner.images?.length ? banner.images : (banner.image ? [banner.image] : []);
+        return images.map((imgUrl, i) => ({
+            id: `${banner._id || 'banner'}-${i}`,
+            imgUrl,
+            title: banner.title,
+            link: banner.link,
+        }));
+    });
 
     // ── Auto-slider ────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -267,7 +362,7 @@ export default function VendorHomePage({ params }) {
 
             {/* ✨ HERO / BANNER SLIDER ✨ */}
             {showHero && allSlides.length > 0 ? (
-                <section className={`relative w-full ${heroHeightClass} rounded-3xl sm:rounded-[2rem] overflow-hidden mb-8 sm:mb-12 shadow-xl group`}>
+                <section className={`relative w-full ${heroHeightClass} rounded-3xl sm:rounded-[2rem] overflow-hidden ${sectionSpacingClass} shadow-xl group`}>
                     {allSlides.map((slide, index) => (
                         <div
                             key={slide.id}
@@ -284,11 +379,11 @@ export default function VendorHomePage({ params }) {
                                 priority={index === 0}
                                 loading={index === 0 ? 'eager' : 'lazy'}
                             />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 sm:p-6" style={{ backgroundColor: `rgba(0,0,0,${(hero.overlayOpacity ?? 25) / 100})` }}>
-                                {(slide.title || hero.subtitle) && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 sm:p-6" style={{ backgroundColor: `rgba(0,0,0,${(heroOverlayOpacity ?? 25) / 100})` }}>
+                                {(slide.title || heroSubtitle) && (
                                     <div className="mt-auto mb-6 text-white">
                                         {slide.title && <h1 className="text-3xl sm:text-5xl font-black" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>{slide.title}</h1>}
-                                        {hero.subtitle && <p className="mt-3 text-sm sm:text-lg text-white/90">{hero.subtitle}</p>}
+                                        {heroSubtitle && <p className="mt-3 text-sm sm:text-lg text-white/90">{heroSubtitle}</p>}
                                     </div>
                                 )}
                                 {slide.link && (
@@ -296,7 +391,7 @@ export default function VendorHomePage({ params }) {
                                         href={slide.link}
                                         className="bg-white text-gray-900 px-6 py-2.5 sm:px-8 sm:py-3 rounded-full text-sm sm:text-base font-bold hover:bg-gray-100 active:scale-95 transition-all shadow-lg mt-auto mb-8 sm:mb-12"
                                     >
-                                        {hero.ctaLabel || 'Shop Now'}
+                                        {heroCtaLabel || 'Shop Now'}
                                     </Link>
                                 )}
                             </div>
@@ -319,11 +414,11 @@ export default function VendorHomePage({ params }) {
                     )}
                 </section>
             ) : showHero ? (
-                <section className="relative bg-gray-900 text-white rounded-3xl sm:rounded-[2rem] py-12 px-4 sm:py-16 sm:px-6 md:py-24 mb-8 sm:mb-12 overflow-hidden flex flex-col items-center text-center shadow-xl shadow-gray-900/10">
+                <section className={`relative bg-gray-900 text-white rounded-3xl sm:rounded-[2rem] py-12 px-4 sm:py-16 sm:px-6 md:py-24 ${sectionSpacingClass} overflow-hidden flex flex-col items-center text-center shadow-xl shadow-gray-900/10`}>
                     <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
                     <div className="relative z-10 max-w-3xl">
                         <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 sm:mb-6 capitalize" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
-                            {hero.title || shop?.shopName || subdomain}
+                            {heroTitle || shop?.shopName || subdomain}
                         </h1>
                         {storewideDiscount > 0 && (
                             <div className="mb-4 sm:mb-6 inline-block bg-[var(--sf-accent)] text-white text-[10px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full uppercase tracking-widest animate-pulse">
@@ -331,13 +426,29 @@ export default function VendorHomePage({ params }) {
                             </div>
                         )}
                         <p className="text-gray-400 text-base sm:text-lg md:text-xl font-light px-2">
-                            {hero.subtitle || shop?.description || "Curated essentials for the modern lifestyle. Discover the latest collection."}
+                            {heroSubtitle || shop?.description || "Curated essentials for the modern lifestyle. Discover the latest collection."}
                         </p>
                     </div>
                 </section>
             ) : null}
 
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
+            {customSections.length > 0 && (
+                <div className={sectionSpacingClass}>
+                    <div className="space-y-5 sm:space-y-7">
+                        {customSections.map((section, index) => (
+                            <HomepageCustomSection
+                                key={section._id || `${section.type}-${index}`}
+                                section={section}
+                                categories={categories}
+                                banners={activeBanners}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {showProducts && (
+            <div id="products" className="flex flex-col lg:flex-row gap-6 lg:gap-10">
 
                 {/* ⬅️ SIDEBAR FILTERS */}
                 <aside className="w-full lg:w-64 flex-shrink-0">
@@ -413,6 +524,19 @@ export default function VendorHomePage({ params }) {
 
                 {/* ➡️ PRODUCT GRID */}
                 <main className="flex-1">
+                    {productSection?.title && (
+                        <div className="mb-5 flex items-center justify-between gap-4">
+                            <h2 className="text-2xl sm:text-3xl font-black text-[var(--sf-foreground)]" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
+                                {productSection.title}
+                            </h2>
+                            {productCard.showQuickBuy !== false && (
+                                <span className="hidden sm:inline text-sm font-bold text-[var(--sf-accent)]">
+                                    Quick buy enabled
+                                </span>
+                            )}
+                        </div>
+                    )}
+
                     {/* Sort controls */}
                     <div className="flex flex-row flex-wrap justify-between items-center gap-3 mb-6 bg-gray-50/50 border border-gray-100 p-2 sm:p-3 rounded-2xl">
                         <div className="flex items-center flex-1 min-w-[140px]">
@@ -455,7 +579,7 @@ export default function VendorHomePage({ params }) {
                                     </button>
                                 </div>
                             ) : (
-                                <div className={`grid ${gridClass} gap-3 sm:gap-6 lg:gap-8`}>
+                                <div className={`grid ${gridClass} ${gridGapClass}`}>
                                     {products.map((product, index) => (
                                         <ProductCard
                                             key={product._id}
@@ -514,6 +638,7 @@ export default function VendorHomePage({ params }) {
                     )}
                 </main>
             </div>
+            )}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 import {
     ShieldCheck,
@@ -15,6 +15,7 @@ import {
     Minus,
     Plus,
     Package,
+    FileText,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -26,6 +27,7 @@ import API from "@/api/api";
 
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { useStorefrontTheme } from "@/components/storefront/StorefrontThemeProvider";
 
 export default function CheckoutPage({ params }) {
 
@@ -42,6 +44,16 @@ export default function CheckoutPage({ params }) {
         removeFromCart,
     } = useCart();
     const { user } = useAuth();
+    const { theme } = useStorefrontTheme();
+    const policies = useMemo(() => theme.policies || {}, [theme.policies]);
+    const visiblePolicies = useMemo(() => (
+        [
+            ['refund', 'Refund policy'],
+            ['shipping', 'Shipping policy'],
+            ['privacy', 'Privacy policy'],
+            ['terms', 'Terms of service'],
+        ].filter(([key]) => Boolean(policies[key]?.trim()))
+    ), [policies]);
 
     // =========================================
     // STATES
@@ -64,26 +76,7 @@ export default function CheckoutPage({ params }) {
 
     const [promotionCode, setPromotionCode] = useState("");
     const [promotionPreview, setPromotionPreview] = useState(null);
-    const [checkoutBranding, setCheckoutBranding] = useState({});
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchBranding = async () => {
-            try {
-                const { data } = await API.get(`/store-builder/storefront/${subdomain}`);
-                if (isMounted) setCheckoutBranding(data.data?.theme?.checkoutBranding || {});
-            } catch {
-                if (isMounted) setCheckoutBranding({});
-            }
-        };
-
-        if (subdomain) fetchBranding();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [subdomain]);
+    const checkoutBranding = useMemo(() => theme.checkoutBranding || {}, [theme.checkoutBranding]);
 
     // =========================================
     // SHIPPING LOGIC
@@ -439,7 +432,7 @@ export default function CheckoutPage({ params }) {
     // MAIN UI
     // =========================================
     return (
-        <div className="min-h-screen bg-[#fafafa]">
+        <div className="min-h-screen bg-[var(--sf-background)]">
 
             <div className="container mx-auto max-w-7xl px-4 py-10">
 
@@ -866,6 +859,27 @@ export default function CheckoutPage({ params }) {
                                     {checkoutBranding.trustMessage || 'Secure Checkout'}
 
                                 </p>
+
+                                {visiblePolicies.length > 0 && (
+                                    <div className="mt-6 border-t border-gray-100 pt-5">
+                                        <div className="mb-3 flex items-center gap-2 text-sm font-black text-gray-900">
+                                            <FileText size={16} className="text-[var(--sf-accent)]" />
+                                            Store Policies
+                                        </div>
+                                        <div className="space-y-2">
+                                            {visiblePolicies.map(([key, label]) => (
+                                                <details key={key} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+                                                    <summary className="cursor-pointer text-sm font-bold text-gray-800">
+                                                        {label}
+                                                    </summary>
+                                                    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-gray-600">
+                                                        {policies[key]}
+                                                    </p>
+                                                </details>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                             </div>
 

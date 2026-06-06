@@ -1,4 +1,5 @@
 import Navbar from '@/components/storefront/Navbar';
+import StorefrontFooter from '@/components/storefront/StorefrontFooter';
 import StorefrontThemeProvider from '@/components/storefront/StorefrontThemeProvider';
 // ✨ IMPORT THE CART PROVIDER ✨
 import { CartProvider } from '@/context/CartContext';
@@ -10,7 +11,7 @@ export default async function VendorLayout({ children, params }) {
 
     return (
         <StorefrontThemeProvider subdomain={subdomain}>
-            <div className="min-h-screen bg-white flex flex-col">
+            <div className="min-h-screen bg-[var(--sf-background)] flex flex-col">
 
                 {/* Wrap everything in the CartProvider and pass the subdomain */}
                 <CartProvider subdomain={subdomain}>
@@ -22,11 +23,7 @@ export default async function VendorLayout({ children, params }) {
 
                     <main className="flex-grow">{children}</main>
 
-                    <footer className="border-t py-12 mt-20 bg-gray-50">
-                        <div className="container mx-auto px-4 text-center text-gray-500 text-sm font-medium">
-                            © {new Date().getFullYear()} <span className="capitalize">{subdomain}</span>. Powered by ShopForAll.
-                        </div>
-                    </footer>
+                    <StorefrontFooter subdomain={subdomain} />
 
                 </CartProvider>
 
