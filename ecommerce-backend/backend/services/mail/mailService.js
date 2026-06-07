@@ -4,6 +4,10 @@ const { isResendEnabled, sendResendMail } = require('../mail/providers/resendPro
 const escapeFromName = (value = '') => String(value).replace(/"/g, "'");
 
 const getFromEmail = (type) => {
+    if (type === 'reset') {
+        return process.env.RESET_EMAIL || process.env.RESEND_FROM || process.env.ADMIN_EMAIL_USER || process.env.EMAIL_USER;
+    }
+
     if (type === 'order') {
         return process.env.ORDER_MAIL || process.env.RESEND_FROM || process.env.ADMIN_EMAIL_USER || process.env.EMAIL_USER;
     }
@@ -20,6 +24,10 @@ const formatFrom = (senderName, fromEmail) => {
 };
 
 const getSmtpTransporter = (type) => {
+    if (type === 'reset') {
+        return require('../mail/transporters/resetTransporter');
+    }
+
     if (type === 'order') {
         return require('../mail/transporters/orderTransporter');
     }

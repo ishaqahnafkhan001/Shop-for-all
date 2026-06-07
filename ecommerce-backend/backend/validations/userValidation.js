@@ -87,9 +87,50 @@ const loginUserSchema = Joi.object({
     subdomain: Joi.string().trim().lowercase().optional()
 }).required();
 
+const resetAudience = Joi.string().valid('admin', 'customer').default('customer');
+
+const forgotPasswordSchema = Joi.object({
+    email: Joi.string().email().required(),
+    subdomain: Joi.string().trim().lowercase().allow('').optional(),
+    audience: resetAudience
+}).required();
+
+const verifyResetOtpSchema = Joi.object({
+    email: Joi.string().email().required(),
+    otp: Joi.string().pattern(/^\d{6}$/).required().messages({
+        'string.pattern.base': 'Verification code must be 6 digits'
+    }),
+    subdomain: Joi.string().trim().lowercase().allow('').optional(),
+    audience: resetAudience
+}).required();
+
+const resetPasswordSchema = Joi.object({
+    email: Joi.string().email().required(),
+    resetToken: Joi.string().hex().length(64).required(),
+    password: Joi.string()
+        .min(8)
+        .pattern(/[a-z]/, 'lowercase')
+        .pattern(/[A-Z]/, 'uppercase')
+        .pattern(/\d/, 'number')
+        .pattern(/[^A-Za-z0-9]/, 'special character')
+        .required()
+        .messages({
+            'string.min': 'Password must be at least 8 characters',
+            'string.pattern.name': 'Password must include uppercase, lowercase, number, and special character'
+        }),
+    confirmPassword: Joi.string().valid(Joi.ref('password')).optional().messages({
+        'any.only': 'Passwords do not match'
+    }),
+    subdomain: Joi.string().trim().lowercase().allow('').optional(),
+    audience: resetAudience
+}).required();
+
 module.exports = {
     registerCustomerSchema,
     createUserSchema: createStaffSchema,
     createStaffSchema,
-    loginUserSchema
+    loginUserSchema,
+    forgotPasswordSchema,
+    verifyResetOtpSchema,
+    resetPasswordSchema
 };

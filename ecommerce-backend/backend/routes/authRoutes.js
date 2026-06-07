@@ -17,7 +17,10 @@ const {
     login,
     logout,
     getMe,
-    sendOTP
+    sendOTP,
+    forgotPassword,
+    verifyResetOtp,
+    resetPassword
 } = require('../controllers/authController');
 
 // ======================================================
@@ -46,6 +49,24 @@ router.post(
 router.post(
     '/login',
     login
+);
+
+// Request password reset OTP
+router.post(
+    '/forgot-password',
+    forgotPassword
+);
+
+// Verify password reset OTP
+router.post(
+    '/verify-reset-otp',
+    verifyResetOtp
+);
+
+// Complete password reset
+router.post(
+    '/reset-password',
+    resetPassword
 );
 
 // Logout

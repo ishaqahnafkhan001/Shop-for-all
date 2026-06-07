@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext'; // 🌟 Import Auth Context
 import AuthView from '@/components/account/AuthView';
 import VendorView from '@/components/account/VendorView';
 import CustomerDashboard from '@/components/account/CustomerDashboard';
+import PasswordResetFlow from '@/components/account/PasswordResetFlow';
 
 export default function AccountPage({ params }) {
     const { subdomain } = React.use(params);
@@ -17,6 +18,7 @@ export default function AccountPage({ params }) {
     const { user, loading: authLoading, login, logout, checkAuthStatus } = useAuth();
 
     const [isRegistering, setIsRegistering] = useState(false);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '', otp: '' });
     const [otpSent, setOtpSent] = useState(false);
     const [otpTimer, setOtpTimer] = useState(0);
@@ -169,10 +171,27 @@ export default function AccountPage({ params }) {
     }
 
     if (!user) {
+        if (isResettingPassword) {
+            return (
+                <PasswordResetFlow
+                    subdomain={subdomain}
+                    onBack={() => setIsResettingPassword(false)}
+                    onComplete={() => {
+                        setIsResettingPassword(false);
+                        setIsRegistering(false);
+                    }}
+                />
+            );
+        }
+
         return (
             <AuthView
                 isRegistering={isRegistering}
                 setIsRegistering={setIsRegistering}
+                onForgotPassword={() => {
+                    setIsRegistering(false);
+                    setIsResettingPassword(true);
+                }}
                 authForm={authForm}
                 setAuthForm={setAuthForm}
                 handleAuthSubmit={handleAuthSubmit}

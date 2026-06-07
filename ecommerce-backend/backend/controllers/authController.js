@@ -12,7 +12,10 @@ const { sendMail } = require('../services/mail/mailService');
 const { shopRegistrationSchema } = require('../validations/shopValidation');
 const {
     loginUserSchema,
-    registerCustomerSchema
+    registerCustomerSchema,
+    forgotPasswordSchema,
+    verifyResetOtpSchema,
+    resetPasswordSchema
 } = require('../validations/userValidation');
 const {
     normalizeEmail,
@@ -20,6 +23,12 @@ const {
     createAccountForLegacyUser,
     createMembershipForLegacyUser
 } = require('../services/identityService');
+const {
+    GENERIC_FORGOT_RESPONSE,
+    requestPasswordReset,
+    verifyResetOtp,
+    resetPassword
+} = require('../services/passwordResetService');
 
 const signSessionToken = ({ account, membership, user }) => jwt.sign(
     {
@@ -546,6 +555,85 @@ exports.login = async (req, res) => {
 
         res.status(500).json({
             error: 'Login failed'
+        });
+    }
+};
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { error, value } = forgotPasswordSchema.validate(req.body);
+
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
+        const result = await requestPasswordReset(value);
+
+        res.status(200).json({
+            success: true,
+            message: result.message || GENERIC_FORGOT_RESPONSE
+        });
+    } catch (err) {
+        console.error('Forgot Password Error:', err);
+
+        res.status(200).json({
+            success: true,
+            message: GENERIC_FORGOT_RESPONSE
+        });
+    }
+};
+
+exports.verifyResetOtp = async (req, res) => {
+    try {
+        const { error, value } = verifyResetOtpSchema.validate(req.body);
+
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
+        const result = await verifyResetOtp(value);
+
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: result.message,
+            resetToken: result.resetToken
+        });
+    } catch (err) {
+        console.error('Verify Reset OTP Error:', err);
+
+        res.status(400).json({
+            error: 'Invalid or expired verification code.'
+        });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { error, value } = resetPasswordSchema.validate(req.body);
+
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
+        const result = await resetPassword(value);
+
+        if (!result.success) {
+            return res.status(result.status || 400).json({ error: result.error });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: result.message
+        });
+    } catch (err) {
+        console.error('Reset Password Error:', err);
+
+        res.status(500).json({
+            error: 'Password reset failed.'
         });
     }
 };

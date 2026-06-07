@@ -4,12 +4,14 @@ import API from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import Input from '../components/ui/Input.jsx';
 import Button from '../components/ui/Button.jsx';
+import PasswordResetForm from './PasswordResetForm.jsx';
 
 const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
 
     const { setUser } = useAuth();
     const navigate = useNavigate();
@@ -29,6 +31,10 @@ const LoginForm = () => {
             setIsLoading(false);
         }
     };
+
+    if (isResettingPassword) {
+        return <PasswordResetForm onBack={() => setIsResettingPassword(false)} />;
+    }
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -57,6 +63,14 @@ const LoginForm = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
             />
+
+            <button
+                type="button"
+                onClick={() => setIsResettingPassword(true)}
+                className="w-full text-right text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+            >
+                Forgot password?
+            </button>
 
             <Button type="submit" isLoading={isLoading}>
                 Sign In

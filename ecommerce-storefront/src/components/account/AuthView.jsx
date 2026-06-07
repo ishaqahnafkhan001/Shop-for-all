@@ -5,6 +5,7 @@ export default function AuthView({
                                      setIsRegistering,
                                      authForm,
                                      setAuthForm,
+                                     onForgotPassword,
                                      handleAuthSubmit,
                                      otpSent,
                                      handleSendOTP,
@@ -107,12 +108,23 @@ export default function AuthView({
                             {otpLoading ? 'Sending code...' : otpTimer > 0 ? `Please wait ${formatTime(otpTimer)}` : 'Send Verification Code'}
                         </button>
                     ) : (
-                        <button
-                            type="submit"
-                            className="sf-btn sf-btn-primary mt-4 w-full"
-                        >
-                            {isRegistering ? 'Verify & Sign Up' : 'Sign In'}
-                        </button>
+                        <>
+                            {!isRegistering && (
+                                <button
+                                    type="button"
+                                    onClick={onForgotPassword}
+                                    className="w-full text-right text-xs font-black text-indigo-600 hover:text-indigo-800"
+                                >
+                                    Forgot password?
+                                </button>
+                            )}
+                            <button
+                                type="submit"
+                                className="sf-btn sf-btn-primary mt-4 w-full"
+                            >
+                                {isRegistering ? 'Verify & Sign Up' : 'Sign In'}
+                            </button>
+                        </>
                     )}
                 </form>
 

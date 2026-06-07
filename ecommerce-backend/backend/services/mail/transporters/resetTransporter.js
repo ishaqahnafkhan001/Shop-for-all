@@ -1,0 +1,22 @@
+const nodemailer = require('nodemailer');
+
+const smtpPort = Number(process.env.RESET_SMTP_PORT || process.env.SMTP_PORT || 465);
+
+const resetTransporter = nodemailer.createTransport({
+    host: process.env.RESET_SMTP_HOST || process.env.SMTP_HOST || 'mail.spacemail.com',
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+        user: process.env.RESET_EMAIL,
+        pass: process.env.RESET_PASSWORD
+    },
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 15000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 15000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 15000),
+    tls: {
+        rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED === 'true',
+        minVersion: 'TLSv1.2'
+    }
+});
+
+module.exports = resetTransporter;
