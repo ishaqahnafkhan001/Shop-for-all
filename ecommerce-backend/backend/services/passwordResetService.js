@@ -28,7 +28,7 @@ const GENERIC_FORGOT_RESPONSE = 'If an account exists, an OTP has been sent.';
 const INVALID_OTP_RESPONSE = 'Invalid or expired verification code.';
 
 const getResetSecret = () => {
-    const secret = process.env.PASSWORD_RESET_SECRET || process.env.JWT_SECRET || process.env.RESET_PASSWORD;
+    const secret = process.env.PASSWORD_RESET_SECRET || process.env.JWT_SECRET || process.env.RESET_PASSWORD || process.env.PASS;
 
     if (!secret && process.env.NODE_ENV === 'production') {
         throw new Error('Password reset secret is not configured');
@@ -303,7 +303,7 @@ const requestPasswordReset = async ({ email, subdomain, audience }) => {
             email: cleanEmail,
             otp,
             expiresInMinutes: RESET_LIMITS.expiresMs / 60000,
-            supportEmail: process.env.SUPPORT_EMAIL || process.env.RESET_EMAIL
+            supportEmail: process.env.SUPPORT_EMAIL || process.env.RESET_EMAIL || process.env.RESET
         }),
         text: `Your verification code is ${otp}. This code expires in 10 minutes. If you did not request this reset, ignore this email.`
     });

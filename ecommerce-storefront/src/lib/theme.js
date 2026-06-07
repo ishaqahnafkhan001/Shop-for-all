@@ -1,19 +1,45 @@
+export const THEME_SCHEMA_VERSION = 2;
+
 export const FALLBACK_THEME = {
+    version: THEME_SCHEMA_VERSION,
     logoUrl: '',
     fontFamily: 'Inter',
     productGridStyle: 'Comfortable',
     colors: {
-        accent: '#4f46e5',
-        accentHover: '#4338ca',
-        accentSoft: '#c7d2fe',
-        accentBg: '#eef2ff',
-        accentStrong: '#3730a3',
-        accentMuted: '#818cf8',
-        accentLight: '#a5b4fc',
-        accentRing: '#e0e7ff',
+        accent: '#0f766e',
+        accentHover: '#115e59',
+        accentSoft: '#99f6e4',
+        accentBg: '#ecfdf5',
+        accentStrong: '#042f2e',
+        accentMuted: '#14b8a6',
+        accentLight: '#5eead4',
+        accentRing: '#ccfbf1',
         background: '#ffffff',
         foreground: '#111827',
         headerBackground: '#ffffff',
+        primaryButtonBg: '#0f766e',
+        primaryButtonText: '#ffffff',
+        primaryButtonHoverBg: '#115e59',
+        secondaryButtonBg: '#ffffff',
+        secondaryButtonText: '#0f172a',
+        secondaryButtonHoverBg: '#f8fafc',
+        navbarBackground: '#ffffff',
+        navbarText: '#0f172a',
+        navbarHover: '#0f766e',
+        cardBackground: '#ffffff',
+        cardBorder: '#e2e8f0',
+        cardHoverBorder: '#99f6e4',
+        priceColor: '#0f172a',
+        saleBadgeBg: '#dc2626',
+        saleBadgeText: '#ffffff',
+        ratingColor: '#f59e0b',
+        footerBackground: '#0f172a',
+        footerText: '#ffffff',
+        footerLink: '#99f6e4',
+    },
+    header: {
+        logoPosition: 'Left',
+        menuStyle: 'Simple',
     },
     typography: {
         headingFont: 'Inter',
@@ -32,17 +58,42 @@ export const FALLBACK_THEME = {
     },
     layout: {
         maxWidth: 'Wide',
+        containerWidth: 'Wide',
         sectionSpacing: 'Comfortable',
+        contentSpacing: 'Comfortable',
+        sectionWidth: 'Full Width',
+        sectionPaddingTop: 40,
+        sectionPaddingBottom: 40,
+        sectionMarginTop: 0,
+        sectionMarginBottom: 40,
         productColumnsDesktop: 3,
         productColumnsMobile: 2,
+        productGap: 'Comfortable',
+        cardAlignment: 'Left',
     },
     productCard: {
+        style: 'Modern',
         imageFit: 'Contain',
+        aspectRatio: 'Square',
+        imageRadius: 'Rounded',
+        hoverZoom: true,
         showCategory: true,
         showRating: true,
+        showReviews: true,
+        showStock: true,
+        showSku: false,
+        showDiscountBadge: true,
         showQuickBuy: true,
+        showWishlist: false,
         borderRadius: 'Rounded',
         shadow: 'Soft',
+        titleSize: 'Medium',
+        titleWeight: '800',
+        priceSize: 'Medium',
+        priceColor: '#0f172a',
+        buttonStyle: 'Solid',
+        buttonShape: 'Rounded',
+        buttonColor: '#0f766e',
     },
     checkoutBranding: {
         logoUrl: '',
@@ -55,13 +106,24 @@ export const FALLBACK_THEME = {
         compactHeader: true,
         showBottomNavigation: false,
     },
+    paymentSettings: {
+        additionalMethodsEnabled: false,
+        providers: {
+            stripe: false,
+            sslcommerz: false,
+            bkash: false,
+            nagad: false,
+            rocket: false,
+            paypal: false,
+        },
+    },
     homepageSections: [
         { type: 'Hero', title: 'Featured offers', sortOrder: 0, isEnabled: true },
         { type: 'FeaturedProducts', title: 'Latest products', sortOrder: 1, isEnabled: true },
     ],
     navigation: [
-        { label: 'Shop', url: '/', sortOrder: 0 },
-        { label: 'Track Order', url: '/track', sortOrder: 1 },
+        { label: 'Shop', url: '/', sortOrder: 0, children: [], megaMenu: false },
+        { label: 'Track Order', url: '/track', sortOrder: 1, children: [], megaMenu: false },
     ],
     footer: {
         text: '',
@@ -76,6 +138,16 @@ export const FALLBACK_THEME = {
 };
 
 const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
+const LEGACY_DEFAULT_COLORS = {
+    accent: '#4f46e5',
+    accentHover: '#4338ca',
+    accentSoft: '#c7d2fe',
+    accentBg: '#eef2ff',
+    accentStrong: '#3730a3',
+    accentMuted: '#818cf8',
+    accentLight: '#a5b4fc',
+    accentRing: '#e0e7ff',
+};
 
 const mergeObject = (base, incoming) => ({
     ...base,
@@ -85,13 +157,23 @@ const mergeObject = (base, incoming) => ({
 export const normalizeTheme = (theme = {}) => ({
     ...FALLBACK_THEME,
     ...theme,
+    version: Number(theme.version) || THEME_SCHEMA_VERSION,
     colors: mergeObject(FALLBACK_THEME.colors, theme.colors || theme),
+    header: mergeObject(FALLBACK_THEME.header, theme.header),
     typography: mergeObject(FALLBACK_THEME.typography, theme.typography),
     hero: mergeObject(FALLBACK_THEME.hero, theme.hero),
     layout: mergeObject(FALLBACK_THEME.layout, theme.layout),
     productCard: mergeObject(FALLBACK_THEME.productCard, theme.productCard),
     checkoutBranding: mergeObject(FALLBACK_THEME.checkoutBranding, theme.checkoutBranding),
     mobile: mergeObject(FALLBACK_THEME.mobile, theme.mobile),
+    paymentSettings: {
+        ...FALLBACK_THEME.paymentSettings,
+        ...(theme.paymentSettings || {}),
+        providers: {
+            ...FALLBACK_THEME.paymentSettings.providers,
+            ...(theme.paymentSettings?.providers || {}),
+        },
+    },
     footer: mergeObject(FALLBACK_THEME.footer, theme.footer),
     policies: mergeObject(FALLBACK_THEME.policies, theme.policies),
     homepageSections: Array.isArray(theme.homepageSections)
@@ -106,7 +188,8 @@ export const getThemeCssVars = (themeCandidate = {}) => {
     const theme = normalizeTheme(themeCandidate);
     const colors = theme.colors;
     const safeColors = Object.keys(FALLBACK_THEME.colors).reduce((acc, key) => {
-        acc[key] = HEX_COLOR_REGEX.test(colors[key]) ? colors[key] : FALLBACK_THEME.colors[key];
+        const color = HEX_COLOR_REGEX.test(colors[key]) ? colors[key] : FALLBACK_THEME.colors[key];
+        acc[key] = color.toLowerCase() === LEGACY_DEFAULT_COLORS[key] ? FALLBACK_THEME.colors[key] : color;
         return acc;
     }, {});
     const baseSize = Math.min(Math.max(Number(theme.typography.baseSize) || 16, 12), 20);

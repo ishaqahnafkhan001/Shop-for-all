@@ -7,8 +7,8 @@ const resetTransporter = nodemailer.createTransport({
     port: smtpPort,
     secure: smtpPort === 465,
     auth: {
-        user: process.env.RESET_EMAIL,
-        pass: process.env.RESET_PASSWORD
+        user: process.env.RESET_EMAIL || process.env.RESET,
+        pass: process.env.RESET_PASSWORD || process.env.PASS
     },
     connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 15000),
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 15000),

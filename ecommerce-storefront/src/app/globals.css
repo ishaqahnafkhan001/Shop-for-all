@@ -5,17 +5,36 @@
   --foreground: #171717;
   --sf-navy: #0f172a;
   --sf-ink: #111827;
-  --sf-accent: #3346d3;
-  --sf-accent-hover: #2735a5;
+  --sf-accent: #0f766e;
+  --sf-accent-hover: #115e59;
   --sf-blue: #2563eb;
-  --sf-teal: #14b8a6;
+  --sf-teal: #0f766e;
   --sf-coral: #f97316;
-  --sf-accent-soft: #c7d2fe;
-  --sf-accent-bg: #eef2ff;
-  --sf-accent-strong: #1e1b4b;
-  --sf-accent-muted: #6473e8;
-  --sf-accent-light: #a5b4fc;
-  --sf-accent-ring: #dbeafe;
+  --sf-accent-soft: #99f6e4;
+  --sf-accent-bg: #ecfdf5;
+  --sf-accent-strong: #042f2e;
+  --sf-accent-muted: #14b8a6;
+  --sf-accent-light: #5eead4;
+  --sf-accent-ring: #ccfbf1;
+  --sf-primary-button-bg: #0f766e;
+  --sf-primary-button-text: #ffffff;
+  --sf-primary-button-hover-bg: #115e59;
+  --sf-secondary-button-bg: #ffffff;
+  --sf-secondary-button-text: #0f172a;
+  --sf-secondary-button-hover-bg: #f8fafc;
+  --sf-navbar-bg: #ffffff;
+  --sf-navbar-text: #0f172a;
+  --sf-navbar-hover: #0f766e;
+  --sf-card-bg: #ffffff;
+  --sf-card-border: #e2e8f0;
+  --sf-card-hover-border: #99f6e4;
+  --sf-price-color: #0f172a;
+  --sf-sale-badge-bg: #dc2626;
+  --sf-sale-badge-text: #ffffff;
+  --sf-rating-color: #f59e0b;
+  --sf-footer-bg: #0f172a;
+  --sf-footer-text: #ffffff;
+  --sf-footer-link: #99f6e4;
   --sf-success: #059669;
   --sf-success-bg: #ecfdf5;
   --sf-warning: #d97706;
@@ -117,7 +136,7 @@ textarea:focus-visible {
 
 .sf-button-primary:hover {
   background: var(--sf-accent-hover);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.18);
   transform: translateY(-1px);
 }
 
@@ -218,9 +237,8 @@ textarea:focus-visible {
   inset: 0;
   z-index: -1;
   opacity: 0;
-  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.28) 42%, transparent 72%);
-  transform: translateX(-120%);
-  transition: transform 520ms ease, opacity 180ms ease;
+  background: rgba(255, 255, 255, 0.08);
+  transition: opacity 180ms ease;
 }
 
 .sf-btn:hover {
@@ -229,7 +247,6 @@ textarea:focus-visible {
 
 .sf-btn:hover::after {
   opacity: 1;
-  transform: translateX(120%);
 }
 
 .sf-btn:active {
@@ -237,25 +254,26 @@ textarea:focus-visible {
 }
 
 .sf-btn-primary {
-  background: linear-gradient(135deg, var(--sf-navy), var(--sf-accent) 58%, var(--sf-teal));
-  color: #fff;
-  box-shadow: 0 18px 34px rgba(51, 70, 211, 0.22);
+  background: var(--sf-primary-button-bg, var(--sf-accent));
+  color: var(--sf-primary-button-text, #fff);
+  border: 1px solid color-mix(in srgb, var(--sf-primary-button-bg, var(--sf-accent)), #000 8%);
+  box-shadow: 0 14px 28px rgba(15, 118, 110, 0.18);
 }
 
 .sf-btn-primary:hover {
-  background: linear-gradient(135deg, #172554, var(--sf-blue) 55%, var(--sf-teal));
-  box-shadow: 0 22px 40px rgba(37, 99, 235, 0.28);
+  background: var(--sf-primary-button-hover-bg, var(--sf-accent-hover));
+  box-shadow: 0 18px 34px rgba(15, 118, 110, 0.24);
 }
 
 .sf-btn-secondary {
   border: 1px solid var(--sf-border);
-  background: #fff;
-  color: var(--sf-ink);
+  background: var(--sf-secondary-button-bg, #fff);
+  color: var(--sf-secondary-button-text, var(--sf-ink));
 }
 
 .sf-btn-secondary:hover {
   border-color: var(--sf-border-strong);
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  background: var(--sf-secondary-button-hover-bg, #f8fafc);
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
 

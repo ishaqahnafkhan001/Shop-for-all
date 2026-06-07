@@ -79,7 +79,7 @@ export default function AuthView({
                                 placeholder="Enter 6-digit code"
                                 value={authForm.otp}
                                 onChange={(e) => setAuthForm({ ...authForm, otp: e.target.value })}
-                                className="sf-field border-indigo-200 bg-indigo-50/30"
+                                className="sf-field border-[var(--sf-accent-soft)] bg-[var(--sf-accent-bg)]/40"
                             />
 
                             {/* Resend Logic */}
@@ -89,7 +89,7 @@ export default function AuthView({
                                     type="button"
                                     onClick={handleSendOTP}
                                     disabled={otpTimer > 0 || otpLoading}
-                                    className={`text-xs font-bold ${otpTimer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-800'}`}
+                                    className={`text-xs font-bold ${otpTimer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-[var(--sf-accent)] hover:text-[var(--sf-accent-hover)]'}`}
                                 >
                                     {otpLoading ? 'Sending...' : otpTimer > 0 ? `Resend in ${formatTime(otpTimer)}` : 'Resend Code'}
                                 </button>
@@ -113,7 +113,7 @@ export default function AuthView({
                                 <button
                                     type="button"
                                     onClick={onForgotPassword}
-                                    className="w-full text-right text-xs font-black text-indigo-600 hover:text-indigo-800"
+                                    className="w-full text-right text-xs font-black text-[var(--sf-accent)] hover:text-[var(--sf-accent-hover)]"
                                 >
                                     Forgot password?
                                 </button>

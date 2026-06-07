@@ -187,26 +187,40 @@ export function ProfileTab({ user }) {
 
 // 🌟 UPDATED: SecurityTab now handles its own state and API requests
 export function SecurityTab() {
-    const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '' });
+    const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [loading, setLoading] = useState(false);
+
+    const passwordChecks = {
+        length: passForm.newPassword.length >= 8,
+        lower: /[a-z]/.test(passForm.newPassword),
+        upper: /[A-Z]/.test(passForm.newPassword),
+        number: /\d/.test(passForm.newPassword),
+        special: /[^A-Za-z0-9]/.test(passForm.newPassword)
+    };
+    const passwordScore = Object.values(passwordChecks).filter(Boolean).length;
+    const passwordsMatch = passForm.newPassword && passForm.confirmPassword && passForm.newPassword === passForm.confirmPassword;
 
     const handlePasswordReset = async (e) => {
         e.preventDefault();
 
-        if (passForm.newPassword.length < 6) {
-            return toast.error("New password must be at least 6 characters long");
+        if (passwordScore < 5) {
+            return toast.error("Use at least 8 characters with uppercase, lowercase, number, and special character.");
+        }
+
+        if (!passwordsMatch) {
+            return toast.error("Passwords do not match.");
         }
 
         setLoading(true);
         try {
-            // Adjust this route to match your actual backend update-password endpoint
             const { data } = await API.put('/auth/update-password', {
                 currentPassword: passForm.currentPassword,
-                newPassword: passForm.newPassword
+                newPassword: passForm.newPassword,
+                confirmPassword: passForm.confirmPassword
             });
 
-            toast.success("Password updated successfully!");
-            setPassForm({ currentPassword: '', newPassword: '' }); // Clear form
+            toast.success(data.message || "Password updated successfully!");
+            setPassForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
         } catch (error) {
             toast.error(error.response?.data?.message || error.response?.data?.error || "Failed to update password");
@@ -243,10 +257,34 @@ export function SecurityTab() {
                         className="sf-field"
                         placeholder="Enter new password"
                     />
+                    <div className="mt-3">
+                        <div className="mb-2 grid grid-cols-5 gap-1">
+                            {Array.from({ length: 5 }).map((_, index) => (
+                                <span key={index} className={`h-1.5 rounded-full ${index < passwordScore ? 'bg-[var(--sf-accent)]' : 'bg-slate-200'}`} />
+                            ))}
+                        </div>
+                        <p className="text-xs leading-5 text-slate-500">
+                            Use 8+ characters with uppercase, lowercase, number, and special character.
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <label className="mb-1.5 block text-sm font-bold text-slate-700">Confirm New Password</label>
+                    <input
+                        required
+                        type="password"
+                        value={passForm.confirmPassword}
+                        onChange={(e) => setPassForm({ ...passForm, confirmPassword: e.target.value })}
+                        className="sf-field"
+                        placeholder="Repeat new password"
+                    />
+                    {passForm.confirmPassword && !passwordsMatch && (
+                        <p className="mt-2 text-xs font-bold text-red-600">Passwords do not match.</p>
+                    )}
                 </div>
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || passwordScore < 5 || !passwordsMatch}
                     className="sf-btn sf-btn-primary mt-2 w-full disabled:cursor-not-allowed disabled:opacity-70"
                 >
                     {loading ? 'Updating...' : 'Update Password'}

@@ -21,12 +21,12 @@ export default function StorefrontFooter({ subdomain }) {
 
     return (
         <>
-            <footer className="mt-12 border-t border-slate-200 bg-slate-950 pb-20 pt-10 text-white md:pb-10">
+            <footer className="mt-12 border-t border-slate-200 pb-20 pt-10 md:pb-10" style={{ backgroundColor: 'var(--sf-footer-bg)', color: 'var(--sf-footer-text)' }}>
                 <div className="sf-shell-wide">
                     <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
                         <div>
                             <h2 className="text-2xl font-black tracking-tight">{settings?.shopName || subdomain}</h2>
-                            <p className="mt-3 max-w-lg text-sm leading-6 text-white/58">
+                            <p className="mt-3 max-w-lg text-sm leading-6 opacity-70">
                                 {theme.footer?.text || `Curated products, secure checkout, and reliable order updates from ${settings?.shopName || subdomain}.`}
                             </p>
                             <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -35,8 +35,8 @@ export default function StorefrontFooter({ subdomain }) {
                                     [Truck, 'Order tracking'],
                                     [RotateCcw, 'Store policies'],
                                 ].map(([Icon, label]) => (
-                                    <div key={label} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3 text-xs font-bold text-white/78">
-                                        <Icon size={16} className="text-emerald-300" />
+                                    <div key={label} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3 text-xs font-bold opacity-85">
+                                        <Icon size={16} style={{ color: 'var(--sf-footer-link)' }} />
                                         {label}
                                     </div>
                                 ))}
@@ -44,14 +44,15 @@ export default function StorefrontFooter({ subdomain }) {
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-black uppercase tracking-[0.18em] text-white/42">Shop</h3>
+                            <h3 className="text-sm font-black uppercase tracking-[0.18em] opacity-45">Shop</h3>
                             {navLinks.length > 0 && (
-                                <nav className="mt-4 grid gap-3 text-sm font-semibold text-white/68">
+                                <nav className="mt-4 grid gap-3 text-sm font-semibold opacity-75">
                                     {navLinks.slice(0, 7).map((item, index) => (
                                         <Link
                                             key={`${item.label}-${index}`}
                                             href={item.url}
-                                            className="transition-colors hover:text-white"
+                                            className="transition-colors hover:opacity-100"
+                                            style={{ color: 'var(--sf-footer-link)' }}
                                         >
                                             {item.label}
                                         </Link>
@@ -61,12 +62,12 @@ export default function StorefrontFooter({ subdomain }) {
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-black uppercase tracking-[0.18em] text-white/42">Help</h3>
-                            <div className="mt-4 grid gap-3 text-sm font-semibold text-white/68">
-                                <Link href="/track" className="transition-colors hover:text-white">Track order</Link>
-                                <Link href="/account" className="transition-colors hover:text-white">Customer account</Link>
-                                <Link href="/cart" className="transition-colors hover:text-white">View cart</Link>
-                                <div className="flex items-center gap-2 pt-1 text-white/48">
+                            <h3 className="text-sm font-black uppercase tracking-[0.18em] opacity-45">Help</h3>
+                            <div className="mt-4 grid gap-3 text-sm font-semibold opacity-75">
+                                <Link href="/track" className="transition-colors hover:opacity-100" style={{ color: 'var(--sf-footer-link)' }}>Track order</Link>
+                                <Link href="/account" className="transition-colors hover:opacity-100" style={{ color: 'var(--sf-footer-link)' }}>Customer account</Link>
+                                <Link href="/cart" className="transition-colors hover:opacity-100" style={{ color: 'var(--sf-footer-link)' }}>View cart</Link>
+                                <div className="flex items-center gap-2 pt-1 opacity-60">
                                     <Mail size={15} />
                                     Support through store email
                                 </div>
@@ -74,7 +75,7 @@ export default function StorefrontFooter({ subdomain }) {
                         </div>
                     </div>
 
-                    <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs font-semibold text-white/42 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs font-semibold opacity-55 sm:flex-row sm:items-center sm:justify-between">
                         <p>© {new Date().getFullYear()} {settings?.shopName || subdomain}. All rights reserved.</p>
                         <p>Powered by ShopForAll commerce platform.</p>
                     </div>

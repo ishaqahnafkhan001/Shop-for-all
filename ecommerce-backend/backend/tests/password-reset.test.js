@@ -41,6 +41,7 @@ test('password reset endpoints are mounted on auth routes', () => {
     assert.match(routes, /'\/forgot-password'[\s\S]*forgotPassword/);
     assert.match(routes, /'\/verify-reset-otp'[\s\S]*verifyResetOtp/);
     assert.match(routes, /'\/reset-password'[\s\S]*resetPassword/);
+    assert.match(routes, /'\/update-password'[\s\S]*protect[\s\S]*updatePassword/);
 });
 
 test('forgot password response is generic and enumeration-safe', () => {
@@ -69,7 +70,9 @@ test('password reset emails use dedicated reset sender configuration', () => {
 
     assert.match(mailService, /type === 'reset'/);
     assert.match(resetTransporter, /process\.env\.RESET_EMAIL/);
+    assert.match(resetTransporter, /process\.env\.RESET/);
     assert.match(resetTransporter, /process\.env\.RESET_PASSWORD/);
+    assert.match(resetTransporter, /process\.env\.PASS/);
     assert.match(template, /Reset your password/);
     assert.match(template, /verification code/);
     assert.match(template, /expires in/);

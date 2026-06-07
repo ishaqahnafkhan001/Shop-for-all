@@ -685,7 +685,7 @@ export default function PlatformLandingPage() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 text-sm font-black text-white shadow-lg shadow-slate-300 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sf-accent)] px-6 text-sm font-black text-white shadow-lg shadow-teal-200 transition hover:-translate-y-0.5 hover:bg-[var(--sf-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isLoading ? <span className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : "Send verification code"}
                                     {!isLoading && <ArrowRight size={18} />}
@@ -718,7 +718,7 @@ export default function PlatformLandingPage() {
                                     <button
                                         type="submit"
                                         disabled={isLoading}
-                                        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sf-accent)] px-6 text-sm font-black text-white shadow-lg shadow-teal-200 transition hover:-translate-y-0.5 hover:bg-[var(--sf-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {isLoading ? <span className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : "Launch store"}
                                         {!isLoading && <ArrowRight size={18} />}

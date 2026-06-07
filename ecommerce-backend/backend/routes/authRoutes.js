@@ -6,7 +6,7 @@ const router = express.Router();
 // =========================
 // Middlewares
 // =========================
-const { optionalAuth } = require('../middlewares/auth');
+const { optionalAuth, protect } = require('../middlewares/auth');
 
 // =========================
 // Controllers
@@ -20,7 +20,8 @@ const {
     sendOTP,
     forgotPassword,
     verifyResetOtp,
-    resetPassword
+    resetPassword,
+    updatePassword
 } = require('../controllers/authController');
 
 // ======================================================
@@ -67,6 +68,13 @@ router.post(
 router.post(
     '/reset-password',
     resetPassword
+);
+
+// Authenticated password change
+router.put(
+    '/update-password',
+    protect,
+    updatePassword
 );
 
 // Logout

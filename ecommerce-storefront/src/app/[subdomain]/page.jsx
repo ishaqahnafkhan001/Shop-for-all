@@ -8,7 +8,7 @@ import { useCart } from '@/context/CartContext';
 import { getEnabledHomepageSections, normalizeTheme } from '@/lib/theme';
 import {
     PackageX, ShoppingBag, ArrowRight,
-    Filter, ChevronLeft, ChevronRight, SlidersHorizontal, Star, ShieldCheck, Truck
+    Filter, ChevronLeft, ChevronRight, SlidersHorizontal, Star, ShieldCheck, Truck, Heart
 } from 'lucide-react';
 
 // ─── Extracted & memoised product card ───────────────────────────────────────
@@ -24,6 +24,37 @@ const getCardShadow = (shadow) => {
     return 'hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]';
 };
 
+const getImageAspect = (aspectRatio) => {
+    if (aspectRatio === 'Portrait') return 'aspect-[3/4]';
+    if (aspectRatio === 'Landscape') return 'aspect-[4/3]';
+    return 'aspect-square';
+};
+
+const textAlignClasses = {
+    Left: 'text-left items-start',
+    Center: 'text-center items-center',
+    Right: 'text-right items-end',
+};
+
+const titleSizeClasses = {
+    Small: 'text-xs sm:text-sm',
+    Medium: 'text-sm sm:text-base',
+    Large: 'text-base sm:text-lg',
+};
+
+const priceSizeClasses = {
+    Small: 'text-base sm:text-lg',
+    Medium: 'text-lg sm:text-xl',
+    Large: 'text-xl sm:text-2xl',
+};
+
+const buttonShapeStyles = {
+    Soft: '10px',
+    Rounded: '16px',
+    Pill: '999px',
+    Square: '0px',
+};
+
 const sectionSpacingClasses = {
     Compact: 'mb-7 sm:mb-9',
     Comfortable: 'mb-9 sm:mb-12',
@@ -33,6 +64,7 @@ const sectionSpacingClasses = {
 const productGridGapClasses = {
     Compact: 'gap-3 sm:gap-5 lg:gap-6',
     Comfortable: 'gap-4 sm:gap-7 lg:gap-9',
+    Spacious: 'gap-6 sm:gap-9 lg:gap-11',
     Editorial: 'gap-6 sm:gap-9 lg:gap-11'
 };
 
@@ -61,16 +93,34 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
     }, [product, addToCart, router]);
 
     const radiusClass = getCardRadius(cardTheme?.borderRadius);
-    const shadowClass = getCardShadow(cardTheme?.shadow);
+    const imageRadiusClass = getCardRadius(cardTheme?.imageRadius || cardTheme?.borderRadius);
+    const shadowClass = cardTheme?.style === 'Minimal'
+        ? 'shadow-none'
+        : cardTheme?.style === 'Premium'
+            ? 'shadow-xl shadow-slate-900/10 hover:shadow-2xl'
+            : getCardShadow(cardTheme?.shadow);
     const imageFitClass = cardTheme?.imageFit === 'Cover' ? 'object-cover p-0' : 'object-contain p-3 sm:p-5 mix-blend-multiply';
+    const imageAspectClass = getImageAspect(cardTheme?.aspectRatio);
+    const alignmentClass = textAlignClasses[cardTheme?.cardAlignment] || textAlignClasses.Left;
+    const titleSizeClass = titleSizeClasses[cardTheme?.titleSize] || titleSizeClasses.Medium;
+    const priceSizeClass = priceSizeClasses[cardTheme?.priceSize] || priceSizeClasses.Medium;
+    const buttonRadius = buttonShapeStyles[cardTheme?.buttonShape] || buttonShapeStyles.Rounded;
+    const cardButtonColor = cardTheme?.buttonColor || 'var(--sf-primary-button-bg)';
+    const cardButtonStyle = {
+        borderRadius: buttonRadius,
+        borderColor: cardButtonColor,
+        backgroundColor: cardTheme?.buttonStyle === 'Outline' || cardTheme?.buttonStyle === 'Ghost' ? 'transparent' : cardButtonColor,
+        color: cardTheme?.buttonStyle === 'Solid' ? 'var(--sf-primary-button-text)' : cardButtonColor,
+    };
     const showQuickBuy = cardTheme?.showQuickBuy !== false;
+    const sku = product.sku || product.barcode || product._id?.slice(-8)?.toUpperCase();
 
     return (
         <article
-            className={`group flex min-h-full flex-col overflow-hidden border border-slate-200 bg-white ${radiusClass} ${shadowClass} transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-100/70`}
-            style={{ animationDelay: `${(index % 12) * 30}ms` }}
+            className={`group flex min-h-full flex-col overflow-hidden border ${radiusClass} ${shadowClass} transition duration-300 hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] hover:shadow-2xl hover:shadow-slate-200/70`}
+            style={{ animationDelay: `${(index % 12) * 30}ms`, backgroundColor: 'var(--sf-card-bg)', borderColor: 'var(--sf-card-border)' }}
         >
-            <div className={`aspect-[4/4.25] relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/70 ${radiusClass} m-2 sm:m-3`}>
+            <div className={`${imageAspectClass} relative m-2 overflow-hidden bg-[var(--sf-accent-bg)] ${imageRadiusClass} sm:m-3`}>
                 <Link href={`/products/${product._id}`} className="absolute inset-0 z-10" />
 
                 <Image
@@ -78,7 +128,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     alt={product.title}
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    className={`${imageFitClass} transition-transform duration-500 group-hover:scale-105`}
+                    className={`${imageFitClass} transition-transform duration-500 ${cardTheme?.hoverZoom === false ? '' : 'group-hover:scale-105'}`}
                     loading={index < 6 ? 'eager' : 'lazy'}
                 />
 
@@ -88,8 +138,18 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     </div>
                 )}
 
-                {hasDiscount && product.stock > 0 && (
-                    <div className="absolute right-2 top-2 z-20 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-200 sm:right-3 sm:top-3">
+                {cardTheme?.showWishlist && (
+                    <button
+                        type="button"
+                        className="absolute bottom-2 right-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)] sm:bottom-3 sm:right-3"
+                        aria-label={`Save ${product.title} to wishlist`}
+                    >
+                        <Heart size={16} />
+                    </button>
+                )}
+
+                {hasDiscount && product.stock > 0 && cardTheme?.showDiscountBadge !== false && (
+                    <div className="absolute right-2 top-2 z-20 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest shadow-lg sm:right-3 sm:top-3" style={{ backgroundColor: 'var(--sf-sale-badge-bg)', color: 'var(--sf-sale-badge-text)' }}>
                         {activeDiscount}% OFF
                     </div>
                 )}
@@ -101,39 +161,47 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                 )}
             </div>
 
-            <div className="flex flex-grow flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-5">
-                <h3 className="min-h-[40px] text-sm font-black leading-snug text-slate-950 line-clamp-2 sm:text-base">
+            <div className={`flex flex-grow flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-5 ${alignmentClass}`}>
+                <h3 className={`min-h-[40px] leading-snug text-slate-950 line-clamp-2 ${titleSizeClass}`} style={{ fontWeight: cardTheme?.titleWeight || 800 }}>
                     <Link href={`/products/${product._id}`} className="hover:text-[var(--sf-accent)] transition-colors relative z-10">
                         {product.title}
                     </Link>
                 </h3>
 
                 {cardTheme?.showRating !== false && product.averageRating > 0 && (
-                    <div className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-500">
+                    <div className="mt-2 flex items-center gap-1 text-xs font-bold" style={{ color: 'var(--sf-rating-color)' }}>
                         <Star size={13} fill="currentColor" />
                         <span>{Number(product.averageRating).toFixed(1)}</span>
+                        {cardTheme?.showReviews !== false && product.reviewCount > 0 && (
+                            <span className="text-slate-400">({product.reviewCount})</span>
+                        )}
                     </div>
                 )}
 
                 <div className="mt-auto flex flex-wrap items-end gap-1.5 pt-4 sm:gap-2">
-                    <span className="text-lg font-black text-slate-950 sm:text-xl">৳ {product.finalPrice}</span>
+                    <span className={`${priceSizeClass} font-black`} style={{ color: cardTheme?.priceColor || 'var(--sf-price-color)' }}>৳ {product.finalPrice}</span>
                     {hasDiscount && (
                         <span className="pb-0.5 text-xs font-semibold text-slate-400 line-through sm:text-sm">৳ {product.sellingPrice}</span>
                     )}
                 </div>
-                <div className="mt-2 flex items-center justify-between gap-2 text-xs font-bold">
-                    <span className={product.stock > 0 ? 'text-emerald-700' : 'text-red-600'}>
-                        {product.stock > 0 ? `${product.stock} in stock` : 'Unavailable'}
-                    </span>
-                    <span className="rounded-full bg-cyan-50 px-2 py-1 text-cyan-700">COD ready</span>
-                </div>
+                {(cardTheme?.showStock !== false || cardTheme?.showSku) && (
+                    <div className="mt-2 flex w-full flex-wrap items-center justify-between gap-2 text-xs font-bold">
+                        {cardTheme?.showStock !== false && (
+                            <span className={product.stock > 0 ? 'text-emerald-700' : 'text-red-600'}>
+                                {product.stock > 0 ? `${product.stock} in stock` : 'Unavailable'}
+                            </span>
+                        )}
+                        {cardTheme?.showSku && sku && <span className="text-slate-400">SKU {sku}</span>}
+                    </div>
+                )}
 
                 {showQuickBuy && (
                 <div className="relative z-20 mt-5 flex items-center gap-2">
                     <button
                         onClick={handleAddToCart}
                         disabled={product.stock <= 0}
-                        className="sf-btn sf-btn-secondary h-12 min-h-0 w-12 shrink-0 p-0 text-slate-600 disabled:opacity-50"
+                        className="sf-btn sf-btn-secondary h-12 min-h-0 w-12 shrink-0 p-0 disabled:opacity-50"
+                        style={{ borderRadius: buttonRadius }}
                         aria-label={`Add ${product.title} to cart`}
                     >
                         <ShoppingBag size={18} />
@@ -141,7 +209,8 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     <button
                         onClick={handleBuyNow}
                         disabled={product.stock <= 0}
-                        className="sf-btn sf-btn-primary h-12 min-h-0 flex-1 px-3 text-xs disabled:bg-slate-300 disabled:shadow-none sm:text-sm"
+                        className="h-12 min-h-0 flex-1 border px-3 text-xs font-black transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:shadow-none sm:text-sm"
+                        style={cardButtonStyle}
                     >
                         <span>Buy Now</span>
                         <ArrowRight size={14} />
@@ -276,11 +345,20 @@ export default function VendorHomePage({ params }) {
     const heroCtaLabel = hero.ctaLabel;
     const heroOverlayOpacity = hero.overlayOpacity;
     const enabledSections = getEnabledHomepageSections(theme);
-    const containerClass = layout.maxWidth === 'Full'
-            ? 'w-full px-5 py-6 pb-24 sm:px-8 sm:py-8'
-        : layout.maxWidth === 'Contained'
+    const containerWidth = layout.containerWidth || (layout.maxWidth === 'Full' ? 'Full Width' : layout.maxWidth === 'Contained' ? 'Narrow' : 'Wide');
+    const containerClass = containerWidth === 'Full Width'
+        ? 'w-full px-5 py-6 pb-24 sm:px-8 sm:py-8'
+        : containerWidth === 'Narrow'
             ? 'mx-auto max-w-5xl px-5 py-6 pb-24 sm:px-8 sm:py-8'
-            : 'sf-shell-wide py-6 pb-24 sm:py-8';
+            : containerWidth === 'Standard'
+                ? 'mx-auto max-w-7xl px-5 py-6 pb-24 sm:px-8 sm:py-8'
+                : 'sf-shell-wide py-6 pb-24 sm:py-8';
+    const sectionRhythmStyle = {
+        '--sf-section-padding-top': `${Math.min(Math.max(Number(layout.sectionPaddingTop) || 0, 0), 160)}px`,
+        '--sf-section-padding-bottom': `${Math.min(Math.max(Number(layout.sectionPaddingBottom) || 0, 0), 160)}px`,
+        '--sf-section-margin-top': `${Math.min(Math.max(Number(layout.sectionMarginTop) || 0, 0), 160)}px`,
+        '--sf-section-margin-bottom': `${Math.min(Math.max(Number(layout.sectionMarginBottom) || 0, 0), 160)}px`,
+    };
     const heroHeightClass = hero.height === 'Compact'
         ? 'h-[220px] sm:h-[280px] md:h-[340px]'
         : hero.height === 'Tall'
@@ -288,8 +366,8 @@ export default function VendorHomePage({ params }) {
             : 'h-[260px] sm:h-[340px] md:h-[440px]';
     const desktopColumns = Math.min(Math.max(layout.productColumnsDesktop || 3, 2), 5);
     const gridClass = `${layout.productColumnsMobile === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
-    const gridGapClass = productGridGapClasses[theme.productGridStyle] || productGridGapClasses.Comfortable;
-    const sectionSpacingClass = sectionSpacingClasses[layout.sectionSpacing] || sectionSpacingClasses.Comfortable;
+    const gridGapClass = productGridGapClasses[layout.productGap || theme.productGridStyle] || productGridGapClasses.Comfortable;
+    const sectionSpacingClass = `${sectionSpacingClasses[layout.contentSpacing || layout.sectionSpacing] || sectionSpacingClasses.Comfortable} mt-[var(--sf-section-margin-top)] mb-[var(--sf-section-margin-bottom)]`;
     const showHero = enabledSections.length === 0 || enabledSections.some(section => section.type === 'Hero');
     const showProducts = enabledSections.length === 0 || enabledSections.some(section => ['FeaturedProducts', 'Collection'].includes(section.type));
     const productSection = enabledSections.find(section => ['FeaturedProducts', 'Collection'].includes(section.type));
@@ -388,7 +466,7 @@ export default function VendorHomePage({ params }) {
     );
 
     return (
-        <div className={containerClass}>
+        <div className={containerClass} style={sectionRhythmStyle}>
 
             {/* ✨ HERO / BANNER SLIDER ✨ */}
             {showHero && allSlides.length > 0 ? (
@@ -670,7 +748,7 @@ export default function VendorHomePage({ params }) {
                                             index={index}
                                             storewideDiscount={storewideDiscount}
                                             addToCart={addToCart}
-                                            cardTheme={productCard}
+                                            cardTheme={{ ...productCard, cardAlignment: layout.cardAlignment }}
                                         />
                                     ))}
                                 </div>
@@ -697,8 +775,8 @@ export default function VendorHomePage({ params }) {
                                                         onClick={() => handlePageChange(pageNumber)}
                                                         className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-sm font-black shadow-sm transition-all sm:h-10 sm:w-10 ${
                                                             filters.page === pageNumber
-                                                                ? 'bg-slate-950 text-white'
-                                                                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                                                ? 'bg-[var(--sf-accent)] text-white'
+                                                                : 'border border-slate-200 bg-white text-slate-600 hover:border-[var(--sf-accent)] hover:bg-slate-50'
                                                         }`}
                                                     >
                                                         {pageNumber}
@@ -733,7 +811,7 @@ const CategoryButton = memo(function CategoryButton({ label, active, onClick }) 
             onClick={onClick}
             className={`flex-shrink-0 snap-start rounded-full border px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap ${
                 active
-                    ? 'border-slate-950 bg-slate-950 text-white shadow-md'
+                    ? 'border-[var(--sf-accent)] bg-[var(--sf-accent)] text-white shadow-md'
                     : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
             }`}
         >
@@ -747,7 +825,7 @@ const DesktopCategoryButton = memo(function DesktopCategoryButton({ label, activ
         <button
             onClick={onClick}
             className={`rounded-xl px-3 py-2 text-left text-sm font-bold transition-colors ${
-                active ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+                active ? 'bg-[var(--sf-accent)] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
             }`}
         >
             {label}

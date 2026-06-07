@@ -56,10 +56,108 @@ export default function Navbar({ subdomain }) {
     }, [searchOpen, subdomain, products.length]);
 
     const navLinks = getSortedNavigation(theme).slice(0, 4);
+    const logoPosition = theme.header?.logoPosition || 'Left';
+
+    const logoLink = (
+        <Link
+            href="/"
+            className="flex min-w-0 items-center gap-3 text-lg font-black tracking-tight capitalize transition hover:text-[var(--sf-navbar-hover)] sm:text-xl"
+            style={{ color: 'var(--sf-navbar-text)' }}
+        >
+            {theme.logoUrl && (
+                <Image src={theme.logoUrl} alt="" width={36} height={36} className="h-9 w-9 rounded-xl border border-slate-200 object-cover" />
+            )}
+            <span className="truncate">{shopSettings?.shopName || subdomain}</span>
+        </Link>
+    );
+
+    const navBlock = (
+        <nav className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white/80 p-1 text-sm font-bold shadow-sm md:flex">
+            {navLinks.map((item, index) => {
+                const children = (item.children || []).filter(child => child?.label && child?.url).slice(0, 6);
+                return (
+                    <div key={`${item.label}-${index}`} className="group relative">
+                        <Link
+                            href={item.url}
+                            className="block rounded-full px-4 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
+                            style={{ color: 'var(--sf-navbar-text)' }}
+                        >
+                            {item.label}
+                        </Link>
+                        {children.length > 0 && (
+                            <div className="invisible absolute left-0 top-full z-50 mt-2 min-w-48 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:opacity-100">
+                                {children.map((child, childIndex) => (
+                                    <Link
+                                        key={`${child.label}-${childIndex}`}
+                                        href={child.url}
+                                        className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[var(--sf-navbar-hover)]"
+                                    >
+                                        {child.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </nav>
+    );
+
+    const actionsBlock = (
+        <div className="flex items-center gap-2">
+            <button
+                onClick={() => setSearchOpen(true)}
+                className="sf-btn sf-btn-secondary h-11 min-h-0 px-3 sm:px-4"
+                title="Search"
+                aria-label="Search products"
+            >
+                <Search size={18} strokeWidth={2.5} />
+                <span className="hidden text-sm sm:inline">Search</span>
+            </button>
+
+            <Link
+                href="/track"
+                className="hidden h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] sm:flex"
+                style={{ color: 'var(--sf-navbar-text)' }}
+            >
+                <Truck size={18} strokeWidth={2.5} />
+                Track
+            </Link>
+
+            <Link
+                href="/account"
+                className="flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
+                style={{ color: 'var(--sf-navbar-text)' }}
+                aria-label="Account"
+            >
+                <User size={19} strokeWidth={2.5} />
+            </Link>
+
+            <Link
+                href="/cart"
+                className="relative flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-[var(--sf-primary-button-hover-bg)]"
+                style={{ backgroundColor: 'var(--sf-primary-button-bg)', color: 'var(--sf-primary-button-text)' }}
+                aria-label="Cart"
+            >
+                <ShoppingBag size={19} strokeWidth={2.5} />
+
+                {cartCount > 0 && (
+                    <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 px-1 text-[10px] font-black text-white shadow-md">
+                        {cartCount}
+                    </span>
+                )}
+            </Link>
+        </div>
+    );
+    const [desktopLeftSlot, desktopCenterSlot, desktopRightSlot] = {
+        Left: [logoLink, navBlock, actionsBlock],
+        Center: [navBlock, logoLink, actionsBlock],
+        Right: [navBlock, actionsBlock, logoLink],
+    }[logoPosition] || [logoLink, navBlock, actionsBlock];
 
     return (
         <>
-            <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-[var(--sf-header-background)]/90 shadow-sm backdrop-blur-xl">
+            <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-[var(--sf-navbar-bg)]/90 shadow-sm backdrop-blur-xl">
                 <div className="hidden border-b border-slate-200/70 bg-slate-950 text-white lg:block">
                     <div className="sf-shell-wide flex h-9 items-center justify-between text-xs font-semibold text-white/72">
                         <div className="flex items-center gap-2">
@@ -74,72 +172,15 @@ export default function Navbar({ subdomain }) {
                     </div>
                 </div>
 
-                <div className="sf-shell-wide flex h-16 items-center justify-between gap-4">
-
-                    <Link
-                        href="/"
-                        className="flex min-w-0 items-center gap-3 text-lg font-black tracking-tight text-slate-950 capitalize transition hover:text-[var(--sf-accent)] sm:text-xl"
-                    >
-                        {theme.logoUrl && (
-                            <Image src={theme.logoUrl} alt="" width={36} height={36} className="h-9 w-9 rounded-xl border border-slate-200 object-cover" />
-                        )}
-                        <span className="truncate">{shopSettings?.shopName || subdomain}</span>
-                    </Link>
-
-                    <nav className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-sm font-bold text-slate-600 md:flex">
-                        {navLinks.map((item, index) => (
-                            <Link
-                                key={`${item.label}-${index}`}
-                                href={item.url}
-                                className="rounded-full px-4 py-2 transition hover:bg-slate-100 hover:text-slate-950"
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
-
-                    <div className="flex items-center gap-2">
-
-                        {/* SEARCH */}
-                        <button
-                            onClick={() => setSearchOpen(true)}
-                            className="sf-btn sf-btn-secondary h-11 min-h-0 px-3 text-slate-600 sm:px-4"
-                            title="Search"
-                            aria-label="Search products"
-                        >
-                            <Search size={18} strokeWidth={2.5} />
-                            <span className="hidden text-sm sm:inline">Search</span>
-                        </button>
-
-                        <Link
-                            href="/track"
-                            className="hidden h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 sm:flex"
-                        >
-                            <Truck size={18} strokeWidth={2.5} />
-                            Track
-                        </Link>
-
-                        <Link
-                            href="/account"
-                            className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
-                            aria-label="Account"
-                        >
-                            <User size={19} strokeWidth={2.5} />
-                        </Link>
-
-                        <Link
-                            href="/cart"
-                            className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-white transition hover:bg-[var(--sf-accent)]"
-                            aria-label="Cart"
-                        >
-                            <ShoppingBag size={19} strokeWidth={2.5} />
-
-                            {cartCount > 0 && (
-                                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 px-1 text-[10px] font-black text-white shadow-md">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </Link>
+                <div className="sf-shell-wide">
+                    <div className="flex h-16 items-center justify-between gap-4 md:hidden">
+                        {logoLink}
+                        {actionsBlock}
+                    </div>
+                    <div className="hidden h-16 items-center gap-4 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+                        <div className="flex min-w-0 justify-start">{desktopLeftSlot}</div>
+                        <div className="flex min-w-0 justify-center">{desktopCenterSlot}</div>
+                        <div className="flex min-w-0 justify-end">{desktopRightSlot}</div>
                     </div>
                 </div>
             </header>

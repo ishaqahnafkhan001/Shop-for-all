@@ -2,17 +2,20 @@ const Shop = require('../models/Shop');
 const cache = require('../services/cacheService');
 
 const allowedThemeKeys = [
+    'version',
     'logoUrl',
     'faviconUrl',
     'fontFamily',
     'productGridStyle',
     'colors',
+    'header',
     'typography',
     'hero',
     'layout',
     'productCard',
     'checkoutBranding',
     'mobile',
+    'paymentSettings',
     'homepageSections',
     'navigation',
     'footer',

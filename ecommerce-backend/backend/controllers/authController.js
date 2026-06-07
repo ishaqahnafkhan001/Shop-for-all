@@ -15,7 +15,8 @@ const {
     registerCustomerSchema,
     forgotPasswordSchema,
     verifyResetOtpSchema,
-    resetPasswordSchema
+    resetPasswordSchema,
+    updatePasswordSchema
 } = require('../validations/userValidation');
 const {
     normalizeEmail,
@@ -91,7 +92,7 @@ exports.sendOTP = async (req, res) => {
         );
 
         await sendMail({
-            type: 'admin',
+            type: 'reset',
             to: email,
             senderName: 'ScaleUp',
             recipientName: 'Customer',
@@ -634,6 +635,70 @@ exports.resetPassword = async (req, res) => {
 
         res.status(500).json({
             error: 'Password reset failed.'
+        });
+    }
+};
+
+exports.updatePassword = async (req, res) => {
+    try {
+        const { error, value } = updatePasswordSchema.validate(req.body);
+
+        if (error) {
+            return res.status(400).json({ error: error.details[0].message });
+        }
+
+        const userId = req.user?._id || req.user?.id;
+        const accountId = req.user?.accountId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Not authorized. Please login again.' });
+        }
+
+        const user = await User.findById(userId).select('password account_id status');
+        if (!user || user.status !== 'Active') {
+            return res.status(401).json({ error: 'Not authorized. Please login again.' });
+        }
+
+        const account = accountId || user.account_id
+            ? await Account.findById(accountId || user.account_id).select('passwordHash status')
+            : null;
+
+        if (account && account.status !== 'Active') {
+            return res.status(403).json({ error: 'Account is suspended' });
+        }
+
+        const currentHash = account?.passwordHash || user.password;
+        const passwordMatches = await bcrypt.compare(value.currentPassword, currentHash);
+
+        if (!passwordMatches) {
+            return res.status(400).json({ error: 'Current password is incorrect.' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(value.newPassword, salt);
+
+        if (account) {
+            await Account.updateOne({ _id: account._id }, { $set: { passwordHash } });
+            await User.updateMany({ account_id: account._id }, { $set: { password: passwordHash } });
+        } else {
+            await User.updateOne({ _id: user._id }, { $set: { password: passwordHash } });
+        }
+
+        console.info('[Auth] Password updated', {
+            userId: String(user._id),
+            accountId: account ? String(account._id) : null,
+            role: req.user?.role
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Password updated successfully.'
+        });
+    } catch (err) {
+        console.error('Update Password Error:', err);
+
+        res.status(500).json({
+            error: 'Password update failed.'
         });
     }
 };

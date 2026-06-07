@@ -125,6 +125,26 @@ const resetPasswordSchema = Joi.object({
     audience: resetAudience
 }).required();
 
+const updatePasswordSchema = Joi.object({
+    currentPassword: Joi.string().required().messages({
+        'string.empty': 'Current password is required'
+    }),
+    newPassword: Joi.string()
+        .min(8)
+        .pattern(/[a-z]/, 'lowercase')
+        .pattern(/[A-Z]/, 'uppercase')
+        .pattern(/\d/, 'number')
+        .pattern(/[^A-Za-z0-9]/, 'special character')
+        .required()
+        .messages({
+            'string.min': 'Password must be at least 8 characters',
+            'string.pattern.name': 'Password must include uppercase, lowercase, number, and special character'
+        }),
+    confirmPassword: Joi.string().valid(Joi.ref('newPassword')).optional().messages({
+        'any.only': 'Passwords do not match'
+    })
+}).required();
+
 module.exports = {
     registerCustomerSchema,
     createUserSchema: createStaffSchema,
@@ -132,5 +152,6 @@ module.exports = {
     loginUserSchema,
     forgotPasswordSchema,
     verifyResetOtpSchema,
-    resetPasswordSchema
+    resetPasswordSchema,
+    updatePasswordSchema
 };

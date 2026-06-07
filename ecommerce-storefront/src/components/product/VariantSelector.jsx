@@ -45,8 +45,8 @@ const VariantSelector = memo(function VariantSelector({ availableAttributes, sel
                                     aria-pressed={isSelected}
                                     className={`rounded-xl px-4 py-2.5 text-sm font-black transition-all duration-200
                                         ${isSelected
-                                        ? 'bg-slate-950 text-white shadow-lg shadow-slate-900/15'
-                                        : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-950 hover:bg-slate-50'
+                                        ? 'bg-[var(--sf-accent)] text-white shadow-lg shadow-teal-900/15'
+                                        : 'border border-slate-200 bg-white text-slate-700 hover:border-[var(--sf-accent)] hover:bg-slate-50'
                                     } disabled:cursor-not-allowed disabled:opacity-40 disabled:line-through`}
                                 >
                                     {value}

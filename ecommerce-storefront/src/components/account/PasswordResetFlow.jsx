@@ -216,7 +216,7 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
                                     type="button"
                                     onClick={requestOtp}
                                     disabled={loading || resendTimer > 0}
-                                    className="font-black text-indigo-600 hover:text-indigo-800 disabled:cursor-not-allowed disabled:text-slate-400"
+                                    className="font-black text-[var(--sf-accent)] hover:text-[var(--sf-accent-hover)] disabled:cursor-not-allowed disabled:text-slate-400"
                                 >
                                     {resendTimer > 0 ? `Resend in ${formatTime(resendTimer)}` : 'Resend code'}
                                 </button>
@@ -254,7 +254,7 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
                                 {Array.from({ length: 5 }).map((_, index) => (
                                     <span
                                         key={index}
-                                        className={`h-1.5 rounded-full ${index < score ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                        className={`h-1.5 rounded-full ${index < score ? 'bg-[var(--sf-accent)]' : 'bg-slate-200'}`}
                                     />
                                 ))}
                             </div>

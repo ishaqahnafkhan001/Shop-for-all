@@ -4,7 +4,9 @@ const linkSchema = new mongoose.Schema({
     label: { type: String, trim: true, maxlength: 80 },
     url: { type: String, trim: true, maxlength: 300 },
     isExternal: { type: Boolean, default: false },
-    sortOrder: { type: Number, default: 0 }
+    sortOrder: { type: Number, default: 0 },
+    megaMenu: { type: Boolean, default: false },
+    children: { type: [mongoose.Schema.Types.Mixed], default: [] }
 }, { _id: false });
 
 const homepageSectionSchema = new mongoose.Schema({
@@ -67,26 +69,58 @@ const shopSchema = new mongoose.Schema({
         lastCheckedAt: Date
     },
     theme: {
+        version: { type: Number, default: 2, min: 1 },
         logoUrl: { type: String, default: '' },
         faviconUrl: { type: String, default: '' },
         fontFamily: { type: String, default: 'Inter' },
         productGridStyle: {
             type: String,
-            enum: ['Comfortable', 'Compact', 'Editorial'],
+            enum: ['Comfortable', 'Compact', 'Spacious', 'Editorial'],
             default: 'Comfortable'
         },
+        header: {
+            logoPosition: {
+                type: String,
+                enum: ['Left', 'Center', 'Right'],
+                default: 'Left'
+            },
+            menuStyle: {
+                type: String,
+                enum: ['Simple', 'Nested', 'Mega'],
+                default: 'Simple'
+            }
+        },
         colors: {
-            accent: { type: String, default: '#4f46e5' },
-            accentHover: { type: String, default: '#4338ca' },
-            accentSoft: { type: String, default: '#c7d2fe' },
-            accentBg: { type: String, default: '#eef2ff' },
-            accentStrong: { type: String, default: '#3730a3' },
-            accentMuted: { type: String, default: '#818cf8' },
-            accentLight: { type: String, default: '#a5b4fc' },
-            accentRing: { type: String, default: '#e0e7ff' },
+            accent: { type: String, default: '#0f766e' },
+            accentHover: { type: String, default: '#115e59' },
+            accentSoft: { type: String, default: '#99f6e4' },
+            accentBg: { type: String, default: '#ecfdf5' },
+            accentStrong: { type: String, default: '#042f2e' },
+            accentMuted: { type: String, default: '#14b8a6' },
+            accentLight: { type: String, default: '#5eead4' },
+            accentRing: { type: String, default: '#ccfbf1' },
             background: { type: String, default: '#ffffff' },
             foreground: { type: String, default: '#111827' },
-            headerBackground: { type: String, default: '#ffffff' }
+            headerBackground: { type: String, default: '#ffffff' },
+            primaryButtonBg: { type: String, default: '#0f766e' },
+            primaryButtonText: { type: String, default: '#ffffff' },
+            primaryButtonHoverBg: { type: String, default: '#115e59' },
+            secondaryButtonBg: { type: String, default: '#ffffff' },
+            secondaryButtonText: { type: String, default: '#0f172a' },
+            secondaryButtonHoverBg: { type: String, default: '#f8fafc' },
+            navbarBackground: { type: String, default: '#ffffff' },
+            navbarText: { type: String, default: '#0f172a' },
+            navbarHover: { type: String, default: '#0f766e' },
+            cardBackground: { type: String, default: '#ffffff' },
+            cardBorder: { type: String, default: '#e2e8f0' },
+            cardHoverBorder: { type: String, default: '#99f6e4' },
+            priceColor: { type: String, default: '#0f172a' },
+            saleBadgeBg: { type: String, default: '#dc2626' },
+            saleBadgeText: { type: String, default: '#ffffff' },
+            ratingColor: { type: String, default: '#f59e0b' },
+            footerBackground: { type: String, default: '#0f172a' },
+            footerText: { type: String, default: '#ffffff' },
+            footerLink: { type: String, default: '#99f6e4' }
         },
         typography: {
             headingFont: { type: String, default: 'Inter' },
@@ -117,23 +151,73 @@ const shopSchema = new mongoose.Schema({
                 enum: ['Contained', 'Wide', 'Full'],
                 default: 'Wide'
             },
+            containerWidth: {
+                type: String,
+                enum: ['Narrow', 'Standard', 'Wide', 'Full Width'],
+                default: 'Wide'
+            },
             sectionSpacing: {
                 type: String,
                 enum: ['Compact', 'Comfortable', 'Spacious'],
                 default: 'Comfortable'
             },
+            contentSpacing: {
+                type: String,
+                enum: ['Compact', 'Comfortable', 'Spacious'],
+                default: 'Comfortable'
+            },
+            sectionWidth: {
+                type: String,
+                enum: ['Narrow', 'Standard', 'Wide', 'Full Width'],
+                default: 'Full Width'
+            },
+            sectionPaddingTop: { type: Number, default: 40, min: 0, max: 160 },
+            sectionPaddingBottom: { type: Number, default: 40, min: 0, max: 160 },
+            sectionMarginTop: { type: Number, default: 0, min: 0, max: 160 },
+            sectionMarginBottom: { type: Number, default: 40, min: 0, max: 160 },
             productColumnsDesktop: { type: Number, default: 3, min: 2, max: 5 },
-            productColumnsMobile: { type: Number, default: 2, min: 1, max: 2 }
+            productColumnsMobile: { type: Number, default: 2, min: 1, max: 2 },
+            productGap: {
+                type: String,
+                enum: ['Compact', 'Comfortable', 'Spacious', 'Editorial'],
+                default: 'Comfortable'
+            },
+            cardAlignment: {
+                type: String,
+                enum: ['Left', 'Center', 'Right'],
+                default: 'Left'
+            }
         },
         productCard: {
+            style: {
+                type: String,
+                enum: ['Minimal', 'Modern', 'Premium'],
+                default: 'Modern'
+            },
             imageFit: {
                 type: String,
                 enum: ['Contain', 'Cover'],
                 default: 'Contain'
             },
+            aspectRatio: {
+                type: String,
+                enum: ['Square', 'Portrait', 'Landscape'],
+                default: 'Square'
+            },
+            imageRadius: {
+                type: String,
+                enum: ['Soft', 'Rounded', 'Square'],
+                default: 'Rounded'
+            },
+            hoverZoom: { type: Boolean, default: true },
             showCategory: { type: Boolean, default: true },
             showRating: { type: Boolean, default: true },
+            showReviews: { type: Boolean, default: true },
+            showStock: { type: Boolean, default: true },
+            showSku: { type: Boolean, default: false },
+            showDiscountBadge: { type: Boolean, default: true },
             showQuickBuy: { type: Boolean, default: true },
+            showWishlist: { type: Boolean, default: false },
             borderRadius: {
                 type: String,
                 enum: ['Soft', 'Rounded', 'Square'],
@@ -143,7 +227,34 @@ const shopSchema = new mongoose.Schema({
                 type: String,
                 enum: ['None', 'Soft', 'Elevated'],
                 default: 'Soft'
-            }
+            },
+            titleSize: {
+                type: String,
+                enum: ['Small', 'Medium', 'Large'],
+                default: 'Medium'
+            },
+            titleWeight: {
+                type: String,
+                enum: ['600', '700', '800', '900'],
+                default: '800'
+            },
+            priceSize: {
+                type: String,
+                enum: ['Small', 'Medium', 'Large'],
+                default: 'Medium'
+            },
+            priceColor: { type: String, default: '#0f172a' },
+            buttonStyle: {
+                type: String,
+                enum: ['Solid', 'Outline', 'Ghost'],
+                default: 'Solid'
+            },
+            buttonShape: {
+                type: String,
+                enum: ['Soft', 'Rounded', 'Pill', 'Square'],
+                default: 'Rounded'
+            },
+            buttonColor: { type: String, default: '#0f766e' }
         },
         checkoutBranding: {
             logoUrl: { type: String, default: '' },
@@ -159,6 +270,17 @@ const shopSchema = new mongoose.Schema({
             stickyCheckoutButton: { type: Boolean, default: true },
             compactHeader: { type: Boolean, default: true },
             showBottomNavigation: { type: Boolean, default: false }
+        },
+        paymentSettings: {
+            additionalMethodsEnabled: { type: Boolean, default: false },
+            providers: {
+                stripe: { type: Boolean, default: false },
+                sslcommerz: { type: Boolean, default: false },
+                bkash: { type: Boolean, default: false },
+                nagad: { type: Boolean, default: false },
+                rocket: { type: Boolean, default: false },
+                paypal: { type: Boolean, default: false }
+            }
         },
         homepageSections: {
             type: [homepageSectionSchema],
