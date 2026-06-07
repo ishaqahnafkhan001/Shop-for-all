@@ -358,39 +358,39 @@ export default function CheckoutPage({ params }) {
     if (isSuccess) {
 
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[var(--sf-background)] px-4">
+            <div className="sf-page flex min-h-screen items-center justify-center px-4">
 
-                <div className="bg-white border border-gray-100 rounded-3xl shadow-xl max-w-lg w-full p-10 text-center">
+                <div className="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-2xl shadow-slate-200/70 sm:p-10">
 
                     <CheckCircle
                         size={90}
-                        className="mx-auto text-green-500 mb-6"
+                        className="mx-auto mb-6 text-emerald-500"
                     />
 
-                    <h1 className="text-4xl font-black text-gray-900 mb-3">
+                    <h1 className="mb-3 text-4xl font-black text-slate-950">
                         Order Confirmed
                     </h1>
 
-                    <p className="text-gray-600 leading-relaxed">
+                    <p className="leading-relaxed text-slate-600">
                         Thank you for your purchase.
                     </p>
 
-                    <div className="mt-7 bg-gray-50 rounded-2xl border border-gray-100 p-5">
+                    <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5">
 
-                        <p className="text-sm text-gray-500 mb-2">
+                        <p className="mb-2 text-sm font-black uppercase tracking-[0.16em] text-slate-500">
                             ORDER ID FOR TRACKING
                         </p>
 
-                        <p className="text-2xl font-black text-[var(--sf-accent)] tracking-wider">
+                        <p className="text-2xl font-black tracking-wider text-[var(--sf-accent)]">
                             #
                             {orderId
                                 ?.slice(-6)
                                 ?.toUpperCase()}
                         </p>
-                        <p className="mt-2 break-all text-xs text-gray-500">
+                        <p className="mt-2 break-all text-xs text-slate-500">
                             Full ID: {orderId}
                         </p>
-                        <p className="mt-3 text-xs text-gray-500">
+                        <p className="mt-3 text-xs text-slate-500">
                             Use the short ID and your delivery phone number on the Track Order page.
                         </p>
 
@@ -398,7 +398,7 @@ export default function CheckoutPage({ params }) {
 
                     <Link
                         href="/"
-                        className="inline-flex mt-8 bg-[var(--sf-accent)] text-white px-8 py-4 rounded-2xl font-bold hover:scale-[1.02] transition"
+                        className="sf-btn sf-btn-primary mt-8 px-8"
                     >
                         Continue Shopping
                     </Link>
@@ -415,24 +415,24 @@ export default function CheckoutPage({ params }) {
     if (cartItems.length === 0) {
 
         return (
-            <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
+            <div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
 
                 <Package
                     size={80}
-                    className="text-gray-300 mb-6"
+                    className="mb-6 text-slate-300"
                 />
 
-                <h2 className="text-3xl font-black text-gray-900 mb-3">
+                <h2 className="mb-3 text-3xl font-black text-slate-950">
                     Your cart is empty
                 </h2>
 
-                <p className="text-gray-500 mb-8">
+                <p className="mb-8 text-slate-500">
                     Add some products first
                 </p>
 
                 <Link
                     href="/"
-                    className="bg-[var(--sf-accent)] text-white px-7 py-4 rounded-2xl font-bold"
+                    className="sf-btn sf-btn-primary px-7"
                 >
                     Continue Shopping
                 </Link>
@@ -445,12 +445,12 @@ export default function CheckoutPage({ params }) {
     // MAIN UI
     // =========================================
     return (
-        <div className="min-h-screen bg-[var(--sf-background)]">
+        <div className="sf-page">
 
-            <div className="container mx-auto max-w-7xl px-4 py-10">
+            <div className="sf-shell-wide py-8 sm:py-10">
 
                 {(checkoutBranding.logoUrl || checkoutBranding.bannerText) && (
-                    <div className="mb-8 rounded-3xl border border-gray-100 bg-white p-6 text-center shadow-sm">
+                    <div className="mb-8 rounded-[2rem] border border-slate-200 bg-white p-6 text-center shadow-sm">
                         {checkoutBranding.logoUrl && (
                             <Image
                                 src={checkoutBranding.logoUrl}
@@ -461,14 +461,14 @@ export default function CheckoutPage({ params }) {
                             />
                         )}
                         {checkoutBranding.bannerText && (
-                            <p className="text-sm font-semibold text-gray-700">{checkoutBranding.bannerText}</p>
+                            <p className="text-sm font-bold text-slate-700">{checkoutBranding.bannerText}</p>
                         )}
                     </div>
                 )}
 
                 <Link
                     href="/cart"
-                    className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-[var(--sf-accent)] transition mb-8"
+                    className="mb-6 inline-flex items-center text-sm font-bold text-slate-500 transition hover:text-[var(--sf-accent)]"
                 >
                     <ArrowLeft
                         size={16}
@@ -479,24 +479,24 @@ export default function CheckoutPage({ params }) {
 
                 <form
                     onSubmit={handlePlaceOrder}
-                    className="grid grid-cols-1 lg:grid-cols-12 gap-10"
+                    className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_450px]"
                 >
 
                     {/* LEFT SIDE */}
-                    <div className="lg:col-span-7 space-y-8">
+                    <div className="space-y-7">
 
                         {/* CUSTOMER INFO */}
-                        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+                        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
 
-                            <h2 className="text-2xl font-black text-gray-900 mb-8">
+                            <h2 className="mb-6 text-2xl font-black text-slate-950">
                                 Customer Information
                             </h2>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
                                 <div className="md:col-span-2">
 
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <User size={16} />
                                         Full Name
                                     </label>
@@ -510,14 +510,14 @@ export default function CheckoutPage({ params }) {
                                             handleInputChange
                                         }
                                         placeholder="Enter your full name"
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none"
+                                        className="sf-field"
                                     />
 
                                 </div>
 
                                 <div>
 
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <Mail size={16} />
                                         Email
                                     </label>
@@ -531,14 +531,14 @@ export default function CheckoutPage({ params }) {
                                             handleInputChange
                                         }
                                         placeholder="example@gmail.com"
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none"
+                                        className="sf-field"
                                     />
 
                                 </div>
 
                                 <div>
 
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <Phone size={16} />
                                         Phone Number
                                     </label>
@@ -552,14 +552,14 @@ export default function CheckoutPage({ params }) {
                                             handleInputChange
                                         }
                                         placeholder="+8801XXXXXXXXX"
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none"
+                                        className="sf-field"
                                     />
 
                                 </div>
 
                                 <div className="md:col-span-2">
 
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <MapPin size={16} />
                                         Full Address
                                     </label>
@@ -573,14 +573,14 @@ export default function CheckoutPage({ params }) {
                                             handleInputChange
                                         }
                                         placeholder="House, road, area, thana"
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none resize-none"
+                                        className="sf-field resize-none"
                                     />
 
                                 </div>
 
                                 <div className="md:col-span-2">
 
-                                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                    <label className="mb-2 block text-sm font-bold text-slate-700">
                                         City / District
                                     </label>
 
@@ -593,7 +593,7 @@ export default function CheckoutPage({ params }) {
                                             handleInputChange
                                         }
                                         placeholder="Dhaka"
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none"
+                                        className="sf-field"
                                     />
 
                                 </div>
@@ -603,24 +603,24 @@ export default function CheckoutPage({ params }) {
                         </div>
 
                         {/* DELIVERY NOTICE */}
-                        <div className="bg-white rounded-3xl border border-gray-100 p-6 flex gap-4">
+                        <div className="flex gap-5 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white to-cyan-50/50 p-6 shadow-sm">
 
                             <Truck
                                 size={32}
-                                className="text-[var(--sf-accent)] mt-1"
+                                className="mt-1 text-[var(--sf-accent)]"
                             />
 
                             <div>
 
-                                <h3 className="font-black text-lg text-gray-900 mb-1">
+                                <h3 className="mb-1 text-lg font-black text-slate-950">
                                     Delivery Charge
                                 </h3>
 
-                                <p className="text-gray-600">
+                                <p className="text-sm font-semibold text-slate-600">
                                     Inside Dhaka → ৳ 80
                                 </p>
 
-                                <p className="text-gray-600">
+                                <p className="text-sm font-semibold text-slate-600">
                                     Outside Dhaka → ৳ 120
                                 </p>
 
@@ -631,14 +631,14 @@ export default function CheckoutPage({ params }) {
                     </div>
 
                     {/* RIGHT SIDE */}
-                    <div className="lg:col-span-5">
+                    <div>
 
-                        <div className="sticky top-24 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div className="sticky top-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
 
                             {/* HEADER */}
-                            <div className="p-7 border-b border-gray-100">
+                            <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-indigo-50/60 p-6 sm:p-7">
 
-                                <h2 className="text-2xl font-black text-gray-900">
+                                <h2 className="text-2xl font-black text-slate-950">
                                     Order Summary
                                 </h2>
 
@@ -646,7 +646,7 @@ export default function CheckoutPage({ params }) {
 
                             
                             {/* PRODUCTS */}
-                            <div className="max-h-[500px] overflow-y-auto p-7 space-y-5">
+                            <div className="max-h-[460px] space-y-5 overflow-y-auto p-6 sm:p-7">
 
                                 {cartItems.map((item) => {
 
@@ -655,14 +655,15 @@ export default function CheckoutPage({ params }) {
                                     return (
                                         // Changed key from item.cartId to item._id
                                         <div
-                                            key={item._id}
-                                            className="border border-gray-100 rounded-2xl p-4"
+                                            key={item.cartItemId || item._id}
+                                            className="rounded-3xl border border-slate-200 p-5"
                                         >
 
                                             <div className="flex gap-4">
 
                                                 <Image
                                                     src={
+                                                        item.imageUrl ||
                                                         product?.thumbnail ||
                                                         product?.images?.[0] ||
                                                         "/placeholder.png"
@@ -670,17 +671,17 @@ export default function CheckoutPage({ params }) {
                                                     alt={item.title}
                                                     width={96}
                                                     height={96}
-                                                    className="h-24 w-24 rounded-2xl object-cover border"
+                                                    className="h-20 w-20 rounded-2xl border border-slate-200 object-cover sm:h-24 sm:w-24"
                                                 />
 
                                                 <div className="flex-1">
 
-                                                    <h3 className="font-black text-gray-900 line-clamp-2">
+                                                    <h3 className="line-clamp-2 font-black text-slate-950">
                                                         {item.title}
                                                     </h3>
 
                                                     {product?.shortDescription && (
-                                                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">
                                                             {
                                                                 product.shortDescription
                                                             }
@@ -697,16 +698,16 @@ export default function CheckoutPage({ params }) {
                                                                 // Changed item.cartId to item._id
                                                                 onClick={() =>
                                                                     updateQuantity(
-                                                                        item._id,
+                                                                        item.cartItemId || item._id,
                                                                         item.quantity - 1
                                                                     )
                                                                 }
-                                                                className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-100"
+                                                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-100"
                                                             >
                                                                 <Minus size={16} />
                                                             </button>
 
-                                                            <div className="w-10 text-center font-black">
+                                                            <div className="w-10 text-center font-black text-slate-950">
                                                                 {
                                                                     item.quantity
                                                                 }
@@ -717,11 +718,11 @@ export default function CheckoutPage({ params }) {
                                                                 // Changed item.cartId to item._id
                                                                 onClick={() =>
                                                                     updateQuantity(
-                                                                        item._id,
+                                                                        item.cartItemId || item._id,
                                                                         item.quantity + 1
                                                                     )
                                                                 }
-                                                                className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-100"
+                                                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-100"
                                                             >
                                                                 <Plus size={16} />
                                                             </button>
@@ -730,14 +731,14 @@ export default function CheckoutPage({ params }) {
 
                                                         <div className="text-right">
 
-                                                            <p className="font-black text-lg text-[var(--sf-accent)]">
+                                                            <p className="text-lg font-black text-slate-950">
                                                                 ৳
                                                                 {(item.finalPrice ||
                                                                         item.sellingPrice) *
                                                                     item.quantity}
                                                             </p>
 
-                                                            <p className="text-xs text-gray-400">
+                                                            <p className="text-xs text-slate-400">
                                                                 ৳
                                                                 {item.finalPrice ||
                                                                     item.sellingPrice}
@@ -754,10 +755,10 @@ export default function CheckoutPage({ params }) {
                                                         // Changed item.cartId to item._id
                                                         onClick={() =>
                                                             removeFromCart(
-                                                                item._id
+                                                                item.cartItemId || item._id
                                                             )
                                                         }
-                                                        className="mt-4 inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-600 font-semibold"
+                                                        className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-600"
                                                     >
                                                         <Trash2 size={14} />
                                                         Remove
@@ -773,10 +774,10 @@ export default function CheckoutPage({ params }) {
 
                             </div>
                             {/* TOTALS */}
-                            <div className="border-t border-gray-100 p-7">
+                            <div className="border-t border-slate-200 p-6 sm:p-7">
 
                                 <div className="mb-6">
-                                    <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                    <label className="mb-2 block text-sm font-bold text-slate-700">
                                         Coupon Code
                                     </label>
                                     <div className="flex gap-2">
@@ -785,12 +786,12 @@ export default function CheckoutPage({ params }) {
                                             value={promotionCode}
                                             onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
                                             placeholder="SAVE10"
-                                            className="min-w-0 flex-1 px-4 py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none uppercase"
+                                            className="sf-field min-w-0 flex-1 uppercase"
                                         />
                                         <button
                                             type="button"
                                             onClick={handleApplyPromotion}
-                                            className="px-4 py-3 rounded-2xl bg-gray-900 text-white font-bold hover:bg-[var(--sf-accent)]"
+                                            className="sf-btn sf-btn-primary min-h-0 px-4 py-3"
                                         >
                                             Apply
                                         </button>
@@ -801,11 +802,11 @@ export default function CheckoutPage({ params }) {
 
                                     <div className="flex justify-between">
 
-                                        <span className="text-gray-500">
+                                        <span className="text-slate-500">
                                             Subtotal
                                         </span>
 
-                                        <span className="font-bold text-gray-900">
+                                        <span className="font-bold text-slate-950">
                                             ৳ {subtotal}
                                         </span>
 
@@ -813,11 +814,11 @@ export default function CheckoutPage({ params }) {
 
                                     <div className="flex justify-between">
 
-                                        <span className="text-gray-500">
+                                        <span className="text-slate-500">
                                             Delivery Charge
                                         </span>
 
-                                        <span className="font-bold text-gray-900">
+                                        <span className="font-bold text-slate-950">
                                             ৳ {finalShippingCost}
                                         </span>
 
@@ -839,13 +840,13 @@ export default function CheckoutPage({ params }) {
 
                                 </div>
 
-                                <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-5 mt-5">
+                                <div className="mt-5 flex items-center justify-between border-t border-dashed border-slate-200 pt-5">
 
-                                    <span className="text-xl font-black text-gray-900">
+                                    <span className="text-xl font-black text-slate-950">
                                         Total
                                     </span>
 
-                                    <span className="text-3xl font-black text-[var(--sf-accent)]">
+                                    <span className="text-3xl font-black text-slate-950">
                                         ৳ {totalAmount}
                                     </span>
 
@@ -854,7 +855,7 @@ export default function CheckoutPage({ params }) {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full mt-7 bg-gray-900 hover:bg-[var(--sf-accent)] text-white py-5 font-black text-lg transition disabled:opacity-50"
+                                    className="sf-btn sf-btn-primary mt-7 w-full py-5 text-lg disabled:opacity-50"
                                     style={{ borderRadius: 'var(--sf-checkout-radius)' }}
                                 >
                                     {loading
@@ -862,11 +863,11 @@ export default function CheckoutPage({ params }) {
                                         : "Place Order"}
                                 </button>
 
-                                <p className="flex items-center justify-center gap-2 mt-5 text-sm text-gray-500">
+                                <p className="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-500">
 
                                     <ShieldCheck
                                         size={16}
-                                        className="text-green-500"
+                                        className="text-emerald-500"
                                     />
 
                                     {checkoutBranding.trustMessage || 'Secure Checkout'}
@@ -874,18 +875,18 @@ export default function CheckoutPage({ params }) {
                                 </p>
 
                                 {visiblePolicies.length > 0 && (
-                                    <div className="mt-6 border-t border-gray-100 pt-5">
-                                        <div className="mb-3 flex items-center gap-2 text-sm font-black text-gray-900">
+                                    <div className="mt-6 border-t border-slate-200 pt-5">
+                                        <div className="mb-3 flex items-center gap-2 text-sm font-black text-slate-950">
                                             <FileText size={16} className="text-[var(--sf-accent)]" />
                                             Store Policies
                                         </div>
                                         <div className="space-y-2">
                                             {visiblePolicies.map(([key, label]) => (
-                                                <details key={key} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
-                                                    <summary className="cursor-pointer text-sm font-bold text-gray-800">
+                                                <details key={key} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                    <summary className="cursor-pointer text-sm font-bold text-slate-800">
                                                         {label}
                                                     </summary>
-                                                    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-gray-600">
+                                                    <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">
                                                         {policies[key]}
                                                     </p>
                                                 </details>

@@ -24,17 +24,17 @@ export default function CartPage() {
     // EMPTY STATE
     if (cartItems.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] py-20 px-4 text-center">
-                <div className="bg-gray-50 p-6 rounded-full mb-6">
-                    <ShoppingBag size={64} className="text-gray-300" />
+            <div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
+                <div className="mb-6 rounded-[2rem] bg-white p-6 shadow-sm">
+                    <ShoppingBag size={56} className="text-slate-300" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-                <p className="text-gray-500 mb-8 max-w-md">
-                    Looks like you haven&apos;t added anything to your cart yet.
+                <h2 className="mb-2 text-3xl font-black text-slate-950">Your cart is empty</h2>
+                <p className="mb-8 max-w-md text-sm leading-6 text-slate-500">
+                    Add products to compare options, review totals, and complete checkout securely.
                 </p>
                 <Link
                     href="/"
-                    className="bg-black text-white px-8 py-3 rounded-xl font-bold hover:opacity-80 transition shadow-lg"
+                    className="sf-btn sf-btn-primary px-8"
                 >
                     Continue Shopping
                 </Link>
@@ -43,24 +43,34 @@ export default function CartPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-12 max-w-6xl">
-            <div className="flex items-center mb-8">
-                <Link href="/" className="text-gray-500 hover:text-black transition mr-4">
+        <div className="sf-page">
+        <div className="sf-shell-wide py-8 sm:py-10">
+            <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex items-center">
+                <Link href="/" className="mr-4 rounded-full bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-950">
                     <ArrowLeft size={24} />
                 </Link>
-                <h1 className="text-3xl font-extrabold text-gray-900">Your Cart ({cartItems.length})</h1>
+                <div>
+                    <p className="sf-kicker">Cart</p>
+                    <h1 className="sf-heading text-3xl">Your Cart ({cartItems.length})</h1>
+                </div>
+                </div>
+                <div className="grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-2">
+                    <span className="rounded-full bg-white px-3 py-2 shadow-sm">Secure checkout</span>
+                    <span className="rounded-full bg-white px-3 py-2 shadow-sm">Delivery estimate included</span>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
                 {/* Left Side: Items */}
-                <div className="lg:col-span-2 space-y-4">
+                <div className="space-y-4">
                     {cartItems.map((item) => (
-                        <div key={item.cartItemId || item._id} className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                        <div key={item.cartItemId || item._id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg hover:shadow-indigo-100/60 sm:p-6">
+                            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
-                                <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0 w-full">
+                                <div className="flex w-full min-w-0 flex-1 items-start gap-4 sm:gap-5">
                                     {/* Product Image */}
-                                    <div className="relative w-full sm:w-28 sm:h-28 aspect-square bg-gray-50 rounded-xl flex-shrink-0 border border-gray-100 overflow-hidden">
+                                    <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-indigo-50 sm:h-28 sm:w-28">
                                         <Image
                                             src={item.imageUrl || (item.images && item.images[0]) || 'https://via.placeholder.com/150'}
                                             alt={item.title}
@@ -71,29 +81,29 @@ export default function CartPage() {
                                     </div>
 
                                     {/* Product Details */}
-                                    <div className="flex flex-col flex-1 min-w-0 w-full">
+                                    <div className="flex min-w-0 flex-1 flex-col">
 
                                         {/* Category & SKU */}
                                         <div className="flex flex-wrap items-center gap-2 mb-1.5">
                                             {item.category && (
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--sf-accent,blue-600)]">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--sf-accent)]">
                                                     {item.category}
                                                 </span>
                                             )}
                                             {(item.sku || item.selectedVariant?.sku) && (
-                                                <span className="text-[10px] text-gray-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                                                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
                                                     SKU: {item.selectedVariant?.sku || item.sku}
                                                 </span>
                                             )}
                                         </div>
 
-                                        <h3 className="font-bold text-lg text-gray-900 line-clamp-1 mb-1" title={item.title}>
+                                        <h3 className="mb-1 line-clamp-1 text-lg font-black text-slate-950" title={item.title}>
                                             {item.title}
                                         </h3>
 
                                         {/* Description Snippet */}
                                         {(item.shortDescription || item.description) && (
-                                            <p className="text-xs text-gray-500 line-clamp-2 mb-2 leading-relaxed">
+                                            <p className="mb-2 line-clamp-2 text-xs leading-relaxed text-slate-500">
                                                 {item.shortDescription || item.description}
                                             </p>
                                         )}
@@ -102,8 +112,8 @@ export default function CartPage() {
                                         {item.selectedVariant && item.selectedVariant.attributes && (
                                             <div className="flex flex-wrap gap-2 mb-2">
                                                 {item.selectedVariant.attributes.map((attr, idx) => (
-                                                    <span key={idx} className="text-[11px] uppercase tracking-wider border border-gray-200 bg-gray-50 px-2 py-1 rounded-md text-gray-700 font-semibold">
-                                                        <span className="text-gray-400 mr-1">{attr.name}:</span>
+                                                    <span key={idx} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                                                        <span className="mr-1 text-slate-400">{attr.name}:</span>
                                                         {attr.value}
                                                     </span>
                                                 ))}
@@ -112,11 +122,11 @@ export default function CartPage() {
 
                                         {/* Pricing */}
                                         <div className="mt-auto flex items-center gap-2">
-                                            <p className="font-extrabold text-[var(--sf-accent,blue-600)] text-lg">
+                                            <p className="text-lg font-black text-slate-950">
                                                 ৳ {item.cartPrice || item.finalPrice || item.sellingPrice}
                                             </p>
                                             {item.pricing?.discount > 0 && (
-                                                <p className="text-sm text-gray-400 line-through">
+                                                <p className="text-sm text-slate-400 line-through">
                                                     ৳ {item.pricing.sellingPrice}
                                                 </p>
                                             )}
@@ -125,23 +135,23 @@ export default function CartPage() {
                                 </div>
 
                                 {/* Controls */}
-                                <div className="flex items-center space-x-6 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-gray-100 pt-4 sm:pt-0">
+                                <div className="flex w-full items-center justify-between gap-4 border-t border-slate-100 pt-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
                                     <div className="flex flex-col items-center sm:items-end">
-                                        <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 overflow-hidden shadow-sm">
+                                        <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
                                             <button
                                                 onClick={() => updateQuantity(item.cartItemId || item._id, item.quantity - 1)}
                                                 disabled={item.quantity <= 1}
-                                                className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                                className="p-2.5 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-950 disabled:opacity-30 disabled:hover:bg-transparent"
                                             >
                                                 <Minus size={14} />
                                             </button>
-                                            <span className="w-10 text-center font-bold text-sm bg-white py-2">
+                                            <span className="w-10 bg-white py-2 text-center text-sm font-black">
                                                 {item.quantity}
                                             </span>
                                             <button
                                                 onClick={() => updateQuantity(item.cartItemId || item._id, item.quantity + 1)}
                                                 disabled={item.quantity >= (item.selectedVariant?.stock || item.stock || 99)}
-                                                className="p-2.5 text-gray-500 hover:text-gray-900 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                                                className="p-2.5 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-950 disabled:opacity-30 disabled:hover:bg-transparent"
                                             >
                                                 <Plus size={14} />
                                             </button>
@@ -156,7 +166,7 @@ export default function CartPage() {
 
                                     <button
                                         onClick={() => removeFromCart(item.cartItemId || item._id)}
-                                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-lg transition-colors"
+                                        className="rounded-xl p-2.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
                                         title="Remove item"
                                     >
                                         <Trash2 size={20} />
@@ -168,51 +178,52 @@ export default function CartPage() {
                 </div>
 
                 {/* Right Side: Summary */}
-                <div className="lg:col-span-1">
-                    <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 sticky top-24">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+                <div>
+                    <div className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/70">
+                        <h2 className="mb-6 text-xl font-black text-slate-950">Order Summary</h2>
 
-                        <div className="space-y-3 text-sm mb-6">
-                            <div className="flex justify-between text-gray-600">
+                        <div className="mb-6 space-y-3 text-sm">
+                            <div className="flex justify-between text-slate-600">
                                 <span>Subtotal</span>
-                                <span className="font-medium text-gray-900">৳ {subtotal}</span>
+                                <span className="font-bold text-slate-950">৳ {subtotal}</span>
                             </div>
-                            <div className="flex justify-between text-gray-600">
+                            <div className="flex justify-between text-slate-600">
                                 <span>Shipping estimate</span>
-                                <span className="font-medium text-gray-900">৳ {shipping}</span>
+                                <span className="font-bold text-slate-950">৳ {shipping}</span>
                             </div>
 
                             {totalSavings > 0 && (
-                                <div className="flex justify-between text-green-700 font-bold bg-green-100/50 p-3 rounded-xl border border-green-200/50">
+                                <div className="flex justify-between rounded-2xl border border-emerald-200/60 bg-emerald-50 p-3 font-black text-emerald-700">
                                     <span>Total Savings</span>
                                     <span>- ৳ {totalSavings}</span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex justify-between items-center border-t border-gray-200 pt-5 mb-8">
-                            <span className="font-bold text-gray-900 text-lg">Total</span>
-                            <span className="text-3xl font-black text-[var(--sf-accent,gray-900)]">৳ {total}</span>
+                        <div className="mb-6 flex items-center justify-between border-t border-slate-200 pt-5">
+                            <span className="text-lg font-black text-slate-950">Total</span>
+                            <span className="text-3xl font-black text-slate-950">৳ {total}</span>
                         </div>
 
-                        <Link href="/checkout" className="w-full block text-center bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-[var(--sf-accent,black)] hover:-translate-y-0.5 transition-all shadow-lg">
+                        <Link href="/checkout" className="sf-btn sf-btn-primary w-full">
                             Proceed to Checkout
                         </Link>
 
                         {/* Trust Info */}
-                        <div className="mt-8 space-y-4 pt-6 border-t border-gray-200">
-                            <div className="flex items-center gap-3 text-sm text-gray-600 font-medium bg-white p-3 rounded-xl border border-gray-100">
-                                <ShieldCheck size={18} className="text-green-600 flex-shrink-0" />
+                        <div className="mt-6 space-y-3 border-t border-slate-200 pt-5">
+                            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-600">
+                                <ShieldCheck size={18} className="flex-shrink-0 text-emerald-600" />
                                 <span>Authentic Products Guaranteed</span>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-600 font-medium bg-white p-3 rounded-xl border border-gray-100">
-                                <Truck size={18} className="text-[var(--sf-accent,blue-600)] flex-shrink-0" />
+                            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-600">
+                                <Truck size={18} className="flex-shrink-0 text-[var(--sf-accent)]" />
                                 <span>Fast & secure delivery</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     );
 }

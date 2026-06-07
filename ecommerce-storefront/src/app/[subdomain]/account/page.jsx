@@ -120,7 +120,7 @@ export default function AccountPage({ params }) {
 
                 // Assuming your backend sets the HttpOnly cookie upon successful registration,
                 // we tell the AuthContext to fetch the new user profile.
-                await checkAuthStatus();
+                await checkAuthStatus(subdomain);
 
                 toast.success("Registration successful!");
                 router.push('/');

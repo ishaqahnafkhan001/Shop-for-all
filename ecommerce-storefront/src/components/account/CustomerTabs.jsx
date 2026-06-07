@@ -20,13 +20,13 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
 
     return (
         <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Order History</h2>
+            <h2 className="mb-5 text-xl font-black text-slate-950">Order History</h2>
 
             {orders.length === 0 ? (
-                <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                    <Package size={48} className="mx-auto text-gray-300 mb-4" />
-	                    <p className="text-gray-500 mb-4">You haven&apos;t placed any orders yet.</p>
-                    <Link href="/" className="text-[var(--sf-accent,blue-600)] font-bold underline hover:opacity-80 transition-opacity">
+                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 py-10 text-center">
+                    <Package size={48} className="mx-auto mb-4 text-slate-300" />
+	                    <p className="mb-4 text-slate-500">You haven&apos;t placed any orders yet.</p>
+                    <Link href="/" className="font-black text-[var(--sf-accent)] underline transition-opacity hover:opacity-80">
                         Start Shopping
                     </Link>
                 </div>
@@ -36,21 +36,21 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                         const isExpanded = expandedOrderId === order._id;
 
                         return (
-                            <div key={order._id} className="border border-gray-200 rounded-2xl bg-white overflow-hidden transition-all duration-200 hover:border-gray-300 shadow-sm">
+                            <div key={order._id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-slate-300">
 
                                 {/* Main Order Row (Clickable) */}
                                 <div
                                     onClick={() => toggleOrderDetails(order._id)}
-                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-5 cursor-pointer gap-4 group"
+                                    className="group flex cursor-pointer flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center"
                                 >
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
-                                            <p className="font-bold text-gray-900">Order #{order._id.slice(-6).toUpperCase()}</p>
-                                            <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
+                                            <p className="font-black text-slate-950">Order #{order._id.slice(-6).toUpperCase()}</p>
+                                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">
                                                 {new Date(order.createdAt).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-gray-500">
+                                        <p className="text-sm text-slate-500">
                                             {order.items[0]?.title || 'Product'}
                                             {order.items.length > 1 && <span className="font-medium italic"> + {order.items.length - 1} more item(s)</span>}
                                         </p>
@@ -58,9 +58,9 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
 
                                     <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
                                         <div className="text-left sm:text-right">
-                                            <p className="font-black text-gray-900 text-lg mb-1">৳ {order.pricing?.total}</p>
+                                            <p className="mb-1 text-lg font-black text-slate-950">৳ {order.pricing?.total}</p>
                                             <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
-                                                order.status === 'Pending' ? 'bg-yellow-50 text-yellow-600 border border-yellow-200/50' :
+                                                order.status === 'Pending' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200/50' :
                                                     order.status === 'Shipped' ? 'bg-blue-50 text-blue-600 border border-blue-200/50' :
                                                         order.status === 'Delivered' ? 'bg-green-50 text-green-600 border border-green-200/50' :
                                                             'bg-gray-50 text-gray-600 border border-gray-200/50'
@@ -69,7 +69,7 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                             </span>
                                         </div>
 
-                                        <button className="flex items-center gap-1 text-sm font-bold text-[var(--sf-accent,blue-600)] bg-blue-50 group-hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors">
+                                        <button className="flex items-center gap-1 rounded-xl bg-[var(--sf-accent-bg)] px-4 py-2 text-sm font-black text-[var(--sf-accent)] transition-colors group-hover:bg-blue-100">
                                             {isExpanded ? 'Hide' : 'View'}
                                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                         </button>
@@ -78,15 +78,15 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
 
                                 {/* Expanded Order Details */}
                                 {isExpanded && (
-                                    <div className="border-t border-gray-100 bg-gray-50/50 p-5">
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Order Items</h4>
+                                    <div className="border-t border-slate-100 bg-slate-50/70 p-5">
+                                        <h4 className="mb-4 text-xs font-black uppercase tracking-wider text-slate-400">Order Items</h4>
                                         <div className="space-y-4">
                                             {order.items.map((item, index) => {
                                                 const productId = item.productId || item.product?._id || item.product || item._id;
                                                 const productUrl = subdomain ? `/${subdomain}/products/${productId}` : `/products/${productId}`;
 
                                                 return (
-                                                    <div key={index} className="flex justify-between items-start bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                                                    <div key={index} className="flex items-start justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                                         <div className="flex gap-4">
                                                             {/* Clickable Image */}
                                                             {item.imageUrl && (
@@ -96,14 +96,14 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                                                         alt={item.title}
                                                                         width={64}
                                                                         height={64}
-                                                                        className="h-16 w-16 object-cover rounded-lg border border-gray-100 hover:opacity-80 transition-opacity"
+                                                                        className="h-16 w-16 rounded-xl border border-slate-200 object-cover transition-opacity hover:opacity-80"
                                                                     />
                                                                 </Link>
                                                             )}
                                                             <div>
                                                                 {/* Clickable Title */}
                                                                 <Link href={productUrl} className="group/link flex items-center gap-1.5 w-fit">
-                                                                    <p className="font-bold text-gray-900 mb-1 group-hover/link:text-[var(--sf-accent,blue-600)] transition-colors">
+                                                                    <p className="mb-1 font-black text-slate-950 transition-colors group-hover/link:text-[var(--sf-accent)]">
                                                                         {item.title}
                                                                     </p>
                                                                     <ExternalLink size={12} className="text-gray-300 opacity-0 group-hover/link:opacity-100 transition-opacity mb-1" />
@@ -113,17 +113,17 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                                                 {item.variant?.attributes && (
                                                                     <div className="flex flex-wrap gap-2 mb-2">
                                                                         {item.variant.attributes.map((attr, idx) => (
-                                                                            <span key={idx} className="text-[10px] uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold border border-gray-200">
+                                                                            <span key={idx} className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
                                                                                 {attr.name}: {attr.value}
                                                                             </span>
                                                                         ))}
                                                                     </div>
                                                                 )}
-                                                                <p className="text-sm text-gray-500 font-medium">Qty: {item.quantity}</p>
+                                                                <p className="text-sm font-semibold text-slate-500">Qty: {item.quantity}</p>
                                                             </div>
                                                         </div>
                                                         <div className="text-right shrink-0">
-                                                            <p className="font-bold text-gray-900">৳ {item.price}</p>
+                                                            <p className="font-black text-slate-950">৳ {item.price}</p>
                                                             {item.quantity > 1 && (
                                                                 <p className="text-xs text-gray-400 mt-1">৳ {item.price * item.quantity} total</p>
                                                             )}
@@ -134,8 +134,8 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                         </div>
 
                                         {/* Order Summary Footer */}
-                                        <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col items-end text-sm">
-                                            <div className="flex justify-between w-full sm:w-64 mb-2 text-gray-600">
+                                        <div className="mt-6 flex flex-col items-end border-t border-slate-200 pt-4 text-sm">
+                                            <div className="mb-2 flex w-full justify-between text-slate-600 sm:w-64">
                                                 <span>Subtotal</span>
                                                 <span className="font-medium">৳ {order.pricing?.subtotal || order.pricing?.total}</span>
                                             </div>
@@ -145,9 +145,9 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                                     <span className="font-medium">৳ {order.pricing.shipping}</span>
                                                 </div>
                                             )}
-                                            <div className="flex justify-between w-full sm:w-64 text-gray-900 font-black text-lg">
+                                            <div className="flex w-full justify-between text-lg font-black text-slate-950 sm:w-64">
                                                 <span>Total</span>
-                                                <span className="text-[var(--sf-accent,blue-600)]">৳ {order.pricing?.total}</span>
+                                                <span className="text-[var(--sf-accent)]">৳ {order.pricing?.total}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -164,19 +164,19 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
 export function ProfileTab({ user }) {
     return (
         <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Profile Details</h2>
+            <h2 className="mb-5 text-xl font-black text-slate-950">Profile Details</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Full Name</label>
-                    <p className="font-semibold text-gray-900 text-lg">{user.fullName || 'Not provided'}</p>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <label className="mb-1 block text-xs font-black uppercase tracking-widest text-slate-400">Full Name</label>
+                    <p className="text-lg font-bold text-slate-950">{user.fullName || 'Not provided'}</p>
                 </div>
-                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Email Address</label>
-                    <p className="font-semibold text-gray-900 text-lg">{user.email}</p>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <label className="mb-1 block text-xs font-black uppercase tracking-widest text-slate-400">Email Address</label>
+                    <p className="text-lg font-bold text-slate-950">{user.email}</p>
                 </div>
-                <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Account Role</label>
-                    <span className="bg-gradient-to-r from-gray-800 to-gray-600 text-white text-xs font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-sm">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <label className="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">Account Role</label>
+                    <span className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white shadow-sm">
                         {user.role}
                     </span>
                 </div>
@@ -217,37 +217,37 @@ export function SecurityTab() {
 
     return (
         <div className="max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Lock size={20} className="text-gray-400" />
+            <h2 className="mb-5 flex items-center gap-2 text-xl font-black text-slate-950">
+                <Lock size={20} className="text-slate-400" />
                 Change Password
             </h2>
-            <form onSubmit={handlePasswordReset} className="space-y-5 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <form onSubmit={handlePasswordReset} className="space-y-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Current Password</label>
+                    <label className="mb-1.5 block text-sm font-bold text-slate-700">Current Password</label>
                     <input
                         required
                         type="password"
                         value={passForm.currentPassword}
                         onChange={(e) => setPassForm({ ...passForm, currentPassword: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent,blue-600)] focus:border-transparent outline-none transition-all"
+                        className="sf-field"
                         placeholder="Enter current password"
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">New Password</label>
+                    <label className="mb-1.5 block text-sm font-bold text-slate-700">New Password</label>
                     <input
                         required
                         type="password"
                         value={passForm.newPassword}
                         onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent,blue-600)] focus:border-transparent outline-none transition-all"
+                        className="sf-field"
                         placeholder="Enter new password"
                     />
                 </div>
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gray-900 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-black transition-colors mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="sf-btn sf-btn-primary mt-2 w-full disabled:cursor-not-allowed disabled:opacity-70"
                 >
                     {loading ? 'Updating...' : 'Update Password'}
                 </button>

@@ -45,9 +45,11 @@ const getCookieOptions = () => {
         // In local dev, this is usually false unless you use an SSL proxy
         secure: isProduction,
 
-        // 'none' is required for cross-site (Vercel domain vs Railway domain)
-        // 'lax' is better once you move both to subdomains of the same root domain
-        sameSite: 'lax',
+        // Production storefronts can be on tenant/custom domains while the API
+        // is on api.scaleup.codes, so the session cookie must survive cross-site
+        // XHR refreshes. Local HTTP dev cannot use SameSite=None because it
+        // requires Secure.
+        sameSite: isProduction ? 'none' : 'lax',
         // CHIPS (Cookies Having Independent Partitioned State)
         // This helps the cookie work in Incognito/Third-party contexts in modern browsers
         partitioned: isProduction,
@@ -551,12 +553,28 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
     try {
         const userId = req.user?._id || req.user?.id;
+        const requestedSubdomain = req.query?.subdomain
+            ? String(req.query.subdomain).trim().toLowerCase()
+            : '';
+
         if (!userId) {
             return res.status(200).json({
                 success: true,
                 authenticated: false,
                 user: null
             });
+        }
+
+        if (requestedSubdomain && req.user?.role !== 'SuperAdmin') {
+            const requestedShop = await Shop.findOne({ subdomain: requestedSubdomain })
+                .select('_id subdomain')
+                .lean();
+
+            if (!requestedShop || String(requestedShop._id) !== String(req.user.shop_id || req.user.shopId)) {
+                return res.status(401).json({
+                    error: 'Session does not belong to this shop'
+                });
+            }
         }
 
         const user = await User.findById(userId)
@@ -603,7 +621,9 @@ exports.logout = (req, res) => {
         ...getCookieOptions(),
         expires: new Date(0)
     };
-    res.cookie('token', 'none', cookieOptions);
+    delete cookieOptions.maxAge;
+
+    res.clearCookie('token', cookieOptions);
 
     res.status(200).json({
         message: 'Logged out successfully'

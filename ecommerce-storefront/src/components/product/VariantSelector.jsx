@@ -25,14 +25,14 @@ const VariantSelector = memo(function VariantSelector({ availableAttributes, sel
     if (!Object.keys(availableAttributes).length) return null;
 
     return (
-        <div className="mb-8 space-y-6">
+        <div className="mb-7 space-y-6 rounded-[1.75rem] border border-slate-200 bg-white p-5 sm:p-6">
             {Object.entries(availableAttributes).map(([attrName, values]) => (
                 <div key={attrName}>
-                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-3 flex items-center">
+                    <h3 className="mb-3 flex items-center text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                         {attrName}
-                        <span className="ml-3 h-px flex-1 bg-gray-200" />
+                        <span className="ml-3 h-px flex-1 bg-slate-200" />
                     </h3>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3.5">
                         {values.map(value => {
                             const isSelected = selectedAttributes[attrName] === value;
                             const isAvailable = optionAvailability[attrName]?.[value] !== false;
@@ -43,10 +43,10 @@ const VariantSelector = memo(function VariantSelector({ availableAttributes, sel
                                     onClick={() => onSelect(attrName, value)}
                                     disabled={!isAvailable}
                                     aria-pressed={isSelected}
-                                    className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm
+                                    className={`rounded-xl px-4 py-2.5 text-sm font-black transition-all duration-200
                                         ${isSelected
-                                        ? 'bg-gray-900 text-white shadow-gray-900/20 scale-[1.02] ring-2 ring-gray-900 ring-offset-1'
-                                        : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-900 hover:bg-gray-50'
+                                        ? 'bg-slate-950 text-white shadow-lg shadow-slate-900/15'
+                                        : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-950 hover:bg-slate-50'
                                     } disabled:cursor-not-allowed disabled:opacity-40 disabled:line-through`}
                                 >
                                     {value}

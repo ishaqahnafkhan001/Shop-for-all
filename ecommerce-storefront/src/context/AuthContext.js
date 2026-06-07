@@ -5,18 +5,39 @@ import API from '@/api/api';
 // 1. Create the context
 const AuthContext = createContext();
 
+const getCurrentSubdomain = () => {
+    if (typeof window === 'undefined') return '';
+
+    const hostname = window.location.hostname.toLowerCase();
+
+    if (hostname.includes('localhost')) {
+        const localSubdomain = hostname.split('.localhost')[0];
+        return localSubdomain && localSubdomain !== 'localhost' ? localSubdomain : '';
+    }
+
+    if (hostname.endsWith('.scaleup.codes')) {
+        const [subdomain] = hostname.split('.');
+        return ['www', 'api', 'admin'].includes(subdomain) ? '' : subdomain;
+    }
+
+    return '';
+};
+
 // 2. Create the Provider component
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     // 🧠 Check if user is logged in on first load
-    const checkAuthStatus = async () => {
+    const checkAuthStatus = async (subdomain) => {
         try {
             // The browser automatically attaches the HttpOnly cookie to this request
-            const { data } = await API.get('/auth/me');
-            console.log(data)
-            setUser(data.user); // Assuming backend returns { user: { _id, name, email } }
+            const currentSubdomain = subdomain || getCurrentSubdomain();
+            const { data } = await API.get('/auth/me', {
+                params: currentSubdomain ? { subdomain: currentSubdomain } : {}
+            });
+
+            setUser(data.authenticated === false ? null : data.user);
         } catch (error) {
             // If 401 Unauthorized, it means no cookie or expired cookie
             setUser(null);
@@ -26,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const timer = setTimeout(checkAuthStatus, 0);
+        const timer = setTimeout(() => checkAuthStatus(), 0);
         return () => clearTimeout(timer);
     }, []);
 

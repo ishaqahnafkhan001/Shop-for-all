@@ -41,26 +41,28 @@ export default function TrackOrderPage({ params }) {
     const progressWidth = currentStepIndex === -1 ? '0%' : `${(currentStepIndex / (steps.length - 1)) * 100}%`;
 
     return (
-        <div className="container mx-auto px-4 py-16 max-w-4xl min-h-[70vh]">
+        <div className="sf-page min-h-[70vh]">
+        <div className="mx-auto max-w-4xl px-4 py-10 sm:py-12">
 
             {/* SEARCH SECTION */}
-            <div className="text-center mb-12">
-                <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Track Your Order</h1>
-                <p className="text-gray-500 mb-8 max-w-lg mx-auto">
+            <div className="mb-8 text-center">
+                <p className="sf-kicker mb-2">Order tracking</p>
+                <h1 className="sf-heading mb-4 text-4xl">Track Your Order</h1>
+                <p className="mx-auto mb-7 max-w-lg text-sm leading-6 text-slate-500">
                     Enter the short Order ID from your confirmation screen and delivery phone number to get real-time delivery updates.
                 </p>
 
-                <form onSubmit={handleTrackOrder} className="max-w-xl mx-auto space-y-3">
+                <form onSubmit={handleTrackOrder} className="mx-auto max-w-xl space-y-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Search className="h-5 w-5 text-gray-400" />
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                            <Search className="h-5 w-5 text-slate-400" />
                         </div>
                         <input
                             type="text"
                             value={trackingId}
                             onChange={(e) => setTrackingId(e.target.value)}
                             placeholder="Order ID, for example A1B2C3"
-                            className="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none text-gray-900 font-mono shadow-sm"
+                            className="sf-field pl-12 font-mono"
                         />
                     </div>
                     <input
@@ -68,12 +70,12 @@ export default function TrackOrderPage({ params }) {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="Delivery phone number"
-                        className="w-full px-4 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] outline-none text-gray-900 shadow-sm"
+                        className="sf-field"
                     />
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gray-900 text-white px-6 py-4 rounded-xl font-bold hover:bg-[var(--sf-accent)] transition-colors disabled:opacity-50"
+                        className="sf-btn sf-btn-primary w-full disabled:opacity-50"
                     >
                         {loading ? 'Searching...' : 'Track'}
                     </button>
@@ -82,35 +84,35 @@ export default function TrackOrderPage({ params }) {
 
             {/* RESULTS SECTION */}
             {order && (
-                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/20 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
 
                     {/* Header Strip */}
-                    <div className="bg-gray-50 px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:items-center">
                         <div>
-                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Order ID</p>
-                            <p className="text-lg font-mono font-bold text-[var(--sf-accent)]">#{order._id.slice(-8).toUpperCase()}</p>
+                            <p className="mb-1 text-sm font-black uppercase tracking-widest text-slate-400">Order ID</p>
+                            <p className="font-mono text-lg font-black text-[var(--sf-accent)]">#{order._id.slice(-8).toUpperCase()}</p>
                         </div>
                         <div className="text-left sm:text-right">
-                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Order Date</p>
-                            <p className="font-semibold text-gray-900 flex items-center sm:justify-end gap-2">
-                                <Calendar size={16} className="text-gray-400"/>
+                            <p className="mb-1 text-sm font-black uppercase tracking-widest text-slate-400">Order Date</p>
+                            <p className="flex items-center gap-2 font-bold text-slate-950 sm:justify-end">
+                                <Calendar size={16} className="text-slate-400"/>
                                 {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
                         </div>
                     </div>
 
                     {/* PROGRESS TRACKER VISUALIZATION */}
-                    <div className="px-8 py-12 border-b border-gray-100">
+                    <div className="border-b border-slate-200 px-5 py-10 sm:px-8">
                         {order.status === 'Cancelled' ? (
                             <div className="text-center py-8">
                                 <XCircle size={64} className="mx-auto text-red-500 mb-4" />
-                                <h3 className="text-2xl font-bold text-gray-900">Order Cancelled</h3>
-                                <p className="text-gray-500 mt-2">This order has been cancelled and will not be delivered.</p>
+                                <h3 className="text-2xl font-black text-slate-950">Order Cancelled</h3>
+                                <p className="mt-2 text-slate-500">This order has been cancelled and will not be delivered.</p>
                             </div>
                         ) : (
                             <div className="relative max-w-2xl mx-auto">
                                 {/* The Background Track Line */}
-                                <div className="absolute top-1/2 left-0 w-full h-1.5 bg-gray-100 -translate-y-1/2 rounded-full overflow-hidden">
+                                <div className="absolute left-0 top-1/2 h-1.5 w-full -translate-y-1/2 overflow-hidden rounded-full bg-slate-100">
                                     {/* The Animated Colored Line */}
                                     <div
                                         className="h-full bg-[var(--sf-accent)] transition-all duration-1000 ease-out"
@@ -126,8 +128,8 @@ export default function TrackOrderPage({ params }) {
 
                                         return (
                                             <div key={step} className="flex flex-col items-center bg-white px-2">
-                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm border-4 border-white
-                                                    ${isCompleted ? 'bg-[var(--sf-accent)] text-white shadow-[0_6px_16px_-8px_var(--sf-accent)]' : 'bg-gray-100 text-gray-400'}
+                                                <div className={`flex h-12 w-12 items-center justify-center rounded-full border-4 border-white shadow-sm transition-all duration-500
+                                                    ${isCompleted ? 'bg-[var(--sf-accent)] text-white shadow-[0_6px_16px_-8px_var(--sf-accent)]' : 'bg-slate-100 text-slate-400'}
                                                     ${isCurrent ? 'ring-4 ring-[var(--sf-accent-ring)] scale-110' : ''}
                                                 `}>
                                                     {index === 0 && <Box size={20} />}
@@ -135,7 +137,7 @@ export default function TrackOrderPage({ params }) {
                                                     {index === 2 && <Truck size={20} />}
                                                     {index === 3 && <CheckCircle size={20} />}
                                                 </div>
-                                                <p className={`mt-3 font-bold text-sm ${isCompleted ? 'text-gray-900' : 'text-gray-400'}`}>
+                                                <p className={`mt-3 text-sm font-black ${isCompleted ? 'text-slate-950' : 'text-slate-400'}`}>
                                                     {step}
                                                 </p>
                                             </div>
@@ -147,47 +149,48 @@ export default function TrackOrderPage({ params }) {
                     </div>
 
                     {/* ORDER DETAILS GRID */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 p-8 gap-8">
+                    <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2 sm:p-8">
                         {/* Left: Shipping Info */}
                         <div>
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400">
                                 <MapPin size={16} /> Delivery Information
                             </h3>
-                            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                                <p className="font-bold text-gray-900 mb-1">Shipping Address</p>
-                                <p className="text-gray-600 leading-relaxed">{order.shippingAddress}</p>
-                                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
-                                    <span className="text-gray-500 text-sm">Zone</span>
-                                    <span className="font-semibold text-gray-900">{order.shippingZone}</span>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                <p className="mb-1 font-black text-slate-950">Shipping Address</p>
+                                <p className="leading-relaxed text-slate-600">{order.shippingAddress}</p>
+                                <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
+                                    <span className="text-sm text-slate-500">Zone</span>
+                                    <span className="font-bold text-slate-950">{order.shippingZone}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Right: Payment Info */}
                         <div>
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400">
                                 <Package size={16} /> Order Summary
                             </h3>
-                            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                                 <div className="space-y-3 mb-4">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">Items ({order.items.length})</span>
-                                        <span className="font-semibold text-gray-900">৳ {order.totalAmount - order.shippingCost}</span>
+                                        <span className="text-slate-600">Items ({order.items.length})</span>
+                                        <span className="font-bold text-slate-950">৳ {order.totalAmount - order.shippingCost}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">Shipping</span>
-                                        <span className="font-semibold text-gray-900">৳ {order.shippingCost}</span>
+                                        <span className="text-slate-600">Shipping</span>
+                                        <span className="font-bold text-slate-950">৳ {order.shippingCost}</span>
                                     </div>
                                 </div>
-                                <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
-                                    <span className="font-bold text-gray-900">Total Paid</span>
-                                    <span className="text-xl font-extrabold text-[var(--sf-accent)]">৳ {order.totalAmount}</span>
+                                <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+                                    <span className="font-black text-slate-950">Total Paid</span>
+                                    <span className="text-xl font-black text-[var(--sf-accent)]">৳ {order.totalAmount}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+        </div>
         </div>
     );
 }

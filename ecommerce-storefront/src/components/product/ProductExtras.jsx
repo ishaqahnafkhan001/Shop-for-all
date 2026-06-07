@@ -6,19 +6,19 @@ export const ProductFeatures = memo(function ProductFeatures({ features }) {
     if (!features?.length) return null;
 
     return (
-        <section>
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-10 flex items-center">
-                <Zap className="mr-4 text-[var(--sf-accent)]" size={28} />
+        <section className="sf-panel p-5 sm:p-6">
+            <h2 className="mb-5 flex items-center text-2xl font-black text-slate-950">
+                <Zap className="mr-3 text-[var(--sf-accent)]" size={24} />
 	                Why You&apos;ll Love It
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {features.map((feature, idx) => (
                     <div
                         key={idx}
-                        className="bg-white border border-gray-100 rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow"
+                        className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
                     >
-                        <h4 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h4>
-                        <p className="text-gray-600 leading-relaxed">{feature.value}</p>
+                        <h4 className="mb-2 text-base font-black text-slate-950">{feature.title}</h4>
+                        <p className="text-sm leading-6 text-slate-600">{feature.value}</p>
                     </div>
                 ))}
             </div>
@@ -30,21 +30,21 @@ export const ProductSpecifications = memo(function ProductSpecifications({ speci
     if (!specifications?.length) return null;
 
     return (
-        <section>
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-10 flex items-center">
-                <Tag className="mr-4 text-[var(--sf-accent)]" size={28} />
+        <section className="sf-panel overflow-hidden p-5 sm:p-6">
+            <h2 className="mb-5 flex items-center text-2xl font-black text-slate-950">
+                <Tag className="mr-3 text-[var(--sf-accent)]" size={24} />
                 Tech Specs
             </h2>
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 {specifications.map((spec, idx) => (
                     <div
                         key={idx}
-                        className="flex flex-col sm:flex-row px-8 py-5 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors"
+                        className="flex flex-col border-b border-slate-100 px-5 py-4 transition-colors last:border-0 hover:bg-slate-50 sm:flex-row"
                     >
-                        <dt className="text-sm font-bold text-gray-500 sm:w-1/3 uppercase tracking-widest mb-1 sm:mb-0">
+                        <dt className="mb-1 text-xs font-black uppercase tracking-widest text-slate-500 sm:mb-0 sm:w-1/3">
                             {spec.title}
                         </dt>
-                        <dd className="text-base font-medium text-gray-900 sm:w-2/3">
+                        <dd className="text-sm font-bold text-slate-950 sm:w-2/3">
                             {spec.value}
                         </dd>
                     </div>
@@ -58,20 +58,20 @@ export const ExpertNotes = memo(function ExpertNotes({ comments }) {
     if (!comments?.length) return null;
 
     return (
-        <div className="lg:w-[380px] shrink-0">
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 sticky top-8 shadow-2xl shadow-gray-900/20">
-                <h3 className="text-xl font-bold text-white mb-8 flex items-center border-b border-white/10 pb-4">
+        <div>
+            <div className="sticky top-24 rounded-3xl bg-slate-950 p-6 shadow-2xl shadow-slate-900/20">
+                <h3 className="mb-6 flex items-center border-b border-white/10 pb-4 text-xl font-black text-white">
                     <Zap size={22} className="mr-3 text-yellow-400 fill-current" />
                     Expert Notes
                 </h3>
-                <div className="space-y-6">
+                <div className="space-y-5">
                     {comments.map((comment, idx) => (
                         <div key={idx} className="group">
-                            <strong className="flex items-center text-[var(--sf-accent-light,cyan-400)] font-bold mb-2 text-sm uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                            <strong className="mb-2 flex items-center text-sm font-black uppercase tracking-wider text-cyan-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-current mr-2" />
                                 {comment.title}
                             </strong>
-                            <span className="text-gray-300 text-sm leading-relaxed block pl-3.5 border-l border-white/10 ml-[3px]">
+                            <span className="ml-[3px] block border-l border-white/10 pl-3.5 text-sm leading-6 text-white/62">
                                 {comment.value}
                             </span>
                         </div>

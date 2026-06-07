@@ -16,6 +16,7 @@ const getTokenFromRequest = (req) => {
 
 const attachUserFromToken = async (req, token) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const resolvedTenantId = req.tenantId ? String(req.tenantId) : null;
 
     if (decoded.accountId) {
         const account = await Account.findById(decoded.accountId).select('status platformRole').lean();
@@ -43,6 +44,9 @@ const attachUserFromToken = async (req, token) => {
             }).lean();
 
             if (!membership) throw new Error('Membership inactive');
+            if (resolvedTenantId && String(membership.shop_id) !== resolvedTenantId) {
+                throw new Error('Membership does not belong to requested shop');
+            }
 
             const shop = await Shop.findById(membership.shop_id)
                 .select('isActive approvalStatus')
@@ -64,8 +68,12 @@ const attachUserFromToken = async (req, token) => {
             permissions: legacyUser.permissions
         };
 
-        req.tenantId = legacyUser.shop_id;
+        req.tenantId = resolvedTenantId || legacyUser.shop_id;
         return;
+    }
+
+    if (resolvedTenantId && decoded.shopId && String(decoded.shopId) !== resolvedTenantId) {
+        throw new Error('Token does not belong to requested shop');
     }
 
     req.user = {
@@ -76,7 +84,7 @@ const attachUserFromToken = async (req, token) => {
         shop_id: decoded.shopId
     };
 
-    req.tenantId = decoded.shopId;
+    req.tenantId = resolvedTenantId || decoded.shopId;
 };
 
 exports.protect = async (req, res, next) => {

@@ -81,30 +81,26 @@ export default function ProductDetails({ params }) {
     }
 
     return (
-        <div className="relative overflow-hidden bg-white">
-            {/* Decorative blobs */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gradient-to-br from-[var(--sf-accent)]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute top-[20%] right-[-5%] w-[30%] h-[30%] bg-gradient-to-bl from-purple-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-            <div className="container mx-auto px-4 py-12 max-w-7xl relative z-10">
+        <div className="sf-page">
+            <div className="sf-shell-wide py-8 sm:py-10">
 
                 {/* Back link */}
-                <Link href="/" className="inline-flex items-center text-sm font-medium text-gray-500 hover:text-[var(--sf-accent)] mb-8 transition-colors group">
-                    <div className="bg-gray-100 p-2 rounded-full mr-3 group-hover:bg-[var(--sf-accent)] group-hover:text-white transition-colors">
+                <Link href="/" className="mb-6 inline-flex items-center text-sm font-bold text-slate-500 transition-colors hover:text-[var(--sf-accent)] group">
+                    <div className="mr-3 rounded-full bg-white p-2 shadow-sm transition-colors group-hover:bg-[var(--sf-accent)] group-hover:text-white">
                         <ArrowLeft size={16} />
                     </div>
                     Continue Shopping
                 </Link>
 
                 {/* ── ABOVE THE FOLD: images + product details ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
                     <ProductImageGallery
                         images={currentVariant?.image ? [currentVariant.image, ...product.images.filter(image => image !== currentVariant.image)] : product.images}
                         category={product.category}
                         displayDiscount={displayDiscount}
                     />
 
-                    <div className="flex flex-col justify-start py-2">
+                    <div className="sf-panel flex flex-col justify-start p-6 sm:p-8">
                         <ProductInfo
                             title={product.title}
                             averageRating={product.averageRating}
@@ -132,8 +128,8 @@ export default function ProductDetails({ params }) {
                 </div>
 
                 {/* ── BELOW THE FOLD: features, specs, notes ── */}
-                <div className="mt-24 flex flex-col lg:flex-row gap-12 lg:gap-20 pt-16 border-t border-gray-100">
-                    <div className="flex-1 space-y-20">
+                <div className="mt-12 grid gap-8 border-t border-slate-200 pt-10 lg:grid-cols-[1fr_0.42fr]">
+                    <div className="space-y-8">
                         <ProductFeatures    features={product.features} />
                         <ProductSpecifications specifications={product.specifications} />
                     </div>

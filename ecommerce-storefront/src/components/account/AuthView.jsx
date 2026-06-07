@@ -20,71 +20,75 @@ export default function AuthView({
     };
 
     return (
-        <div className="container mx-auto px-4 py-16 max-w-md">
-            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/20">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="sf-page flex min-h-[70vh] items-center justify-center px-4 py-10">
+            <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/70 sm:p-8">
+                <p className="sf-kicker mb-2">{isRegistering ? 'Customer account' : 'Welcome back'}</p>
+                <h1 className="mb-2 text-3xl font-black text-slate-950">
                     {isRegistering ? 'Create Account' : 'Welcome Back'}
                 </h1>
+                <p className="mb-6 text-sm leading-6 text-slate-500">
+                    {isRegistering ? 'Create a shop-specific customer account to track orders and review purchases.' : 'Sign in to view orders, tracking, and account details.'}
+                </p>
 
                 <form onSubmit={handleAuthSubmit} className="space-y-4">
                     {isRegistering && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <label className="mb-1.5 block text-sm font-bold text-slate-700">Full Name</label>
                             <input
                                 required
                                 type="text"
                                 value={authForm.fullName}
                                 onChange={(e) => setAuthForm({ ...authForm, fullName: e.target.value })}
                                 disabled={otpSent}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-900 outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                                className="sf-field disabled:bg-slate-50 disabled:text-slate-400"
                             />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <label className="mb-1.5 block text-sm font-bold text-slate-700">Email Address</label>
                         <input
                             required
                             type="email"
                             value={authForm.email}
                             onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
                             disabled={isRegistering && otpSent}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-900 outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                            className="sf-field disabled:bg-slate-50 disabled:text-slate-400"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <label className="mb-1.5 block text-sm font-bold text-slate-700">Password</label>
                         <input
                             required
                             type="password"
                             value={authForm.password}
                             onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
                             disabled={isRegistering && otpSent}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-gray-900 outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                            className="sf-field disabled:bg-slate-50 disabled:text-slate-400"
                         />
                     </div>
 
                     {isRegistering && otpSent && (
-                        <div className="animate-fade-in">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                        <div>
+                            <label className="mb-1.5 block text-sm font-bold text-slate-700">Verification Code</label>
                             <input
                                 required
                                 type="text"
                                 placeholder="Enter 6-digit code"
                                 value={authForm.otp}
                                 onChange={(e) => setAuthForm({ ...authForm, otp: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50/30 focus:ring-2 focus:ring-indigo-600 outline-none"
+                                className="sf-field border-indigo-200 bg-indigo-50/30"
                             />
 
                             {/* Resend Logic */}
                             <div className="flex justify-between items-center mt-2">
-                                <p className="text-xs text-gray-500">Check your email for the code.</p>
+                                <p className="text-xs text-slate-500">Check your email for the code.</p>
                                 <button
                                     type="button"
                                     onClick={handleSendOTP}
                                     disabled={otpTimer > 0 || otpLoading}
-                                    className={`text-xs font-semibold ${otpTimer > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-800'}`}
+                                    className={`text-xs font-bold ${otpTimer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-indigo-600 hover:text-indigo-800'}`}
                                 >
                                     {otpLoading ? 'Sending...' : otpTimer > 0 ? `Resend in ${formatTime(otpTimer)}` : 'Resend Code'}
                                 </button>
@@ -97,7 +101,7 @@ export default function AuthView({
                             type="button"
                             onClick={handleSendOTP}
                             disabled={otpTimer > 0 || otpLoading}
-                            className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold hover:bg-gray-800 transition-colors mt-4 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="sf-btn sf-btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:bg-slate-400"
                         >
                             {otpLoading && <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
                             {otpLoading ? 'Sending code...' : otpTimer > 0 ? `Please wait ${formatTime(otpTimer)}` : 'Send Verification Code'}
@@ -105,7 +109,7 @@ export default function AuthView({
                     ) : (
                         <button
                             type="submit"
-                            className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold hover:bg-gray-800 transition-colors mt-4"
+                            className="sf-btn sf-btn-primary mt-4 w-full"
                         >
                             {isRegistering ? 'Verify & Sign Up' : 'Sign In'}
                         </button>
@@ -115,7 +119,7 @@ export default function AuthView({
                 <div className="mt-6 text-center">
                     <button
                         onClick={() => setIsRegistering(!isRegistering)}
-                        className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+                        className="text-sm font-bold text-slate-600 hover:text-slate-950"
                     >
                         {isRegistering ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
                     </button>

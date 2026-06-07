@@ -8,15 +8,15 @@ import { StarRow } from './ProductInfo';
 /* ─── Single review card ─────────────────────────────────────── */
 const ReviewCard = memo(function ReviewCard({ review }) {
     return (
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
-            <div className="flex justify-between items-start mb-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-gray-600 font-bold uppercase">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-black uppercase text-slate-600">
                         {review.name?.charAt(0) || 'U'}
                     </div>
                     <div>
-                        <h4 className="font-bold text-gray-900">{review.name}</h4>
-                        <span className="text-xs text-gray-500">
+                        <h4 className="font-black text-slate-950">{review.name}</h4>
+                        <span className="text-xs text-slate-500">
                             {new Date(review.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric', month: 'long', day: 'numeric',
                             })}
@@ -25,7 +25,7 @@ const ReviewCard = memo(function ReviewCard({ review }) {
                 </div>
                 <StarRow rating={review.rating} size={14} />
             </div>
-            <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+            <p className="leading-6 text-slate-700">{review.comment}</p>
         </div>
     );
 });
@@ -63,12 +63,12 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
 
     if (!isLoggedIn) {
         return (
-            <div className="text-center py-8">
-                <User size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-600 mb-4">Log in to submit a review and share your thoughts.</p>
+            <div className="py-8 text-center">
+                <User size={48} className="mx-auto mb-4 text-slate-300" />
+                <p className="mb-4 text-slate-600">Log in to submit a review and share your thoughts.</p>
                 <Link
                     href={`/${subdomain}/account`}
-                    className="inline-block bg-[var(--sf-accent)] text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:-translate-y-0.5 transition-all"
+                    className="sf-btn sf-btn-primary"
                 >
                     Log In / Register
                 </Link>
@@ -80,7 +80,7 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Star picker */}
             <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Rating</label>
+                <label className="mb-2 block text-sm font-bold text-slate-700">Rating</label>
                 <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map(star => (
                         <button
@@ -100,10 +100,10 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
 
             {/* Comment */}
             <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Comment</label>
+                <label className="mb-2 block text-sm font-bold text-slate-700">Comment</label>
                 <textarea
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[var(--sf-accent)] focus:border-[var(--sf-accent)] outline-none transition-all resize-none"
+                    className="sf-field resize-none"
                     placeholder="Share your experience with this product..."
                     value={newReview.comment}
                     onChange={e => setNewReview(r => ({ ...r, comment: e.target.value }))}
@@ -119,7 +119,7 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
             <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gray-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                className="sf-btn sf-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70"
             >
                 {submitting ? 'Submitting…' : 'Submit Review'}
             </button>
@@ -130,17 +130,17 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
 /* ─── Full section (form + list) ─────────────────────────────── */
 const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess }) {
     return (
-        <div className="mt-24 pt-16 border-t border-gray-100">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-10 flex items-center tracking-tight">
-                <MessageSquare className="mr-4 text-[var(--sf-accent)]" size={32} />
+        <div className="mt-10 border-t border-slate-200 pt-8">
+            <h2 className="mb-6 flex items-center text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
+                <MessageSquare className="mr-3 text-[var(--sf-accent)]" size={28} />
                 Customer Reviews
             </h2>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {/* Form */}
                 <div className="lg:col-span-1">
-                    <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-900 mb-6">Write a Review</h3>
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <h3 className="mb-5 text-xl font-black text-slate-950">Write a Review</h3>
                         <ReviewForm
                             subdomain={subdomain}
                             id={id}
@@ -153,14 +153,14 @@ const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, r
                 {/* List */}
                 <div className="lg:col-span-2">
                     {reviews.length > 0 ? (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             {reviews.map(review => <ReviewCard key={review._id} review={review} />)}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full py-12 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                            <MessageSquare size={48} className="text-gray-300 mb-4" />
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">No reviews yet</h3>
-                            <p className="text-gray-500 text-center max-w-sm">Be the first to share your experience!</p>
+                        <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 py-12">
+                            <MessageSquare size={48} className="mb-4 text-slate-300" />
+                            <h3 className="mb-2 text-xl font-black text-slate-950">No reviews yet</h3>
+                            <p className="max-w-sm text-center text-slate-500">Be the first to share your experience!</p>
                         </div>
                     )}
                 </div>

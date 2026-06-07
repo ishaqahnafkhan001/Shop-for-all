@@ -7,8 +7,8 @@ import { useShopData } from '@/hooks/useShopData';
 import { useCart } from '@/context/CartContext';
 import { getEnabledHomepageSections, normalizeTheme } from '@/lib/theme';
 import {
-    ShoppingCart, PackageX, ShoppingBag, ArrowRight,
-    Filter, ChevronLeft, ChevronRight, SlidersHorizontal, Star
+    PackageX, ShoppingBag, ArrowRight,
+    Filter, ChevronLeft, ChevronRight, SlidersHorizontal, Star, ShieldCheck, Truck
 } from 'lucide-react';
 
 // ─── Extracted & memoised product card ───────────────────────────────────────
@@ -25,15 +25,15 @@ const getCardShadow = (shadow) => {
 };
 
 const sectionSpacingClasses = {
-    Compact: 'mb-6 sm:mb-8',
-    Comfortable: 'mb-8 sm:mb-12',
+    Compact: 'mb-7 sm:mb-9',
+    Comfortable: 'mb-9 sm:mb-12',
     Spacious: 'mb-12 sm:mb-16'
 };
 
 const productGridGapClasses = {
-    Compact: 'gap-2 sm:gap-4 lg:gap-5',
-    Comfortable: 'gap-3 sm:gap-6 lg:gap-8',
-    Editorial: 'gap-5 sm:gap-8 lg:gap-10'
+    Compact: 'gap-3 sm:gap-5 lg:gap-6',
+    Comfortable: 'gap-4 sm:gap-7 lg:gap-9',
+    Editorial: 'gap-6 sm:gap-9 lg:gap-11'
 };
 
 const desktopGridClasses = {
@@ -66,11 +66,11 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
     const showQuickBuy = cardTheme?.showQuickBuy !== false;
 
     return (
-        <div
-            className={`group flex flex-col bg-white ${radiusClass} ${shadowClass} transition-shadow duration-300 animate-in fade-in slide-in-from-bottom-4 fill-mode-both`}
-            style={{ animationDelay: `${(index % 12) * 40}ms` }}
+        <article
+            className={`group flex min-h-full flex-col overflow-hidden border border-slate-200 bg-white ${radiusClass} ${shadowClass} transition duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-100/70`}
+            style={{ animationDelay: `${(index % 12) * 30}ms` }}
         >
-            <div className={`aspect-square relative overflow-hidden bg-gray-50 sm:bg-gray-50/50 ${radiusClass} mb-3 sm:mb-5`}>
+            <div className={`aspect-[4/4.25] relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-indigo-50/70 ${radiusClass} m-2 sm:m-3`}>
                 <Link href={`/products/${product._id}`} className="absolute inset-0 z-10" />
 
                 <Image
@@ -82,66 +82,74 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     loading={index < 6 ? 'eager' : 'lazy'}
                 />
 
+                {cardTheme?.showCategory !== false && product.category && (
+                    <div className="absolute left-2 top-2 z-20 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm backdrop-blur sm:left-3 sm:top-3">
+                        {product.category}
+                    </div>
+                )}
+
                 {hasDiscount && product.stock > 0 && (
-                    <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-600 text-white text-[9px] sm:text-[10px] font-black px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg uppercase tracking-widest z-20 shadow-lg shadow-red-200">
+                    <div className="absolute right-2 top-2 z-20 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-200 sm:right-3 sm:top-3">
                         {activeDiscount}% OFF
                     </div>
                 )}
 
                 {product.stock <= 0 && (
-                    <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-white/90 backdrop-blur text-gray-900 text-[9px] sm:text-[10px] font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full uppercase tracking-widest z-20 shadow-sm">
+                    <div className="absolute left-2 top-2 z-20 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-900 shadow-sm backdrop-blur sm:left-3 sm:top-3">
                         Sold Out
                     </div>
                 )}
             </div>
 
-            <div className="flex flex-col flex-grow px-1 sm:px-2 pb-2 sm:pb-4">
-                {cardTheme?.showCategory !== false && (
-                    <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider mb-1 line-clamp-1">
-                        {product.category}
-                    </p>
-                )}
-                <h3 className="text-sm sm:text-base font-semibold text-[var(--sf-foreground)] mb-2 leading-snug line-clamp-2 min-h-[40px] sm:min-h-[44px]">
+            <div className="flex flex-grow flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-5">
+                <h3 className="min-h-[40px] text-sm font-black leading-snug text-slate-950 line-clamp-2 sm:text-base">
                     <Link href={`/products/${product._id}`} className="hover:text-[var(--sf-accent)] transition-colors relative z-10">
                         {product.title}
                     </Link>
                 </h3>
 
                 {cardTheme?.showRating !== false && product.averageRating > 0 && (
-                    <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-amber-500">
+                    <div className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-500">
                         <Star size={13} fill="currentColor" />
                         <span>{Number(product.averageRating).toFixed(1)}</span>
                     </div>
                 )}
 
-                <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6 mt-auto">
-                    <span className="text-base sm:text-xl font-black text-[var(--sf-foreground)]">৳ {product.finalPrice}</span>
+                <div className="mt-auto flex flex-wrap items-end gap-1.5 pt-4 sm:gap-2">
+                    <span className="text-lg font-black text-slate-950 sm:text-xl">৳ {product.finalPrice}</span>
                     {hasDiscount && (
-                        <span className="text-xs sm:text-sm text-gray-400 line-through font-medium">৳ {product.sellingPrice}</span>
+                        <span className="pb-0.5 text-xs font-semibold text-slate-400 line-through sm:text-sm">৳ {product.sellingPrice}</span>
                     )}
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs font-bold">
+                    <span className={product.stock > 0 ? 'text-emerald-700' : 'text-red-600'}>
+                        {product.stock > 0 ? `${product.stock} in stock` : 'Unavailable'}
+                    </span>
+                    <span className="rounded-full bg-cyan-50 px-2 py-1 text-cyan-700">COD ready</span>
                 </div>
 
                 {showQuickBuy && (
-                <div className="flex items-center gap-2 relative z-20">
+                <div className="relative z-20 mt-5 flex items-center gap-2">
                     <button
                         onClick={handleAddToCart}
                         disabled={product.stock <= 0}
-                        className="p-2.5 sm:p-3 border border-gray-200 rounded-lg sm:rounded-xl text-gray-600 active:scale-95 hover:border-[var(--sf-accent)] hover:text-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)] transition-all disabled:opacity-50"
+                        className="sf-btn sf-btn-secondary h-12 min-h-0 w-12 shrink-0 p-0 text-slate-600 disabled:opacity-50"
+                        aria-label={`Add ${product.title} to cart`}
                     >
-                        <ShoppingBag size={18} className="sm:w-5 sm:h-5" />
+                        <ShoppingBag size={18} />
                     </button>
                     <button
                         onClick={handleBuyNow}
                         disabled={product.stock <= 0}
-                        className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-gray-900 text-white py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold active:scale-95 hover:bg-[var(--sf-accent)] transition-colors shadow-md shadow-gray-900/20 disabled:bg-gray-300 disabled:shadow-none"
+                        className="sf-btn sf-btn-primary h-12 min-h-0 flex-1 px-3 text-xs disabled:bg-slate-300 disabled:shadow-none sm:text-sm"
                     >
                         <span>Buy Now</span>
-                        <ArrowRight size={14} className="sm:w-4 sm:h-4" />
+                        <ArrowRight size={14} />
                     </button>
                 </div>
                 )}
             </div>
-        </div>
+        </article>
     );
 });
 
@@ -163,7 +171,7 @@ const SkeletonGrid = memo(function SkeletonGrid() {
 const HomepageCustomSection = memo(function HomepageCustomSection({ section, categories, banners }) {
     if (section.type === 'CategoryList') {
         return (
-            <section className="rounded-3xl border border-gray-100 bg-white p-5 sm:p-7">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                 <h2 className="mb-4 text-xl sm:text-2xl font-black text-[var(--sf-foreground)]" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
                     {section.title || 'Shop by category'}
                 </h2>
@@ -172,7 +180,7 @@ const HomepageCustomSection = memo(function HomepageCustomSection({ section, cat
                         <Link
                             key={category}
                             href={`/?category=${encodeURIComponent(category)}`}
-                            className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:border-[var(--sf-accent)] hover:text-[var(--sf-accent)]"
+                            className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)] hover:text-[var(--sf-accent)]"
                         >
                             {category}
                         </Link>
@@ -187,7 +195,7 @@ const HomepageCustomSection = memo(function HomepageCustomSection({ section, cat
         if (visibleBanners.length === 0) return null;
 
         return (
-            <section className="grid gap-4 sm:grid-cols-2">
+            <section className="grid gap-5 sm:grid-cols-2">
                 {visibleBanners.map((banner) => {
                     const imageUrl = banner.desktopImages?.[0] || banner.images?.[0] || banner.image;
                     const mobileImageUrl = banner.mobileImages?.[0] || imageUrl;
@@ -196,7 +204,7 @@ const HomepageCustomSection = memo(function HomepageCustomSection({ section, cat
                         <Link
                             key={banner._id}
                             href={banner.link || '/'}
-                            className="group relative aspect-[16/9] overflow-hidden rounded-3xl bg-gray-100"
+                            className="group relative aspect-[16/9] overflow-hidden rounded-[2rem] bg-slate-100 shadow-sm"
                         >
                             {mobileImageUrl !== imageUrl && (
                                 <Image
@@ -228,7 +236,7 @@ const HomepageCustomSection = memo(function HomepageCustomSection({ section, cat
 
     if (section.type === 'TextBlock' || section.type === 'Newsletter' || section.type === 'Reviews') {
         return (
-            <section className="rounded-3xl border border-gray-100 bg-[var(--sf-accent-bg)] p-6 text-center sm:p-10">
+            <section className="rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-7 text-center shadow-sm sm:p-12">
                 <h2 className="text-xl sm:text-3xl font-black text-[var(--sf-foreground)]" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
                     {section.title || 'Store update'}
                 </h2>
@@ -269,15 +277,15 @@ export default function VendorHomePage({ params }) {
     const heroOverlayOpacity = hero.overlayOpacity;
     const enabledSections = getEnabledHomepageSections(theme);
     const containerClass = layout.maxWidth === 'Full'
-        ? 'w-full px-4 sm:px-6'
+            ? 'w-full px-5 py-6 pb-24 sm:px-8 sm:py-8'
         : layout.maxWidth === 'Contained'
-            ? 'container mx-auto px-4 py-6 sm:py-8 sm:px-6 mb-24 max-w-5xl'
-            : 'container mx-auto px-4 py-6 sm:py-8 sm:px-6 mb-24 max-w-7xl';
+            ? 'mx-auto max-w-5xl px-5 py-6 pb-24 sm:px-8 sm:py-8'
+            : 'sf-shell-wide py-6 pb-24 sm:py-8';
     const heroHeightClass = hero.height === 'Compact'
-        ? 'h-[220px] sm:h-[280px] md:h-[360px]'
+        ? 'h-[220px] sm:h-[280px] md:h-[340px]'
         : hero.height === 'Tall'
-            ? 'h-[320px] sm:h-[480px] md:h-[640px]'
-            : 'h-[250px] sm:h-[350px] md:h-[500px]';
+            ? 'h-[340px] sm:h-[440px] md:h-[540px]'
+            : 'h-[260px] sm:h-[340px] md:h-[440px]';
     const desktopColumns = Math.min(Math.max(layout.productColumnsDesktop || 3, 2), 5);
     const gridClass = `${layout.productColumnsMobile === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
     const gridGapClass = productGridGapClasses[theme.productGridStyle] || productGridGapClasses.Comfortable;
@@ -363,6 +371,12 @@ export default function VendorHomePage({ params }) {
     }, []);
 
     const storewideDiscount = shop?.storewideDiscount || 0;
+    const trustItems = [
+        { icon: ShieldCheck, label: 'Secure checkout', text: 'Protected customer details' },
+        { icon: Truck, label: 'Order tracking', text: 'Track delivery after purchase' },
+        { icon: ShoppingBag, label: 'Quick buy', text: 'Fast cart and checkout flow' },
+        { icon: Star, label: 'Reviewed products', text: 'Ratings and customer feedback' },
+    ];
 
     // ── Error state ────────────────────────────────────────────────────────────
     if (error) return (
@@ -378,7 +392,7 @@ export default function VendorHomePage({ params }) {
 
             {/* ✨ HERO / BANNER SLIDER ✨ */}
             {showHero && allSlides.length > 0 ? (
-                <section className={`relative w-full ${heroHeightClass} rounded-3xl sm:rounded-[2rem] overflow-hidden ${sectionSpacingClass} shadow-xl group`}>
+                <section className={`relative w-full ${heroHeightClass} overflow-hidden rounded-[1.75rem] bg-slate-950 shadow-2xl shadow-slate-200/70 ${sectionSpacingClass} group`}>
                     {allSlides.map((slide, index) => (
                         <div
                             key={slide.id}
@@ -406,17 +420,25 @@ export default function VendorHomePage({ params }) {
                                 priority={index === 0}
                                 loading={index === 0 ? 'eager' : 'lazy'}
                             />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 sm:p-6" style={{ backgroundColor: `rgba(0,0,0,${(heroOverlayOpacity ?? 25) / 100})` }}>
+                            <div className="absolute inset-0 flex items-end p-6 sm:p-10" style={{ background: `linear-gradient(90deg, rgba(15,23,42,${Math.max((heroOverlayOpacity ?? 25) / 100, 0.38)}) 0%, rgba(15,23,42,0.22) 52%, rgba(15,23,42,0.08) 100%)` }}>
                                 {(slide.title || heroSubtitle) && (
-                                    <div className="mt-auto mb-6 text-white">
-                                        {slide.title && <h1 className="text-3xl sm:text-5xl font-black" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>{slide.title}</h1>}
-                                        {heroSubtitle && <p className="mt-3 text-sm sm:text-lg text-white/90">{heroSubtitle}</p>}
+                                    <div className="max-w-2xl pb-14 text-left text-white sm:pb-10">
+                                        <p className="mb-3 inline-flex rounded-full bg-white/14 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white/82 backdrop-blur">
+                                            Featured collection
+                                        </p>
+                                        {slide.title && <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-5xl" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>{slide.title}</h1>}
+                                        {heroSubtitle && <p className="mt-3 max-w-xl text-sm leading-6 text-white/82 sm:text-lg">{heroSubtitle}</p>}
+                                        {storewideDiscount > 0 && (
+                                            <span className="mt-5 inline-flex rounded-full bg-gradient-to-r from-emerald-300 to-cyan-300 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-950 shadow-lg shadow-emerald-900/20">
+                                                {storewideDiscount}% storewide offer
+                                            </span>
+                                        )}
                                     </div>
                                 )}
                                 {slide.link && (
                                     <Link
                                         href={slide.link}
-                                        className="bg-white text-gray-900 px-6 py-2.5 sm:px-8 sm:py-3 rounded-full text-sm sm:text-base font-bold hover:bg-gray-100 active:scale-95 transition-all shadow-lg mt-auto mb-8 sm:mb-12"
+                                        className="absolute bottom-6 right-5 rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-xl transition hover:bg-slate-100 sm:bottom-8 sm:right-8"
                                     >
                                         {heroCtaLabel || 'Shop Now'}
                                     </Link>
@@ -441,23 +463,55 @@ export default function VendorHomePage({ params }) {
                     )}
                 </section>
             ) : showHero ? (
-                <section className={`relative bg-gray-900 text-white rounded-3xl sm:rounded-[2rem] py-12 px-4 sm:py-16 sm:px-6 md:py-24 ${sectionSpacingClass} overflow-hidden flex flex-col items-center text-center shadow-xl shadow-gray-900/10`}>
-                    <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
-                    <div className="relative z-10 max-w-3xl">
-                        <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 sm:mb-6 capitalize" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
+                <section className={`relative overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-14 text-white shadow-2xl shadow-slate-200/70 sm:px-10 sm:py-18 md:py-20 ${sectionSpacingClass}`}>
+                    <div className="absolute inset-0 opacity-20 landing-grid" />
+                    <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-end">
+                        <div className="max-w-3xl">
+                            <p className="sf-badge bg-white/10 text-white/78">New storefront</p>
+                        <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl capitalize" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
                             {heroTitle || shop?.shopName || subdomain}
                         </h1>
                         {storewideDiscount > 0 && (
-                            <div className="mb-4 sm:mb-6 inline-block bg-[var(--sf-accent)] text-white text-[10px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full uppercase tracking-widest animate-pulse">
-                                🔥 {storewideDiscount}% Storewide Sale Active!
+                            <div className="mt-5 inline-block rounded-full bg-emerald-400 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-950">
+                                {storewideDiscount}% storewide sale active
                             </div>
                         )}
-                        <p className="text-gray-400 text-base sm:text-lg md:text-xl font-light px-2">
+                        <p className="mt-5 max-w-2xl text-base leading-7 text-white/66 sm:text-lg">
                             {heroSubtitle || shop?.description || "Curated essentials for the modern lifestyle. Discover the latest collection."}
                         </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {trustItems.slice(0, 4).map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <div key={item.label} className="rounded-3xl border border-white/10 bg-white/[0.07] p-5">
+                                        <Icon size={20} className="text-emerald-300" />
+                                        <p className="mt-3 text-sm font-black">{item.label}</p>
+                                        <p className="mt-1 text-xs leading-5 text-white/48">{item.text}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </section>
             ) : null}
+
+            <section className={`${sectionSpacingClass} grid gap-4 sm:grid-cols-2 lg:grid-cols-4`}>
+                {trustItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                        <div key={item.label} className="flex items-start gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-50 to-cyan-50 text-[var(--sf-accent)]">
+                                <Icon size={18} />
+                            </span>
+                            <div>
+                                <p className="text-sm font-black text-slate-950">{item.label}</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">{item.text}</p>
+                            </div>
+                        </div>
+                    );
+                })}
+            </section>
 
             {customSections.length > 0 && (
                 <div className={sectionSpacingClass}>
@@ -475,19 +529,19 @@ export default function VendorHomePage({ params }) {
             )}
 
             {showProducts && (
-            <div id="products" className="flex flex-col lg:flex-row gap-6 lg:gap-10">
+            <div id="products" className="grid gap-5 lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-8">
 
                 {/* ⬅️ SIDEBAR FILTERS */}
-                <aside className="w-full lg:w-64 flex-shrink-0">
-                    <div className="sticky top-20 bg-white lg:border lg:border-gray-100 lg:rounded-2xl lg:p-6 lg:shadow-sm">
+                <aside className="min-w-0">
+                    <div className="sticky top-24 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
 
                         {/* Mobile: horizontal category strip + price toggle */}
                         <div className="lg:hidden mb-4">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Categories</h3>
+                                <h3 className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Categories</h3>
                                 <button
                                     onClick={toggleMobileFilters}
-                                    className="flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+                                    className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-700"
                                 >
                                     <SlidersHorizontal size={14} />
                                     Price Filter
@@ -504,13 +558,13 @@ export default function VendorHomePage({ params }) {
 
                         {/* Desktop sidebar + collapsible mobile price */}
                         <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block transition-all duration-300`}>
-                            <div className="hidden lg:flex items-center gap-2 mb-6 text-gray-900 font-bold text-lg">
+                            <div className="hidden lg:flex items-center gap-2 mb-5 text-slate-950 font-black text-lg">
                                 <Filter size={20} />
                                 <h2>Filters</h2>
                             </div>
 
-                            <div className="hidden lg:block mb-8">
-                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Categories</h3>
+                            <div className="hidden lg:block mb-6">
+                                <h3 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500">Categories</h3>
                                 <div className="flex flex-col gap-1.5">
                                     <DesktopCategoryButton label="All Products" active={filters.category === 'All'} onClick={() => handleCategoryChange('All')} />
                                     {categories?.map((cat) => (
@@ -519,28 +573,28 @@ export default function VendorHomePage({ params }) {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 lg:bg-transparent p-4 lg:p-0 rounded-xl mb-6 lg:mb-0">
-                                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Price Range</h3>
-                                <div className="flex items-center gap-2 mb-3">
+                            <div className="rounded-3xl bg-gradient-to-br from-slate-50 to-indigo-50/60 p-5">
+                                <h3 className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500">Price Range</h3>
+                                <div className="mb-3 flex items-center gap-2">
                                     <input
                                         type="number"
                                         placeholder="Min"
                                         value={priceInput.min}
                                         onChange={handleMinPriceChange}
-                                        className="w-full px-3 py-2.5 bg-white lg:bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--sf-accent-ring)] outline-none transition-shadow"
+                                        className="sf-field px-3 py-2.5 text-sm"
                                     />
-                                    <span className="text-gray-400">-</span>
+                                    <span className="text-slate-400">-</span>
                                     <input
                                         type="number"
                                         placeholder="Max"
                                         value={priceInput.max}
                                         onChange={handleMaxPriceChange}
-                                        className="w-full px-3 py-2.5 bg-white lg:bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[var(--sf-accent-ring)] outline-none transition-shadow"
+                                        className="sf-field px-3 py-2.5 text-sm"
                                     />
                                 </div>
                                 <button
                                     onClick={handlePriceApply}
-                                    className="w-full py-2.5 bg-gray-900 lg:bg-gray-100 hover:bg-gray-800 lg:hover:bg-gray-200 text-white lg:text-gray-900 text-sm font-semibold rounded-lg transition-colors active:scale-95 shadow-sm lg:shadow-none"
+                                    className="sf-btn sf-btn-primary min-h-0 w-full py-2.5 text-sm"
                                 >
                                     Apply Price
                                 </button>
@@ -551,39 +605,40 @@ export default function VendorHomePage({ params }) {
 
                 {/* ➡️ PRODUCT GRID */}
                 <main className="flex-1">
-                    {productSection?.title && (
-                        <div className="mb-5 flex items-center justify-between gap-4">
-                            <h2 className="text-2xl sm:text-3xl font-black text-[var(--sf-foreground)]" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
-                                {productSection.title}
+                    <div className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                        <div>
+                            <p className="sf-kicker">Catalog</p>
+                            <h2 className="sf-heading mt-1 text-2xl sm:text-3xl" style={{ fontFamily: 'var(--sf-heading-font)', fontWeight: 'var(--sf-heading-weight)' }}>
+                                {productSection?.title || 'Shop products'}
                             </h2>
+                            <p className="mt-1 text-sm font-semibold text-slate-500">
+                                {loading ? 'Loading products...' : `${products?.length || 0} products shown`}
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {storewideDiscount > 0 && (
+                                <span className="sf-badge sf-badge-success">{storewideDiscount}% sale active</span>
+                            )}
                             {productCard.showQuickBuy !== false && (
-                                <span className="hidden sm:inline text-sm font-bold text-[var(--sf-accent)]">
-                                    Quick buy enabled
-                                </span>
+                                <span className="sf-badge sf-badge-color">Quick buy</span>
                             )}
                         </div>
-                    )}
+                    </div>
 
                     {/* Sort controls */}
-                    <div className="flex flex-row flex-wrap justify-between items-center gap-3 mb-6 bg-gray-50/50 border border-gray-100 p-2 sm:p-3 rounded-2xl">
-                        <div className="flex items-center flex-1 min-w-[140px]">
+                    <div className="mb-6 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 to-cyan-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm font-semibold text-slate-600">
+                            Filter by category or price, then sort products by what matters.
+                        </p>
+                        <div className="flex min-w-[200px] items-center">
                             <select
-                                value={['priceAsc', 'priceDesc'].includes(filters.sort) ? filters.sort : 'default'}
+                                value={filters.sort}
                                 onChange={handleSortChange}
-                                className="w-full bg-white border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none appearance-none cursor-pointer hover:border-gray-300 transition-colors shadow-sm"
+                                className="sf-field py-2.5 text-sm font-bold"
                             >
-                                <option value="default" disabled>Sort by Price</option>
+                                <option value="newest">Newest first</option>
                                 <option value="priceAsc">Price: Low to High</option>
                                 <option value="priceDesc">Price: High to Low</option>
-                            </select>
-                        </div>
-                        <div className="flex items-center flex-1 min-w-[140px]">
-                            <select
-                                value={['nameAsc', 'nameDesc'].includes(filters.sort) ? filters.sort : 'default'}
-                                onChange={handleSortChange}
-                                className="w-full bg-white border border-gray-200 text-gray-800 text-sm rounded-xl px-3 py-2 outline-none appearance-none cursor-pointer hover:border-gray-300 transition-colors shadow-sm"
-                            >
-                                <option value="default" disabled>Sort by Name</option>
                                 <option value="nameAsc">Name: A to Z</option>
                                 <option value="nameDesc">Name: Z to A</option>
                             </select>
@@ -595,12 +650,13 @@ export default function VendorHomePage({ params }) {
                     ) : (
                         <>
                             {products?.length === 0 ? (
-                                <div className="text-center py-20 px-4 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                                    <h3 className="text-xl font-bold text-gray-900 mb-2">No products found</h3>
-                                    <p className="text-gray-500 text-sm">Try adjusting your filters or searching for something else.</p>
+                                <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-4 py-16 text-center">
+                                    <PackageX size={44} className="mx-auto mb-4 text-slate-300" />
+                                    <h3 className="mb-2 text-xl font-black text-slate-950">No products found</h3>
+                                    <p className="text-sm text-slate-500">Try adjusting your filters or searching for something else.</p>
                                     <button
                                         onClick={handleClearFilters}
-                                        className="mt-6 px-6 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                                        className="sf-btn sf-btn-secondary mt-6"
                                     >
                                         Clear all filters
                                     </button>
@@ -622,12 +678,12 @@ export default function VendorHomePage({ params }) {
 
                             {/* PAGINATION */}
                             {pagination?.pages > 1 && (
-                                <div className="w-full mt-12 sm:mt-16 mb-8 overflow-x-auto pb-4 scrollbar-hide px-2">
+                                <div className="mb-8 mt-10 w-full overflow-x-auto px-2 pb-4 scrollbar-hide sm:mt-12">
                                     <div className="flex items-center justify-start sm:justify-center gap-2 min-w-max mx-auto w-fit">
                                         <button
                                             onClick={() => handlePageChange(filters.page - 1)}
                                             disabled={filters.page === 1}
-                                            className="flex-shrink-0 p-2 sm:p-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm bg-white"
+                                            className="flex-shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:p-2.5"
                                         >
                                             <ChevronLeft size={18} />
                                         </button>
@@ -639,10 +695,10 @@ export default function VendorHomePage({ params }) {
                                                     <button
                                                         key={pageNumber}
                                                         onClick={() => handlePageChange(pageNumber)}
-                                                        className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-all active:scale-95 shadow-sm ${
+                                                        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-sm font-black shadow-sm transition-all sm:h-10 sm:w-10 ${
                                                             filters.page === pageNumber
-                                                                ? 'bg-gray-900 text-white'
-                                                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                                ? 'bg-slate-950 text-white'
+                                                                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                                                         }`}
                                                     >
                                                         {pageNumber}
@@ -654,7 +710,7 @@ export default function VendorHomePage({ params }) {
                                         <button
                                             onClick={() => handlePageChange(filters.page + 1)}
                                             disabled={filters.page === pagination.pages}
-                                            className="flex-shrink-0 p-2 sm:p-2.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm bg-white"
+                                            className="flex-shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:p-2.5"
                                         >
                                             <ChevronRight size={18} />
                                         </button>
@@ -675,10 +731,10 @@ const CategoryButton = memo(function CategoryButton({ label, active, onClick }) 
     return (
         <button
             onClick={onClick}
-            className={`flex-shrink-0 snap-start px-4 py-2 rounded-full text-sm transition-colors whitespace-nowrap border ${
+            className={`flex-shrink-0 snap-start rounded-full border px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap ${
                 active
-                    ? 'bg-gray-900 border-gray-900 text-white font-medium shadow-md'
-                    : 'bg-white border-gray-200 text-gray-600 active:bg-gray-50'
+                    ? 'border-slate-950 bg-slate-950 text-white shadow-md'
+                    : 'border-slate-200 bg-white text-slate-600 active:bg-slate-50'
             }`}
         >
             {label}
@@ -690,8 +746,8 @@ const DesktopCategoryButton = memo(function DesktopCategoryButton({ label, activ
     return (
         <button
             onClick={onClick}
-            className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                active ? 'bg-gray-900 text-white font-medium' : 'text-gray-600 hover:bg-gray-100'
+            className={`rounded-xl px-3 py-2 text-left text-sm font-bold transition-colors ${
+                active ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
             }`}
         >
             {label}

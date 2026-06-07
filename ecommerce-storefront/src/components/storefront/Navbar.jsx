@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingBag, Search, User, Truck } from 'lucide-react';
+import { ShoppingBag, Search, User, Truck, ShieldCheck } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useEffect, useState } from 'react';
 
@@ -59,60 +59,83 @@ export default function Navbar({ subdomain }) {
 
     return (
         <>
-            <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-[var(--sf-header-background)]/80 backdrop-blur-md shadow-sm">
-                <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6">
+            <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-[var(--sf-header-background)]/90 shadow-sm backdrop-blur-xl">
+                <div className="hidden border-b border-slate-200/70 bg-slate-950 text-white lg:block">
+                    <div className="sf-shell-wide flex h-9 items-center justify-between text-xs font-semibold text-white/72">
+                        <div className="flex items-center gap-2">
+                            <ShieldCheck size={14} className="text-emerald-300" />
+                            Secure shopping, fast delivery, and tenant-safe customer accounts.
+                        </div>
+                        <div className="flex items-center gap-5">
+                            <span>Support ready</span>
+                            <span>Order tracking available</span>
+                            <span>Cash on delivery supported</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="sf-shell-wide flex h-16 items-center justify-between gap-4">
 
                     <Link
                         href="/"
-                        className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-gray-900 capitalize hover:text-[var(--sf-accent)] transition"
+                        className="flex min-w-0 items-center gap-3 text-lg font-black tracking-tight text-slate-950 capitalize transition hover:text-[var(--sf-accent)] sm:text-xl"
                     >
                         {theme.logoUrl && (
-                            <Image src={theme.logoUrl} alt="" width={32} height={32} className="h-8 w-8 rounded object-cover" />
+                            <Image src={theme.logoUrl} alt="" width={36} height={36} className="h-9 w-9 rounded-xl border border-slate-200 object-cover" />
                         )}
-                        <span>{shopSettings?.shopName || subdomain}</span>
+                        <span className="truncate">{shopSettings?.shopName || subdomain}</span>
                     </Link>
 
-                    <nav className="hidden md:flex items-center gap-5 text-sm font-semibold text-gray-600">
+                    <nav className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-sm font-bold text-slate-600 md:flex">
                         {navLinks.map((item, index) => (
-                            <Link key={`${item.label}-${index}`} href={item.url} className="hover:text-[var(--sf-accent)] transition">
+                            <Link
+                                key={`${item.label}-${index}`}
+                                href={item.url}
+                                className="rounded-full px-4 py-2 transition hover:bg-slate-100 hover:text-slate-950"
+                            >
                                 {item.label}
                             </Link>
                         ))}
                     </nav>
 
-                    <div className="flex items-center space-x-5 sm:space-x-7">
+                    <div className="flex items-center gap-2">
 
                         {/* SEARCH */}
                         <button
                             onClick={() => setSearchOpen(true)}
-                            className="text-gray-500 hover:text-[var(--sf-accent)] transition transform hover:scale-110"
+                            className="sf-btn sf-btn-secondary h-11 min-h-0 px-3 text-slate-600 sm:px-4"
                             title="Search"
+                            aria-label="Search products"
                         >
-                            <Search size={22} strokeWidth={2.5} />
+                            <Search size={18} strokeWidth={2.5} />
+                            <span className="hidden text-sm sm:inline">Search</span>
                         </button>
 
                         <Link
                             href="/track"
-                            className="text-gray-500 hover:text-[var(--sf-accent)] transition transform hover:scale-110"
+                            className="hidden h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 sm:flex"
                         >
-                            <Truck size={22} strokeWidth={2.5} />
+                            <Truck size={18} strokeWidth={2.5} />
+                            Track
                         </Link>
 
                         <Link
                             href="/account"
-                            className="text-gray-500 hover:text-[var(--sf-accent)] transition transform hover:scale-110"
+                            className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-slate-950"
+                            aria-label="Account"
                         >
-                            <User size={22} strokeWidth={2.5} />
+                            <User size={19} strokeWidth={2.5} />
                         </Link>
 
                         <Link
                             href="/cart"
-                            className="relative text-gray-500 hover:text-[var(--sf-accent)] transition flex items-center transform hover:scale-110"
+                            className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-slate-950 text-white transition hover:bg-[var(--sf-accent)]"
+                            aria-label="Cart"
                         >
-                            <ShoppingBag size={22} strokeWidth={2.5} />
+                            <ShoppingBag size={19} strokeWidth={2.5} />
 
                             {cartCount > 0 && (
-                                <span className="absolute -top-2.5 -right-2.5 bg-[var(--sf-accent)] text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md animate-in zoom-in duration-200 border-2 border-white">
+                                <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 px-1 text-[10px] font-black text-white shadow-md">
                                     {cartCount}
                                 </span>
                             )}

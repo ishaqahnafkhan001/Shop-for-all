@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Home, Search, ShoppingBag, Truck, User } from 'lucide-react';
+import { Home, Search, ShoppingBag, Truck, User, ShieldCheck, RotateCcw, Mail } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { getSortedNavigation } from '@/lib/theme';
 import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
@@ -21,24 +21,63 @@ export default function StorefrontFooter({ subdomain }) {
 
     return (
         <>
-            <footer className="border-t py-10 sm:py-12 mt-16 sm:mt-20 bg-gray-50">
-                <div className="container mx-auto px-4 text-center text-gray-500 text-sm font-medium">
-                    <p>
-                        {theme.footer?.text || `© ${new Date().getFullYear()} ${settings?.shopName || subdomain}. Powered by ShopForAll.`}
-                    </p>
-                    {navLinks.length > 0 && (
-                        <nav className="mt-4 flex flex-wrap items-center justify-center gap-4">
-                            {navLinks.slice(0, 6).map((item, index) => (
-                                <Link
-                                    key={`${item.label}-${index}`}
-                                    href={item.url}
-                                    className="hover:text-[var(--sf-accent)] transition-colors"
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </nav>
-                    )}
+            <footer className="mt-12 border-t border-slate-200 bg-slate-950 pb-20 pt-10 text-white md:pb-10">
+                <div className="sf-shell-wide">
+                    <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
+                        <div>
+                            <h2 className="text-2xl font-black tracking-tight">{settings?.shopName || subdomain}</h2>
+                            <p className="mt-3 max-w-lg text-sm leading-6 text-white/58">
+                                {theme.footer?.text || `Curated products, secure checkout, and reliable order updates from ${settings?.shopName || subdomain}.`}
+                            </p>
+                            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                                {[
+                                    [ShieldCheck, 'Secure checkout'],
+                                    [Truck, 'Order tracking'],
+                                    [RotateCcw, 'Store policies'],
+                                ].map(([Icon, label]) => (
+                                    <div key={label} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3 text-xs font-bold text-white/78">
+                                        <Icon size={16} className="text-emerald-300" />
+                                        {label}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 className="text-sm font-black uppercase tracking-[0.18em] text-white/42">Shop</h3>
+                            {navLinks.length > 0 && (
+                                <nav className="mt-4 grid gap-3 text-sm font-semibold text-white/68">
+                                    {navLinks.slice(0, 7).map((item, index) => (
+                                        <Link
+                                            key={`${item.label}-${index}`}
+                                            href={item.url}
+                                            className="transition-colors hover:text-white"
+                                        >
+                                            {item.label}
+                                        </Link>
+                                    ))}
+                                </nav>
+                            )}
+                        </div>
+
+                        <div>
+                            <h3 className="text-sm font-black uppercase tracking-[0.18em] text-white/42">Help</h3>
+                            <div className="mt-4 grid gap-3 text-sm font-semibold text-white/68">
+                                <Link href="/track" className="transition-colors hover:text-white">Track order</Link>
+                                <Link href="/account" className="transition-colors hover:text-white">Customer account</Link>
+                                <Link href="/cart" className="transition-colors hover:text-white">View cart</Link>
+                                <div className="flex items-center gap-2 pt-1 text-white/48">
+                                    <Mail size={15} />
+                                    Support through store email
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs font-semibold text-white/42 sm:flex-row sm:items-center sm:justify-between">
+                        <p>© {new Date().getFullYear()} {settings?.shopName || subdomain}. All rights reserved.</p>
+                        <p>Powered by ShopForAll commerce platform.</p>
+                    </div>
                 </div>
             </footer>
 
