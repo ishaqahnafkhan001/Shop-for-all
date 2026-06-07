@@ -32,6 +32,7 @@ import API from '../../api/api';
 
 const THEME_SCHEMA_VERSION = 2;
 const HISTORY_LIMIT = 30;
+const PREVIEW_COMPONENT_INTERACTIONS_ENABLED = false;
 
 const defaultTheme = {
     version: THEME_SCHEMA_VERSION,
@@ -166,6 +167,19 @@ const sampleProducts = [
     { title: 'New Arrival', category: 'Latest', price: 990 }
 ];
 
+const inlineSectionPresets = [
+    { label: 'Hero', type: 'Hero', title: 'Featured offers', settings: { visualLabel: 'Hero' } },
+    { label: 'Banner', type: 'BannerGrid', title: 'Promotional banner', settings: { visualLabel: 'Banner' } },
+    { label: 'Featured Products', type: 'FeaturedProducts', title: 'Featured products', settings: { visualLabel: 'Featured Products' } },
+    { label: 'Testimonials', type: 'Reviews', title: 'Testimonials', settings: { visualLabel: 'Testimonials', text: 'Share customer quotes and social proof.' } },
+    { label: 'Gallery', type: 'BannerGrid', title: 'Gallery', settings: { visualLabel: 'Gallery' } },
+    { label: 'Video', type: 'TextBlock', title: 'Video', settings: { visualLabel: 'Video', text: 'Add a product story, launch video, or brand introduction.' } },
+    { label: 'FAQ', type: 'TextBlock', title: 'FAQ', settings: { visualLabel: 'FAQ', text: 'Answer common customer questions.' } },
+    { label: 'Custom Section', type: 'TextBlock', title: 'Custom section', settings: { visualLabel: 'Custom Section', text: 'Write custom homepage content here.' } }
+];
+
+const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';
+
 const settingsGroups = [
     { id: 'brand', label: 'Brand', icon: Palette, description: 'Logo and store identity' },
     { id: 'colors', label: 'Colors', icon: Palette, description: 'Brand colors and page surfaces' },
@@ -237,6 +251,52 @@ const groupElementMap = {
     footer: 'footer',
     policies: 'policies',
     domain: 'domain'
+};
+
+const structureComponentRegistry = structureTree.reduce((registry, item) => {
+    registry[item.id] = { label: item.label, group: item.group };
+    (item.children || []).forEach(child => {
+        registry[child.id] = { label: child.label, group: child.group };
+    });
+    return registry;
+}, {});
+
+const editorComponentRegistry = {
+    ...structureComponentRegistry,
+    themeColors: { label: 'Colors', group: 'colors' },
+    typography: { label: 'Typography', group: 'typography' },
+    layout: { label: 'Layout', group: 'layout' },
+    mobile: { label: 'Mobile', group: 'mobile' },
+    domain: { label: 'Domain', group: 'domain' },
+    heroTitle: { label: 'Hero title', group: 'hero' },
+    heroSubtitle: { label: 'Hero subtitle', group: 'hero' },
+    heroButton: { label: 'Hero button', group: 'hero' }
+};
+
+const resolveEditorComponent = (target, theme = {}) => {
+    if (!target) return null;
+
+    if (target.startsWith('section-')) {
+        const sectionIndex = Number(target.replace('section-', ''));
+        const section = theme.homepageSections?.[sectionIndex];
+        return {
+            id: target,
+            group: 'sections',
+            label: section ? getSectionDisplayLabel(section) : 'Homepage section'
+        };
+    }
+
+    if (target.startsWith('navigation-')) {
+        const navigationIndex = Number(target.replace('navigation-', ''));
+        const navigationItem = theme.navigation?.[navigationIndex];
+        return {
+            id: target,
+            group: 'navigation',
+            label: navigationItem?.label ? `Navigation: ${navigationItem.label}` : 'Navigation label'
+        };
+    }
+
+    return editorComponentRegistry[target] || null;
 };
 
 const colorGroups = [
@@ -471,6 +531,232 @@ const BuilderCard = ({ title, description, icon: Icon, children, actions }) => (
     </section>
 );
 
+const InlineEditable = ({
+    value,
+    fallback,
+    onChange,
+    onSelect,
+    className = '',
+    style,
+    multiline = false,
+    ariaLabel = 'Editable text',
+    disabled = false
+}) => {
+    if (disabled) {
+        const Tag = multiline ? 'div' : 'span';
+        return (
+            <Tag
+                aria-label={ariaLabel}
+                className={`block whitespace-pre-wrap ${className}`}
+                style={style}
+            >
+                {value || fallback}
+            </Tag>
+        );
+    }
+
+    const sharedProps = {
+        value: value || '',
+        placeholder: fallback,
+        onChange: event => onChange(event.target.value),
+        onClick: event => {
+            event.stopPropagation();
+            onSelect?.();
+        },
+        onMouseDown: event => {
+            event.stopPropagation();
+        },
+        onPointerDown: event => {
+            event.stopPropagation();
+        },
+        onFocus: event => {
+            event.stopPropagation();
+            onSelect?.();
+        },
+        onKeyDown: event => {
+            if (event.key === 'Escape') event.currentTarget.blur();
+        },
+        'aria-label': ariaLabel,
+        className: `w-full resize-none rounded-md border border-transparent bg-transparent outline-none transition placeholder:text-current placeholder:opacity-70 hover:border-slate-300 hover:bg-white/30 focus:border-indigo-500 focus:bg-white/80 focus:ring-2 focus:ring-indigo-200 ${className}`,
+        style
+    };
+
+    return multiline ? (
+        <textarea {...sharedProps} rows={2} />
+    ) : (
+        <input {...sharedProps} />
+    );
+};
+
+const FloatingToolbar = ({ type, colors, typography, productCard, onColorChange, onThemeGroupChange, onPromptImage }) => {
+    const stop = event => event.stopPropagation();
+    const selectClass = 'rounded-md border border-slate-200 bg-white px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500';
+    const labelClass = 'flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1';
+
+    return (
+        <div
+            className="absolute -top-12 left-3 z-40 flex max-w-[calc(100vw-3rem)] items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 shadow-xl"
+            onClick={stop}
+            onMouseDown={stop}
+            onPointerDown={stop}
+        >
+            {type === 'text' && (
+                <>
+                    <select
+                        aria-label="Heading font"
+                        value={typography.headingFont || 'Inter'}
+                        onChange={event => onThemeGroupChange('typography', 'headingFont', event.target.value)}
+                        className={selectClass}
+                    >
+                        <option>Inter</option>
+                        <option>Georgia</option>
+                        <option>Arial</option>
+                        <option>Times New Roman</option>
+                    </select>
+                    <select
+                        aria-label="Heading weight"
+                        value={typography.headingWeight || '800'}
+                        onChange={event => onThemeGroupChange('typography', 'headingWeight', event.target.value)}
+                        className={selectClass}
+                    >
+                        <option value="600">Semi</option>
+                        <option value="700">Bold</option>
+                        <option value="800">Extra</option>
+                        <option value="900">Black</option>
+                    </select>
+                    <label className={labelClass}>
+                        Text
+                        <input type="color" value={colors.foreground || '#111827'} onChange={event => onColorChange('foreground', event.target.value)} className="h-5 w-6" />
+                    </label>
+                </>
+            )}
+            {type === 'heroButton' && (
+                <>
+                    <label className={labelClass}>
+                        Fill
+                        <input type="color" value={colors.primaryButtonBg || colors.accent || '#0f766e'} onChange={event => onColorChange('primaryButtonBg', event.target.value)} className="h-5 w-6" />
+                    </label>
+                    <label className={labelClass}>
+                        Text
+                        <input type="color" value={colors.primaryButtonText || '#ffffff'} onChange={event => onColorChange('primaryButtonText', event.target.value)} className="h-5 w-6" />
+                    </label>
+                </>
+            )}
+            {type === 'productCardButton' && (
+                <>
+                    <label className={labelClass}>
+                        Fill
+                        <input
+                            type="color"
+                            value={productCard.buttonColor || defaultTheme.productCard.buttonColor}
+                            onChange={event => onThemeGroupChange('productCard', 'buttonColor', event.target.value)}
+                            className="h-5 w-6"
+                        />
+                    </label>
+                    <select
+                        aria-label="Button radius"
+                        value={productCard.buttonShape || 'Rounded'}
+                        onChange={event => onThemeGroupChange('productCard', 'buttonShape', event.target.value)}
+                        className={selectClass}
+                    >
+                        <option>Soft</option>
+                        <option>Rounded</option>
+                        <option>Pill</option>
+                        <option>Square</option>
+                    </select>
+                </>
+            )}
+            {type === 'heroImage' && (
+                <>
+                    <button
+                        type="button"
+                        onClick={event => {
+                            event.stopPropagation();
+                            onPromptImage?.();
+                        }}
+                        className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50"
+                    >
+                        Replace
+                    </button>
+                </>
+            )}
+            {type === 'section' && (
+                <span className="px-2 py-1 text-slate-500">Drag, duplicate, hide, or edit this section in place.</span>
+            )}
+        </div>
+    );
+};
+
+const SectionHoverActions = ({ locked, onEdit, onDuplicate, onHide, onMoveUp, onMoveDown, onDelete }) => (
+    <div
+        className="absolute right-3 top-3 z-30 flex items-center gap-1 rounded-lg border border-slate-200 bg-white/95 p-1 text-slate-600 opacity-0 shadow-lg transition group-hover:opacity-100"
+        onClick={event => event.stopPropagation()}
+        onMouseDown={event => event.stopPropagation()}
+        onPointerDown={event => event.stopPropagation()}
+    >
+        <button type="button" onClick={onEdit} className="rounded-md px-2 py-1 text-xs font-bold hover:bg-slate-100">Edit</button>
+        <button type="button" onClick={onDuplicate} disabled={locked} className="rounded-md p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" title="Duplicate"><Copy size={14} /></button>
+        <button type="button" onClick={onHide} disabled={locked} className="rounded-md px-2 py-1 text-xs font-bold hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">Hide</button>
+        <button type="button" onClick={onMoveUp} disabled={locked} className="rounded-md p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" title="Move up"><ChevronUp size={14} /></button>
+        <button type="button" onClick={onMoveDown} disabled={locked} className="rounded-md p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" title="Move down"><ChevronDown size={14} /></button>
+        <button type="button" onClick={onDelete} disabled={locked} className="rounded-md p-1.5 text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40" title="Delete"><Trash2 size={14} /></button>
+    </div>
+);
+
+const AddSectionInline = ({ index, onAddSection, activeIndex, onToggle, dragOverIndex, onDragOverIndex, onDropSection }) => (
+    <div
+        className="relative py-1"
+        onDragOver={event => {
+            event.preventDefault();
+            onDragOverIndex(index);
+        }}
+        onDragLeave={() => onDragOverIndex(null)}
+        onDrop={event => {
+            event.preventDefault();
+            onDropSection(index, event);
+            onDragOverIndex(null);
+        }}
+    >
+        <button
+            type="button"
+            onClick={event => {
+                event.stopPropagation();
+                onToggle(activeIndex === index ? null : index);
+            }}
+            className={`flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs font-black transition ${
+                dragOverIndex === index
+                    ? 'border-indigo-500 bg-indigo-100 text-indigo-800'
+                    : 'border-slate-300 bg-white/70 text-slate-500 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700'
+            }`}
+        >
+            <Plus size={14} /> Add Section
+        </button>
+        {activeIndex === index && (
+            <div
+                className="absolute left-1/2 top-full z-50 mt-2 grid w-64 -translate-x-1/2 grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-xl"
+                onClick={event => event.stopPropagation()}
+                onMouseDown={event => event.stopPropagation()}
+                onPointerDown={event => event.stopPropagation()}
+            >
+                {inlineSectionPresets.map((preset) => (
+                    <button
+                        key={`${preset.label}-${index}`}
+                        type="button"
+                        onClick={event => {
+                            event.stopPropagation();
+                            onAddSection(preset, index);
+                            onToggle(null);
+                        }}
+                        className="rounded-md px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                        {preset.label}
+                    </button>
+                ))}
+            </div>
+        )}
+    </div>
+);
+
 const DeviceSwitcher = ({ value, onChange }) => {
     const devices = [
         { id: 'desktop', label: 'Desktop', icon: Monitor },
@@ -581,27 +867,34 @@ const CheckoutBrandingPreview = ({ theme, shopName }) => {
     );
 };
 
-const PreviewTarget = ({ id, activeElement, hoveredElement, onSelectElement, onHoverElement, children, className = '' }) => {
-    const active = activeElement === id;
-    const hovered = hoveredElement === id;
-
-    return (
-        <div
-            role="button"
-            tabIndex={0}
-            onClick={(event) => {
+const PreviewTarget = ({ id, activeElement, hoveredElement, onSelectElement, onHoverElement, children, className = '', toolbar = null }) => {
+    const active = PREVIEW_COMPONENT_INTERACTIONS_ENABLED && activeElement === id;
+    const hovered = PREVIEW_COMPONENT_INTERACTIONS_ENABLED && hoveredElement === id;
+    const interactiveProps = PREVIEW_COMPONENT_INTERACTIONS_ENABLED
+        ? {
+            role: 'button',
+            tabIndex: 0,
+            onClick: (event) => {
                 event.stopPropagation();
                 onSelectElement(id);
-            }}
-            onMouseEnter={() => onHoverElement(id)}
-            onMouseLeave={() => onHoverElement('')}
-            onKeyDown={(event) => {
+            },
+            onMouseEnter: () => onHoverElement(id),
+            onMouseLeave: () => onHoverElement(''),
+            onKeyDown: (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     onSelectElement(id);
                 }
-            }}
-            className={`relative cursor-pointer rounded-lg outline-none transition ${
+            }
+        }
+        : {};
+
+    return (
+        <div
+            {...interactiveProps}
+            className={`relative rounded-lg outline-none transition ${
+                PREVIEW_COMPONENT_INTERACTIONS_ENABLED ? 'cursor-pointer' : ''
+            } ${
                 active
                     ? 'ring-2 ring-indigo-600 ring-offset-2 ring-offset-slate-100'
                     : hovered
@@ -614,20 +907,52 @@ const PreviewTarget = ({ id, activeElement, hoveredElement, onSelectElement, onH
                     {id.replace(/([A-Z])/g, ' $1')}
                 </span>
             )}
+            {active && toolbar}
             {children}
         </div>
     );
 };
 
-const StorefrontPreview = ({ theme, storewideDiscount, shopName, activeGroup, activeElement, hoveredElement, onSelectElement, onHoverElement, device }) => {
+const StorefrontPreview = ({
+    theme,
+    storewideDiscount,
+    shopName,
+    activeGroup,
+    activeElement,
+    hoveredElement,
+    onSelectElement,
+    onHoverElement,
+    device,
+    onColorChange,
+    onThemeGroupChange,
+    onHeroChange,
+    onNavigationChange,
+    onSectionChange,
+    onAddSection,
+    onDuplicateSection,
+    onHideSection,
+    onMoveSection,
+    onRemoveSection,
+    onReorderSection,
+    isSectionLocked
+}) => {
+    const [addMenuIndex, setAddMenuIndex] = useState(null);
+    const [dragOverIndex, setDragOverIndex] = useState(null);
+    const previewInteractionsEnabled = PREVIEW_COMPONENT_INTERACTIONS_ENABLED;
     const colors = theme.colors || defaultTheme.colors;
     const typography = theme.typography || defaultTheme.typography;
     const hero = theme.hero || defaultTheme.hero;
     const layout = theme.layout || defaultTheme.layout;
     const header = theme.header || defaultTheme.header;
     const productCard = theme.productCard || defaultTheme.productCard;
-    const navItems = (theme.navigation || []).filter(item => item.label).slice(0, 4);
-    const enabledSections = (theme.homepageSections || []).filter(section => section.isEnabled !== false).slice(0, 4);
+    const navItems = (theme.navigation || []).map((item, index) => ({ item, index })).slice(0, 4);
+    const previewNavItems = navItems.length
+        ? navItems
+        : defaultTheme.navigation.map((item, index) => ({ item, index, isFallback: true }));
+    const enabledSections = (theme.homepageSections || [])
+        .map((section, index) => ({ section, index }))
+        .filter(({ section }) => section.isEnabled !== false)
+        .slice(0, 6);
     const radius = productRadiusClass[productCard.borderRadius] || productRadiusClass.Rounded;
     const imageRadius = productRadiusClass[productCard.imageRadius] || radius;
     const shadow = productCard.style === 'Minimal'
@@ -667,18 +992,19 @@ const StorefrontPreview = ({ theme, storewideDiscount, shopName, activeGroup, ac
         marginTop: `${Math.min(Math.max(Number(layout.sectionMarginTop) || 0, 0), 160)}px`,
         marginBottom: `${Math.min(Math.max(Number(layout.sectionMarginBottom) || 0, 0), 160)}px`
     };
-    const buttonRadius = productCard.buttonShape === 'Pill'
+    const productButtonRadius = productCard.buttonShape === 'Pill'
         ? '999px'
         : productCard.buttonShape === 'Square'
             ? '0px'
             : productCard.buttonShape === 'Soft'
                 ? '8px'
                 : '16px';
+    const heroButtonRadius = '16px';
     const productButtonStyle = {
-        backgroundColor: productCard.buttonStyle === 'Outline' || productCard.buttonStyle === 'Ghost' ? 'transparent' : (productCard.buttonColor || colors.primaryButtonBg || colors.accent),
-        color: productCard.buttonStyle === 'Solid' ? (colors.primaryButtonText || '#ffffff') : (productCard.buttonColor || colors.primaryButtonBg || colors.accent),
-        borderColor: productCard.buttonColor || colors.primaryButtonBg || colors.accent,
-        borderRadius: buttonRadius
+        backgroundColor: productCard.buttonStyle === 'Outline' || productCard.buttonStyle === 'Ghost' ? 'transparent' : (productCard.buttonColor || defaultTheme.productCard.buttonColor),
+        color: productCard.buttonStyle === 'Solid' ? '#ffffff' : (productCard.buttonColor || defaultTheme.productCard.buttonColor),
+        borderColor: productCard.buttonColor || defaultTheme.productCard.buttonColor,
+        borderRadius: productButtonRadius
     };
     const previewStyle = {
         color: colors.foreground,
@@ -695,29 +1021,130 @@ const StorefrontPreview = ({ theme, storewideDiscount, shopName, activeGroup, ac
         } : {})
     };
     const highlight = (groups) => (groups.includes(activeGroup) ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-100' : '');
+    const promptHeroImage = () => {
+        const imageUrl = window.prompt('Paste hero image URL', hero.imageUrl || '');
+        if (imageUrl !== null) onHeroChange('imageUrl', imageUrl.trim());
+    };
+    const textToolbar = (
+        <FloatingToolbar
+            type="text"
+            colors={colors}
+            typography={typography}
+            productCard={productCard}
+            onColorChange={onColorChange}
+            onThemeGroupChange={onThemeGroupChange}
+        />
+    );
+    const heroButtonToolbar = (
+        <FloatingToolbar
+            type="heroButton"
+            colors={colors}
+            typography={typography}
+            productCard={productCard}
+            onColorChange={onColorChange}
+            onThemeGroupChange={onThemeGroupChange}
+        />
+    );
+    const productCardToolbar = (
+        <FloatingToolbar
+            type="productCardButton"
+            colors={colors}
+            typography={typography}
+            productCard={productCard}
+            onColorChange={onColorChange}
+            onThemeGroupChange={onThemeGroupChange}
+        />
+    );
+    const heroImageToolbar = (
+        <FloatingToolbar
+            type="heroImage"
+            colors={colors}
+            typography={typography}
+            productCard={productCard}
+            onColorChange={onColorChange}
+            onThemeGroupChange={onThemeGroupChange}
+            onPromptImage={promptHeroImage}
+        />
+    );
+    const sectionToolbar = (
+        <FloatingToolbar
+            type="section"
+            colors={colors}
+            typography={typography}
+            productCard={productCard}
+            onColorChange={onColorChange}
+            onThemeGroupChange={onThemeGroupChange}
+        />
+    );
+    const frameLabel = device === 'desktop'
+        ? 'scaleup.store'
+        : device === 'tablet'
+            ? 'Tablet preview'
+            : device === 'smallMobile'
+                ? 'Small phone preview'
+                : 'Phone preview';
+    const frameClass = device === 'desktop'
+        ? 'rounded-xl border border-slate-300 bg-white shadow-2xl shadow-slate-900/10'
+        : device === 'tablet'
+            ? 'rounded-[2rem] border-[10px] border-slate-900 bg-white shadow-2xl shadow-slate-900/20'
+            : 'rounded-[2.4rem] border-[10px] border-slate-950 bg-white shadow-2xl shadow-slate-900/25';
+    const handleDropSection = (insertIndex, event) => {
+        const fromIndex = Number(event.dataTransfer.getData('text/plain'));
+        if (!Number.isFinite(fromIndex)) return;
+        onReorderSection(fromIndex, insertIndex);
+    };
+    const renderPreviewNavigation = () => previewNavItems.map(({ item, index, isFallback }) => (
+        isFallback ? (
+            <span
+                key={`fallback-${item.label}-${index}`}
+                onClick={event => {
+                    event.stopPropagation();
+                    if (previewInteractionsEnabled) onSelectElement('navigation');
+                }}
+                onMouseDown={event => event.stopPropagation()}
+                onPointerDown={event => event.stopPropagation()}
+                className="min-w-12 max-w-24 truncate px-1 py-0 text-xs font-bold"
+            >
+                {item.label}
+            </span>
+        ) : (
+            <InlineEditable
+                key={`${item.label}-${index}`}
+                value={item.label || ''}
+                fallback="Link"
+                onChange={value => onNavigationChange(index, 'label', value)}
+                onSelect={() => onSelectElement(`navigation-${index}`)}
+                className="min-w-12 max-w-24 px-1 py-0 text-xs font-bold"
+                ariaLabel="Navigation label"
+                disabled={!previewInteractionsEnabled}
+            />
+        )
+    ));
 
     return (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-3">
+        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
             <div className={`mx-auto transition-all duration-300 ${deviceClasses[device]}`}>
-                <div className={`${isMobilePreview ? 'max-h-[760px] overflow-y-auto rounded-[2rem]' : 'overflow-hidden rounded-lg'} border border-slate-200 bg-white shadow-sm`}>
-                    <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
-                        <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                        <span className="ml-2 truncate text-xs text-slate-500">{device} preview</span>
-                    </div>
+                <div className={`${isMobilePreview ? 'max-h-[760px] overflow-y-auto' : 'overflow-hidden'} ${frameClass}`}>
+                    {device === 'desktop' ? (
+                        <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
+                            <span className="ml-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{frameLabel}</span>
+                        </div>
+                    ) : (
+                        <div className="mx-auto mt-2 h-1.5 w-16 rounded-full bg-slate-800" />
+                    )}
                     <div style={previewStyle} className={`${isMobilePreview ? 'p-3' : 'p-4'}`}>
                         <div className={`mx-auto space-y-5 ${previewContainerClass}`}>
                             <PreviewTarget id="header" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement}>
                                 <header style={{ backgroundColor: colors.navbarBackground || colors.headerBackground, color: colors.navbarText || colors.foreground }} className={`flex items-center gap-4 rounded-lg border border-black/5 px-4 py-3 ${highlight(['brand', 'navigation', 'colors'])}`}>
                                     {header.logoPosition === 'Right' && !isMobilePreview && (
-                                        <PreviewTarget id="navigation" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className="mr-auto">
-                                            <nav className="flex items-center gap-4 text-xs font-semibold">
-                                                {(navItems.length ? navItems : defaultTheme.navigation).map((item, index) => (
-                                                    <span key={`${item.label}-${index}`}>{item.label}</span>
-                                                ))}
-                                            </nav>
-                                        </PreviewTarget>
+	                                        <PreviewTarget id="navigation" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className="mr-auto">
+	                                            <nav className="flex items-center gap-4 text-xs font-semibold">
+	                                                {renderPreviewNavigation()}
+	                                            </nav>
+	                                        </PreviewTarget>
                                     )}
                                     <PreviewTarget id="logo" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className={header.logoPosition === 'Center' ? 'mx-auto' : header.logoPosition === 'Right' ? 'ml-auto' : ''}>
                                         <div className="flex min-w-0 items-center gap-2">
@@ -730,45 +1157,72 @@ const StorefrontPreview = ({ theme, storewideDiscount, shopName, activeGroup, ac
                                         </div>
                                     </PreviewTarget>
                                     {header.logoPosition !== 'Right' && !isMobilePreview && (
-                                        <PreviewTarget id="navigation" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className="ml-auto">
-                                            <nav className="flex items-center gap-4 text-xs font-semibold">
-                                                {(navItems.length ? navItems : defaultTheme.navigation).map((item, index) => (
-                                                    <span key={`${item.label}-${index}`}>{item.label}</span>
-                                                ))}
-                                            </nav>
-                                        </PreviewTarget>
+	                                        <PreviewTarget id="navigation" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className="ml-auto">
+	                                            <nav className="flex items-center gap-4 text-xs font-semibold">
+	                                                {renderPreviewNavigation()}
+	                                            </nav>
+	                                        </PreviewTarget>
                                     )}
                                 </header>
                             </PreviewTarget>
 
-                            <PreviewTarget id="hero" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement}>
-                                <section style={{ ...heroStyle, ...sectionStyle }} className={`${heroHeightClass[hero.height] || heroHeightClass.Medium} rounded-lg px-6 flex items-center ${highlight(['hero', 'layout'])}`}>
-                                    <div className="max-w-xl">
+	                            <PreviewTarget id="hero" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={heroImageToolbar}>
+	                                <section style={{ ...heroStyle, ...sectionStyle }} className={`group relative ${heroHeightClass[hero.height] || heroHeightClass.Medium} rounded-lg px-6 flex items-center ${highlight(['hero', 'layout'])}`}>
+	                                    {previewInteractionsEnabled && <SectionHoverActions
+	                                        locked={false}
+	                                        onEdit={() => onSelectElement('hero')}
+	                                        onDuplicate={() => onAddSection(inlineSectionPresets[0], 1)}
+	                                        onHide={() => onSelectElement('sections')}
+	                                        onMoveUp={() => {}}
+	                                        onMoveDown={() => {}}
+	                                        onDelete={() => onSelectElement('hero')}
+	                                    />}
+	                                    <div className="max-w-xl">
                                         <p className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: hero.imageUrl ? '#ffffff' : colors.accent }}>
                                             {storewideDiscount > 0 ? `${storewideDiscount}% storewide offer` : 'Featured collection'}
                                         </p>
-                                        <h2 className={`${isMobilePreview ? 'text-xl' : 'text-3xl'} font-black leading-tight`} style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
-                                            {hero.title || 'Build a storefront customers trust'}
-                                        </h2>
-                                        <p className="mt-3 text-sm opacity-80">{hero.subtitle || 'Your homepage hero, colors, font, product cards, and navigation preview here.'}</p>
-                                        <button
-                                            type="button"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                onSelectElement('heroButton');
-                                            }}
-                                            onMouseEnter={() => onHoverElement('heroButton')}
-                                            onMouseLeave={() => onHoverElement('')}
-                                            className={`mt-5 rounded-lg px-4 py-2 text-sm font-bold transition ${activeElement === 'heroButton' ? 'ring-2 ring-indigo-600 ring-offset-2' : hoveredElement === 'heroButton' ? 'ring-2 ring-sky-400 ring-offset-2' : ''}`}
-                                            style={{ backgroundColor: colors.primaryButtonBg || colors.accent, color: colors.primaryButtonText || '#ffffff' }}
-                                        >
-                                            {hero.ctaLabel || 'Shop Now'}
-                                        </button>
+                                        <PreviewTarget id="heroTitle" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={textToolbar}>
+                                            <InlineEditable
+                                                value={hero.title || ''}
+                                                fallback="Build a storefront customers trust"
+                                                onChange={value => onHeroChange('title', value)}
+                                                onSelect={() => onSelectElement('heroTitle')}
+                                                multiline
+                                                className={`${isMobilePreview ? 'text-xl' : 'text-3xl'} min-h-[2.6em] font-black leading-tight`}
+	                                                style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}
+	                                                ariaLabel="Hero title"
+	                                                disabled={!previewInteractionsEnabled}
+	                                            />
+                                        </PreviewTarget>
+                                        <PreviewTarget id="heroSubtitle" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={textToolbar}>
+                                            <InlineEditable
+                                                value={hero.subtitle || ''}
+                                                fallback="Your homepage hero, colors, font, product cards, and navigation preview here."
+                                                onChange={value => onHeroChange('subtitle', value)}
+                                                onSelect={() => onSelectElement('heroSubtitle')}
+                                                multiline
+	                                                className="mt-3 min-h-[3.2em] text-sm opacity-80"
+	                                                ariaLabel="Hero subtitle"
+	                                                disabled={!previewInteractionsEnabled}
+	                                            />
+                                        </PreviewTarget>
+                                        <PreviewTarget id="heroButton" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={heroButtonToolbar} className="mt-5 inline-block">
+                                            <InlineEditable
+                                                value={hero.ctaLabel || ''}
+                                                fallback="Shop Now"
+                                                onChange={value => onHeroChange('ctaLabel', value)}
+                                                onSelect={() => onSelectElement('heroButton')}
+                                                className="min-w-28 px-4 py-2 text-center text-sm font-bold"
+	                                                style={{ backgroundColor: colors.primaryButtonBg || colors.accent, color: colors.primaryButtonText || '#ffffff', borderRadius: heroButtonRadius }}
+	                                                ariaLabel="Hero button text"
+	                                                disabled={!previewInteractionsEnabled}
+	                                            />
+                                        </PreviewTarget>
                                     </div>
                                 </section>
                             </PreviewTarget>
 
-                            <PreviewTarget id="productCard" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement}>
+                            <PreviewTarget id="productCard" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={productCardToolbar}>
                             <section className={highlight(['products', 'layout'])}>
                                 <div className="mb-3 flex items-center justify-between">
                                     <h3 className="text-lg font-black" style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
@@ -815,19 +1269,113 @@ const StorefrontPreview = ({ theme, storewideDiscount, shopName, activeGroup, ac
                             </section>
                             </PreviewTarget>
 
-                            <PreviewTarget id="sections" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement}>
-                                <section className={`rounded-lg border border-black/5 p-4 ${highlight(['sections'])}`}>
-                                    <h3 className="mb-3 text-sm font-black">Homepage sections</h3>
+	                            <PreviewTarget id="sections" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={sectionToolbar}>
+	                                <section className={`rounded-lg border border-black/5 p-4 ${highlight(['sections'])}`}>
+	                                    <h3 className="mb-3 text-sm font-black">Homepage sections</h3>
+	                                    {previewInteractionsEnabled && <AddSectionInline
+	                                        index={0}
+	                                        onAddSection={onAddSection}
+	                                        activeIndex={addMenuIndex}
+	                                        onToggle={setAddMenuIndex}
+	                                        dragOverIndex={dragOverIndex}
+	                                        onDragOverIndex={setDragOverIndex}
+	                                        onDropSection={handleDropSection}
+	                                    />}
                                     {enabledSections.length > 0 ? (
-                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                            {enabledSections.map((section, index) => (
-                                                <div key={`${section.type}-${index}`} className="rounded-lg px-3 py-2 text-xs font-semibold" style={{ backgroundColor: colors.accentBg }}>
-                                                    {section.title || section.type}
-                                                </div>
-                                            ))}
+                                        <div className="space-y-2">
+                                            {enabledSections.map(({ section, index }) => {
+                                                const locked = isSectionLocked(section);
+                                                const sectionId = `section-${index}`;
+                                                const sectionText = section.settings?.text || '';
+
+                                                return (
+                                                    <div key={section._id || `${section.type}-${index}`}>
+                                                        <PreviewTarget
+                                                            id={sectionId}
+                                                            activeElement={activeElement}
+                                                            hoveredElement={hoveredElement}
+                                                            onSelectElement={onSelectElement}
+                                                            onHoverElement={onHoverElement}
+                                                            toolbar={sectionToolbar}
+	                                                            >
+	                                                            <article
+	                                                                draggable={previewInteractionsEnabled && !locked}
+	                                                                onDragStart={event => {
+	                                                                    event.dataTransfer.setData('text/plain', String(index));
+	                                                                    event.dataTransfer.effectAllowed = 'move';
+                                                                }}
+	                                                                className={`group relative rounded-lg border p-4 transition ${locked ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white hover:border-indigo-200'}`}
+	                                                                style={{ backgroundColor: section.type === 'Hero' ? colors.accentBg : undefined }}
+	                                                            >
+	                                                                {previewInteractionsEnabled && <SectionHoverActions
+	                                                                    locked={locked}
+	                                                                    onEdit={() => onSelectElement(sectionId)}
+	                                                                    onDuplicate={() => onDuplicateSection(index)}
+                                                                    onHide={() => onHideSection(index)}
+	                                                                    onMoveUp={() => onMoveSection(index, -1)}
+	                                                                    onMoveDown={() => onMoveSection(index, 1)}
+	                                                                    onDelete={() => onRemoveSection(index)}
+	                                                                />}
+                                                                <div className="mb-2 flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-slate-400">
+                                                                    <GripVertical size={14} className={locked ? 'text-amber-500' : 'text-slate-400'} />
+                                                                    {getSectionDisplayLabel(section)}
+                                                                    {locked && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Locked</span>}
+                                                                </div>
+                                                                <InlineEditable
+                                                                    value={section.title || ''}
+                                                                    fallback={getSectionDisplayLabel(section)}
+                                                                    onChange={value => onSectionChange(index, 'title', value)}
+                                                                    onSelect={() => onSelectElement(sectionId)}
+                                                                    multiline
+                                                                    className="min-h-[2.4em] text-lg font-black"
+	                                                                    style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}
+	                                                                    ariaLabel="Section heading"
+	                                                                    disabled={!previewInteractionsEnabled}
+	                                                                />
+                                                                {['TextBlock', 'Newsletter', 'Reviews', 'BannerGrid', 'CategoryList'].includes(section.type) && (
+                                                                    <InlineEditable
+                                                                        value={sectionText}
+                                                                        fallback="Add supporting text for this section."
+                                                                        onChange={value => onSectionChange(index, 'settings.text', value)}
+                                                                        onSelect={() => onSelectElement(sectionId)}
+                                                                        multiline
+	                                                                        className="mt-2 min-h-[3em] text-sm text-slate-500"
+	                                                                        ariaLabel="Section text"
+	                                                                        disabled={!previewInteractionsEnabled}
+	                                                                    />
+                                                                )}
+                                                                {section.type === 'FeaturedProducts' && (
+                                                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                                                        {sampleProducts.map(product => (
+                                                                            <div key={product.title} className="rounded-lg border border-slate-100 bg-slate-50 p-2 text-xs font-bold text-slate-600">
+                                                                                <div className="mb-2 aspect-square rounded bg-white" />
+                                                                                {product.title}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                {section.type === 'Hero' && (
+                                                                    <div className="mt-3 rounded-lg bg-white/70 px-3 py-2 text-sm font-semibold text-slate-600">
+                                                                        Hero-style promotional section
+                                                                    </div>
+                                                                )}
+                                                            </article>
+                                                        </PreviewTarget>
+	                                                        {previewInteractionsEnabled && <AddSectionInline
+	                                                            index={index + 1}
+	                                                            onAddSection={onAddSection}
+	                                                            activeIndex={addMenuIndex}
+                                                            onToggle={setAddMenuIndex}
+                                                            dragOverIndex={dragOverIndex}
+	                                                            onDragOverIndex={setDragOverIndex}
+	                                                            onDropSection={handleDropSection}
+	                                                        />}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     ) : (
-                                        <p className="text-xs text-slate-500">No custom homepage sections yet.</p>
+                                        <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">No custom homepage sections yet. Use Add Section to build the homepage visually.</p>
                                     )}
                                 </section>
                             </PreviewTarget>
@@ -876,9 +1424,9 @@ const StoreBuilder = () => {
     const canUndo = editorHistory.past.length > 0;
     const canRedo = editorHistory.future.length > 0;
     const selectedLabel = useMemo(() => {
-        const flatItems = structureTree.flatMap(item => [item, ...(item.children || [])]);
-        return flatItems.find(item => item.id === activeElement)?.label || settingsGroups.find(item => item.id === activeGroup)?.label || 'Store element';
-    }, [activeElement, activeGroup]);
+        const selectionTheme = { homepageSections: theme.homepageSections, navigation: theme.navigation };
+        return resolveEditorComponent(activeElement, selectionTheme)?.label || settingsGroups.find(item => item.id === activeGroup)?.label || 'Store element';
+    }, [activeElement, activeGroup, theme.homepageSections, theme.navigation]);
 
     const publishedVersionLabel = useMemo(() => {
         if (!initialSnapshot) return 'Not loaded';
@@ -887,10 +1435,10 @@ const StoreBuilder = () => {
     }, [initialSnapshot]);
 
     const selectEditorTarget = (target) => {
-        const flatItems = structureTree.flatMap(item => [item, ...(item.children || [])]);
-        const item = flatItems.find(entry => entry.id === target);
+        if (!target) return;
+        const selection = resolveEditorComponent(target, theme);
         setActiveElement(target);
-        if (item?.group) setActiveGroup(item.group);
+        if (selection?.group) setActiveGroup(selection.group);
         setMobileWorkspace('edit');
     };
 
@@ -1029,6 +1577,15 @@ const StoreBuilder = () => {
         }));
     };
 
+    const updateHomepageSectionFromPreview = (index, field, value) => {
+        if (field.startsWith('settings.')) {
+            updateHomepageSectionSetting(index, field.replace('settings.', ''), value);
+            return;
+        }
+
+        updateHomepageSection(index, field, value);
+    };
+
     const normalizeSectionOrder = (sections) => sections.map((section, index) => ({ ...section, sortOrder: index }));
 
     const moveHomepageSection = (index, direction) => {
@@ -1076,20 +1633,48 @@ const StoreBuilder = () => {
         }));
     };
 
-    const addHomepageSection = () => {
-        setTheme(prev => ({
-            ...prev,
-            homepageSections: normalizeSectionOrder([
-                ...(prev.homepageSections || []),
-                {
-                    type: 'FeaturedProducts',
-                    title: 'Featured products',
-                    isEnabled: true,
-                    sortOrder: prev.homepageSections?.length || 0,
-                    settings: {}
-                }
-            ])
-        }));
+    const addHomepageSection = (preset = inlineSectionPresets[2], insertIndex = null) => {
+        setTheme(prev => {
+            const sections = [...(prev.homepageSections || [])];
+            const safePreset = preset || inlineSectionPresets[2];
+            const targetIndex = insertIndex === null
+                ? sections.length
+                : Math.max(0, Math.min(Number(insertIndex) || 0, sections.length));
+
+            sections.splice(targetIndex, 0, {
+                type: safePreset.type || 'FeaturedProducts',
+                title: safePreset.title || safePreset.label || 'New section',
+                isEnabled: true,
+                sortOrder: targetIndex,
+                settings: { ...(safePreset.settings || {}) }
+            });
+
+            return { ...prev, homepageSections: normalizeSectionOrder(sections) };
+        });
+        setActiveGroup('sections');
+        setActiveElement(`section-${insertIndex ?? theme.homepageSections?.length ?? 0}`);
+        setMobileWorkspace('preview');
+    };
+
+    const hideHomepageSection = (index) => {
+        updateHomepageSection(index, 'isEnabled', false);
+    };
+
+    const reorderHomepageSection = (fromIndex, insertIndex) => {
+        setTheme(prev => {
+            const sections = [...(prev.homepageSections || [])];
+            const sourceIndex = Number(fromIndex);
+            const targetInsertIndex = Number(insertIndex);
+
+            if (!Number.isFinite(sourceIndex) || !Number.isFinite(targetInsertIndex)) return prev;
+            if (sourceIndex < 0 || sourceIndex >= sections.length) return prev;
+            if (isHomepageSectionLocked(sections[sourceIndex])) return prev;
+
+            const [moved] = sections.splice(sourceIndex, 1);
+            const adjustedIndex = sourceIndex < targetInsertIndex ? targetInsertIndex - 1 : targetInsertIndex;
+            sections.splice(Math.max(0, Math.min(adjustedIndex, sections.length)), 0, moved);
+            return { ...prev, homepageSections: normalizeSectionOrder(sections) };
+        });
     };
 
     const updateNavigation = (index, field, value) => {
@@ -1690,7 +2275,7 @@ const StoreBuilder = () => {
                         title="Homepage sections"
                         description="Control which homepage blocks are visible and their order."
                         icon={LayoutTemplate}
-                        actions={<BuilderButton type="button" variant="secondary" onClick={addHomepageSection}><Plus size={16} /> Add section</BuilderButton>}
+                        actions={<BuilderButton type="button" variant="secondary" onClick={() => addHomepageSection()}><Plus size={16} /> Add section</BuilderButton>}
                     >
                         {(theme.homepageSections || []).length === 0 && (
                             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
@@ -1979,7 +2564,7 @@ const StoreBuilder = () => {
                             })}
                         </div>
                         <div className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-                            Hover a row to highlight the preview. Click a row or preview area to edit it.
+                            Click a row to edit it. The preview stays live while component clicking is paused.
                         </div>
                     </div>
 
@@ -2080,7 +2665,7 @@ const StoreBuilder = () => {
                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h2 className="text-base font-bold text-slate-950">Live preview</h2>
-                                <p className="mt-1 text-sm text-slate-500">The highlighted area shows what you are editing now.</p>
+                                <p className="mt-1 text-sm text-slate-500">The preview updates live from the settings panel.</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
@@ -2095,17 +2680,29 @@ const StoreBuilder = () => {
                                 </div>
                             </div>
                         </div>
-                        <StorefrontPreview
-                            theme={theme}
-                            storewideDiscount={Number(storewideDiscount) || 0}
-                            shopName={shopName}
-                            activeGroup={activeGroup}
-                            activeElement={activeElement}
-                            hoveredElement={hoveredElement}
-                            onSelectElement={selectEditorTarget}
-                            onHoverElement={setHoveredElement}
-                            device={device}
-                        />
+	                        <StorefrontPreview
+	                            theme={theme}
+	                            storewideDiscount={Number(storewideDiscount) || 0}
+	                            shopName={shopName}
+	                            activeGroup={activeGroup}
+	                            activeElement={activeElement}
+	                            hoveredElement={hoveredElement}
+	                            onSelectElement={selectEditorTarget}
+	                            onHoverElement={setHoveredElement}
+	                            onColorChange={setColor}
+	                            onThemeGroupChange={setThemeGroup}
+	                            onHeroChange={(key, value) => setThemeGroup('hero', key, value)}
+	                            onNavigationChange={updateNavigation}
+	                            onSectionChange={updateHomepageSectionFromPreview}
+	                            onAddSection={addHomepageSection}
+	                            onDuplicateSection={duplicateHomepageSection}
+	                            onHideSection={hideHomepageSection}
+	                            onMoveSection={moveHomepageSection}
+	                            onRemoveSection={removeHomepageSection}
+	                            onReorderSection={reorderHomepageSection}
+	                            isSectionLocked={isHomepageSectionLocked}
+	                            device={device}
+	                        />
                     </section>
                 </main>
             </div>
