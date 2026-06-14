@@ -1,11 +1,38 @@
 const Shop = require('../models/Shop');
 const Product = require('../models/Product');
 const Banner = require('../models/Banner');
+const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
+const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
+
+const PRODUCT_CARD_PROJECT = {
+    title: 1,
+    slug: 1,
+    category: 1,
+    collections: 1,
+    images: { $slice: ['$images', 1] },
+    pricing: 1,
+    averageRating: 1,
+    numReviews: 1,
+    totalStock: { $sum: '$variants.stock' },
+    variantCount: { $size: { $ifNull: ['$variants', []] } }
+};
+
+const getManualSectionProductIds = (sections = []) => {
+    const idsBySection = {};
+    sections.forEach(section => {
+        if (section?.type !== 'FeaturedProducts' || section?.isEnabled === false) return;
+        const source = section.settings?.source || section.source || {};
+        const productIds = section.settings?.productIds || source.productIds || [];
+        if ((source.type || 'manual') !== 'manual' || !Array.isArray(productIds) || productIds.length === 0) return;
+        idsBySection[section.id || String(section._id)] = productIds.map(String).filter(id => /^[a-f\d]{24}$/i.test(id));
+    });
+    return idsBySection;
+};
 
 
 exports.getStoreInfo = async (req, res) => {
@@ -37,6 +64,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         const currentPage = Math.max(parseInt(page, 10) || 1, 1);
         const limit = 9;
         const skip = (currentPage - 1) * limit;
+        const shopObjectId = new mongoose.Types.ObjectId(shopId);
         const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
             page: currentPage,
             sort,
@@ -49,7 +77,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         if (cached) return res.status(200).json(cached);
 
         const query = {
-            shop_id: shopId,
+            shop_id: shopObjectId,
             isDeleted: false,
             isActive: true,
             status: 'Published'
@@ -76,24 +104,11 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 { $sort: sortQuery },
                 { $skip: skip },
                 { $limit: limit },
-                {
-                    $project: {
-                        title: 1,
-                        slug: 1,
-                        category: 1,
-                        collections: 1,
-                        images: { $slice: ['$images', 1] },
-                        pricing: 1,
-                        averageRating: 1,
-                        numReviews: 1,
-                        totalStock: { $sum: '$variants.stock' },
-                        variantCount: { $size: { $ifNull: ['$variants', []] } }
-                    }
-                }
+                { $project: PRODUCT_CARD_PROJECT }
             ]),
             Product.countDocuments(query),
             Product.distinct('category', {
-                shop_id: shopId,
+                shop_id: shopObjectId,
                 isDeleted: false,
                 isActive: true,
                 status: 'Published'
@@ -104,11 +119,38 @@ exports.getStorefrontBootstrap = async (req, res) => {
             return res.status(404).json({ error: "Shop details not found." });
         }
 
+        await ensureThemeSectionArchitecture(shop);
+
+        const manualIdsBySection = getManualSectionProductIds(shop.theme?.homepageSections || []);
+        const allManualProductIds = [...new Set(Object.values(manualIdsBySection).flat())];
+        let sectionProducts = {};
+
+        if (allManualProductIds.length > 0) {
+            const manualProducts = await Product.aggregate([
+                {
+                    $match: {
+                        _id: { $in: allManualProductIds.map(id => new mongoose.Types.ObjectId(id)) },
+                        shop_id: shopObjectId,
+                        isDeleted: false,
+                        isActive: true,
+                        status: 'Published'
+                    }
+                },
+                { $project: PRODUCT_CARD_PROJECT }
+            ]);
+            const productMap = new Map(manualProducts.map(product => [String(product._id), product]));
+            sectionProducts = Object.entries(manualIdsBySection).reduce((acc, [sectionId, productIds]) => {
+                acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);
+                return acc;
+            }, {});
+        }
+
         const response = {
             success: true,
             data: {
                 shop,
                 banners,
+                sectionProducts,
                 products,
                 categories: categories.filter(Boolean),
                 pagination: {

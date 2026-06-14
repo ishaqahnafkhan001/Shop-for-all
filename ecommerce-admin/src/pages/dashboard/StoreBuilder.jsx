@@ -20,7 +20,6 @@ import {
     ShieldCheck,
     ShoppingBag,
     Smartphone,
-    Star,
     Tablet,
     Trash2,
     Undo2,
@@ -29,10 +28,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
+import {
+    REFERENCE_SAMPLE_CATEGORIES,
+    REFERENCE_SAMPLE_PRODUCTS,
+    ReferenceStorefrontPage,
+    getReferenceThemeStyle
+} from '../../../../ecommerce-storefront/src/components/storefront/ReferenceStorefront.jsx';
 
 const THEME_SCHEMA_VERSION = 2;
 const HISTORY_LIMIT = 30;
-const PREVIEW_COMPONENT_INTERACTIONS_ENABLED = false;
 
 const defaultTheme = {
     version: THEME_SCHEMA_VERSION,
@@ -68,9 +72,9 @@ const defaultTheme = {
         saleBadgeBg: '#dc2626',
         saleBadgeText: '#ffffff',
         ratingColor: '#f59e0b',
-        footerBackground: '#0f172a',
-        footerText: '#ffffff',
-        footerLink: '#99f6e4'
+        footerBackground: '#ffffff',
+        footerText: '#64748b',
+        footerLink: '#0f172a'
     },
     header: {
         logoPosition: 'Left',
@@ -119,7 +123,7 @@ const defaultTheme = {
         showSku: false,
         showDiscountBadge: true,
         showQuickBuy: true,
-        showWishlist: false,
+        showWishlist: true,
         borderRadius: 'Rounded',
         shadow: 'Soft',
         titleSize: 'Medium',
@@ -158,24 +162,36 @@ const defaultTheme = {
     ],
     footer: { text: '', links: [] },
     policies: { refund: '', shipping: '', privacy: '', terms: '' },
-    homepageSections: []
+    allProducts: {
+        title: 'All Products',
+        subtitle: "Browse this shop's latest catalog",
+        isEnabled: true,
+        desktopColumns: 3,
+        tabletColumns: 2,
+        mobileColumns: 2,
+        spacing: 'Comfortable'
+    },
+    migrations: {
+        bannerSectionsV1: false
+    },
+    homepageSections: [
+        {
+            id: 'featured-products',
+            type: 'FeaturedProducts',
+            title: 'Featured Products',
+            sortOrder: 0,
+            isEnabled: true,
+            settings: { source: { type: 'manual', productIds: [] }, productIds: [] },
+            mobileSettings: { columns: 2, isVisible: true }
+        }
+    ]
 };
 
-const sampleProducts = [
-    { title: 'Signature Product', category: 'Featured', price: 1490 },
-    { title: 'Customer Favorite', category: 'Best Seller', price: 2190 },
-    { title: 'New Arrival', category: 'Latest', price: 990 }
-];
-
 const inlineSectionPresets = [
-    { label: 'Hero', type: 'Hero', title: 'Featured offers', settings: { visualLabel: 'Hero' } },
-    { label: 'Banner', type: 'BannerGrid', title: 'Promotional banner', settings: { visualLabel: 'Banner' } },
-    { label: 'Featured Products', type: 'FeaturedProducts', title: 'Featured products', settings: { visualLabel: 'Featured Products' } },
+    { label: 'Banner', type: 'Banner', title: 'Promotional banner', settings: { visualLabel: 'Banner', desktopImage: '', mobileImage: '', title: '', subtitle: '', buttonText: 'Shop now', buttonLink: '/' }, mobileSettings: { isVisible: true } },
+    { label: 'Featured Products', type: 'FeaturedProducts', title: 'Featured products', settings: { visualLabel: 'Featured Products', productIds: [], source: { type: 'manual', productIds: [] } }, source: { type: 'manual', productIds: [] }, mobileSettings: { columns: 2, isVisible: true } },
     { label: 'Testimonials', type: 'Reviews', title: 'Testimonials', settings: { visualLabel: 'Testimonials', text: 'Share customer quotes and social proof.' } },
-    { label: 'Gallery', type: 'BannerGrid', title: 'Gallery', settings: { visualLabel: 'Gallery' } },
-    { label: 'Video', type: 'TextBlock', title: 'Video', settings: { visualLabel: 'Video', text: 'Add a product story, launch video, or brand introduction.' } },
-    { label: 'FAQ', type: 'TextBlock', title: 'FAQ', settings: { visualLabel: 'FAQ', text: 'Answer common customer questions.' } },
-    { label: 'Custom Section', type: 'TextBlock', title: 'Custom section', settings: { visualLabel: 'Custom Section', text: 'Write custom homepage content here.' } }
+    { label: 'Promo Content', type: 'TextBlock', title: 'Promotional content', settings: { visualLabel: 'Promo Content', text: 'Add a product story, offer, FAQ, or brand introduction.' } }
 ];
 
 const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';
@@ -213,8 +229,8 @@ const structureTree = [
         children: [
             { id: 'hero', label: 'Hero', group: 'hero' },
             { id: 'heroButton', label: 'Hero button', group: 'hero' },
-            { id: 'productCard', label: 'Product cards', group: 'products' },
-            { id: 'sections', label: 'Custom sections', group: 'sections' }
+            { id: 'sections', label: 'Dynamic sections', group: 'sections' },
+            { id: 'allProducts', label: 'All products', group: 'products' }
         ]
     },
     {
@@ -351,6 +367,48 @@ const colorGroups = [
 ];
 const colorFields = colorGroups.flatMap(group => group.fields);
 
+const normalizeHomepageSections = (sections = []) => sections
+    .filter(section => {
+        if (!section || section.type === 'Hero') return false;
+        const settings = section.settings || {};
+        const source = settings.source || section.source || {};
+        const productIds = settings.productIds || source.productIds || [];
+        return !(['FeaturedProducts', 'Collection'].includes(section.type) && !source.type && (!Array.isArray(productIds) || productIds.length === 0));
+    })
+    .map((section, index) => {
+        const type = section.type === 'BannerGrid' ? 'Banner' : section.type;
+        const settings = section.settings || {};
+        const source = settings.source || section.source || {};
+        const productIds = settings.productIds || source.productIds || [];
+
+        return {
+            ...section,
+            id: section.id || section._id || `${type || 'section'}-${index}-${Date.now()}`,
+            type,
+            sortOrder: Number.isFinite(Number(section.sortOrder)) ? Number(section.sortOrder) : index,
+            settings: type === 'FeaturedProducts'
+                ? {
+                    ...settings,
+                    productIds,
+                    source: { type: source.type || 'manual', productIds }
+                }
+                : settings,
+            mobileSettings: section.mobileSettings || {},
+            source: type === 'FeaturedProducts'
+                ? { type: source.type || 'manual', productIds }
+                : (section.source || {})
+        };
+    })
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    .map((section, index) => ({ ...section, sortOrder: index }));
+
+const getLegacyAllProductsSection = (sections = []) => sections.find(section => {
+    const settings = section?.settings || {};
+    const source = settings.source || section?.source || {};
+    const productIds = settings.productIds || source.productIds || [];
+    return ['FeaturedProducts', 'Collection'].includes(section?.type) && !source.type && (!Array.isArray(productIds) || productIds.length === 0);
+});
+
 const mergeTheme = (base, incoming = {}) => ({
     ...base,
     ...incoming,
@@ -374,7 +432,13 @@ const mergeTheme = (base, incoming = {}) => ({
     navigation: incoming.navigation || base.navigation,
     footer: { ...base.footer, ...(incoming.footer || {}) },
     policies: { ...base.policies, ...(incoming.policies || {}) },
-    homepageSections: incoming.homepageSections || base.homepageSections
+    allProducts: {
+        ...base.allProducts,
+        ...(getLegacyAllProductsSection(incoming.homepageSections || [])?.title ? { title: getLegacyAllProductsSection(incoming.homepageSections || []).title } : {}),
+        ...(incoming.allProducts || {})
+    },
+    migrations: { ...base.migrations, ...(incoming.migrations || {}) },
+    homepageSections: normalizeHomepageSections(incoming.homepageSections || base.homepageSections)
 });
 
 const sortForSnapshot = (value) => {
@@ -395,48 +459,6 @@ const safeParseSnapshot = (snapshot) => {
     }
 };
 const isHexColor = (value) => /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(String(value || ''));
-
-const productRadiusClass = {
-    Soft: 'rounded-lg',
-    Rounded: 'rounded-2xl',
-    Square: 'rounded-none'
-};
-
-const productShadowClass = {
-    None: '',
-    Soft: 'shadow-sm',
-    Elevated: 'shadow-xl shadow-black/10'
-};
-
-const productAspectClass = {
-    Square: 'aspect-square',
-    Portrait: 'aspect-[3/4]',
-    Landscape: 'aspect-[4/3]'
-};
-
-const titleSizeClass = {
-    Small: 'text-xs',
-    Medium: 'text-sm',
-    Large: 'text-base'
-};
-
-const priceSizeClass = {
-    Small: 'text-sm',
-    Medium: 'text-base',
-    Large: 'text-lg'
-};
-
-const cardAlignmentClass = {
-    Left: 'text-left items-start',
-    Center: 'text-center items-center',
-    Right: 'text-right items-end'
-};
-
-const heroHeightClass = {
-    Compact: 'min-h-36',
-    Medium: 'min-h-48',
-    Tall: 'min-h-64'
-};
 
 const deviceClasses = {
     desktop: 'w-full max-w-6xl',
@@ -529,232 +551,6 @@ const BuilderCard = ({ title, description, icon: Icon, children, actions }) => (
         </div>
         <div className="space-y-4">{children}</div>
     </section>
-);
-
-const InlineEditable = ({
-    value,
-    fallback,
-    onChange,
-    onSelect,
-    className = '',
-    style,
-    multiline = false,
-    ariaLabel = 'Editable text',
-    disabled = false
-}) => {
-    if (disabled) {
-        const Tag = multiline ? 'div' : 'span';
-        return (
-            <Tag
-                aria-label={ariaLabel}
-                className={`block whitespace-pre-wrap ${className}`}
-                style={style}
-            >
-                {value || fallback}
-            </Tag>
-        );
-    }
-
-    const sharedProps = {
-        value: value || '',
-        placeholder: fallback,
-        onChange: event => onChange(event.target.value),
-        onClick: event => {
-            event.stopPropagation();
-            onSelect?.();
-        },
-        onMouseDown: event => {
-            event.stopPropagation();
-        },
-        onPointerDown: event => {
-            event.stopPropagation();
-        },
-        onFocus: event => {
-            event.stopPropagation();
-            onSelect?.();
-        },
-        onKeyDown: event => {
-            if (event.key === 'Escape') event.currentTarget.blur();
-        },
-        'aria-label': ariaLabel,
-        className: `w-full resize-none rounded-md border border-transparent bg-transparent outline-none transition placeholder:text-current placeholder:opacity-70 hover:border-slate-300 hover:bg-white/30 focus:border-indigo-500 focus:bg-white/80 focus:ring-2 focus:ring-indigo-200 ${className}`,
-        style
-    };
-
-    return multiline ? (
-        <textarea {...sharedProps} rows={2} />
-    ) : (
-        <input {...sharedProps} />
-    );
-};
-
-const FloatingToolbar = ({ type, colors, typography, productCard, onColorChange, onThemeGroupChange, onPromptImage }) => {
-    const stop = event => event.stopPropagation();
-    const selectClass = 'rounded-md border border-slate-200 bg-white px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500';
-    const labelClass = 'flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1';
-
-    return (
-        <div
-            className="absolute -top-12 left-3 z-40 flex max-w-[calc(100vw-3rem)] items-center gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 shadow-xl"
-            onClick={stop}
-            onMouseDown={stop}
-            onPointerDown={stop}
-        >
-            {type === 'text' && (
-                <>
-                    <select
-                        aria-label="Heading font"
-                        value={typography.headingFont || 'Inter'}
-                        onChange={event => onThemeGroupChange('typography', 'headingFont', event.target.value)}
-                        className={selectClass}
-                    >
-                        <option>Inter</option>
-                        <option>Georgia</option>
-                        <option>Arial</option>
-                        <option>Times New Roman</option>
-                    </select>
-                    <select
-                        aria-label="Heading weight"
-                        value={typography.headingWeight || '800'}
-                        onChange={event => onThemeGroupChange('typography', 'headingWeight', event.target.value)}
-                        className={selectClass}
-                    >
-                        <option value="600">Semi</option>
-                        <option value="700">Bold</option>
-                        <option value="800">Extra</option>
-                        <option value="900">Black</option>
-                    </select>
-                    <label className={labelClass}>
-                        Text
-                        <input type="color" value={colors.foreground || '#111827'} onChange={event => onColorChange('foreground', event.target.value)} className="h-5 w-6" />
-                    </label>
-                </>
-            )}
-            {type === 'heroButton' && (
-                <>
-                    <label className={labelClass}>
-                        Fill
-                        <input type="color" value={colors.primaryButtonBg || colors.accent || '#0f766e'} onChange={event => onColorChange('primaryButtonBg', event.target.value)} className="h-5 w-6" />
-                    </label>
-                    <label className={labelClass}>
-                        Text
-                        <input type="color" value={colors.primaryButtonText || '#ffffff'} onChange={event => onColorChange('primaryButtonText', event.target.value)} className="h-5 w-6" />
-                    </label>
-                </>
-            )}
-            {type === 'productCardButton' && (
-                <>
-                    <label className={labelClass}>
-                        Fill
-                        <input
-                            type="color"
-                            value={productCard.buttonColor || defaultTheme.productCard.buttonColor}
-                            onChange={event => onThemeGroupChange('productCard', 'buttonColor', event.target.value)}
-                            className="h-5 w-6"
-                        />
-                    </label>
-                    <select
-                        aria-label="Button radius"
-                        value={productCard.buttonShape || 'Rounded'}
-                        onChange={event => onThemeGroupChange('productCard', 'buttonShape', event.target.value)}
-                        className={selectClass}
-                    >
-                        <option>Soft</option>
-                        <option>Rounded</option>
-                        <option>Pill</option>
-                        <option>Square</option>
-                    </select>
-                </>
-            )}
-            {type === 'heroImage' && (
-                <>
-                    <button
-                        type="button"
-                        onClick={event => {
-                            event.stopPropagation();
-                            onPromptImage?.();
-                        }}
-                        className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50"
-                    >
-                        Replace
-                    </button>
-                </>
-            )}
-            {type === 'section' && (
-                <span className="px-2 py-1 text-slate-500">Drag, duplicate, hide, or edit this section in place.</span>
-            )}
-        </div>
-    );
-};
-
-const SectionHoverActions = ({ locked, onEdit, onDuplicate, onHide, onMoveUp, onMoveDown, onDelete }) => (
-    <div
-        className="absolute right-3 top-3 z-30 flex items-center gap-1 rounded-lg border border-slate-200 bg-white/95 p-1 text-slate-600 opacity-0 shadow-lg transition group-hover:opacity-100"
-        onClick={event => event.stopPropagation()}
-        onMouseDown={event => event.stopPropagation()}
-        onPointerDown={event => event.stopPropagation()}
-    >
-        <button type="button" onClick={onEdit} className="rounded-md px-2 py-1 text-xs font-bold hover:bg-slate-100">Edit</button>
-        <button type="button" onClick={onDuplicate} disabled={locked} className="rounded-md p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" title="Duplicate"><Copy size={14} /></button>
-        <button type="button" onClick={onHide} disabled={locked} className="rounded-md px-2 py-1 text-xs font-bold hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40">Hide</button>
-        <button type="button" onClick={onMoveUp} disabled={locked} className="rounded-md p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" title="Move up"><ChevronUp size={14} /></button>
-        <button type="button" onClick={onMoveDown} disabled={locked} className="rounded-md p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40" title="Move down"><ChevronDown size={14} /></button>
-        <button type="button" onClick={onDelete} disabled={locked} className="rounded-md p-1.5 text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40" title="Delete"><Trash2 size={14} /></button>
-    </div>
-);
-
-const AddSectionInline = ({ index, onAddSection, activeIndex, onToggle, dragOverIndex, onDragOverIndex, onDropSection }) => (
-    <div
-        className="relative py-1"
-        onDragOver={event => {
-            event.preventDefault();
-            onDragOverIndex(index);
-        }}
-        onDragLeave={() => onDragOverIndex(null)}
-        onDrop={event => {
-            event.preventDefault();
-            onDropSection(index, event);
-            onDragOverIndex(null);
-        }}
-    >
-        <button
-            type="button"
-            onClick={event => {
-                event.stopPropagation();
-                onToggle(activeIndex === index ? null : index);
-            }}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs font-black transition ${
-                dragOverIndex === index
-                    ? 'border-indigo-500 bg-indigo-100 text-indigo-800'
-                    : 'border-slate-300 bg-white/70 text-slate-500 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700'
-            }`}
-        >
-            <Plus size={14} /> Add Section
-        </button>
-        {activeIndex === index && (
-            <div
-                className="absolute left-1/2 top-full z-50 mt-2 grid w-64 -translate-x-1/2 grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-xl"
-                onClick={event => event.stopPropagation()}
-                onMouseDown={event => event.stopPropagation()}
-                onPointerDown={event => event.stopPropagation()}
-            >
-                {inlineSectionPresets.map((preset) => (
-                    <button
-                        key={`${preset.label}-${index}`}
-                        type="button"
-                        onClick={event => {
-                            event.stopPropagation();
-                            onAddSection(preset, index);
-                            onToggle(null);
-                        }}
-                        className="rounded-md px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                        {preset.label}
-                    </button>
-                ))}
-            </div>
-        )}
-    </div>
 );
 
 const DeviceSwitcher = ({ value, onChange }) => {
@@ -867,215 +663,20 @@ const CheckoutBrandingPreview = ({ theme, shopName }) => {
     );
 };
 
-const PreviewTarget = ({ id, activeElement, hoveredElement, onSelectElement, onHoverElement, children, className = '', toolbar = null }) => {
-    const active = PREVIEW_COMPONENT_INTERACTIONS_ENABLED && activeElement === id;
-    const hovered = PREVIEW_COMPONENT_INTERACTIONS_ENABLED && hoveredElement === id;
-    const interactiveProps = PREVIEW_COMPONENT_INTERACTIONS_ENABLED
-        ? {
-            role: 'button',
-            tabIndex: 0,
-            onClick: (event) => {
-                event.stopPropagation();
-                onSelectElement(id);
-            },
-            onMouseEnter: () => onHoverElement(id),
-            onMouseLeave: () => onHoverElement(''),
-            onKeyDown: (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    onSelectElement(id);
-                }
-            }
-        }
-        : {};
-
-    return (
-        <div
-            {...interactiveProps}
-            className={`relative rounded-lg outline-none transition ${
-                PREVIEW_COMPONENT_INTERACTIONS_ENABLED ? 'cursor-pointer' : ''
-            } ${
-                active
-                    ? 'ring-2 ring-indigo-600 ring-offset-2 ring-offset-slate-100'
-                    : hovered
-                        ? 'ring-2 ring-sky-400 ring-offset-2 ring-offset-slate-100'
-                        : ''
-            } ${className}`}
-        >
-            {(active || hovered) && (
-                <span className={`absolute left-2 top-2 z-30 rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-sm ${active ? 'bg-indigo-600' : 'bg-sky-500'}`}>
-                    {id.replace(/([A-Z])/g, ' $1')}
-                </span>
-            )}
-            {active && toolbar}
-            {children}
-        </div>
-    );
-};
-
 const StorefrontPreview = ({
     theme,
     storewideDiscount,
     shopName,
-    activeGroup,
-    activeElement,
-    hoveredElement,
-    onSelectElement,
-    onHoverElement,
     device,
-    onColorChange,
-    onThemeGroupChange,
-    onHeroChange,
-    onNavigationChange,
-    onSectionChange,
-    onAddSection,
-    onDuplicateSection,
-    onHideSection,
-    onMoveSection,
-    onRemoveSection,
-    onReorderSection,
-    isSectionLocked
+    availableProducts = []
 }) => {
-    const [addMenuIndex, setAddMenuIndex] = useState(null);
-    const [dragOverIndex, setDragOverIndex] = useState(null);
-    const previewInteractionsEnabled = PREVIEW_COMPONENT_INTERACTIONS_ENABLED;
-    const colors = theme.colors || defaultTheme.colors;
-    const typography = theme.typography || defaultTheme.typography;
-    const hero = theme.hero || defaultTheme.hero;
-    const layout = theme.layout || defaultTheme.layout;
-    const header = theme.header || defaultTheme.header;
-    const productCard = theme.productCard || defaultTheme.productCard;
-    const navItems = (theme.navigation || []).map((item, index) => ({ item, index })).slice(0, 4);
-    const previewNavItems = navItems.length
-        ? navItems
-        : defaultTheme.navigation.map((item, index) => ({ item, index, isFallback: true }));
-    const enabledSections = (theme.homepageSections || [])
-        .map((section, index) => ({ section, index }))
-        .filter(({ section }) => section.isEnabled !== false)
-        .slice(0, 6);
-    const radius = productRadiusClass[productCard.borderRadius] || productRadiusClass.Rounded;
-    const imageRadius = productRadiusClass[productCard.imageRadius] || radius;
-    const shadow = productCard.style === 'Minimal'
-        ? ''
-        : productCard.style === 'Premium'
-            ? 'shadow-2xl shadow-black/15'
-            : productShadowClass[productCard.shadow] || productShadowClass.Soft;
-    const imageAspect = productAspectClass[productCard.aspectRatio] || productAspectClass.Square;
-    const titleSize = titleSizeClass[productCard.titleSize] || titleSizeClass.Medium;
-    const priceSize = priceSizeClass[productCard.priceSize] || priceSizeClass.Medium;
-    const alignment = cardAlignmentClass[layout.cardAlignment] || cardAlignmentClass.Left;
-    const productGap = layout.productGap || theme.productGridStyle || 'Comfortable';
     const isMobilePreview = device === 'mobile' || device === 'smallMobile';
-    const gridColumns = isMobilePreview
-        ? (layout.productColumnsMobile === 1 ? 'grid-cols-1' : 'grid-cols-2')
-        : layout.productColumnsDesktop >= 4
-            ? 'grid-cols-4'
-            : layout.productColumnsDesktop === 2
-                ? 'grid-cols-2'
-                : 'grid-cols-3';
-    const gridGapClass = productGap === 'Compact'
-        ? 'gap-3'
-        : productGap === 'Spacious' || productGap === 'Editorial'
-            ? 'gap-6'
-            : 'gap-4';
-    const containerWidth = layout.containerWidth || (layout.maxWidth === 'Full' ? 'Full Width' : layout.maxWidth === 'Contained' ? 'Narrow' : 'Wide');
-    const previewContainerClass = containerWidth === 'Full Width'
-        ? 'max-w-none'
-        : containerWidth === 'Narrow'
-            ? 'max-w-3xl'
-            : containerWidth === 'Standard'
-                ? 'max-w-4xl'
-                : 'max-w-5xl';
-    const sectionStyle = {
-        paddingTop: `${Math.min(Math.max(Number(layout.sectionPaddingTop) || 0, 0), 160)}px`,
-        paddingBottom: `${Math.min(Math.max(Number(layout.sectionPaddingBottom) || 0, 0), 160)}px`,
-        marginTop: `${Math.min(Math.max(Number(layout.sectionMarginTop) || 0, 0), 160)}px`,
-        marginBottom: `${Math.min(Math.max(Number(layout.sectionMarginBottom) || 0, 0), 160)}px`
-    };
-    const productButtonRadius = productCard.buttonShape === 'Pill'
-        ? '999px'
-        : productCard.buttonShape === 'Square'
-            ? '0px'
-            : productCard.buttonShape === 'Soft'
-                ? '8px'
-                : '16px';
-    const heroButtonRadius = '16px';
-    const productButtonStyle = {
-        backgroundColor: productCard.buttonStyle === 'Outline' || productCard.buttonStyle === 'Ghost' ? 'transparent' : (productCard.buttonColor || defaultTheme.productCard.buttonColor),
-        color: productCard.buttonStyle === 'Solid' ? '#ffffff' : (productCard.buttonColor || defaultTheme.productCard.buttonColor),
-        borderColor: productCard.buttonColor || defaultTheme.productCard.buttonColor,
-        borderRadius: productButtonRadius
-    };
-    const previewStyle = {
-        color: colors.foreground,
-        backgroundColor: colors.background,
-        fontFamily: typography.bodyFont || theme.fontFamily || 'Inter'
-    };
-    const heroStyle = {
-        backgroundColor: colors.accentBg,
-        ...(hero.imageUrl ? {
-            backgroundImage: `linear-gradient(rgba(0,0,0,${Number(hero.overlayOpacity || 25) / 100}), rgba(0,0,0,${Number(hero.overlayOpacity || 25) / 100})), url(${hero.imageUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            color: '#ffffff'
-        } : {})
-    };
-    const highlight = (groups) => (groups.includes(activeGroup) ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-100' : '');
-    const promptHeroImage = () => {
-        const imageUrl = window.prompt('Paste hero image URL', hero.imageUrl || '');
-        if (imageUrl !== null) onHeroChange('imageUrl', imageUrl.trim());
-    };
-    const textToolbar = (
-        <FloatingToolbar
-            type="text"
-            colors={colors}
-            typography={typography}
-            productCard={productCard}
-            onColorChange={onColorChange}
-            onThemeGroupChange={onThemeGroupChange}
-        />
-    );
-    const heroButtonToolbar = (
-        <FloatingToolbar
-            type="heroButton"
-            colors={colors}
-            typography={typography}
-            productCard={productCard}
-            onColorChange={onColorChange}
-            onThemeGroupChange={onThemeGroupChange}
-        />
-    );
-    const productCardToolbar = (
-        <FloatingToolbar
-            type="productCardButton"
-            colors={colors}
-            typography={typography}
-            productCard={productCard}
-            onColorChange={onColorChange}
-            onThemeGroupChange={onThemeGroupChange}
-        />
-    );
-    const heroImageToolbar = (
-        <FloatingToolbar
-            type="heroImage"
-            colors={colors}
-            typography={typography}
-            productCard={productCard}
-            onColorChange={onColorChange}
-            onThemeGroupChange={onThemeGroupChange}
-            onPromptImage={promptHeroImage}
-        />
-    );
-    const sectionToolbar = (
-        <FloatingToolbar
-            type="section"
-            colors={colors}
-            typography={typography}
-            productCard={productCard}
-            onColorChange={onColorChange}
-            onThemeGroupChange={onThemeGroupChange}
-        />
-    );
+    const products = availableProducts.length > 0
+        ? availableProducts.slice(0, 10).map(product => ({
+            ...product,
+            imageUrl: product.imageUrl || product.images?.[0] || REFERENCE_SAMPLE_PRODUCTS[0].imageUrl
+        }))
+        : REFERENCE_SAMPLE_PRODUCTS;
     const frameLabel = device === 'desktop'
         ? 'scaleup.store'
         : device === 'tablet'
@@ -1088,38 +689,6 @@ const StorefrontPreview = ({
         : device === 'tablet'
             ? 'rounded-[2rem] border-[10px] border-slate-900 bg-white shadow-2xl shadow-slate-900/20'
             : 'rounded-[2.4rem] border-[10px] border-slate-950 bg-white shadow-2xl shadow-slate-900/25';
-    const handleDropSection = (insertIndex, event) => {
-        const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-        if (!Number.isFinite(fromIndex)) return;
-        onReorderSection(fromIndex, insertIndex);
-    };
-    const renderPreviewNavigation = () => previewNavItems.map(({ item, index, isFallback }) => (
-        isFallback ? (
-            <span
-                key={`fallback-${item.label}-${index}`}
-                onClick={event => {
-                    event.stopPropagation();
-                    if (previewInteractionsEnabled) onSelectElement('navigation');
-                }}
-                onMouseDown={event => event.stopPropagation()}
-                onPointerDown={event => event.stopPropagation()}
-                className="min-w-12 max-w-24 truncate px-1 py-0 text-xs font-bold"
-            >
-                {item.label}
-            </span>
-        ) : (
-            <InlineEditable
-                key={`${item.label}-${index}`}
-                value={item.label || ''}
-                fallback="Link"
-                onChange={value => onNavigationChange(index, 'label', value)}
-                onSelect={() => onSelectElement(`navigation-${index}`)}
-                className="min-w-12 max-w-24 px-1 py-0 text-xs font-bold"
-                ariaLabel="Navigation label"
-                disabled={!previewInteractionsEnabled}
-            />
-        )
-    ));
 
     return (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
@@ -1135,265 +704,22 @@ const StorefrontPreview = ({
                     ) : (
                         <div className="mx-auto mt-2 h-1.5 w-16 rounded-full bg-slate-800" />
                     )}
-                    <div style={previewStyle} className={`${isMobilePreview ? 'p-3' : 'p-4'}`}>
-                        <div className={`mx-auto space-y-5 ${previewContainerClass}`}>
-                            <PreviewTarget id="header" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement}>
-                                <header style={{ backgroundColor: colors.navbarBackground || colors.headerBackground, color: colors.navbarText || colors.foreground }} className={`flex items-center gap-4 rounded-lg border border-black/5 px-4 py-3 ${highlight(['brand', 'navigation', 'colors'])}`}>
-                                    {header.logoPosition === 'Right' && !isMobilePreview && (
-	                                        <PreviewTarget id="navigation" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className="mr-auto">
-	                                            <nav className="flex items-center gap-4 text-xs font-semibold">
-	                                                {renderPreviewNavigation()}
-	                                            </nav>
-	                                        </PreviewTarget>
-                                    )}
-                                    <PreviewTarget id="logo" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className={header.logoPosition === 'Center' ? 'mx-auto' : header.logoPosition === 'Right' ? 'ml-auto' : ''}>
-                                        <div className="flex min-w-0 items-center gap-2">
-                                            {theme.logoUrl ? (
-                                                <div className="h-8 w-8 rounded bg-center bg-cover border border-black/10" style={{ backgroundImage: `url(${theme.logoUrl})` }} />
-                                            ) : (
-                                                <div className="flex h-8 w-8 items-center justify-center rounded text-xs font-bold text-white" style={{ backgroundColor: colors.accent }}>S</div>
-                                            )}
-                                            <span className="truncate text-sm font-bold">{shopName || 'Your Store'}</span>
-                                        </div>
-                                    </PreviewTarget>
-                                    {header.logoPosition !== 'Right' && !isMobilePreview && (
-	                                        <PreviewTarget id="navigation" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} className="ml-auto">
-	                                            <nav className="flex items-center gap-4 text-xs font-semibold">
-	                                                {renderPreviewNavigation()}
-	                                            </nav>
-	                                        </PreviewTarget>
-                                    )}
-                                </header>
-                            </PreviewTarget>
-
-	                            <PreviewTarget id="hero" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={heroImageToolbar}>
-	                                <section style={{ ...heroStyle, ...sectionStyle }} className={`group relative ${heroHeightClass[hero.height] || heroHeightClass.Medium} rounded-lg px-6 flex items-center ${highlight(['hero', 'layout'])}`}>
-	                                    {previewInteractionsEnabled && <SectionHoverActions
-	                                        locked={false}
-	                                        onEdit={() => onSelectElement('hero')}
-	                                        onDuplicate={() => onAddSection(inlineSectionPresets[0], 1)}
-	                                        onHide={() => onSelectElement('sections')}
-	                                        onMoveUp={() => {}}
-	                                        onMoveDown={() => {}}
-	                                        onDelete={() => onSelectElement('hero')}
-	                                    />}
-	                                    <div className="max-w-xl">
-                                        <p className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: hero.imageUrl ? '#ffffff' : colors.accent }}>
-                                            {storewideDiscount > 0 ? `${storewideDiscount}% storewide offer` : 'Featured collection'}
-                                        </p>
-                                        <PreviewTarget id="heroTitle" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={textToolbar}>
-                                            <InlineEditable
-                                                value={hero.title || ''}
-                                                fallback="Build a storefront customers trust"
-                                                onChange={value => onHeroChange('title', value)}
-                                                onSelect={() => onSelectElement('heroTitle')}
-                                                multiline
-                                                className={`${isMobilePreview ? 'text-xl' : 'text-3xl'} min-h-[2.6em] font-black leading-tight`}
-	                                                style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}
-	                                                ariaLabel="Hero title"
-	                                                disabled={!previewInteractionsEnabled}
-	                                            />
-                                        </PreviewTarget>
-                                        <PreviewTarget id="heroSubtitle" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={textToolbar}>
-                                            <InlineEditable
-                                                value={hero.subtitle || ''}
-                                                fallback="Your homepage hero, colors, font, product cards, and navigation preview here."
-                                                onChange={value => onHeroChange('subtitle', value)}
-                                                onSelect={() => onSelectElement('heroSubtitle')}
-                                                multiline
-	                                                className="mt-3 min-h-[3.2em] text-sm opacity-80"
-	                                                ariaLabel="Hero subtitle"
-	                                                disabled={!previewInteractionsEnabled}
-	                                            />
-                                        </PreviewTarget>
-                                        <PreviewTarget id="heroButton" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={heroButtonToolbar} className="mt-5 inline-block">
-                                            <InlineEditable
-                                                value={hero.ctaLabel || ''}
-                                                fallback="Shop Now"
-                                                onChange={value => onHeroChange('ctaLabel', value)}
-                                                onSelect={() => onSelectElement('heroButton')}
-                                                className="min-w-28 px-4 py-2 text-center text-sm font-bold"
-	                                                style={{ backgroundColor: colors.primaryButtonBg || colors.accent, color: colors.primaryButtonText || '#ffffff', borderRadius: heroButtonRadius }}
-	                                                ariaLabel="Hero button text"
-	                                                disabled={!previewInteractionsEnabled}
-	                                            />
-                                        </PreviewTarget>
-                                    </div>
-                                </section>
-                            </PreviewTarget>
-
-                            <PreviewTarget id="productCard" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={productCardToolbar}>
-                            <section className={highlight(['products', 'layout'])}>
-                                <div className="mb-3 flex items-center justify-between">
-                                    <h3 className="text-lg font-black" style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}>
-                                        Latest products
-                                    </h3>
-                                    {productCard.showQuickBuy && <span className="text-xs font-bold" style={{ color: colors.accent }}>Quick buy enabled</span>}
-                                </div>
-                                <div className={`grid ${gridGapClass} ${gridColumns}`}>
-                                    {sampleProducts.slice(0, isMobilePreview ? 2 : 3).map((product) => (
-                                        <article
-                                            key={product.title}
-                                            className={`flex flex-col border p-3 ${radius} ${shadow} ${alignment}`}
-                                            style={{ backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }}
-                                        >
-                                            <div className={`${imageAspect} w-full overflow-hidden ${imageRadius} ${productCard.imageFit === 'Cover' ? '' : 'p-6'} flex items-center justify-center`} style={{ backgroundColor: colors.accentBg }}>
-                                                <ShoppingBag size={isMobilePreview ? 24 : 36} style={{ color: colors.accent }} />
-                                            </div>
-                                            {productCard.showCategory && <p className="mt-3 text-[11px] uppercase font-bold opacity-50">{product.category}</p>}
-                                            <h4 className={`mt-1 line-clamp-1 ${titleSize}`} style={{ fontWeight: productCard.titleWeight || '800' }}>{product.title}</h4>
-                                            {productCard.showRating && (
-                                                <div className="mt-1 flex items-center gap-1" style={{ color: colors.ratingColor }}>
-                                                    {[1, 2, 3, 4, 5].map(star => <Star key={star} size={12} fill="currentColor" />)}
-                                                    {productCard.showReviews && <span className="ml-1 text-[10px] opacity-60">(12)</span>}
-                                                </div>
-                                            )}
-                                            <div className="mt-2 flex items-center justify-between">
-                                                <span className={`${priceSize} font-black`} style={{ color: productCard.priceColor || colors.priceColor }}>৳ {product.price}</span>
-                                                {storewideDiscount > 0 && productCard.showDiscountBadge !== false && (
-                                                    <span className="rounded-full px-2 py-1 text-xs font-bold" style={{ backgroundColor: colors.saleBadgeBg, color: colors.saleBadgeText }}>
-                                                        -{storewideDiscount}%
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {productCard.showStock !== false && <p className="mt-2 text-[11px] font-bold text-emerald-700">In stock</p>}
-                                            {productCard.showSku && <p className="mt-1 text-[10px] font-bold uppercase tracking-wide opacity-50">SKU SAMPLE-{product.price}</p>}
-                                            {productCard.showQuickBuy && (
-                                                <button className="mt-3 w-full border px-3 py-2 text-xs font-black" style={productButtonStyle}>
-                                                    Quick buy
-                                                </button>
-                                            )}
-                                        </article>
-                                    ))}
-                                </div>
-                            </section>
-                            </PreviewTarget>
-
-	                            <PreviewTarget id="sections" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement} toolbar={sectionToolbar}>
-	                                <section className={`rounded-lg border border-black/5 p-4 ${highlight(['sections'])}`}>
-	                                    <h3 className="mb-3 text-sm font-black">Homepage sections</h3>
-	                                    {previewInteractionsEnabled && <AddSectionInline
-	                                        index={0}
-	                                        onAddSection={onAddSection}
-	                                        activeIndex={addMenuIndex}
-	                                        onToggle={setAddMenuIndex}
-	                                        dragOverIndex={dragOverIndex}
-	                                        onDragOverIndex={setDragOverIndex}
-	                                        onDropSection={handleDropSection}
-	                                    />}
-                                    {enabledSections.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {enabledSections.map(({ section, index }) => {
-                                                const locked = isSectionLocked(section);
-                                                const sectionId = `section-${index}`;
-                                                const sectionText = section.settings?.text || '';
-
-                                                return (
-                                                    <div key={section._id || `${section.type}-${index}`}>
-                                                        <PreviewTarget
-                                                            id={sectionId}
-                                                            activeElement={activeElement}
-                                                            hoveredElement={hoveredElement}
-                                                            onSelectElement={onSelectElement}
-                                                            onHoverElement={onHoverElement}
-                                                            toolbar={sectionToolbar}
-	                                                            >
-	                                                            <article
-	                                                                draggable={previewInteractionsEnabled && !locked}
-	                                                                onDragStart={event => {
-	                                                                    event.dataTransfer.setData('text/plain', String(index));
-	                                                                    event.dataTransfer.effectAllowed = 'move';
-                                                                }}
-	                                                                className={`group relative rounded-lg border p-4 transition ${locked ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white hover:border-indigo-200'}`}
-	                                                                style={{ backgroundColor: section.type === 'Hero' ? colors.accentBg : undefined }}
-	                                                            >
-	                                                                {previewInteractionsEnabled && <SectionHoverActions
-	                                                                    locked={locked}
-	                                                                    onEdit={() => onSelectElement(sectionId)}
-	                                                                    onDuplicate={() => onDuplicateSection(index)}
-                                                                    onHide={() => onHideSection(index)}
-	                                                                    onMoveUp={() => onMoveSection(index, -1)}
-	                                                                    onMoveDown={() => onMoveSection(index, 1)}
-	                                                                    onDelete={() => onRemoveSection(index)}
-	                                                                />}
-                                                                <div className="mb-2 flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-slate-400">
-                                                                    <GripVertical size={14} className={locked ? 'text-amber-500' : 'text-slate-400'} />
-                                                                    {getSectionDisplayLabel(section)}
-                                                                    {locked && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">Locked</span>}
-                                                                </div>
-                                                                <InlineEditable
-                                                                    value={section.title || ''}
-                                                                    fallback={getSectionDisplayLabel(section)}
-                                                                    onChange={value => onSectionChange(index, 'title', value)}
-                                                                    onSelect={() => onSelectElement(sectionId)}
-                                                                    multiline
-                                                                    className="min-h-[2.4em] text-lg font-black"
-	                                                                    style={{ fontFamily: typography.headingFont, fontWeight: typography.headingWeight }}
-	                                                                    ariaLabel="Section heading"
-	                                                                    disabled={!previewInteractionsEnabled}
-	                                                                />
-                                                                {['TextBlock', 'Newsletter', 'Reviews', 'BannerGrid', 'CategoryList'].includes(section.type) && (
-                                                                    <InlineEditable
-                                                                        value={sectionText}
-                                                                        fallback="Add supporting text for this section."
-                                                                        onChange={value => onSectionChange(index, 'settings.text', value)}
-                                                                        onSelect={() => onSelectElement(sectionId)}
-                                                                        multiline
-	                                                                        className="mt-2 min-h-[3em] text-sm text-slate-500"
-	                                                                        ariaLabel="Section text"
-	                                                                        disabled={!previewInteractionsEnabled}
-	                                                                    />
-                                                                )}
-                                                                {section.type === 'FeaturedProducts' && (
-                                                                    <div className="mt-3 grid grid-cols-3 gap-2">
-                                                                        {sampleProducts.map(product => (
-                                                                            <div key={product.title} className="rounded-lg border border-slate-100 bg-slate-50 p-2 text-xs font-bold text-slate-600">
-                                                                                <div className="mb-2 aspect-square rounded bg-white" />
-                                                                                {product.title}
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                {section.type === 'Hero' && (
-                                                                    <div className="mt-3 rounded-lg bg-white/70 px-3 py-2 text-sm font-semibold text-slate-600">
-                                                                        Hero-style promotional section
-                                                                    </div>
-                                                                )}
-                                                            </article>
-                                                        </PreviewTarget>
-	                                                        {previewInteractionsEnabled && <AddSectionInline
-	                                                            index={index + 1}
-	                                                            onAddSection={onAddSection}
-	                                                            activeIndex={addMenuIndex}
-                                                            onToggle={setAddMenuIndex}
-                                                            dragOverIndex={dragOverIndex}
-	                                                            onDragOverIndex={setDragOverIndex}
-	                                                            onDropSection={handleDropSection}
-	                                                        />}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-500">No custom homepage sections yet. Use Add Section to build the homepage visually.</p>
-                                    )}
-                                </section>
-                            </PreviewTarget>
-
-                            <PreviewTarget id="footer" activeElement={activeElement} hoveredElement={hoveredElement} onSelectElement={onSelectElement} onHoverElement={onHoverElement}>
-                                <footer
-                                    className={`rounded-lg border border-black/5 p-4 text-xs ${highlight(['footer', 'policies'])}`}
-                                    style={{ backgroundColor: colors.footerBackground, color: colors.footerText }}
-                                >
-                                    {theme.footer?.text || 'Footer text and policy links will appear here.'}
-                                    <div className="mt-2 flex flex-wrap gap-2" style={{ color: colors.footerLink }}>
-                                        {(theme.footer?.links || []).filter(item => item.label).slice(0, 3).map((item, index) => (
-                                            <span key={`${item.label}-${index}`}>{item.label}</span>
-                                        ))}
-                                    </div>
-                                </footer>
-                            </PreviewTarget>
-                        </div>
+                    <div style={getReferenceThemeStyle(theme)}>
+                        <ReferenceStorefrontPage
+                            theme={theme}
+                            shopName={shopName || 'Vendor Store'}
+                            subdomain="preview"
+                            cartCount={3}
+                            storewideDiscount={storewideDiscount}
+                            products={products}
+                            categories={REFERENCE_SAMPLE_CATEGORIES}
+                            sectionProducts={{}}
+                            pagination={{ page: 1, pages: 10 }}
+                            filters={{ category: 'All', sort: 'newest', page: 1 }}
+                            priceInput={{ min: '', max: '' }}
+                            catalogSearch=""
+                            preview
+                        />
                     </div>
                 </div>
             </div>
@@ -1407,6 +733,7 @@ const StoreBuilder = () => {
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [shopName, setShopName] = useState('');
     const [theme, setTheme] = useState(defaultTheme);
+    const [availableProducts, setAvailableProducts] = useState([]);
     const [customDomain, setCustomDomain] = useState({ domain: '' });
     const [storewideDiscount, setStorewideDiscount] = useState(0);
     const [activeGroup, setActiveGroup] = useState('brand');
@@ -1476,13 +803,17 @@ const StoreBuilder = () => {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const { data } = await API.get('/store-builder/admin');
+                const [{ data }, productsResponse] = await Promise.all([
+                    API.get('/store-builder/admin'),
+                    API.get('/admin/products', { params: { limit: 100, status: 'Published' } }).catch(() => ({ data: { data: [] } }))
+                ]);
                 const shop = data.data || {};
                 const nextTheme = mergeTheme(defaultTheme, shop.theme || {});
                 const nextDomain = shop.customDomain || { domain: '' };
                 const nextDiscount = shop.storewideDiscount || 0;
                 setShopName(shop.shopName || '');
                 setTheme(nextTheme);
+                setAvailableProducts(productsResponse.data?.data || []);
                 setCustomDomain(nextDomain);
                 setStorewideDiscount(nextDiscount);
                 const loadedSnapshot = stableStringify({ theme: nextTheme, customDomain: nextDomain, storewideDiscount: Number(nextDiscount) || 0 });
@@ -1577,6 +908,40 @@ const StoreBuilder = () => {
         }));
     };
 
+    const updateHomepageSectionMobileSetting = (index, key, value) => {
+        setTheme(prev => ({
+            ...prev,
+            homepageSections: (prev.homepageSections || []).map((section, i) => (
+                i === index && !isHomepageSectionLocked(section)
+                    ? { ...section, mobileSettings: { ...(section.mobileSettings || {}), [key]: value } }
+                    : section
+            ))
+        }));
+    };
+
+    const updateFeaturedProductsSelection = (index, productId, checked) => {
+        setTheme(prev => ({
+            ...prev,
+            homepageSections: (prev.homepageSections || []).map((section, i) => {
+                if (i !== index || isHomepageSectionLocked(section)) return section;
+                const currentIds = section.settings?.productIds || section.settings?.source?.productIds || [];
+                const nextIds = checked
+                    ? [...new Set([...currentIds, productId])]
+                    : currentIds.filter(id => id !== productId);
+
+                return {
+                    ...section,
+                    settings: {
+                        ...(section.settings || {}),
+                        productIds: nextIds,
+                        source: { type: 'manual', productIds: nextIds }
+                    },
+                    source: { type: 'manual', productIds: nextIds }
+                };
+            })
+        }));
+    };
+
     const updateHomepageSectionFromPreview = (index, field, value) => {
         if (field.startsWith('settings.')) {
             updateHomepageSectionSetting(index, field.replace('settings.', ''), value);
@@ -1586,7 +951,7 @@ const StoreBuilder = () => {
         updateHomepageSection(index, field, value);
     };
 
-    const normalizeSectionOrder = (sections) => sections.map((section, index) => ({ ...section, sortOrder: index }));
+    const normalizeSectionOrder = (sections) => normalizeHomepageSections(sections).map((section, index) => ({ ...section, sortOrder: index }));
 
     const moveHomepageSection = (index, direction) => {
         setTheme(prev => {
@@ -1607,8 +972,11 @@ const StoreBuilder = () => {
             sections.splice(index + 1, 0, {
                 ...source,
                 _id: undefined,
+                id: `${source.type || 'section'}-${Date.now()}`,
                 title: `${source.title || source.type} copy`,
                 settings: { ...(source.settings || {}) },
+                mobileSettings: { ...(source.mobileSettings || {}) },
+                source: { ...(source.source || {}) },
                 sortOrder: index + 1
             });
             return { ...prev, homepageSections: normalizeSectionOrder(sections) };
@@ -1642,11 +1010,14 @@ const StoreBuilder = () => {
                 : Math.max(0, Math.min(Number(insertIndex) || 0, sections.length));
 
             sections.splice(targetIndex, 0, {
+                id: `${safePreset.type || 'section'}-${Date.now()}`,
                 type: safePreset.type || 'FeaturedProducts',
                 title: safePreset.title || safePreset.label || 'New section',
                 isEnabled: true,
                 sortOrder: targetIndex,
-                settings: { ...(safePreset.settings || {}) }
+                settings: { ...(safePreset.settings || {}) },
+                mobileSettings: { ...(safePreset.mobileSettings || {}) },
+                source: { ...(safePreset.source || {}) }
             });
 
             return { ...prev, homepageSections: normalizeSectionOrder(sections) };
@@ -1811,6 +1182,7 @@ const StoreBuilder = () => {
             navigation: prev.navigation,
             footer: prev.footer,
             policies: prev.policies,
+            allProducts: prev.allProducts,
             homepageSections: prev.homepageSections,
             checkoutBranding: {
                 ...defaultTheme.checkoutBranding,
@@ -2186,6 +1558,32 @@ const StoreBuilder = () => {
                 );
             case 'products':
                 return (
+                    <div className="space-y-4">
+                    <BuilderCard title="All Products" description="This fixed storefront section always appears after flexible homepage sections." icon={ShoppingBag}>
+                        <BuilderToggle label="Show All Products section" help="Keep this on unless the store is temporarily not selling products." checked={theme.allProducts?.isEnabled !== false} onChange={() => setThemeGroup('allProducts', 'isEnabled', theme.allProducts?.isEnabled === false)} />
+                        <BuilderInput label="Section title" value={theme.allProducts?.title || ''} onChange={e => setThemeGroup('allProducts', 'title', e.target.value)} placeholder="Shop products" />
+                        <BuilderInput label="Section subtitle" value={theme.allProducts?.subtitle || ''} onChange={e => setThemeGroup('allProducts', 'subtitle', e.target.value)} placeholder="Optional helper text above the product catalog" />
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <BuilderSelect label="Desktop columns" value={theme.allProducts?.desktopColumns || theme.layout?.productColumnsDesktop || 3} onChange={e => {
+                                setThemeGroup('allProducts', 'desktopColumns', Number(e.target.value));
+                                setThemeGroup('layout', 'productColumnsDesktop', Number(e.target.value));
+                            }}>
+                                <option value={2}>2 columns</option><option value={3}>3 columns</option><option value={4}>4 columns</option><option value={5}>5 columns</option>
+                            </BuilderSelect>
+                            <BuilderSelect label="Tablet columns" value={theme.allProducts?.tabletColumns || 2} onChange={e => setThemeGroup('allProducts', 'tabletColumns', Number(e.target.value))}>
+                                <option value={1}>1 column</option><option value={2}>2 columns</option><option value={3}>3 columns</option><option value={4}>4 columns</option>
+                            </BuilderSelect>
+                            <BuilderSelect label="Mobile columns" value={theme.allProducts?.mobileColumns || theme.layout?.productColumnsMobile || 2} onChange={e => {
+                                setThemeGroup('allProducts', 'mobileColumns', Number(e.target.value));
+                                setThemeGroup('layout', 'productColumnsMobile', Number(e.target.value));
+                            }}>
+                                <option value={1}>1 column</option><option value={2}>2 columns</option>
+                            </BuilderSelect>
+                        </div>
+                        <BuilderSelect label="Section spacing" value={theme.allProducts?.spacing || theme.layout?.contentSpacing || 'Comfortable'} onChange={e => setThemeGroup('allProducts', 'spacing', e.target.value)}>
+                            <option>Compact</option><option>Comfortable</option><option>Spacious</option>
+                        </BuilderSelect>
+                    </BuilderCard>
                     <BuilderCard title="Product cards" description="Control how products appear in grids across desktop and mobile." icon={ShoppingBag}>
                         <BuilderSelect label="Card style" value={theme.productCard?.style || 'Modern'} onChange={e => setThemeGroup('productCard', 'style', e.target.value)} help="Minimal is quieter, Modern is balanced, Premium adds stronger depth.">
                             <option>Minimal</option><option>Modern</option><option>Premium</option>
@@ -2268,18 +1666,27 @@ const StoreBuilder = () => {
                             </FieldShell>
                         </div>
                     </BuilderCard>
+                    </div>
                 );
             case 'sections':
                 return (
                     <BuilderCard
                         title="Homepage sections"
-                        description="Control which homepage blocks are visible and their order."
+                        description="Navbar, Hero, All Products, and Footer are fixed. Add flexible sections between Hero and All Products."
                         icon={LayoutTemplate}
                         actions={<BuilderButton type="button" variant="secondary" onClick={() => addHomepageSection()}><Plus size={16} /> Add section</BuilderButton>}
                     >
+                        <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-600 sm:grid-cols-4">
+                            {['Navbar', 'Hero Banner', 'All Products', 'Footer'].map(label => (
+                                <div key={label} className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2">
+                                    <Lock size={13} className="text-amber-600" />
+                                    {label}
+                                </div>
+                            ))}
+                        </div>
                         {(theme.homepageSections || []).length === 0 && (
                             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                                No custom homepage sections yet. Add a section for featured products, collections, or banners.
+                                No flexible homepage sections yet. Add a banner, featured products, reviews, or promotional content block.
                             </div>
                         )}
                         {(theme.homepageSections || []).map((section, index) => {
@@ -2321,10 +1728,66 @@ const StoreBuilder = () => {
                                 </div>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <BuilderSelect label="Section type" value={section.type || 'FeaturedProducts'} onChange={e => updateHomepageSection(index, 'type', e.target.value)} disabled={locked}>
-                                        <option>Hero</option><option>FeaturedProducts</option><option>Collection</option><option>TextBlock</option><option>Newsletter</option><option>Reviews</option><option>BannerGrid</option><option>CategoryList</option>
+                                        <option value="FeaturedProducts">Featured Products</option>
+                                        <option value="Banner">Banner</option>
+                                        <option value="Reviews">Customer Reviews</option>
+                                        <option value="TextBlock">Promotional Content</option>
+                                        <option value="Newsletter">Newsletter</option>
+                                        <option value="CategoryList">Category List</option>
                                     </BuilderSelect>
                                     <BuilderInput label="Section title" value={section.title || ''} onChange={e => updateHomepageSection(index, 'title', e.target.value)} disabled={locked} />
                                 </div>
+                                {section.type === 'Banner' && (
+                                    <div className="mt-3 grid grid-cols-1 gap-3">
+                                        <BuilderInput label="Desktop image URL" value={section.settings?.desktopImage || ''} onChange={e => updateHomepageSectionSetting(index, 'desktopImage', e.target.value)} disabled={locked} help="Wide image for laptop and desktop shoppers." />
+                                        <BuilderInput label="Mobile image URL" value={section.settings?.mobileImage || section.mobileSettings?.image || ''} onChange={e => {
+                                            updateHomepageSectionSetting(index, 'mobileImage', e.target.value);
+                                            updateHomepageSectionMobileSetting(index, 'image', e.target.value);
+                                        }} disabled={locked} help="Vertical or square image for phones. Falls back to desktop image when empty." />
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <BuilderInput label="Banner headline" value={section.settings?.title || ''} onChange={e => updateHomepageSectionSetting(index, 'title', e.target.value)} disabled={locked} />
+                                            <BuilderInput label="Subtitle" value={section.settings?.subtitle || ''} onChange={e => updateHomepageSectionSetting(index, 'subtitle', e.target.value)} disabled={locked} />
+                                            <BuilderInput label="Button text" value={section.settings?.buttonText || ''} onChange={e => updateHomepageSectionSetting(index, 'buttonText', e.target.value)} disabled={locked} />
+                                            <BuilderInput label="Button link" value={section.settings?.buttonLink || ''} onChange={e => updateHomepageSectionSetting(index, 'buttonLink', e.target.value)} disabled={locked} />
+                                        </div>
+                                    </div>
+                                )}
+                                {section.type === 'FeaturedProducts' && (
+                                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                        <div className="mb-3 flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-900">Manual product selection</p>
+                                                <p className="mt-1 text-xs text-slate-500">Collection and automatic rule sources can use this same source structure later.</p>
+                                            </div>
+                                            <span className="rounded-full bg-white px-2 py-1 text-[11px] font-bold text-slate-500">
+                                                {(section.settings?.productIds || []).length} selected
+                                            </span>
+                                        </div>
+                                        <div className="max-h-56 space-y-2 overflow-y-auto">
+                                            {availableProducts.length === 0 ? (
+                                                <p className="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-xs text-slate-500">No published products available yet.</p>
+                                            ) : availableProducts.map(product => {
+                                                const productId = product._id;
+                                                const selected = (section.settings?.productIds || []).includes(productId);
+                                                return (
+                                                    <label key={productId} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-semibold text-slate-800">{product.title}</span>
+                                                            <span className="text-xs text-slate-500">{product.category || 'No category'} · ৳ {product.pricing?.sellingPrice || 0}</span>
+                                                        </span>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selected}
+                                                            disabled={locked}
+                                                            onChange={e => updateFeaturedProductsSelection(index, productId, e.target.checked)}
+                                                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                        />
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                                 {['TextBlock', 'Newsletter', 'Reviews'].includes(section.type) && (
                                     <div className="mt-3">
                                         <BuilderTextarea
@@ -2338,6 +1801,15 @@ const StoreBuilder = () => {
                                 )}
                                 <div className="mt-3">
                                     <BuilderToggle label="Visible on storefront" checked={section.isEnabled !== false} onChange={() => updateHomepageSection(index, 'isEnabled', section.isEnabled === false)} disabled={locked} />
+                                </div>
+                                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <BuilderToggle label="Visible on mobile" checked={section.mobileSettings?.isVisible !== false} onChange={() => updateHomepageSectionMobileSetting(index, 'isVisible', section.mobileSettings?.isVisible === false)} disabled={locked} />
+                                    {section.type === 'FeaturedProducts' && (
+                                        <BuilderSelect label="Mobile columns" value={section.mobileSettings?.columns || 2} onChange={e => updateHomepageSectionMobileSetting(index, 'columns', Number(e.target.value))} disabled={locked}>
+                                            <option value={1}>1 column</option>
+                                            <option value={2}>2 columns</option>
+                                        </BuilderSelect>
+                                    )}
                                 </div>
                                 <p className="mt-2 text-xs text-slate-500">
                                     {locked
@@ -2702,6 +2174,7 @@ const StoreBuilder = () => {
 	                            onReorderSection={reorderHomepageSection}
 	                            isSectionLocked={isHomepageSectionLocked}
 	                            device={device}
+                                availableProducts={availableProducts}
 	                        />
                     </section>
                 </main>

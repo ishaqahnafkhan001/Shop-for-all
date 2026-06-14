@@ -17,7 +17,6 @@ const ShopSettings = lazy(() => import('./pages/dashboard/settings/ShopSettings'
 const ShippingSettings = lazy(() => import('./pages/dashboard/ShippingSettings/ShippingSettings.jsx'));
 const EditProduct = lazy(() => import('./pages/dashboard/products/EditProduct'));
 const CustomerList = lazy(() => import("./pages/dashboard/customers/CustomerList.jsx"));
-const PromotionalBanner = lazy(() => import('./pages/dashboard/Promotional Banner/promotionalBanner.jsx'));
 const StoreBuilder = lazy(() => import('./pages/dashboard/StoreBuilder.jsx'));
 const Promotions = lazy(() => import('./pages/dashboard/Promotions.jsx'));
 const CatalogTools = lazy(() => import('./pages/dashboard/CatalogTools.jsx'));
@@ -83,7 +82,7 @@ function App() {
                         <Route path="catalog-tools" element={withSuspense(<CatalogTools />)} />
                         <Route path="orders" element={withSuspense(<OrderList />)} />
                         <Route path="promotions" element={withSuspense(<Promotions />)} />
-                        <Route path="banners" element={withSuspense(<PromotionalBanner />)} />
+                        <Route path="banners" element={<Navigate to="/dashboard/store-builder" replace />} />
                         <Route path="customers" element={withSuspense(<CustomerList />)} />
                         <Route path="analytics" element={withSuspense(<AdvancedAnalytics />)} />
                         <Route path="shipping" element={withSuspense(<ShippingSettings />)} />

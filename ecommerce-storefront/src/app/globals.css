@@ -159,9 +159,17 @@ textarea:focus-visible {
   padding-block: 40px;
 }
 
+.sf-section-block {
+  margin-top: 32px;
+}
+
 @media (min-width: 768px) {
   .sf-section {
     padding-block: 56px;
+  }
+
+  .sf-section-block {
+    margin-top: 48px;
   }
 }
 

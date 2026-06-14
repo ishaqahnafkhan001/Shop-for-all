@@ -27,8 +27,8 @@ const helpTextByPath = [
     },
     {
         match: '/dashboard/banners',
-        title: 'Banners',
-        body: 'Upload one desktop image and one mobile image for each banner. Use short text in the image and link it to the right product or collection.'
+        title: 'Store Builder',
+        body: 'Banners are now managed inside Store Builder as flexible homepage sections.'
     },
     {
         match: '/dashboard/store-builder',

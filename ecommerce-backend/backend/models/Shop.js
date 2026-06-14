@@ -10,15 +10,18 @@ const linkSchema = new mongoose.Schema({
 }, { _id: false });
 
 const homepageSectionSchema = new mongoose.Schema({
+    id: { type: String, trim: true, maxlength: 80 },
     type: {
         type: String,
-        enum: ['Hero', 'FeaturedProducts', 'Collection', 'TextBlock', 'Newsletter', 'Reviews', 'BannerGrid', 'CategoryList'],
+        enum: ['Hero', 'FeaturedProducts', 'Collection', 'TextBlock', 'Newsletter', 'Reviews', 'BannerGrid', 'CategoryList', 'Banner', 'PromoBlock', 'BrandShowcase', 'CollectionShowcase'],
         default: 'FeaturedProducts'
     },
     title: { type: String, trim: true, maxlength: 120 },
     isEnabled: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
-    settings: { type: mongoose.Schema.Types.Mixed, default: {} }
+    settings: { type: mongoose.Schema.Types.Mixed, default: {} },
+    mobileSettings: { type: mongoose.Schema.Types.Mixed, default: {} },
+    source: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { _id: true });
 
 const shopSchema = new mongoose.Schema({
@@ -285,9 +288,31 @@ const shopSchema = new mongoose.Schema({
         homepageSections: {
             type: [homepageSectionSchema],
             default: [
-                { type: 'Hero', title: 'Featured offers', sortOrder: 0, isEnabled: true },
-                { type: 'FeaturedProducts', title: 'Latest products', sortOrder: 1, isEnabled: true }
+                {
+                    id: 'featured-products',
+                    type: 'FeaturedProducts',
+                    title: 'Featured products',
+                    sortOrder: 0,
+                    isEnabled: true,
+                    settings: { source: { type: 'manual', productIds: [] }, productIds: [] }
+                }
             ]
+        },
+        allProducts: {
+            title: { type: String, default: 'Shop products' },
+            subtitle: { type: String, default: '' },
+            isEnabled: { type: Boolean, default: true },
+            desktopColumns: { type: Number, default: 3, min: 2, max: 5 },
+            tabletColumns: { type: Number, default: 2, min: 1, max: 4 },
+            mobileColumns: { type: Number, default: 2, min: 1, max: 2 },
+            spacing: {
+                type: String,
+                enum: ['Compact', 'Comfortable', 'Spacious'],
+                default: 'Comfortable'
+            }
+        },
+        migrations: {
+            bannerSectionsV1: { type: Boolean, default: false }
         },
         navigation: {
             type: [linkSchema],

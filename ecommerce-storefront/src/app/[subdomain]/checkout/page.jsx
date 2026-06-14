@@ -7,6 +7,7 @@ import {
     Truck,
     ArrowLeft,
     CheckCircle,
+    CreditCard,
     MapPin,
     Phone,
     User,
@@ -626,6 +627,47 @@ export default function CheckoutPage({ params }) {
 
                             </div>
 
+                        </div>
+
+                        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                            <h2 className="mb-5 text-2xl font-black text-slate-950">
+                                Delivery Method
+                            </h2>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className={`rounded-2xl border p-4 ${isDhaka ? 'border-[var(--sf-accent)] bg-[var(--sf-accent-bg)]' : 'border-slate-200 bg-slate-50'}`}>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="text-sm font-black text-slate-950">Inside Dhaka</span>
+                                        <span className="text-sm font-black text-[var(--sf-accent)]">৳ 80</span>
+                                    </div>
+                                    <p className="mt-2 text-xs font-semibold text-slate-500">Same-city delivery estimate.</p>
+                                </div>
+                                <div className={`rounded-2xl border p-4 ${!isDhaka ? 'border-[var(--sf-accent)] bg-[var(--sf-accent-bg)]' : 'border-slate-200 bg-slate-50'}`}>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="text-sm font-black text-slate-950">Outside Dhaka</span>
+                                        <span className="text-sm font-black text-[var(--sf-accent)]">৳ 120</span>
+                                    </div>
+                                    <p className="mt-2 text-xs font-semibold text-slate-500">Nationwide delivery estimate.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                            <h2 className="mb-5 text-2xl font-black text-slate-950">
+                                Payment Method
+                            </h2>
+                            <div className="rounded-2xl border border-[var(--sf-accent)] bg-[var(--sf-accent-bg)] p-4">
+                                <div className="flex items-start gap-3">
+                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--sf-accent)] shadow-sm">
+                                        <CreditCard size={19} />
+                                    </span>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-950">Cash on Delivery</p>
+                                        <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                                            Pay securely when your order arrives. Online payment providers can be enabled later from the platform.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>

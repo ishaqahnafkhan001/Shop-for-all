@@ -1,5 +1,6 @@
 const Shop = require('../models/Shop');
 const cache = require('../services/cacheService');
+const { ensureThemeSectionArchitecture, normalizeDynamicSections } = require('../services/themeSectionService');
 
 const allowedThemeKeys = [
     'version',
@@ -17,6 +18,8 @@ const allowedThemeKeys = [
     'mobile',
     'paymentSettings',
     'homepageSections',
+    'allProducts',
+    'migrations',
     'navigation',
     'footer',
     'policies'
@@ -37,6 +40,8 @@ exports.getStoreBuilderSettings = async (req, res) => {
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
+        await ensureThemeSectionArchitecture(shop);
+
         res.status(200).json({ success: true, data: shop });
     } catch (err) {
         console.error('Get store builder settings error:', err);
@@ -49,6 +54,9 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         const { theme = {}, customDomain, storewideDiscount } = req.body;
         const update = {};
         const cleanTheme = pickThemePayload(theme);
+        if (cleanTheme.homepageSections !== undefined) {
+            cleanTheme.homepageSections = normalizeDynamicSections(cleanTheme.homepageSections);
+        }
 
         for (const [key, value] of Object.entries(cleanTheme)) {
             update[`theme.${key}`] = value;
@@ -71,6 +79,8 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         ).select('shopName subdomain theme customDomain plan featureFlags storewideDiscount');
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+
+        await ensureThemeSectionArchitecture(shop);
 
         await Promise.all([
             cache.del(`storefront:settings:${req.tenantId}`),
@@ -133,6 +143,8 @@ exports.getPublicStorefrontSettings = async (req, res) => {
             .lean();
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+
+        await ensureThemeSectionArchitecture(shop);
 
         const response = { success: true, data: shop };
         await cache.set(cacheKey, response, 60);

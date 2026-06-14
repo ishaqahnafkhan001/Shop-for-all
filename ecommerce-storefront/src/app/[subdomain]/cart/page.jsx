@@ -7,6 +7,7 @@ import Image from 'next/image';
 
 export default function CartPage() {
     const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart();
+    const [promoCode, setPromoCode] = React.useState('');
 
     const subtotal = cartTotal;
     const shipping = cartItems.length > 0 ? 60 : 0;
@@ -43,7 +44,7 @@ export default function CartPage() {
     }
 
     return (
-        <div className="sf-page">
+        <div className="sf-page pb-28 lg:pb-0">
         <div className="sf-shell-wide py-8 sm:py-10">
             <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex items-center">
@@ -200,6 +201,24 @@ export default function CartPage() {
                             )}
                         </div>
 
+                        <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                            <label className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                                Promo code
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={promoCode}
+                                    onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                                    placeholder="SAVE10"
+                                    className="sf-field min-w-0 flex-1 rounded-xl px-3 py-2.5 text-sm uppercase"
+                                />
+                                <button type="button" className="rounded-xl bg-slate-950 px-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800">
+                                    Apply
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="mb-6 flex items-center justify-between border-t border-slate-200 pt-5">
                             <span className="text-lg font-black text-slate-950">Total</span>
                             <span className="text-3xl font-black text-slate-950">৳ {total}</span>
@@ -207,6 +226,10 @@ export default function CartPage() {
 
                         <Link href="/checkout" className="sf-btn sf-btn-primary w-full">
                             Proceed to Checkout
+                        </Link>
+
+                        <Link href="/" className="mt-4 flex justify-center text-sm font-black text-slate-500 transition hover:text-[var(--sf-accent)]">
+                            Continue Shopping
                         </Link>
 
                         {/* Trust Info */}
@@ -222,6 +245,18 @@ export default function CartPage() {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+            <div className="mx-auto flex max-w-xl items-center gap-3">
+                <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Total</p>
+                    <p className="text-xl font-black text-slate-950">৳ {total}</p>
+                </div>
+                <Link href="/checkout" className="sf-btn sf-btn-primary min-h-0 rounded-full px-6 py-3 text-sm">
+                    Checkout
+                </Link>
             </div>
         </div>
         </div>

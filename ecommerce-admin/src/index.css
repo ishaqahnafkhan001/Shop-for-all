@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../ecommerce-storefront/src/components/storefront";
 
 :root {
     --admin-bg: #f8fafc;

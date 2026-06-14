@@ -28,6 +28,7 @@ export const useShopData = (subdomain, filters) => {
         products: [],
         categories: [],
         banners: [], // ✨ 1. Added banners to the initial state
+        sectionProducts: {},
         pagination: { page: 1, pages: 1, total: 0 },
         loading: true,
         error: null
@@ -55,11 +56,17 @@ export const useShopData = (subdomain, filters) => {
 
                 const bootstrapData = bootstrapRes.data?.data || {};
                 const rawProducts = bootstrapData.products || [];
+                const rawSectionProducts = bootstrapData.sectionProducts || {};
+                const sectionProducts = Object.entries(rawSectionProducts).reduce((acc, [sectionId, items]) => {
+                    acc[sectionId] = Array.isArray(items) ? items.map(normalizeProduct) : [];
+                    return acc;
+                }, {});
 
                 setData(prev => ({
                     ...prev,
                     shop: bootstrapData.shop || null,
                     banners: bootstrapData.banners || [],
+                    sectionProducts,
                     products: rawProducts.map(normalizeProduct),
                     categories: bootstrapData.categories?.filter(Boolean) || [],
                     pagination: bootstrapData.pagination || { page: 1, pages: 1 },

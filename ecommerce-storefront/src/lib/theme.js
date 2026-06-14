@@ -33,9 +33,9 @@ export const FALLBACK_THEME = {
         saleBadgeBg: '#dc2626',
         saleBadgeText: '#ffffff',
         ratingColor: '#f59e0b',
-        footerBackground: '#0f172a',
-        footerText: '#ffffff',
-        footerLink: '#99f6e4',
+        footerBackground: '#ffffff',
+        footerText: '#64748b',
+        footerLink: '#0f172a',
     },
     header: {
         logoPosition: 'Left',
@@ -84,7 +84,7 @@ export const FALLBACK_THEME = {
         showSku: false,
         showDiscountBadge: true,
         showQuickBuy: true,
-        showWishlist: false,
+        showWishlist: true,
         borderRadius: 'Rounded',
         shadow: 'Soft',
         titleSize: 'Medium',
@@ -118,9 +118,28 @@ export const FALLBACK_THEME = {
         },
     },
     homepageSections: [
-        { type: 'Hero', title: 'Featured offers', sortOrder: 0, isEnabled: true },
-        { type: 'FeaturedProducts', title: 'Latest products', sortOrder: 1, isEnabled: true },
+        {
+            id: 'featured-products',
+            type: 'FeaturedProducts',
+            title: 'Featured Products',
+            sortOrder: 0,
+            isEnabled: true,
+            settings: { source: { type: 'manual', productIds: [] }, productIds: [] },
+            mobileSettings: { columns: 2, isVisible: true },
+        },
     ],
+    allProducts: {
+        title: 'All Products',
+        subtitle: "Browse this shop's latest catalog",
+        isEnabled: true,
+        desktopColumns: 3,
+        tabletColumns: 2,
+        mobileColumns: 2,
+        spacing: 'Comfortable',
+    },
+    migrations: {
+        bannerSectionsV1: false,
+    },
     navigation: [
         { label: 'Shop', url: '/', sortOrder: 0, children: [], megaMenu: false },
         { label: 'Track Order', url: '/track', sortOrder: 1, children: [], megaMenu: false },
@@ -154,6 +173,48 @@ const mergeObject = (base, incoming) => ({
     ...(incoming || {}),
 });
 
+const normalizeHomepageSections = (sections = []) => sections
+    .filter(section => {
+        if (!section || section.type === 'Hero') return false;
+        const settings = section.settings || {};
+        const source = settings.source || section.source || {};
+        const productIds = settings.productIds || source.productIds || [];
+        return !(['FeaturedProducts', 'Collection'].includes(section.type) && !source.type && (!Array.isArray(productIds) || productIds.length === 0));
+    })
+    .map((section, index) => {
+        const type = section.type === 'BannerGrid' ? 'Banner' : section.type;
+        const settings = section.settings || {};
+        const source = settings.source || section.source || {};
+        const productIds = settings.productIds || source.productIds || [];
+
+        return {
+            ...section,
+            id: section.id || section._id || `${type || 'section'}-${index}`,
+            type,
+            sortOrder: Number.isFinite(Number(section.sortOrder)) ? Number(section.sortOrder) : index,
+            settings: type === 'FeaturedProducts'
+                ? {
+                    ...settings,
+                    productIds,
+                    source: { type: source.type || 'manual', productIds },
+                }
+                : settings,
+            mobileSettings: section.mobileSettings || {},
+            source: type === 'FeaturedProducts'
+                ? { type: source.type || 'manual', productIds }
+                : (section.source || {}),
+        };
+    })
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    .map((section, index) => ({ ...section, sortOrder: index }));
+
+const getLegacyAllProductsSection = (sections = []) => sections.find(section => {
+    const settings = section?.settings || {};
+    const source = settings.source || section?.source || {};
+    const productIds = settings.productIds || source.productIds || [];
+    return ['FeaturedProducts', 'Collection'].includes(section?.type) && !source.type && (!Array.isArray(productIds) || productIds.length === 0);
+});
+
 export const normalizeTheme = (theme = {}) => ({
     ...FALLBACK_THEME,
     ...theme,
@@ -166,6 +227,16 @@ export const normalizeTheme = (theme = {}) => ({
     productCard: mergeObject(FALLBACK_THEME.productCard, theme.productCard),
     checkoutBranding: mergeObject(FALLBACK_THEME.checkoutBranding, theme.checkoutBranding),
     mobile: mergeObject(FALLBACK_THEME.mobile, theme.mobile),
+    allProducts: mergeObject(
+        FALLBACK_THEME.allProducts,
+        {
+            ...(getLegacyAllProductsSection(theme.homepageSections || [])?.title
+                ? { title: getLegacyAllProductsSection(theme.homepageSections || []).title }
+                : {}),
+            ...(theme.allProducts || {})
+        }
+    ),
+    migrations: mergeObject(FALLBACK_THEME.migrations, theme.migrations),
     paymentSettings: {
         ...FALLBACK_THEME.paymentSettings,
         ...(theme.paymentSettings || {}),
@@ -176,9 +247,9 @@ export const normalizeTheme = (theme = {}) => ({
     },
     footer: mergeObject(FALLBACK_THEME.footer, theme.footer),
     policies: mergeObject(FALLBACK_THEME.policies, theme.policies),
-    homepageSections: Array.isArray(theme.homepageSections)
+    homepageSections: normalizeHomepageSections(Array.isArray(theme.homepageSections)
         ? theme.homepageSections
-        : FALLBACK_THEME.homepageSections,
+        : FALLBACK_THEME.homepageSections),
     navigation: Array.isArray(theme.navigation)
         ? theme.navigation
         : FALLBACK_THEME.navigation,
