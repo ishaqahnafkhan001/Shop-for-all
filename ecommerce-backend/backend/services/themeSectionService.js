@@ -65,6 +65,8 @@ const createBannerSection = (banner, sortOrder) => ({
     settings: {
         desktopImage: getBannerImage(banner, 'desktop'),
         mobileImage: getBannerImage(banner, 'mobile'),
+        desktopImages: (banner.desktopImages?.length ? banner.desktopImages : banner.images || [banner.image]).filter(Boolean).slice(0, 5),
+        mobileImages: (banner.mobileImages?.length ? banner.mobileImages : banner.desktopImages || banner.images || [banner.image]).filter(Boolean).slice(0, 5),
         title: banner.title || '',
         subtitle: '',
         buttonText: banner.link ? 'Shop now' : '',

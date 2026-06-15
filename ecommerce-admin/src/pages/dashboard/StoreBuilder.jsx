@@ -19,12 +19,14 @@ import {
     Save,
     ShieldCheck,
     ShoppingBag,
+    Search,
     Smartphone,
     Tablet,
     Trash2,
     Undo2,
     Unlock,
-    Upload
+    Upload,
+    X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
@@ -188,9 +190,10 @@ const defaultTheme = {
 };
 
 const inlineSectionPresets = [
-    { label: 'Banner', type: 'Banner', title: 'Promotional banner', settings: { visualLabel: 'Banner', desktopImage: '', mobileImage: '', title: '', subtitle: '', buttonText: 'Shop now', buttonLink: '/' }, mobileSettings: { isVisible: true } },
+    { label: 'Banner', type: 'Banner', title: 'Promotional banner', settings: { visualLabel: 'Banner', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: '', subtitle: '', buttonText: 'Shop now', buttonLink: '/' }, mobileSettings: { isVisible: true } },
     { label: 'Featured Products', type: 'FeaturedProducts', title: 'Featured products', settings: { visualLabel: 'Featured Products', productIds: [], source: { type: 'manual', productIds: [] } }, source: { type: 'manual', productIds: [] }, mobileSettings: { columns: 2, isVisible: true } },
-    { label: 'Testimonials', type: 'Reviews', title: 'Testimonials', settings: { visualLabel: 'Testimonials', text: 'Share customer quotes and social proof.' } },
+    { label: 'Category List', type: 'CategoryList', title: 'Shop by category', settings: { visualLabel: 'Category List', maxCategories: 10, columns: 4 }, mobileSettings: { columns: 2, isVisible: true } },
+    { label: 'Testimonials', type: 'Reviews', title: 'Testimonials', settings: { visualLabel: 'Testimonials', mode: 'text', reviewIds: [], text: 'Share customer quotes and social proof.' } },
     { label: 'Promo Content', type: 'TextBlock', title: 'Promotional content', settings: { visualLabel: 'Promo Content', text: 'Add a product story, offer, FAQ, or brand introduction.' } }
 ];
 
@@ -461,10 +464,10 @@ const safeParseSnapshot = (snapshot) => {
 const isHexColor = (value) => /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(String(value || ''));
 
 const deviceClasses = {
-    desktop: 'w-full max-w-6xl',
-    tablet: 'w-[768px] max-w-full',
-    mobile: 'w-[390px] max-w-full',
-    smallMobile: 'w-[320px] max-w-full'
+    desktop: 'w-[1180px] max-w-none',
+    tablet: 'w-[768px] max-w-none',
+    mobile: 'w-[390px] max-w-none',
+    smallMobile: 'w-[320px] max-w-none'
 };
 
 const BuilderButton = ({ children, variant = 'primary', className = '', ...props }) => {
@@ -668,7 +671,9 @@ const StorefrontPreview = ({
     storewideDiscount,
     shopName,
     device,
-    availableProducts = []
+    availableProducts = [],
+    availableCategories = [],
+    availableReviews = []
 }) => {
     const isMobilePreview = device === 'mobile' || device === 'smallMobile';
     const products = availableProducts.length > 0
@@ -677,7 +682,9 @@ const StorefrontPreview = ({
             imageUrl: product.imageUrl || product.images?.[0] || ''
         }))
         : REFERENCE_SAMPLE_PRODUCTS;
-    const categories = [...new Set(products.map(product => product.category).filter(Boolean))];
+    const categories = availableCategories.length
+        ? availableCategories
+        : [...new Set(products.map(product => product.category).filter(Boolean))];
     const previewSectionProducts = useMemo(() => {
         const productMap = new Map(products.map(product => [String(product._id), product]));
         return (theme.homepageSections || []).reduce((acc, section) => {
@@ -689,6 +696,17 @@ const StorefrontPreview = ({
             return acc;
         }, {});
     }, [products, theme.homepageSections]);
+    const previewSectionReviews = useMemo(() => {
+        const reviewMap = new Map(availableReviews.map(review => [String(review._id), review]));
+        return (theme.homepageSections || []).reduce((acc, section) => {
+            if (section.type !== 'Reviews') return acc;
+            const sectionId = section.id || section._id;
+            const reviewIds = section.settings?.reviewIds || [];
+            if (!sectionId || !Array.isArray(reviewIds) || reviewIds.length === 0) return acc;
+            acc[sectionId] = reviewIds.map(id => reviewMap.get(String(id))).filter(Boolean);
+            return acc;
+        }, {});
+    }, [availableReviews, theme.homepageSections]);
     const frameLabel = device === 'desktop'
         ? 'scaleup.store'
         : device === 'tablet'
@@ -703,7 +721,7 @@ const StorefrontPreview = ({
             : 'rounded-[2.4rem] border-[10px] border-slate-950 bg-white shadow-2xl shadow-slate-900/25';
 
     return (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
+        <div className="isolate overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
             <div className={`mx-auto transition-all duration-300 ${deviceClasses[device]}`}>
                 <div className={`${isMobilePreview ? 'max-h-[760px] overflow-y-auto' : 'overflow-hidden'} ${frameClass}`}>
                     {device === 'desktop' ? (
@@ -726,6 +744,7 @@ const StorefrontPreview = ({
                             products={products}
                             categories={categories.length ? categories : REFERENCE_SAMPLE_CATEGORIES}
                             sectionProducts={previewSectionProducts}
+                            sectionReviews={previewSectionReviews}
                             pagination={{ page: 1, pages: 10 }}
                             filters={{ category: 'All', sort: 'newest', page: 1 }}
                             priceInput={{ min: '', max: '' }}
@@ -748,6 +767,11 @@ const StoreBuilder = () => {
     const [shopName, setShopName] = useState('');
     const [theme, setTheme] = useState(defaultTheme);
     const [availableProducts, setAvailableProducts] = useState([]);
+    const [productOptions, setProductOptions] = useState([]);
+    const [productCategories, setProductCategories] = useState([]);
+    const [productPicker, setProductPicker] = useState({ search: '', category: 'All', page: 1, pages: 1, loading: false });
+    const [availableReviews, setAvailableReviews] = useState([]);
+    const [reviewPicker, setReviewPicker] = useState({ search: '', page: 1, pages: 1, loading: false });
     const [customDomain, setCustomDomain] = useState({ domain: '' });
     const [storewideDiscount, setStorewideDiscount] = useState(0);
     const [activeGroup, setActiveGroup] = useState('brand');
@@ -814,20 +838,134 @@ const StoreBuilder = () => {
         return [...colorErrors, ...discountErrors, ...navErrors, ...navChildErrors, ...productColorErrors];
     }, [theme.colors, theme.navigation, theme.productCard, storewideDiscount]);
 
+    const mergeProductCache = (products = []) => {
+        setAvailableProducts(prev => {
+            const map = new Map(prev.map(product => [String(product._id), product]));
+            products.forEach(product => {
+                if (product?._id) map.set(String(product._id), product);
+            });
+            return Array.from(map.values());
+        });
+    };
+
+    const loadProductOptions = async ({ page = 1, append = false, search = productPicker.search, category = productPicker.category } = {}) => {
+        setProductPicker(prev => ({ ...prev, loading: true }));
+        try {
+            const { data } = await API.get('/admin/products', {
+                params: {
+                    limit: 10,
+                    page,
+                    status: 'Published',
+                    ...(search ? { search } : {}),
+                    ...(category && category !== 'All' ? { category } : {})
+                }
+            });
+            const products = data.data || [];
+            setProductOptions(prev => append ? [...prev, ...products.filter(product => !prev.some(item => item._id === product._id))] : products);
+            mergeProductCache(products);
+            setProductCategories(data.categories || []);
+            setProductPicker(prev => ({
+                ...prev,
+                search,
+                category,
+                page: data.pagination?.page || page,
+                pages: data.pagination?.pages || 1,
+                loading: false
+            }));
+        } catch {
+            setProductPicker(prev => ({ ...prev, loading: false }));
+            toast.error('Failed to load products for selection');
+        }
+    };
+
+    const loadReviewOptions = async ({ page = 1, append = false, search = reviewPicker.search, ids = '' } = {}) => {
+        setReviewPicker(prev => ({ ...prev, loading: true }));
+        try {
+            const { data } = await API.get('/store-builder/admin/reviews', {
+                params: {
+                    page,
+                    limit: 10,
+                    rating: 5,
+                    ...(search ? { search } : {}),
+                    ...(ids ? { ids } : {})
+                }
+            });
+            const reviews = data.data || [];
+            setAvailableReviews(prev => {
+                const selectedIds = new Set((theme.homepageSections || [])
+                    .flatMap(section => section.type === 'Reviews' ? (section.settings?.reviewIds || []) : [])
+                    .map(String));
+                const selectedExisting = prev.filter(review => selectedIds.has(String(review._id)));
+                if (ids) {
+                    const map = new Map(prev.map(review => [String(review._id), review]));
+                    reviews.forEach(review => map.set(String(review._id), review));
+                    return Array.from(map.values());
+                }
+                if (!append) {
+                    const map = new Map(selectedExisting.map(review => [String(review._id), review]));
+                    reviews.forEach(review => map.set(String(review._id), review));
+                    return Array.from(map.values());
+                }
+                const map = new Map(prev.map(review => [String(review._id), review]));
+                reviews.forEach(review => map.set(String(review._id), review));
+                return Array.from(map.values());
+            });
+            setReviewPicker(prev => ({
+                ...prev,
+                search,
+                page: data.pagination?.page || page,
+                pages: data.pagination?.pages || 1,
+                loading: false
+            }));
+        } catch {
+            setReviewPicker(prev => ({ ...prev, loading: false }));
+            toast.error('Failed to load reviews');
+        }
+    };
+
     useEffect(() => {
         const fetchSettings = async () => {
             try {
                 const [{ data }, productsResponse] = await Promise.all([
                     API.get('/store-builder/admin'),
-                    API.get('/admin/products', { params: { limit: 100, status: 'Published' } }).catch(() => ({ data: { data: [] } }))
+                    API.get('/admin/products', { params: { limit: 10, status: 'Published' } }).catch(() => ({ data: { data: [], categories: [], pagination: { page: 1, pages: 1 } } }))
                 ]);
                 const shop = data.data || {};
                 const nextTheme = mergeTheme(defaultTheme, shop.theme || {});
                 const nextDomain = shop.customDomain || { domain: '' };
                 const nextDiscount = shop.storewideDiscount || 0;
+                const selectedReviewIds = [
+                    ...new Set((nextTheme.homepageSections || [])
+                        .flatMap(section => section.type === 'Reviews' ? (section.settings?.reviewIds || []) : [])
+                        .filter(Boolean)
+                        .map(String))
+                ];
+                const [reviewsResponse, selectedReviewsResponse] = await Promise.all([
+                    API.get('/store-builder/admin/reviews', { params: { page: 1, limit: 10, rating: 5 } }).catch(() => ({ data: { data: [], pagination: { page: 1, pages: 1 } } })),
+                    selectedReviewIds.length
+                        ? API.get('/store-builder/admin/reviews', { params: { ids: selectedReviewIds.join(','), limit: selectedReviewIds.length, rating: 5 } }).catch(() => ({ data: { data: [] } }))
+                        : Promise.resolve({ data: { data: [] } })
+                ]);
+                const initialProducts = productsResponse.data?.data || [];
+                const initialReviews = [...(reviewsResponse.data?.data || []), ...(selectedReviewsResponse.data?.data || [])];
                 setShopName(shop.shopName || '');
                 setTheme(nextTheme);
-                setAvailableProducts(productsResponse.data?.data || []);
+                setAvailableProducts(initialProducts);
+                setProductOptions(initialProducts);
+                setProductCategories(productsResponse.data?.categories || []);
+                setProductPicker(prev => ({
+                    ...prev,
+                    page: productsResponse.data?.pagination?.page || 1,
+                    pages: productsResponse.data?.pagination?.pages || 1,
+                    loading: false
+                }));
+                setAvailableReviews(Array.from(new Map(initialReviews.map(review => [String(review._id), review])).values()));
+                setReviewPicker(prev => ({
+                    ...prev,
+                    page: reviewsResponse.data?.pagination?.page || 1,
+                    pages: reviewsResponse.data?.pagination?.pages || 1,
+                    loading: false
+                }));
                 setCustomDomain(nextDomain);
                 setStorewideDiscount(nextDiscount);
                 const loadedSnapshot = stableStringify({ theme: nextTheme, customDomain: nextDomain, storewideDiscount: Number(nextDiscount) || 0 });
@@ -954,6 +1092,86 @@ const StoreBuilder = () => {
                 };
             })
         }));
+    };
+
+    const updateReviewSelection = (index, reviewId, checked) => {
+        setTheme(prev => ({
+            ...prev,
+            homepageSections: (prev.homepageSections || []).map((section, i) => {
+                if (i !== index || isHomepageSectionLocked(section)) return section;
+                const currentIds = section.settings?.reviewIds || [];
+                const nextIds = checked
+                    ? [...new Set([...currentIds, reviewId])]
+                    : currentIds.filter(id => id !== reviewId);
+
+                return {
+                    ...section,
+                    settings: {
+                        ...(section.settings || {}),
+                        mode: nextIds.length > 0 ? 'selectedReviews' : 'text',
+                        reviewIds: nextIds
+                    }
+                };
+            })
+        }));
+    };
+
+    const getBannerImages = (section, key) => {
+        const fallbackKey = key === 'desktopImages' ? 'desktopImage' : 'mobileImage';
+        return [
+            ...new Set([
+                ...(Array.isArray(section.settings?.[key]) ? section.settings[key] : []),
+                section.settings?.[fallbackKey]
+            ].filter(Boolean))
+        ].slice(0, 5);
+    };
+
+    const updateBannerImages = (index, key, images) => {
+        const fallbackKey = key === 'desktopImages' ? 'desktopImage' : 'mobileImage';
+        const nextImages = [...new Set((images || []).filter(Boolean).map(String))].slice(0, 5);
+        setTheme(prev => ({
+            ...prev,
+            homepageSections: (prev.homepageSections || []).map((section, i) => (
+                i === index && !isHomepageSectionLocked(section)
+                    ? {
+                        ...section,
+                        settings: {
+                            ...(section.settings || {}),
+                            [key]: nextImages,
+                            [fallbackKey]: nextImages[0] || ''
+                        },
+                        mobileSettings: key === 'mobileImages'
+                            ? { ...(section.mobileSettings || {}), image: nextImages[0] || '' }
+                            : section.mobileSettings
+                    }
+                    : section
+            ))
+        }));
+    };
+
+    const addBannerImageUrl = (index, key, url) => {
+        if (!url) return;
+        const section = theme.homepageSections?.[index];
+        const currentImages = getBannerImages(section || {}, key);
+        if (currentImages.length >= 5) {
+            toast.error('You can add up to 5 images.');
+            return;
+        }
+        updateBannerImages(index, key, [...currentImages, url]);
+    };
+
+    const removeBannerImage = (index, key, imageIndex) => {
+        const section = theme.homepageSections?.[index];
+        updateBannerImages(index, key, getBannerImages(section || {}, key).filter((_, i) => i !== imageIndex));
+    };
+
+    const moveBannerImage = (index, key, imageIndex, direction) => {
+        const section = theme.homepageSections?.[index];
+        const images = getBannerImages(section || {}, key);
+        const targetIndex = imageIndex + direction;
+        if (targetIndex < 0 || targetIndex >= images.length) return;
+        [images[imageIndex], images[targetIndex]] = [images[targetIndex], images[imageIndex]];
+        updateBannerImages(index, key, images);
     };
 
     const updateHomepageSectionFromPreview = (index, field, value) => {
@@ -1317,6 +1535,46 @@ const StoreBuilder = () => {
             toast.success('Image uploaded');
         } catch (err) {
             toast.error(err.response?.data?.error || err.message || 'Failed to upload image');
+        } finally {
+            setUploadingThemeImage(false);
+            event.target.value = '';
+        }
+    };
+
+    const handleBannerImagesUpload = async (event, sectionIndex, key) => {
+        const files = Array.from(event.target.files || []);
+        if (files.length === 0) return;
+
+        const section = theme.homepageSections?.[sectionIndex];
+        const currentImages = getBannerImages(section || {}, key);
+        const availableSlots = Math.max(0, 5 - currentImages.length);
+        const uploadFiles = files.slice(0, availableSlots);
+
+        if (availableSlots === 0) {
+            toast.error('You can add up to 5 images.');
+            event.target.value = '';
+            return;
+        }
+        if (files.length > availableSlots) {
+            toast.error(`Only ${availableSlots} more image${availableSlots === 1 ? '' : 's'} can be added.`);
+        }
+
+        setUploadingThemeImage(true);
+        try {
+            const uploadedUrls = [];
+            for (const file of uploadFiles) {
+                const formData = new FormData();
+                formData.append('image', file);
+                const { data } = await API.post('/store-builder/admin/image', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                const url = data.data?.url;
+                if (url) uploadedUrls.push(url);
+            }
+            updateBannerImages(sectionIndex, key, [...currentImages, ...uploadedUrls]);
+            if (uploadedUrls.length > 0) toast.success(`${uploadedUrls.length} banner image${uploadedUrls.length === 1 ? '' : 's'} uploaded`);
+        } catch (err) {
+            toast.error(err.response?.data?.error || err.message || 'Failed to upload banner images');
         } finally {
             setUploadingThemeImage(false);
             event.target.value = '';
@@ -1744,6 +2002,22 @@ const StoreBuilder = () => {
                                 </div>
                             ))}
                         </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+                            <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Add flexible section</p>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {inlineSectionPresets.map(preset => (
+                                    <button
+                                        key={preset.type}
+                                        type="button"
+                                        onClick={() => addHomepageSection(preset)}
+                                        className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                    >
+                                        <Plus size={14} className="mr-2 inline" />
+                                        {preset.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                         {(theme.homepageSections || []).length === 0 && (
                             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
                                 No flexible homepage sections yet. Add a banner, featured products, reviews, or promotional content block.
@@ -1753,6 +2027,17 @@ const StoreBuilder = () => {
                             const locked = isHomepageSectionLocked(section);
                             const previousLocked = isHomepageSectionLocked((theme.homepageSections || [])[index - 1]);
                             const nextLocked = isHomepageSectionLocked((theme.homepageSections || [])[index + 1]);
+                            const selectedProductIds = section.settings?.productIds || section.settings?.source?.productIds || [];
+                            const selectedProducts = selectedProductIds
+                                .map(productId => availableProducts.find(product => String(product._id) === String(productId)))
+                                .filter(Boolean);
+                            const selectedReviewIds = section.settings?.reviewIds || [];
+                            const selectedReviews = selectedReviewIds
+                                .map(reviewId => availableReviews.find(review => String(review._id) === String(reviewId)))
+                                .filter(Boolean);
+                            const availableCategoryOptions = productCategories.length
+                                ? productCategories
+                                : [...new Set(availableProducts.map(product => product.category).filter(Boolean))];
 
                             return (
                             <div key={section._id || index} className={`rounded-lg border p-3 ${locked ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200'}`}>
@@ -1799,11 +2084,67 @@ const StoreBuilder = () => {
                                 </div>
                                 {section.type === 'Banner' && (
                                     <div className="mt-3 grid grid-cols-1 gap-3">
-                                        <BuilderInput label="Desktop image URL" value={section.settings?.desktopImage || ''} onChange={e => updateHomepageSectionSetting(index, 'desktopImage', e.target.value)} disabled={locked} help="Wide image for laptop and desktop shoppers." />
-                                        <BuilderInput label="Mobile image URL" value={section.settings?.mobileImage || section.mobileSettings?.image || ''} onChange={e => {
-                                            updateHomepageSectionSetting(index, 'mobileImage', e.target.value);
-                                            updateHomepageSectionMobileSetting(index, 'image', e.target.value);
-                                        }} disabled={locked} help="Vertical or square image for phones. Falls back to desktop image when empty." />
+                                        {[
+                                            { key: 'desktopImages', label: 'Desktop images', help: 'Wide campaign images for laptop and desktop shoppers.' },
+                                            { key: 'mobileImages', label: 'Mobile images', help: 'Vertical or square campaign images for phones.' }
+                                        ].map(({ key, label, help }) => {
+                                            const images = getBannerImages(section, key);
+                                            return (
+                                                <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                        <div>
+                                                            <p className="text-sm font-bold text-slate-900">{label}</p>
+                                                            <p className="text-xs text-slate-500">{help} Maximum 5 images.</p>
+                                                        </div>
+                                                        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-100">
+                                                            <Upload size={14} />
+                                                            {uploadingThemeImage ? 'Uploading...' : 'Upload'}
+                                                            <input
+                                                                type="file"
+                                                                multiple
+                                                                accept="image/png,image/jpeg,image/webp"
+                                                                className="hidden"
+                                                                disabled={locked || uploadingThemeImage || images.length >= 5}
+                                                                onChange={event => handleBannerImagesUpload(event, index, key)}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                    {images.length === 0 ? (
+                                                        <p className="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-xs text-slate-500">No images added yet.</p>
+                                                    ) : (
+                                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                                            {images.map((image, imageIndex) => (
+                                                                <div key={image} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                                                    <img src={image} alt="" className="h-24 w-full object-cover" />
+                                                                    <div className="flex items-center justify-between gap-1 p-2">
+                                                                        <button type="button" onClick={() => moveBannerImage(index, key, imageIndex, -1)} disabled={locked || imageIndex === 0} className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30">
+                                                                            <ChevronUp size={14} />
+                                                                        </button>
+                                                                        <button type="button" onClick={() => moveBannerImage(index, key, imageIndex, 1)} disabled={locked || imageIndex === images.length - 1} className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30">
+                                                                            <ChevronDown size={14} />
+                                                                        </button>
+                                                                        <button type="button" onClick={() => removeBannerImage(index, key, imageIndex)} disabled={locked} className="rounded p-1 text-red-500 hover:bg-red-50 disabled:opacity-30">
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <BuilderInput
+                                                        label="Paste image URL"
+                                                        defaultValue=""
+                                                        onBlur={e => {
+                                                            addBannerImageUrl(index, key, e.currentTarget.value);
+                                                            e.currentTarget.value = '';
+                                                        }}
+                                                        disabled={locked || images.length >= 5}
+                                                        placeholder="https://..."
+                                                        help="Optional. Upload is recommended for reliable image delivery."
+                                                    />
+                                                </div>
+                                            );
+                                        })}
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             <BuilderInput label="Banner headline" value={section.settings?.title || ''} onChange={e => updateHomepageSectionSetting(index, 'title', e.target.value)} disabled={locked} />
                                             <BuilderInput label="Subtitle" value={section.settings?.subtitle || ''} onChange={e => updateHomepageSectionSetting(index, 'subtitle', e.target.value)} disabled={locked} />
@@ -1820,15 +2161,63 @@ const StoreBuilder = () => {
                                                 <p className="mt-1 text-xs text-slate-500">Collection and automatic rule sources can use this same source structure later.</p>
                                             </div>
                                             <span className="rounded-full bg-white px-2 py-1 text-[11px] font-bold text-slate-500">
-                                                {(section.settings?.productIds || []).length} selected
+                                                {selectedProductIds.length} selected
                                             </span>
                                         </div>
+                                        {selectedProducts.length > 0 && (
+                                            <div className="mb-3 flex flex-wrap gap-2">
+                                                {selectedProducts.map(product => (
+                                                    <span key={product._id} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 shadow-sm">
+                                                        {product.title}
+                                                        <button type="button" onClick={() => updateFeaturedProductsSelection(index, product._id, false)} disabled={locked} className="text-red-500 disabled:opacity-40">
+                                                            <X size={12} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_160px_auto]">
+                                            <label className="relative">
+                                                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    value={productPicker.search}
+                                                    onChange={e => setProductPicker(prev => ({ ...prev, search: e.target.value }))}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            loadProductOptions({ page: 1, search: productPicker.search, category: productPicker.category });
+                                                        }
+                                                    }}
+                                                    className={`${inputClass} pl-9`}
+                                                    placeholder="Search products"
+                                                    disabled={locked}
+                                                />
+                                            </label>
+                                            <select
+                                                value={productPicker.category}
+                                                onChange={e => {
+                                                    const category = e.target.value;
+                                                    setProductPicker(prev => ({ ...prev, category }));
+                                                    loadProductOptions({ page: 1, search: productPicker.search, category });
+                                                }}
+                                                className={inputClass}
+                                                disabled={locked}
+                                            >
+                                                <option value="All">All categories</option>
+                                                {availableCategoryOptions.map(category => (
+                                                    <option key={category} value={category}>{category}</option>
+                                                ))}
+                                            </select>
+                                            <BuilderButton type="button" variant="secondary" onClick={() => loadProductOptions({ page: 1, search: productPicker.search, category: productPicker.category })} disabled={locked || productPicker.loading}>
+                                                {productPicker.loading ? 'Searching...' : 'Search'}
+                                            </BuilderButton>
+                                        </div>
                                         <div className="max-h-56 space-y-2 overflow-y-auto">
-                                            {availableProducts.length === 0 ? (
+                                            {productOptions.length === 0 ? (
                                                 <p className="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-xs text-slate-500">No published products available yet.</p>
-                                            ) : availableProducts.map(product => {
+                                            ) : productOptions.map(product => {
                                                 const productId = product._id;
-                                                const selected = (section.settings?.productIds || []).includes(productId);
+                                                const selected = selectedProductIds.map(String).includes(String(productId));
                                                 return (
                                                     <label key={productId} className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
                                                         <span className="min-w-0">
@@ -1846,9 +2235,161 @@ const StoreBuilder = () => {
                                                 );
                                             })}
                                         </div>
+                                        {productPicker.page < productPicker.pages && (
+                                            <BuilderButton
+                                                type="button"
+                                                variant="secondary"
+                                                className="mt-3 w-full"
+                                                onClick={() => loadProductOptions({ page: productPicker.page + 1, append: true, search: productPicker.search, category: productPicker.category })}
+                                                disabled={locked || productPicker.loading}
+                                            >
+                                                {productPicker.loading ? 'Loading...' : 'Load more products'}
+                                            </BuilderButton>
+                                        )}
                                     </div>
                                 )}
-                                {['TextBlock', 'Newsletter', 'Reviews'].includes(section.type) && (
+                                {section.type === 'Reviews' && (
+                                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                        <div className="mb-3 flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-900">Real 5-star testimonials</p>
+                                                <p className="mt-1 text-xs text-slate-500">Select real customer reviews by Review ID. Only 10 reviews load at a time.</p>
+                                            </div>
+                                            <span className="rounded-full bg-white px-2 py-1 text-[11px] font-bold text-slate-500">
+                                                {selectedReviewIds.length} selected
+                                            </span>
+                                        </div>
+                                        <BuilderSelect
+                                            label="Review source"
+                                            value={section.settings?.mode || (selectedReviewIds.length ? 'selectedReviews' : 'text')}
+                                            onChange={e => updateHomepageSectionSetting(index, 'mode', e.target.value)}
+                                            disabled={locked}
+                                            help="Use real reviews when available, or a manual testimonial as fallback."
+                                        >
+                                            <option value="selectedReviews">Selected 5-star reviews</option>
+                                            <option value="text">Manual testimonial text</option>
+                                        </BuilderSelect>
+                                        {selectedReviews.length > 0 && (
+                                            <div className="my-3 space-y-2">
+                                                {selectedReviews.map(review => (
+                                                    <div key={review._id} className="rounded-lg bg-white p-3 text-sm shadow-sm">
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <p className="font-black text-slate-900">{review.name}</p>
+                                                                <p className="text-xs font-bold text-amber-500">★★★★★ <span className="text-slate-400">Review ID {String(review._id).slice(-8)}</span></p>
+                                                                <p className="mt-1 truncate text-xs text-slate-500">{review.product?.title || 'Product review'}</p>
+                                                            </div>
+                                                            <button type="button" onClick={() => updateReviewSelection(index, review._id, false)} disabled={locked} className="rounded p-1 text-red-500 hover:bg-red-50 disabled:opacity-40">
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">{review.comment}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+                                            <label className="relative">
+                                                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    value={reviewPicker.search}
+                                                    onChange={e => setReviewPicker(prev => ({ ...prev, search: e.target.value }))}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            loadReviewOptions({ page: 1, search: reviewPicker.search });
+                                                        }
+                                                    }}
+                                                    className={`${inputClass} pl-9`}
+                                                    placeholder="Search reviewer, product, or comment"
+                                                    disabled={locked}
+                                                />
+                                            </label>
+                                            <BuilderButton type="button" variant="secondary" onClick={() => loadReviewOptions({ page: 1, search: reviewPicker.search })} disabled={locked || reviewPicker.loading}>
+                                                {reviewPicker.loading ? 'Searching...' : 'Search'}
+                                            </BuilderButton>
+                                        </div>
+                                        <div className="max-h-64 space-y-2 overflow-y-auto">
+                                            {availableReviews.length === 0 ? (
+                                                <p className="rounded-lg border border-dashed border-slate-300 bg-white p-3 text-xs text-slate-500">No 5-star reviews found yet.</p>
+                                            ) : availableReviews.map(review => {
+                                                const selected = selectedReviewIds.map(String).includes(String(review._id));
+                                                return (
+                                                    <label key={review._id} className="flex items-start justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm">
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-semibold text-slate-800">{review.name}</span>
+                                                            <span className="block text-xs font-bold text-amber-500">★★★★★ <span className="text-slate-400">Review ID {String(review._id).slice(-8)}</span></span>
+                                                            <span className="block truncate text-xs text-slate-500">{review.product?.title || 'Product review'}</span>
+                                                            <span className="mt-1 block line-clamp-2 text-xs leading-5 text-slate-600">{review.comment}</span>
+                                                        </span>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selected}
+                                                            disabled={locked}
+                                                            onChange={e => updateReviewSelection(index, review._id, e.target.checked)}
+                                                            className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                        />
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        {reviewPicker.page < reviewPicker.pages && (
+                                            <BuilderButton
+                                                type="button"
+                                                variant="secondary"
+                                                className="mt-3 w-full"
+                                                onClick={() => loadReviewOptions({ page: reviewPicker.page + 1, append: true, search: reviewPicker.search })}
+                                                disabled={locked || reviewPicker.loading}
+                                            >
+                                                {reviewPicker.loading ? 'Loading...' : 'Load more 10 reviews'}
+                                            </BuilderButton>
+                                        )}
+                                        <div className="mt-3">
+                                            <BuilderTextarea
+                                                label="Manual fallback text"
+                                                value={section.settings?.text || ''}
+                                                onChange={e => updateHomepageSectionSetting(index, 'text', e.target.value)}
+                                                disabled={locked}
+                                                help="Used when no real review is selected, or when you choose manual testimonial text."
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                                {section.type === 'CategoryList' && (
+                                    <div className="mt-3 grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3">
+                                        <BuilderInput
+                                            label="Max categories"
+                                            type="number"
+                                            min="1"
+                                            max="24"
+                                            value={section.settings?.maxCategories || 10}
+                                            onChange={e => updateHomepageSectionSetting(index, 'maxCategories', Math.min(Math.max(Number(e.target.value) || 1, 1), 24))}
+                                            disabled={locked}
+                                            help="Limits how many category links appear."
+                                        />
+                                        <BuilderSelect
+                                            label="Desktop columns"
+                                            value={section.settings?.columns || 4}
+                                            onChange={e => updateHomepageSectionSetting(index, 'columns', Number(e.target.value))}
+                                            disabled={locked}
+                                        >
+                                            <option value={1}>1 column</option>
+                                            <option value={2}>2 columns</option>
+                                            <option value={3}>3 columns</option>
+                                            <option value={4}>4 columns</option>
+                                        </BuilderSelect>
+                                        <BuilderSelect
+                                            label="Mobile columns"
+                                            value={section.mobileSettings?.columns || 2}
+                                            onChange={e => updateHomepageSectionMobileSetting(index, 'columns', Number(e.target.value))}
+                                            disabled={locked}
+                                        >
+                                            <option value={1}>1 column</option>
+                                            <option value={2}>2 columns</option>
+                                        </BuilderSelect>
+                                    </div>
+                                )}
+                                {['TextBlock', 'Newsletter'].includes(section.type) && (
                                     <div className="mt-3">
                                         <BuilderTextarea
                                             label="Section text"
@@ -1864,7 +2405,7 @@ const StoreBuilder = () => {
                                 </div>
                                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <BuilderToggle label="Visible on mobile" checked={section.mobileSettings?.isVisible !== false} onChange={() => updateHomepageSectionMobileSetting(index, 'isVisible', section.mobileSettings?.isVisible === false)} disabled={locked} />
-                                    {section.type === 'FeaturedProducts' && (
+                                    {['FeaturedProducts', 'CategoryList'].includes(section.type) && (
                                         <BuilderSelect label="Mobile columns" value={section.mobileSettings?.columns || 2} onChange={e => updateHomepageSectionMobileSetting(index, 'columns', Number(e.target.value))} disabled={locked}>
                                             <option value={1}>1 column</option>
                                             <option value={2}>2 columns</option>
@@ -2235,6 +2776,8 @@ const StoreBuilder = () => {
 	                            isSectionLocked={isHomepageSectionLocked}
 	                            device={device}
                                 availableProducts={availableProducts}
+                                availableCategories={productCategories}
+                                availableReviews={availableReviews}
 	                        />
                     </section>
                 </main>

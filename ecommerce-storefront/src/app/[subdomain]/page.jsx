@@ -19,7 +19,7 @@ export default function VendorHomePage({ params }) {
     const [catalogSearch, setCatalogSearch] = useState('');
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-    const { shop, products, categories, sectionProducts, loading, error, pagination } = useShopData(subdomain, filters);
+    const { shop, products, categories, sectionProducts, sectionReviews, loading, error, pagination } = useShopData(subdomain, filters);
     const theme = normalizeTheme(shop?.theme || {});
     const storewideDiscount = shop?.storewideDiscount || 0;
     const customerId = user?.role === 'Customer' ? (user._id || user.id) : null;
@@ -111,6 +111,7 @@ export default function VendorHomePage({ params }) {
             products={products}
             categories={categories}
             sectionProducts={sectionProducts}
+            sectionReviews={sectionReviews}
             storewideDiscount={storewideDiscount}
             loading={loading}
             pagination={pagination}

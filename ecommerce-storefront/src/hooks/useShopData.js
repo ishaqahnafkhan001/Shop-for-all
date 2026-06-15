@@ -30,6 +30,7 @@ export const useShopData = (subdomain, filters) => {
         categories: [],
         banners: [], // ✨ 1. Added banners to the initial state
         sectionProducts: {},
+        sectionReviews: {},
         pagination: { page: 1, pages: 1, total: 0 },
         loading: true,
         error: null
@@ -69,6 +70,7 @@ export const useShopData = (subdomain, filters) => {
                     shop: bootstrapData.shop || null,
                     banners: bootstrapData.banners || [],
                     sectionProducts,
+                    sectionReviews: bootstrapData.sectionReviews || {},
                     products: rawProducts.map(normalizeProduct),
                     categories: bootstrapData.categories?.filter(Boolean) || [],
                     pagination: bootstrapData.pagination || { page: 1, pages: 1 },
@@ -86,5 +88,5 @@ export const useShopData = (subdomain, filters) => {
         return () => { isMounted = false; };
     }, [subdomain, page, sort, category, minPrice, maxPrice, minRating]);
 
-    return data; // Returns { shop, products, categories, banners, pagination, loading, error }
+    return data;
 };

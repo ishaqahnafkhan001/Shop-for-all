@@ -1,6 +1,7 @@
 const Shop = require('../models/Shop');
 const Product = require('../models/Product');
 const Banner = require('../models/Banner');
+const Review = require('../models/Review');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
@@ -30,6 +31,17 @@ const getManualSectionProductIds = (sections = []) => {
         const productIds = section.settings?.productIds || source.productIds || [];
         if ((source.type || 'manual') !== 'manual' || !Array.isArray(productIds) || productIds.length === 0) return;
         idsBySection[section.id || String(section._id)] = productIds.map(String).filter(id => /^[a-f\d]{24}$/i.test(id));
+    });
+    return idsBySection;
+};
+
+const getSelectedSectionReviewIds = (sections = []) => {
+    const idsBySection = {};
+    sections.forEach(section => {
+        if (section?.type !== 'Reviews' || section?.isEnabled === false) return;
+        const reviewIds = section.settings?.reviewIds || [];
+        if (!Array.isArray(reviewIds) || reviewIds.length === 0) return;
+        idsBySection[section.id || String(section._id)] = reviewIds.map(String).filter(id => /^[a-f\d]{24}$/i.test(id));
     });
     return idsBySection;
 };
@@ -128,7 +140,10 @@ exports.getStorefrontBootstrap = async (req, res) => {
 
         const manualIdsBySection = getManualSectionProductIds(shop.theme?.homepageSections || []);
         const allManualProductIds = [...new Set(Object.values(manualIdsBySection).flat())];
+        const reviewIdsBySection = getSelectedSectionReviewIds(shop.theme?.homepageSections || []);
+        const allReviewIds = [...new Set(Object.values(reviewIdsBySection).flat())];
         let sectionProducts = {};
+        let sectionReviews = {};
 
         if (allManualProductIds.length > 0) {
             const manualProducts = await Product.aggregate([
@@ -150,12 +165,41 @@ exports.getStorefrontBootstrap = async (req, res) => {
             }, {});
         }
 
+        if (allReviewIds.length > 0) {
+            const reviews = await Review.find({
+                _id: { $in: allReviewIds.map(id => new mongoose.Types.ObjectId(id)) },
+                shop_id: shopObjectId,
+                rating: 5
+            }).select('_id product_id name rating comment createdAt').lean();
+            const reviewProductIds = [...new Set(reviews.map(review => String(review.product_id)).filter(Boolean))];
+            const reviewProducts = reviewProductIds.length
+                ? await Product.find({
+                    _id: { $in: reviewProductIds.map(id => new mongoose.Types.ObjectId(id)) },
+                    shop_id: shopObjectId,
+                    isDeleted: false
+                }).select('title').lean()
+                : [];
+            const productMap = new Map(reviewProducts.map(product => [String(product._id), product]));
+            const reviewMap = new Map(reviews.map(review => [
+                String(review._id),
+                {
+                    ...review,
+                    product: productMap.get(String(review.product_id)) || null
+                }
+            ]));
+            sectionReviews = Object.entries(reviewIdsBySection).reduce((acc, [sectionId, reviewIds]) => {
+                acc[sectionId] = reviewIds.map(id => reviewMap.get(String(id))).filter(Boolean);
+                return acc;
+            }, {});
+        }
+
         const response = {
             success: true,
             data: {
                 shop,
                 banners,
                 sectionProducts,
+                sectionReviews,
                 products,
                 categories: categories.filter(Boolean),
                 pagination: {

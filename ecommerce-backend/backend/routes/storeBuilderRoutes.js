@@ -8,6 +8,7 @@ const { upload } = require('../config/cloudinary');
 const {
     getStoreBuilderSettings,
     updateStoreBuilderSettings,
+    getStoreBuilderReviews,
     uploadStoreBuilderLogo,
     uploadStoreBuilderImage,
     getPublicStorefrontSettings
@@ -25,6 +26,13 @@ router.patch(
     protect,
     authorize('VendorAdmin'),
     updateStoreBuilderSettings
+);
+
+router.get(
+    '/admin/reviews',
+    protect,
+    authorize('VendorAdmin'),
+    getStoreBuilderReviews
 );
 
 router.post(

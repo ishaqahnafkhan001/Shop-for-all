@@ -62,6 +62,63 @@ const plainGridClasses = {
     5: 'grid-cols-5'
 };
 
+const cardRadiusClasses = {
+    Soft: 'rounded-xl',
+    Rounded: 'rounded-[1.35rem]',
+    Square: 'rounded-none'
+};
+
+const imageRadiusClasses = {
+    Soft: 'rounded-xl',
+    Rounded: 'rounded-[1.15rem]',
+    Square: 'rounded-none'
+};
+
+const cardShadowClasses = {
+    None: 'shadow-none hover:shadow-none',
+    Soft: 'shadow-sm hover:shadow-xl hover:shadow-slate-200/70',
+    Elevated: 'shadow-lg shadow-slate-200/70 hover:shadow-2xl hover:shadow-slate-300/70'
+};
+
+const imageAspectClasses = {
+    Square: 'aspect-square',
+    Portrait: 'aspect-[3/4]',
+    Landscape: 'aspect-[4/3]'
+};
+
+const titleSizeClasses = {
+    Small: 'text-xs sm:text-sm',
+    Medium: 'text-sm sm:text-base',
+    Large: 'text-base sm:text-lg'
+};
+
+const priceSizeClasses = {
+    Small: 'text-base',
+    Medium: 'text-lg',
+    Large: 'text-xl sm:text-2xl'
+};
+
+const buttonShapeClasses = {
+    Soft: 'rounded-lg',
+    Rounded: 'rounded-xl',
+    Pill: 'rounded-full',
+    Square: 'rounded-none'
+};
+
+const categoryGridClasses = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4'
+};
+
+const categoryDesktopGridClasses = {
+    1: 'md:grid-cols-1',
+    2: 'md:grid-cols-2',
+    3: 'md:grid-cols-3',
+    4: 'md:grid-cols-4'
+};
+
 const noop = () => {};
 const formatPrice = (value) => {
     const number = Number(value || 0);
@@ -69,6 +126,7 @@ const formatPrice = (value) => {
 };
 const getImageUrl = (product) => product?.imageUrl || product?.images?.[0] || '';
 const getPrice = (product) => product?.finalPrice || product?.sellingPrice || product?.pricing?.sellingPrice || product?.price || 0;
+const normalizeImageList = (...lists) => [...new Set(lists.flat().filter(Boolean).map(String))];
 
 export const getReferenceThemeStyle = (themeCandidate = {}) => {
     const theme = normalizeTheme(themeCandidate);
@@ -84,6 +142,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         '--sf-card-hover-border': colors.cardHoverBorder || '#99f6e4',
         '--sf-sale-badge-bg': colors.saleBadgeBg || '#dc2626',
         '--sf-sale-badge-text': colors.saleBadgeText || '#ffffff',
+        '--sf-price-color': colors.priceColor || '#0f172a',
         fontFamily: theme.typography?.bodyFont || theme.fontFamily || 'Inter, ui-sans-serif, system-ui, sans-serif',
         color: colors.foreground || '#111827',
         backgroundColor: colors.background || '#ffffff'
@@ -354,14 +413,32 @@ export function ReferenceStorefrontHeader({
 }
 
 const ProductCard = memo(function ProductCard({ product, index, storewideDiscount, productCard, onProductAdd, LinkComponent }) {
-    const activeDiscount = product.discount > 0 ? product.discount : (storewideDiscount || 0);
+    const activeDiscount = product.discount > 0 ? product.discount : (product.pricing?.discount > 0 ? product.pricing.discount : (storewideDiscount || 0));
     const hasDiscount = activeDiscount > 0;
     const stock = product.stock ?? product.totalStock ?? 0;
     const price = getPrice(product);
     const originalPrice = product.sellingPrice || product.pricing?.sellingPrice || price;
     const rating = Number(product.averageRating || 0);
     const showRating = productCard?.showRating !== false && rating > 0;
+    const showReviews = productCard?.showReviews !== false && Number(product.numReviews || 0) > 0;
     const imageUrl = getImageUrl(product);
+    const cardRadiusClass = cardRadiusClasses[productCard?.borderRadius || 'Rounded'] || cardRadiusClasses.Rounded;
+    const imageRadiusClass = imageRadiusClasses[productCard?.imageRadius || 'Rounded'] || imageRadiusClasses.Rounded;
+    const shadowClass = cardShadowClasses[productCard?.shadow || 'Soft'] || cardShadowClasses.Soft;
+    const aspectClass = imageAspectClasses[productCard?.aspectRatio || 'Square'] || imageAspectClasses.Square;
+    const titleSizeClass = titleSizeClasses[productCard?.titleSize || 'Medium'] || titleSizeClasses.Medium;
+    const priceSizeClass = priceSizeClasses[productCard?.priceSize || 'Medium'] || priceSizeClasses.Medium;
+    const buttonShapeClass = buttonShapeClasses[productCard?.buttonShape || 'Pill'] || buttonShapeClasses.Pill;
+    const buttonColor = productCard?.buttonColor || 'var(--sf-accent)';
+    const priceColor = productCard?.priceColor || 'var(--sf-price-color, #0f172a)';
+    const imageFitClass = productCard?.imageFit === 'Contain' ? 'object-contain' : 'object-cover';
+    const imagePaddingClass = productCard?.imageFit === 'Contain' ? 'p-3' : '';
+    const buttonStyle = productCard?.buttonStyle || 'Solid';
+    const buttonInlineStyle = buttonStyle === 'Solid'
+        ? { backgroundColor: buttonColor, color: '#ffffff', borderColor: buttonColor }
+        : { color: buttonColor, borderColor: buttonStyle === 'Ghost' ? 'transparent' : buttonColor, backgroundColor: buttonStyle === 'Ghost' ? 'transparent' : '#ffffff' };
+    const stockText = stock > 0 ? `${stock} in stock` : 'Out of stock';
+    const sku = product.sku || product.variants?.[0]?.sku || (product._id ? `ID ${String(product._id).slice(-6)}` : '');
 
     const handleAdd = (event) => {
         event.preventDefault();
@@ -371,16 +448,16 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
 
     return (
         <article
-            className="group relative flex min-h-full flex-col overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] hover:shadow-xl hover:shadow-slate-200/70"
+            className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border border-slate-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
             style={{ animationDelay: `${(index % 8) * 35}ms` }}
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
-            <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 sm:aspect-square">
+            <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === 'rounded-none' ? '' : 'm-3 mb-0'} ${imageRadiusClass}`}>
                 {imageUrl ? (
                     <img
                         src={imageUrl}
                         alt={product.title}
-                        className={`h-full w-full object-cover transition-transform duration-500 ${productCard?.hoverZoom === false ? '' : 'group-hover:scale-105'}`}
+                        className={`h-full w-full ${imageFitClass} ${imagePaddingClass} transition-transform duration-500 ${productCard?.hoverZoom === false ? '' : 'group-hover:scale-105'}`}
                         loading={index < 6 ? 'eager' : 'lazy'}
                     />
                 ) : (
@@ -412,16 +489,22 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                                 />
                             ))}
                         </span>
-                        <span className="text-slate-400">{rating.toFixed(1)}</span>
+                        <span className="text-slate-400">{rating.toFixed(1)}{showReviews ? ` (${product.numReviews})` : ''}</span>
                     </div>
                 )}
-                <h3 className="line-clamp-2 text-sm font-black leading-snug text-slate-950 sm:text-base">{product.title}</h3>
+                <h3 className={`line-clamp-2 leading-snug text-slate-950 ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800 }}>{product.title}</h3>
                 {productCard?.showCategory !== false && product.category && (
                     <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">{product.category}</p>
                 )}
+                {(productCard?.showStock !== false || productCard?.showSku) && (
+                    <div className="mt-2 space-y-1 text-[11px] font-bold text-slate-400">
+                        {productCard?.showStock !== false && <p>{stockText}</p>}
+                        {productCard?.showSku && sku && <p>SKU: {sku}</p>}
+                    </div>
+                )}
                 <div className="mt-auto flex items-end justify-between gap-3 pt-4">
                     <div>
-                        <p className="text-lg font-black text-slate-950">{formatPrice(price)}</p>
+                        <p className={`${priceSizeClass} font-black`} style={{ color: priceColor }}>{formatPrice(price)}</p>
                         {hasDiscount && originalPrice > price && (
                             <p className="text-xs font-semibold text-slate-400 line-through">{formatPrice(originalPrice)}</p>
                         )}
@@ -431,7 +514,8 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                             type="button"
                             disabled={stock <= 0}
                             onClick={handleAdd}
-                            className="relative z-20 rounded-full bg-[var(--sf-accent)] px-4 py-2 text-xs font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sf-accent-hover)] disabled:bg-slate-300"
+                            className={`relative z-20 border px-4 py-2 text-xs font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white ${buttonShapeClass}`}
+                            style={stock <= 0 ? undefined : buttonInlineStyle}
                         >
                             Add to Cart
                         </button>
@@ -442,8 +526,9 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
     );
 });
 
-const HomepageSection = memo(function HomepageSection({ section, categories, sectionProducts, catalogProducts, storewideDiscount, productCard, layout, onProductAdd, LinkComponent, previewDevice }) {
+const HomepageSection = memo(function HomepageSection({ section, categories, sectionProducts, sectionReviews, catalogProducts, storewideDiscount, productCard, layout, onProductAdd, LinkComponent, previewDevice }) {
     const mobileSettings = section.mobileSettings || {};
+    const [activeImage, setActiveImage] = useState(0);
     const mobileVisibilityClass = mobileSettings.isVisible === false
         ? (isPreviewMobile(previewDevice) ? 'hidden' : previewDevice ? '' : 'hidden md:block')
         : '';
@@ -484,8 +569,14 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
     }
 
     if (section.type === 'Banner') {
-        const imageUrl = section.settings?.desktopImage || section.settings?.image || '';
-        const mobileImageUrl = section.settings?.mobileImage || mobileSettings.image || imageUrl;
+        const desktopImages = normalizeImageList(section.settings?.desktopImages || [], section.settings?.desktopImage, section.settings?.image);
+        const mobileImages = normalizeImageList(section.settings?.mobileImages || [], section.settings?.mobileImage, mobileSettings.image);
+        const images = desktopImages.length ? desktopImages : mobileImages;
+        const mobileDisplayImages = mobileImages.length ? mobileImages : images;
+        const imageIndex = images.length ? activeImage % images.length : 0;
+        const mobileImageIndex = mobileDisplayImages.length ? activeImage % mobileDisplayImages.length : 0;
+        const imageUrl = images[imageIndex] || '';
+        const mobileImageUrl = mobileDisplayImages[mobileImageIndex] || imageUrl;
         return (
             <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
                 <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || '#products'} className="group relative block min-h-[240px] overflow-hidden rounded-[1.75rem] bg-slate-950 shadow-sm sm:min-h-[320px]">
@@ -497,6 +588,27 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
                         {section.settings?.subtitle && <p className="mt-3 max-w-xl text-sm leading-6 text-white/75 sm:text-base">{section.settings.subtitle}</p>}
                         {section.settings?.buttonText && <span className="mt-5 inline-flex w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950">{section.settings.buttonText}</span>}
                     </div>
+                    {images.length > 1 && (
+                        <div className="absolute bottom-5 right-5 z-20 flex items-center gap-2" onClick={event => event.preventDefault()}>
+                            <button type="button" onClick={() => setActiveImage(prev => (prev - 1 + images.length) % images.length)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-950 shadow-sm">
+                                <ChevronLeft size={16} />
+                            </button>
+                            <div className="flex gap-1.5">
+                                {images.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        type="button"
+                                        onClick={() => setActiveImage(index)}
+                                        className={`h-2 rounded-full transition ${index === imageIndex ? 'w-6 bg-white' : 'w-2 bg-white/50'}`}
+                                        aria-label={`Show banner ${index + 1}`}
+                                    />
+                                ))}
+                            </div>
+                            <button type="button" onClick={() => setActiveImage(prev => (prev + 1) % images.length)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-950 shadow-sm">
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    )}
                 </LinkSlot>
             </section>
         );
@@ -504,25 +616,48 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
 
     if (section.type === 'Reviews') {
         const reviewText = section.settings?.text?.trim();
-        if (!reviewText) return null;
+        const reviews = sectionReviews?.[section.id || section._id] || [];
+        if (!reviewText && reviews.length === 0) return null;
         return (
             <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 shadow-sm md:mt-12`}>
                 <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Customer Reviews'}</h2>
-                <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                    <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>
-                    <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{reviewText}</p>
+                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                    {reviews.length > 0 ? reviews.map(review => (
+                        <div key={review._id} className="rounded-2xl bg-slate-50 p-4">
+                            <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>
+                            <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">“{review.comment}”</p>
+                            <div className="mt-4 border-t border-slate-200 pt-3">
+                                <p className="text-sm font-black text-slate-950">{review.name}</p>
+                                {review.product?.title && <p className="text-xs font-semibold text-slate-500">{review.product.title}</p>}
+                                <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">Review ID {String(review._id).slice(-8)}</p>
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="rounded-2xl bg-slate-50 p-4 md:col-span-3">
+                            <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>
+                            <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{reviewText}</p>
+                        </div>
+                    )}
                 </div>
             </section>
         );
     }
 
     if (section.type === 'CategoryList') {
+        const maxCategories = Math.min(Math.max(Number(section.settings?.maxCategories) || 10, 1), 24);
+        const visibleCategories = (categories || []).slice(0, maxCategories);
+        const mobileColumns = Math.min(Math.max(Number(mobileSettings.columns) || 2, 1), 4);
+        const desktopColumns = Math.min(Math.max(Number(section.settings?.columns) || 4, 1), 4);
+        const categoryGridClass = previewDevice
+            ? (isPreviewMobile(previewDevice) ? categoryGridClasses[mobileColumns] : categoryGridClasses[desktopColumns])
+            : `${categoryGridClasses[mobileColumns]} ${categoryDesktopGridClasses[desktopColumns]}`;
+        if (visibleCategories.length === 0) return null;
         return (
             <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm md:mt-12`}>
                 <h2 className="text-2xl font-black text-slate-950">{section.title || 'Shop by category'}</h2>
-                <div className="mt-4 flex flex-wrap gap-2">
-                    {(categories || []).slice(0, 10).map(category => (
-                        <LinkSlot key={category} LinkComponent={LinkComponent} href={`/?category=${encodeURIComponent(category)}`} className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
+                <div className={`mt-4 grid gap-2 ${categoryGridClass}`}>
+                    {visibleCategories.map(category => (
+                        <LinkSlot key={category} LinkComponent={LinkComponent} href={`/?category=${encodeURIComponent(category)}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
                             {category}
                         </LinkSlot>
                     ))}
@@ -587,6 +722,7 @@ export function ReferenceStorefrontHome({
     products = [],
     categories = [],
     sectionProducts = {},
+    sectionReviews = {},
     storewideDiscount = 0,
     loading = false,
     pagination = { page: 1, pages: 1 },
@@ -747,6 +883,7 @@ export function ReferenceStorefrontHome({
                         section={section}
                         categories={categories}
                         sectionProducts={sectionProducts}
+                        sectionReviews={sectionReviews}
                         catalogProducts={catalogProducts}
                         storewideDiscount={storewideDiscount}
                         productCard={productCard}

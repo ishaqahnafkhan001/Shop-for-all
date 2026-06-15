@@ -1,4 +1,6 @@
 const Shop = require('../models/Shop');
+const Review = require('../models/Review');
+const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { ensureThemeSectionArchitecture, normalizeDynamicSections } = require('../services/themeSectionService');
 
@@ -95,6 +97,101 @@ exports.updateStoreBuilderSettings = async (req, res) => {
     } catch (err) {
         console.error('Update store builder settings error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update store builder settings' });
+    }
+};
+
+exports.getStoreBuilderReviews = async (req, res) => {
+    try {
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const rating = Math.min(Math.max(Number(req.query.rating) || 5, 1), 5);
+        const search = String(req.query.search || '').trim();
+        const selectedIds = String(req.query.ids || '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(id => mongoose.Types.ObjectId.isValid(id))
+            .slice(0, 50);
+        const limit = selectedIds.length > 0
+            ? Math.min(Math.max(parseInt(req.query.limit, 10) || selectedIds.length, 1), 50)
+            : Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 10);
+        const shopObjectId = new mongoose.Types.ObjectId(req.tenantId);
+        const match = {
+            shop_id: shopObjectId,
+            rating
+        };
+        if (selectedIds.length > 0) {
+            match._id = { $in: selectedIds.map(id => new mongoose.Types.ObjectId(id)) };
+        }
+        const searchMatch = search
+            ? {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { comment: { $regex: search, $options: 'i' } },
+                    { 'product.title': { $regex: search, $options: 'i' } }
+                ]
+            }
+            : null;
+
+        const [result] = await Review.aggregate([
+            { $match: match },
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+            {
+                $match: {
+                    $or: [
+                        { product: null },
+                        { 'product.shop_id': shopObjectId }
+                    ]
+                }
+            },
+            ...(searchMatch ? [{ $match: searchMatch }] : []),
+            { $sort: { createdAt: -1, _id: -1 } },
+            {
+                $facet: {
+                    data: [
+                        { $skip: (page - 1) * limit },
+                        { $limit: limit },
+                        {
+                            $project: {
+                                _id: 1,
+                                name: 1,
+                                rating: 1,
+                                comment: 1,
+                                createdAt: 1,
+                                product_id: 1,
+                                product: {
+                                    _id: '$product._id',
+                                    title: '$product.title'
+                                }
+                            }
+                        }
+                    ],
+                    total: [{ $count: 'count' }]
+                }
+            }
+        ]);
+
+        const total = result?.total?.[0]?.count || 0;
+
+        res.status(200).json({
+            success: true,
+            data: result?.data || [],
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit) || 1
+            }
+        });
+    } catch (err) {
+        console.error('Get store builder reviews error:', err);
+        res.status(500).json({ success: false, error: 'Failed to load reviews' });
     }
 };
 
