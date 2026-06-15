@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
     BarChart3,
+    Copy,
     Eye,
+    Lightbulb,
     Megaphone,
     MousePointerClick,
     Search,
     ShoppingCart,
     Sparkles,
+    Target,
     TrendingUp
 } from 'lucide-react';
 import API from '../../api/api';
@@ -187,6 +190,17 @@ const GrowthCenter = () => {
         }
     };
 
+    const copyAdText = async (label, value) => {
+        if (!value) return;
+
+        try {
+            await navigator.clipboard.writeText(value);
+            toast.success(`${label} copied`);
+        } catch {
+            toast.error('Could not copy text');
+        }
+    };
+
     return (
         <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -350,11 +364,69 @@ const GrowthCenter = () => {
                                 </div>
                             </div>
                             {adCopy && (
-                                <div className="space-y-2 rounded-lg bg-slate-50 p-4 text-sm">
-                                    <p><strong>Primary:</strong> {adCopy.primaryText}</p>
-                                    <p><strong>Headline:</strong> {adCopy.headline}</p>
-                                    <p><strong>Description:</strong> {adCopy.description}</p>
-                                    <p><strong>CTA:</strong> {adCopy.callToAction}</p>
+                                <div className="space-y-4">
+                                    <AdHelperSection
+                                        icon={Megaphone}
+                                        title="Ad Copy"
+                                        helper="Use these fields when creating a Facebook or Instagram ad."
+                                    >
+                                        <AdCopyRow
+                                            label="Primary caption"
+                                            value={adCopy.primaryText}
+                                            onCopy={() => copyAdText('Primary caption', adCopy.primaryText)}
+                                        />
+                                        <AdCopyRow
+                                            label="Headline"
+                                            value={adCopy.headline}
+                                            onCopy={() => copyAdText('Headline', adCopy.headline)}
+                                        />
+                                        <AdCopyRow
+                                            label="Description"
+                                            value={adCopy.description}
+                                            onCopy={() => copyAdText('Description', adCopy.description)}
+                                        />
+                                        <div className="rounded-lg bg-white p-3">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">CTA</p>
+                                            <p className="mt-1 text-sm font-semibold text-slate-800">{adCopy.callToAction}</p>
+                                        </div>
+                                    </AdHelperSection>
+
+                                    <AdHelperSection
+                                        icon={Target}
+                                        title="Target Audience"
+                                        helper="Estimated targeting ideas based on product data and your store analytics."
+                                    >
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            <AdInfoBlock label="Targeted customer" value={adCopy.targetedCustomer} />
+                                            <AdInfoBlock label="Age range" value={adCopy.targetedAgeRange} />
+                                        </div>
+                                        <AdChipList label="Suggested interests" items={adCopy.suggestedInterests} />
+                                        <AdChipList label="Location focus" items={adCopy.suggestedLocationFocus} />
+                                    </AdHelperSection>
+
+                                    <AdHelperSection
+                                        icon={Lightbulb}
+                                        title="Ad Strategy"
+                                        helper="Use this before spending money so the product has the right campaign angle."
+                                    >
+                                        <AdInfoBlock label="Ad angle" value={adCopy.adAngle} />
+                                        <AdInfoBlock label="Why this audience fits" value={adCopy.audienceReason} />
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Improvement suggestions</p>
+                                            <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                                                {(adCopy.improvementSuggestions || []).map(item => (
+                                                    <li key={item} className="flex gap-2 rounded-lg bg-white px-3 py-2">
+                                                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                                                        <span>{item}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </AdHelperSection>
+
+                                    <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
+                                        Audience suggestions are estimated from product type, store analytics, and order behavior. They do not use private Facebook or Instagram profile data.
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -371,6 +443,56 @@ const MiniMetric = ({ label, value }) => (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
         <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
         <p className="mt-1 text-lg font-black text-slate-950">{value}</p>
+    </div>
+);
+
+const AdHelperSection = ({ icon: Icon, title, helper, children }) => (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-3 flex items-start gap-3">
+            <div className="rounded-lg bg-white p-2 text-indigo-600 shadow-sm">
+                <Icon size={18} />
+            </div>
+            <div>
+                <h4 className="font-black text-slate-950">{title}</h4>
+                <p className="text-xs leading-5 text-slate-500">{helper}</p>
+            </div>
+        </div>
+        <div className="space-y-3">{children}</div>
+    </div>
+);
+
+const AdCopyRow = ({ label, value, onCopy }) => (
+    <div className="rounded-lg bg-white p-3">
+        <div className="mb-1 flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
+            <Button size="sm" variant="secondary" onClick={onCopy} className="min-h-8 px-2 py-1">
+                <Copy size={14} />
+                Copy
+            </Button>
+        </div>
+        <p className="text-sm font-semibold leading-6 text-slate-800">{value}</p>
+    </div>
+);
+
+const AdInfoBlock = ({ label, value }) => (
+    <div className="rounded-lg bg-white p-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="mt-1 text-sm font-semibold leading-6 text-slate-800">{value || 'Not enough data yet'}</p>
+    </div>
+);
+
+const AdChipList = ({ label, items = [] }) => (
+    <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+            {items.length === 0 ? (
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">Not enough data yet</span>
+            ) : items.map(item => (
+                <span key={item} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 shadow-sm">
+                    {item}
+                </span>
+            ))}
+        </div>
     </div>
 );
 

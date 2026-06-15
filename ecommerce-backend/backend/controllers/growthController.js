@@ -23,6 +23,214 @@ const getRangeStart = (queryRange) => {
 
 const roundRate = (value) => Math.round((Number(value || 0)) * 100) / 100;
 const rate = (part, total) => total > 0 ? roundRate((part / total) * 100) : 0;
+const defaultLocationFocus = ['Dhaka', 'Chattogram', 'Gazipur', 'Narayanganj', 'Sylhet'];
+
+const uniqueList = (items, limit = 8) => [
+    ...new Set((items || []).map(item => String(item || '').trim()).filter(Boolean))
+].slice(0, limit);
+
+const textIncludes = (text, keywords) => keywords.some(keyword => text.includes(keyword));
+
+const getProductAudienceBase = (product) => {
+    const tags = Array.isArray(product.tags) ? product.tags : [];
+    const haystack = `${product.title || ''} ${product.category || ''} ${tags.join(' ')} ${product.description || ''}`.toLowerCase();
+
+    if (textIncludes(haystack, ['saree', 'women', 'female', 'beauty', 'cosmetic', 'jewelry', 'makeup'])) {
+        return {
+            targetedCustomer: 'Women shopping for fashion, beauty, gifts, and occasion-ready products',
+            targetedAgeRange: '18-44',
+            suggestedInterests: ['Women fashion', 'Online shopping', 'Eid collection', 'Beauty products', 'Lifestyle shopping'],
+            adAngle: 'Style, occasion, and confidence-focused offer'
+        };
+    }
+
+    if (textIncludes(haystack, ['panjabi', 't-shirt', 'men', 'wallet', 'sneaker', 'shoe', 'footwear'])) {
+        return {
+            targetedCustomer: 'Men and gift buyers looking for practical fashion and daily-use products',
+            targetedAgeRange: '18-45',
+            suggestedInterests: ['Men fashion', 'Casual wear', 'Online shopping', 'Eid shopping', 'Lifestyle products'],
+            adAngle: 'Daily use, comfort, and value-focused offer'
+        };
+    }
+
+    if (textIncludes(haystack, ['phone', 'mobile', 'electronics', 'gadget', 'laptop', 'charger', 'speaker', 'headphone'])) {
+        return {
+            targetedCustomer: 'Tech shoppers comparing gadgets, accessories, and useful everyday electronics',
+            targetedAgeRange: '18-40',
+            suggestedInterests: ['Mobile phones', 'Gadgets', 'Electronics', 'Tech accessories', 'Online deals'],
+            adAngle: 'Feature, price, and convenience-focused offer'
+        };
+    }
+
+    if (textIncludes(haystack, ['home', 'living', 'decor', 'kitchen', 'furniture', 'lamp', 'bottle'])) {
+        return {
+            targetedCustomer: 'Home and lifestyle shoppers looking for useful, good-looking everyday items',
+            targetedAgeRange: '22-50',
+            suggestedInterests: ['Home decor', 'Home improvement', 'Lifestyle shopping', 'Kitchen products', 'Online shopping'],
+            adAngle: 'Home upgrade and daily convenience-focused offer'
+        };
+    }
+
+    if (textIncludes(haystack, ['baby', 'kids', 'toy', 'school'])) {
+        return {
+            targetedCustomer: 'Parents and family shoppers buying safe, useful, and giftable products',
+            targetedAgeRange: '24-45',
+            suggestedInterests: ['Parenting', 'Kids products', 'Family shopping', 'Baby care', 'Online shopping'],
+            adAngle: 'Trust, safety, and family value-focused offer'
+        };
+    }
+
+    return {
+        targetedCustomer: 'Online shoppers in Bangladesh interested in trusted products and Cash on Delivery',
+        targetedAgeRange: '18-45',
+        suggestedInterests: ['Online shopping', 'Cash on Delivery', 'E-commerce', 'Discount offers', 'New arrivals'],
+        adAngle: 'Trust, value, and easy ordering-focused offer'
+    };
+};
+
+const getMetricStrategy = (label) => {
+    const normalizedLabel = label === 'needs_data' ? 'not_enough_data' : label;
+    const strategies = {
+        winner: {
+            adAngle: 'Best-performing product with proven customer interest',
+            audienceReason: 'This product already gets engagement and orders, so it is safer to test with a broader buyer audience.',
+            improvementSuggestions: [
+                'Keep stock ready before increasing ad spend',
+                'Use best-seller or popular product wording',
+                'Send traffic directly to the product page'
+            ]
+        },
+        hidden_gem: {
+            adAngle: 'High-converting product that needs more reach',
+            audienceReason: 'Current traffic is limited, but the product shows buying intent when people see it.',
+            improvementSuggestions: [
+                'Run a small test campaign first',
+                'Feature the product on the homepage',
+                'Use clear product benefits in the first line'
+            ]
+        },
+        fix_before_ads: {
+            adAngle: 'Improve trust and product presentation before scaling ads',
+            audienceReason: 'People view this product but do not add it to cart, so creative or product-page clarity may be weak.',
+            improvementSuggestions: [
+                'Improve the first product image',
+                'Make price, delivery, and return details clearer',
+                'Add stronger short description and benefit bullets'
+            ]
+        },
+        checkout_problem: {
+            adAngle: 'Fix checkout friction before spending more',
+            audienceReason: 'Customers add this product to cart but do not finish orders, which points to checkout, delivery, or trust friction.',
+            improvementSuggestions: [
+                'Review delivery charge and checkout fields',
+                'Show COD, return, and support information clearly',
+                'Check stock, coupon, and payment issues'
+            ]
+        },
+        low_interest: {
+            adAngle: 'Test a sharper offer before running a larger campaign',
+            audienceReason: 'The product has not shown enough interest yet, so use a small test and improve the creative first.',
+            improvementSuggestions: [
+                'Improve title and thumbnail',
+                'Test a discount or bundle angle',
+                'Compare demand with similar products'
+            ]
+        },
+        not_enough_data: {
+            adAngle: 'Collect more traffic before making a strong ad decision',
+            audienceReason: 'There is not enough store activity yet to confidently judge this product.',
+            improvementSuggestions: [
+                'Share organically before paid ads',
+                'Add it to featured products',
+                'Wait for more views, carts, and orders'
+            ]
+        }
+    };
+
+    return strategies[normalizedLabel] || strategies.not_enough_data;
+};
+
+const getTopBuyerLocations = async ({ shopId, productId, from }) => {
+    const shopObjectId = asObjectId(shopId);
+    const productObjectId = asObjectId(productId);
+
+    const locations = await Order.aggregate([
+        {
+            $match: {
+                shop_id: shopObjectId,
+                isDeleted: false,
+                createdAt: { $gte: from },
+                'items.productId': productObjectId
+            }
+        },
+        { $unwind: '$items' },
+        { $match: { 'items.productId': productObjectId } },
+        {
+            $project: {
+                city: { $trim: { input: { $ifNull: ['$shipping.address.city', ''] } } }
+            }
+        },
+        { $match: { city: { $ne: '' } } },
+        {
+            $group: {
+                _id: { $toLower: '$city' },
+                city: { $first: '$city' },
+                orders: { $sum: 1 }
+            }
+        },
+        { $sort: { orders: -1, city: 1 } },
+        { $limit: 5 }
+    ]);
+
+    return uniqueList(locations.map(item => item.city), 5);
+};
+
+const getProductAudienceSuggestion = ({ product, metrics, campaignType, language, locations }) => {
+    const base = getProductAudienceBase(product);
+    const strategy = getMetricStrategy(metrics?.label || metrics?.recommendation?.label || 'not_enough_data');
+    const price = product.pricing?.sellingPrice;
+    const title = product.title;
+    const campaignText = String(campaignType || 'general').replace(/_/g, ' ');
+    const locationFocus = uniqueList(locations, 5);
+    const suggestedLocationFocus = locationFocus.length ? locationFocus : defaultLocationFocus;
+    const interests = uniqueList([
+        ...(Array.isArray(product.tags) ? product.tags : []),
+        product.category,
+        ...base.suggestedInterests
+    ], 8);
+
+    const templates = {
+        en: {
+            primaryText: `Discover ${title} today. Order with Cash on Delivery across Bangladesh${price ? ` from BDT ${price}` : ''}.`,
+            headline: title,
+            description: campaignText === 'general' ? 'Limited stock available.' : `Perfect for your ${campaignText} campaign.`,
+            callToAction: 'Shop Now'
+        },
+        bn: {
+            primaryText: `${title} ekhoni order korun. Bangladesh jure Cash on Delivery available${price ? `, price BDT ${price}` : ''}.`,
+            headline: title,
+            description: 'Limited stock available.',
+            callToAction: 'Order Now'
+        },
+        banglish: {
+            primaryText: `${title} niye nin ajkei. Cash on Delivery available, stock limited.`,
+            headline: `${title} - order now`,
+            description: campaignText === 'general' ? 'Fast delivery and easy ordering.' : `${campaignText} er jonno perfect offer.`,
+            callToAction: 'Shop Now'
+        }
+    };
+
+    return {
+        ...(templates[language] || templates.en),
+        targetedCustomer: base.targetedCustomer,
+        targetedAgeRange: base.targetedAgeRange,
+        suggestedInterests: interests,
+        suggestedLocationFocus,
+        adAngle: strategy.adAngle || base.adAngle,
+        audienceReason: strategy.audienceReason,
+        improvementSuggestions: strategy.improvementSuggestions
+    };
+};
 
 const classifyProduct = (metrics) => {
     const addToCartRate = metrics.addToCartRate || 0;
@@ -441,6 +649,7 @@ exports.getGrowthRecommendations = async (req, res) => {
 exports.generateAdCopy = async (req, res) => {
     try {
         const { productId, language = 'en', campaignType = 'general' } = req.body;
+        const { from } = getRangeStart(req.body.range);
 
         if (!mongoose.Types.ObjectId.isValid(productId)) {
             return res.status(400).json({ success: false, error: 'Valid productId is required' });
@@ -450,40 +659,29 @@ exports.generateAdCopy = async (req, res) => {
             _id: productId,
             shop_id: req.tenantId,
             isDeleted: false
-        }).select('title category pricing').lean();
+        }).select('title category tags description pricing').lean();
 
         if (!product) {
             return res.status(404).json({ success: false, error: 'Product not found' });
         }
 
-        const price = product.pricing?.sellingPrice;
-        const campaignText = String(campaignType || 'general').replace(/_/g, ' ');
-        const title = product.title;
-
-        const templates = {
-            en: {
-                primaryText: `Discover ${title} today. Order with Cash on Delivery across Bangladesh${price ? ` from BDT ${price}` : ''}.`,
-                headline: title,
-                description: campaignText === 'general' ? 'Limited stock available.' : `Perfect for your ${campaignText} campaign.`,
-                callToAction: 'Shop Now'
-            },
-            bn: {
-                primaryText: `${title} ekhoni order korun. Bangladesh jure Cash on Delivery available${price ? `, price BDT ${price}` : ''}.`,
-                headline: title,
-                description: 'Limited stock available.',
-                callToAction: 'Order Now'
-            },
-            banglish: {
-                primaryText: `${title} niye nin ajkei. Cash on Delivery available, stock limited.`,
-                headline: `${title} - order now`,
-                description: campaignText === 'general' ? 'Fast delivery and easy ordering.' : `${campaignText} er jonno perfect offer.`,
-                callToAction: 'Shop Now'
-            }
-        };
+        const [[metrics], locations] = await Promise.all([
+            getProductMetrics({ shopId: req.tenantId, from, productId }),
+            getTopBuyerLocations({ shopId: req.tenantId, productId, from })
+        ]);
 
         res.status(200).json({
             success: true,
-            data: templates[language] || templates.en
+            data: getProductAudienceSuggestion({
+                product,
+                metrics: metrics || {
+                    label: 'not_enough_data',
+                    recommendation: classifyProduct({ views: 0, addToCarts: 0, orders: 0 })
+                },
+                campaignType,
+                language,
+                locations
+            })
         });
     } catch (err) {
         console.error('Generate ad copy error:', err);
