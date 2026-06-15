@@ -1,4 +1,4 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
     LayoutDashboard,
@@ -20,7 +20,6 @@ import {
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate();
     const isSuperAdmin = user?.role === 'SuperAdmin';
 
     const vendorNavItems = [
@@ -100,28 +99,36 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                 <span>{activeItem.name}</span>
                             </NavLink>
                         )}
-                        <div className="pt-4">
-                            <label className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
-                                Go to another page
-                            </label>
-                            <select
-                                value={activeItem?.path || ''}
-                                onChange={(event) => {
-                                    navigate(event.target.value);
-                                    setIsOpen(false);
-                                }}
-                                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        <div className="pt-4">
+            <p className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Navigation
+            </p>
+            <div className="mt-2 space-y-1.5">
+                {navItems
+                    .filter(item => item.path !== activeItem?.path)
+                    .map((item) => {
+                        const Icon = item.icon;
+
+                        return (
+                            <NavLink
+                                key={item.name}
+                                to={item.path}
+                                end={item.path === '/dashboard'}
+                                onClick={() => setIsOpen(false)}
+                                className={({ isActive }) => `
+                                    group flex items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition
+                                    ${isActive
+                                        ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}
+                                `}
                             >
-                                {navItems.map((item) => (
-                                    <option key={item.name} value={item.path}>
-                                        {item.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <p className="mt-3 px-3 text-xs leading-5 text-slate-500">
-                                Only the selected page is shown here to keep the dashboard simple. Use this menu when you want to move somewhere else.
-                            </p>
-                        </div>
+                                <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-400 transition group-hover:text-slate-600" />
+                                <span>{item.name}</span>
+                            </NavLink>
+                        );
+                    })}
+            </div>
+        </div>
                     </nav>
                 </div>
             </div>
