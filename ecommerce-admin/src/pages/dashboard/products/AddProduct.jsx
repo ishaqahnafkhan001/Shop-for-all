@@ -34,6 +34,8 @@ const AddProduct = () => {
     const [imageFiles, setImageFiles] = useState([]);
     const [videoFiles, setVideoFiles] = useState([]);
     const [previewImageUrl, setPreviewImageUrl] = useState(null);
+    const [collections, setCollections] = useState([]);
+    const [selectedCollections, setSelectedCollections] = useState([]);
 
     // ── Scalar fields ─────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
@@ -70,6 +72,25 @@ const AddProduct = () => {
 
     const finalPrice = formData.pricing.sellingPrice - (formData.pricing.sellingPrice * formData.pricing.discount) / 100;
     const profit     = (finalPrice || 0) - (Number(formData.pricing.buyingPrice) || 0);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchCollections = async () => {
+            try {
+                const { data } = await API.get('/admin/collections');
+                if (isMounted) setCollections(data.data || []);
+            } catch (error) {
+                console.warn('Failed to load collections', error);
+            }
+        };
+
+        fetchCollections();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     // Live Image Preview Effect
     useEffect(() => {
@@ -225,6 +246,30 @@ const AddProduct = () => {
         pricing: { ...formData.pricing, [e.target.id]: Number(e.target.value) }
     });
 
+    const handleImageFiles = (files) => {
+        const nextFiles = Array.from(files || []);
+        if (nextFiles.length > 5) {
+            toast.error('You can upload up to 5 product images.');
+        }
+        setImageFiles(nextFiles.slice(0, 5));
+    };
+
+    const handleVideoFiles = (files) => {
+        const nextFiles = Array.from(files || []);
+        if (nextFiles.length > 2) {
+            toast.error('You can upload up to 2 product videos.');
+        }
+        setVideoFiles(nextFiles.slice(0, 2));
+    };
+
+    const toggleCollection = (collectionId) => {
+        setSelectedCollections(prev =>
+            prev.includes(collectionId)
+                ? prev.filter(id => id !== collectionId)
+                : [...prev, collectionId]
+        );
+    };
+
     const handleKVChange = (type, index, field, value) => {
         const updated = [...formData[type]];
         updated[index][field] = value;
@@ -238,11 +283,11 @@ const AddProduct = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (validAttrs.length === 0) {
-            toast.error('Add at least one attribute with options (e.g. color: black, white)');
+        if (imageFiles.length === 0) {
+            toast.error('Add at least one product image.');
             return;
         }
-        if (combinations.length === 0) {
+        if (validAttrs.length > 0 && combinations.length === 0) {
             toast.error('No variant combinations generated. Check your attributes.');
             return;
         }
@@ -303,11 +348,16 @@ const AddProduct = () => {
             data.append('lowStockThreshold', String(formData.lowStockThreshold || 5));
             data.append('seo',            JSON.stringify(formData.seo));
             data.append('pricing',        JSON.stringify(formData.pricing));
-            data.append('variantMatrix',  JSON.stringify({
-                attributes:   validAttrs,
-                defaultStock: Number(defaultStock),
-                overrides
-            }));
+            data.append('collections',    JSON.stringify(selectedCollections));
+            if (validAttrs.length > 0) {
+                data.append('variantMatrix',  JSON.stringify({
+                    attributes:   validAttrs,
+                    defaultStock: Number(defaultStock),
+                    overrides
+                }));
+            } else {
+                data.append('simpleStock', String(defaultStock));
+            }
             data.append('features',       JSON.stringify(formData.features));
             data.append('specifications', JSON.stringify(formData.specifications));
             data.append('comments',       JSON.stringify(formData.comments));
@@ -322,7 +372,8 @@ const AddProduct = () => {
             toast.success(formData.status === 'Draft' ? 'Product saved as draft.' : 'Product published to your store.');
             navigate('/dashboard/products');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to add product');
+            const response = err.response?.data;
+            toast.error(response?.details || response?.error || response?.message || 'Failed to add product');
         } finally {
             setIsLoading(false);
         }
@@ -353,6 +404,29 @@ const AddProduct = () => {
                         <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
 
                         <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
+
+                        {collections.length > 0 && (
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">Collections</label>
+                                <div className="flex flex-wrap gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                    {collections.map(collection => (
+                                        <button
+                                            key={collection._id}
+                                            type="button"
+                                            onClick={() => toggleCollection(collection._id)}
+                                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                selectedCollections.includes(collection._id)
+                                                    ? 'border-indigo-500 bg-indigo-600 text-white'
+                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200 hover:text-indigo-600'
+                                            }`}
+                                        >
+                                            {collection.title}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-gray-500">Optional. Collections help organize products in storefront sections and catalog filters.</p>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <Input id="slug" label="Product Slug" value={formData.slug} onChange={handleChange} />
@@ -430,10 +504,10 @@ const AddProduct = () => {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-gray-600">Images (max 10)</label>
+                                <label className="text-sm font-medium text-gray-600">Images (max 5)</label>
                                 <input
                                     type="file" accept="image/*" multiple
-                                    onChange={(e) => setImageFiles(Array.from(e.target.files))}
+                                    onChange={(e) => handleImageFiles(e.target.files)}
                                     className="w-full border rounded-lg p-2 text-sm bg-gray-50"
                                 />
                                 {imageFiles.length > 0 && (
@@ -446,7 +520,7 @@ const AddProduct = () => {
                                 </label>
                                 <input
                                     type="file" accept="video/*" multiple
-                                    onChange={(e) => setVideoFiles(Array.from(e.target.files))}
+                                    onChange={(e) => handleVideoFiles(e.target.files)}
                                     className="w-full border rounded-lg p-2 text-sm bg-gray-50"
                                 />
                                 {videoFiles.length > 0 && (
@@ -487,7 +561,7 @@ const AddProduct = () => {
                             <div>
                                 <h2 className="font-semibold text-gray-700">Variants</h2>
                                 <p className="text-xs text-gray-400 mt-0.5">
-                                    Add options like color or size. They are combined into sellable variants.
+                                    Optional. Add options like color or size, or leave this empty for a simple product.
                                 </p>
                             </div>
                             {combinations.length > 0 && (
@@ -699,12 +773,37 @@ const AddProduct = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <input
-                                                        value={getVariantField(combo, 'image')}
-                                                        onChange={(e) => setVariantField(combo, 'image', e.target.value)}
-                                                        placeholder="https://..."
-                                                        className="w-full border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                                    />
+                                                    <div className="space-y-1">
+                                                        <select
+                                                            value={(() => {
+                                                                const imageValue = getVariantField(combo, 'image');
+                                                                if (!imageValue) return '';
+                                                                return imageValue.startsWith('product-image:') ? imageValue : 'custom';
+                                                            })()}
+                                                            onChange={(e) => setVariantField(combo, 'image', e.target.value === 'custom' ? '' : e.target.value)}
+                                                            className="w-full border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+                                                        >
+                                                            <option value="">Default</option>
+                                                            {imageFiles.map((file, index) => (
+                                                                <option key={`${file.name}-${index}`} value={`product-image:${index}`}>
+                                                                    Product image {index + 1}
+                                                                </option>
+                                                            ))}
+                                                            <option value="custom">Custom URL</option>
+                                                        </select>
+                                                        {(() => {
+                                                            const imageValue = getVariantField(combo, 'image');
+                                                            const isCustom = imageValue && !imageValue.startsWith('product-image:');
+                                                            return (
+                                                                <input
+                                                                    value={isCustom ? imageValue : ''}
+                                                                    onChange={(e) => setVariantField(combo, 'image', e.target.value)}
+                                                                    placeholder="or paste URL"
+                                                                    className="w-full border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                                />
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </td>
                                                 <td className="px-3 py-2">
                                                     <select
@@ -735,7 +834,7 @@ const AddProduct = () => {
 
                         {validAttrs.length === 0 && (
                             <p className="text-xs text-gray-400 text-center py-2">
-                                Add an attribute name and at least one option, e.g. color: black, white.
+                                No options added. This will be saved as one simple product variant using the default stock.
                             </p>
                         )}
                     </div>

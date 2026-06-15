@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 
 import {
     ShieldCheck,
@@ -29,6 +29,7 @@ import API from "@/api/api";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useStorefrontTheme } from "@/components/storefront/StorefrontThemeProvider";
+import { trackStorefrontEvent } from "@/utils/analyticsTracker";
 
 export default function CheckoutPage({ params }) {
 
@@ -46,6 +47,8 @@ export default function CheckoutPage({ params }) {
     } = useCart();
     const { user } = useAuth();
     const { theme } = useStorefrontTheme();
+    const checkoutTrackedRef = useRef('');
+    const customerId = user?.role === "Customer" ? (user._id || user.id) : null;
     const policies = useMemo(() => theme.policies || {}, [theme.policies]);
     const visiblePolicies = useMemo(() => (
         [
@@ -95,6 +98,33 @@ export default function CheckoutPage({ params }) {
     const promotionDiscount = promotionPreview?.discountAmount || 0;
     const finalShippingCost = promotionPreview?.freeShipping ? 0 : shippingCost;
     const totalAmount = Math.max(0, subtotal - promotionDiscount) + finalShippingCost;
+
+    useEffect(() => {
+        if (cartItems.length === 0) return;
+
+        const checkoutKey = cartItems
+            .map(item => `${item._id}:${item.variantId || item.selectedVariant?._id || 'default'}:${item.quantity}`)
+            .join('|');
+
+        if (checkoutTrackedRef.current === checkoutKey) return;
+        checkoutTrackedRef.current = checkoutKey;
+
+        cartItems.forEach((item) => {
+            const unitPrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
+            trackStorefrontEvent({
+                subdomain,
+                eventType: 'begin_checkout',
+                customer_id: customerId,
+                product_id: item._id,
+                variant_id: item.variantId || item.selectedVariant?._id,
+                value: unitPrice * item.quantity,
+                metadata: {
+                    productTitle: item.title,
+                    quantity: item.quantity
+                }
+            });
+        });
+    }, [cartItems, customerId, subdomain]);
 
     // =========================================
     // FETCH PRODUCTS
@@ -325,6 +355,30 @@ export default function CheckoutPage({ params }) {
                     _id: response.data.orderId || response.data.order?._id || response.data._id,
                 };
             }
+
+            cartItems.forEach((item) => {
+                const unitPrice =
+                    item.cartPrice ||
+                    item.finalPrice ||
+                    item.sellingPrice ||
+                    0;
+
+                trackStorefrontEvent({
+                    subdomain,
+                    eventType: "order_placed",
+                    customer_id: customerId,
+                    product_id: item._id,
+                    variant_id: item.variantId || item.selectedVariant?._id,
+                    order_id: savedOrderData._id,
+                    value: unitPrice * item.quantity,
+                    metadata: {
+                        productTitle: item.title,
+                        quantity: item.quantity,
+                        orderTotal: totalAmount,
+                        paymentMethod: "COD"
+                    }
+                });
+            });
 
             setOrderId(savedOrderData._id);
 
@@ -693,6 +747,7 @@ export default function CheckoutPage({ params }) {
                                 {cartItems.map((item) => {
 
                                     const product = productsDetails[item._id];
+                                    const imageUrl = item.imageUrl || product?.thumbnail || product?.images?.[0] || "";
 
                                     return (
                                         // Changed key from item.cartId to item._id
@@ -703,18 +758,19 @@ export default function CheckoutPage({ params }) {
 
                                             <div className="flex gap-4">
 
-                                                <Image
-                                                    src={
-                                                        item.imageUrl ||
-                                                        product?.thumbnail ||
-                                                        product?.images?.[0] ||
-                                                        "/placeholder.png"
-                                                    }
-                                                    alt={item.title}
-                                                    width={96}
-                                                    height={96}
-                                                    className="h-20 w-20 rounded-2xl border border-slate-200 object-cover sm:h-24 sm:w-24"
-                                                />
+                                                {imageUrl ? (
+                                                    <Image
+                                                        src={imageUrl}
+                                                        alt={item.title}
+                                                        width={96}
+                                                        height={96}
+                                                        className="h-20 w-20 rounded-2xl border border-slate-200 object-cover sm:h-24 sm:w-24"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-300 sm:h-24 sm:w-24">
+                                                        <Package size={28} />
+                                                    </div>
+                                                )}
 
                                                 <div className="flex-1">
 

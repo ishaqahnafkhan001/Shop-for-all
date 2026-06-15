@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, lazy, Suspense, useState } from 'react';
+import React, { useCallback, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useCart }    from '@/context/CartContext';
 import { useAuth }    from '@/context/AuthContext';
 import { useRouter }  from 'next/navigation';
@@ -12,6 +12,7 @@ import ProductInfo           from './ProductInfo';
 import VariantSelector       from './VariantSelector';
 import ActionButtons         from './ActionButtons';
 import { ProductFeatures, ProductSpecifications, ExpertNotes } from './ProductExtras';
+import { trackStorefrontEvent } from '@/utils/analyticsTracker';
 
 // Below-the-fold sections are lazily loaded — they're not needed for LCP
 const ReviewSection   = lazy(() => import('./ReviewSection'));
@@ -37,6 +38,7 @@ export default function ProductDetails({ params }) {
     const router            = useRouter();
     const isLoggedIn        = !!user;
     const [quantity, setQuantity] = useState(1);
+    const trackedProductRef = useRef(null);
 
     const {
         product, relatedProducts, reviews,
@@ -45,6 +47,25 @@ export default function ProductDetails({ params }) {
         displayStock, baseOriginalPrice, displayDiscount, displayFinalPrice,
         handleAttributeSelect, refreshProductStats,
     } = useProductData(subdomain, id);
+    const customerId = user?.role === 'Customer' ? (user._id || user.id) : null;
+
+    useEffect(() => {
+        if (!product?._id || trackedProductRef.current === product._id) return;
+
+        trackedProductRef.current = product._id;
+        trackStorefrontEvent({
+            subdomain,
+            eventType: 'product_view',
+            customer_id: customerId,
+            product_id: product._id,
+            variant_id: currentVariant?._id,
+            value: displayFinalPrice || product.finalPrice || product.sellingPrice || 0,
+            metadata: {
+                productTitle: product.title,
+                category: product.category
+            }
+        });
+    }, [customerId, currentVariant?._id, displayFinalPrice, product, subdomain]);
 
     /* Stable cart handlers — won't cause child re-renders */
     const handleAddToCart = useCallback(() => {
@@ -57,7 +78,22 @@ export default function ProductDetails({ params }) {
             cartPrice: displayFinalPrice,
             imageUrl: currentVariant?.image || product.images?.[0]
         }, quantity);
-    }, [addToCart, product, currentVariant, displayFinalPrice, quantity]);
+
+        trackStorefrontEvent({
+            subdomain,
+            eventType: 'add_to_cart',
+            customer_id: customerId,
+            product_id: product._id,
+            variant_id: currentVariant?._id,
+            value: displayFinalPrice || product.finalPrice || product.sellingPrice || 0,
+            metadata: {
+                productTitle: product.title,
+                category: product.category,
+                quantity,
+                location: 'product_detail'
+            }
+        });
+    }, [addToCart, customerId, product, currentVariant, displayFinalPrice, quantity, subdomain]);
 
     const handleBuyNow = useCallback(() => {
         handleAddToCart();

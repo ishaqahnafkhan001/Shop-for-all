@@ -11,7 +11,7 @@ const normalizeProduct = (p) => {
         discount,
         finalPrice,
         stock: p?.totalStock ?? p?.stock ?? 0,
-        imageUrl: p?.imageUrl || p?.images?.[0] || 'https://via.placeholder.com/400',
+        imageUrl: p?.imageUrl || p?.images?.[0] || '',
     };
 };
 
@@ -21,7 +21,8 @@ export const useShopData = (subdomain, filters) => {
         sort,
         category,
         minPrice,
-        maxPrice
+        maxPrice,
+        minRating
     } = filters;
     const [data, setData] = useState({
         shop: null,
@@ -48,6 +49,7 @@ export const useShopData = (subdomain, filters) => {
                     ...(category !== 'All' && { category }),
                     ...(minPrice && { minPrice }),
                     ...(maxPrice && { maxPrice }),
+                    ...(minRating && { minRating }),
                 };
 
                 const bootstrapRes = await API.get(`/storefront/${subdomain}/bootstrap`, { params });
@@ -82,7 +84,7 @@ export const useShopData = (subdomain, filters) => {
         if (subdomain) fetchBootstrap();
 
         return () => { isMounted = false; };
-    }, [subdomain, page, sort, category, minPrice, maxPrice]);
+    }, [subdomain, page, sort, category, minPrice, maxPrice, minRating]);
 
     return data; // Returns { shop, products, categories, banners, pagination, loading, error }
 };

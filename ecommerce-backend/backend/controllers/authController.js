@@ -73,6 +73,38 @@ const getCookieOptions = () => {
         domain: undefined,
     };
 };
+
+const extractSubdomainFromHost = (host = '') => {
+    const hostname = String(host).split(':')[0].toLowerCase();
+
+    if (hostname.includes('.localhost')) {
+        const localSubdomain = hostname.split('.localhost')[0];
+        return localSubdomain && localSubdomain !== 'localhost' ? localSubdomain : '';
+    }
+
+    if (hostname.endsWith('.scaleup.codes')) {
+        const [subdomain] = hostname.split('.');
+        return ['www', 'api', 'admin', 'shop', 'scaleup'].includes(subdomain) ? '' : subdomain;
+    }
+
+    return '';
+};
+
+const extractSubdomainFromUrl = (value = '') => {
+    try {
+        return extractSubdomainFromHost(new URL(value).host);
+    } catch {
+        return '';
+    }
+};
+
+const getResetPayload = (req) => ({
+    ...req.body,
+    subdomain: req.body?.subdomain ||
+        req.get('x-shop-subdomain') ||
+        extractSubdomainFromUrl(req.get('origin')) ||
+        extractSubdomainFromUrl(req.get('referer'))
+});
 exports.sendOTP = async (req, res) => {
     try {
         const email = normalizeEmail(req.body.email);
@@ -562,7 +594,7 @@ exports.login = async (req, res) => {
 
 exports.forgotPassword = async (req, res) => {
     try {
-        const { error, value } = forgotPasswordSchema.validate(req.body);
+        const { error, value } = forgotPasswordSchema.validate(getResetPayload(req));
 
         if (error) {
             return res.status(400).json({ error: error.details[0].message });
@@ -586,7 +618,7 @@ exports.forgotPassword = async (req, res) => {
 
 exports.verifyResetOtp = async (req, res) => {
     try {
-        const { error, value } = verifyResetOtpSchema.validate(req.body);
+        const { error, value } = verifyResetOtpSchema.validate(getResetPayload(req));
 
         if (error) {
             return res.status(400).json({ error: error.details[0].message });
@@ -614,7 +646,7 @@ exports.verifyResetOtp = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
     try {
-        const { error, value } = resetPasswordSchema.validate(req.body);
+        const { error, value } = resetPasswordSchema.validate(getResetPayload(req));
 
         if (error) {
             return res.status(400).json({ error: error.details[0].message });

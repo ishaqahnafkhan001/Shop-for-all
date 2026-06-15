@@ -132,6 +132,25 @@ exports.uploadStoreBuilderLogo = async (req, res) => {
     }
 };
 
+exports.uploadStoreBuilderImage = async (req, res) => {
+    try {
+        if (!req.file?.path) {
+            return res.status(400).json({ success: false, error: 'Image is required' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Image uploaded',
+            data: {
+                url: req.file.path
+            }
+        });
+    } catch (err) {
+        console.error('Upload store builder image error:', err);
+        res.status(400).json({ success: false, error: err.message || 'Failed to upload image' });
+    }
+};
+
 exports.getPublicStorefrontSettings = async (req, res) => {
     try {
         const cacheKey = `storefront:settings:${req.tenantId}`;

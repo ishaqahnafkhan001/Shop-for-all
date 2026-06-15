@@ -110,22 +110,67 @@ const findOrCreateAccountFromLegacy = async ({ email, audience, shop }) => {
     return account;
 };
 
-const resolveResetTarget = async ({ email, subdomain, audience = 'customer' }) => {
+const createMembershipFromLegacyIfSafe = async ({ email, audience, shop, account }) => {
+    if (!shop || !account) return null;
+
+    const legacyUsers = await User.find({
+        email,
+        status: 'Active',
+        role: { $in: getRolesForAudience(audience) },
+        shop_id: shop._id
+    }).limit(2);
+
+    if (legacyUsers.length !== 1) return null;
+
+    const legacyUser = legacyUsers[0];
+    if (legacyUser.account_id && String(legacyUser.account_id) !== String(account._id)) {
+        return null;
+    }
+
+    try {
+        return await createMembershipForLegacyUser(legacyUser, account);
+    } catch (error) {
+        if (!/duplicate key|already/i.test(error.message)) {
+            throw error;
+        }
+
+        return ShopMembership.findOne({
+            account_id: account._id,
+            shop_id: shop._id,
+            role: { $in: getRolesForAudience(audience) }
+        });
+    }
+};
+
+const resolveResetTargetWithReason = async ({ email, subdomain, audience = 'customer' }) => {
     const cleanEmail = normalizeEmail(email);
     const normalizedAudience = audience === 'admin' ? 'admin' : 'customer';
+    const cleanSubdomain = String(subdomain || '').trim().toLowerCase();
 
     let shop = null;
-    if (subdomain) {
+    if (cleanSubdomain) {
         shop = await Shop.findOne({
-            subdomain: String(subdomain).trim().toLowerCase(),
+            subdomain: cleanSubdomain,
             isActive: true
-        }).select('_id shopName subdomain').lean();
+        }).select('_id shopName subdomain approvalStatus').lean();
 
-        if (!shop) return null;
+        if (!shop) {
+            return {
+                target: null,
+                reason: 'shop_not_found',
+                shop: null,
+                subdomain: cleanSubdomain
+            };
+        }
     }
 
     if (normalizedAudience === 'customer' && !shop) {
-        return null;
+        return {
+            target: null,
+            reason: 'missing_subdomain',
+            shop: null,
+            subdomain: cleanSubdomain
+        };
     }
 
     let account = await Account.findOne({ email: cleanEmail, status: 'Active' });
@@ -138,17 +183,29 @@ const resolveResetTarget = async ({ email, subdomain, audience = 'customer' }) =
         });
     }
 
-    if (!account || account.status !== 'Active') return null;
+    if (!account || account.status !== 'Active') {
+        return {
+            target: null,
+            reason: 'account_not_found_or_inactive',
+            shop,
+            subdomain: cleanSubdomain
+        };
+    }
 
     if (account.platformRole === 'SuperAdmin' && normalizedAudience === 'admin' && !shop) {
         return {
-            email: cleanEmail,
-            audience: normalizedAudience,
-            account,
-            membership: null,
+            target: {
+                email: cleanEmail,
+                audience: normalizedAudience,
+                account,
+                membership: null,
+                shop: null,
+                role: 'SuperAdmin',
+                recipientName: account.fullName || 'there'
+            },
+            reason: null,
             shop: null,
-            role: 'SuperAdmin',
-            recipientName: account.fullName || 'there'
+            subdomain: cleanSubdomain
         };
     }
 
@@ -162,25 +219,68 @@ const resolveResetTarget = async ({ email, subdomain, audience = 'customer' }) =
         membershipQuery.shop_id = shop._id;
     }
 
-    const membership = await ShopMembership.findOne(membershipQuery)
+    let membership = await ShopMembership.findOne(membershipQuery)
         .populate('legacyUser_id', 'fullName status')
         .populate('shop_id', 'shopName subdomain isActive approvalStatus')
         .sort({ createdAt: 1 });
 
+    if (!membership && normalizedAudience === 'customer' && shop) {
+        await createMembershipFromLegacyIfSafe({
+            email: cleanEmail,
+            audience: normalizedAudience,
+            shop,
+            account
+        });
+
+        membership = await ShopMembership.findOne(membershipQuery)
+            .populate('legacyUser_id', 'fullName status')
+            .populate('shop_id', 'shopName subdomain isActive approvalStatus')
+            .sort({ createdAt: 1 });
+    }
+
     const memberUser = membership?.legacyUser_id;
     const memberShop = membership?.shop_id;
 
-    if (!membership || memberUser?.status !== 'Active') return null;
-    if (memberShop?.isActive === false || memberShop?.approvalStatus === 'Suspended') return null;
+    if (!membership) {
+        return {
+            target: null,
+            reason: 'membership_not_found',
+            shop,
+            subdomain: cleanSubdomain
+        };
+    }
+
+    if (memberUser?.status !== 'Active') {
+        return {
+            target: null,
+            reason: 'member_user_inactive',
+            shop,
+            subdomain: cleanSubdomain
+        };
+    }
+
+    if (memberShop?.isActive === false || memberShop?.approvalStatus === 'Suspended') {
+        return {
+            target: null,
+            reason: 'shop_inactive_or_suspended',
+            shop: memberShop || shop,
+            subdomain: cleanSubdomain
+        };
+    }
 
     return {
-        email: cleanEmail,
-        audience: normalizedAudience,
-        account,
-        membership,
+        target: {
+            email: cleanEmail,
+            audience: normalizedAudience,
+            account,
+            membership,
+            shop: memberShop || shop,
+            role: membership.role,
+            recipientName: memberUser?.fullName || account.fullName || 'there'
+        },
+        reason: null,
         shop: memberShop || shop,
-        role: membership.role,
-        recipientName: memberUser?.fullName || account.fullName || 'there'
+        subdomain: cleanSubdomain
     };
 };
 
@@ -233,13 +333,14 @@ const applyRequestRateLimit = (record, now) => {
 const requestPasswordReset = async ({ email, subdomain, audience }) => {
     const cleanEmail = normalizeEmail(email);
     const normalizedAudience = audience === 'admin' ? 'admin' : 'customer';
-    const target = await resolveResetTarget({
+    const resolution = await resolveResetTargetWithReason({
         email: cleanEmail,
         subdomain,
         audience: normalizedAudience
     });
+    const { target } = resolution;
 
-    const shopId = target?.shop?._id || null;
+    const shopId = target?.shop?._id || resolution.shop?._id || null;
     const record = await getResetRecord({
         email: cleanEmail,
         audience: normalizedAudience,
@@ -256,7 +357,8 @@ const requestPasswordReset = async ({ email, subdomain, audience }) => {
             email: maskEmail(cleanEmail),
             audience: normalizedAudience,
             shopId: shopId ? String(shopId) : null,
-            reason: target ? limit.reason : 'no_target'
+            reason: target ? limit.reason : resolution.reason || 'no_target',
+            subdomain: resolution.subdomain || null
         });
 
         return { message: GENERIC_FORGOT_RESPONSE };
@@ -314,17 +416,19 @@ const requestPasswordReset = async ({ email, subdomain, audience }) => {
 const verifyResetOtp = async ({ email, subdomain, audience, otp }) => {
     const cleanEmail = normalizeEmail(email);
     const normalizedAudience = audience === 'admin' ? 'admin' : 'customer';
-    const target = await resolveResetTarget({
+    const resolution = await resolveResetTargetWithReason({
         email: cleanEmail,
         subdomain,
         audience: normalizedAudience
     });
+    const { target } = resolution;
 
     if (!target) {
         console.info('[PasswordReset] OTP verify failed', {
             email: maskEmail(cleanEmail),
             audience: normalizedAudience,
-            reason: 'no_target'
+            reason: resolution.reason || 'no_target',
+            subdomain: resolution.subdomain || null
         });
         return { success: false, error: INVALID_OTP_RESPONSE };
     }
@@ -397,13 +501,20 @@ const resetPassword = async ({ email, subdomain, audience, resetToken, password 
         };
     }
 
-    const target = await resolveResetTarget({
+    const resolution = await resolveResetTargetWithReason({
         email: cleanEmail,
         subdomain,
         audience: normalizedAudience
     });
+    const { target } = resolution;
 
     if (!target) {
+        console.info('[PasswordReset] Password reset failed', {
+            email: maskEmail(cleanEmail),
+            audience: normalizedAudience,
+            reason: resolution.reason || 'no_target',
+            subdomain: resolution.subdomain || null
+        });
         return { success: false, status: 400, error: 'Reset session is invalid or expired.' };
     }
 

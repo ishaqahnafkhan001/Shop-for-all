@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const Collection = require('../models/Collection');
 const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
 const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
@@ -17,6 +18,24 @@ const slugify = (value = '') =>
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 80);
+
+const getUniqueSlug = async ({ shopId, requestedSlug, title, session }) => {
+    const baseSlug = (slugify(requestedSlug || title) || `product-${Date.now()}`).slice(0, 80);
+    let candidate = baseSlug;
+    let suffix = 2;
+
+    while (await Product.findOne({
+        shop_id: shopId,
+        slug: candidate,
+        isDeleted: false
+    }).select('_id').session(session || null)) {
+        const suffixText = `-${suffix}`;
+        candidate = `${baseSlug.slice(0, 80 - suffixText.length)}${suffixText}`;
+        suffix += 1;
+    }
+
+    return candidate;
+};
 
 const productCategoryCache = new Map();
 const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
@@ -111,6 +130,52 @@ const normalizeIncomingVariant = (variant) => {
         status,
         isActive: status === 'active' && variant.isActive !== false
     };
+};
+
+const buildSimpleVariant = ({ stock = 0, pricing = {}, lowStockThreshold = 5 }) => ({
+    sku: '',
+    attributes: [],
+    stock: Number(stock) || 0,
+    pricing: {
+        price: pricing.sellingPrice,
+        costPrice: pricing.buyingPrice
+    },
+    inventory: {
+        stock: Number(stock) || 0,
+        reservedStock: 0,
+        lowStockThreshold: Number(lowStockThreshold) || 5,
+        trackQuantity: true,
+        allowOversell: false
+    },
+    status: 'active',
+    tax: { taxable: true },
+    isActive: true
+});
+
+const resolveImageReference = (value, imageUrls = []) => {
+    const raw = String(value || '').trim();
+    if (!raw.startsWith('product-image:')) return raw;
+
+    const index = Number(raw.replace('product-image:', ''));
+    return Number.isInteger(index) && imageUrls[index] ? imageUrls[index] : '';
+};
+
+const resolveVariantImageReferences = (payload, imageUrls = []) => {
+    if (payload.variantMatrix?.overrides) {
+        for (const override of Object.values(payload.variantMatrix.overrides)) {
+            if (override?.image) override.image = resolveImageReference(override.image, imageUrls);
+            if (override?.image === '') delete override.image;
+        }
+    }
+
+    if (Array.isArray(payload.variants)) {
+        payload.variants = payload.variants.map(variant => ({
+            ...variant,
+            image: variant.image ? resolveImageReference(variant.image, imageUrls) : variant.image
+        }));
+    }
+
+    return payload;
 };
 
 
@@ -303,6 +368,9 @@ exports.getSingleProduct = async (req, res) => {
  * @access  Private (Admin)
  */
 exports.createProduct = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
         // ── 1. Extract Cloudinary media URLs ─────────────────────────────────
         let imageUrls = [];
@@ -317,6 +385,7 @@ exports.createProduct = async (req, res) => {
         try {
             parsedBody = parseProductPayload(req.body);
         } catch (parseError) {
+            await session.abortTransaction();
             return res.status(400).json({ success: false, error: parseError.message });
         }
 
@@ -326,10 +395,12 @@ exports.createProduct = async (req, res) => {
             ...(imageUrls.length > 0 && { images: imageUrls }),
             ...(videoUrls.length > 0 && { videos: videoUrls })
         };
+        resolveVariantImageReferences(payload, imageUrls);
 
         // ── 4. Validate ───────────────────────────────────────────────────────
         const { error, value } = createProductSchema.validate(payload, { abortEarly: true });
         if (error) {
+            await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
 
@@ -340,15 +411,57 @@ exports.createProduct = async (req, res) => {
             delete value.variantMatrix;
         } else if (value.variants) {
             value.variants = value.variants.map(normalizeIncomingVariant);
+        } else {
+            value.variants = [buildSimpleVariant({
+                stock: value.simpleStock,
+                pricing: value.pricing,
+                lowStockThreshold: value.lowStockThreshold
+            })];
         }
 
-        value.slug = value.slug || slugify(value.title);
+        value.slug = await getUniqueSlug({
+            shopId: req.tenantId,
+            requestedSlug: value.slug,
+            title: value.title,
+            session
+        });
+
+        delete value.simpleStock;
 
         // ── 6. Save ───────────────────────────────────────────────────────────
-        const product = await Product.create({
+        const [product] = await Product.create([{
             ...value,
             shop_id: req.tenantId
-        });
+        }], { session });
+
+        const inventoryLogs = product.variants
+            .filter(variant => Number(variant.stock || 0) !== 0)
+            .map(variant => ({
+                shop_id: req.tenantId,
+                productId: product._id,
+                variantId: variant._id,
+                change: Number(variant.stock || 0),
+                type: 'RESTOCK',
+                referenceId: product._id,
+                beforeStock: 0,
+                afterStock: Number(variant.stock || 0),
+                user: req.user._id,
+                note: 'Initial product stock'
+            }));
+
+        if (inventoryLogs.length > 0) {
+            await InventoryLog.insertMany(inventoryLogs, { session });
+        }
+
+        if (Array.isArray(value.collections) && value.collections.length > 0) {
+            await Collection.updateMany(
+                { _id: { $in: value.collections }, shop_id: req.tenantId },
+                { $addToSet: { productIds: product._id } },
+                { session }
+            );
+        }
+
+        await session.commitTransaction();
 
         return res.status(201).json({
             success: true,
@@ -357,12 +470,17 @@ exports.createProduct = async (req, res) => {
         });
 
     } catch (err) {
+        await session.abortTransaction();
         console.error('Create product error:', err);
-        return res.status(500).json({
+        const isDuplicateSlug = err.code === 11000 && err.keyPattern?.slug;
+
+        return res.status(isDuplicateSlug ? 409 : 500).json({
             success: false,
-            error:   'Failed to create product',
+            error: isDuplicateSlug ? 'A product with this slug already exists. Try a different slug.' : 'Failed to create product',
             details: err.message
         });
+    } finally {
+        session.endSession();
     }
 };
 

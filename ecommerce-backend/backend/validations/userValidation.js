@@ -91,8 +91,15 @@ const resetAudience = Joi.string().valid('admin', 'customer').default('customer'
 
 const forgotPasswordSchema = Joi.object({
     email: Joi.string().email().required(),
-    subdomain: Joi.string().trim().lowercase().allow('').optional(),
-    audience: resetAudience
+    audience: resetAudience,
+    subdomain: Joi.when('audience', {
+        is: 'customer',
+        then: Joi.string().trim().lowercase().min(1).required().messages({
+            'any.required': 'Store context is missing for customer password reset.',
+            'string.empty': 'Store context is missing for customer password reset.'
+        }),
+        otherwise: Joi.string().trim().lowercase().allow('').optional()
+    })
 }).required();
 
 const verifyResetOtpSchema = Joi.object({
@@ -100,8 +107,15 @@ const verifyResetOtpSchema = Joi.object({
     otp: Joi.string().pattern(/^\d{6}$/).required().messages({
         'string.pattern.base': 'Verification code must be 6 digits'
     }),
-    subdomain: Joi.string().trim().lowercase().allow('').optional(),
-    audience: resetAudience
+    audience: resetAudience,
+    subdomain: Joi.when('audience', {
+        is: 'customer',
+        then: Joi.string().trim().lowercase().min(1).required().messages({
+            'any.required': 'Store context is missing for customer password reset.',
+            'string.empty': 'Store context is missing for customer password reset.'
+        }),
+        otherwise: Joi.string().trim().lowercase().allow('').optional()
+    })
 }).required();
 
 const resetPasswordSchema = Joi.object({
@@ -121,8 +135,15 @@ const resetPasswordSchema = Joi.object({
     confirmPassword: Joi.string().valid(Joi.ref('password')).optional().messages({
         'any.only': 'Passwords do not match'
     }),
-    subdomain: Joi.string().trim().lowercase().allow('').optional(),
-    audience: resetAudience
+    audience: resetAudience,
+    subdomain: Joi.when('audience', {
+        is: 'customer',
+        then: Joi.string().trim().lowercase().min(1).required().messages({
+            'any.required': 'Store context is missing for customer password reset.',
+            'string.empty': 'Store context is missing for customer password reset.'
+        }),
+        otherwise: Joi.string().trim().lowercase().allow('').optional()
+    })
 }).required();
 
 const updatePasswordSchema = Joi.object({

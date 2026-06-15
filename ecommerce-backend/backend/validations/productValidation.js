@@ -196,10 +196,11 @@ const createProductSchema = Joi.object({
     status:      Joi.string().valid('Draft', 'Published', 'Archived').default('Published'),
     seo:         seoSchema.optional(),
     lowStockThreshold: Joi.number().integer().min(0).default(5),
-    images:      Joi.array().items(Joi.string().uri()).min(1).max(10).required(),
+    images:      Joi.array().items(Joi.string().uri()).min(1).max(5).required(),
     videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
     options:     Joi.array().items(productOptionSchema).max(10).optional(),
     pricing:     pricingCreateSchema,
+    simpleStock: Joi.number().integer().min(0).default(0),
 
     variants: Joi.array().items(variantSchema).min(1).max(200)
         .custom(noDuplicateVariants).messages({ 'any.invalid': 'Duplicate variant combination detected' })
@@ -207,8 +208,8 @@ const createProductSchema = Joi.object({
 
     variantMatrix: variantMatrixSchema.optional(),
     ...contentFields
-}).xor('variants', 'variantMatrix').messages({
-    'object.xor': 'Provide either "variants" (flat list) or "variantMatrix" (auto-expand), not both'
+}).oxor('variants', 'variantMatrix').messages({
+    'object.oxor': 'Provide either "variants" (flat list) or "variantMatrix" (auto-expand), not both'
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -224,7 +225,7 @@ const updateProductSchema = Joi.object({
     status:      Joi.string().valid('Draft', 'Published', 'Archived').optional(),
     seo:         seoSchema.optional(),
     lowStockThreshold: Joi.number().integer().min(0).optional(),
-    images:      Joi.array().items(Joi.string().uri()).max(10).optional(),
+    images:      Joi.array().items(Joi.string().uri()).max(5).optional(),
     videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
     options:     Joi.array().items(productOptionSchema).max(10).optional(),
     pricing:     pricingUpdateSchema,

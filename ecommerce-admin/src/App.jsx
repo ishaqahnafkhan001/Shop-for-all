@@ -21,6 +21,7 @@ const StoreBuilder = lazy(() => import('./pages/dashboard/StoreBuilder.jsx'));
 const Promotions = lazy(() => import('./pages/dashboard/Promotions.jsx'));
 const CatalogTools = lazy(() => import('./pages/dashboard/CatalogTools.jsx'));
 const AdvancedAnalytics = lazy(() => import('./pages/dashboard/AdvancedAnalytics.jsx'));
+const GrowthCenter = lazy(() => import('./pages/dashboard/GrowthCenter.jsx'));
 const StaffPermissions = lazy(() => import('./pages/dashboard/StaffPermissions.jsx'));
 const SuperAdminPanel = lazy(() => import('./pages/superadmin/SuperAdminPanel.jsx'));
 
@@ -84,6 +85,7 @@ function App() {
                         <Route path="promotions" element={withSuspense(<Promotions />)} />
                         <Route path="banners" element={<Navigate to="/dashboard/store-builder" replace />} />
                         <Route path="customers" element={withSuspense(<CustomerList />)} />
+                        <Route path="growth" element={withSuspense(<GrowthCenter />)} />
                         <Route path="analytics" element={withSuspense(<AdvancedAnalytics />)} />
                         <Route path="shipping" element={withSuspense(<ShippingSettings />)} />
                         <Route path="settings" element={withSuspense(<ShopSettings />)} />

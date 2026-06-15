@@ -21,6 +21,8 @@ const storeBuilderRoutes = require('./routes/storeBuilderRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const collectionRoutes = require('./routes/collectionRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const analyticsEventRoutes = require('./routes/analyticsEventRoutes');
+const growthRoutes = require('./routes/growthRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 
 const app = express();
@@ -149,11 +151,13 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/storefront', storefrontRoutes);
 app.use('/api/public', publicWriteLimiter, publicRoutes);
+app.use('/api/analytics', publicWriteLimiter, analyticsEventRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/store-builder', storeBuilderRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/admin/collections', collectionRoutes);
+app.use('/api/admin/growth', growthRoutes);
 app.use('/api/admin/analytics', analyticsRoutes);
 app.use('/api/super-admin', superAdminRoutes);
 

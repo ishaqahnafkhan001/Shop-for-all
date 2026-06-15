@@ -9,6 +9,7 @@ const {
     getStoreBuilderSettings,
     updateStoreBuilderSettings,
     uploadStoreBuilderLogo,
+    uploadStoreBuilderImage,
     getPublicStorefrontSettings
 } = require('../controllers/storeBuilderController');
 
@@ -32,6 +33,14 @@ router.post(
     authorize('VendorAdmin'),
     upload.single('logo'),
     uploadStoreBuilderLogo
+);
+
+router.post(
+    '/admin/image',
+    protect,
+    authorize('VendorAdmin'),
+    upload.single('image'),
+    uploadStoreBuilderImage
 );
 
 router.get(

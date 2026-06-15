@@ -26,6 +26,24 @@ const getStrengthLabel = (score) => {
     return 'Strong';
 };
 
+const getCurrentSubdomain = () => {
+    if (typeof window === 'undefined') return '';
+
+    const hostname = window.location.hostname.toLowerCase();
+
+    if (hostname.includes('.localhost')) {
+        const localSubdomain = hostname.split('.localhost')[0];
+        return localSubdomain && localSubdomain !== 'localhost' ? localSubdomain : '';
+    }
+
+    if (hostname.endsWith('.scaleup.codes')) {
+        const [tenant] = hostname.split('.');
+        return ['www', 'api', 'admin', 'shop', 'scaleup'].includes(tenant) ? '' : tenant;
+    }
+
+    return '';
+};
+
 export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
     const [step, setStep] = useState('email');
     const [email, setEmail] = useState('');
@@ -42,6 +60,10 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
     const otpValue = otp.join('');
     const passwordsMatch = Boolean(password && confirmPassword && password === confirmPassword);
     const canReset = score === 5 && passwordsMatch && Boolean(resetToken);
+    const tenantSubdomain = useMemo(
+        () => String(subdomain || getCurrentSubdomain() || '').trim().toLowerCase(),
+        [subdomain]
+    );
 
     useEffect(() => {
         if (resendTimer <= 0) return undefined;
@@ -56,13 +78,14 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
     const requestOtp = async (event) => {
         event?.preventDefault();
         if (!email.trim()) return toast.error('Enter your email address first.');
+        if (!tenantSubdomain) return toast.error('Store context is missing. Please open this page from your store subdomain.');
         if (resendTimer > 0) return undefined;
 
         setLoading(true);
         try {
             const { data } = await API.post('/auth/forgot-password', {
                 email,
-                subdomain,
+                subdomain: tenantSubdomain,
                 audience: 'customer'
             });
 
@@ -86,7 +109,7 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
             const { data } = await API.post('/auth/verify-reset-otp', {
                 email,
                 otp: otpValue,
-                subdomain,
+                subdomain: tenantSubdomain,
                 audience: 'customer'
             });
 
@@ -113,7 +136,7 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
                 resetToken,
                 password,
                 confirmPassword,
-                subdomain,
+                subdomain: tenantSubdomain,
                 audience: 'customer'
             });
 

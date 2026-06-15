@@ -27,7 +27,7 @@ export const normalizeProduct = (raw) => {
         stock,
         averageRating : raw?.averageRating ?? 0,
         numReviews    : raw?.numReviews    ?? 0,
-        images        : raw?.images?.length > 0 ? raw.images : [raw?.imageUrl || 'https://via.placeholder.com/600'],
+        images        : raw?.images?.length > 0 ? raw.images : (raw?.imageUrl ? [raw.imageUrl] : []),
         options       : raw?.options       || [],
         variants      : normalizedVariants,
         features      : raw?.features      || [],

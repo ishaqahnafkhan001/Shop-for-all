@@ -100,6 +100,22 @@ const createAccountForLegacyUser = async (legacyUser, session) => {
 const createMembershipForLegacyUser = async (legacyUser, account, session) => {
     if (legacyUser.role === 'SuperAdmin' || !legacyUser.shop_id) return null;
 
+    if (legacyUser.account_id && String(legacyUser.account_id) !== String(account._id)) {
+        throw new Error('Legacy user is linked to a different account.');
+    }
+
+    const existingMembership = await ShopMembership.findOne({
+        account_id: account._id,
+        shop_id: legacyUser.shop_id
+    }).session(session || null);
+
+    if (existingMembership) {
+        legacyUser.account_id = account._id;
+        legacyUser.membership_id = existingMembership._id;
+        await legacyUser.save({ session });
+        return existingMembership;
+    }
+
     const [membership] = await ShopMembership.create([{
         account_id: account._id,
         shop_id: legacyUser.shop_id,
@@ -108,28 +124,47 @@ const createMembershipForLegacyUser = async (legacyUser, account, session) => {
         legacyUser_id: legacyUser._id
     }], { session });
 
+    legacyUser.account_id = account._id;
     legacyUser.membership_id = membership._id;
     await legacyUser.save({ session });
 
     if (legacyUser.role === 'Customer') {
-        await CustomerProfile.create([{
-            account_id: account._id,
-            membership_id: membership._id,
-            shop_id: legacyUser.shop_id,
-            legacyUser_id: legacyUser._id,
-            fullName: legacyUser.fullName,
-            phone: legacyUser.phone || ''
-        }], { session });
+        const existingProfile = await CustomerProfile.findOne({
+            $or: [
+                { membership_id: membership._id },
+                { legacyUser_id: legacyUser._id }
+            ]
+        }).session(session || null);
+
+        if (!existingProfile) {
+            await CustomerProfile.create([{
+                account_id: account._id,
+                membership_id: membership._id,
+                shop_id: legacyUser.shop_id,
+                legacyUser_id: legacyUser._id,
+                fullName: legacyUser.fullName,
+                phone: legacyUser.phone || ''
+            }], { session });
+        }
     }
 
     if (legacyUser.role === 'VendorStaff') {
-        await StaffPermission.create([{
-            account_id: account._id,
-            membership_id: membership._id,
-            shop_id: legacyUser.shop_id,
-            legacyUser_id: legacyUser._id,
-            permissions: legacyUser.permissions || DEFAULT_PERMISSIONS
-        }], { session });
+        const existingPermission = await StaffPermission.findOne({
+            $or: [
+                { membership_id: membership._id },
+                { legacyUser_id: legacyUser._id }
+            ]
+        }).session(session || null);
+
+        if (!existingPermission) {
+            await StaffPermission.create([{
+                account_id: account._id,
+                membership_id: membership._id,
+                shop_id: legacyUser.shop_id,
+                legacyUser_id: legacyUser._id,
+                permissions: legacyUser.permissions || DEFAULT_PERMISSIONS
+            }], { session });
+        }
     }
 
     return membership;

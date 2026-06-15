@@ -18,7 +18,7 @@ const normalizeSearchProduct = (p) => {
         sellingPrice,
         discount,
         finalPrice,
-        imageUrl: p?.imageUrl || p?.images?.[0] || 'https://via.placeholder.com/400',
+        imageUrl: p?.imageUrl || p?.images?.[0] || '',
     };
 };
 

@@ -11,6 +11,7 @@ import {
     Palette,
     TicketPercent,
     BarChart3,
+    TrendingUp,
     Shield,
     Crown,
     Boxes
@@ -29,6 +30,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
         { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent },
+        { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp },
         { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
         { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, adminOnly: true },
         { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true },

@@ -24,110 +24,8 @@ import {
 } from 'lucide-react';
 import { getEnabledHomepageSections, getSortedNavigation, normalizeTheme } from '../../lib/theme';
 
-export const REFERENCE_SAMPLE_PRODUCTS = [
-    {
-        _id: 'sample-tote',
-        title: 'Everyday Carry Tote',
-        category: 'Bags & travel',
-        sellingPrice: 68,
-        finalPrice: 68,
-        stock: 12,
-        averageRating: 4.9,
-        imageUrl: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=700&q=85'
-    },
-    {
-        _id: 'sample-lamp',
-        title: 'Ceramic Desk Lamp',
-        category: 'Home studio',
-        sellingPrice: 124,
-        finalPrice: 124,
-        stock: 8,
-        averageRating: 4.8,
-        imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=700&q=85'
-    },
-    {
-        _id: 'sample-runner',
-        title: 'Minimal Runner Sneaker',
-        category: 'Footwear',
-        sellingPrice: 92,
-        finalPrice: 92,
-        stock: 16,
-        averageRating: 4.7,
-        imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=85'
-    },
-    {
-        _id: 'sample-bottle',
-        title: 'Wellness Bottle Set',
-        category: 'Lifestyle',
-        sellingPrice: 36,
-        finalPrice: 36,
-        stock: 24,
-        averageRating: 4.9,
-        imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=700&q=85'
-    },
-    {
-        _id: 'sample-overshirt',
-        title: 'Linen Overshirt',
-        category: 'Breathable daily layer',
-        sellingPrice: 78,
-        finalPrice: 78,
-        stock: 10,
-        averageRating: 4.8,
-        imageUrl: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=900&q=85'
-    },
-    {
-        _id: 'sample-tray',
-        title: 'Oak Charging Tray',
-        category: 'Organize essentials',
-        sellingPrice: 45,
-        finalPrice: 45,
-        stock: 14,
-        averageRating: 4.6,
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=85'
-    },
-    {
-        _id: 'sample-throw',
-        title: 'Soft Knit Throw',
-        category: 'Warm textured weave',
-        sellingPrice: 89,
-        finalPrice: 89,
-        stock: 6,
-        averageRating: 4.9,
-        imageUrl: 'https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=900&q=85'
-    },
-    {
-        _id: 'sample-glass',
-        title: 'Daily Glass Tumbler',
-        category: 'Set of four',
-        sellingPrice: 32,
-        finalPrice: 32,
-        stock: 18,
-        averageRating: 4.7,
-        imageUrl: 'https://images.unsplash.com/photo-1604134967494-8a9ed3adea0d?auto=format&fit=crop&w=900&q=85'
-    },
-    {
-        _id: 'sample-weekender',
-        title: 'Compact Weekender',
-        category: 'Water resistant finish',
-        sellingPrice: 118,
-        finalPrice: 118,
-        stock: 9,
-        averageRating: 4.8,
-        imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=85'
-    },
-    {
-        _id: 'sample-speaker',
-        title: 'Wireless Desk Speaker',
-        category: 'Clear room-filling audio',
-        sellingPrice: 149,
-        finalPrice: 149,
-        stock: 5,
-        averageRating: 4.5,
-        imageUrl: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=900&q=85'
-    }
-];
-
-export const REFERENCE_SAMPLE_CATEGORIES = ['Home & Living', 'Fashion', 'Accessories', 'Electronics'];
+export const REFERENCE_SAMPLE_PRODUCTS = [];
+export const REFERENCE_SAMPLE_CATEGORIES = [];
 
 const serviceCards = [
     { icon: Truck, title: 'Quick Shipping', text: 'Fast fulfillment with live delivery updates' },
@@ -142,11 +40,26 @@ const productGridGapClasses = {
     Editorial: 'gap-5 sm:gap-7 lg:gap-8'
 };
 
+const tabletGridClasses = {
+    1: 'md:grid-cols-1',
+    2: 'md:grid-cols-2',
+    3: 'md:grid-cols-3',
+    4: 'md:grid-cols-4'
+};
+
 const desktopGridClasses = {
-    2: 'md:grid-cols-2 lg:grid-cols-2',
-    3: 'md:grid-cols-2 xl:grid-cols-3',
-    4: 'md:grid-cols-3 xl:grid-cols-4',
-    5: 'md:grid-cols-3 xl:grid-cols-5'
+    2: 'xl:grid-cols-2',
+    3: 'xl:grid-cols-3',
+    4: 'xl:grid-cols-4',
+    5: 'xl:grid-cols-5'
+};
+
+const plainGridClasses = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4',
+    5: 'grid-cols-5'
 };
 
 const noop = () => {};
@@ -154,7 +67,7 @@ const formatPrice = (value) => {
     const number = Number(value || 0);
     return number > 999 ? `৳ ${number.toLocaleString('en-BD')}` : `$${number.toFixed(2)}`;
 };
-const getImageUrl = (product) => product?.imageUrl || product?.images?.[0] || REFERENCE_SAMPLE_PRODUCTS[0].imageUrl;
+const getImageUrl = (product) => product?.imageUrl || product?.images?.[0] || '';
 const getPrice = (product) => product?.finalPrice || product?.sellingPrice || product?.pricing?.sellingPrice || product?.price || 0;
 
 export const getReferenceThemeStyle = (themeCandidate = {}) => {
@@ -185,6 +98,10 @@ const LinkSlot = ({ LinkComponent = DefaultLink, href, children, className, onCl
     <LinkComponent href={href} className={className} onClick={onClick} {...props}>{children}</LinkComponent>
 );
 
+const containerClass = 'mx-auto w-full max-w-[1440px] px-4 sm:px-5 lg:px-8';
+const isPreviewMobile = (device) => device === 'mobile' || device === 'smallMobile';
+const isPreviewNarrow = (device) => isPreviewMobile(device) || device === 'tablet';
+
 const BrandMark = ({ theme, brandName }) => (
     <span className="flex min-w-0 items-center gap-3">
         {theme.logoUrl ? (
@@ -200,10 +117,55 @@ const BrandMark = ({ theme, brandName }) => (
         )}
         <span className="min-w-0">
             <span className="block truncate text-sm font-black leading-tight text-slate-950 sm:text-base">{brandName}</span>
-            <span className="hidden truncate text-xs font-semibold text-slate-500 sm:block">Custom storefront</span>
+            <span className="hidden truncate text-xs font-semibold text-slate-500 sm:block">Storefront</span>
         </span>
     </span>
 );
+
+const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
+    const children = item.children || [];
+    const hasChildren = children.length > 0;
+
+    if (!hasChildren) {
+        return (
+            <LinkSlot
+                LinkComponent={LinkComponent}
+                href={item.url || '#'}
+                onClick={onClick}
+                className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]"
+            >
+                {item.label}
+            </LinkSlot>
+        );
+    }
+
+    return (
+        <div className="group relative">
+            <LinkSlot
+                LinkComponent={LinkComponent}
+                href={item.url || '#'}
+                onClick={onClick}
+                className="inline-flex items-center gap-1 rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]"
+            >
+                {item.label}
+                <ChevronDown size={14} className="transition group-hover:rotate-180" />
+            </LinkSlot>
+            <div className="invisible absolute left-0 top-full z-40 min-w-56 translate-y-2 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                {children.map((child, index) => (
+                    <LinkSlot
+                        key={`${child.label}-${index}`}
+                        LinkComponent={LinkComponent}
+                        href={child.url}
+                        onClick={onClick}
+                        className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[var(--sf-accent)]"
+                    >
+                        {child.label}
+                    </LinkSlot>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 export function ReferenceStorefrontHeader({
     theme: themeCandidate,
@@ -212,69 +174,101 @@ export function ReferenceStorefrontHeader({
     cartCount = 0,
     onSearch = noop,
     LinkComponent = DefaultLink,
-    preview = false
+    preview = false,
+    previewDevice
 }) {
     const theme = normalizeTheme(themeCandidate);
-    const brandName = shopName || subdomain || 'Vendor Store';
-    const navLinks = getSortedNavigation(theme).slice(0, 3);
+    const brandName = shopName || subdomain || 'Storefront';
+    const navLinks = getSortedNavigation(theme);
+    const headerNavLinks = navLinks.filter(item => !['track order', 'account', 'cart'].includes(String(item.label || '').toLowerCase()));
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const logoPosition = theme.header?.logoPosition || 'Left';
+    const forcedDesktopLayoutClass = logoPosition === 'Center'
+        ? 'grid-cols-[minmax(320px,1fr)_minmax(210px,auto)_minmax(360px,1fr)]'
+        : logoPosition === 'Right'
+            ? 'grid-cols-[minmax(320px,1fr)_minmax(360px,1fr)_minmax(210px,auto)]'
+            : 'grid-cols-[minmax(210px,0.8fr)_minmax(320px,1fr)_minmax(360px,1.2fr)]';
+    const desktopLayoutClass = logoPosition === 'Center'
+        ? 'lg:grid-cols-[minmax(320px,1fr)_minmax(210px,auto)_minmax(360px,1fr)]'
+        : logoPosition === 'Right'
+            ? 'lg:grid-cols-[minmax(320px,1fr)_minmax(360px,1fr)_minmax(210px,auto)]'
+            : 'lg:grid-cols-[minmax(210px,0.8fr)_minmax(320px,1fr)_minmax(360px,1.2fr)]';
+    const brandSlot = (
+        <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0">
+            <BrandMark theme={theme} brandName={brandName} />
+        </LinkSlot>
+    );
+    const searchSlot = (
+        <div className={`flex ${logoPosition === 'Left' ? 'justify-center' : 'justify-start'}`}>
+            <button
+                type="button"
+                onClick={onSearch}
+                className="flex h-11 w-full max-w-[420px] items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-5 text-sm font-semibold text-slate-500 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-slate-900"
+            >
+                <Search size={17} />
+                <span>Search products</span>
+            </button>
+        </div>
+    );
+    const actionSlot = (
+        <div className={`flex items-center gap-2 ${logoPosition === 'Right' ? 'justify-start' : 'justify-end'}`}>
+            <nav className="mr-2 hidden max-w-full items-center gap-1 overflow-visible text-sm font-bold text-slate-700 xl:flex">
+                {headerNavLinks.slice(0, 5).map((item, index) => (
+                    <HeaderNavItem
+                        key={`${item.label}-${index}`}
+                        item={item}
+                        LinkComponent={LinkComponent}
+                    />
+                ))}
+            </nav>
+            <LinkSlot LinkComponent={LinkComponent} href="/track" className="inline-flex h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]">
+                <Truck size={17} />
+                Track Order
+            </LinkSlot>
+            <LinkSlot LinkComponent={LinkComponent} href="/account" className="inline-flex h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]">
+                <User size={17} />
+                Account
+            </LinkSlot>
+            <LinkSlot
+                LinkComponent={LinkComponent}
+                href="/cart"
+                className="relative inline-flex h-11 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
+            >
+                <ShoppingBag size={17} />
+                Cart
+                {cartCount > 0 && (
+                    <span className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sf-accent)] px-1 text-[10px] font-black text-white">
+                        {cartCount}
+                    </span>
+                )}
+            </LinkSlot>
+        </div>
+    );
+    const desktopSlots = logoPosition === 'Center'
+        ? [searchSlot, brandSlot, actionSlot]
+        : logoPosition === 'Right'
+            ? [searchSlot, actionSlot, brandSlot]
+            : [brandSlot, searchSlot, actionSlot];
+    const forceNarrowHeader = isPreviewNarrow(previewDevice);
+    const desktopHeaderClass = previewDevice
+        ? (forceNarrowHeader ? 'hidden' : `grid h-[76px] items-center gap-6 ${forcedDesktopLayoutClass}`)
+        : `hidden h-[76px] items-center gap-6 lg:grid ${desktopLayoutClass}`;
+    const mobileHeaderClass = previewDevice
+        ? (forceNarrowHeader ? 'flex h-[66px] items-center justify-between gap-3' : 'hidden')
+        : 'flex h-[66px] items-center justify-between gap-3 lg:hidden';
+    const mobileSearchClass = previewDevice
+        ? (forceNarrowHeader ? 'pb-3' : 'hidden')
+        : 'pb-3 lg:hidden';
 
     return (
         <>
             <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
-                <div className="mx-auto w-[min(100%-40px,1440px)]">
-                    <div className="hidden h-[76px] items-center gap-6 lg:grid lg:grid-cols-[minmax(210px,0.8fr)_minmax(320px,1fr)_minmax(360px,1.2fr)]">
-                        <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0">
-                            <BrandMark theme={theme} brandName={brandName} />
-                        </LinkSlot>
-                        <div className="flex justify-center">
-                            <button
-                                type="button"
-                                onClick={onSearch}
-                                className="flex h-11 min-w-[320px] items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-5 text-sm font-semibold text-slate-500 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-slate-900"
-                            >
-                                <Search size={17} />
-                                <span>Search products</span>
-                            </button>
-                        </div>
-                        <div className="flex items-center justify-end gap-2">
-                            <nav className="mr-2 flex items-center gap-1 text-sm font-bold text-slate-700">
-                                {navLinks.map((item, index) => (
-                                    <LinkSlot
-                                        key={`${item.label}-${index}`}
-                                        LinkComponent={LinkComponent}
-                                        href={item.url}
-                                        className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]"
-                                    >
-                                        {item.label}
-                                    </LinkSlot>
-                                ))}
-                            </nav>
-                            <LinkSlot LinkComponent={LinkComponent} href="/track" className="inline-flex h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]">
-                                <Truck size={17} />
-                                Track Order
-                            </LinkSlot>
-                            <LinkSlot LinkComponent={LinkComponent} href="/account" className="inline-flex h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]">
-                                <User size={17} />
-                                Account
-                            </LinkSlot>
-                            <LinkSlot
-                                LinkComponent={LinkComponent}
-                                href="/cart"
-                                className="relative inline-flex h-11 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
-                            >
-                                <ShoppingBag size={17} />
-                                Cart
-                                {cartCount > 0 && (
-                                    <span className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sf-accent)] px-1 text-[10px] font-black text-white">
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </LinkSlot>
-                        </div>
+                <div className={containerClass}>
+                    <div className={desktopHeaderClass}>
+                        {desktopSlots.map((slot, index) => <div key={index} className="min-w-0">{slot}</div>)}
                     </div>
 
-                    <div className="flex h-[66px] items-center justify-between gap-3 lg:hidden">
+                    <div className={mobileHeaderClass}>
                         <button
                             type="button"
                             onClick={() => setMobileMenuOpen(true)}
@@ -301,7 +295,7 @@ export function ReferenceStorefrontHeader({
                         </LinkSlot>
                     </div>
 
-                    <div className="pb-3 lg:hidden">
+                    <div className={mobileSearchClass}>
                         <button
                             type="button"
                             onClick={onSearch}
@@ -324,16 +318,32 @@ export function ReferenceStorefrontHeader({
                             </button>
                         </div>
                         <nav className="grid gap-2">
-                            {[...navLinks, { label: 'Track Order', url: '/track' }, { label: 'Account', url: '/account' }].map((item, index) => (
-                                <LinkSlot
-                                    key={`${item.label}-${index}`}
-                                    LinkComponent={LinkComponent}
-                                    href={item.url}
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-800 transition hover:border-[var(--sf-accent-soft)] hover:bg-slate-50"
-                                >
-                                    {item.label}
-                                </LinkSlot>
+                            {[...headerNavLinks, { label: 'Track Order', url: '/track' }, { label: 'Account', url: '/account' }].map((item, index) => (
+                                <div key={`${item.label}-${index}`} className="rounded-2xl border border-slate-200 bg-white">
+                                    <LinkSlot
+                                        LinkComponent={LinkComponent}
+                                        href={item.url || '#'}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="block px-4 py-3 text-sm font-black text-slate-800 transition hover:text-[var(--sf-accent)]"
+                                    >
+                                        {item.label}
+                                    </LinkSlot>
+                                    {(item.children || []).length > 0 && (
+                                        <div className="border-t border-slate-100 px-3 pb-3">
+                                            {item.children.map((child, childIndex) => (
+                                                <LinkSlot
+                                                    key={`${child.label}-${childIndex}`}
+                                                    LinkComponent={LinkComponent}
+                                                    href={child.url}
+                                                    onClick={() => setMobileMenuOpen(false)}
+                                                    className="mt-2 block rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-600"
+                                                >
+                                                    {child.label}
+                                                </LinkSlot>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </nav>
                     </aside>
@@ -349,7 +359,9 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
     const stock = product.stock ?? product.totalStock ?? 0;
     const price = getPrice(product);
     const originalPrice = product.sellingPrice || product.pricing?.sellingPrice || price;
-    const showRating = productCard?.showRating !== false;
+    const rating = Number(product.averageRating || 0);
+    const showRating = productCard?.showRating !== false && rating > 0;
+    const imageUrl = getImageUrl(product);
 
     const handleAdd = (event) => {
         event.preventDefault();
@@ -364,12 +376,18 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
             <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 sm:aspect-square">
-                <img
-                    src={getImageUrl(product)}
-                    alt={product.title}
-                    className={`h-full w-full object-cover transition-transform duration-500 ${productCard?.hoverZoom === false ? '' : 'group-hover:scale-105'}`}
-                    loading={index < 6 ? 'eager' : 'lazy'}
-                />
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt={product.title}
+                        className={`h-full w-full object-cover transition-transform duration-500 ${productCard?.hoverZoom === false ? '' : 'group-hover:scale-105'}`}
+                        loading={index < 6 ? 'eager' : 'lazy'}
+                    />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-300">
+                        <ShoppingBag size={34} />
+                    </div>
+                )}
                 {productCard?.showWishlist !== false && (
                     <button type="button" className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)]">
                         <Heart size={16} />
@@ -385,14 +403,21 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                 {showRating && (
                     <div className="mb-2 flex items-center justify-between text-xs font-bold">
                         <span className="flex items-center gap-0.5 text-amber-400">
-                            {[1, 2, 3, 4, 5].map(star => <Star key={star} size={12} fill="currentColor" />)}
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <Star
+                                    key={star}
+                                    size={12}
+                                    fill={star <= Math.round(rating) ? 'currentColor' : 'none'}
+                                    className={star <= Math.round(rating) ? '' : 'text-slate-300'}
+                                />
+                            ))}
                         </span>
-                        <span className="text-slate-400">{Number(product.averageRating || 4.8).toFixed(1)}</span>
+                        <span className="text-slate-400">{rating.toFixed(1)}</span>
                     </div>
                 )}
                 <h3 className="line-clamp-2 text-sm font-black leading-snug text-slate-950 sm:text-base">{product.title}</h3>
-                {productCard?.showCategory !== false && (
-                    <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">{product.category || 'Store product'}</p>
+                {productCard?.showCategory !== false && product.category && (
+                    <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">{product.category}</p>
                 )}
                 <div className="mt-auto flex items-end justify-between gap-3 pt-4">
                     <div>
@@ -417,15 +442,21 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
     );
 });
 
-const HomepageSection = memo(function HomepageSection({ section, categories, sectionProducts, catalogProducts, storewideDiscount, productCard, layout, onProductAdd, LinkComponent }) {
+const HomepageSection = memo(function HomepageSection({ section, categories, sectionProducts, catalogProducts, storewideDiscount, productCard, layout, onProductAdd, LinkComponent, previewDevice }) {
     const mobileSettings = section.mobileSettings || {};
-    if (mobileSettings.isVisible === false) return null;
+    const mobileVisibilityClass = mobileSettings.isVisible === false
+        ? (isPreviewMobile(previewDevice) ? 'hidden' : previewDevice ? '' : 'hidden md:block')
+        : '';
 
     if (section.type === 'FeaturedProducts') {
         const products = sectionProducts?.[section.id || section._id] || catalogProducts.slice(0, 4);
+        const mobileGridClass = Number(mobileSettings.columns) === 1 ? 'grid-cols-1' : 'grid-cols-2';
+        const featuredGridClass = previewDevice
+            ? (isPreviewMobile(previewDevice) ? mobileGridClass : 'grid-cols-4')
+            : `${mobileGridClass} md:grid-cols-4`;
         if (products.length === 0) return null;
         return (
-            <section className="mt-10 md:mt-12">
+            <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
                 <div className="mb-5 flex items-end justify-between gap-4">
                     <div>
                         <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{section.title || 'Featured Products'}</h2>
@@ -435,7 +466,7 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
                         View all
                     </LinkSlot>
                 </div>
-                <div className={`grid grid-cols-2 md:grid-cols-4 ${productGridGapClasses[layout?.productGap || 'Comfortable']}`}>
+                <div className={`grid ${featuredGridClass} ${productGridGapClasses[layout?.productGap || 'Comfortable']}`}>
                     {products.slice(0, 4).map((product, index) => (
                         <ProductCard
                             key={product._id}
@@ -456,7 +487,7 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
         const imageUrl = section.settings?.desktopImage || section.settings?.image || '';
         const mobileImageUrl = section.settings?.mobileImage || mobileSettings.image || imageUrl;
         return (
-            <section className="mt-10 md:mt-12">
+            <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
                 <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || '#products'} className="group relative block min-h-[240px] overflow-hidden rounded-[1.75rem] bg-slate-950 shadow-sm sm:min-h-[320px]">
                     {mobileImageUrl && mobileImageUrl !== imageUrl && <img src={mobileImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover md:hidden" />}
                     {imageUrl && <img src={imageUrl} alt="" className={`${mobileImageUrl && mobileImageUrl !== imageUrl ? 'hidden md:block' : ''} absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105`} />}
@@ -472,17 +503,14 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
     }
 
     if (section.type === 'Reviews') {
+        const reviewText = section.settings?.text?.trim();
+        if (!reviewText) return null;
         return (
-            <section className="mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 shadow-sm md:mt-12">
+            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 shadow-sm md:mt-12`}>
                 <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Customer Reviews'}</h2>
-                <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    {['Beautiful store experience.', 'Fast delivery and support.', 'Products arrived perfectly.'].map((quote, index) => (
-                        <div key={quote} className="rounded-2xl bg-slate-50 p-4">
-                            <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>
-                            <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{section.settings?.text || quote}</p>
-                            <p className="mt-3 text-xs font-black text-slate-950">Verified customer {index + 1}</p>
-                        </div>
-                    ))}
+                <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                    <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>
+                    <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{reviewText}</p>
                 </div>
             </section>
         );
@@ -490,7 +518,7 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
 
     if (section.type === 'CategoryList') {
         return (
-            <section className="mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm md:mt-12">
+            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm md:mt-12`}>
                 <h2 className="text-2xl font-black text-slate-950">{section.title || 'Shop by category'}</h2>
                 <div className="mt-4 flex flex-wrap gap-2">
                     {(categories || []).slice(0, 10).map(category => (
@@ -504,14 +532,14 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
     }
 
     return (
-        <section className="mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 text-center shadow-sm md:mt-12 sm:p-10">
+        <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 text-center shadow-sm md:mt-12 sm:p-10`}>
             <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Store update'}</h2>
             {section.settings?.text && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">{section.settings.text}</p>}
         </section>
     );
 });
 
-const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters }) => (
+const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange }) => (
     <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-5 flex items-center justify-between">
             <h3 className="text-base font-black text-slate-950">Filter Products</h3>
@@ -538,10 +566,15 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
             <div>
                 <p className="mb-2 text-slate-950">Rating</p>
                 {[5, 4, 3].map(rating => (
-                    <div key={rating} className="flex items-center gap-2 text-amber-400">
+                    <button
+                        key={rating}
+                        type="button"
+                        onClick={() => onRatingChange?.(Number(filters.minRating) === rating ? '' : rating)}
+                        className={`flex w-full items-center gap-2 rounded-xl px-2 py-1 text-left text-amber-400 transition ${Number(filters.minRating) === rating ? 'bg-amber-50 ring-1 ring-amber-200' : 'hover:bg-slate-50'}`}
+                    >
                         {[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" className={star <= rating ? '' : 'text-slate-200'} />)}
                         <span className="text-xs text-slate-500">{rating}.0+</span>
-                    </div>
+                    </button>
                 ))}
             </div>
         </div>
@@ -551,8 +584,8 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
 
 export function ReferenceStorefrontHome({
     theme: themeCandidate,
-    products = REFERENCE_SAMPLE_PRODUCTS,
-    categories = REFERENCE_SAMPLE_CATEGORIES,
+    products = [],
+    categories = [],
     sectionProducts = {},
     storewideDiscount = 0,
     loading = false,
@@ -570,9 +603,11 @@ export function ReferenceStorefrontHome({
     onMaxPriceChange = noop,
     onPriceApply = noop,
     onClearFilters = noop,
+    onRatingChange = noop,
     onPageChange = noop,
     onProductAdd = noop,
-    LinkComponent = DefaultLink
+    LinkComponent = DefaultLink,
+    previewDevice
 }) {
     const theme = normalizeTheme(themeCandidate);
     const hero = theme.hero || {};
@@ -580,19 +615,65 @@ export function ReferenceStorefrontHome({
     const productCard = theme.productCard || {};
     const allProducts = theme.allProducts || {};
     const enabledSections = getEnabledHomepageSections(theme);
-    const catalogProducts = products?.length ? products : REFERENCE_SAMPLE_PRODUCTS;
+    const catalogProducts = products || [];
     const filteredProducts = catalogSearch.trim()
         ? catalogProducts.filter(product => `${product.title || ''} ${product.category || ''}`.toLowerCase().includes(catalogSearch.toLowerCase()))
         : catalogProducts;
     const desktopColumns = Math.min(Math.max(allProducts.desktopColumns || layout.productColumnsDesktop || 3, 2), 5);
+    const tabletColumns = Math.min(Math.max(allProducts.tabletColumns || 2, 1), 4);
     const mobileColumns = Math.min(Math.max(allProducts.mobileColumns || layout.productColumnsMobile || 2, 1), 2);
-    const gridClass = `${mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
+    const liveGridClass = `${mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
+    const gridClass = previewDevice
+        ? (isPreviewMobile(previewDevice)
+            ? plainGridClasses[mobileColumns]
+            : previewDevice === 'tablet'
+                ? plainGridClasses[tabletColumns]
+                : plainGridClasses[desktopColumns])
+        : liveGridClass;
     const gridGapClass = productGridGapClasses[layout.productGap || theme.productGridStyle] || productGridGapClasses.Comfortable;
+    const forcedMobilePreview = isPreviewMobile(previewDevice);
+    const forcedNarrowPreview = isPreviewNarrow(previewDevice);
+    const heroClass = previewDevice
+        ? `relative overflow-hidden rounded-[1.75rem] bg-slate-950 ${forcedMobilePreview ? 'p-5' : 'p-10'} text-white shadow-xl shadow-slate-200/70 ${previewDevice === 'desktop' ? 'min-h-[420px]' : 'min-h-[360px]'}`
+        : 'relative overflow-hidden rounded-[1.75rem] bg-slate-950 p-6 text-white shadow-xl shadow-slate-200/70 sm:p-10 lg:min-h-[420px]';
+    const heroGridClass = previewDevice
+        ? `relative z-10 grid gap-8 ${previewDevice === 'desktop' ? 'grid-cols-[0.9fr_1fr] items-center' : ''}`
+        : 'relative z-10 grid gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-center';
+    const heroTitleClass = previewDevice
+        ? `max-w-xl font-black leading-[0.95] tracking-tight ${forcedMobilePreview ? 'text-4xl' : previewDevice === 'tablet' ? 'text-5xl' : 'text-7xl'}`
+        : 'max-w-xl text-4xl font-black leading-[0.95] tracking-tight sm:text-5xl lg:text-7xl';
+    const serviceGridClass = previewDevice
+        ? (forcedMobilePreview
+            ? 'mt-5 grid auto-cols-[82%] grid-flow-col gap-4 overflow-x-auto pb-2'
+            : 'mt-5 grid grid-cols-3 gap-4 pb-2')
+        : 'mt-5 grid auto-cols-[82%] grid-flow-col gap-4 overflow-x-auto pb-2 sm:auto-cols-fr sm:grid-flow-row sm:grid-cols-3 sm:overflow-visible';
+    const allProductsHeaderClass = forcedNarrowPreview
+        ? 'mb-6 flex flex-col gap-4'
+        : 'mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between';
+    const catalogControlsClass = forcedMobilePreview
+        ? 'flex flex-col gap-3'
+        : 'flex flex-col gap-3 sm:flex-row';
+    const catalogSearchClass = forcedMobilePreview
+        ? 'relative min-w-0'
+        : 'relative min-w-0 sm:min-w-[320px]';
+    const catalogSelectClass = forcedMobilePreview
+        ? 'rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100'
+        : 'rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36';
+    const productLayoutClass = forcedNarrowPreview
+        ? 'grid gap-6'
+        : 'grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]';
+    const filterAsideClass = forcedNarrowPreview ? 'hidden' : 'hidden lg:block';
+    const filterButtonClass = forcedNarrowPreview
+        ? 'inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700'
+        : 'inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 lg:hidden';
+    const mobileFilterOverlayClass = forcedNarrowPreview
+        ? 'fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm'
+        : 'fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm lg:hidden';
 
     return (
         <div className="bg-white" style={getReferenceThemeStyle(theme)}>
-            <div className="mx-auto w-[min(100%-40px,1440px)] py-5 sm:py-8">
-                <section className="relative overflow-hidden rounded-[1.75rem] bg-slate-950 p-6 text-white shadow-xl shadow-slate-200/70 sm:p-10 lg:min-h-[420px]">
+            <div className={`${containerClass} py-5 sm:py-8`}>
+                <section className={heroClass}>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(20,184,166,.35),transparent_30rem)]" />
                     <button type="button" disabled className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-950 shadow-md disabled:opacity-90 md:flex" aria-label="Previous slide">
                         <ChevronLeft size={19} />
@@ -600,19 +681,20 @@ export function ReferenceStorefrontHome({
                     <button type="button" disabled className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-950 shadow-md disabled:opacity-90 md:flex" aria-label="Next slide">
                         <ChevronRight size={19} />
                     </button>
-                    <div className="relative z-10 grid gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-center">
+                    <div className={heroGridClass}>
                         <div className="max-w-2xl">
-                            <span className="inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-black text-white/80 ring-1 ring-white/10">
-                                Theme-ready storefront for every vendor
-                            </span>
-                            <h1 className="mt-5 max-w-xl text-4xl font-black leading-[0.95] tracking-tight sm:text-5xl lg:text-7xl">
-                                {hero.title || 'Discover Your Favorite Products'}
-                            </h1>
-                            <p className="mt-5 max-w-lg text-base font-semibold leading-7 text-white/70 sm:text-lg">
-                                {hero.subtitle || 'Shop quality products from trusted stores'}
-                            </p>
+                            {hero.title && (
+                                <h1 className={heroTitleClass}>
+                                    {hero.title}
+                                </h1>
+                            )}
+                            {hero.subtitle && (
+                                <p className="mt-5 max-w-lg text-base font-semibold leading-7 text-white/70 sm:text-lg">
+                                    {hero.subtitle}
+                                </p>
+                            )}
                             <div className="mt-7 flex flex-wrap gap-3">
-                                <LinkSlot LinkComponent={LinkComponent} href={hero.ctaUrl || '#products'} className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-slate-100">
+                                <LinkSlot LinkComponent={LinkComponent} href="#products" className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-slate-100">
                                     {hero.ctaLabel || 'Shop Now'}
                                 </LinkSlot>
                                 <LinkSlot LinkComponent={LinkComponent} href="#products" className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/10">
@@ -624,7 +706,9 @@ export function ReferenceStorefrontHome({
                             {hero.imageUrl ? (
                                 <img src={hero.imageUrl} alt={hero.title || 'Store hero'} className="absolute inset-0 h-full w-full object-cover" />
                             ) : (
-                                <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1000&q=85" alt="Store hero" className="absolute inset-0 h-full w-full object-cover" />
+                                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/20 text-white/50">
+                                    <ShoppingBag size={54} />
+                                </div>
                             )}
                             {storewideDiscount > 0 && (
                                 <div className="absolute bottom-5 left-5 rounded-2xl bg-white px-5 py-4 text-slate-950 shadow-xl">
@@ -641,7 +725,7 @@ export function ReferenceStorefrontHome({
                     </div>
                 </section>
 
-                <section className="mt-5 grid auto-cols-[82%] grid-flow-col gap-4 overflow-x-auto pb-2 sm:auto-cols-fr sm:grid-flow-row sm:grid-cols-3 sm:overflow-visible">
+                <section className={serviceGridClass}>
                     {serviceCards.map(({ icon: Icon, title, text }) => (
                         <div key={title} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-4">
@@ -669,38 +753,42 @@ export function ReferenceStorefrontHome({
                         layout={layout}
                         onProductAdd={onProductAdd}
                         LinkComponent={LinkComponent}
+                        previewDevice={previewDevice}
                     />
                 ))}
             </div>
 
             {allProducts.isEnabled !== false && (
                 <section id="products" className="bg-slate-50 py-9 sm:py-12">
-                    <div className="mx-auto w-[min(100%-40px,1440px)]">
-                        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className={containerClass}>
+                        <div className={allProductsHeaderClass}>
                             <div>
                                 <h2 className="text-3xl font-black tracking-tight text-slate-950">{allProducts.title || 'All Products'}</h2>
                                 <p className="mt-1 text-sm font-semibold text-slate-500">{allProducts.subtitle || "Browse this shop's latest catalog"}</p>
                             </div>
-                            <div className="flex flex-col gap-3 sm:flex-row">
-                                <label className="relative min-w-0 sm:min-w-[320px]">
+                            <div className={catalogControlsClass}>
+                                <label className={catalogSearchClass}>
                                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input value={catalogSearch} onChange={onCatalogSearchChange} placeholder="Search catalog" className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
                                 </label>
-                                <select value={filters.sort} onChange={onSortChange} className="rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36">
+                                <select value={filters.sort} onChange={onSortChange} className={catalogSelectClass}>
                                     <option value="newest">Newest</option>
                                     <option value="priceAsc">Price low</option>
                                     <option value="priceDesc">Price high</option>
+                                    <option value="ratingDesc">Top rated</option>
+                                    <option value="ratingAsc">Lowest rated</option>
                                     <option value="nameAsc">A to Z</option>
+                                    <option value="nameDesc">Z to A</option>
                                 </select>
-                                <button type="button" onClick={onFilterOpen} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 lg:hidden">
+                                <button type="button" onClick={onFilterOpen} className={filterButtonClass}>
                                     <Filter size={16} />
                                     Filters
                                 </button>
                             </div>
                         </div>
 
-                        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-                            <aside className="hidden lg:block">
+                        <div className={productLayoutClass}>
+                            <aside className={filterAsideClass}>
                                 <div className="sticky top-28">
                                     <FilterPanel
                                         categories={categories}
@@ -711,6 +799,7 @@ export function ReferenceStorefrontHome({
                                         onMaxPriceChange={onMaxPriceChange}
                                         onPriceApply={onPriceApply}
                                         onClearFilters={onClearFilters}
+                                        onRatingChange={onRatingChange}
                                     />
                                 </div>
                             </aside>
@@ -763,7 +852,7 @@ export function ReferenceStorefrontHome({
             )}
 
             {mobileFiltersOpen && (
-                <div className="fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={onFilterClose}>
+                <div className={mobileFilterOverlayClass} onClick={onFilterClose}>
                     <div className="max-h-[86vh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5" onClick={event => event.stopPropagation()}>
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-black text-slate-950">Filter products</h2>
@@ -780,6 +869,7 @@ export function ReferenceStorefrontHome({
                             onMaxPriceChange={onMaxPriceChange}
                             onPriceApply={onPriceApply}
                             onClearFilters={onClearFilters}
+                            onRatingChange={onRatingChange}
                         />
                     </div>
                 </div>
@@ -817,19 +907,19 @@ const FooterAccordion = ({ title, links, LinkComponent }) => (
     </details>
 );
 
-export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, subdomain, cartCount = 0, LinkComponent = DefaultLink }) {
+export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, subdomain, cartCount = 0, LinkComponent = DefaultLink, preview = false, previewDevice }) {
     const theme = normalizeTheme(themeCandidate);
-    const brandName = shopName || subdomain || 'Vendor Store';
+    const brandName = shopName || subdomain || 'Storefront';
     const footerLinks = (theme.footer?.links || []).filter(item => item?.label && item?.url);
     const navLinks = footerLinks.length
         ? footerLinks.map(item => ({ label: item.label, href: item.url }))
         : getSortedNavigation(theme).map(item => ({ label: item.label, href: item.url }));
-    const columns = [
-        { title: 'About Us', links: [{ label: 'Brand values', href: '/' }, { label: 'Store builder', href: '/' }, { label: 'Help center', href: '/account' }, { label: 'Shipping & returns', href: '/checkout' }] },
-        { title: 'Contact', links: [{ label: 'support@store.com', href: '/account' }, { label: 'Track order', href: '/track' }, { label: 'Customer account', href: '/account' }, { label: 'Cart', href: '/cart' }] },
-        { title: 'FAQ', links: [{ label: 'Common questions', href: '/' }, { label: 'Payment safety', href: '/checkout' }, { label: 'Order updates', href: '/track' }, { label: 'Support', href: '/account' }] },
-        { title: 'Policies', links: [{ label: 'Privacy policy', href: '/checkout' }, { label: 'Store policy', href: '/checkout' }, { label: 'Refund policy', href: '/checkout' }, { label: 'Terms', href: '/checkout' }] }
-    ];
+    const columns = navLinks.length ? [{ title: 'Store Links', links: navLinks.slice(0, 8) }] : [];
+    const forceNarrowFooter = isPreviewNarrow(previewDevice);
+    const footerGridClass = `grid gap-8 ${columns.length && !forceNarrowFooter ? 'lg:grid-cols-[1.3fr_minmax(0,1fr)]' : ''}`;
+    const desktopColumnsClass = forceNarrowFooter ? 'hidden' : 'hidden contents lg:contents';
+    const mobileColumnsClass = forceNarrowFooter ? 'block' : 'lg:hidden';
+    const bottomNavClass = `${preview ? 'sticky bottom-0' : 'fixed inset-x-0 bottom-0'} z-50 ${previewDevice ? (previewDevice === 'desktop' ? 'hidden' : 'grid') : 'grid md:hidden'} grid-cols-5 border-t border-slate-200 bg-white/95 px-1 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur`;
     const mobileLinks = [
         { label: 'Home', href: '/', icon: Home },
         { label: 'Search', href: '/#products', icon: Search },
@@ -841,28 +931,30 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
     return (
         <>
             <footer className="border-t border-slate-200 bg-white pb-20 pt-10 md:pb-8" style={getReferenceThemeStyle(theme)}>
-                <div className="mx-auto w-[min(100%-40px,1440px)]">
-                    <div className="grid gap-8 lg:grid-cols-[1.3fr_repeat(4,0.7fr)]">
+                <div className={containerClass}>
+                    <div className={footerGridClass}>
                         <div>
                             <div className="flex items-center gap-3">
                                 <span className="h-10 w-10 rounded-full bg-[var(--sf-accent)]" />
                                 <div>
                                     <h2 className="text-lg font-black text-slate-950">{brandName}</h2>
-                                    <p className="text-xs font-semibold text-slate-500">Custom storefront</p>
+                                    <p className="text-xs font-semibold text-slate-500">Storefront</p>
                                 </div>
                             </div>
-                            <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
-                                {theme.footer?.text || 'A flexible, brandable storefront built for modern multi-tenant commerce.'}
-                            </p>
+                            {theme.footer?.text && (
+                                <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
+                                    {theme.footer.text}
+                                </p>
+                            )}
                             <form className="mt-5 flex max-w-sm gap-2 rounded-full border border-slate-200 bg-slate-50 p-1">
                                 <input type="email" placeholder="Email for updates" className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400" />
                                 <button type="button" className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Subscribe</button>
                             </form>
                         </div>
-                        <div className="hidden contents lg:contents">
+                        <div className={desktopColumnsClass}>
                             {columns.map(column => <FooterColumn key={column.title} {...column} LinkComponent={LinkComponent} />)}
                         </div>
-                        <div className="lg:hidden">
+                        <div className={mobileColumnsClass}>
                             {columns.map(column => <FooterAccordion key={column.title} {...column} LinkComponent={LinkComponent} />)}
                             {navLinks.length > 0 && <FooterAccordion title="Store Links" links={navLinks.slice(0, 6)} LinkComponent={LinkComponent} />}
                         </div>
@@ -882,7 +974,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
             </footer>
 
             {theme.mobile?.showBottomNavigation && (
-                <nav className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t border-slate-200 bg-white/95 px-1 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+                <nav className={bottomNavClass}>
                     {mobileLinks.map((item) => {
                         const Icon = item.icon;
                         return (

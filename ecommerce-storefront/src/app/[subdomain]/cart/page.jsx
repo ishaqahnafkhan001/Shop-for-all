@@ -21,6 +21,7 @@ export default function CartPage() {
     }, 0);
 
     const total = subtotal + shipping;
+    const getCartImageUrl = (item) => item.imageUrl || item.images?.[0] || '';
 
     // EMPTY STATE
     if (cartItems.length === 0) {
@@ -72,13 +73,19 @@ export default function CartPage() {
                                 <div className="flex w-full min-w-0 flex-1 items-start gap-4 sm:gap-5">
                                     {/* Product Image */}
                                     <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-indigo-50 sm:h-28 sm:w-28">
-                                        <Image
-                                            src={item.imageUrl || (item.images && item.images[0]) || 'https://via.placeholder.com/150'}
-                                            alt={item.title}
-                                            fill
-                                            sizes="(max-width: 640px) 100vw, 112px"
-                                            className="object-cover"
-                                        />
+                                        {getCartImageUrl(item) ? (
+                                            <Image
+                                                src={getCartImageUrl(item)}
+                                                alt={item.title}
+                                                fill
+                                                sizes="(max-width: 640px) 100vw, 112px"
+                                                className="object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center text-slate-300">
+                                                <ShoppingBag size={26} />
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Product Details */}

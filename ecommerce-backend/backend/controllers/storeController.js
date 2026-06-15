@@ -59,7 +59,8 @@ exports.getStorefrontBootstrap = async (req, res) => {
             sort,
             category,
             minPrice,
-            maxPrice
+            maxPrice,
+            minRating
         } = req.query;
         const currentPage = Math.max(parseInt(page, 10) || 1, 1);
         const limit = 9;
@@ -70,7 +71,8 @@ exports.getStorefrontBootstrap = async (req, res) => {
             sort,
             category,
             minPrice,
-            maxPrice
+            maxPrice,
+            minRating
         })}`;
 
         const cached = await cache.get(cacheKey);
@@ -89,10 +91,13 @@ exports.getStorefrontBootstrap = async (req, res) => {
             if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
             if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
         }
+        if (minRating) query.averageRating = { $gte: Math.min(Math.max(Number(minRating) || 0, 0), 5) };
 
         let sortQuery = { createdAt: -1, _id: 1 };
         if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
         else if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
+        else if (sort === 'ratingDesc') sortQuery = { averageRating: -1, numReviews: -1, _id: 1 };
+        else if (sort === 'ratingAsc') sortQuery = { averageRating: 1, numReviews: 1, _id: 1 };
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 

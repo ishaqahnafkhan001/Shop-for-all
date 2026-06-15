@@ -26,6 +26,11 @@ const helpTextByPath = [
         body: 'Create coupons for discounts or free shipping. Always set an expiry date so old offers do not stay active by mistake.'
     },
     {
+        match: '/dashboard/growth',
+        title: 'Growth Center',
+        body: 'Use this page to find products worth promoting, products that need improvement, and what customers search for in your store.'
+    },
+    {
         match: '/dashboard/banners',
         title: 'Store Builder',
         body: 'Banners are now managed inside Store Builder as flexible homepage sections.'

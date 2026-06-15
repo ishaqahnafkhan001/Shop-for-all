@@ -48,6 +48,20 @@ const copyRequestHeaders = (request) => {
 
     headers.delete('origin');
 
+    const host = request.headers.get('host') || '';
+    const hostname = host.split(':')[0].toLowerCase();
+    let subdomain = '';
+
+    if (hostname.includes('.localhost')) {
+        subdomain = hostname.split('.localhost')[0];
+    } else if (hostname.endsWith('.scaleup.codes')) {
+        [subdomain] = hostname.split('.');
+    }
+
+    if (subdomain && !['www', 'api', 'admin', 'shop', 'localhost', 'scaleup'].includes(subdomain)) {
+        headers.set('x-shop-subdomain', subdomain);
+    }
+
     return headers;
 };
 

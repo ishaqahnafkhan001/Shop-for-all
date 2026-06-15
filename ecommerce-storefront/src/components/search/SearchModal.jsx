@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Search, X } from "lucide-react";
+import { ArrowRight, Search, ShoppingBag, X } from "lucide-react";
+import { trackStorefrontEvent } from "@/utils/analyticsTracker";
 
 export default function SearchModal({
                                         isOpen,
@@ -31,6 +32,24 @@ export default function SearchModal({
             return searchText.includes(query.toLowerCase());
         });
     }, [query, products]);
+
+    useEffect(() => {
+        const cleanQuery = query.trim();
+        if (!isOpen || cleanQuery.length < 2) return undefined;
+
+        const timer = setTimeout(() => {
+            trackStorefrontEvent({
+                eventType: 'search',
+                metadata: {
+                    query: cleanQuery,
+                    resultCount: filteredProducts.length,
+                    location: 'search_modal'
+                }
+            });
+        }, 700);
+
+        return () => clearTimeout(timer);
+    }, [filteredProducts.length, isOpen, query]);
 
     if (!isOpen) return null;
 
@@ -84,13 +103,19 @@ export default function SearchModal({
                                                 onClick={onClose}
                                                 className="flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[var(--sf-accent)] hover:bg-slate-50"
                                             >
-                                                <Image
-                                                    src={product.imageUrl}
-                                                    alt={product.title}
-                                                    width={56}
-                                                    height={56}
-                                                    className="h-14 w-14 rounded-xl bg-slate-100 object-cover"
-                                                />
+                                                {product.imageUrl ? (
+                                                    <Image
+                                                        src={product.imageUrl}
+                                                        alt={product.title}
+                                                        width={56}
+                                                        height={56}
+                                                        className="h-14 w-14 rounded-xl bg-slate-100 object-cover"
+                                                    />
+                                                ) : (
+                                                    <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
+                                                        <ShoppingBag size={20} />
+                                                    </span>
+                                                )}
                                                 <div className="min-w-0 flex-1">
                                                     <p className="line-clamp-1 text-sm font-bold text-slate-950">{product.title}</p>
                                                     <p className="mt-1 text-xs font-semibold text-slate-500">৳ {product.finalPrice}</p>
@@ -122,13 +147,19 @@ export default function SearchModal({
                                 onClick={onClose}
                                 className="flex items-center gap-4 p-4 transition hover:bg-slate-50 sm:p-5"
                             >
-	                                <Image
-	                                    src={product.imageUrl}
-	                                    alt={product.title}
-	                                    width={64}
-	                                    height={64}
-	                                    className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
-	                                />
+                                {product.imageUrl ? (
+                                    <Image
+                                        src={product.imageUrl}
+                                        alt={product.title}
+                                        width={64}
+                                        height={64}
+                                        className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
+                                    />
+                                ) : (
+                                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">
+                                        <ShoppingBag size={22} />
+                                    </span>
+                                )}
 
                                 <div className="flex-1 min-w-0">
                                     <h3 className="line-clamp-1 text-sm font-black text-slate-950">

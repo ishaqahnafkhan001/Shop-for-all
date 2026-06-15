@@ -286,6 +286,15 @@ export const getEnabledHomepageSections = (themeCandidate = {}) => {
 export const getSortedNavigation = (themeCandidate = {}) => {
     const theme = normalizeTheme(themeCandidate);
     return theme.navigation
-        .filter(item => item?.label && item?.url)
+        .filter(item => item?.label && (item?.url || item?.children?.length))
+        .map(item => ({
+            ...item,
+            url: item.url || '#',
+            children: Array.isArray(item.children)
+                ? item.children
+                    .filter(child => child?.label && child?.url)
+                    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                : []
+        }))
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 };

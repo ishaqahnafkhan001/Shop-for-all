@@ -1,12 +1,12 @@
 "use client";
 import React, { useEffect, useState, memo } from 'react';
 import Image from 'next/image';
-import { Zap } from 'lucide-react';
+import { ShoppingBag, Zap } from 'lucide-react';
 
 const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount }) {
     const [activeIdx,    setActiveIdx]    = useState(0);
     const [isZoomed,     setIsZoomed]     = useState(false);
-    const safeImages = images?.length ? images : ['https://via.placeholder.com/600'];
+    const safeImages = images?.filter(Boolean) || [];
     const primaryImage = safeImages?.[0];
 
     useEffect(() => {
@@ -21,14 +21,20 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                 onMouseEnter={() => setIsZoomed(true)}
                 onMouseLeave={() => setIsZoomed(false)}
             >
-                <Image
-                    src={safeImages[activeIdx]}
-                    alt="Product"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    priority={activeIdx === 0}
-                    className={`object-contain transition-transform duration-700 ease-out ${isZoomed ? 'scale-110' : 'scale-100'}`}
-                />
+                {primaryImage ? (
+                    <Image
+                        src={safeImages[activeIdx] || primaryImage}
+                        alt="Product"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        priority={activeIdx === 0}
+                        className={`object-contain transition-transform duration-700 ease-out ${isZoomed ? 'scale-110' : 'scale-100'}`}
+                    />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center text-slate-300">
+                        <ShoppingBag size={56} />
+                    </div>
+                )}
 
                 <div className="absolute left-4 top-4 flex flex-col gap-2 sm:left-6 sm:top-6">
                     <span className="rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur-md">

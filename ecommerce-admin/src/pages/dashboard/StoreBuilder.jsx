@@ -674,9 +674,21 @@ const StorefrontPreview = ({
     const products = availableProducts.length > 0
         ? availableProducts.slice(0, 10).map(product => ({
             ...product,
-            imageUrl: product.imageUrl || product.images?.[0] || REFERENCE_SAMPLE_PRODUCTS[0].imageUrl
+            imageUrl: product.imageUrl || product.images?.[0] || ''
         }))
         : REFERENCE_SAMPLE_PRODUCTS;
+    const categories = [...new Set(products.map(product => product.category).filter(Boolean))];
+    const previewSectionProducts = useMemo(() => {
+        const productMap = new Map(products.map(product => [String(product._id), product]));
+        return (theme.homepageSections || []).reduce((acc, section) => {
+            if (section.type !== 'FeaturedProducts') return acc;
+            const sectionId = section.id || section._id;
+            const productIds = section.settings?.productIds || section.settings?.source?.productIds || section.source?.productIds || [];
+            if (!sectionId || !Array.isArray(productIds) || productIds.length === 0) return acc;
+            acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);
+            return acc;
+        }, {});
+    }, [products, theme.homepageSections]);
     const frameLabel = device === 'desktop'
         ? 'scaleup.store'
         : device === 'tablet'
@@ -707,18 +719,19 @@ const StorefrontPreview = ({
                     <div style={getReferenceThemeStyle(theme)}>
                         <ReferenceStorefrontPage
                             theme={theme}
-                            shopName={shopName || 'Vendor Store'}
+                            shopName={shopName || 'Store preview'}
                             subdomain="preview"
                             cartCount={3}
                             storewideDiscount={storewideDiscount}
                             products={products}
-                            categories={REFERENCE_SAMPLE_CATEGORIES}
-                            sectionProducts={{}}
+                            categories={categories.length ? categories : REFERENCE_SAMPLE_CATEGORIES}
+                            sectionProducts={previewSectionProducts}
                             pagination={{ page: 1, pages: 10 }}
                             filters={{ category: 'All', sort: 'newest', page: 1 }}
                             priceInput={{ min: '', max: '' }}
                             catalogSearch=""
                             preview
+                            previewDevice={device}
                         />
                     </div>
                 </div>
@@ -731,6 +744,7 @@ const StoreBuilder = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [uploadingThemeImage, setUploadingThemeImage] = useState(false);
     const [shopName, setShopName] = useState('');
     const [theme, setTheme] = useState(defaultTheme);
     const [availableProducts, setAvailableProducts] = useState([]);
@@ -1069,6 +1083,25 @@ const StoreBuilder = () => {
         }));
     };
 
+    const addNavigationDropdown = () => {
+        setTheme(prev => ({
+            ...prev,
+            navigation: normalizeNavigationOrder([
+                ...(prev.navigation || []),
+                {
+                    label: 'New dropdown',
+                    url: '#',
+                    isExternal: false,
+                    sortOrder: prev.navigation?.length || 0,
+                    megaMenu: true,
+                    children: [
+                        { label: 'Sub link', url: '/', isExternal: false, sortOrder: 0 }
+                    ]
+                }
+            ])
+        }));
+    };
+
     const removeNavigation = (index) => {
         setTheme(prev => ({
             ...prev,
@@ -1266,6 +1299,30 @@ const StoreBuilder = () => {
         }
     };
 
+    const handleThemeImageUpload = async (event, onUploaded) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+        setUploadingThemeImage(true);
+
+        try {
+            const { data } = await API.post('/store-builder/admin/image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const url = data.data?.url;
+            if (!url) throw new Error('Upload did not return an image URL');
+            onUploaded(url);
+            toast.success('Image uploaded');
+        } catch (err) {
+            toast.error(err.response?.data?.error || err.message || 'Failed to upload image');
+        } finally {
+            setUploadingThemeImage(false);
+            event.target.value = '';
+        }
+    };
+
     const handleSave = async () => {
         if (validation.length > 0) {
             toast.error(validation[0]);
@@ -1351,16 +1408,6 @@ const StoreBuilder = () => {
                         >
                             <option>Left</option><option>Center</option><option>Right</option>
                         </BuilderSelect>
-                        <BuilderInput
-                            label="Storewide discount"
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={storewideDiscount}
-                            onChange={e => setStorewideDiscount(e.target.value)}
-                            help="Optional percentage discount shown on products. Use 0 when no storewide sale is active."
-                            error={Number(storewideDiscount) < 0 || Number(storewideDiscount) > 100 ? 'Use a value from 0 to 100.' : ''}
-                        />
                     </BuilderCard>
                 );
             case 'colors':
@@ -1458,7 +1505,12 @@ const StoreBuilder = () => {
                         title="Header and navigation"
                         description="Keep navigation short so customers can find the important pages quickly."
                         icon={LinkIcon}
-                        actions={<BuilderButton type="button" variant="secondary" onClick={addNavigation}><Plus size={16} /> Add link</BuilderButton>}
+                        actions={(
+                            <div className="flex flex-wrap gap-2">
+                                <BuilderButton type="button" variant="secondary" onClick={addNavigation}><Plus size={16} /> Add link</BuilderButton>
+                                <BuilderButton type="button" variant="secondary" onClick={addNavigationDropdown}><Plus size={16} /> Add dropdown</BuilderButton>
+                            </div>
+                        )}
                     >
                         {(theme.navigation || []).map((item, index) => (
                             <div key={index} className="rounded-lg border border-slate-200 p-3">
@@ -1547,10 +1599,18 @@ const StoreBuilder = () => {
                         <BuilderInput label="Hero title" value={theme.hero?.title || ''} onChange={e => setThemeGroup('hero', 'title', e.target.value)} placeholder="Summer sale is live" />
                         <BuilderInput label="Hero subtitle" value={theme.hero?.subtitle || ''} onChange={e => setThemeGroup('hero', 'subtitle', e.target.value)} placeholder="Short supporting message" />
                         <BuilderInput label="Hero image URL" value={theme.hero?.imageUrl || ''} onChange={e => setThemeGroup('hero', 'imageUrl', e.target.value)} placeholder="https://..." help="Use a wide image so desktop and mobile cropping looks good." />
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <BuilderInput label="Button label" value={theme.hero?.ctaLabel || ''} onChange={e => setThemeGroup('hero', 'ctaLabel', e.target.value)} />
-                            <BuilderInput label="Button URL" value={theme.hero?.ctaUrl || '/'} onChange={e => setThemeGroup('hero', 'ctaUrl', e.target.value)} />
-                        </div>
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                            <Upload size={16} />
+                            {uploadingThemeImage ? 'Uploading...' : 'Upload hero image'}
+                            <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                className="hidden"
+                                disabled={uploadingThemeImage}
+                                onChange={event => handleThemeImageUpload(event, url => setThemeGroup('hero', 'imageUrl', url))}
+                            />
+                        </label>
+                        <BuilderInput label="Button label" value={theme.hero?.ctaLabel || ''} onChange={e => setThemeGroup('hero', 'ctaLabel', e.target.value)} />
                         <BuilderSelect label="Hero height" value={theme.hero?.height || 'Medium'} onChange={e => setThemeGroup('hero', 'height', e.target.value)}>
                             <option>Compact</option><option>Medium</option><option>Tall</option>
                         </BuilderSelect>
