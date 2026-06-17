@@ -4,6 +4,7 @@ const router = express.Router();
 const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { resolveTenant } = require('../middlewares/tenant');
+const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const { upload } = require('../config/cloudinary');
 const {
     getStoreBuilderSettings,
@@ -25,6 +26,7 @@ router.patch(
     '/admin',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     updateStoreBuilderSettings
 );
 
@@ -39,6 +41,7 @@ router.post(
     '/admin/logo',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     upload.single('logo'),
     uploadStoreBuilderLogo
 );
@@ -47,6 +50,7 @@ router.post(
     '/admin/image',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     upload.single('image'),
     uploadStoreBuilderImage
 );

@@ -79,7 +79,8 @@ export const useShopData = (subdomain, filters) => {
                 }));
             } catch (err) {
                 console.error("Storefront Bootstrap Fetch Error:", err);
-                if (isMounted) setData(prev => ({ ...prev, loading: false, error: "Store not found" }));
+                const errorMessage = err.response?.data?.error || "Store not found";
+                if (isMounted) setData(prev => ({ ...prev, loading: false, error: errorMessage }));
             }
         };
 

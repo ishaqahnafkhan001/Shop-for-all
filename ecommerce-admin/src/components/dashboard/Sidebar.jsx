@@ -14,7 +14,11 @@ import {
     TrendingUp,
     Shield,
     Crown,
-    Boxes
+    Boxes,
+    RefreshCcw,
+    Bell,
+    History,
+    BadgeCheck
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -27,12 +31,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Products', path: '/dashboard/products', icon: Package },
         { name: 'Catalog Tools', path: '/dashboard/catalog-tools', icon: Boxes },
         { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart },
+        { name: 'Returns', path: '/dashboard/returns', icon: RefreshCcw },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
+        { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },
+        { name: 'Verification', path: '/dashboard/verification', icon: BadgeCheck },
         { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent },
         { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp },
         { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
         { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, adminOnly: true },
         { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true },
+        { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, adminOnly: true },
 
         // 🚚 NEW: Added the Shipping link here
         { name: 'Shipping', path: '/dashboard/shipping', icon: Truck },
@@ -41,7 +49,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     ];
 
     const superAdminNavItems = [
-        { name: 'Super Admin', path: '/super-admin', icon: Crown }
+        { name: 'Super Admin', path: '/super-admin', icon: Crown },
+        { name: 'Vendor Verification', path: '/super-admin/vendor-verifications', icon: BadgeCheck },
+        { name: 'Platform Audit Logs', path: '/super-admin/audit-logs', icon: History }
     ];
 
     const navItems = isSuperAdmin

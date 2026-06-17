@@ -5,6 +5,7 @@ const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
 const { resolveTenant } = require('../middlewares/tenant');
+const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const {
     getPromotions,
     createPromotion,
@@ -25,6 +26,7 @@ router.post(
     '/admin',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     createPromotion
 );
 
@@ -32,6 +34,7 @@ router.patch(
     '/admin/:id',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     updatePromotion
 );
 
@@ -39,6 +42,7 @@ router.delete(
     '/admin/:id',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     deletePromotion
 );
 

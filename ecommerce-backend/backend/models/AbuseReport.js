@@ -29,7 +29,22 @@ const abuseReportSchema = new Schema({
         enum: ['Open', 'Reviewing', 'Resolved', 'Dismissed'],
         default: 'Open',
         index: true
+    },
+    internalNote: {
+        type: String,
+        trim: true,
+        maxlength: 2000,
+        default: ''
+    },
+    resolutionReason: {
+        type: String,
+        trim: true,
+        maxlength: 1000,
+        default: ''
     }
 }, { timestamps: true });
+
+abuseReportSchema.index({ status: 1, createdAt: -1 });
+abuseReportSchema.index({ shop_id: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('AbuseReport', abuseReportSchema);

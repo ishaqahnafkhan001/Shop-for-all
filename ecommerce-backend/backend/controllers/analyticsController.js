@@ -12,11 +12,24 @@ exports.getAdvancedAnalytics = async (req, res) => {
         const from = req.query.from ? new Date(req.query.from) : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         const to = req.query.to ? new Date(req.query.to) : now;
 
-        const match = {
+        const deliveredMatch = {
             shop_id: shopId,
             isDeleted: false,
-            createdAt: { $gte: startOfDay(from), $lte: to }
+            status: 'Delivered'
         };
+        const deliveredAnalyticsPrefix = [
+            { $match: deliveredMatch },
+            {
+                $addFields: {
+                    analyticsDate: { $ifNull: ['$shipping.deliveredAt', '$updatedAt'] }
+                }
+            },
+            {
+                $match: {
+                    analyticsDate: { $gte: startOfDay(from), $lte: to }
+                }
+            }
+        ];
 
         const [
             salesByDay,
@@ -30,13 +43,13 @@ exports.getAdvancedAnalytics = async (req, res) => {
             totalCustomers
         ] = await Promise.all([
             Order.aggregate([
-                { $match: match },
+                ...deliveredAnalyticsPrefix,
                 {
                     $group: {
                         _id: {
-                            year: { $year: '$createdAt' },
-                            month: { $month: '$createdAt' },
-                            day: { $dayOfMonth: '$createdAt' }
+                            year: { $year: '$analyticsDate' },
+                            month: { $month: '$analyticsDate' },
+                            day: { $dayOfMonth: '$analyticsDate' }
                         },
                         orders: { $sum: 1 },
                         revenue: { $sum: '$pricing.total' },
@@ -61,12 +74,12 @@ exports.getAdvancedAnalytics = async (req, res) => {
                 { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
             ]),
             Order.aggregate([
-                { $match: match },
+                ...deliveredAnalyticsPrefix,
                 {
                     $group: {
                         _id: {
-                            year: { $year: '$createdAt' },
-                            month: { $month: '$createdAt' }
+                            year: { $year: '$analyticsDate' },
+                            month: { $month: '$analyticsDate' }
                         },
                         orders: { $sum: 1 },
                         revenue: { $sum: '$pricing.total' }
@@ -75,7 +88,7 @@ exports.getAdvancedAnalytics = async (req, res) => {
                 { $sort: { '_id.year': 1, '_id.month': 1 } }
             ]),
             Order.aggregate([
-                { $match: match },
+                ...deliveredAnalyticsPrefix,
                 { $unwind: '$items' },
                 {
                     $group: {
@@ -89,7 +102,7 @@ exports.getAdvancedAnalytics = async (req, res) => {
                 { $limit: 10 }
             ]),
             Order.aggregate([
-                { $match: match },
+                ...deliveredAnalyticsPrefix,
                 {
                     $group: {
                         _id: '$source',
@@ -100,7 +113,7 @@ exports.getAdvancedAnalytics = async (req, res) => {
                 { $sort: { orders: -1 } }
             ]),
             Order.aggregate([
-                { $match: match },
+                ...deliveredAnalyticsPrefix,
                 {
                     $group: {
                         _id: null,
@@ -128,7 +141,7 @@ exports.getAdvancedAnalytics = async (req, res) => {
                 }
             ]),
             Order.aggregate([
-                { $match: match },
+                ...deliveredAnalyticsPrefix,
                 { $group: { _id: '$customer', orders: { $sum: 1 } } },
                 { $match: { orders: { $gt: 1 } } },
                 { $count: 'count' }

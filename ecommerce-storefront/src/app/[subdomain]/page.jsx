@@ -100,7 +100,7 @@ export default function VendorHomePage({ params }) {
             <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
                 <PackageX size={48} className="mb-4 text-slate-300" />
                 <h2 className="mb-2 text-xl font-black text-slate-950">Store Unavailable</h2>
-                <p className="text-sm text-slate-500">This storefront is currently inactive or does not exist.</p>
+                <p className="text-sm text-slate-500">{error || 'This storefront is currently inactive or does not exist.'}</p>
             </div>
         );
     }

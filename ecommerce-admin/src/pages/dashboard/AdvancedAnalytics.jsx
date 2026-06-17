@@ -67,7 +67,7 @@ const AdvancedAnalytics = () => {
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">Advanced Analytics</h1>
-                <p className="text-sm text-slate-500 mt-1">Use these reports to spot what sells, where customers come from, and which stock needs attention.</p>
+                <p className="text-sm text-slate-500 mt-1">Revenue, profit, and best sellers are counted only after orders are delivered.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -83,7 +83,7 @@ const AdvancedAnalytics = () => {
 
             <section className="bg-white border border-slate-200 rounded-lg p-5">
                     <div className="font-semibold text-slate-900 mb-1">Sales by Day</div>
-                    <p className="text-xs text-slate-500 mb-4">Revenue and profit are grouped by order date.</p>
+                    <p className="text-xs text-slate-500 mb-4">Revenue and profit are grouped by delivery date.</p>
                 <div className="h-[340px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={salesByDay}>
@@ -106,7 +106,7 @@ const AdvancedAnalytics = () => {
                     </div>
                     <div className="space-y-3">
                         {bestSelling.length === 0 ? (
-                            <div className="rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-500">No sales yet. Best sellers appear after customers place orders.</div>
+                            <div className="rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-500">No delivered sales yet. Best sellers appear after orders are delivered.</div>
                         ) : bestSelling.map(product => (
                             <div key={product._id} className="flex justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
                                 <span className="text-sm font-medium text-slate-800 truncate">{product.title}</span>

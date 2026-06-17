@@ -8,6 +8,7 @@ const InventoryLog = require('../models/InventoryLog');
 const User = require('../models/User'); // We need this to create Guest customers
 const Promotion = require('../models/Promotion');
 const { evaluatePromotion } = require('../services/promotionService');
+const { notifyNewOrder } = require('../services/shopEventNotificationService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
@@ -390,6 +391,12 @@ exports.createPublicOrder = async (req, res) => {
         }
 
         await session.commitTransaction();
+
+        notifyNewOrder({
+            shop_id: shop._id,
+            order: newOrder,
+            customer: orderCustomer
+        });
 
         return res.status(201).json({
             success: true,

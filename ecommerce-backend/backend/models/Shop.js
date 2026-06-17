@@ -50,6 +50,30 @@ const shopSchema = new mongoose.Schema({
         default: 'Approved',
         index: true
     },
+    verification: {
+        status: {
+            type: String,
+            enum: ['not_submitted', 'pending', 'approved', 'rejected', 'expired', 'suspended'],
+            default: 'not_submitted',
+            index: true
+        },
+        deadline: {
+            type: Date,
+            default: () => {
+                const deadline = new Date();
+                deadline.setDate(deadline.getDate() + 20);
+                return deadline;
+            },
+            index: true
+        },
+        approvedAt: Date,
+        suspendedAt: Date
+    },
+    suspensionReason: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     plan: {
         name: { type: String, default: 'Starter' },
         status: {
@@ -69,7 +93,8 @@ const shopSchema = new mongoose.Schema({
             default: 'NotConfigured'
         },
         verifiedAt: Date,
-        lastCheckedAt: Date
+        lastCheckedAt: Date,
+        adminNote: { type: String, trim: true, default: '' }
     },
     theme: {
         version: { type: Number, default: 2, min: 1 },
@@ -365,5 +390,7 @@ shopSchema.index({ 'customDomain.domain': 1 }, {
     sparse: true,
     partialFilterExpression: { 'customDomain.domain': { $type: 'string', $ne: '' } }
 });
+shopSchema.index({ 'verification.status': 1, 'verification.deadline': 1 });
+shopSchema.index({ approvalStatus: 1, isActive: 1 });
 
 module.exports = mongoose.model('Shop', shopSchema);

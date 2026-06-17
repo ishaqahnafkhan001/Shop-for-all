@@ -3,6 +3,7 @@ const router = express.Router();
 
 const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
+const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 
 const {
     updateStock,
@@ -22,7 +23,7 @@ router.use(authorize('VendorAdmin', 'VendorStaff'));
 
 
 // 📊 Routes
-router.patch('/stock',         updateStock);          // FIX: was defined in controller but never registered
+router.patch('/stock',         blockVerificationSuspendedShop, updateStock);          // FIX: was defined in controller but never registered
 router.get('/logs',            getInventoryLogs);     // FIX: was defined in controller but never registered
 router.get('/movement',        getStockMovement);
 router.get('/top-products',    getTopProducts);       // FIX: removed redundant per-route protect()

@@ -3,6 +3,7 @@ const Collection = require('../models/Collection');
 const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
 const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
+const { logAudit } = require('../services/auditLogService');
 const {
     expandMatrix,
     makeVariantKey,
@@ -463,6 +464,21 @@ exports.createProduct = async (req, res) => {
 
         await session.commitTransaction();
 
+        await logAudit({
+            req,
+            shop_id: req.tenantId,
+            action: 'product.created',
+            entityType: 'Product',
+            entityId: product._id,
+            entityLabel: product.title,
+            after: {
+                title: product.title,
+                status: product.status,
+                category: product.category,
+                price: product.pricing?.sellingPrice
+            }
+        });
+
         return res.status(201).json({
             success: true,
             message: 'Product created successfully',
@@ -529,6 +545,13 @@ exports.updateProduct = async (req, res) => {
         }).session(session);
 
         if (!product) throw new Error('Product not found');
+        const beforeAudit = {
+            title: product.title,
+            status: product.status,
+            category: product.category,
+            price: product.pricing?.sellingPrice,
+            totalStock: product.variants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0)
+        };
 
         // ── 4. Snapshot current stock for inventory logging ───────────────────
         const oldStockById  = new Map(); // variantId  → stock
@@ -672,6 +695,23 @@ exports.updateProduct = async (req, res) => {
 
         await session.commitTransaction();
 
+        await logAudit({
+            req,
+            shop_id: shopId,
+            action: 'product.updated',
+            entityType: 'Product',
+            entityId: product._id,
+            entityLabel: product.title,
+            before: beforeAudit,
+            after: {
+                title: product.title,
+                status: product.status,
+                category: product.category,
+                price: product.pricing?.sellingPrice,
+                totalStock: product.variants.reduce((sum, variant) => sum + Number(variant.stock || 0), 0)
+            }
+        });
+
         return res.status(200).json({
             success: true,
             message: 'Product updated successfully',
@@ -707,6 +747,21 @@ exports.deleteProduct = async (req, res) => {
         if (!product) {
             return res.status(404).json({ success: false, error: "Product not found or already deleted" });
         }
+
+        await logAudit({
+            req,
+            shop_id: req.tenantId,
+            action: 'product.deleted',
+            entityType: 'Product',
+            entityId: product._id,
+            entityLabel: product.title,
+            severity: 'warning',
+            before: {
+                title: product.title,
+                status: product.status,
+                category: product.category
+            }
+        });
 
         res.status(200).json({ success: true, message: "Product deleted successfully" });
 

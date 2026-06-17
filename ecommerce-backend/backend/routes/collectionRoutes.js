@@ -4,6 +4,7 @@ const router = express.Router();
 const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
+const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const {
     getCollections,
     createCollection,
@@ -16,8 +17,8 @@ router.use(authorize('VendorAdmin', 'VendorStaff'));
 router.use(requirePermission('products'));
 
 router.get('/', getCollections);
-router.post('/', authorize('VendorAdmin'), createCollection);
-router.patch('/:id', authorize('VendorAdmin'), updateCollection);
-router.delete('/:id', authorize('VendorAdmin'), deleteCollection);
+router.post('/', authorize('VendorAdmin'), blockVerificationSuspendedShop, createCollection);
+router.patch('/:id', authorize('VendorAdmin'), blockVerificationSuspendedShop, updateCollection);
+router.delete('/:id', authorize('VendorAdmin'), blockVerificationSuspendedShop, deleteCollection);
 
 module.exports = router;

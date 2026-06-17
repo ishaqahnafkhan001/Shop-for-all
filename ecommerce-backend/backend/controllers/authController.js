@@ -3,6 +3,7 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const Account = require('../models/Account');
 const ShopMembership = require('../models/ShopMembership');
+const VendorVerification = require('../models/VendorVerification');
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -30,6 +31,8 @@ const {
     verifyResetOtp,
     resetPassword
 } = require('../services/passwordResetService');
+const { notifyCustomerRegistered } = require('../services/shopEventNotificationService');
+const { getDefaultDeadline } = require('../services/vendorVerificationService');
 
 const signSessionToken = ({ account, membership, user }) => jwt.sign(
     {
@@ -231,6 +234,14 @@ exports.registerVendor = async (req, res) => {
             session
         });
 
+        await VendorVerification.create([{
+            shop_id: newShop._id,
+            owner_id: account._id,
+            ownerModel: 'Account',
+            status: 'not_submitted',
+            verificationDeadline: newShop.verification?.deadline || getDefaultDeadline(newShop)
+        }], { session });
+
         await OTP.deleteOne({ email: cleanEmail }).session(session);
 
         await session.commitTransaction();
@@ -349,6 +360,11 @@ exports.registerCustomer = async (req, res) => {
             await OTP.deleteOne({ email: cleanEmail }).session(session);
             await session.commitTransaction();
 
+            notifyCustomerRegistered({
+                shop_id: targetShop._id,
+                customer: existingShopCustomer
+            });
+
             const token = signSessionToken({ account, membership, user: existingShopCustomer });
 
             res.cookie('token', token, getCookieOptions());
@@ -390,6 +406,11 @@ exports.registerCustomer = async (req, res) => {
         await OTP.deleteOne({ email: cleanEmail }).session(session);
 
         await session.commitTransaction();
+
+        notifyCustomerRegistered({
+            shop_id: targetShop._id,
+            customer: newCustomer
+        });
 
         const token = signSessionToken({ account, membership, user: newCustomer });
 

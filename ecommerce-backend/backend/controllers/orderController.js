@@ -9,6 +9,8 @@ const Shop = require('../models/Shop'); // Make sure to import your Shop model
 const Promotion = require('../models/Promotion');
 const { evaluatePromotion } = require('../services/promotionService');
 const cache = require('../services/cacheService');
+const { logAudit } = require('../services/auditLogService');
+const { notifyNewOrder } = require('../services/shopEventNotificationService');
 
 
 
@@ -163,7 +165,7 @@ exports.createOrder = async (req, res) => {
         if (!userId) throw new Error("Authentication failed. Please log in again.");
 
         // ✅ Customer existence + status check
-        const customer = await User.findById(userId).select('status').session(session);
+        const customer = await User.findById(userId).select('status fullName email phone').session(session);
         if (!customer) throw new Error("Customer not found");
         if (customer.status === 'Suspended') throw new Error("Your account is suspended.");
 
@@ -314,6 +316,12 @@ exports.createOrder = async (req, res) => {
         await InventoryLog.insertMany(logsWithRef, { session });
 
         await session.commitTransaction();
+
+        notifyNewOrder({
+            shop_id: shopId,
+            order,
+            customer
+        });
 
         res.status(201).json({
             success: true,
@@ -482,15 +490,36 @@ exports.updateOrderStatus = async (req, res) => {
             });
         }
 
+        const previousOrder = await Order.findOne({
+            _id: req.params.id,
+            shop_id: shopId,
+            isDeleted: false
+        }).select('status').lean();
+
+        const update = { status };
+        if (status === 'Shipped') update['shipping.shippedAt'] = new Date();
+        if (status === 'Delivered') update['shipping.deliveredAt'] = new Date();
+
         const order = await Order.findOneAndUpdate(
             { _id: req.params.id, shop_id: shopId, isDeleted: false },
-            { status },
+            { $set: update },
             { new: true }
         ).populate('customer', 'fullName email');
 
         if (!order) {
             return res.status(404).json({ success: false, error: "Order not found or access denied" });
         }
+
+        await logAudit({
+            req,
+            shop_id: shopId,
+            action: 'order.status_updated',
+            entityType: 'Order',
+            entityId: order._id,
+            entityLabel: `Order #${String(order._id).slice(-6).toUpperCase()}`,
+            before: { status: previousOrder?.status },
+            after: { status: order.status }
+        });
 
         res.status(200).json({
             success: true,

@@ -23,7 +23,14 @@ const CatalogTools = lazy(() => import('./pages/dashboard/CatalogTools.jsx'));
 const AdvancedAnalytics = lazy(() => import('./pages/dashboard/AdvancedAnalytics.jsx'));
 const GrowthCenter = lazy(() => import('./pages/dashboard/GrowthCenter.jsx'));
 const StaffPermissions = lazy(() => import('./pages/dashboard/StaffPermissions.jsx'));
+const Returns = lazy(() => import('./pages/dashboard/Returns.jsx'));
+const Notifications = lazy(() => import('./pages/dashboard/Notifications.jsx'));
+const ActivityLogs = lazy(() => import('./pages/dashboard/ActivityLogs.jsx'));
+const Verification = lazy(() => import('./pages/dashboard/Verification.jsx'));
 const SuperAdminPanel = lazy(() => import('./pages/superadmin/SuperAdminPanel.jsx'));
+const VendorVerifications = lazy(() => import('./pages/superadmin/VendorVerifications.jsx'));
+const ShopDetail = lazy(() => import('./pages/superadmin/ShopDetail.jsx'));
+const PlatformAuditLogs = lazy(() => import('./pages/superadmin/PlatformAuditLogs.jsx'));
 
 // Helper to determine where logged-in users should go if they hit /login or a 404
 const getRedirectPath = (role) => {
@@ -61,6 +68,9 @@ function App() {
                 <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
                     <Route path="/super-admin" element={<DashboardLayout />}>
                         <Route index element={withSuspense(<SuperAdminPanel />)} />
+                        <Route path="shops/:shopId" element={withSuspense(<ShopDetail />)} />
+                        <Route path="vendor-verifications" element={withSuspense(<VendorVerifications />)} />
+                        <Route path="audit-logs" element={withSuspense(<PlatformAuditLogs />)} />
                     </Route>
                 </Route>
 
@@ -74,6 +84,7 @@ function App() {
                             {/* Note: You might want to move 'settings' here too depending on your business logic */}
                             <Route path="store-builder" element={withSuspense(<StoreBuilder />)} />
                             <Route path="staff" element={withSuspense(<StaffPermissions />)} />
+                            <Route path="activity-logs" element={withSuspense(<ActivityLogs />)} />
                         </Route>
 
                         {/* 🟢 ADMIN & STAFF ROUTES */}
@@ -82,6 +93,9 @@ function App() {
                         <Route path="products/edit/:id" element={withSuspense(<EditProduct />)} />
                         <Route path="catalog-tools" element={withSuspense(<CatalogTools />)} />
                         <Route path="orders" element={withSuspense(<OrderList />)} />
+                        <Route path="returns" element={withSuspense(<Returns />)} />
+                        <Route path="notifications" element={withSuspense(<Notifications />)} />
+                        <Route path="verification" element={withSuspense(<Verification />)} />
                         <Route path="promotions" element={withSuspense(<Promotions />)} />
                         <Route path="banners" element={<Navigate to="/dashboard/store-builder" replace />} />
                         <Route path="customers" element={withSuspense(<CustomerList />)} />

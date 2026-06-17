@@ -3,6 +3,7 @@ const Account = require('../models/Account');
 const User = require('../models/User');
 const Shop = require('../models/Shop');
 const ShopMembership = require('../models/ShopMembership');
+const { isVerificationSuspension } = require('../services/vendorVerificationService');
 
 const getTokenFromRequest = (req) => {
     if (req.cookies && req.cookies.token) return req.cookies.token;
@@ -26,7 +27,7 @@ const attachUserFromToken = async (req, token) => {
         }
 
         const legacyUser = await User.findById(decoded.id)
-            .select('role shop_id status account_id membership_id permissions')
+            .select('fullName email role shop_id status account_id membership_id permissions')
             .lean();
 
         if (!legacyUser || legacyUser.status !== 'Active') {
@@ -49,10 +50,13 @@ const attachUserFromToken = async (req, token) => {
             }
 
             const shop = await Shop.findById(membership.shop_id)
-                .select('isActive approvalStatus')
+                .select('isActive approvalStatus suspensionReason verification')
                 .lean();
 
-            if (!shop || shop.isActive === false || shop.approvalStatus === 'Suspended') {
+            const canAccessVerificationRecovery = isVerificationSuspension(shop) &&
+                ['VendorAdmin', 'VendorStaff'].includes(legacyUser.role);
+
+            if (!shop || ((shop.isActive === false || shop.approvalStatus === 'Suspended') && !canAccessVerificationRecovery)) {
                 throw new Error('Shop inactive');
             }
         }
@@ -63,6 +67,8 @@ const attachUserFromToken = async (req, token) => {
             accountId: decoded.accountId,
             membershipId: decoded.membershipId,
             role: legacyUser.role,
+            fullName: legacyUser.fullName,
+            email: legacyUser.email,
             shopId: legacyUser.shop_id,
             shop_id: legacyUser.shop_id,
             permissions: legacyUser.permissions
@@ -76,10 +82,22 @@ const attachUserFromToken = async (req, token) => {
         throw new Error('Token does not belong to requested shop');
     }
 
+    if (decoded.shopId && ['VendorAdmin', 'VendorStaff'].includes(decoded.role)) {
+        const shop = await Shop.findById(decoded.shopId)
+            .select('isActive approvalStatus suspensionReason verification')
+            .lean();
+        const canAccessVerificationRecovery = isVerificationSuspension(shop);
+        if (!shop || ((shop.isActive === false || shop.approvalStatus === 'Suspended') && !canAccessVerificationRecovery)) {
+            throw new Error('Shop inactive');
+        }
+    }
+
     req.user = {
         _id: decoded.id,
         id: decoded.id,
         role: decoded.role,
+        fullName: decoded.fullName,
+        email: decoded.email,
         shopId: decoded.shopId,
         shop_id: decoded.shopId
     };

@@ -8,6 +8,7 @@ const {
     normalizeEmail,
     createMembershipArtifacts
 } = require('../services/identityService');
+const { logAudit } = require('../services/auditLogService');
 
 
 /**
@@ -31,6 +32,7 @@ exports.toggleCustomerStatus = async (req, res) => {
         }
 
         // 2. Toggle the status
+        const previousStatus = customer.status;
         customer.status = customer.status === 'Active' ? 'Suspended' : 'Active';
         await customer.save();
 
@@ -39,6 +41,18 @@ exports.toggleCustomerStatus = async (req, res) => {
                 status: customer.status
             });
         }
+
+        await logAudit({
+            req,
+            shop_id: shopId,
+            action: 'customer.status_updated',
+            entityType: 'User',
+            entityId: customer._id,
+            entityLabel: customer.fullName || customer.email,
+            severity: customer.status === 'Suspended' ? 'warning' : 'info',
+            before: { status: previousStatus },
+            after: { status: customer.status }
+        });
 
         res.status(200).json({
             success: true,
@@ -124,6 +138,19 @@ exports.createShopUser = async (req, res) => {
             session: null
         });
 
+        await logAudit({
+            req,
+            shop_id: currentShopId,
+            action: 'user.created',
+            entityType: 'User',
+            entityId: newUser._id,
+            entityLabel: newUser.fullName || newUser.email,
+            after: {
+                email: newUser.email,
+                role: newUser.role
+            }
+        });
+
         res.status(201).json({
             message: `${value.role} created successfully`,
             user: { id: newUser._id, email: newUser.email, role: newUser.role }
@@ -160,6 +187,10 @@ exports.updateShopUserPermissions = async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'Staff member not found' });
         }
+        const beforeAudit = {
+            status: user.status,
+            permissions: user.permissions?.toObject?.() || user.permissions || {}
+        };
 
         user.permissions = {
             ...(user.permissions?.toObject?.() || user.permissions || {}),
@@ -193,6 +224,20 @@ exports.updateShopUserPermissions = async (req, res) => {
         }
 
         await user.save();
+
+        await logAudit({
+            req,
+            shop_id: req.user.shopId,
+            action: 'staff.permissions_updated',
+            entityType: 'User',
+            entityId: user._id,
+            entityLabel: user.fullName || user.email,
+            before: beforeAudit,
+            after: {
+                status: user.status,
+                permissions: user.permissions?.toObject?.() || user.permissions || {}
+            }
+        });
 
         res.status(200).json({
             success: true,

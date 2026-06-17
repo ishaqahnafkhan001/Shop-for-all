@@ -2,9 +2,35 @@ import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import Topbar from '../components/dashboard/Topbar';
+import VerificationBanner from '../components/dashboard/VerificationBanner';
 import { CircleHelp } from 'lucide-react';
 
 const helpTextByPath = [
+    {
+        match: '/super-admin/audit-logs',
+        title: 'Platform Audit Logs',
+        body: 'Review Super Admin actions across shops, verification, announcements, domains, plans, and abuse reports.'
+    },
+    {
+        match: '/super-admin/shops',
+        title: 'Shop Governance',
+        body: 'Review one shop in detail, including owner, verification, domain, abuse reports, feature flags, and suspension history.'
+    },
+    {
+        match: '/super-admin/vendor-verifications',
+        title: 'Vendor Verification',
+        body: 'Review NID submissions carefully. Approve only clear documents and give vendors a specific reason when rejecting.'
+    },
+    {
+        match: '/super-admin',
+        title: 'Super Admin',
+        body: 'Manage platform shops, governance, plans, domains, payments, announcements, and abuse reports.'
+    },
+    {
+        match: '/dashboard/verification',
+        title: 'Verification',
+        body: 'Submit NID details for your store owner. Verification keeps the storefront active after the 20-day review deadline.'
+    },
     {
         match: '/dashboard/products',
         title: 'Products',
@@ -16,9 +42,19 @@ const helpTextByPath = [
         body: 'Start from Pending orders. Confirm, process, ship, then deliver. Open View before changing status if you need customer or delivery details.'
     },
     {
+        match: '/dashboard/returns',
+        title: 'Returns',
+        body: 'Record return requests and manual refund details here. This does not trigger payment gateway refunds.'
+    },
+    {
         match: '/dashboard/customers',
         title: 'Customers',
         body: 'This page shows shoppers for this store only. Use it to review customer history and contact customers when needed.'
+    },
+    {
+        match: '/dashboard/notifications',
+        title: 'Notifications',
+        body: 'Important order, customer, return, and refund events appear here so staff can react quickly.'
     },
     {
         match: '/dashboard/promotions',
@@ -44,6 +80,11 @@ const helpTextByPath = [
         match: '/dashboard/shipping',
         title: 'Shipping',
         body: 'Connect courier settings before sending confirmed orders. Keep pickup address and phone number accurate.'
+    },
+    {
+        match: '/dashboard/activity-logs',
+        title: 'Activity Logs',
+        body: 'Review tenant-scoped admin activity such as product changes, order status updates, returns, refunds, and staff permission edits.'
     },
     {
         match: '/dashboard',
@@ -103,6 +144,7 @@ const DashboardLayout = () => {
                                 <p className="mt-0.5 leading-5">{helpText.body}</p>
                             </div>
                         </div>
+                        <VerificationBanner />
                     </div>
                     <Outlet />
                 </div>

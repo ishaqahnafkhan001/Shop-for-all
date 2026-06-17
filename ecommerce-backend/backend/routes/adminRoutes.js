@@ -7,6 +7,7 @@ const router = express.Router();
 const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
+const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const { upload } = require('../config/cloudinary');
 
 // =========================
@@ -59,6 +60,29 @@ const {
     sendOrderStatusEmail
 } = require('../controllers/emailController');
 
+// Returns / Activity / Notifications
+const {
+    getReturns,
+    getReturnById,
+    createReturn,
+    updateReturnStatus,
+    updateReturnRefund,
+    updateReturn,
+    deleteReturns
+} = require('../controllers/returnController');
+const { getAuditLogs } = require('../controllers/auditLogController');
+const {
+    getNotifications,
+    getUnreadCount,
+    markNotificationRead,
+    markAllNotificationsRead,
+    deleteNotification
+} = require('../controllers/notificationController');
+const {
+    getVendorVerificationStatus,
+    submitVendorVerification
+} = require('../controllers/vendorVerificationController');
+
 // =========================
 // Upload Config
 // =========================
@@ -66,6 +90,30 @@ const productMediaUpload = upload.fields([
     { name: 'images', maxCount: 5 },
     { name: 'videos', maxCount: 2 }
 ]);
+const vendorNidUpload = upload.fields([
+    { name: 'nidFront', maxCount: 1 },
+    { name: 'nidBack', maxCount: 1 }
+]);
+
+// ======================================================
+// VENDOR VERIFICATION
+// ======================================================
+
+router.get(
+    '/vendor-verification/status',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getVendorVerificationStatus
+);
+
+router.post(
+    '/vendor-verification/submit',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    vendorNidUpload,
+    submitVendorVerification
+);
 
 // ======================================================
 // EMAIL ROUTES
@@ -83,6 +131,116 @@ router.post(
     protect,
     authorize('VendorAdmin', 'SuperAdmin'),
     sendOrderStatusEmail
+);
+
+// ======================================================
+// NOTIFICATIONS
+// ======================================================
+
+router.get(
+    '/notifications',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getNotifications
+);
+
+router.get(
+    '/notifications/unread-count',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getUnreadCount
+);
+
+router.patch(
+    '/notifications/read-all',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    markAllNotificationsRead
+);
+
+router.patch(
+    '/notifications/:id/read',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    markNotificationRead
+);
+
+router.delete(
+    '/notifications/:id',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    deleteNotification
+);
+
+// ======================================================
+// RETURNS / REFUNDS
+// ======================================================
+
+router.get(
+    '/returns',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    getReturns
+);
+
+router.get(
+    '/returns/:id',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    getReturnById
+);
+
+router.post(
+    '/returns',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    createReturn
+);
+
+router.patch(
+    '/returns/:id/status',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    updateReturnStatus
+);
+
+router.patch(
+    '/returns/:id/refund',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    updateReturnRefund
+);
+
+router.patch(
+    '/returns/:id',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    updateReturn
+);
+
+router.delete(
+    '/returns',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    deleteReturns
+);
+
+// ======================================================
+// ACTIVITY LOGS
+// ======================================================
+
+router.get(
+    '/audit-logs',
+    protect,
+    authorize('VendorAdmin'),
+    getAuditLogs
 );
 
 // ======================================================
@@ -161,6 +319,7 @@ router.post(
     '/products/bulk-import',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     bulkImportProducts
 );
 
@@ -169,6 +328,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    blockVerificationSuspendedShop,
     bulkUpdateProducts
 );
 
@@ -185,6 +345,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    blockVerificationSuspendedShop,
     productMediaUpload,
     createProduct
 );
@@ -194,6 +355,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    blockVerificationSuspendedShop,
     productMediaUpload,
     updateProduct
 );
@@ -202,6 +364,7 @@ router.delete(
     '/products/:id',
     protect,
     authorize('VendorAdmin'),
+    blockVerificationSuspendedShop,
     deleteProduct
 );
 
@@ -222,6 +385,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockVerificationSuspendedShop,
     updateOrderStatus
 );
 
@@ -230,6 +394,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockVerificationSuspendedShop,
     syncOrderToPathao
 );
 
