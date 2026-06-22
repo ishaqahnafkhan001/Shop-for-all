@@ -1,48 +1,70 @@
 "use client";
-import React, { useEffect, useState, memo } from 'react';
+import React, { useEffect, useMemo, useState, memo } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, Zap } from 'lucide-react';
+import { ImageOff, Zap } from 'lucide-react';
 import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
 
-const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount }) {
+const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount, productTitle }) {
     const [activeIdx,    setActiveIdx]    = useState(0);
     const [isZoomed,     setIsZoomed]     = useState(false);
-    const safeImages = images?.filter(Boolean) || [];
-    const primaryImage = safeImages?.[0];
+    const [failedImages, setFailedImages] = useState(() => new Set());
+    const safeImages = useMemo(() => images?.filter(Boolean) || [], [images]);
+    const displayImages = useMemo(
+        () => safeImages.filter(image => !failedImages.has(image)),
+        [safeImages, failedImages]
+    );
+    const primaryImage = displayImages?.[0];
+    const activeImage = displayImages[activeIdx] || primaryImage;
 
     useEffect(() => {
         setActiveIdx(0);
     }, [primaryImage]);
 
+    useEffect(() => {
+        if (activeIdx > 0 && activeIdx >= displayImages.length) setActiveIdx(0);
+    }, [activeIdx, displayImages.length]);
+
+    const handleImageError = (image) => {
+        setFailedImages(prev => {
+            const next = new Set(prev);
+            next.add(image);
+            return next;
+        });
+    };
+
     return (
-        <div className="flex flex-col gap-5">
-            {/* Main image */}
+        <div className="min-w-0 lg:sticky lg:top-28">
             <div
-                className="group relative flex aspect-square cursor-crosshair items-center justify-center overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-indigo-50/50 p-7 shadow-sm transition-all duration-500 hover:shadow-xl hover:shadow-indigo-100/70 sm:p-9"
+                className="group relative flex aspect-[4/5] max-h-[620px] min-h-[320px] cursor-crosshair items-center justify-center overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-teal-50/50 p-4 shadow-sm shadow-slate-200/70 transition-all duration-500 hover:shadow-xl hover:shadow-teal-100/70 sm:aspect-[5/4] sm:p-6 lg:aspect-[4/5] lg:rounded-[2.25rem] xl:aspect-square"
                 onMouseEnter={() => setIsZoomed(true)}
                 onMouseLeave={() => setIsZoomed(false)}
             >
-                {primaryImage ? (
+                {activeImage ? (
                     <Image
-                        src={safeImages[activeIdx] || primaryImage}
-                        alt="Product"
+                        src={activeImage}
+                        alt={productTitle ? `${productTitle} product image` : 'Product image'}
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
                         priority={activeIdx === 0}
-                        unoptimized={shouldUseUnoptimizedImage(safeImages[activeIdx] || primaryImage)}
-                        className={`object-contain transition-transform duration-700 ease-out ${isZoomed ? 'scale-110' : 'scale-100'}`}
+                        onError={() => handleImageError(activeImage)}
+                        unoptimized={shouldUseUnoptimizedImage(activeImage)}
+                        className={`object-contain p-3 transition-transform duration-700 ease-out sm:p-5 ${isZoomed ? 'scale-105' : 'scale-100'}`}
                     />
                 ) : (
-                    <div className="flex h-full w-full items-center justify-center text-slate-300">
-                        <ShoppingBag size={56} />
+                    <div className="flex h-full w-full flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-white/70 text-center text-slate-400">
+                        <ImageOff size={48} />
+                        <p className="mt-3 text-sm font-bold text-slate-500">Image unavailable</p>
+                        <p className="mt-1 max-w-xs text-xs leading-5 text-slate-400">Add or replace this product image from the admin catalog.</p>
                     </div>
                 )}
 
-                <div className="absolute left-4 top-4 flex flex-col gap-2 sm:left-6 sm:top-6">
-                    <span className="rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur-md">
-                        {category}
-                    </span>
-                </div>
+                {category && (
+                    <div className="absolute left-4 top-4 flex max-w-[calc(100%-2rem)] flex-col gap-2 sm:left-6 sm:top-6">
+                        <span className="truncate rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-700 shadow-sm backdrop-blur-md">
+                            {category}
+                        </span>
+                    </div>
+                )}
 
                 {displayDiscount > 0 && (
                     <div className="absolute right-4 top-4 flex items-center rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg shadow-red-200 sm:right-6 sm:top-6">
@@ -52,22 +74,27 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                 )}
             </div>
 
-            {/* Thumbnails */}
-            {safeImages.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto px-1 py-2 scrollbar-hide">
-                    {safeImages.map((img, idx) => (
+            {displayImages.length > 1 && (
+                <div className="mt-4">
+                    <div className="flex gap-3 overflow-x-auto px-1 py-2 scrollbar-hide">
+                    {displayImages.map((img, idx) => (
                         <button
-                            key={idx}
+                            key={img}
+                            type="button"
                             onClick={() => setActiveIdx(idx)}
-                            className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl transition-all duration-300
+                            aria-label={`View product image ${idx + 1}`}
+                            aria-pressed={activeIdx === idx}
+                            className={`relative h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-2xl bg-white transition-all duration-300 sm:h-20 sm:w-20
                                 ${activeIdx === idx
                                 ? 'ring-2 ring-[var(--sf-accent)] ring-offset-2 scale-105 shadow-md'
                                 : 'border border-slate-200 opacity-75 hover:border-[var(--sf-accent)]/50 hover:opacity-100'
                             }`}
                         >
-                            <Image src={img} alt="" fill sizes="80px" unoptimized={shouldUseUnoptimizedImage(img)} className="object-cover" />
+                            <Image src={img} alt={`${productTitle || 'Product'} thumbnail ${idx + 1}`} fill sizes="80px" onError={() => handleImageError(img)} unoptimized={shouldUseUnoptimizedImage(img)} className="object-cover" />
                         </button>
                     ))}
+                    </div>
+                    <p className="px-1 text-xs font-semibold text-slate-400">Swipe or tap thumbnails to preview more angles.</p>
                 </div>
             )}
         </div>

@@ -21,10 +21,18 @@ const RelatedProducts = lazy(() => import('./RelatedProducts'));
 /* ─── Loading skeleton ───────────────────────────────────────── */
 function PageSpinner() {
     return (
-        <div className="flex h-[70vh] items-center justify-center bg-gray-50/50">
-            <div className="relative">
-                <div className="h-12 w-12 rounded-full border-4 border-gray-200" />
-                <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-[var(--sf-accent)] border-t-transparent animate-spin" />
+        <div className="sf-page">
+            <div className="sf-shell-wide py-8 sm:py-10">
+                <div className="mb-6 h-10 w-44 animate-pulse rounded-full bg-white" />
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.82fr)]">
+                    <div className="aspect-[4/5] animate-pulse rounded-[2rem] border border-slate-200 bg-white shadow-sm sm:aspect-[5/4] lg:aspect-square" />
+                    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                        <div className="h-5 w-40 animate-pulse rounded-full bg-slate-100" />
+                        <div className="mt-5 h-20 animate-pulse rounded-3xl bg-slate-100" />
+                        <div className="mt-5 h-28 animate-pulse rounded-3xl bg-slate-100" />
+                        <div className="mt-5 h-52 animate-pulse rounded-3xl bg-slate-100" />
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -110,13 +118,16 @@ export default function ProductDetails({ params }) {
 
     if (error || !product) {
         return (
-            <div className="flex flex-col items-center justify-center h-[70vh] space-y-6 bg-gray-50/30">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center">
-                    <ShoppingCart size={40} className="text-gray-300" />
+            <div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
+                <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-white shadow-sm">
+                    <ShoppingCart size={40} className="text-slate-300" />
                 </div>
-                <h2 className="text-3xl font-extrabold text-gray-900">Product Not Found</h2>
-                <Link href="/" className="inline-flex items-center px-6 py-3 bg-[var(--sf-accent)] text-white font-medium rounded-full hover:shadow-lg hover:-translate-y-0.5 transition-all">
-                    <ArrowLeft size={18} className="mr-2" /> Back to Shop
+                <h2 className="text-3xl font-black text-slate-950">Product not found</h2>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+                    This product may be unavailable or the link may have changed. Return to the store to keep shopping.
+                </p>
+                <Link href="/" className="sf-btn sf-btn-primary mt-8 px-6">
+                    <ArrowLeft size={18} /> Back to shop
                 </Link>
             </div>
         );
@@ -125,12 +136,14 @@ export default function ProductDetails({ params }) {
     const maxQuantity = Math.max(Number(displayStock) || 0, 1);
     const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1));
     const increaseQuantity = () => setQuantity(prev => Math.min(maxQuantity, prev + 1));
+    const productImages = Array.isArray(product.images) ? product.images : [];
+    const galleryImages = currentVariant?.image
+        ? [currentVariant.image, ...productImages.filter(image => image !== currentVariant.image)]
+        : productImages;
 
     return (
-        <div className="sf-page pb-28 lg:pb-0">
-            <div className="sf-shell-wide py-8 sm:py-10">
-
-                {/* Back link */}
+        <div className="sf-page pb-32 lg:pb-0">
+            <div className="sf-shell-wide py-5 sm:py-8 lg:py-10">
                 <Link href="/" className="mb-6 inline-flex items-center text-sm font-bold text-slate-500 transition-colors hover:text-[var(--sf-accent)] group">
                     <div className="mr-3 rounded-full bg-white p-2 shadow-sm transition-colors group-hover:bg-[var(--sf-accent)] group-hover:text-white">
                         <ArrowLeft size={16} />
@@ -138,15 +151,16 @@ export default function ProductDetails({ params }) {
                     Continue Shopping
                 </Link>
 
-                {/* ── ABOVE THE FOLD: images + product details ── */}
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.82fr)] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.72fr)]">
                     <ProductImageGallery
-                        images={currentVariant?.image ? [currentVariant.image, ...product.images.filter(image => image !== currentVariant.image)] : product.images}
+                        images={galleryImages}
                         category={product.category}
                         displayDiscount={displayDiscount}
+                        productTitle={product.title}
                     />
 
-                    <div className="sf-panel flex flex-col justify-start p-6 sm:p-8">
+                    <aside className="lg:sticky lg:top-28">
+                    <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-4 shadow-xl shadow-slate-200/70 backdrop-blur sm:p-6 lg:rounded-[2.25rem] lg:p-7">
                         <ProductInfo
                             title={product.title}
                             averageRating={product.averageRating}
@@ -158,6 +172,8 @@ export default function ProductDetails({ params }) {
                             description={product.description}
                         />
 
+                        <div className="my-6 h-px bg-slate-200" />
+
                         <VariantSelector
                             availableAttributes={availableAttributes}
                             selectedAttributes={selectedAttributes}
@@ -166,7 +182,7 @@ export default function ProductDetails({ params }) {
                         />
 
                         {displayStock > 0 && (
-                            <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                            <div className="my-5 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
                                 <div>
                                     <p className="text-sm font-black text-slate-950">Quantity</p>
                                     <p className="mt-1 text-xs font-semibold text-slate-500">Choose how many units to add.</p>
@@ -203,10 +219,10 @@ export default function ProductDetails({ params }) {
                             onBuyNow={handleBuyNow}
                         />
                     </div>
+                    </aside>
                 </div>
 
-                {/* ── BELOW THE FOLD: features, specs, notes ── */}
-                <div className="mt-12 grid gap-8 border-t border-slate-200 pt-10 lg:grid-cols-[1fr_0.42fr]">
+                <div className="mt-12 grid gap-6 border-t border-slate-200 pt-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
                     <div className="space-y-8">
                         <ProductFeatures    features={product.features} />
                         <ProductSpecifications specifications={product.specifications} />
@@ -232,19 +248,30 @@ export default function ProductDetails({ params }) {
 
             {displayStock > 0 && (
                 <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
-                    <div className="mx-auto flex max-w-xl items-center gap-3">
+                    <div className="mx-auto grid max-w-xl gap-2 min-[390px]:grid-cols-[minmax(0,1fr)_auto] min-[390px]:items-center min-[390px]:gap-3">
                         <div className="min-w-0 flex-1">
                             <p className="line-clamp-1 text-sm font-black text-slate-950">{product.title}</p>
                             <p className="text-base font-black text-[var(--sf-accent)]">৳ {displayFinalPrice}</p>
                         </div>
-                        <button
-                            type="button"
-                            onClick={handleAddToCart}
-                            className="sf-btn sf-btn-primary min-h-0 rounded-full px-5 py-3 text-sm"
-                        >
-                            <ShoppingCart size={17} />
-                            Add
-                        </button>
+                        <div className="grid grid-cols-2 gap-2 min-[390px]:flex">
+                            <button
+                                type="button"
+                                onClick={handleAddToCart}
+                                aria-label={`Add ${product.title} to cart`}
+                                className="sf-btn sf-btn-secondary min-h-0 rounded-full px-4 py-3 text-sm"
+                            >
+                                <ShoppingCart size={17} />
+                                <span>Add</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleBuyNow}
+                                aria-label={`Buy ${product.title} now`}
+                                className="sf-btn sf-btn-primary min-h-0 rounded-full px-4 py-3 text-sm"
+                            >
+                                Buy now
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

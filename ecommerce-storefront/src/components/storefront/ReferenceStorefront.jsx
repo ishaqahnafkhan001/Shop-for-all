@@ -22,7 +22,7 @@ import {
     User,
     X
 } from 'lucide-react';
-import { getEnabledHomepageSections, getSortedNavigation, normalizeTheme } from '../../lib/theme';
+import { getEnabledHomepageSections, getSortedNavigation, getThemeCssVars, normalizeTheme } from '../../lib/theme';
 
 export const REFERENCE_SAMPLE_PRODUCTS = [];
 export const REFERENCE_SAMPLE_CATEGORIES = [];
@@ -122,11 +122,12 @@ const categoryDesktopGridClasses = {
 const noop = () => {};
 const formatPrice = (value) => {
     const number = Number(value || 0);
-    return number > 999 ? `৳ ${number.toLocaleString('en-BD')}` : `$${number.toFixed(2)}`;
+    return `৳ ${number.toLocaleString('en-BD', { maximumFractionDigits: 2 })}`;
 };
 const getImageUrl = (product) => product?.imageUrl || product?.images?.[0] || '';
 const getPrice = (product) => product?.finalPrice || product?.sellingPrice || product?.pricing?.sellingPrice || product?.price || 0;
 const normalizeImageList = (...lists) => [...new Set(lists.flat().filter(Boolean).map(String))];
+const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';
 const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
     id: slide.id || `hero-slide-${index + 1}`,
     enabled: slide.enabled !== false,
@@ -151,23 +152,31 @@ const getHeroSlides = (hero = {}) => {
 };
 
 export const getReferenceThemeStyle = (themeCandidate = {}) => {
-    const theme = normalizeTheme(themeCandidate);
-    const colors = theme.colors || {};
+    const cssTheme = getThemeCssVars(themeCandidate);
     return {
-        '--sf-accent': colors.accent || '#0f766e',
-        '--sf-accent-hover': colors.accentHover || '#115e59',
-        '--sf-accent-soft': colors.accentSoft || '#99f6e4',
-        '--sf-accent-bg': colors.accentBg || '#ecfdf5',
-        '--sf-primary-button-bg': colors.primaryButtonBg || colors.accent || '#0f766e',
-        '--sf-primary-button-text': colors.primaryButtonText || '#ffffff',
-        '--sf-primary-button-hover-bg': colors.primaryButtonHoverBg || colors.accentHover || '#115e59',
-        '--sf-card-hover-border': colors.cardHoverBorder || '#99f6e4',
-        '--sf-sale-badge-bg': colors.saleBadgeBg || '#dc2626',
-        '--sf-sale-badge-text': colors.saleBadgeText || '#ffffff',
-        '--sf-price-color': colors.priceColor || '#0f172a',
-        fontFamily: theme.typography?.bodyFont || theme.fontFamily || 'Inter, ui-sans-serif, system-ui, sans-serif',
-        color: colors.foreground || '#111827',
-        backgroundColor: colors.background || '#ffffff'
+        '--sf-accent': cssTheme.accent,
+        '--sf-accent-hover': cssTheme.accentHover,
+        '--sf-accent-soft': cssTheme.accentSoft,
+        '--sf-accent-bg': cssTheme.accentBg,
+        '--sf-primary-button-bg': cssTheme.primaryButtonBg,
+        '--sf-primary-button-text': cssTheme.primaryButtonText,
+        '--sf-primary-button-hover-bg': cssTheme.primaryButtonHoverBg,
+        '--sf-navbar-background': cssTheme.navbarBackground,
+        '--sf-navbar-text': cssTheme.navbarText,
+        '--sf-navbar-hover': cssTheme.navbarHover,
+        '--sf-card-background': cssTheme.cardBackground,
+        '--sf-card-border': cssTheme.cardBorder,
+        '--sf-card-hover-border': cssTheme.cardHoverBorder,
+        '--sf-sale-badge-bg': cssTheme.saleBadgeBg,
+        '--sf-sale-badge-text': cssTheme.saleBadgeText,
+        '--sf-price-color': cssTheme.priceColor,
+        '--sf-rating-color': cssTheme.ratingColor,
+        '--sf-footer-background': cssTheme.footerBackground,
+        '--sf-footer-text': cssTheme.footerText,
+        '--sf-footer-link': cssTheme.footerLink,
+        fontFamily: cssTheme.fontFamily,
+        color: cssTheme.foreground,
+        backgroundColor: cssTheme.background
     };
 };
 
@@ -183,6 +192,48 @@ const containerClass = 'mx-auto w-full max-w-screen-2xl px-3 sm:px-4 md:px-6 lg:
 const isPreviewMobile = (device) => device === 'mobile' || device === 'smallMobile';
 const isPreviewNarrow = (device) => isPreviewMobile(device) || device === 'tablet';
 
+const EditorSelectionFrame = ({ editor, id, label, locked = false, children }) => {
+    if (!editor || !id) return children;
+
+    const selected = editor.selectedId === id;
+    const handleSelect = () => editor.onSelect?.(id);
+    const handleKeyDown = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        handleSelect();
+    };
+
+    return (
+        <div
+            className="group/builder-section relative min-w-0"
+            data-builder-section={id}
+            role="button"
+            tabIndex={0}
+            aria-label={`Edit ${label || id}`}
+            onClick={handleSelect}
+            onKeyDown={handleKeyDown}
+        >
+            <div
+                className={`pointer-events-none absolute inset-0 z-[70] rounded-[1.5rem] transition ${
+                    selected
+                        ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-white'
+                        : 'opacity-0 ring-2 ring-indigo-300 ring-offset-2 ring-offset-white group-hover/builder-section:opacity-100'
+                }`}
+            >
+                <span
+                    className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-black shadow-sm ${
+                        selected ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700'
+                    }`}
+                >
+                    {label}{locked ? ' · Locked layout' : ''}
+                </span>
+            </div>
+            {selected && editor.renderToolbar?.(id, { label, locked })}
+            {children}
+        </div>
+    );
+};
+
 const BrandMark = ({ theme, brandName }) => (
     <span className="flex min-w-0 items-center gap-3">
         {theme.logoUrl ? (
@@ -197,8 +248,8 @@ const BrandMark = ({ theme, brandName }) => (
             </span>
         )}
         <span className="min-w-0">
-            <span className="block truncate text-sm font-black leading-tight text-slate-950 sm:text-base">{brandName}</span>
-            <span className="hidden truncate text-xs font-semibold text-slate-500 sm:block">Storefront</span>
+            <span className="block truncate text-sm font-black leading-tight text-[var(--sf-navbar-text)] sm:text-base">{brandName}</span>
+            <span className="hidden truncate text-xs font-semibold text-[var(--sf-navbar-text)] opacity-60 sm:block">Storefront</span>
         </span>
     </span>
 );
@@ -213,7 +264,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                 LinkComponent={LinkComponent}
                 href={item.url || '#'}
                 onClick={onClick}
-                className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]"
+                className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
             >
                 {item.label}
             </LinkSlot>
@@ -226,7 +277,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                 LinkComponent={LinkComponent}
                 href={item.url || '#'}
                 onClick={onClick}
-                className="inline-flex items-center gap-1 rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]"
+                className="inline-flex items-center gap-1 rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
             >
                 {item.label}
                 <ChevronDown size={14} className="transition group-hover:rotate-180" />
@@ -238,7 +289,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                         LinkComponent={LinkComponent}
                         href={child.url}
                         onClick={onClick}
-                        className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[var(--sf-accent)]"
+                        className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[var(--sf-navbar-hover)]"
                     >
                         {child.label}
                     </LinkSlot>
@@ -256,7 +307,8 @@ export function ReferenceStorefrontHeader({
     onSearch = noop,
     LinkComponent = DefaultLink,
     preview = false,
-    previewDevice
+    previewDevice,
+    editor
 }) {
     const theme = normalizeTheme(themeCandidate);
     const brandName = shopName || subdomain || 'Storefront';
@@ -284,6 +336,7 @@ export function ReferenceStorefrontHeader({
             <button
                 type="button"
                 onClick={onSearch}
+                aria-label="Search products"
                 className="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-slate-900 xl:px-5"
             >
                 <Search size={17} className="shrink-0" />
@@ -293,7 +346,7 @@ export function ReferenceStorefrontHeader({
     );
     const actionSlot = (
         <div className={`flex min-w-0 items-center gap-1 xl:gap-2 ${logoPosition === 'Right' ? 'justify-start' : 'justify-end'}`}>
-            <nav className="mr-2 hidden max-w-full items-center gap-1 overflow-visible text-sm font-bold text-slate-700 xl:flex">
+            <nav className="mr-2 hidden max-w-full items-center gap-1 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] xl:flex">
                 {headerNavLinks.slice(0, 5).map((item, index) => (
                     <HeaderNavItem
                         key={`${item.label}-${index}`}
@@ -302,11 +355,11 @@ export function ReferenceStorefrontHeader({
                     />
                 ))}
             </nav>
-            <LinkSlot LinkComponent={LinkComponent} href="/track" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)] xl:px-3">
+            <LinkSlot LinkComponent={LinkComponent} href="/track" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <Truck size={17} className="shrink-0" />
                 <span className="hidden xl:inline">Track Order</span>
             </LinkSlot>
-            <LinkSlot LinkComponent={LinkComponent} href="/account" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)] xl:px-3">
+            <LinkSlot LinkComponent={LinkComponent} href="/account" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <User size={17} className="shrink-0" />
                 <span className="hidden xl:inline">Account</span>
             </LinkSlot>
@@ -343,58 +396,61 @@ export function ReferenceStorefrontHeader({
 
     return (
         <>
-            <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
-                <div className={containerClass}>
-                    <div className={desktopHeaderClass}>
-                        {desktopSlots.map((slot, index) => <div key={index} className="min-w-0">{slot}</div>)}
-                    </div>
+            <EditorSelectionFrame editor={editor} id="header" label="Navbar" locked>
+                <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl">
+                    <div className={containerClass}>
+                        <div className={desktopHeaderClass}>
+                            {desktopSlots.map((slot, index) => <div key={index} className="min-w-0">{slot}</div>)}
+                        </div>
 
-                    <div className={mobileHeaderClass}>
-                        <button
-                            type="button"
-                            onClick={() => setMobileMenuOpen(true)}
-                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700"
-                            aria-label="Open menu"
-                        >
-                            <Menu size={20} />
-                        </button>
-                        <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0 flex-1">
-                            <BrandMark theme={theme} brandName={brandName} />
-                        </LinkSlot>
-                        <LinkSlot
-                            LinkComponent={LinkComponent}
-                            href="/cart"
-                            className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white"
-                            aria-label="Cart"
-                        >
-                            <ShoppingBag size={18} />
-                            {cartCount > 0 && (
-                                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sf-accent)] px-1 text-[10px] font-black">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </LinkSlot>
-                    </div>
+                        <div className={mobileHeaderClass}>
+                            <button
+                                type="button"
+                                onClick={() => setMobileMenuOpen(true)}
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[var(--sf-navbar-text)]"
+                                aria-label="Open menu"
+                            >
+                                <Menu size={20} />
+                            </button>
+                            <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0 flex-1">
+                                <BrandMark theme={theme} brandName={brandName} />
+                            </LinkSlot>
+                            <LinkSlot
+                                LinkComponent={LinkComponent}
+                                href="/cart"
+                                className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white"
+                                aria-label="Cart"
+                            >
+                                <ShoppingBag size={18} />
+                                {cartCount > 0 && (
+                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sf-accent)] px-1 text-[10px] font-black">
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </LinkSlot>
+                        </div>
 
-                    <div className={mobileSearchClass}>
-                        <button
-                            type="button"
-                            onClick={onSearch}
-                            className="flex h-11 w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500"
-                        >
-                            <Search size={17} />
-                            <span>Search products</span>
-                        </button>
+                        <div className={mobileSearchClass}>
+                            <button
+                                type="button"
+                                onClick={onSearch}
+                                aria-label="Search products"
+                                className="flex h-11 w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500"
+                            >
+                                <Search size={17} />
+                                <span>Search products</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </header>
+                </header>
+            </EditorSelectionFrame>
 
             {mobileMenuOpen && !preview && (
                 <div className="fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
                     <aside className="h-full w-[86vw] max-w-sm bg-white p-5 shadow-2xl" onClick={event => event.stopPropagation()}>
                         <div className="mb-6 flex items-center justify-between gap-4">
                             <BrandMark theme={theme} brandName={brandName} />
-                            <button type="button" onClick={() => setMobileMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                            <button type="button" onClick={() => setMobileMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Close menu">
                                 <X size={20} />
                             </button>
                         </div>
@@ -405,7 +461,7 @@ export function ReferenceStorefrontHeader({
                                         LinkComponent={LinkComponent}
                                         href={item.url || '#'}
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="block px-4 py-3 text-sm font-black text-slate-800 transition hover:text-[var(--sf-accent)]"
+                                        className="block px-4 py-3 text-sm font-black text-slate-800 transition hover:text-[var(--sf-navbar-hover)]"
                                     >
                                         {item.label}
                                     </LinkSlot>
@@ -470,8 +526,12 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
 
     return (
         <article
-            className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border border-slate-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
-            style={{ animationDelay: `${(index % 8) * 35}ms` }}
+            className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border transition duration-300 hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
+            style={{
+                animationDelay: `${(index % 8) * 35}ms`,
+                backgroundColor: 'var(--sf-card-background)',
+                borderColor: 'var(--sf-card-border)'
+            }}
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
             <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === 'rounded-none' ? '' : 'm-2 mb-0 sm:m-3 sm:mb-0'} ${imageRadiusClass}`}>
@@ -488,7 +548,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     </div>
                 )}
                 {productCard?.showWishlist !== false && (
-                    <button type="button" className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)] sm:right-3 sm:top-3 sm:h-9 sm:w-9">
+                    <button type="button" aria-label={`Save ${product.title} to wishlist`} className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)] sm:right-3 sm:top-3 sm:h-9 sm:w-9">
                         <Heart size={16} />
                     </button>
                 )}
@@ -501,7 +561,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
             <div className="flex flex-1 flex-col p-2.5 sm:p-4">
                 {showRating && (
                     <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-1 text-[11px] font-bold sm:text-xs">
-                        <span className="flex shrink-0 items-center gap-0.5 text-amber-400">
+                        <span className="flex shrink-0 items-center gap-0.5 text-[var(--sf-rating-color)]">
                             {[1, 2, 3, 4, 5].map(star => (
                                 <Star
                                     key={star}
@@ -536,6 +596,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                             type="button"
                             disabled={stock <= 0}
                             onClick={handleAdd}
+                            aria-label={`${stock > 0 ? 'Add' : 'Unavailable'} ${product.title} to cart`}
                             className={`relative z-20 inline-flex h-9 w-full items-center justify-center whitespace-nowrap border px-3 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white sm:w-auto sm:min-w-[96px] sm:px-4 sm:text-xs ${buttonShapeClass}`}
                             style={stock <= 0 ? undefined : buttonInlineStyle}
                         >
@@ -548,12 +609,14 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
     );
 });
 
-const HomepageSection = memo(function HomepageSection({ section, categories, sectionProducts, sectionReviews, catalogProducts, storewideDiscount, productCard, layout, onProductAdd, LinkComponent, previewDevice }) {
+const HomepageSection = memo(function HomepageSection({ section, sectionIndex, categories, sectionProducts, sectionReviews, catalogProducts, storewideDiscount, productCard, layout, onProductAdd, LinkComponent, previewDevice, editor }) {
     const mobileSettings = section.mobileSettings || {};
     const [activeImage, setActiveImage] = useState(0);
     const mobileVisibilityClass = mobileSettings.isVisible === false
         ? (isPreviewMobile(previewDevice) ? 'hidden' : previewDevice ? '' : 'hidden md:block')
         : '';
+    const editorId = Number.isFinite(sectionIndex) ? `section-${sectionIndex}` : `section-${section.id || section._id || section.type}`;
+    const editorLabel = getSectionDisplayLabel(section);
 
     if (section.type === 'FeaturedProducts') {
         const products = sectionProducts?.[section.id || section._id] || catalogProducts.slice(0, 4);
@@ -563,7 +626,8 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
             : `${mobileGridClass} md:grid-cols-3 lg:grid-cols-4`;
         if (products.length === 0) return null;
         return (
-            <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
+            <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
+                <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
                 <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
                     <div className="min-w-0">
                         <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{section.title || 'Featured Products'}</h2>
@@ -586,7 +650,8 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
                         />
                     ))}
                 </div>
-            </section>
+                </section>
+            </EditorSelectionFrame>
         );
     }
 
@@ -600,7 +665,8 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
         const imageUrl = images[imageIndex] || '';
         const mobileImageUrl = mobileDisplayImages[mobileImageIndex] || imageUrl;
         return (
-            <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
+            <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
+                <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
                 <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || '#products'} className="group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] bg-slate-950 shadow-sm sm:min-h-[280px] sm:rounded-[1.75rem] lg:min-h-[320px]">
                     {mobileImageUrl && mobileImageUrl !== imageUrl && <img src={mobileImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover md:hidden" />}
                     {imageUrl && <img src={imageUrl} alt="" className={`${mobileImageUrl && mobileImageUrl !== imageUrl ? 'hidden md:block' : ''} absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105`} />}
@@ -612,7 +678,7 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
                     </div>
                     {images.length > 1 && (
                         <div className="absolute bottom-5 right-5 z-20 flex items-center gap-2" onClick={event => event.preventDefault()}>
-                            <button type="button" onClick={() => setActiveImage(prev => (prev - 1 + images.length) % images.length)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-950 shadow-sm">
+                            <button type="button" onClick={() => setActiveImage(prev => (prev - 1 + images.length) % images.length)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-950 shadow-sm" aria-label="Previous banner image">
                                 <ChevronLeft size={16} />
                             </button>
                             <div className="flex gap-1.5">
@@ -626,13 +692,14 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
                                     />
                                 ))}
                             </div>
-                            <button type="button" onClick={() => setActiveImage(prev => (prev + 1) % images.length)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-950 shadow-sm">
+                            <button type="button" onClick={() => setActiveImage(prev => (prev + 1) % images.length)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-950 shadow-sm" aria-label="Next banner image">
                                 <ChevronRight size={16} />
                             </button>
                         </div>
                     )}
                 </LinkSlot>
-            </section>
+                </section>
+            </EditorSelectionFrame>
         );
     }
 
@@ -641,7 +708,8 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
         const reviews = sectionReviews?.[section.id || section._id] || [];
         if (!reviewText && reviews.length === 0) return null;
         return (
-            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem] md:p-7`}>
+            <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
+                <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem] md:p-7`}>
                 <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Customer Reviews'}</h2>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {reviews.length > 0 ? reviews.map(review => (
@@ -661,7 +729,8 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
                         </div>
                     )}
                 </div>
-            </section>
+                </section>
+            </EditorSelectionFrame>
         );
     }
 
@@ -675,7 +744,8 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
             : `${categoryGridClasses[mobileColumns]} max-[360px]:grid-cols-1 ${categoryDesktopGridClasses[desktopColumns]}`;
         if (visibleCategories.length === 0) return null;
         return (
-            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem]`}>
+            <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
+                <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem]`}>
                 <h2 className="text-2xl font-black text-slate-950">{section.title || 'Shop by category'}</h2>
                 <div className={`mt-4 grid gap-2 ${categoryGridClass}`}>
                     {visibleCategories.map(category => (
@@ -684,15 +754,18 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
                         </LinkSlot>
                     ))}
                 </div>
-            </section>
+                </section>
+            </EditorSelectionFrame>
         );
     }
 
     return (
-        <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 text-center shadow-sm md:mt-12 sm:p-10`}>
-            <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Store update'}</h2>
-            {section.settings?.text && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">{section.settings.text}</p>}
-        </section>
+        <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
+            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 text-center shadow-sm md:mt-12 sm:p-10`}>
+                <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Store update'}</h2>
+                {section.settings?.text && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">{section.settings.text}</p>}
+            </section>
+        </EditorSelectionFrame>
     );
 });
 
@@ -713,8 +786,8 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
         <div className="my-5 h-px bg-slate-200" />
         <h4 className="mb-3 text-sm font-black text-slate-950">Price Range</h4>
         <div className="grid grid-cols-2 gap-2 max-[360px]:grid-cols-1">
-            <input type="number" placeholder="Min" value={priceInput.min} onChange={onMinPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
-            <input type="number" placeholder="Max" value={priceInput.max} onChange={onMaxPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
+            <input type="number" aria-label="Minimum price" placeholder="Min" value={priceInput.min} onChange={onMinPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
+            <input type="number" aria-label="Maximum price" placeholder="Max" value={priceInput.max} onChange={onMaxPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
         </div>
         <button type="button" onClick={onPriceApply} className="mt-3 w-full rounded-full bg-[var(--sf-accent)] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--sf-accent-hover)]">Apply Price</button>
         <div className="my-5 h-px bg-slate-200" />
@@ -727,6 +800,8 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
                         key={rating}
                         type="button"
                         onClick={() => onRatingChange?.(Number(filters.minRating) === rating ? '' : rating)}
+                        aria-pressed={Number(filters.minRating) === rating}
+                        aria-label={`Filter by ${rating} stars and up`}
                         className={`flex w-full items-center gap-2 rounded-xl px-2 py-1 text-left text-amber-400 transition ${Number(filters.minRating) === rating ? 'bg-amber-50 ring-1 ring-amber-200' : 'hover:bg-slate-50'}`}
                     >
                         {[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" className={star <= rating ? '' : 'text-slate-200'} />)}
@@ -765,7 +840,8 @@ export function ReferenceStorefrontHome({
     onPageChange = noop,
     onProductAdd = noop,
     LinkComponent = DefaultLink,
-    previewDevice
+    previewDevice,
+    editor
 }) {
     const theme = normalizeTheme(themeCandidate);
     const hero = theme.hero || {};
@@ -834,10 +910,20 @@ export function ReferenceStorefrontHome({
     const mobileFilterOverlayClass = forcedNarrowPreview
         ? 'fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm'
         : 'fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm lg:hidden';
+    const activeFilterChips = [
+        filters.category && filters.category !== 'All' ? { label: filters.category, onClear: () => onCategoryChange('All') } : null,
+        filters.minRating ? { label: `${filters.minRating}.0+ rating`, onClear: () => onRatingChange('') } : null,
+        filters.minPrice || filters.maxPrice ? { label: `৳${filters.minPrice || 0} - ${filters.maxPrice || 'Any'}`, onClear: onClearFilters } : null,
+        catalogSearch.trim() ? {
+            label: `Search: ${catalogSearch.trim()}`,
+            onClear: () => onCatalogSearchChange({ target: { value: '' } })
+        } : null
+    ].filter(Boolean);
 
     return (
         <div className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
             <div className={`${containerClass} py-5 sm:py-8`}>
+                <EditorSelectionFrame editor={editor} id="hero" label="Hero Banner" locked>
                 <section className={heroClass}>
                     {activeHeroImage ? (
                         <picture>
@@ -942,11 +1028,13 @@ export function ReferenceStorefrontHome({
                         </div>
                     </div>
                 </section>
+                </EditorSelectionFrame>
 
                 {enabledSections.map((section, index) => (
                     <HomepageSection
                         key={section.id || section._id || `${section.type}-${index}`}
                         section={section}
+                        sectionIndex={index}
                         categories={categories}
                         sectionProducts={sectionProducts}
                         sectionReviews={sectionReviews}
@@ -957,11 +1045,13 @@ export function ReferenceStorefrontHome({
                         onProductAdd={onProductAdd}
                         LinkComponent={LinkComponent}
                         previewDevice={previewDevice}
+                        editor={editor}
                     />
                 ))}
             </div>
 
             {allProducts.isEnabled !== false && (
+                <EditorSelectionFrame editor={editor} id="allProducts" label="All Products" locked>
                 <section id="products" className="bg-slate-50 py-9 sm:py-12">
                     <div className={containerClass}>
                         <div className={allProductsHeaderClass}>
@@ -972,9 +1062,9 @@ export function ReferenceStorefrontHome({
                             <div className={catalogControlsClass}>
                                 <label className={catalogSearchClass}>
                                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input value={catalogSearch} onChange={onCatalogSearchChange} placeholder="Search catalog" className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
+                                    <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
                                 </label>
-                                <select value={filters.sort} onChange={onSortChange} className={catalogSelectClass}>
+                                <select value={filters.sort} onChange={onSortChange} aria-label="Sort products" className={catalogSelectClass}>
                                     <option value="newest">Newest</option>
                                     <option value="priceAsc">Price low</option>
                                     <option value="priceDesc">Price high</option>
@@ -988,6 +1078,33 @@ export function ReferenceStorefrontHome({
                                     Filters
                                 </button>
                             </div>
+                        </div>
+
+                        <div className="mb-5 flex flex-col gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                                Showing {filteredProducts.length} product{filteredProducts.length === 1 ? '' : 's'}
+                            </p>
+                            {activeFilterChips.length > 0 ? (
+                                <div className="flex min-w-0 flex-wrap gap-2">
+                                    {activeFilterChips.map(chip => (
+                                        <button
+                                            key={chip.label}
+                                            type="button"
+                                            onClick={chip.onClear}
+                                            aria-label={`Remove filter ${chip.label}`}
+                                            className="inline-flex max-w-full items-center gap-1 rounded-full bg-[var(--sf-accent-bg)] px-3 py-1.5 text-xs font-black text-[var(--sf-accent)]"
+                                        >
+                                            <span className="truncate">{chip.label}</span>
+                                            <X size={13} />
+                                        </button>
+                                    ))}
+                                    <button type="button" onClick={onClearFilters} className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-500">
+                                        Clear all
+                                    </button>
+                                </div>
+                            ) : (
+                                <span className="text-xs font-semibold text-slate-400">Use filters to narrow results</span>
+                            )}
                         </div>
 
                         <div className={productLayoutClass}>
@@ -1036,22 +1153,23 @@ export function ReferenceStorefrontHome({
 
                                 {pagination?.pages > 1 && (
                                     <div className="mt-8 hidden items-center justify-center gap-2 md:flex">
-                                        <button type="button" onClick={() => onPageChange(filters.page - 1)} disabled={filters.page === 1} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 disabled:opacity-40">Previous</button>
+                                        <button type="button" onClick={() => onPageChange(filters.page - 1)} disabled={filters.page === 1} aria-label="Previous product page" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 disabled:opacity-40">Previous</button>
                                         {Array.from({ length: Math.min(pagination.pages, 5) }, (_, index) => {
                                             const pageNumber = index + 1;
                                             return (
-                                                <button key={pageNumber} type="button" onClick={() => onPageChange(pageNumber)} className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black ${filters.page === pageNumber ? 'bg-[var(--sf-accent)] text-white' : 'bg-white text-slate-600'}`}>
+                                                <button key={pageNumber} type="button" onClick={() => onPageChange(pageNumber)} aria-label={`Go to product page ${pageNumber}`} aria-current={filters.page === pageNumber ? 'page' : undefined} className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black ${filters.page === pageNumber ? 'bg-[var(--sf-accent)] text-white' : 'bg-white text-slate-600'}`}>
                                                     {pageNumber}
                                                 </button>
                                             );
                                         })}
-                                        <button type="button" onClick={() => onPageChange(filters.page + 1)} disabled={filters.page === pagination.pages} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 disabled:opacity-40">Next</button>
+                                        <button type="button" onClick={() => onPageChange(filters.page + 1)} disabled={filters.page === pagination.pages} aria-label="Next product page" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 disabled:opacity-40">Next</button>
                                     </div>
                                 )}
                             </main>
                         </div>
                     </div>
                 </section>
+                </EditorSelectionFrame>
             )}
 
             {mobileFiltersOpen && (
@@ -1059,7 +1177,7 @@ export function ReferenceStorefrontHome({
                     <div className="max-h-[86vh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5" onClick={event => event.stopPropagation()}>
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-black text-slate-950">Filter products</h2>
-                            <button type="button" onClick={onFilterClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
+                            <button type="button" onClick={onFilterClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100" aria-label="Close filters">
                                 <X size={18} />
                             </button>
                         </div>
@@ -1083,10 +1201,10 @@ export function ReferenceStorefrontHome({
 
 const FooterColumn = ({ title, links, LinkComponent }) => (
     <div>
-        <h3 className="text-sm font-black text-slate-950">{title}</h3>
-        <div className="mt-4 grid gap-3 text-sm font-semibold text-slate-500">
+        <h3 className="text-sm font-black text-[var(--sf-footer-link)]">{title}</h3>
+        <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-accent)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link)]">
                     {link.label}
                 </LinkSlot>
             ))}
@@ -1096,13 +1214,13 @@ const FooterColumn = ({ title, links, LinkComponent }) => (
 
 const FooterAccordion = ({ title, links, LinkComponent }) => (
     <details className="group border-b border-slate-200 py-4">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-slate-950">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-[var(--sf-footer-link)]">
             {title}
             <ChevronDown size={17} className="transition group-open:rotate-180" />
         </summary>
-        <div className="mt-3 grid gap-3 pb-2 text-sm font-semibold text-slate-500">
+        <div className="mt-3 grid gap-3 pb-2 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map(link => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-accent)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link)]">
                     {link.label}
                 </LinkSlot>
             ))}
@@ -1110,7 +1228,7 @@ const FooterAccordion = ({ title, links, LinkComponent }) => (
     </details>
 );
 
-export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, subdomain, cartCount = 0, LinkComponent = DefaultLink, preview = false, previewDevice }) {
+export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, subdomain, cartCount = 0, LinkComponent = DefaultLink, preview = false, previewDevice, editor }) {
     const theme = normalizeTheme(themeCandidate);
     const brandName = shopName || subdomain || 'Storefront';
     const footerLinks = (theme.footer?.links || []).filter(item => item?.label && item?.url);
@@ -1133,48 +1251,49 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
 
     return (
         <>
-            <footer className="min-w-0 overflow-x-hidden border-t border-slate-200 bg-white pb-20 pt-10 md:pb-8" style={getReferenceThemeStyle(theme)}>
-                <div className={containerClass}>
-                    <div className={footerGridClass}>
-                        <div className="min-w-0">
-                            <div className="flex items-center gap-3">
-                                <span className="h-10 w-10 rounded-full bg-[var(--sf-accent)]" />
-                                <div className="min-w-0">
-                                    <h2 className="truncate text-lg font-black text-slate-950">{brandName}</h2>
-                                    <p className="text-xs font-semibold text-slate-500">Storefront</p>
+            <EditorSelectionFrame editor={editor} id="footer" label="Footer" locked>
+                <footer className="min-w-0 overflow-x-hidden border-t border-slate-200 bg-[var(--sf-footer-background)] pb-20 pt-10 text-[var(--sf-footer-text)] md:pb-8" style={getReferenceThemeStyle(theme)}>
+                    <div className={containerClass}>
+                        <div className={footerGridClass}>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-3">
+                                    <span className="h-10 w-10 rounded-full bg-[var(--sf-accent)]" />
+                                    <div className="min-w-0">
+                                        <h2 className="truncate text-lg font-black text-[var(--sf-footer-link)]">{brandName}</h2>
+                                        <p className="text-xs font-semibold text-[var(--sf-footer-text)]">Storefront</p>
+                                    </div>
                                 </div>
+                                {theme.footer?.text && (
+                                    <p className="mt-4 max-w-sm text-sm leading-6 text-[var(--sf-footer-text)]">
+                                        {theme.footer.text}
+                                    </p>
+                                )}
+                                <form className="mt-5 flex max-w-sm flex-col gap-2 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-1 min-[420px]:flex-row min-[420px]:rounded-full" onSubmit={event => event.preventDefault()}>
+                                    <input type="email" aria-label="Email for updates" placeholder="Email for updates" className="min-h-11 min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400" />
+                                    <button type="submit" className="min-h-11 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Subscribe</button>
+                                </form>
                             </div>
-                            {theme.footer?.text && (
-                                <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
-                                    {theme.footer.text}
-                                </p>
-                            )}
-                            <form className="mt-5 flex max-w-sm flex-col gap-2 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-1 min-[420px]:flex-row min-[420px]:rounded-full">
-                                <input type="email" placeholder="Email for updates" className="min-h-11 min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400" />
-                                <button type="button" className="min-h-11 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Subscribe</button>
-                            </form>
+                            <div className={desktopColumnsClass}>
+                                {columns.map(column => <FooterColumn key={column.title} {...column} LinkComponent={LinkComponent} />)}
+                            </div>
+                            <div className={mobileColumnsClass}>
+                                {columns.map(column => <FooterAccordion key={column.title} {...column} LinkComponent={LinkComponent} />)}
+                            </div>
                         </div>
-                        <div className={desktopColumnsClass}>
-                            {columns.map(column => <FooterColumn key={column.title} {...column} LinkComponent={LinkComponent} />)}
-                        </div>
-                        <div className={mobileColumnsClass}>
-                            {columns.map(column => <FooterAccordion key={column.title} {...column} LinkComponent={LinkComponent} />)}
-                            {navLinks.length > 0 && <FooterAccordion title="Store Links" links={navLinks.slice(0, 6)} LinkComponent={LinkComponent} />}
-                        </div>
-                    </div>
-                    <div className="mt-8 flex min-w-0 flex-col gap-4 border-t border-slate-200 pt-5 text-xs font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="min-w-0 break-words">© {new Date().getFullYear()} {brandName}. Powered by Commerce SaaS.</p>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <Mail size={16} />
-                            {['f', 'ig', 'x'].map(item => (
-                                <span key={item} className="flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-100 px-1 text-[10px] font-black uppercase text-slate-500">
-                                    {item}
-                                </span>
-                            ))}
+                        <div className="mt-8 flex min-w-0 flex-col gap-4 border-t border-slate-200 pt-5 text-xs font-semibold text-[var(--sf-footer-text)] sm:flex-row sm:items-center sm:justify-between">
+                            <p className="min-w-0 break-words">© {new Date().getFullYear()} {brandName}. Powered by Commerce SaaS.</p>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Mail size={16} />
+                                {['f', 'ig', 'x'].map(item => (
+                                    <span key={item} className="flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-100 px-1 text-[10px] font-black uppercase text-[var(--sf-footer-text)]">
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            </footer>
+                </footer>
+            </EditorSelectionFrame>
 
             {theme.mobile?.showBottomNavigation && (
                 <nav className={bottomNavClass}>

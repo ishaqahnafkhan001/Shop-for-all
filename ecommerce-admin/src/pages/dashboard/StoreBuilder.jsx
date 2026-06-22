@@ -11,19 +11,12 @@ import {
     LayoutTemplate,
     Link as LinkIcon,
     Lock,
-    Monitor,
     Palette,
     Plus,
-    Redo2,
-    RotateCcw,
-    Save,
-    ShieldCheck,
     ShoppingBag,
     Search,
     Smartphone,
-    Tablet,
     Trash2,
-    Undo2,
     Unlock,
     Upload,
     X
@@ -31,172 +24,181 @@ import {
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 import {
-    REFERENCE_SAMPLE_CATEGORIES,
-    REFERENCE_SAMPLE_PRODUCTS,
-    ReferenceStorefrontPage,
-    getReferenceThemeStyle
-} from '../../../../ecommerce-storefront/src/components/storefront/ReferenceStorefront.jsx';
+    BuilderButton,
+    BuilderCard,
+    BuilderInput,
+    BuilderSelect,
+    BuilderTextarea,
+    BuilderToggle,
+    FieldShell,
+    inputClass
+} from './StoreBuilder/builderUi.jsx';
+import { StoreBuilderHeader } from './StoreBuilder/StoreBuilderHeader.jsx';
+import {
+    CheckoutBrandingPreview,
+    StorefrontPreview
+} from './StoreBuilder/StorefrontPreview.jsx';
+import {
+    previewPages,
+    usePreviewMode
+} from './StoreBuilder/hooks/usePreviewMode.js';
+import {
+    FALLBACK_THEME,
+    normalizeTheme
+} from '../../../../ecommerce-storefront/src/lib/theme.js';
 
-const THEME_SCHEMA_VERSION = 2;
 const HISTORY_LIMIT = 30;
 const HERO_SLIDE_LIMIT = 5;
 
-const defaultTheme = {
-    version: THEME_SCHEMA_VERSION,
-    logoUrl: '',
-    faviconUrl: '',
-    fontFamily: 'Inter',
-    productGridStyle: 'Comfortable',
-    colors: {
-        accent: '#0f766e',
-        accentHover: '#115e59',
-        accentSoft: '#99f6e4',
-        accentBg: '#ecfdf5',
-        accentStrong: '#042f2e',
-        accentMuted: '#14b8a6',
-        accentLight: '#5eead4',
-        accentRing: '#ccfbf1',
-        background: '#ffffff',
-        foreground: '#111827',
-        headerBackground: '#ffffff',
-        primaryButtonBg: '#0f766e',
-        primaryButtonText: '#ffffff',
-        primaryButtonHoverBg: '#115e59',
-        secondaryButtonBg: '#ffffff',
-        secondaryButtonText: '#0f172a',
-        secondaryButtonHoverBg: '#f8fafc',
-        navbarBackground: '#ffffff',
-        navbarText: '#0f172a',
-        navbarHover: '#0f766e',
-        cardBackground: '#ffffff',
-        cardBorder: '#e2e8f0',
-        cardHoverBorder: '#99f6e4',
-        priceColor: '#0f172a',
-        saleBadgeBg: '#dc2626',
-        saleBadgeText: '#ffffff',
-        ratingColor: '#f59e0b',
-        footerBackground: '#ffffff',
-        footerText: '#64748b',
-        footerLink: '#0f172a'
-    },
-    header: {
-        logoPosition: 'Left',
-        menuStyle: 'Simple'
-    },
-    typography: {
-        headingFont: 'Inter',
-        bodyFont: 'Inter',
-        baseSize: 16,
-        headingWeight: '800'
-    },
-    hero: {
-        title: '',
-        subtitle: '',
-        imageUrl: '',
-        ctaLabel: 'Shop Now',
-        ctaUrl: '/',
-        overlayOpacity: 25,
-        height: 'Medium',
-        bannerSlides: []
-    },
-    layout: {
-        maxWidth: 'Wide',
-        containerWidth: 'Wide',
-        sectionSpacing: 'Comfortable',
-        contentSpacing: 'Comfortable',
-        sectionWidth: 'Full Width',
-        sectionPaddingTop: 40,
-        sectionPaddingBottom: 40,
-        sectionMarginTop: 0,
-        sectionMarginBottom: 40,
-        productColumnsDesktop: 3,
-        productColumnsMobile: 2,
-        productGap: 'Comfortable',
-        cardAlignment: 'Left'
-    },
-    productCard: {
-        style: 'Modern',
-        imageFit: 'Contain',
-        aspectRatio: 'Square',
-        imageRadius: 'Rounded',
-        hoverZoom: true,
-        showCategory: true,
-        showRating: true,
-        showReviews: true,
-        showStock: true,
-        showSku: false,
-        showDiscountBadge: true,
-        showQuickBuy: true,
-        showWishlist: true,
-        borderRadius: 'Rounded',
-        shadow: 'Soft',
-        titleSize: 'Medium',
-        titleWeight: '800',
-        priceSize: 'Medium',
-        priceColor: '#0f172a',
-        buttonStyle: 'Solid',
-        buttonShape: 'Rounded',
-        buttonColor: '#0f766e'
-    },
-    checkoutBranding: {
-        logoUrl: '',
-        bannerText: '',
-        buttonStyle: 'Rounded',
-        trustMessage: 'Secure checkout'
-    },
-    mobile: {
-        stickyCheckoutButton: true,
-        compactHeader: true,
-        showBottomNavigation: false
-    },
-    paymentSettings: {
-        additionalMethodsEnabled: false,
-        providers: {
-            stripe: false,
-            sslcommerz: false,
-            bkash: false,
-            nagad: false,
-            rocket: false,
-            paypal: false
-        }
-    },
-    navigation: [
-        { label: 'Shop', url: '/', isExternal: false, sortOrder: 0, children: [], megaMenu: false },
-        { label: 'Track Order', url: '/track', isExternal: false, sortOrder: 1, children: [], megaMenu: false }
-    ],
-    footer: { text: '', links: [] },
-    policies: { refund: '', shipping: '', privacy: '', terms: '' },
-    allProducts: {
-        title: 'All Products',
-        subtitle: "Browse this shop's latest catalog",
-        isEnabled: true,
-        desktopColumns: 3,
-        tabletColumns: 2,
-        mobileColumns: 2,
-        spacing: 'Comfortable'
-    },
-    migrations: {
-        bannerSectionsV1: false
-    },
-    homepageSections: [
-        {
-            id: 'featured-products',
-            type: 'FeaturedProducts',
-            title: 'Featured Products',
-            sortOrder: 0,
-            isEnabled: true,
-            settings: { source: { type: 'manual', productIds: [] }, productIds: [] },
-            mobileSettings: { columns: 2, isVisible: true }
-        }
-    ]
+const normalizeBuilderNavigation = (navigation = []) => navigation.map((item, index) => ({
+    isExternal: false,
+    megaMenu: false,
+    sortOrder: index,
+    ...item,
+    children: Array.isArray(item.children)
+        ? item.children.map((child, childIndex) => ({
+            isExternal: false,
+            sortOrder: childIndex,
+            ...child
+        }))
+        : []
+}));
+
+const normalizeBuilderTheme = (theme = {}) => {
+    const normalized = normalizeTheme(theme);
+
+    return {
+        ...normalized,
+        faviconUrl: theme.faviconUrl || normalized.faviconUrl || '',
+        navigation: normalizeBuilderNavigation(normalized.navigation)
+    };
 };
 
+const defaultTheme = normalizeBuilderTheme(FALLBACK_THEME);
+
 const inlineSectionPresets = [
-    { label: 'Banner', type: 'Banner', title: 'Promotional banner', settings: { visualLabel: 'Banner', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: '', subtitle: '', buttonText: 'Shop now', buttonLink: '/' }, mobileSettings: { isVisible: true } },
-    { label: 'Featured Products', type: 'FeaturedProducts', title: 'Featured products', settings: { visualLabel: 'Featured Products', productIds: [], source: { type: 'manual', productIds: [] } }, source: { type: 'manual', productIds: [] }, mobileSettings: { columns: 2, isVisible: true } },
-    { label: 'Category List', type: 'CategoryList', title: 'Shop by category', settings: { visualLabel: 'Category List', maxCategories: 10, columns: 4 }, mobileSettings: { columns: 2, isVisible: true } },
-    { label: 'Testimonials', type: 'Reviews', title: 'Testimonials', settings: { visualLabel: 'Testimonials', mode: 'text', reviewIds: [], text: 'Share customer quotes and social proof.' } },
-    { label: 'Promo Content', type: 'TextBlock', title: 'Promotional content', settings: { visualLabel: 'Promo Content', text: 'Add a product story, offer, FAQ, or brand introduction.' } }
+    {
+        templateId: 'featured-products',
+        label: 'Featured Products',
+        type: 'FeaturedProducts',
+        title: 'Featured products',
+        description: 'Show a handpicked row of products.',
+        useCase: 'Best for best sellers, launches, and seasonal picks.',
+        thumbnail: 'grid',
+        settings: { visualLabel: 'Featured Products', productIds: [], source: { type: 'manual', productIds: [] } },
+        source: { type: 'manual', productIds: [] },
+        mobileSettings: { columns: 2, isVisible: true }
+    },
+    {
+        templateId: 'category-showcase',
+        label: 'Category Showcase',
+        type: 'CategoryList',
+        title: 'Shop by category',
+        description: 'Help shoppers jump into popular categories.',
+        useCase: 'Best for stores with several product families.',
+        thumbnail: 'chips',
+        settings: { visualLabel: 'Category Showcase', maxCategories: 10, columns: 4 },
+        mobileSettings: { columns: 2, isVisible: true }
+    },
+    {
+        templateId: 'image-banner',
+        label: 'Image Banner',
+        type: 'Banner',
+        title: 'Promotional banner',
+        description: 'Full-width campaign image with text and button.',
+        useCase: 'Best for sales, offers, and collection highlights.',
+        thumbnail: 'image',
+        settings: { visualLabel: 'Image Banner', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: 'Limited offer', subtitle: 'Add a short campaign message.', buttonText: 'Shop now', buttonLink: '/' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'image-text',
+        label: 'Image + Text',
+        type: 'TextBlock',
+        title: 'Brand highlight',
+        description: 'Pair a story, benefit, or offer with rich copy.',
+        useCase: 'Best for explaining quality, materials, or brand values.',
+        thumbnail: 'split',
+        settings: { visualLabel: 'Image + Text', text: 'Tell customers why this collection matters.' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'testimonials',
+        label: 'Testimonials',
+        type: 'Reviews',
+        title: 'Customer reviews',
+        description: 'Show selected 5-star reviews or a custom quote.',
+        useCase: 'Best for trust and social proof.',
+        thumbnail: 'quotes',
+        settings: { visualLabel: 'Testimonials', mode: 'text', reviewIds: [], text: 'Share customer quotes and social proof.' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'promo-strip',
+        label: 'Promo Strip',
+        type: 'TextBlock',
+        title: 'Today’s offer',
+        description: 'Compact announcement for a quick promotion.',
+        useCase: 'Best for free shipping, COD, or flash deals.',
+        thumbnail: 'strip',
+        settings: { visualLabel: 'Promo Strip', text: 'Free delivery on selected products today.' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'faq',
+        label: 'FAQ',
+        type: 'TextBlock',
+        title: 'Common questions',
+        description: 'Answer buying questions before checkout.',
+        useCase: 'Best for delivery, returns, sizing, and payment details.',
+        thumbnail: 'list',
+        settings: { visualLabel: 'FAQ', text: 'Q: How long does delivery take?\nA: Add your answer here.' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'newsletter',
+        label: 'Newsletter',
+        type: 'Newsletter',
+        title: 'Join our updates',
+        description: 'Invite shoppers to follow future launches.',
+        useCase: 'Best for repeat purchase and audience building.',
+        thumbnail: 'mail',
+        settings: { visualLabel: 'Newsletter', text: 'Get product updates, offers, and launches.' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'brand-story',
+        label: 'Brand Story',
+        type: 'TextBlock',
+        title: 'Our story',
+        description: 'Create a short credibility-building brand block.',
+        useCase: 'Best for premium, local, or handmade stores.',
+        thumbnail: 'story',
+        settings: { visualLabel: 'Brand Story', text: 'Share what makes your store different.' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'trust-badges',
+        label: 'Trust Badges',
+        type: 'TextBlock',
+        title: 'Why shop with us',
+        description: 'Highlight secure payment, fast delivery, and support.',
+        useCase: 'Best before All Products or checkout-focused content.',
+        thumbnail: 'badges',
+        settings: { visualLabel: 'Trust Badges', text: 'Secure checkout · Fast delivery · Easy support' },
+        mobileSettings: { isVisible: true }
+    },
+    {
+        templateId: 'collection-grid',
+        label: 'Collection Grid',
+        type: 'CategoryList',
+        title: 'Explore collections',
+        description: 'Use category cards as a future-ready collection grid.',
+        useCase: 'Best for stores planning collection pages later.',
+        thumbnail: 'collections',
+        settings: { visualLabel: 'Collection Grid', maxCategories: 8, columns: 4 },
+        mobileSettings: { columns: 2, isVisible: true }
+    }
 ];
 
 const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';
@@ -220,7 +222,7 @@ const settingsGroups = [
 const structureTree = [
     {
         id: 'header',
-        label: 'Header',
+        label: 'Navbar',
         group: 'navigation',
         children: [
             { id: 'logo', label: 'Logo', group: 'brand' },
@@ -273,6 +275,9 @@ const groupElementMap = {
     policies: 'policies',
     domain: 'domain'
 };
+
+const fixedPreviewElements = new Set(['header', 'hero', 'allProducts', 'footer']);
+const isHomepageSectionLocked = (section) => Boolean(section?.settings?.isLocked);
 
 const structureComponentRegistry = structureTree.reduce((registry, item) => {
     registry[item.id] = { label: item.label, group: item.group };
@@ -407,13 +412,6 @@ const normalizeHomepageSections = (sections = []) => sections
     .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
     .map((section, index) => ({ ...section, sortOrder: index }));
 
-const getLegacyAllProductsSection = (sections = []) => sections.find(section => {
-    const settings = section?.settings || {};
-    const source = settings.source || section?.source || {};
-    const productIds = settings.productIds || source.productIds || [];
-    return ['FeaturedProducts', 'Collection'].includes(section?.type) && !source.type && (!Array.isArray(productIds) || productIds.length === 0);
-});
-
 const createHeroSlide = (overrides = {}) => ({
     id: `hero-slide-${Date.now()}`,
     enabled: true,
@@ -466,36 +464,9 @@ const syncHeroLegacyFields = (hero = {}, slides = []) => {
     };
 };
 
-const mergeTheme = (base, incoming = {}) => ({
-    ...base,
-    ...incoming,
-    version: Number(incoming.version) || THEME_SCHEMA_VERSION,
-    colors: { ...base.colors, ...(incoming.colors || {}) },
-    header: { ...base.header, ...(incoming.header || {}) },
-    typography: { ...base.typography, ...(incoming.typography || {}) },
-    hero: { ...base.hero, ...(incoming.hero || {}) },
-    layout: { ...base.layout, ...(incoming.layout || {}) },
-    productCard: { ...base.productCard, ...(incoming.productCard || {}) },
-    checkoutBranding: { ...base.checkoutBranding, ...(incoming.checkoutBranding || {}) },
-    mobile: { ...base.mobile, ...(incoming.mobile || {}) },
-    paymentSettings: {
-        ...base.paymentSettings,
-        ...(incoming.paymentSettings || {}),
-        providers: {
-            ...base.paymentSettings.providers,
-            ...(incoming.paymentSettings?.providers || {})
-        }
-    },
-    navigation: incoming.navigation || base.navigation,
-    footer: { ...base.footer, ...(incoming.footer || {}) },
-    policies: { ...base.policies, ...(incoming.policies || {}) },
-    allProducts: {
-        ...base.allProducts,
-        ...(getLegacyAllProductsSection(incoming.homepageSections || [])?.title ? { title: getLegacyAllProductsSection(incoming.homepageSections || []).title } : {}),
-        ...(incoming.allProducts || {})
-    },
-    migrations: { ...base.migrations, ...(incoming.migrations || {}) },
-    homepageSections: normalizeHomepageSections(incoming.homepageSections || base.homepageSections)
+const mergeTheme = (base = defaultTheme, incoming = {}) => normalizeBuilderTheme({
+    ...(base || {}),
+    ...(incoming || {})
 });
 
 const sortForSnapshot = (value) => {
@@ -515,303 +486,13 @@ const safeParseSnapshot = (snapshot) => {
         return null;
     }
 };
+const formatBuilderDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+};
 const isHexColor = (value) => /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(String(value || ''));
-
-const deviceClasses = {
-    desktop: 'w-[1180px] max-w-none',
-    tablet: 'w-[768px] max-w-none',
-    mobile: 'w-[390px] max-w-none',
-    smallMobile: 'w-[320px] max-w-none'
-};
-
-const BuilderButton = ({ children, variant = 'primary', className = '', ...props }) => {
-    const variants = {
-        primary: 'bg-slate-950 text-white hover:bg-slate-800 border-slate-950',
-        secondary: 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200',
-        subtle: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-100',
-        danger: 'bg-white text-red-600 hover:bg-red-50 border-red-200'
-    };
-
-    return (
-        <button
-            className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${className}`}
-            {...props}
-        >
-            {children}
-        </button>
-    );
-};
-
-const HelpText = ({ children, tone = 'neutral' }) => (
-    <p className={`text-xs leading-5 ${tone === 'error' ? 'text-red-600' : 'text-slate-500'}`}>{children}</p>
-);
-
-const FieldShell = ({ label, help, error, children }) => (
-    <label className="block space-y-1.5">
-        <span className="text-sm font-semibold text-slate-800">{label}</span>
-        {children}
-        {error ? <HelpText tone="error">{error}</HelpText> : help ? <HelpText>{help}</HelpText> : null}
-    </label>
-);
-
-const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 disabled:text-slate-400';
-
-const BuilderInput = ({ label, help, error, ...props }) => (
-    <FieldShell label={label} help={help} error={error}>
-        <input className={inputClass} {...props} />
-    </FieldShell>
-);
-
-const BuilderTextarea = ({ label, help, error, ...props }) => (
-    <FieldShell label={label} help={help} error={error}>
-        <textarea className={`${inputClass} min-h-24 resize-y`} {...props} />
-    </FieldShell>
-);
-
-const BuilderSelect = ({ label, help, error, children, ...props }) => (
-    <FieldShell label={label} help={help} error={error}>
-        <select className={inputClass} {...props}>{children}</select>
-    </FieldShell>
-);
-
-const BuilderToggle = ({ label, help, checked, onChange, disabled = false }) => (
-    <label className={`flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3 ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}>
-        <span>
-            <span className="block text-sm font-semibold text-slate-800">{label}</span>
-            {help && <span className="mt-1 block text-xs leading-5 text-slate-500">{help}</span>}
-        </span>
-        <input
-            type="checkbox"
-            checked={checked}
-            onChange={onChange}
-            disabled={disabled}
-            className="mt-0.5 h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
-        />
-    </label>
-);
-
-const BuilderCard = ({ title, description, icon: Icon, children, actions }) => (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-4 flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-                {Icon && (
-                    <span className="rounded-lg bg-slate-100 p-2 text-slate-700">
-                        <Icon size={18} />
-                    </span>
-                )}
-                <div>
-                    <h2 className="text-base font-bold text-slate-950">{title}</h2>
-                    {description && <p className="mt-1 text-sm leading-5 text-slate-500">{description}</p>}
-                </div>
-            </div>
-            {actions}
-        </div>
-        <div className="space-y-4">{children}</div>
-    </section>
-);
-
-const DeviceSwitcher = ({ value, onChange }) => {
-    const devices = [
-        { id: 'desktop', label: 'Desktop', icon: Monitor },
-        { id: 'tablet', label: 'Tablet', icon: Tablet },
-        { id: 'mobile', label: 'Phone', icon: Smartphone },
-        { id: 'smallMobile', label: 'Small', icon: Smartphone }
-    ];
-
-    return (
-        <div className="inline-flex flex-wrap rounded-lg border border-slate-200 bg-white p-1">
-            {devices.map((device) => {
-                const Icon = device.icon;
-                const active = value === device.id;
-                return (
-                    <button
-                        key={device.id}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => onChange(device.id)}
-                        className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                            active ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'
-                        }`}
-                    >
-                        <Icon size={15} />
-                        <span className="hidden sm:inline">{device.label}</span>
-                    </button>
-                );
-            })}
-        </div>
-    );
-};
-
-const CheckoutBrandingPreview = ({ theme, shopName }) => {
-    const colors = theme.colors || defaultTheme.colors;
-    const checkoutBranding = theme.checkoutBranding || defaultTheme.checkoutBranding;
-    const policies = theme.policies || defaultTheme.policies;
-    const visiblePolicies = [
-        ['refund', 'Refund policy'],
-        ['shipping', 'Shipping policy'],
-        ['privacy', 'Privacy policy'],
-        ['terms', 'Terms of service']
-    ].filter(([key]) => policies[key]?.trim());
-    const buttonRadius = checkoutBranding.buttonStyle === 'Pill'
-        ? '999px'
-        : checkoutBranding.buttonStyle === 'Solid'
-            ? '10px'
-            : '16px';
-
-    return (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <CreditCard size={16} />
-                Checkout preview
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm" style={{ color: colors.foreground }}>
-                {(checkoutBranding.logoUrl || checkoutBranding.bannerText) && (
-                    <div className="mb-4 rounded-lg border border-slate-100 bg-white p-3 text-center">
-                        {checkoutBranding.logoUrl && (
-                            <div
-                                className="mx-auto mb-2 h-10 w-32 rounded bg-contain bg-center bg-no-repeat"
-                                style={{ backgroundImage: `url(${checkoutBranding.logoUrl})` }}
-                            />
-                        )}
-                        <p className="text-xs font-semibold text-slate-600">
-                            {checkoutBranding.bannerText || shopName || 'Checkout'}
-                        </p>
-                    </div>
-                )}
-                <div className="grid grid-cols-1 gap-3 text-xs">
-                    <div className="rounded-lg border border-slate-100 p-3">
-                        <p className="font-bold text-slate-900">Order Summary</p>
-                        <div className="mt-3 space-y-2 text-slate-500">
-                            <div className="flex justify-between"><span>Subtotal</span><span>৳ 2,190</span></div>
-                            <div className="flex justify-between"><span>Delivery Charge</span><span>৳ 80</span></div>
-                            <div className="flex justify-between border-t border-dashed border-slate-200 pt-2 font-black text-slate-900"><span>Total</span><span style={{ color: colors.accent }}>৳ 2,270</span></div>
-                        </div>
-                    </div>
-                    <button className="w-full py-3 text-sm font-black" style={{ backgroundColor: colors.primaryButtonBg || colors.accent, color: colors.primaryButtonText || '#ffffff', borderRadius: buttonRadius }}>
-                        Place Order
-                    </button>
-                    <p className="flex items-center justify-center gap-2 text-xs text-slate-500">
-                        <ShieldCheck size={14} style={{ color: colors.accent }} />
-                        {checkoutBranding.trustMessage || 'Secure checkout'}
-                    </p>
-                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3">
-                        <p className="font-bold text-slate-900">Additional payment methods</p>
-                        <p className="mt-1 text-xs text-slate-500">Coming soon: Stripe, SSLCommerz, bKash, Nagad, Rocket, and PayPal.</p>
-                    </div>
-                    {visiblePolicies.length > 0 ? (
-                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                            <p className="mb-2 font-bold text-slate-900">Visible checkout policies</p>
-                            <div className="space-y-1">
-                                {visiblePolicies.map(([key, label]) => (
-                                    <div key={key} className="rounded bg-white px-3 py-2 font-semibold text-slate-600">
-                                        {label}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                            No checkout policies are visible yet. Add policy text to show them.
-                        </p>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const StorefrontPreview = ({
-    theme,
-    storewideDiscount,
-    shopName,
-    device,
-    availableProducts = [],
-    availableCategories = [],
-    availableReviews = []
-}) => {
-    const isMobilePreview = device === 'mobile' || device === 'smallMobile';
-    const products = availableProducts.length > 0
-        ? availableProducts.slice(0, 10).map(product => ({
-            ...product,
-            imageUrl: product.imageUrl || product.images?.[0] || ''
-        }))
-        : REFERENCE_SAMPLE_PRODUCTS;
-    const categories = availableCategories.length
-        ? availableCategories
-        : [...new Set(products.map(product => product.category).filter(Boolean))];
-    const previewSectionProducts = useMemo(() => {
-        const productMap = new Map(products.map(product => [String(product._id), product]));
-        return (theme.homepageSections || []).reduce((acc, section) => {
-            if (section.type !== 'FeaturedProducts') return acc;
-            const sectionId = section.id || section._id;
-            const productIds = section.settings?.productIds || section.settings?.source?.productIds || section.source?.productIds || [];
-            if (!sectionId || !Array.isArray(productIds) || productIds.length === 0) return acc;
-            acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);
-            return acc;
-        }, {});
-    }, [products, theme.homepageSections]);
-    const previewSectionReviews = useMemo(() => {
-        const reviewMap = new Map(availableReviews.map(review => [String(review._id), review]));
-        return (theme.homepageSections || []).reduce((acc, section) => {
-            if (section.type !== 'Reviews') return acc;
-            const sectionId = section.id || section._id;
-            const reviewIds = section.settings?.reviewIds || [];
-            if (!sectionId || !Array.isArray(reviewIds) || reviewIds.length === 0) return acc;
-            acc[sectionId] = reviewIds.map(id => reviewMap.get(String(id))).filter(Boolean);
-            return acc;
-        }, {});
-    }, [availableReviews, theme.homepageSections]);
-    const frameLabel = device === 'desktop'
-        ? 'scaleup.store'
-        : device === 'tablet'
-            ? 'Tablet preview'
-            : device === 'smallMobile'
-                ? 'Small phone preview'
-                : 'Phone preview';
-    const frameClass = device === 'desktop'
-        ? 'rounded-xl border border-slate-300 bg-white shadow-2xl shadow-slate-900/10'
-        : device === 'tablet'
-            ? 'rounded-[2rem] border-[10px] border-slate-900 bg-white shadow-2xl shadow-slate-900/20'
-            : 'rounded-[2.4rem] border-[10px] border-slate-950 bg-white shadow-2xl shadow-slate-900/25';
-
-    return (
-        <div className="isolate overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
-            <div className={`mx-auto transition-all duration-300 ${deviceClasses[device]}`}>
-                <div className={`${isMobilePreview ? 'max-h-[760px] overflow-y-auto' : 'overflow-hidden'} ${frameClass}`}>
-                    {device === 'desktop' ? (
-                        <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">
-                            <span className="h-2.5 w-2.5 rounded-full bg-red-300" />
-                            <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                            <span className="ml-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">{frameLabel}</span>
-                        </div>
-                    ) : (
-                        <div className="mx-auto mt-2 h-1.5 w-16 rounded-full bg-slate-800" />
-                    )}
-                    <div style={getReferenceThemeStyle(theme)}>
-                        <ReferenceStorefrontPage
-                            theme={theme}
-                            shopName={shopName || 'Store preview'}
-                            subdomain="preview"
-                            cartCount={3}
-                            storewideDiscount={storewideDiscount}
-                            products={products}
-                            categories={categories.length ? categories : REFERENCE_SAMPLE_CATEGORIES}
-                            sectionProducts={previewSectionProducts}
-                            sectionReviews={previewSectionReviews}
-                            pagination={{ page: 1, pages: 10 }}
-                            filters={{ category: 'All', sort: 'newest', page: 1 }}
-                            priceInput={{ min: '', max: '' }}
-                            catalogSearch=""
-                            preview
-                            previewDevice={device}
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const StoreBuilder = () => {
     const [loading, setLoading] = useState(true);
@@ -830,11 +511,12 @@ const StoreBuilder = () => {
     const [storewideDiscount, setStorewideDiscount] = useState(0);
     const [activeGroup, setActiveGroup] = useState('brand');
     const [activeElement, setActiveElement] = useState('logo');
-    const [hoveredElement, setHoveredElement] = useState('');
-    const [device, setDevice] = useState('desktop');
+    const { device, setDevice, previewPage, setPreviewPage } = usePreviewMode();
     const [mobileWorkspace, setMobileWorkspace] = useState('structure');
     const [initialSnapshot, setInitialSnapshot] = useState('');
     const [editorHistory, setEditorHistory] = useState({ past: [], future: [] });
+    const [lastSavedAt, setLastSavedAt] = useState('');
+    const [lastPublishedAt, setLastPublishedAt] = useState('');
     const historyModeRef = useRef('record');
     const lastHistorySnapshotRef = useRef('');
 
@@ -846,6 +528,12 @@ const StoreBuilder = () => {
         const selectionTheme = { homepageSections: theme.homepageSections, navigation: theme.navigation };
         return resolveEditorComponent(activeElement, selectionTheme)?.label || settingsGroups.find(item => item.id === activeGroup)?.label || 'Store element';
     }, [activeElement, activeGroup, theme.homepageSections, theme.navigation]);
+    const selectedIsLockedLayout = useMemo(() => {
+        if (fixedPreviewElements.has(activeElement)) return true;
+        if (!activeElement?.startsWith('section-')) return false;
+        const sectionIndex = Number(activeElement.replace('section-', ''));
+        return isHomepageSectionLocked(theme.homepageSections?.[sectionIndex]);
+    }, [activeElement, theme.homepageSections]);
 
     const publishedVersionLabel = useMemo(() => {
         if (!initialSnapshot) return 'Not loaded';
@@ -1022,6 +710,8 @@ const StoreBuilder = () => {
                 }));
                 setCustomDomain(nextDomain);
                 setStorewideDiscount(nextDiscount);
+                setLastSavedAt(shop.updatedAt || shop.themeUpdatedAt || '');
+                setLastPublishedAt(shop.updatedAt || shop.themeUpdatedAt || '');
                 const loadedSnapshot = stableStringify({ theme: nextTheme, customDomain: nextDomain, storewideDiscount: Number(nextDiscount) || 0 });
                 setInitialSnapshot(loadedSnapshot);
                 lastHistorySnapshotRef.current = loadedSnapshot;
@@ -1142,8 +832,6 @@ const StoreBuilder = () => {
             [group]: { ...(prev[group] || {}), [key]: !prev[group]?.[key] }
         }));
     };
-
-    const isHomepageSectionLocked = (section) => Boolean(section?.settings?.isLocked);
 
     const updateHomepageSection = (index, field, value) => {
         setTheme(prev => ({
@@ -1279,15 +967,6 @@ const StoreBuilder = () => {
         updateBannerImages(index, key, images);
     };
 
-    const updateHomepageSectionFromPreview = (index, field, value) => {
-        if (field.startsWith('settings.')) {
-            updateHomepageSectionSetting(index, field.replace('settings.', ''), value);
-            return;
-        }
-
-        updateHomepageSection(index, field, value);
-    };
-
     const normalizeSectionOrder = (sections) => normalizeHomepageSections(sections).map((section, index) => ({ ...section, sortOrder: index }));
 
     const moveHomepageSection = (index, direction) => {
@@ -1327,6 +1006,10 @@ const StoreBuilder = () => {
         }));
     };
 
+    const toggleHomepageSectionVisibility = (index, isEnabled) => {
+        updateHomepageSection(index, 'isEnabled', isEnabled);
+    };
+
     const toggleHomepageSectionLock = (index) => {
         setTheme(prev => ({
             ...prev,
@@ -1362,27 +1045,6 @@ const StoreBuilder = () => {
         setActiveGroup('sections');
         setActiveElement(`section-${insertIndex ?? theme.homepageSections?.length ?? 0}`);
         setMobileWorkspace('preview');
-    };
-
-    const hideHomepageSection = (index) => {
-        updateHomepageSection(index, 'isEnabled', false);
-    };
-
-    const reorderHomepageSection = (fromIndex, insertIndex) => {
-        setTheme(prev => {
-            const sections = [...(prev.homepageSections || [])];
-            const sourceIndex = Number(fromIndex);
-            const targetInsertIndex = Number(insertIndex);
-
-            if (!Number.isFinite(sourceIndex) || !Number.isFinite(targetInsertIndex)) return prev;
-            if (sourceIndex < 0 || sourceIndex >= sections.length) return prev;
-            if (isHomepageSectionLocked(sections[sourceIndex])) return prev;
-
-            const [moved] = sections.splice(sourceIndex, 1);
-            const adjustedIndex = sourceIndex < targetInsertIndex ? targetInsertIndex - 1 : targetInsertIndex;
-            sections.splice(Math.max(0, Math.min(adjustedIndex, sections.length)), 0, moved);
-            return { ...prev, homepageSections: normalizeSectionOrder(sections) };
-        });
     };
 
     const updateNavigation = (index, field, value) => {
@@ -1701,7 +1363,10 @@ const StoreBuilder = () => {
             };
             await API.patch('/store-builder/admin', payload);
             const publishedSnapshot = stableStringify({ theme, customDomain, storewideDiscount: payload.storewideDiscount });
+            const publishedAt = new Date().toISOString();
             setInitialSnapshot(publishedSnapshot);
+            setLastSavedAt(publishedAt);
+            setLastPublishedAt(publishedAt);
             lastHistorySnapshotRef.current = publishedSnapshot;
             setEditorHistory({ past: [], future: [] });
             toast.success('Store design published. Refresh your storefront to see the latest changes.');
@@ -2055,16 +1720,16 @@ const StoreBuilder = () => {
                         <BuilderInput label="Section title" value={theme.allProducts?.title || ''} onChange={e => setThemeGroup('allProducts', 'title', e.target.value)} placeholder="Shop products" />
                         <BuilderInput label="Section subtitle" value={theme.allProducts?.subtitle || ''} onChange={e => setThemeGroup('allProducts', 'subtitle', e.target.value)} placeholder="Optional helper text above the product catalog" />
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                            <BuilderSelect label="Desktop columns" value={theme.allProducts?.desktopColumns || theme.layout?.productColumnsDesktop || 3} onChange={e => {
+                            <BuilderSelect label="Products per row on desktop" value={theme.allProducts?.desktopColumns || theme.layout?.productColumnsDesktop || 3} onChange={e => {
                                 setThemeGroup('allProducts', 'desktopColumns', Number(e.target.value));
                                 setThemeGroup('layout', 'productColumnsDesktop', Number(e.target.value));
                             }}>
                                 <option value={2}>2 columns</option><option value={3}>3 columns</option><option value={4}>4 columns</option><option value={5}>5 columns</option>
                             </BuilderSelect>
-                            <BuilderSelect label="Tablet columns" value={theme.allProducts?.tabletColumns || 2} onChange={e => setThemeGroup('allProducts', 'tabletColumns', Number(e.target.value))}>
+                            <BuilderSelect label="Products per row on tablet" value={theme.allProducts?.tabletColumns || 2} onChange={e => setThemeGroup('allProducts', 'tabletColumns', Number(e.target.value))}>
                                 <option value={1}>1 column</option><option value={2}>2 columns</option><option value={3}>3 columns</option><option value={4}>4 columns</option>
                             </BuilderSelect>
-                            <BuilderSelect label="Mobile columns" value={theme.allProducts?.mobileColumns || theme.layout?.productColumnsMobile || 2} onChange={e => {
+                            <BuilderSelect label="Products per row on phone" value={theme.allProducts?.mobileColumns || theme.layout?.productColumnsMobile || 2} onChange={e => {
                                 setThemeGroup('allProducts', 'mobileColumns', Number(e.target.value));
                                 setThemeGroup('layout', 'productColumnsMobile', Number(e.target.value));
                             }}>
@@ -2076,16 +1741,16 @@ const StoreBuilder = () => {
                         </BuilderSelect>
                     </BuilderCard>
                     <BuilderCard title="Product cards" description="Control how products appear in grids across desktop and mobile." icon={ShoppingBag}>
-                        <BuilderSelect label="Card style" value={theme.productCard?.style || 'Modern'} onChange={e => setThemeGroup('productCard', 'style', e.target.value)} help="Minimal is quieter, Modern is balanced, Premium adds stronger depth.">
+                        <BuilderSelect label="Product card style" value={theme.productCard?.style || 'Modern'} onChange={e => setThemeGroup('productCard', 'style', e.target.value)} help="Minimal is quieter, Modern is balanced, Premium adds stronger depth.">
                             <option>Minimal</option><option>Modern</option><option>Premium</option>
                         </BuilderSelect>
-                        <BuilderSelect label="Image fit" value={theme.productCard?.imageFit || 'Contain'} onChange={e => setThemeGroup('productCard', 'imageFit', e.target.value)}>
+                        <BuilderSelect label="Product image fit" value={theme.productCard?.imageFit || 'Contain'} onChange={e => setThemeGroup('productCard', 'imageFit', e.target.value)} help="Contain keeps the whole product visible. Cover fills the image area.">
                             <option>Contain</option><option>Cover</option>
                         </BuilderSelect>
                         <BuilderSelect label="Image aspect ratio" value={theme.productCard?.aspectRatio || 'Square'} onChange={e => setThemeGroup('productCard', 'aspectRatio', e.target.value)}>
                             <option>Square</option><option>Portrait</option><option>Landscape</option>
                         </BuilderSelect>
-                        <BuilderSelect label="Corners" value={theme.productCard?.borderRadius || 'Rounded'} onChange={e => setThemeGroup('productCard', 'borderRadius', e.target.value)}>
+                        <BuilderSelect label="Product card corner roundness" value={theme.productCard?.borderRadius || 'Rounded'} onChange={e => setThemeGroup('productCard', 'borderRadius', e.target.value)}>
                             <option>Soft</option><option>Rounded</option><option>Square</option>
                         </BuilderSelect>
                         <BuilderSelect label="Image corners" value={theme.productCard?.imageRadius || 'Rounded'} onChange={e => setThemeGroup('productCard', 'imageRadius', e.target.value)}>
@@ -2137,7 +1802,7 @@ const StoreBuilder = () => {
                             <BuilderSelect label="Button style" value={theme.productCard?.buttonStyle || 'Solid'} onChange={e => setThemeGroup('productCard', 'buttonStyle', e.target.value)}>
                                 <option>Solid</option><option>Outline</option><option>Ghost</option>
                             </BuilderSelect>
-                            <BuilderSelect label="Button shape" value={theme.productCard?.buttonShape || 'Rounded'} onChange={e => setThemeGroup('productCard', 'buttonShape', e.target.value)}>
+                            <BuilderSelect label="Add-to-cart button shape" value={theme.productCard?.buttonShape || 'Rounded'} onChange={e => setThemeGroup('productCard', 'buttonShape', e.target.value)}>
                                 <option>Soft</option><option>Rounded</option><option>Pill</option><option>Square</option>
                             </BuilderSelect>
                             <FieldShell label="Button color" help="Used by quick-buy buttons on product cards." error={!isHexColor(theme.productCard?.buttonColor || theme.colors?.primaryButtonBg) ? 'Enter a valid hex color.' : ''}>
@@ -2167,26 +1832,82 @@ const StoreBuilder = () => {
                         icon={LayoutTemplate}
                         actions={<BuilderButton type="button" variant="secondary" onClick={() => addHomepageSection()}><Plus size={16} /> Add section</BuilderButton>}
                     >
-                        <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-bold text-slate-600 sm:grid-cols-4">
-                            {['Navbar', 'Hero Banner', 'All Products', 'Footer'].map(label => (
-                                <div key={label} className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2">
-                                    <Lock size={13} className="text-amber-600" />
-                                    {label}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">Homepage order</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                                        Fixed sections stay in place. Flexible sections render between Hero and All Products.
+                                    </p>
                                 </div>
-                            ))}
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-black text-amber-800">
+                                    <Lock size={12} /> Locked frame
+                                </span>
+                            </div>
+                            <div className="mt-3 grid gap-2 text-xs font-bold text-slate-600">
+                                {[
+                                    { label: 'Navbar', note: 'Fixed header', locked: true },
+                                    { label: 'Hero Banner', note: 'Fixed opening section', locked: true },
+                                    { label: 'Flexible content area', note: 'Add, duplicate, hide, reorder, and edit sections here', locked: false },
+                                    { label: 'All Products', note: 'Fixed catalog section', locked: true },
+                                    { label: 'Footer', note: 'Fixed closing section', locked: true }
+                                ].map(item => (
+                                    <div
+                                        key={item.label}
+                                        className={`flex flex-col gap-1 rounded-lg border px-3 py-2 sm:flex-row sm:items-center sm:justify-between ${
+                                            item.locked
+                                                ? 'border-slate-200 bg-white'
+                                                : 'border-indigo-200 bg-indigo-50 text-indigo-800'
+                                        }`}
+                                    >
+                                        <span className="inline-flex items-center gap-2">
+                                            {item.locked ? <Lock size={13} className="text-amber-600" /> : <LayoutTemplate size={13} />}
+                                            {item.label}
+                                        </span>
+                                        <span className="text-[11px] font-semibold opacity-75">{item.note}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                         <div className="rounded-lg border border-slate-200 bg-white p-3">
-                            <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Add flexible section</p>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div className="mb-3">
+                                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Add flexible section</p>
+                                <p className="mt-1 text-sm text-slate-500">Choose a starter layout. You can edit, hide, duplicate, or reorder it after adding.</p>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3">
                                 {inlineSectionPresets.map(preset => (
                                     <button
-                                        key={preset.type}
+                                        key={preset.templateId}
                                         type="button"
                                         onClick={() => addHomepageSection(preset)}
-                                        className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                        className="group grid grid-cols-[72px_minmax(0,1fr)] gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50"
                                     >
-                                        <Plus size={14} className="mr-2 inline" />
-                                        {preset.label}
+                                        <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                                            <span className="grid h-full w-full grid-cols-2 gap-1">
+                                                {[0, 1, 2, 3].map(item => (
+                                                    <span
+                                                        key={item}
+                                                        className={`rounded-md ${
+                                                            preset.thumbnail === 'image'
+                                                                ? 'bg-teal-100'
+                                                                : preset.thumbnail === 'strip'
+                                                                    ? 'col-span-2 bg-indigo-100'
+                                                                    : preset.thumbnail === 'quotes'
+                                                                        ? 'bg-amber-100'
+                                                                        : 'bg-slate-100'
+                                                        }`}
+                                                    />
+                                                ))}
+                                            </span>
+                                        </span>
+                                        <span className="min-w-0">
+                                            <span className="flex items-center justify-between gap-2">
+                                                <span className="text-sm font-black text-slate-900 group-hover:text-indigo-800">{preset.label}</span>
+                                                <Plus size={15} className="shrink-0 text-slate-400 group-hover:text-indigo-600" />
+                                            </span>
+                                            <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{preset.description}</span>
+                                            <span className="mt-2 block text-[11px] font-bold uppercase tracking-wide text-slate-400">{preset.useCase}</span>
+                                        </span>
                                     </button>
                                 ))}
                             </div>
@@ -2211,22 +1932,42 @@ const StoreBuilder = () => {
                             const availableCategoryOptions = productCategories.length
                                 ? productCategories
                                 : [...new Set(availableProducts.map(product => product.category).filter(Boolean))];
+                            const isSelectedSection = activeElement === `section-${index}`;
 
                             return (
-                            <div key={section._id || index} className={`rounded-lg border p-3 ${locked ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200'}`}>
+                            <div
+                                key={section.id || section._id || index}
+                                className={`rounded-lg border p-3 transition ${
+                                    isSelectedSection
+                                        ? 'border-indigo-300 bg-indigo-50/60 ring-2 ring-indigo-100'
+                                        : locked
+                                            ? 'border-amber-200 bg-amber-50/40'
+                                            : 'border-slate-200 bg-white'
+                                }`}
+                            >
                                 <div className="mb-3 flex items-center justify-between gap-3">
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <p className="text-sm font-bold text-slate-900">{section.title || section.type}</p>
+                                            {isSelectedSection && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-bold text-indigo-800">
+                                                    Editing
+                                                </span>
+                                            )}
                                             {locked && (
                                                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
                                                     <Lock size={12} /> Locked
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-slate-500">{section.type}</p>
+                                        <p className="text-xs text-slate-500">
+                                            {locked ? 'Fixed section settings are protected.' : `${section.type} inside the flexible content area.`}
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-1">
+                                        <button type="button" onClick={() => selectEditorTarget(`section-${index}`)} className="rounded-md px-2 py-2 text-xs font-black text-indigo-600 hover:bg-indigo-100" title="Edit section">
+                                            Edit
+                                        </button>
                                         <button type="button" onClick={() => moveHomepageSection(index, -1)} disabled={locked || previousLocked || index === 0} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30" title="Move section up">
                                             <ChevronUp size={16} />
                                         </button>
@@ -2252,6 +1993,9 @@ const StoreBuilder = () => {
                                         <option value="TextBlock">Promotional Content</option>
                                         <option value="Newsletter">Newsletter</option>
                                         <option value="CategoryList">Category List</option>
+                                        <option value="FAQ">FAQ</option>
+                                        <option value="TrustBadges">Trust Badges</option>
+                                        <option value="BrandStory">Brand Story</option>
                                     </BuilderSelect>
                                     <BuilderInput label="Section title" value={section.title || ''} onChange={e => updateHomepageSection(index, 'title', e.target.value)} disabled={locked} />
                                 </div>
@@ -2562,7 +2306,7 @@ const StoreBuilder = () => {
                                         </BuilderSelect>
                                     </div>
                                 )}
-                                {['TextBlock', 'Newsletter'].includes(section.type) && (
+                                {['TextBlock', 'Newsletter', 'FAQ', 'TrustBadges', 'BrandStory'].includes(section.type) && (
                                     <div className="mt-3">
                                         <BuilderTextarea
                                             label="Section text"
@@ -2708,60 +2452,25 @@ const StoreBuilder = () => {
 
     return (
         <div className="min-h-full bg-slate-50">
-            <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-                <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-xl font-bold text-slate-950">Store Builder</h1>
-	                            {hasUnsavedChanges && (
-	                                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
-	                                    Draft changes
-	                                </span>
-	                            )}
-	                        </div>
-	                        <p className="mt-1 text-sm text-slate-500">Customize your storefront without code. Preview draft changes, then publish when ready.</p>
-	                    </div>
-	                    <div className="flex flex-wrap items-center gap-2">
-	                        <DeviceSwitcher value={device} onChange={setDevice} />
-	                        <BuilderButton type="button" variant="secondary" onClick={undoBuilderChange} disabled={!canUndo || saving} title="Undo last editor change">
-	                            <Undo2 size={16} />
-	                            Undo
-	                        </BuilderButton>
-	                        <BuilderButton type="button" variant="secondary" onClick={redoBuilderChange} disabled={!canRedo || saving} title="Redo last editor change">
-	                            <Redo2 size={16} />
-	                            Redo
-	                        </BuilderButton>
-	                        <BuilderButton type="button" variant="secondary" onClick={resetStyling} disabled={saving}>
-	                            <RotateCcw size={16} />
-	                            Reset styling
-	                        </BuilderButton>
-	                        <BuilderButton type="button" onClick={handleSave} disabled={saving || validation.length > 0}>
-	                            <Save size={16} />
-	                            {saving ? 'Publishing...' : 'Publish changes'}
-	                        </BuilderButton>
-	                    </div>
-                </div>
-                <div className="mx-auto flex max-w-[1600px] gap-2 px-4 pb-3 xl:hidden">
-                    {[
-                        ['structure', 'Structure'],
-                        ['edit', 'Edit'],
-                        ['preview', 'Preview']
-                    ].map(([id, label]) => (
-                        <button
-                            key={id}
-                            type="button"
-                            onClick={() => setMobileWorkspace(id)}
-                            className={`flex-1 rounded-lg border px-3 py-2 text-sm font-bold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                mobileWorkspace === id
-                                    ? 'border-slate-950 bg-slate-950 text-white'
-                                    : 'border-slate-200 bg-white text-slate-600'
-                            }`}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            <StoreBuilderHeader
+                hasUnsavedChanges={hasUnsavedChanges}
+                statusLabel={hasUnsavedChanges ? 'Unsaved changes' : 'Published'}
+                lastSavedLabel={formatBuilderDate(lastSavedAt) || 'Current session'}
+                lastPublishedLabel={formatBuilderDate(lastPublishedAt) || publishedVersionLabel}
+                device={device}
+                onDeviceChange={setDevice}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                saving={saving}
+                validationCount={validation.length}
+                onUndo={undoBuilderChange}
+                onRedo={redoBuilderChange}
+                onResetStyling={resetStyling}
+                onRestorePublished={restorePublishedVersion}
+                onSave={handleSave}
+                mobileWorkspace={mobileWorkspace}
+                onWorkspaceChange={setMobileWorkspace}
+            />
 
             <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-4 p-4 xl:grid-cols-[360px_minmax(0,1fr)]">
                 <aside className={`${mobileWorkspace === 'structure' ? 'block' : 'hidden'} space-y-4 xl:sticky xl:top-28 xl:block xl:self-start`}>
@@ -2775,8 +2484,6 @@ const StoreBuilder = () => {
                                         <button
                                             type="button"
                                             onClick={() => selectEditorTarget(item.id)}
-                                            onMouseEnter={() => setHoveredElement(item.id)}
-                                            onMouseLeave={() => setHoveredElement('')}
                                             className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                                                 active ? 'bg-slate-950 text-white' : 'text-slate-700 hover:bg-slate-50'
                                             }`}
@@ -2793,8 +2500,6 @@ const StoreBuilder = () => {
                                                             key={child.id}
                                                             type="button"
                                                             onClick={() => selectEditorTarget(child.id)}
-                                                            onMouseEnter={() => setHoveredElement(child.id)}
-                                                            onMouseLeave={() => setHoveredElement('')}
                                                             className={`flex w-full items-center rounded-md px-3 py-2 text-left text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                                                                 childActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                                             }`}
@@ -2810,7 +2515,7 @@ const StoreBuilder = () => {
                             })}
                         </div>
                         <div className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-                            Click a row to edit it. The preview stays live while component clicking is paused.
+                            Click a row here, or click an outlined section directly in the preview, to open the matching settings.
                         </div>
                     </div>
 
@@ -2871,6 +2576,20 @@ const StoreBuilder = () => {
 	                                Publish
 	                            </BuilderButton>
 	                        </div>
+                            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-wide text-slate-400">Version history</p>
+                                        <p className="mt-1 text-sm font-bold text-slate-800">{publishedVersionLabel}</p>
+                                        <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                                            Full saved version history needs backend persistence. This panel is ready for future restore and preview actions.
+                                        </p>
+                                    </div>
+                                    <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-black text-emerald-800">
+                                        Current
+                                    </span>
+                                </div>
+                            </div>
 	                        <p className="mt-3 text-[11px] leading-5 text-slate-500">
 	                            Shortcuts: Cmd/Ctrl+S publish, Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z or Ctrl+Y redo.
 	                        </p>
@@ -2902,7 +2621,9 @@ const StoreBuilder = () => {
                                 </button>
                             </div>
                             <p className="mt-1 text-sm leading-5 text-indigo-700">
-                                Edit the selected storefront element below. Existing settings and saved theme fields are preserved.
+                                {selectedIsLockedLayout
+                                    ? 'Locked layout, editable content/settings. The section stays in its required position, but you can still tune its allowed settings below.'
+                                    : 'Edit the selected storefront element below. Existing settings and saved theme fields are preserved.'}
                             </p>
                         </div>
                         {renderPanel()}
@@ -2913,7 +2634,24 @@ const StoreBuilder = () => {
                                 <h2 className="text-base font-bold text-slate-950">Live preview</h2>
                                 <p className="mt-1 text-sm text-slate-500">The preview updates live from the settings panel.</p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                                    {previewPages.map(page => (
+                                        <button
+                                            key={page.id}
+                                            type="button"
+                                            aria-pressed={previewPage === page.id}
+                                            onClick={() => setPreviewPage(page.id)}
+                                            className={`rounded-md px-3 py-1.5 text-xs font-black transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                previewPage === page.id
+                                                    ? 'bg-slate-950 text-white'
+                                                    : 'text-slate-600 hover:bg-white hover:text-slate-950'
+                                            }`}
+                                        >
+                                            {page.label}
+                                        </button>
+                                    ))}
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => setMobileWorkspace('edit')}
@@ -2930,27 +2668,17 @@ const StoreBuilder = () => {
 	                            theme={theme}
 	                            storewideDiscount={Number(storewideDiscount) || 0}
 	                            shopName={shopName}
-	                            activeGroup={activeGroup}
-	                            activeElement={activeElement}
-	                            hoveredElement={hoveredElement}
-	                            onSelectElement={selectEditorTarget}
-	                            onHoverElement={setHoveredElement}
-	                            onColorChange={setColor}
-	                            onThemeGroupChange={setThemeGroup}
-	                            onHeroChange={(key, value) => setThemeGroup('hero', key, value)}
-	                            onNavigationChange={updateNavigation}
-	                            onSectionChange={updateHomepageSectionFromPreview}
-	                            onAddSection={addHomepageSection}
-	                            onDuplicateSection={duplicateHomepageSection}
-	                            onHideSection={hideHomepageSection}
-	                            onMoveSection={moveHomepageSection}
-	                            onRemoveSection={removeHomepageSection}
-	                            onReorderSection={reorderHomepageSection}
-	                            isSectionLocked={isHomepageSectionLocked}
 	                            device={device}
+                                previewPage={previewPage}
                                 availableProducts={availableProducts}
                                 availableCategories={productCategories}
                                 availableReviews={availableReviews}
+                                activeElement={activeElement}
+                                onSelectElement={selectEditorTarget}
+                                onMoveSection={moveHomepageSection}
+                                onDuplicateSection={duplicateHomepageSection}
+                                onToggleSectionVisibility={toggleHomepageSectionVisibility}
+                                onRemoveSection={removeHomepageSection}
 	                        />
                     </section>
                 </main>

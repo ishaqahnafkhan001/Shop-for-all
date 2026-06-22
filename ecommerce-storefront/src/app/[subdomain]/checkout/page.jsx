@@ -8,6 +8,8 @@ import {
     ArrowLeft,
     CheckCircle,
     CreditCard,
+    Loader2,
+    Lock,
     MapPin,
     Phone,
     User,
@@ -81,6 +83,7 @@ export default function CheckoutPage({ params }) {
 
     const [promotionCode, setPromotionCode] = useState("");
     const [promotionPreview, setPromotionPreview] = useState(null);
+    const [promotionMessage, setPromotionMessage] = useState(null);
     const [policyAccepted, setPolicyAccepted] = useState(false);
     const checkoutBranding = useMemo(() => theme.checkoutBranding || {}, [theme.checkoutBranding]);
 
@@ -127,6 +130,16 @@ export default function CheckoutPage({ params }) {
             });
         });
     }, [cartItems, customerId, subdomain]);
+
+    useEffect(() => {
+        const pendingCode = sessionStorage.getItem('shopforall_pending_promo');
+        if (pendingCode) {
+            queueMicrotask(() => {
+                setPromotionCode(pendingCode);
+                setPromotionMessage({ type: 'info', text: 'Coupon copied from cart. Apply it to validate before placing your order.' });
+            });
+        }
+    }, []);
 
     // =========================================
     // FETCH PRODUCTS
@@ -205,9 +218,11 @@ export default function CheckoutPage({ params }) {
             );
 
             setPromotionPreview(data.data);
+            setPromotionMessage({ type: 'success', text: data.data?.freeShipping ? 'Coupon applied with free shipping.' : 'Coupon applied successfully.' });
             toast.success("Coupon applied");
         } catch (error) {
             setPromotionPreview(null);
+            setPromotionMessage({ type: 'error', text: error.response?.data?.error || 'Coupon is not valid for this order.' });
             toast.error(error.response?.data?.error || "Coupon is not valid");
         }
     };
@@ -401,6 +416,8 @@ export default function CheckoutPage({ params }) {
 
             setIsSuccess(true);
 
+            sessionStorage.removeItem('shopforall_pending_promo');
+
             clearCart();
 
             toast.success(
@@ -409,7 +426,7 @@ export default function CheckoutPage({ params }) {
 
         } catch (error) {
 
-            console.log("FULL ERROR:", error);
+            console.error("Checkout order placement failed:", error);
 
             toast.error(
                 error.response?.data?.error ||
@@ -517,7 +534,7 @@ export default function CheckoutPage({ params }) {
     // MAIN UI
     // =========================================
     return (
-        <div className="sf-page">
+        <div className="sf-page pb-28 lg:pb-0">
 
             <div className="sf-shell-wide py-8 sm:py-10">
 
@@ -539,16 +556,30 @@ export default function CheckoutPage({ params }) {
                     </div>
                 )}
 
-                <Link
-                    href="/cart"
-                    className="mb-6 inline-flex items-center text-sm font-bold text-slate-500 transition hover:text-[var(--sf-accent)]"
-                >
-                    <ArrowLeft
-                        size={16}
-                        className="mr-2"
-                    />
-                    Back to Cart
-                </Link>
+                <div className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <Link
+                            href="/cart"
+                            className="mb-4 inline-flex items-center text-sm font-bold text-slate-500 transition hover:text-[var(--sf-accent)]"
+                        >
+                            <ArrowLeft
+                                size={16}
+                                className="mr-2"
+                            />
+                            Back to Cart
+                        </Link>
+                        <p className="sf-kicker">Checkout</p>
+                        <h1 className="sf-heading mt-1 text-3xl sm:text-4xl">Complete your order</h1>
+                        <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
+                            Confirm delivery details, review your items, and place the order securely.
+                        </p>
+                    </div>
+                    <div className="grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-3">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><Lock size={14} className="text-emerald-600" /> Secure</span>
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><CreditCard size={14} className="text-[var(--sf-accent)]" /> COD</span>
+                        <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><Truck size={14} className="text-sky-600" /> Delivery</span>
+                    </div>
+                </div>
 
                 <form
                     onSubmit={handlePlaceOrder}
@@ -569,12 +600,13 @@ export default function CheckoutPage({ params }) {
 
                                 <div className="md:col-span-2">
 
-                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                                    <label htmlFor="checkout-full-name" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <User size={16} />
                                         Full Name
                                     </label>
 
                                     <input
+                                        id="checkout-full-name"
                                         required
                                         type="text"
                                         name="fullName"
@@ -590,12 +622,13 @@ export default function CheckoutPage({ params }) {
 
                                 <div>
 
-                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                                    <label htmlFor="checkout-email" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <Mail size={16} />
                                         Email
                                     </label>
 
                                     <input
+                                        id="checkout-email"
                                         required
                                         type="email"
                                         name="email"
@@ -611,12 +644,13 @@ export default function CheckoutPage({ params }) {
 
                                 <div>
 
-                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                                    <label htmlFor="checkout-phone" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <Phone size={16} />
                                         Phone Number
                                     </label>
 
                                     <input
+                                        id="checkout-phone"
                                         required
                                         type="tel"
                                         name="phone"
@@ -632,12 +666,13 @@ export default function CheckoutPage({ params }) {
 
                                 <div className="md:col-span-2">
 
-                                    <label className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                                    <label htmlFor="checkout-address" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <MapPin size={16} />
                                         Full Address
                                     </label>
 
                                     <textarea
+                                        id="checkout-address"
                                         required
                                         rows={4}
                                         name="address"
@@ -653,11 +688,12 @@ export default function CheckoutPage({ params }) {
 
                                 <div className="md:col-span-2">
 
-                                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                                    <label htmlFor="checkout-city" className="mb-2 block text-sm font-bold text-slate-700">
                                         City / District
                                     </label>
 
                                     <input
+                                        id="checkout-city"
                                         required
                                         type="text"
                                         name="city"
@@ -750,11 +786,19 @@ export default function CheckoutPage({ params }) {
                         <div className="sticky top-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
 
                             {/* HEADER */}
-                            <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-indigo-50/60 p-6 sm:p-7">
+                            <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-teal-50/70 p-6 sm:p-7">
 
-                                <h2 className="text-2xl font-black text-slate-950">
-                                    Order Summary
-                                </h2>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="sf-kicker">Review</p>
+                                        <h2 className="mt-1 text-2xl font-black text-slate-950">
+                                            Order Summary
+                                        </h2>
+                                    </div>
+                                    <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[var(--sf-accent)] shadow-sm">
+                                        {cartItems.length} item{cartItems.length === 1 ? '' : 's'}
+                                    </span>
+                                </div>
 
                             </div>
 
@@ -894,15 +938,17 @@ export default function CheckoutPage({ params }) {
                             <div className="border-t border-slate-200 p-6 sm:p-7">
 
                                 <div className="mb-6">
-                                    <label className="mb-2 block text-sm font-bold text-slate-700">
+                                    <label htmlFor="checkout-coupon-code" className="mb-2 block text-sm font-bold text-slate-700">
                                         Coupon Code
                                     </label>
                                     <div className="flex gap-2">
                                         <input
+                                            id="checkout-coupon-code"
                                             type="text"
                                             value={promotionCode}
                                             onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
                                             placeholder="SAVE10"
+                                            aria-describedby={promotionMessage ? 'checkout-coupon-feedback' : undefined}
                                             className="sf-field min-w-0 flex-1 uppercase"
                                         />
                                         <button
@@ -913,6 +959,17 @@ export default function CheckoutPage({ params }) {
                                             Apply
                                         </button>
                                     </div>
+                                    {promotionMessage && (
+                                        <p id="checkout-coupon-feedback" className={`mt-2 rounded-xl px-3 py-2 text-xs font-bold ${
+                                            promotionMessage.type === 'error'
+                                                ? 'bg-red-50 text-red-700'
+                                                : promotionMessage.type === 'success'
+                                                    ? 'bg-emerald-50 text-emerald-700'
+                                                    : 'bg-slate-50 text-slate-600'
+                                        }`}>
+                                            {promotionMessage.text}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-4 text-sm">
@@ -969,8 +1026,13 @@ export default function CheckoutPage({ params }) {
 
                                 </div>
 
-                                <label className="mt-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                                <label className={`mt-6 flex items-start gap-3 rounded-2xl border p-4 text-sm font-semibold transition ${
+                                    policyAccepted
+                                        ? 'border-[var(--sf-accent)] bg-[var(--sf-accent-bg)] text-slate-700'
+                                        : 'border-slate-200 bg-slate-50 text-slate-600'
+                                }`}>
                                     <input
+                                        id="checkout-policy-consent"
                                         type="checkbox"
                                         checked={policyAccepted}
                                         onChange={(event) => setPolicyAccepted(event.target.checked)}
@@ -979,7 +1041,7 @@ export default function CheckoutPage({ params }) {
                                     <span>
                                         I agree to this store&apos;s policies before placing my order.
                                         <span className="mt-1 block text-xs font-medium text-slate-500">
-                                            Review the policy sections below or open the full policy pages from the footer.
+                                            Review the policy sections below. This confirms you understand delivery, refund, and privacy terms.
                                         </span>
                                     </span>
                                 </label>
@@ -990,21 +1052,31 @@ export default function CheckoutPage({ params }) {
                                     className="sf-btn sf-btn-primary mt-7 w-full py-5 text-lg disabled:opacity-50"
                                     style={{ borderRadius: 'var(--sf-checkout-radius)' }}
                                 >
-                                    {loading
-                                        ? "Processing..."
-                                        : "Place Order"}
+                                    {loading ? (
+                                        <>
+                                            <Loader2 size={20} className="animate-spin" />
+                                            Processing order
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Lock size={18} />
+                                            Place Order
+                                        </>
+                                    )}
                                 </button>
 
-                                <p className="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-500">
-
-                                    <ShieldCheck
-                                        size={16}
-                                        className="text-emerald-500"
-                                    />
-
-                                    {checkoutBranding.trustMessage || 'Secure Checkout'}
-
-                                </p>
+                                <div className="mt-5 grid gap-3 text-sm font-semibold text-slate-600">
+                                    <p className="flex items-center justify-center gap-2">
+                                        <ShieldCheck
+                                            size={16}
+                                            className="text-emerald-500"
+                                        />
+                                        {checkoutBranding.trustMessage || 'Secure Checkout'}
+                                    </p>
+                                    <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-emerald-800">
+                                        Cash on delivery order. You pay when the product arrives.
+                                    </p>
+                                </div>
 
                                 {visiblePolicies.length > 0 && (
                                     <div className="mt-6 border-t border-slate-200 pt-5">
@@ -1031,6 +1103,23 @@ export default function CheckoutPage({ params }) {
 
                         </div>
 
+                    </div>
+
+                    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+                        <div className="mx-auto flex max-w-xl items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Pay on delivery</p>
+                                <p className="text-xl font-black text-slate-950">৳ {totalAmount}</p>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading || !policyAccepted}
+                                className="sf-btn sf-btn-primary min-h-0 rounded-full px-5 py-3 text-sm disabled:opacity-50"
+                            >
+                                {loading ? <Loader2 size={17} className="animate-spin" /> : <Lock size={16} />}
+                                Place order
+                            </button>
+                        </div>
                     </div>
 
                 </form>

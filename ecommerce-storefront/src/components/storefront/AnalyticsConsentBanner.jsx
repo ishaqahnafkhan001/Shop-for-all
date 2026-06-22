@@ -1,25 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
     getAnalyticsConsent,
     setAnalyticsConsent
 } from "@/utils/analyticsTracker";
 
+const subscribeToConsentChanges = (callback) => {
+    if (typeof window === "undefined") return () => {};
+    window.addEventListener("scaleup-analytics-consent-changed", callback);
+    return () => window.removeEventListener("scaleup-analytics-consent-changed", callback);
+};
+
+const getServerConsentSnapshot = () => null;
+
 export default function AnalyticsConsentBanner() {
-    const [choice, setChoice] = useState(() => getAnalyticsConsent());
+    const choice = useSyncExternalStore(
+        subscribeToConsentChanges,
+        getAnalyticsConsent,
+        getServerConsentSnapshot
+    );
 
-    useEffect(() => {
-        const syncChoice = () => setChoice(getAnalyticsConsent());
-        window.addEventListener("scaleup-analytics-consent-changed", syncChoice);
-        return () => window.removeEventListener("scaleup-analytics-consent-changed", syncChoice);
-    }, []);
-
+    if (choice === null) return null;
     if (choice !== "unknown") return null;
 
     const choose = (value) => {
         setAnalyticsConsent(value);
-        setChoice(value);
     };
 
     return (

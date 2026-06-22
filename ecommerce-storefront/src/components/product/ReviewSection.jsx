@@ -5,10 +5,17 @@ import API from '@/api/api';
 import { MessageSquare, User, Star } from 'lucide-react';
 import { StarRow } from './ProductInfo';
 
+const formatReviewDate = (date) => new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+}).format(new Date(date));
+
 /* ─── Single review card ─────────────────────────────────────── */
 const ReviewCard = memo(function ReviewCard({ review }) {
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/60">
             <div className="mb-4 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-black uppercase text-slate-600">
@@ -17,16 +24,14 @@ const ReviewCard = memo(function ReviewCard({ review }) {
                     <div>
                         <h4 className="font-black text-slate-950">{review.name}</h4>
                         <span className="text-xs text-slate-500">
-                            {new Date(review.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric', month: 'long', day: 'numeric',
-                            })}
+                            {formatReviewDate(review.createdAt)}
                         </span>
                     </div>
                 </div>
                 <StarRow rating={review.rating} size={14} />
             </div>
             <p className="leading-6 text-slate-700">{review.comment}</p>
-        </div>
+        </article>
     );
 });
 
@@ -80,13 +85,16 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Star picker */}
             <div>
-                <label className="mb-2 block text-sm font-bold text-slate-700">Rating</label>
-                <div className="flex gap-2">
+                <p className="mb-2 block text-sm font-bold text-slate-700">Rating</p>
+                <div className="flex gap-2" role="radiogroup" aria-label="Review rating">
                     {[1, 2, 3, 4, 5].map(star => (
                         <button
                             key={star}
                             type="button"
+                            role="radio"
                             onClick={() => setNewReview(r => ({ ...r, rating: star }))}
+                            aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                            aria-checked={newReview.rating === star}
                             className="focus:outline-none transition-transform hover:scale-110"
                         >
                             <Star
@@ -100,8 +108,9 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
 
             {/* Comment */}
             <div>
-                <label className="mb-2 block text-sm font-bold text-slate-700">Comment</label>
+                <label htmlFor="product-review-comment" className="mb-2 block text-sm font-bold text-slate-700">Comment</label>
                 <textarea
+                    id="product-review-comment"
                     rows={4}
                     className="sf-field resize-none"
                     placeholder="Share your experience with this product..."
@@ -130,14 +139,21 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
 /* ─── Full section (form + list) ─────────────────────────────── */
 const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess }) {
     return (
-        <div className="mt-10 border-t border-slate-200 pt-8">
-            <h2 className="mb-6 flex items-center text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
-                <MessageSquare className="mr-3 text-[var(--sf-accent)]" size={28} />
-                Customer Reviews
-            </h2>
+        <section className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6 lg:p-7">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p className="sf-kicker">Social proof</p>
+                    <h2 className="mt-1 flex items-center text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
+                        <MessageSquare className="mr-3 text-[var(--sf-accent)]" size={28} />
+                        Customer Reviews
+                    </h2>
+                </div>
+                <p className="text-sm font-semibold text-slate-500">
+                    {reviews.length} review{reviews.length === 1 ? '' : 's'}
+                </p>
+            </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                {/* Form */}
                 <div className="lg:col-span-1">
                     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                         <h3 className="mb-5 text-xl font-black text-slate-950">Write a Review</h3>
@@ -150,22 +166,21 @@ const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, r
                     </div>
                 </div>
 
-                {/* List */}
                 <div className="lg:col-span-2">
                     {reviews.length > 0 ? (
                         <div className="space-y-4">
                             {reviews.map(review => <ReviewCard key={review._id} review={review} />)}
                         </div>
                     ) : (
-                        <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 py-12">
+                        <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
                             <MessageSquare size={48} className="mb-4 text-slate-300" />
                             <h3 className="mb-2 text-xl font-black text-slate-950">No reviews yet</h3>
-                            <p className="max-w-sm text-center text-slate-500">Be the first to share your experience!</p>
+                            <p className="max-w-sm text-slate-500">Be the first to share your experience and help future customers buy with confidence.</p>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </section>
     );
 });
 
