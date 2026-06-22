@@ -27,6 +27,50 @@ const allowedThemeKeys = [
     'policies'
 ];
 
+const URL_FIELD_PATTERN = /(url|href|link|image|images|logo|favicon)$/i;
+const UNSAFE_URL_PATTERN = /^(javascript|data|vbscript):/i;
+
+const cleanTextValue = (value = '') => String(value)
+    .replace(/\0/g, '')
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .trim();
+
+const sanitizeUrlValue = (value = '') => {
+    const raw = cleanTextValue(value).slice(0, 1000);
+    if (!raw) return '';
+
+    const compact = raw.replace(/[\u0000-\u001F\u007F\s]+/g, '');
+    if (UNSAFE_URL_PATTERN.test(compact)) return '#';
+    if (raw.startsWith('#')) return raw;
+    if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(raw)) return raw;
+    if (/^tel:\+?[0-9().\-\s]{4,30}$/i.test(raw)) return raw;
+
+    return '#';
+};
+
+const sanitizeThemeValue = (value, key = '') => {
+    if (Array.isArray(value)) {
+        return value.map(item => sanitizeThemeValue(item, key));
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.entries(value).reduce((acc, [childKey, childValue]) => {
+            acc[childKey] = sanitizeThemeValue(childValue, childKey);
+            return acc;
+        }, {});
+    }
+
+    if (typeof value !== 'string') return value;
+
+    return URL_FIELD_PATTERN.test(key)
+        ? sanitizeUrlValue(value)
+        : cleanTextValue(value);
+};
+
+const sanitizeThemePayload = (theme = {}) => sanitizeThemeValue(theme);
+
 const pickThemePayload = (payload = {}) => {
     return allowedThemeKeys.reduce((acc, key) => {
         if (payload[key] !== undefined) acc[key] = payload[key];
@@ -55,7 +99,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
     try {
         const { theme = {}, customDomain, storewideDiscount } = req.body;
         const update = {};
-        const cleanTheme = pickThemePayload(theme);
+        const cleanTheme = sanitizeThemePayload(pickThemePayload(theme));
         if (cleanTheme.homepageSections !== undefined) {
             cleanTheme.homepageSections = normalizeDynamicSections(cleanTheme.homepageSections);
         }

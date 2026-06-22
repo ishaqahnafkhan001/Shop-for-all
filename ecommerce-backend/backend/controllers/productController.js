@@ -10,6 +10,9 @@ const {
     generateNewOptionCombos,
     normalizeProductOptions
 } = require('../helpers/variantMatrix');
+const {
+    PUBLIC_PRODUCT_CARD_PROJECT
+} = require('../services/publicProductSerializer');
 
 const slugify = (value = '') =>
     value
@@ -290,7 +293,7 @@ exports.getShopProducts = async (req, res) => {
         };
 
         // ✨ THE FIX: Add Product.distinct to fetch all categories for this shop
-        const summaryProjection = {
+        const adminSummaryProjection = {
             title: 1,
             slug: 1,
             category: 1,
@@ -307,6 +310,9 @@ exports.getShopProducts = async (req, res) => {
             totalStock: { $sum: '$variants.stock' },
             variantCount: { $size: { $ifNull: ['$variants', []] } }
         };
+        const summaryProjection = isStorefrontRequest
+            ? PUBLIC_PRODUCT_CARD_PROJECT
+            : adminSummaryProjection;
 
         const [products, total, uniqueCategories] = await Promise.all([
             Product.aggregate([

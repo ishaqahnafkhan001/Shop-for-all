@@ -11,6 +11,13 @@ const { evaluatePromotion } = require('../services/promotionService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
 const ConsentLog = require('../models/ConsentLog');
+const {
+    PUBLIC_PRODUCT_CARD_PROJECT,
+    sanitizePublicProduct
+} = require('../services/publicProductSerializer');
+const {
+    sanitizeOrderForCustomer
+} = require('../services/orderPrivacyService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
@@ -421,7 +428,7 @@ exports.createPublicOrder = async (req, res) => {
             message: 'Order placed successfully',
             orderId: newOrder._id,
             total: totalAmount,
-            order: newOrder
+            order: sanitizeOrderForCustomer(newOrder)
         });
 
     } catch (err) {
@@ -487,7 +494,7 @@ exports.getPublicShopDetails = async (req, res) => {
                         category: 1,
                         collections: 1,
                         images: { $slice: ['$images', 1] },
-                        pricing: 1,
+                        pricing: PUBLIC_PRODUCT_CARD_PROJECT.pricing,
                         averageRating: 1,
                         numReviews: 1,
                         totalStock: { $sum: '$variants.stock' },
@@ -536,7 +543,7 @@ exports.getPublicProduct = async (req, res) => {
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
-        res.status(200).json(product);
+        res.status(200).json(sanitizePublicProduct(product));
     } catch (err) {
         console.error("Error fetching single product:", err);
         res.status(500).json({ error: "Server error" });
@@ -613,7 +620,11 @@ exports.trackPublicOrder = async (req, res) => {
             _id: order._id,
             status: order.status,
             createdAt: order.createdAt,
-            items: order.items,
+            items: (order.items || []).map(item => {
+                const clean = item && typeof item === 'object' ? { ...item } : item;
+                if (clean && typeof clean === 'object') delete clean.buyingPrice;
+                return clean;
+            }),
             shippingAddress: order.shipping?.address?.city || order.shipping?.zone || '',
             shippingZone: order.shipping?.zone,
             shippingCost: order.pricing?.shipping || order.shipping?.cost || 0,

@@ -1,6 +1,4 @@
 exports.getOrderStatusMessage = ({ customerName, orderId, status }) => {
-
-    console.log(`Generating order status message for ${customerName} (Order ID: ${orderId}) with status: ${status}`);
     const messages = {
         Pending: `Your order has been placed and is currently pending.`,
         Confirmed: `Good news! Your order has been confirmed.`,

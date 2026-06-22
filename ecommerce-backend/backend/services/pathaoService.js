@@ -89,9 +89,6 @@ exports.getPathaoAreas = async (token, zoneId) => {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        // 🔍 DEBUG: Print the exact response from Pathao so you can see it in your terminal
-        console.log(`RAW PATHAO AREA RESPONSE FOR ZONE ${zoneId}:`, JSON.stringify(data, null, 2));
-
         // Safely extract the array. If the zone has no areas, Pathao might omit the array entirely.
         let areas = [];
         if (Array.isArray(data?.data?.data)) {

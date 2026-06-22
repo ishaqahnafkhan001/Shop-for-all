@@ -31,6 +31,46 @@ test('public order tracking requires tenant and phone verification', () => {
     assert.match(block, /\.select\('items pricing shipping status createdAt'\)/);
 });
 
+test('customer-facing product and order responses hide vendor cost fields', () => {
+    const productSerializer = read('services/publicProductSerializer.js');
+    const orderSerializer = read('services/orderPrivacyService.js');
+    const storeController = read('controllers/storeController.js');
+    const publicController = read('controllers/publicController.js');
+    const orderController = read('controllers/orderController.js');
+
+    assert.match(productSerializer, /delete clean\.comments/);
+    assert.match(productSerializer, /delete clean\.inventory/);
+    assert.match(productSerializer, /delete clean\.tax/);
+    assert.doesNotMatch(productSerializer, /buyingPrice/);
+    assert.match(orderSerializer, /delete clean\.buyingPrice/);
+    assert.match(storeController, /sanitizePublicProduct\(product\)/);
+    assert.match(storeController, /sanitizePublicProducts\(products\)/);
+    assert.match(publicController, /sanitizeOrderForCustomer\(newOrder\)/);
+    assert.match(publicController, /delete clean\.buyingPrice/);
+    assert.match(orderController, /sanitizeOrdersForCustomer\(orders\)/);
+    assert.match(orderController, /sanitizeOrderForCustomer\(order\)/);
+});
+
+test('store builder theme save sanitizes scriptable URLs', () => {
+    const controller = read('controllers/storeBuilderController.js');
+
+    assert.match(controller, /sanitizeThemePayload/);
+    assert.match(controller, /UNSAFE_URL_PATTERN/);
+    assert.match(controller, /javascript\|data\|vbscript/);
+    assert.match(controller, /cleanTheme = sanitizeThemePayload\(pickThemePayload\(theme\)\)/);
+});
+
+test('purchase order receiving is tenant scoped', () => {
+    const controller = read('controllers/purchaseOrderController.js');
+
+    assert.match(controller, /Supplier\.exists\(\{[\s\S]*shop_id:\s*shopId/);
+    assert.match(controller, /Product\.exists\(\{[\s\S]*shop_id:\s*shopId[\s\S]*'variants\._id'/);
+    assert.match(controller, /PurchaseOrder\.findOne\(\{[\s\S]*_id:\s*req\.params\.id[\s\S]*shop_id:\s*shopId/);
+    assert.match(controller, /Product\.findOne\(\{[\s\S]*_id:\s*item\.productId[\s\S]*shop_id:\s*shopId/);
+    assert.doesNotMatch(controller, /PurchaseOrder\.findById\(req\.params\.id\)/);
+    assert.doesNotMatch(controller, /Product\.findById\(item\.productId\)/);
+});
+
 test('security middleware and rate limits are mounted', () => {
     const source = read('app.js');
 

@@ -12,8 +12,6 @@ exports.sendEmailToCustomer = async (req, res) => {
     try {
         const { email, name, subject, message, shopName, orderDetails } = req.body;
 
-        console.log(email, name, subject, message, shopName);
-
         if (!email || !subject || !message) {
             return res.status(400).json({
                 success: false,
@@ -59,7 +57,6 @@ exports.sendEmailToCustomer = async (req, res) => {
 exports.sendOrderStatusEmail = async (req, res) => {
     try {
         const { email, name, subject, message, shopName, orderDetails } = req.body;
-        console.log("Order Email Payload:", { email, name, subject, message, shopName });
         if (!email || !subject || !message) {
             return res.status(400).json({
                 success: false,
@@ -67,11 +64,6 @@ exports.sendOrderStatusEmail = async (req, res) => {
             });
         }
 
-        console.log("Shop Name in Order Email Controller:", shopName,
-            "Email in Order Email Controller:", email,
-            "Name in Order Email Controller:", name,
-            "Subject in Order Email Controller:", subject,
-            "Message in Order Email Controller:", message);
         const senderName = shopName || "Store Administration";
         const content = orderDetails && !String(message).includes('Order details')
             ? `${message}\n\n${orderDetails}`

@@ -257,8 +257,7 @@ exports.registerVendor = async (req, res) => {
         console.error('Register Vendor Error:', err);
 
         res.status(500).json({
-            error: 'Registration failed',
-            dev_details: err.message
+            error: 'Registration failed'
         });
     } finally {
         session.endSession();
@@ -425,14 +424,12 @@ exports.registerCustomer = async (req, res) => {
 
         if (err.code === 11000 && err.keyPattern?.email) {
             return res.status(409).json({
-                error: 'Customer email uniqueness is still using a legacy global index. Restart the backend so the tenant-scoped email index migration can run, then try again.',
-                dev_details: err.message
+                error: 'This email is already registered for this store.'
             });
         }
 
         res.status(500).json({
-            error: 'Registration failed.',
-            dev_details: err.message
+            error: 'Registration failed.'
         });
     } finally {
         session.endSession();
@@ -526,7 +523,6 @@ exports.login = async (req, res) => {
 
             return res.status(200).json({
                 message: 'Login successful',
-                token,
                 user: {
                     id: superUser._id,
                     fullName: superUser.fullName,
@@ -586,7 +582,6 @@ exports.login = async (req, res) => {
 
         res.status(200).json({
             message: 'Login successful',
-            token,
             user: {
                 id: user._id,
                 fullName: user.fullName,

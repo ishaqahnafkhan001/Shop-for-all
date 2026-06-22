@@ -156,20 +156,7 @@ exports.evaluatePromotion = async ({
     }).session(session || null);
 
     const activeCheck = isPromotionActive(promotion);
-    console.log('PROMOTION DEBUG:', {
-        shopId,
-        code: cleanCode,
-        found: Boolean(promotion),
-        promotionShop: promotion?.shop_id,
-        promotionCode: promotion?.code,
-        isActive: promotion?.isActive,
-        startsAt: promotion?.startsAt,
-        expiresAt: promotion?.expiresAt,
-        usageLimit: promotion?.usageLimit,
-        usageCount: promotion?.usageCount,
-        now: new Date()
-    });
-    
+
     if (!activeCheck.active) {
         return {
             valid: false,

@@ -13,6 +13,10 @@ const { notifyNewOrder } = require('../services/shopEventNotificationService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
 const ConsentLog = require('../models/ConsentLog');
 const { enqueueJob } = require('../services/jobQueueService');
+const {
+    sanitizeOrderForCustomer,
+    sanitizeOrdersForCustomer
+} = require('../services/orderPrivacyService');
 
 
 
@@ -95,7 +99,7 @@ exports.getMyOrders = async (req, res) => {
         res.status(200).json({
             success: true,
             count: orders.length,
-            data: orders
+            data: sanitizeOrdersForCustomer(orders)
         });
     } catch (error) {
         console.error("Error fetching customer orders:", error);
@@ -129,7 +133,7 @@ exports.getOrderById = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: order
+            data: sanitizeOrderForCustomer(order)
         });
     } catch (error) {
         console.error("Error fetching single order:", error);
@@ -146,12 +150,10 @@ exports.createOrder = async (req, res) => {
 
     try {
         const { error, value } = createOrderSchema.validate(req.body);
-        console.log("Validation Result:", { error, value });
         if (error) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
-        console.log(JSON.stringify(req.body.items, null, 2));
         const { items, shipping, payment, promotionCode, source, consent } = value;
         const shopId = req.tenantId;
         const userId = req.user?._id;
@@ -292,8 +294,6 @@ exports.createOrder = async (req, res) => {
             status: 'Pending',
             source: source || 'direct'
         }], { session });
-        console.log("Order Created:", order);
-
         await ConsentLog.create([{
             shop_id: shopId,
             customer_id: userId,
@@ -485,7 +485,6 @@ exports.updateOrderStatus = async (req, res) => {
         if (error) {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
-        console.log("hello")
 
         const shopId = req.tenantId;
         const { status } = value;

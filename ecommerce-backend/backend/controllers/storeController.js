@@ -6,22 +6,14 @@ const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
+const {
+    PUBLIC_PRODUCT_CARD_PROJECT,
+    sanitizePublicProduct,
+    sanitizePublicProducts
+} = require('../services/publicProductSerializer');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
-
-const PRODUCT_CARD_PROJECT = {
-    title: 1,
-    slug: 1,
-    category: 1,
-    collections: 1,
-    images: { $slice: ['$images', 1] },
-    pricing: 1,
-    averageRating: 1,
-    numReviews: 1,
-    totalStock: { $sum: '$variants.stock' },
-    variantCount: { $size: { $ifNull: ['$variants', []] } }
-};
 
 const getManualSectionProductIds = (sections = []) => {
     const idsBySection = {};
@@ -121,7 +113,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 { $sort: sortQuery },
                 { $skip: skip },
                 { $limit: limit },
-                { $project: PRODUCT_CARD_PROJECT }
+                { $project: PUBLIC_PRODUCT_CARD_PROJECT }
             ]),
             Product.countDocuments(query),
             Product.distinct('category', {
@@ -156,7 +148,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                         status: 'Published'
                     }
                 },
-                { $project: PRODUCT_CARD_PROJECT }
+                { $project: PUBLIC_PRODUCT_CARD_PROJECT }
             ]);
             const productMap = new Map(manualProducts.map(product => [String(product._id), product]));
             sectionProducts = Object.entries(manualIdsBySection).reduce((acc, [sectionId, productIds]) => {
@@ -226,7 +218,7 @@ exports.getStoreProducts = async (req, res) => {
 
         res.status(200).json({
             count: products.length,
-            products
+            products: sanitizePublicProducts(products)
         });
     } catch (err) {
         res.status(500).json({ error: "Error fetching products." });
@@ -247,7 +239,7 @@ exports.getSingleProduct = async (req, res) => {
             return res.status(404).json({ error: "Product not found." });
         }
 
-        res.status(200).json(product);
+        res.status(200).json(sanitizePublicProduct(product));
     } catch (err) {
         res.status(500).json({ error: "Error fetching product details." });
     }
@@ -274,7 +266,7 @@ exports.getBatchProducts = async (req, res) => {
             .select('title slug category collections images pricing variants averageRating numReviews')
             .lean({ virtuals: true });
 
-        res.status(200).json({ success: true, data: products });
+        res.status(200).json({ success: true, data: sanitizePublicProducts(products) });
     } catch (err) {
         res.status(500).json({ success: false, error: "Error fetching products." });
     }
