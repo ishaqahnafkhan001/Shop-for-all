@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const readProject = (file) => fs.readFileSync(path.join(root, '../..', file), 'utf8');
 
 test('public product lookup is tenant scoped and storefront safe', () => {
     const source = read('controllers/publicController.js');
@@ -36,9 +37,46 @@ test('security middleware and rate limits are mounted', () => {
     assert.match(source, /app\.use\(helmet\(\)\)/);
     assert.match(source, /sanitizeRequest/);
     assert.match(source, /app\.use\(generalLimiter\)/);
+    assert.match(source, /app\.use\(csrfProtection\)/);
     assert.match(source, /app\.use\('\/api\/auth',\s*authLimiter,\s*authRoutes\)/);
     assert.match(source, /app\.use\('\/api\/public',\s*publicWriteLimiter,\s*publicRoutes\)/);
     assert.match(source, /app\.use\('\/api\/analytics',\s*publicWriteLimiter,\s*analyticsEventRoutes\)/);
+});
+
+test('csrf token route is mounted and unsafe clients attach csrf header', () => {
+    const routes = read('routes/authRoutes.js');
+    const adminApi = readProject('ecommerce-admin/src/api/api.js');
+    const storefrontApi = readProject('ecommerce-storefront/src/api/api.js');
+
+    assert.match(routes, /'\/csrf-token'[\s\S]*issueCsrfToken/);
+    assert.match(adminApi, /x-csrf-token/);
+    assert.match(adminApi, /\/auth\/csrf-token/);
+    assert.match(storefrontApi, /x-csrf-token/);
+    assert.match(storefrontApi, /\/auth\/csrf-token/);
+});
+
+test('public health endpoint is redacted for production safety', () => {
+    const source = read('app.js');
+    const start = source.indexOf("app.get('/api/health'");
+    const end = source.indexOf('app.use(csrfProtection)');
+    const block = source.slice(start, end);
+
+    assert.match(block, /status:\s*'ok'/);
+    assert.match(block, /timestamp/);
+    assert.match(block, /uptime/);
+    assert.doesNotMatch(block, /mail/);
+    assert.doesNotMatch(block, /adminEmailUser|orderMail|resendFrom|hasResendApiKey|smtpFallbackConfigured/);
+    assert.doesNotMatch(block, /process\.env\.(ADMIN_EMAIL_USER|ORDER_MAIL|RESEND_FROM|RESEND_API_KEY|EMAIL_PASS)/);
+});
+
+test('storefront next image config restricts remote optimization hosts', () => {
+    const config = readProject('ecommerce-storefront/next.config.mjs');
+    const helper = readProject('ecommerce-storefront/src/lib/imageDomains.js');
+
+    assert.match(config, /hostname:\s*'res\.cloudinary\.com'/);
+    assert.doesNotMatch(config, /hostname:\s*['"]\*\*['"]/);
+    assert.match(helper, /res\.cloudinary\.com/);
+    assert.match(helper, /shouldUseUnoptimizedImage/);
 });
 
 test('admin AI and banner routes require RBAC permissions', () => {
@@ -92,17 +130,27 @@ test('vendor verification routes are protected and use NID upload middleware', (
     const adminRoutes = read('routes/adminRoutes.js');
     const superAdminRoutes = read('routes/superAdminRoutes.js');
     const service = read('services/vendorVerificationService.js');
+    const privacyService = read('services/vendorVerificationPrivacyService.js');
+    const cloudinary = read('config/cloudinary.js');
 
     assert.match(adminRoutes, /'\/vendor-verification\/status'[\s\S]*protect[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*getVendorVerificationStatus/);
     assert.match(adminRoutes, /'\/vendor-verification\/submit'[\s\S]*protect[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('settings'\)[\s\S]*vendorNidUpload[\s\S]*submitVendorVerification/);
+    assert.match(adminRoutes, /'\/vendor-verification\/document\/:type'[\s\S]*getVendorVerificationDocument/);
     assert.match(adminRoutes, /name:\s*'nidFront',\s*maxCount:\s*1/);
     assert.match(adminRoutes, /name:\s*'nidBack',\s*maxCount:\s*1/);
     assert.match(superAdminRoutes, /router\.use\(authorize\('SuperAdmin'\)\)/);
     assert.match(superAdminRoutes, /router\.get\('\/vendor-verifications',\s*getVendorVerifications\)/);
+    assert.match(superAdminRoutes, /router\.get\('\/vendor-verifications\/:id\/document\/:type',\s*getSuperAdminVendorVerificationDocument\)/);
     assert.match(superAdminRoutes, /router\.patch\('\/vendor-verifications\/:id\/approve',\s*approveVendorVerification\)/);
     assert.match(superAdminRoutes, /router\.patch\('\/vendor-verifications\/:id\/reject',\s*rejectVendorVerification\)/);
     assert.match(service, /VERIFICATION_DEADLINE_DAYS\s*=\s*20/);
+    assert.match(service, /REJECTED_NID_RETENTION_DAYS\s*=\s*180/);
     assert.match(service, /VERIFICATION_SUSPENSION_REASON/);
+    assert.match(privacyService, /delete sanitized\.nidFrontUrl/);
+    assert.match(privacyService, /maskNidNumber/);
+    assert.match(privacyService, /createSignedNidUrl/);
+    assert.match(cloudinary, /type:\s*'authenticated'/);
+    assert.match(cloudinary, /vendor_verifications\/nid/);
 });
 
 test('verification suspension blocks high-impact vendor mutations only after auth', () => {
@@ -192,4 +240,80 @@ test('announcements use soft archive lifecycle', () => {
     assert.match(routes, /router\.delete\('\/announcements\/:id',\s*archiveAnnouncement\)/);
     assert.match(controller, /announcement\.archived/);
     assert.doesNotMatch(controller, /PlatformAnnouncement\.findByIdAndDelete/);
+});
+
+test('privacy consent, analytics retention, and data requests are wired', () => {
+    const analyticsModel = read('models/AnalyticsEvent.js');
+    const consentModel = read('models/ConsentLog.js');
+    const dataRequestModel = read('models/DataRequest.js');
+    const orderController = read('controllers/orderController.js');
+    const publicController = read('controllers/publicController.js');
+    const storefrontRoutes = read('routes/storefrontRoutes.js');
+    const adminRoutes = read('routes/adminRoutes.js');
+    const checkout = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx');
+    const tracker = readProject('ecommerce-storefront/src/utils/analyticsTracker.js');
+
+    assert.match(analyticsModel, /RAW_ANALYTICS_RETENTION_DAYS\s*=\s*180/);
+    assert.match(analyticsModel, /expireAfterSeconds:\s*0/);
+    assert.match(consentModel, /checkout_policy/);
+    assert.match(dataRequestModel, /REQUEST_TYPES/);
+    assert.match(orderController, /ConsentLog\.create/);
+    assert.match(publicController, /Policy consent is required before checkout/);
+    assert.match(storefrontRoutes, /'\/:subdomain\/privacy\/data-requests'[\s\S]*protect[\s\S]*createCustomerDataRequest/);
+    assert.match(adminRoutes, /'\/privacy\/data-requests'[\s\S]*getAdminDataRequests/);
+    assert.match(checkout, /policyAccepted/);
+    assert.match(checkout, /checkoutPolicyAccepted:\s*true/);
+    assert.match(tracker, /ANALYTICS_CONSENT_KEY/);
+    assert.match(tracker, /canTrackAnalytics/);
+});
+
+test('request IDs, structured logging, and operations docs exist', () => {
+    const app = read('app.js');
+    const requestContext = read('middlewares/requestContext.js');
+    const errorHandler = read('middlewares/error.js');
+    const logger = read('services/logger.js');
+
+    assert.match(app, /app\.use\(requestContext\)/);
+    assert.match(requestContext, /x-request-id/);
+    assert.match(requestContext, /crypto\.randomUUID/);
+    assert.match(errorHandler, /logger\.error\('unhandled_error'/);
+    assert.match(logger, /SENSITIVE_KEYS/);
+    assert.match(logger, /\[REDACTED\]/);
+    assert.ok(fs.existsSync(path.join(root, '../../docs/operations/production-checklist.md')));
+    assert.ok(fs.existsSync(path.join(root, '../../docs/operations/backup-restore.md')));
+    assert.ok(fs.existsSync(path.join(root, '../../docs/operations/incident-runbook.md')));
+    assert.ok(fs.existsSync(path.join(root, '../../docs/operations/monitoring.md')));
+});
+
+test('mongo-backed queue, worker, and analytics rollups are available', () => {
+    const packageJson = read('package.json');
+    const jobModel = read('models/Job.js');
+    const queue = read('services/jobQueueService.js');
+    const worker = read('workers/index.js');
+    const rollup = read('scripts/runAnalyticsRollup.js');
+    const productMetric = read('models/ProductDailyMetric.js');
+    const shopMetric = read('models/ShopDailyMetric.js');
+    const shopNotifications = read('services/shopEventNotificationService.js');
+    const orderController = read('controllers/orderController.js');
+
+    assert.match(packageJson, /"worker":\s*"node workers\/index\.js"/);
+    assert.match(packageJson, /"rollup:analytics":\s*"node scripts\/runAnalyticsRollup\.js"/);
+    assert.match(jobModel, /JOB_STATUSES\s*=\s*\['queued', 'running', 'completed', 'failed', 'dead'\]/);
+    assert.match(jobModel, /status:[\s\S]*enum:\s*JOB_STATUSES/);
+    assert.match(queue, /findOneAndUpdate/);
+    assert.match(queue, /failJob/);
+    assert.match(worker, /claimNextJob/);
+    assert.match(worker, /processPathaoSyncJob/);
+    assert.match(rollup, /ProductDailyMetric\.updateOne/);
+    assert.match(rollup, /ShopDailyMetric\.updateOne/);
+    assert.match(productMetric, /conversionRate/);
+    assert.match(shopMetric, /deliveredRevenue/);
+    assert.match(shopNotifications, /enqueueJob/);
+    assert.match(orderController, /Pathao sync queued/);
+});
+
+test('ci workflow and test docs exist', () => {
+    assert.ok(fs.existsSync(path.join(root, '../../.github/workflows/ci.yml')));
+    assert.ok(fs.existsSync(path.join(root, '../../docs/testing.md')));
+    assert.ok(fs.existsSync(path.join(root, '.env.test.example')));
 });

@@ -9,6 +9,8 @@ const User = require('../models/User'); // We need this to create Guest customer
 const Promotion = require('../models/Promotion');
 const { evaluatePromotion } = require('../services/promotionService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
+const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
+const ConsentLog = require('../models/ConsentLog');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
@@ -50,7 +52,8 @@ exports.createPublicOrder = async (req, res) => {
             items,
             shippingCost,
             promotionCode,
-            source
+            source,
+            consent
         } = req.body;
 
         // =========================
@@ -66,6 +69,10 @@ exports.createPublicOrder = async (req, res) => {
 
         if (!Array.isArray(items) || items.length === 0) {
             throw new Error('Order must contain at least one item');
+        }
+
+        if (consent?.checkoutPolicyAccepted !== true) {
+            throw new Error('Policy consent is required before checkout.');
         }
 
         // =========================
@@ -219,11 +226,15 @@ exports.createPublicOrder = async (req, res) => {
                 throw new Error(`Selected variant for ${product.title} is not available.`);
             }
 
-            if (variant.stock < quantity) {
-                throw new Error(`Insufficient stock for ${product.title}`);
-            }
+            const stockUpdate = await decrementVariantStockAtomically({
+                product,
+                shopId: shop._id,
+                variantId: variant._id,
+                quantity,
+                session
+            });
 
-            const beforeStock = variant.stock;
+            const beforeStock = stockUpdate.beforeStock;
 
             const variantPrice = variant.pricing?.price ?? variant.priceOverride;
             const basePrice = Number.isFinite(Number(variantPrice))
@@ -270,10 +281,6 @@ exports.createPublicOrder = async (req, res) => {
 
             calculatedSubtotal += itemTotal;
 
-            // Deduct stock
-            variant.stock -= quantity;
-            await product.save({ session });
-
             logsToInsert.push({
                 shop_id: shop._id,
                 productId: product._id,
@@ -281,7 +288,7 @@ exports.createPublicOrder = async (req, res) => {
                 change: -quantity,
                 type: 'ORDER',
                 beforeStock,
-                afterStock: variant.stock,
+                afterStock: stockUpdate.afterStock,
                 user: orderCustomer._id,
                 note: 'Public Storefront Order'
             });
@@ -363,6 +370,17 @@ exports.createPublicOrder = async (req, res) => {
             source: source || 'storefront'
         }], { session });
 
+        await ConsentLog.create([{
+            shop_id: shop._id,
+            customer_id: orderCustomer._id,
+            order_id: newOrder._id,
+            type: 'checkout_policy',
+            version: consent.version || 'checkout_policy_v1',
+            acceptedAt: new Date(),
+            ip: req.ip || req.headers['x-forwarded-for'] || '',
+            userAgent: req.headers['user-agent'] || ''
+        }], { session });
+
         // =========================
         // PROMOTION USAGE COUNT
         // =========================
@@ -411,9 +429,10 @@ exports.createPublicOrder = async (req, res) => {
 
         console.error('Public Order Creation Error:', err);
 
-        return res.status(400).json({
+        return res.status(err.statusCode || 400).json({
             success: false,
-            error: err.message || 'Server error while placing order.'
+            error: err.message || 'Server error while placing order.',
+            ...(err.code ? { code: err.code } : {})
         });
 
     } finally {

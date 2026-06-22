@@ -43,6 +43,9 @@ const {
 const {
     trackPublicOrder
 } = require('../controllers/publicController');
+const {
+    createCustomerDataRequest
+} = require('../controllers/privacyController');
 
 // ======================================================
 // STORE INFO
@@ -132,6 +135,13 @@ router.get(
     '/:subdomain/track-order/:orderId',
     resolveTenant,
     trackPublicOrder
+);
+
+router.post(
+    '/:subdomain/privacy/data-requests',
+    resolveTenant,
+    protect,
+    createCustomerDataRequest
 );
 
 // =========================

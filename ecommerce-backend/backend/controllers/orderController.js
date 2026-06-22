@@ -4,20 +4,21 @@ const User = require('../models/User');
 const mongoose = require('mongoose');
 const { createOrderSchema, updateOrderStatusSchema } = require('../validations/orderValidation');
 const InventoryLog = require('../models/InventoryLog');
-const { getPathaoToken, createPathaoOrder } = require('../services/pathaoService');
 const Shop = require('../models/Shop'); // Make sure to import your Shop model
 const Promotion = require('../models/Promotion');
 const { evaluatePromotion } = require('../services/promotionService');
 const cache = require('../services/cacheService');
 const { logAudit } = require('../services/auditLogService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
+const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
+const ConsentLog = require('../models/ConsentLog');
+const { enqueueJob } = require('../services/jobQueueService');
 
 
 
 exports.syncOrderToPathao = async (req, res) => {
     try {
         const { id } = req.params;
-        const { recipient_name, recipient_phone, recipient_address, item_weight, amount_to_collect, special_instruction } = req.body;
 
         // 1. Identify the Vendor Shop
         const shopId = req.tenantId;
@@ -36,49 +37,42 @@ exports.syncOrderToPathao = async (req, res) => {
         const order = await Order.findOne({ _id: id, shop_id: shopId, isDeleted: false });
         if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
         if (order.isPathaoSynced) return res.status(400).json({ success: false, error: 'Order already synced to Pathao' });
-
-        // 3. Determine Credentials (BYOC or Platform Default)
-        const customCreds = shop.pathaoCredentials && shop.pathaoCredentials.client_id ? shop.pathaoCredentials : null;
-
-        // Generate token using the appropriate credentials
-        const token = await getPathaoToken(customCreds);
-
-        // 4. Prepare the Pathao Payload
-        const pathaoPayload = {
-            store_id: shop.pathaoStoreId, // Vendor's specific physical location ID
-            merchant_order_id: order._id.toString(),
-            recipient_name,
-            recipient_phone,
-            recipient_address,
-            delivery_type: 48, // 48 Hours Normal Delivery
-            item_type: 2,      // 2 = Parcel
-            special_instruction: special_instruction || '',
-            item_quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
-            item_weight: item_weight || "0.5",
-            amount_to_collect: amount_to_collect !== undefined ? amount_to_collect : (order.payment?.method === 'COD' ? order.pricing.total : 0)
-        };
-
-        // 5. Create the Order in Pathao (Pass the isLive flag if they are using custom credentials)
-        const isLive = customCreds ? customCreds.isLive : false;
-        const pathaoRes = await createPathaoOrder(token, pathaoPayload, isLive);
-
-        // 6. Update Local Database on Success
-        if (pathaoRes.type === 'success') {
-            order.pathaoConsignmentId = pathaoRes.data.consignment_id;
-            order.isPathaoSynced = true;
-
-            // Auto-update status to Confirmed if it was still Pending
-            if (order.status === 'Pending') order.status = 'Confirmed';
-            await order.save();
-
-            return res.status(200).json({
+        if (['queued', 'syncing'].includes(order.pathaoSyncStatus)) {
+            return res.status(202).json({
                 success: true,
-                data: order,
-                message: 'Successfully synced to Pathao!'
+                status: order.pathaoSyncStatus,
+                message: 'Pathao sync is already queued'
             });
-        } else {
-            throw new Error('Pathao sync failed');
         }
+
+        const job = await enqueueJob({
+            queue: 'courier',
+            name: 'pathao.sync_order',
+            shop_id: shopId,
+            payload: {
+                orderId: order._id,
+                request: {
+                    recipient_name: req.body.recipient_name,
+                    recipient_phone: req.body.recipient_phone,
+                    recipient_address: req.body.recipient_address,
+                    item_weight: req.body.item_weight,
+                    amount_to_collect: req.body.amount_to_collect,
+                    special_instruction: req.body.special_instruction
+                }
+            }
+        });
+
+        order.pathaoSyncStatus = 'queued';
+        order.pathaoLastError = '';
+        await order.save();
+
+        return res.status(202).json({
+            success: true,
+            status: 'queued',
+            jobId: job?._id,
+            data: order,
+            message: 'Pathao sync queued'
+        });
 
     } catch (err) {
         console.error("Pathao Sync Error:", err);
@@ -158,7 +152,7 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
         console.log(JSON.stringify(req.body.items, null, 2));
-        const { items, shipping, payment, promotionCode, source } = value;
+        const { items, shipping, payment, promotionCode, source, consent } = value;
         const shopId = req.tenantId;
         const userId = req.user?._id;
 
@@ -187,17 +181,16 @@ exports.createOrder = async (req, res) => {
             const variant = product.variants.id(item.variantId);
             if (!variant) throw new Error(`Variant not found for product: ${product.title}`);
 
-            if (variant.stock < item.quantity) {
-                throw new Error(`Insufficient stock for "${product.title}" (SKU: ${variant.sku}). Available: ${variant.stock}`);
-            }
+            const stockUpdate = await decrementVariantStockAtomically({
+                product,
+                shopId,
+                variantId: variant._id,
+                quantity: item.quantity,
+                session
+            });
 
-            const beforeStock = variant.stock;
-
-            // ✅ Deduct stock
-            variant.stock -= item.quantity;
-            await product.save({ session });
-
-            const afterStock = variant.stock;
+            const beforeStock = stockUpdate.beforeStock;
+            const afterStock = stockUpdate.afterStock;
 
             // ✅ Price calculation: variant override takes priority over base price
             const basePrice = variant.pricing?.price ?? variant.priceOverride ?? product.pricing.sellingPrice;
@@ -301,6 +294,17 @@ exports.createOrder = async (req, res) => {
         }], { session });
         console.log("Order Created:", order);
 
+        await ConsentLog.create([{
+            shop_id: shopId,
+            customer_id: userId,
+            order_id: order._id,
+            type: 'checkout_policy',
+            version: consent.version || 'checkout_policy_v1',
+            acceptedAt: new Date(),
+            ip: req.ip || req.headers['x-forwarded-for'] || '',
+            userAgent: req.headers['user-agent'] || ''
+        }], { session });
+
         if (promotionSnapshot.code) {
             await Promotion.updateOne(
                 { shop_id: shopId, code: promotionSnapshot.code },
@@ -332,7 +336,11 @@ exports.createOrder = async (req, res) => {
 
     } catch (err) {
         await session.abortTransaction();
-        res.status(400).json({ success: false, error: err.message });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            error: err.message,
+            ...(err.code ? { code: err.code } : {})
+        });
     } finally {
         session.endSession();
     }

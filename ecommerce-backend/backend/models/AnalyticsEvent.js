@@ -9,6 +9,14 @@ const ANALYTICS_EVENT_TYPES = [
     'search'
 ];
 
+const RAW_ANALYTICS_RETENTION_DAYS = 180;
+
+const getDefaultExpiry = () => {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + RAW_ANALYTICS_RETENTION_DAYS);
+    return expiresAt;
+};
+
 const analyticsEventSchema = new Schema({
     shop_id: {
         type: Schema.Types.ObjectId,
@@ -96,6 +104,11 @@ const analyticsEventSchema = new Schema({
     metadata: {
         type: Schema.Types.Mixed,
         default: {}
+    },
+    expiresAt: {
+        type: Date,
+        default: getDefaultExpiry,
+        index: true
     }
 }, {
     timestamps: { createdAt: true, updatedAt: false }
@@ -105,8 +118,10 @@ analyticsEventSchema.index({ shop_id: 1, createdAt: -1 });
 analyticsEventSchema.index({ shop_id: 1, eventType: 1, createdAt: -1 });
 analyticsEventSchema.index({ shop_id: 1, product_id: 1, createdAt: -1 });
 analyticsEventSchema.index({ sessionId: 1, createdAt: -1 });
+analyticsEventSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 const AnalyticsEvent = mongoose.model('AnalyticsEvent', analyticsEventSchema);
 AnalyticsEvent.EVENT_TYPES = ANALYTICS_EVENT_TYPES;
+AnalyticsEvent.RAW_RETENTION_DAYS = RAW_ANALYTICS_RETENTION_DAYS;
 
 module.exports = AnalyticsEvent;

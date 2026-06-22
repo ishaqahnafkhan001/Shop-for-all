@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ChevronDown, ChevronUp, Package, ExternalLink, Lock } from 'lucide-react';
 import API from '@/api/api'; // Added API import for password reset
 import { toast } from 'react-hot-toast'; // Added toast for notifications
+import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
 
 export function OrderHistoryTab({ orders, subdomain = "" }) {
     // State to track which order is currently expanded
@@ -96,6 +97,7 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                                                         alt={item.title}
                                                                         width={64}
                                                                         height={64}
+                                                                        unoptimized={shouldUseUnoptimizedImage(item.imageUrl)}
                                                                         className="h-16 w-16 rounded-xl border border-slate-200 object-cover transition-opacity hover:opacity-80"
                                                                     />
                                                                 </Link>

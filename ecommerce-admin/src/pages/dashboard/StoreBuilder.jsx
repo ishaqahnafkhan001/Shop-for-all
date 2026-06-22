@@ -39,6 +39,7 @@ import {
 
 const THEME_SCHEMA_VERSION = 2;
 const HISTORY_LIMIT = 30;
+const HERO_SLIDE_LIMIT = 5;
 
 const defaultTheme = {
     version: THEME_SCHEMA_VERSION,
@@ -95,7 +96,8 @@ const defaultTheme = {
         ctaLabel: 'Shop Now',
         ctaUrl: '/',
         overlayOpacity: 25,
-        height: 'Medium'
+        height: 'Medium',
+        bannerSlides: []
     },
     layout: {
         maxWidth: 'Wide',
@@ -411,6 +413,58 @@ const getLegacyAllProductsSection = (sections = []) => sections.find(section => 
     const productIds = settings.productIds || source.productIds || [];
     return ['FeaturedProducts', 'Collection'].includes(section?.type) && !source.type && (!Array.isArray(productIds) || productIds.length === 0);
 });
+
+const createHeroSlide = (overrides = {}) => ({
+    id: `hero-slide-${Date.now()}`,
+    enabled: true,
+    desktopImage: '',
+    mobileImage: '',
+    title: '',
+    subtitle: '',
+    badgeText: 'Limited time offer',
+    discountText: '',
+    primaryCtaText: 'Shop Now',
+    primaryCtaLink: '#products',
+    secondaryCtaText: 'Explore Collection',
+    secondaryCtaLink: '#products',
+    ...overrides
+});
+
+const normalizeHeroSlideForBuilder = (slide = {}, index = 0, hero = {}) => ({
+    id: slide.id || `hero-slide-${index + 1}`,
+    enabled: slide.enabled !== false,
+    desktopImage: slide.desktopImage || slide.imageUrl || (index === 0 ? hero.imageUrl : '') || '',
+    mobileImage: slide.mobileImage || '',
+    title: slide.title ?? (index === 0 ? hero.title : '') ?? '',
+    subtitle: slide.subtitle ?? (index === 0 ? hero.subtitle : '') ?? '',
+    badgeText: slide.badgeText ?? 'Limited time offer',
+    discountText: slide.discountText ?? '',
+    primaryCtaText: slide.primaryCtaText || (index === 0 ? hero.ctaLabel : '') || 'Shop Now',
+    primaryCtaLink: slide.primaryCtaLink || (index === 0 ? hero.ctaUrl : '') || '#products',
+    secondaryCtaText: slide.secondaryCtaText ?? 'Explore Collection',
+    secondaryCtaLink: slide.secondaryCtaLink || '#products'
+});
+
+const getBuilderHeroSlides = (hero = {}) => {
+    const slides = Array.isArray(hero.bannerSlides) ? hero.bannerSlides : [];
+    if (slides.length > 0) {
+        return slides.map((slide, index) => normalizeHeroSlideForBuilder(slide, index, hero)).slice(0, HERO_SLIDE_LIMIT);
+    }
+    return [normalizeHeroSlideForBuilder({}, 0, hero)];
+};
+
+const syncHeroLegacyFields = (hero = {}, slides = []) => {
+    const firstSlide = slides[0] || normalizeHeroSlideForBuilder({}, 0, hero);
+    return {
+        ...hero,
+        bannerSlides: slides.slice(0, HERO_SLIDE_LIMIT),
+        title: firstSlide.title ?? '',
+        subtitle: firstSlide.subtitle ?? '',
+        imageUrl: firstSlide.desktopImage || firstSlide.mobileImage || '',
+        ctaLabel: firstSlide.primaryCtaText || 'Shop Now',
+        ctaUrl: firstSlide.primaryCtaLink || '#products'
+    };
+};
 
 const mergeTheme = (base, incoming = {}) => ({
     ...base,
@@ -1029,6 +1083,57 @@ const StoreBuilder = () => {
             ...prev,
             [group]: { ...(prev[group] || {}), [key]: value }
         }));
+    };
+
+    const updateHeroSlides = (updater) => {
+        setTheme(prev => {
+            const currentSlides = getBuilderHeroSlides(prev.hero);
+            const nextSlides = updater(currentSlides)
+                .map((slide, index) => normalizeHeroSlideForBuilder(slide, index, prev.hero))
+                .slice(0, HERO_SLIDE_LIMIT);
+            const safeSlides = nextSlides.length > 0 ? nextSlides : [createHeroSlide({ id: `hero-slide-${Date.now()}` })];
+
+            return {
+                ...prev,
+                hero: syncHeroLegacyFields(prev.hero, safeSlides)
+            };
+        });
+    };
+
+    const updateHeroSlide = (index, key, value) => {
+        updateHeroSlides(slides => slides.map((slide, i) => (
+            i === index ? { ...slide, [key]: value } : slide
+        )));
+    };
+
+    const addHeroSlide = () => {
+        const currentCount = getBuilderHeroSlides(theme.hero).length;
+        if (currentCount >= HERO_SLIDE_LIMIT) {
+            toast.error(`You can add up to ${HERO_SLIDE_LIMIT} hero slides.`);
+            return;
+        }
+
+        updateHeroSlides(slides => [
+            ...slides,
+            createHeroSlide({
+                id: `hero-slide-${Date.now()}`,
+                title: 'New seasonal offer'
+            })
+        ]);
+    };
+
+    const removeHeroSlide = (index) => {
+        updateHeroSlides(slides => slides.filter((_, i) => i !== index));
+    };
+
+    const moveHeroSlide = (index, direction) => {
+        updateHeroSlides(slides => {
+            const nextSlides = [...slides];
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= nextSlides.length) return nextSlides;
+            [nextSlides[index], nextSlides[targetIndex]] = [nextSlides[targetIndex], nextSlides[index]];
+            return nextSlides;
+        });
     };
 
     const toggleThemeGroup = (group, key) => {
@@ -1851,29 +1956,97 @@ const StoreBuilder = () => {
                         ))}
                     </BuilderCard>
                 );
-            case 'hero':
+            case 'hero': {
+                const heroSlides = getBuilderHeroSlides(theme.hero);
                 return (
-                    <BuilderCard title="Hero" description="The first section shoppers see. Use one clear offer and one button." icon={LayoutTemplate}>
-                        <BuilderInput label="Hero title" value={theme.hero?.title || ''} onChange={e => setThemeGroup('hero', 'title', e.target.value)} placeholder="Summer sale is live" />
-                        <BuilderInput label="Hero subtitle" value={theme.hero?.subtitle || ''} onChange={e => setThemeGroup('hero', 'subtitle', e.target.value)} placeholder="Short supporting message" />
-                        <BuilderInput label="Hero image URL" value={theme.hero?.imageUrl || ''} onChange={e => setThemeGroup('hero', 'imageUrl', e.target.value)} placeholder="https://..." help="Use a wide image so desktop and mobile cropping looks good." />
-                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
-                            <Upload size={16} />
-                            {uploadingThemeImage ? 'Uploading...' : 'Upload hero image'}
-                            <input
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp"
-                                className="hidden"
-                                disabled={uploadingThemeImage}
-                                onChange={event => handleThemeImageUpload(event, url => setThemeGroup('hero', 'imageUrl', url))}
-                            />
-                        </label>
-                        <BuilderInput label="Button label" value={theme.hero?.ctaLabel || ''} onChange={e => setThemeGroup('hero', 'ctaLabel', e.target.value)} />
+                    <BuilderCard
+                        title="Hero carousel"
+                        description="Each slide uses the uploaded image as the full banner background in preview and storefront."
+                        icon={LayoutTemplate}
+                        actions={<BuilderButton type="button" variant="secondary" onClick={addHeroSlide} disabled={heroSlides.length >= HERO_SLIDE_LIMIT}><Plus size={16} /> Add slide</BuilderButton>}
+                    >
                         <BuilderSelect label="Hero height" value={theme.hero?.height || 'Medium'} onChange={e => setThemeGroup('hero', 'height', e.target.value)}>
                             <option>Compact</option><option>Medium</option><option>Tall</option>
                         </BuilderSelect>
+                        <div className="space-y-4">
+                            {heroSlides.map((slide, index) => (
+                                <div key={slide.id || index} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <p className="text-sm font-black text-slate-950">Slide {index + 1}</p>
+                                            <p className="mt-1 text-xs text-slate-500">Desktop image fills the whole banner. Mobile image is optional.</p>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={slide.enabled !== false}
+                                                    onChange={e => updateHeroSlide(index, 'enabled', e.target.checked)}
+                                                    className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                                                />
+                                                Enabled
+                                            </label>
+                                            <button type="button" onClick={() => moveHeroSlide(index, -1)} disabled={index === 0} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-30" title="Move slide up">
+                                                <ChevronUp size={15} />
+                                            </button>
+                                            <button type="button" onClick={() => moveHeroSlide(index, 1)} disabled={index === heroSlides.length - 1} className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:bg-slate-100 disabled:opacity-30" title="Move slide down">
+                                                <ChevronDown size={15} />
+                                            </button>
+                                            <button type="button" onClick={() => removeHeroSlide(index)} className="rounded-lg border border-red-200 bg-white p-2 text-red-600 hover:bg-red-50" title="Delete slide">
+                                                <Trash2 size={15} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        {[
+                                            { key: 'desktopImage', label: 'Desktop image', help: 'Wide image for laptop, desktop, and large screens.' },
+                                            { key: 'mobileImage', label: 'Mobile image', help: 'Optional. If empty, desktop image is used on phones.' }
+                                        ].map(({ key, label, help }) => (
+                                            <div key={key} className="rounded-lg border border-slate-200 bg-white p-3">
+                                                <BuilderInput
+                                                    label={label}
+                                                    value={slide[key] || ''}
+                                                    onChange={e => updateHeroSlide(index, key, e.target.value)}
+                                                    placeholder="https://..."
+                                                    help={help}
+                                                />
+                                                <label className="mt-2 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                                                    <Upload size={14} />
+                                                    {uploadingThemeImage ? 'Uploading...' : 'Upload image'}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/png,image/jpeg,image/webp"
+                                                        className="hidden"
+                                                        disabled={uploadingThemeImage}
+                                                        onChange={event => handleThemeImageUpload(event, url => updateHeroSlide(index, key, url))}
+                                                    />
+                                                </label>
+                                                {slide[key] && (
+                                                    <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
+                                                        <img src={slide[key]} alt="" className="h-24 w-full object-cover" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <BuilderInput label="Headline" value={slide.title || ''} onChange={e => updateHeroSlide(index, 'title', e.target.value)} placeholder="Discover your favorite products" />
+                                        <BuilderInput label="Badge text" value={slide.badgeText || ''} onChange={e => updateHeroSlide(index, 'badgeText', e.target.value)} placeholder="Limited time offer" />
+                                        <BuilderInput label="Offer text" value={slide.discountText || ''} onChange={e => updateHeroSlide(index, 'discountText', e.target.value)} placeholder="14% OFF SITEWIDE" />
+                                        <BuilderInput label="Subtitle" value={slide.subtitle || ''} onChange={e => updateHeroSlide(index, 'subtitle', e.target.value)} placeholder="Fresh styles, premium picks, and exclusive deals." />
+                                        <BuilderInput label="Primary button text" value={slide.primaryCtaText || ''} onChange={e => updateHeroSlide(index, 'primaryCtaText', e.target.value)} placeholder="Shop Now" />
+                                        <BuilderInput label="Primary button link" value={slide.primaryCtaLink || ''} onChange={e => updateHeroSlide(index, 'primaryCtaLink', e.target.value)} placeholder="#products" />
+                                        <BuilderInput label="Secondary button text" value={slide.secondaryCtaText || ''} onChange={e => updateHeroSlide(index, 'secondaryCtaText', e.target.value)} placeholder="Explore Collection" />
+                                        <BuilderInput label="Secondary button link" value={slide.secondaryCtaLink || ''} onChange={e => updateHeroSlide(index, 'secondaryCtaLink', e.target.value)} placeholder="#products" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </BuilderCard>
                 );
+            }
             case 'products':
                 return (
                     <div className="space-y-4">

@@ -24,6 +24,21 @@ const homepageSectionSchema = new mongoose.Schema({
     source: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { _id: true });
 
+const heroSlideSchema = new mongoose.Schema({
+    id: { type: String, trim: true, maxlength: 80 },
+    enabled: { type: Boolean, default: true },
+    desktopImage: { type: String, trim: true, default: '' },
+    mobileImage: { type: String, trim: true, default: '' },
+    title: { type: String, trim: true, maxlength: 140, default: '' },
+    subtitle: { type: String, trim: true, maxlength: 280, default: '' },
+    badgeText: { type: String, trim: true, maxlength: 80, default: '' },
+    discountText: { type: String, trim: true, maxlength: 80, default: '' },
+    primaryCtaText: { type: String, trim: true, maxlength: 80, default: 'Shop Now' },
+    primaryCtaLink: { type: String, trim: true, maxlength: 300, default: '#products' },
+    secondaryCtaText: { type: String, trim: true, maxlength: 80, default: 'Explore Collection' },
+    secondaryCtaLink: { type: String, trim: true, maxlength: 300, default: '#products' }
+}, { _id: false });
+
 const shopSchema = new mongoose.Schema({
     shopName: {
         type: String,
@@ -171,7 +186,8 @@ const shopSchema = new mongoose.Schema({
                 type: String,
                 enum: ['Compact', 'Medium', 'Tall'],
                 default: 'Medium'
-            }
+            },
+            bannerSlides: { type: [heroSlideSchema], default: [] }
         },
         layout: {
             maxWidth: {

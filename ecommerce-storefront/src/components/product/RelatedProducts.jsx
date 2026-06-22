@@ -2,6 +2,7 @@
 import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
 
 const RelatedProducts = memo(function RelatedProducts({ subdomain, products }) {
     if (!products?.length) return null;
@@ -25,6 +26,7 @@ const RelatedProducts = memo(function RelatedProducts({ subdomain, products }) {
 	                                alt={item.title}
 	                                fill
 	                                sizes="288px"
+	                                unoptimized={shouldUseUnoptimizedImage(item.images[0])}
 	                                className="object-contain mix-blend-multiply transition-transform duration-700 group-hover:scale-105"
 	                            />
                             {item.discount > 0 && (

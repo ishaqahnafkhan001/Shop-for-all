@@ -2,6 +2,7 @@
 import React, { useEffect, useState, memo } from 'react';
 import Image from 'next/image';
 import { ShoppingBag, Zap } from 'lucide-react';
+import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
 
 const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount }) {
     const [activeIdx,    setActiveIdx]    = useState(0);
@@ -28,6 +29,7 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
                         priority={activeIdx === 0}
+                        unoptimized={shouldUseUnoptimizedImage(safeImages[activeIdx] || primaryImage)}
                         className={`object-contain transition-transform duration-700 ease-out ${isZoomed ? 'scale-110' : 'scale-100'}`}
                     />
                 ) : (
@@ -63,7 +65,7 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                                 : 'border border-slate-200 opacity-75 hover:border-[var(--sf-accent)]/50 hover:opacity-100'
                             }`}
                         >
-                            <Image src={img} alt="" fill sizes="80px" className="object-cover" />
+                            <Image src={img} alt="" fill sizes="80px" unoptimized={shouldUseUnoptimizedImage(img)} className="object-cover" />
                         </button>
                     ))}
                 </div>

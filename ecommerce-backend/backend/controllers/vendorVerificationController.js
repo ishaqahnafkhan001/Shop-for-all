@@ -6,6 +6,7 @@ const cache = require('../services/cacheService');
 const { logAudit } = require('../services/auditLogService');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
 const { createNotification } = require('../services/notificationService');
+const { uploadNidDocument } = require('../config/cloudinary');
 const {
     VERIFICATION_SUSPENSION_REASON,
     buildStatusPayload,
@@ -15,6 +16,11 @@ const {
     approveVerification,
     rejectVerification
 } = require('../services/vendorVerificationService');
+const {
+    DOCUMENT_TYPES,
+    getSignedNidDocumentUrl,
+    serializeVerificationPrivacy
+} = require('../services/vendorVerificationPrivacyService');
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 const DEFAULT_LIMIT = 10;
@@ -77,16 +83,11 @@ const getVerificationById = async (id) => {
     return VendorVerification.findById(id);
 };
 
-const serializeVerification = (verification) => {
-    const doc = verification?.toObject ? verification.toObject() : verification;
-    if (!doc) return null;
-    return {
-        ...doc,
-        shop: doc.shop_id && typeof doc.shop_id === 'object' ? doc.shop_id : null,
-        owner: doc.owner_id && typeof doc.owner_id === 'object' ? doc.owner_id : null,
-        reviewer: doc.reviewedBy && typeof doc.reviewedBy === 'object' ? doc.reviewedBy : null
-    };
-};
+const serializeVerification = (verification, options = {}) => serializeVerificationPrivacy(verification, options);
+
+const validateDocumentType = (type) => (
+    Object.values(DOCUMENT_TYPES).includes(type) ? type : null
+);
 
 exports.getVendorVerificationStatus = async (req, res) => {
     try {
@@ -110,14 +111,16 @@ exports.submitVendorVerification = async (req, res) => {
 
         const nidName = String(req.body.nidName || '').trim();
         const nidNumber = String(req.body.nidNumber || '').trim();
-        const nidFrontUrl = req.files?.nidFront?.[0]?.path || req.body.nidFront || '';
-        const nidBackUrl = req.files?.nidBack?.[0]?.path || req.body.nidBack || '';
+        const nidFrontFile = req.files?.nidFront?.[0] || null;
+        const nidBackFile = req.files?.nidBack?.[0] || null;
+        const legacyNidFrontUrl = nidFrontFile ? '' : String(req.body.nidFront || '').trim();
+        const legacyNidBackUrl = nidBackFile ? '' : String(req.body.nidBack || '').trim();
 
         if (!nidName || !nidNumber) {
             return res.status(400).json({ success: false, error: 'NID name and number are required' });
         }
 
-        if (!nidFrontUrl || !nidBackUrl) {
+        if ((!nidFrontFile && !legacyNidFrontUrl) || (!nidBackFile && !legacyNidBackUrl)) {
             return res.status(400).json({ success: false, error: 'NID front and back images are required' });
         }
 
@@ -131,14 +134,28 @@ exports.submitVendorVerification = async (req, res) => {
             return res.status(400).json({ success: false, error: 'This shop is already verified' });
         }
 
+        const [frontDocument, backDocument] = await Promise.all([
+            nidFrontFile
+                ? uploadNidDocument({ file: nidFrontFile, shopId: shop._id, documentType: DOCUMENT_TYPES.front })
+                : Promise.resolve(null),
+            nidBackFile
+                ? uploadNidDocument({ file: nidBackFile, shopId: shop._id, documentType: DOCUMENT_TYPES.back })
+                : Promise.resolve(null)
+        ]);
+
         const ownerRef = getOwnerRef(req.user);
         verification.owner_id = ownerRef.owner_id;
         verification.ownerModel = ownerRef.ownerModel;
         verification.status = 'pending';
         verification.nidName = nidName;
         verification.nidNumber = nidNumber;
-        verification.nidFrontUrl = nidFrontUrl;
-        verification.nidBackUrl = nidBackUrl;
+        verification.nidDocuments = {
+            ...(verification.nidDocuments?.toObject ? verification.nidDocuments.toObject() : verification.nidDocuments || {}),
+            ...(frontDocument ? { front: frontDocument } : {}),
+            ...(backDocument ? { back: backDocument } : {})
+        };
+        verification.nidFrontUrl = frontDocument ? '' : legacyNidFrontUrl;
+        verification.nidBackUrl = backDocument ? '' : legacyNidBackUrl;
         verification.submittedAt = new Date();
         verification.rejectionReason = '';
         verification.rejectedAt = null;
@@ -185,6 +202,42 @@ exports.submitVendorVerification = async (req, res) => {
     } catch (err) {
         console.error('Submit vendor verification error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to submit verification' });
+    }
+};
+
+exports.getVendorVerificationDocument = async (req, res) => {
+    try {
+        if (!req.tenantId) {
+            return res.status(400).json({ success: false, error: 'Shop context is required' });
+        }
+
+        const type = validateDocumentType(req.params.type);
+        if (!type) {
+            return res.status(400).json({ success: false, error: 'Invalid document type' });
+        }
+
+        const verification = await VendorVerification.findOne({ shop_id: req.tenantId });
+        if (!verification) {
+            return res.status(404).json({ success: false, error: 'Verification not found' });
+        }
+
+        const signed = await getSignedNidDocumentUrl({ verification, type });
+
+        await logAudit({
+            req,
+            shop_id: req.tenantId,
+            action: 'vendor_verification.document_viewed',
+            entityType: 'VendorVerification',
+            entityId: verification._id,
+            entityLabel: `NID ${type}`,
+            severity: 'info',
+            metadata: { documentType: type }
+        });
+
+        res.status(200).json({ success: true, url: signed.url, expiresAt: signed.expiresAt });
+    } catch (err) {
+        console.error('Get vendor verification document error:', err);
+        res.status(404).json({ success: false, error: err.message || 'Document not found' });
     }
 };
 
@@ -264,7 +317,7 @@ exports.getVendorVerifications = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: verifications.map(serializeVerification),
+            data: verifications.map(verification => serializeVerification(verification, { includeFullNid: false })),
             summary,
             pagination: paginationPayload({ page, limit, total })
         });
@@ -286,10 +339,46 @@ exports.getVendorVerificationById = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Verification not found' });
         }
 
-        res.status(200).json({ success: true, data: serializeVerification(verification) });
+        res.status(200).json({
+            success: true,
+            data: serializeVerification(verification, { includeFullNid: true })
+        });
     } catch (err) {
         console.error('Get vendor verification detail error:', err);
         res.status(500).json({ success: false, error: 'Failed to load verification' });
+    }
+};
+
+exports.getSuperAdminVendorVerificationDocument = async (req, res) => {
+    try {
+        const type = validateDocumentType(req.params.type);
+        if (!type) {
+            return res.status(400).json({ success: false, error: 'Invalid document type' });
+        }
+
+        const verification = await getVerificationById(req.params.id);
+        if (!verification) {
+            return res.status(404).json({ success: false, error: 'Verification not found' });
+        }
+
+        const signed = await getSignedNidDocumentUrl({ verification, type });
+
+        await logPlatformAudit({
+            req,
+            action: 'vendor_verification.document_viewed',
+            entityType: 'VendorVerification',
+            entityId: verification._id,
+            entityLabel: `NID ${type}`,
+            shop_id: verification.shop_id,
+            message: `Super Admin viewed vendor verification ${type} document`,
+            metadata: { documentType: type },
+            severity: 'warning'
+        });
+
+        res.status(200).json({ success: true, url: signed.url, expiresAt: signed.expiresAt });
+    } catch (err) {
+        console.error('Get super admin verification document error:', err);
+        res.status(404).json({ success: false, error: err.message || 'Document not found' });
     }
 };
 

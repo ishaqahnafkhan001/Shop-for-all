@@ -8,7 +8,7 @@ const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
-const { upload } = require('../config/cloudinary');
+const { upload, nidUpload } = require('../config/cloudinary');
 
 // =========================
 // Controllers
@@ -80,8 +80,13 @@ const {
 } = require('../controllers/notificationController');
 const {
     getVendorVerificationStatus,
-    submitVendorVerification
+    submitVendorVerification,
+    getVendorVerificationDocument
 } = require('../controllers/vendorVerificationController');
+const {
+    getAdminDataRequests,
+    updateAdminDataRequest
+} = require('../controllers/privacyController');
 
 // =========================
 // Upload Config
@@ -90,7 +95,7 @@ const productMediaUpload = upload.fields([
     { name: 'images', maxCount: 5 },
     { name: 'videos', maxCount: 2 }
 ]);
-const vendorNidUpload = upload.fields([
+const vendorNidUpload = nidUpload.fields([
     { name: 'nidFront', maxCount: 1 },
     { name: 'nidBack', maxCount: 1 }
 ]);
@@ -113,6 +118,30 @@ router.post(
     requirePermission('settings'),
     vendorNidUpload,
     submitVendorVerification
+);
+
+router.get(
+    '/vendor-verification/document/:type',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    getVendorVerificationDocument
+);
+
+router.get(
+    '/privacy/data-requests',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'),
+    getAdminDataRequests
+);
+
+router.patch(
+    '/privacy/data-requests/:id',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'),
+    updateAdminDataRequest
 );
 
 // ======================================================

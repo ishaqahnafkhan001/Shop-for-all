@@ -18,7 +18,8 @@ import {
     RefreshCcw,
     Bell,
     History,
-    BadgeCheck
+    BadgeCheck,
+    FileText
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -33,6 +34,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart },
         { name: 'Returns', path: '/dashboard/returns', icon: RefreshCcw },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
+        { name: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText },
         { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },
         { name: 'Verification', path: '/dashboard/verification', icon: BadgeCheck },
         { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent },

@@ -30,6 +30,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useStorefrontTheme } from "@/components/storefront/StorefrontThemeProvider";
 import { trackStorefrontEvent } from "@/utils/analyticsTracker";
+import { shouldUseUnoptimizedImage } from "@/lib/imageDomains";
 
 export default function CheckoutPage({ params }) {
 
@@ -80,6 +81,7 @@ export default function CheckoutPage({ params }) {
 
     const [promotionCode, setPromotionCode] = useState("");
     const [promotionPreview, setPromotionPreview] = useState(null);
+    const [policyAccepted, setPolicyAccepted] = useState(false);
     const checkoutBranding = useMemo(() => theme.checkoutBranding || {}, [theme.checkoutBranding]);
 
     // =========================================
@@ -232,6 +234,11 @@ export default function CheckoutPage({ params }) {
             return;
         }
 
+        if (!policyAccepted) {
+            toast.error("Please accept the store policies before placing your order");
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -289,6 +296,11 @@ export default function CheckoutPage({ params }) {
                     promotionCode: promotionPreview?.code || promotionCode,
 
                     source: "storefront",
+
+                    consent: {
+                        checkoutPolicyAccepted: true,
+                        version: "checkout_policy_v1",
+                    },
                 };
 
                 const response =
@@ -343,6 +355,11 @@ export default function CheckoutPage({ params }) {
                     promotionCode: promotionPreview?.code || promotionCode,
 
                     source: "storefront",
+
+                    consent: {
+                        checkoutPolicyAccepted: true,
+                        version: "checkout_policy_v1",
+                    },
                 };
 
                 const response =
@@ -512,6 +529,7 @@ export default function CheckoutPage({ params }) {
                                 alt=""
                                 width={180}
                                 height={48}
+                                unoptimized={shouldUseUnoptimizedImage(checkoutBranding.logoUrl)}
                                 className="mx-auto mb-3 h-12 w-auto object-contain"
                             />
                         )}
@@ -764,6 +782,7 @@ export default function CheckoutPage({ params }) {
                                                         alt={item.title}
                                                         width={96}
                                                         height={96}
+                                                        unoptimized={shouldUseUnoptimizedImage(imageUrl)}
                                                         className="h-20 w-20 rounded-2xl border border-slate-200 object-cover sm:h-24 sm:w-24"
                                                     />
                                                 ) : (
@@ -950,9 +969,24 @@ export default function CheckoutPage({ params }) {
 
                                 </div>
 
+                                <label className="mt-6 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                                    <input
+                                        type="checkbox"
+                                        checked={policyAccepted}
+                                        onChange={(event) => setPolicyAccepted(event.target.checked)}
+                                        className="mt-1 h-4 w-4 rounded border-slate-300 text-[var(--sf-accent)] focus:ring-[var(--sf-accent)]"
+                                    />
+                                    <span>
+                                        I agree to this store&apos;s policies before placing my order.
+                                        <span className="mt-1 block text-xs font-medium text-slate-500">
+                                            Review the policy sections below or open the full policy pages from the footer.
+                                        </span>
+                                    </span>
+                                </label>
+
                                 <button
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || !policyAccepted}
                                     className="sf-btn sf-btn-primary mt-7 w-full py-5 text-lg disabled:opacity-50"
                                     style={{ borderRadius: 'var(--sf-checkout-radius)' }}
                                 >

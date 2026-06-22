@@ -31,6 +31,7 @@ const {
 const {
     getVendorVerifications,
     getVendorVerificationById,
+    getSuperAdminVendorVerificationDocument,
     approveVendorVerification,
     rejectVendorVerification
 } = require('../controllers/vendorVerificationController');
@@ -46,6 +47,7 @@ router.patch('/shops/:shopId/plan', updateShopPlan);
 router.patch('/shops/:shopId/feature-flags', updateShopFeatureFlags);
 router.patch('/shops/:id', updateShopGovernance);
 router.get('/vendor-verifications', getVendorVerifications);
+router.get('/vendor-verifications/:id/document/:type', getSuperAdminVendorVerificationDocument);
 router.get('/vendor-verifications/:id', getVendorVerificationById);
 router.patch('/vendor-verifications/:id/approve', approveVendorVerification);
 router.patch('/vendor-verifications/:id/reject', rejectVendorVerification);

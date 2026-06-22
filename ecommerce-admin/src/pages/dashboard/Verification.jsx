@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { AlertTriangle, BadgeCheck, Clock, FileImage, ShieldCheck, UploadCloud } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Clock, Eye, FileImage, ShieldCheck, UploadCloud } from 'lucide-react';
 import API from '../../api/api';
 
 const emptyForm = {
@@ -56,13 +56,19 @@ const Field = ({ label, helper, children }) => (
     </label>
 );
 
-const DocumentPreview = ({ label, url }) => (
+const DocumentPreview = ({ label, document, onOpen }) => (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
-        {url ? (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <img src={url} alt={label} className="h-40 w-full object-cover" />
-            </a>
+        {document?.available ? (
+            <button
+                type="button"
+                onClick={onOpen}
+                className="flex h-40 w-full flex-col items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+            >
+                <Eye className="mb-2 h-7 w-7" />
+                View secure document
+                {document.requiresMigration && <span className="mt-1 text-xs font-semibold text-amber-600">Secured on first view</span>}
+            </button>
         ) : (
             <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-slate-400">
                 <FileImage className="h-8 w-8" />
@@ -115,6 +121,15 @@ const Verification = () => {
             toast.error(err.response?.data?.error || 'Failed to submit verification');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const openDocument = async (type) => {
+        try {
+            const { data } = await API.get(`/admin/vendor-verification/document/${type}`);
+            if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Unable to open secure document');
         }
     };
 
@@ -226,8 +241,16 @@ const Verification = () => {
                 </form>
 
                 <aside className="space-y-4">
-                    <DocumentPreview label="Submitted NID front" url={status?.documents?.nidFrontUrl} />
-                    <DocumentPreview label="Submitted NID back" url={status?.documents?.nidBackUrl} />
+                    <DocumentPreview
+                        label="Submitted NID front"
+                        document={status?.documents?.front}
+                        onOpen={() => openDocument('front')}
+                    />
+                    <DocumentPreview
+                        label="Submitted NID back"
+                        document={status?.documents?.back}
+                        onOpen={() => openDocument('back')}
+                    />
                 </aside>
             </div>
         </div>

@@ -3,6 +3,7 @@
 import API from '@/api/api';
 
 const SESSION_KEY = 'scaleup_analytics_session_id';
+export const ANALYTICS_CONSENT_KEY = 'scaleup_analytics_consent';
 
 const getCurrentSubdomain = () => {
     if (typeof window === 'undefined') return '';
@@ -81,8 +82,33 @@ const getDevice = () => {
 
 export const getAnalyticsSessionId = getSessionId;
 
+export const getAnalyticsConsent = () => {
+    if (typeof window === 'undefined') return 'unknown';
+    try {
+        return window.localStorage.getItem(ANALYTICS_CONSENT_KEY) || 'unknown';
+    } catch {
+        return 'unknown';
+    }
+};
+
+export const setAnalyticsConsent = (value) => {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.setItem(
+            ANALYTICS_CONSENT_KEY,
+            value === 'accepted' ? 'accepted' : 'declined'
+        );
+        window.dispatchEvent(new CustomEvent('scaleup-analytics-consent-changed'));
+    } catch {
+        // Consent storage must never block storefront usage.
+    }
+};
+
+export const canTrackAnalytics = () => getAnalyticsConsent() === 'accepted';
+
 export const trackStorefrontEvent = async (event) => {
     if (typeof window === 'undefined' || !event?.eventType) return;
+    if (!canTrackAnalytics()) return;
 
     try {
         await API.post('/analytics/event', {

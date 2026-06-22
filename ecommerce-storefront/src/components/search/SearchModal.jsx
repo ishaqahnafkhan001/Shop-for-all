@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Search, ShoppingBag, X } from "lucide-react";
 import { trackStorefrontEvent } from "@/utils/analyticsTracker";
+import { shouldUseUnoptimizedImage } from "@/lib/imageDomains";
 
 export default function SearchModal({
                                         isOpen,
@@ -109,6 +110,7 @@ export default function SearchModal({
                                                         alt={product.title}
                                                         width={56}
                                                         height={56}
+                                                        unoptimized={shouldUseUnoptimizedImage(product.imageUrl)}
                                                         className="h-14 w-14 rounded-xl bg-slate-100 object-cover"
                                                     />
                                                 ) : (
@@ -153,6 +155,7 @@ export default function SearchModal({
                                         alt={product.title}
                                         width={64}
                                         height={64}
+                                        unoptimized={shouldUseUnoptimizedImage(product.imageUrl)}
                                         className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
                                     />
                                 ) : (

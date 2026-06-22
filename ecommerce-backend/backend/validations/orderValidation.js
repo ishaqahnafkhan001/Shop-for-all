@@ -54,6 +54,13 @@ const paymentSchema = Joi.object({
         })
 });
 
+const consentSchema = Joi.object({
+    checkoutPolicyAccepted: Joi.boolean().valid(true).required(),
+    version: Joi.string().trim().max(80).allow('').optional()
+}).required().messages({
+    'any.required': 'Policy consent is required before checkout'
+});
+
 /**
  * Full create order schema (used in POST /api/orders)
  */
@@ -68,6 +75,7 @@ const createOrderSchema = Joi.object({
     }),
     shipping: shippingSchema.required(),
     payment:  paymentSchema.required(),
+    consent: consentSchema,
     promotionCode: Joi.string().trim().max(40).allow('').optional(),
     source: Joi.string().trim().max(80).allow('').optional()
 });

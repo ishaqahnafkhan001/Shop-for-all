@@ -55,6 +55,7 @@ export const FALLBACK_THEME = {
         ctaUrl: '/',
         overlayOpacity: 25,
         height: 'Medium',
+        bannerSlides: [],
     },
     layout: {
         maxWidth: 'Wide',

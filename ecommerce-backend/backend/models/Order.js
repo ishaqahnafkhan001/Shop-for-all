@@ -309,6 +309,32 @@ const orderSchema = new Schema({
         index: true
     },
 
+    isPathaoSynced: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+
+    pathaoConsignmentId: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+
+    pathaoSyncStatus: {
+        type: String,
+        enum: ['not_queued', 'queued', 'syncing', 'synced', 'failed'],
+        default: 'not_queued',
+        index: true
+    },
+
+    pathaoLastError: {
+        type: String,
+        trim: true,
+        maxlength: 1000,
+        default: ''
+    },
+
     isDeleted: {
         type: Boolean,
         default: false

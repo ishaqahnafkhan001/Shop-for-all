@@ -1,6 +1,5 @@
 const Shop = require('../models/Shop');
 const User = require('../models/User');
-const OTP = require('../models/OTP');
 const Account = require('../models/Account');
 const ShopMembership = require('../models/ShopMembership');
 const VendorVerification = require('../models/VendorVerification');
@@ -31,6 +30,10 @@ const {
     verifyResetOtp,
     resetPassword
 } = require('../services/passwordResetService');
+const {
+    createOrReplaceRegistrationOtp,
+    consumeRegistrationOtp
+} = require('../services/registrationOtpService');
 const { notifyCustomerRegistered } = require('../services/shopEventNotificationService');
 const { getDefaultDeadline } = require('../services/vendorVerificationService');
 
@@ -112,19 +115,7 @@ exports.sendOTP = async (req, res) => {
     try {
         const email = normalizeEmail(req.body.email);
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-        await OTP.findOneAndUpdate(
-            { email },
-            {
-                otp,
-                createdAt: Date.now()
-            },
-            {
-                upsert: true,
-                new: true
-            }
-        );
+        const otp = await createOrReplaceRegistrationOtp({ email });
 
         await sendMail({
             type: 'reset',
@@ -183,12 +174,16 @@ exports.registerVendor = async (req, res) => {
         } = value;
         const cleanEmail = normalizeEmail(email);
 
-        const otpRecord = await OTP.findOne({ email: cleanEmail }).session(session);
+        const otpResult = await consumeRegistrationOtp({
+            email: cleanEmail,
+            otp,
+            session
+        });
 
-        if (!otpRecord || String(otpRecord.otp) !== String(otp)) {
+        if (!otpResult.success) {
             await session.abortTransaction();
             return res.status(400).json({
-                error: 'Invalid or expired verification code.'
+                error: otpResult.error
             });
         }
 
@@ -242,8 +237,6 @@ exports.registerVendor = async (req, res) => {
             verificationDeadline: newShop.verification?.deadline || getDefaultDeadline(newShop)
         }], { session });
 
-        await OTP.deleteOne({ email: cleanEmail }).session(session);
-
         await session.commitTransaction();
 
         const token = signSessionToken({ account, membership, user: newAdmin });
@@ -295,12 +288,16 @@ exports.registerCustomer = async (req, res) => {
         } = value;
         const cleanEmail = normalizeEmail(email);
 
-        const otpRecord = await OTP.findOne({ email: cleanEmail }).session(session);
+        const otpResult = await consumeRegistrationOtp({
+            email: cleanEmail,
+            otp,
+            session
+        });
 
-        if (!otpRecord || String(otpRecord.otp) !== String(otp)) {
+        if (!otpResult.success) {
             await session.abortTransaction();
             return res.status(400).json({
-                error: 'Invalid or expired verification code.'
+                error: otpResult.error
             });
         }
 
@@ -357,7 +354,6 @@ exports.registerCustomer = async (req, res) => {
 
             const membership = await createMembershipForLegacyUser(existingShopCustomer, account, session);
 
-            await OTP.deleteOne({ email: cleanEmail }).session(session);
             await session.commitTransaction();
 
             notifyCustomerRegistered({
@@ -402,8 +398,6 @@ exports.registerCustomer = async (req, res) => {
             passwordHash: hashedPassword,
             session
         });
-
-        await OTP.deleteOne({ email: cleanEmail }).session(session);
 
         await session.commitTransaction();
 

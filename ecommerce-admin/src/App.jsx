@@ -27,6 +27,7 @@ const Returns = lazy(() => import('./pages/dashboard/Returns.jsx'));
 const Notifications = lazy(() => import('./pages/dashboard/Notifications.jsx'));
 const ActivityLogs = lazy(() => import('./pages/dashboard/ActivityLogs.jsx'));
 const Verification = lazy(() => import('./pages/dashboard/Verification.jsx'));
+const PrivacyRequests = lazy(() => import('./pages/dashboard/PrivacyRequests.jsx'));
 const SuperAdminPanel = lazy(() => import('./pages/superadmin/SuperAdminPanel.jsx'));
 const VendorVerifications = lazy(() => import('./pages/superadmin/VendorVerifications.jsx'));
 const ShopDetail = lazy(() => import('./pages/superadmin/ShopDetail.jsx'));
@@ -99,6 +100,7 @@ function App() {
                         <Route path="promotions" element={withSuspense(<Promotions />)} />
                         <Route path="banners" element={<Navigate to="/dashboard/store-builder" replace />} />
                         <Route path="customers" element={withSuspense(<CustomerList />)} />
+                        <Route path="privacy-requests" element={withSuspense(<PrivacyRequests />)} />
                         <Route path="growth" element={withSuspense(<GrowthCenter />)} />
                         <Route path="analytics" element={withSuspense(<AdvancedAnalytics />)} />
                         <Route path="shipping" element={withSuspense(<ShippingSettings />)} />

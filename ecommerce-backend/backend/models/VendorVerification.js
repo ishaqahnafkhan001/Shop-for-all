@@ -10,6 +10,15 @@ const verificationStatuses = [
     'suspended'
 ];
 
+const nidDocumentSchema = new Schema({
+    publicId: { type: String, trim: true, default: '' },
+    resourceType: { type: String, trim: true, default: 'image' },
+    format: { type: String, trim: true, default: '' },
+    bytes: { type: Number, min: 0, default: 0 },
+    uploadedAt: { type: Date, default: null },
+    migratedFromLegacyUrl: { type: String, trim: true, default: '' }
+}, { _id: false });
+
 const vendorVerificationSchema = new Schema({
     shop_id: {
         type: Schema.Types.ObjectId,
@@ -50,6 +59,10 @@ const vendorVerificationSchema = new Schema({
         type: String,
         default: ''
     },
+    nidDocuments: {
+        front: { type: nidDocumentSchema, default: () => ({}) },
+        back: { type: nidDocumentSchema, default: () => ({}) }
+    },
     submittedAt: Date,
     verificationDeadline: {
         type: Date,
@@ -74,6 +87,16 @@ const vendorVerificationSchema = new Schema({
         default: ''
     },
     adminNote: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    retentionUntil: {
+        type: Date,
+        default: null,
+        index: true
+    },
+    retentionReason: {
         type: String,
         trim: true,
         default: ''

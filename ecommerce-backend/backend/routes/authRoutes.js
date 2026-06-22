@@ -7,6 +7,7 @@ const router = express.Router();
 // Middlewares
 // =========================
 const { optionalAuth, protect } = require('../middlewares/auth');
+const { issueCsrfToken } = require('../middlewares/csrf');
 
 // =========================
 // Controllers
@@ -27,6 +28,11 @@ const {
 // ======================================================
 // AUTH ROUTES
 // ======================================================
+
+router.get(
+    '/csrf-token',
+    issueCsrfToken
+);
 
 // Vendor Registration
 router.post(

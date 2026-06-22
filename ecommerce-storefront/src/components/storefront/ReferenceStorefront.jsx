@@ -35,9 +35,9 @@ const serviceCards = [
 
 const productGridGapClasses = {
     Compact: 'gap-3 sm:gap-4',
-    Comfortable: 'gap-4 sm:gap-5 lg:gap-6',
-    Spacious: 'gap-5 sm:gap-7 lg:gap-8',
-    Editorial: 'gap-5 sm:gap-7 lg:gap-8'
+    Comfortable: 'gap-3 sm:gap-4 lg:gap-5',
+    Spacious: 'gap-4 sm:gap-5 lg:gap-6',
+    Editorial: 'gap-4 sm:gap-5 lg:gap-6'
 };
 
 const tabletGridClasses = {
@@ -48,18 +48,18 @@ const tabletGridClasses = {
 };
 
 const desktopGridClasses = {
-    2: 'xl:grid-cols-2',
-    3: 'xl:grid-cols-3',
-    4: 'xl:grid-cols-4',
-    5: 'xl:grid-cols-5'
+    2: 'lg:grid-cols-2',
+    3: 'lg:grid-cols-3',
+    4: 'lg:grid-cols-3 xl:grid-cols-4',
+    5: 'lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
 };
 
 const plainGridClasses = {
     1: 'grid-cols-1',
-    2: 'grid-cols-2',
-    3: 'grid-cols-3',
-    4: 'grid-cols-4',
-    5: 'grid-cols-5'
+    2: 'grid-cols-2 max-[360px]:grid-cols-1',
+    3: 'grid-cols-2 max-[360px]:grid-cols-1 md:grid-cols-3',
+    4: 'grid-cols-2 max-[360px]:grid-cols-1 md:grid-cols-3 xl:grid-cols-4',
+    5: 'grid-cols-2 max-[360px]:grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
 };
 
 const cardRadiusClasses = {
@@ -93,9 +93,9 @@ const titleSizeClasses = {
 };
 
 const priceSizeClasses = {
-    Small: 'text-base',
-    Medium: 'text-lg',
-    Large: 'text-xl sm:text-2xl'
+    Small: 'text-sm sm:text-base',
+    Medium: 'text-base sm:text-lg',
+    Large: 'text-lg sm:text-xl md:text-2xl'
 };
 
 const buttonShapeClasses = {
@@ -127,6 +127,28 @@ const formatPrice = (value) => {
 const getImageUrl = (product) => product?.imageUrl || product?.images?.[0] || '';
 const getPrice = (product) => product?.finalPrice || product?.sellingPrice || product?.pricing?.sellingPrice || product?.price || 0;
 const normalizeImageList = (...lists) => [...new Set(lists.flat().filter(Boolean).map(String))];
+const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
+    id: slide.id || `hero-slide-${index + 1}`,
+    enabled: slide.enabled !== false,
+    desktopImage: slide.desktopImage || slide.imageUrl || (index === 0 ? hero.imageUrl : '') || '',
+    mobileImage: slide.mobileImage || '',
+    title: slide.title ?? (index === 0 ? hero.title : '') ?? '',
+    subtitle: slide.subtitle ?? (index === 0 ? hero.subtitle : '') ?? '',
+    badgeText: slide.badgeText ?? (index === 0 ? hero.badgeText : '') ?? '',
+    discountText: slide.discountText ?? '',
+    primaryCtaText: slide.primaryCtaText || (index === 0 ? hero.ctaLabel : '') || 'Shop Now',
+    primaryCtaLink: slide.primaryCtaLink || (index === 0 ? hero.ctaUrl : '') || '#products',
+    secondaryCtaText: slide.secondaryCtaText ?? 'Explore Collection',
+    secondaryCtaLink: slide.secondaryCtaLink || '#products'
+});
+const getHeroSlides = (hero = {}) => {
+    const sourceSlides = Array.isArray(hero.bannerSlides) ? hero.bannerSlides : [];
+    const slides = sourceSlides.length
+        ? sourceSlides.map((slide, index) => normalizeHeroSlide(slide, index, hero))
+        : [normalizeHeroSlide({}, 0, hero)];
+    const enabledSlides = slides.filter(slide => slide.enabled !== false);
+    return enabledSlides.length ? enabledSlides : [slides[0] || normalizeHeroSlide({}, 0, hero)];
+};
 
 export const getReferenceThemeStyle = (themeCandidate = {}) => {
     const theme = normalizeTheme(themeCandidate);
@@ -157,7 +179,7 @@ const LinkSlot = ({ LinkComponent = DefaultLink, href, children, className, onCl
     <LinkComponent href={href} className={className} onClick={onClick} {...props}>{children}</LinkComponent>
 );
 
-const containerClass = 'mx-auto w-full max-w-[1440px] px-4 sm:px-5 lg:px-8';
+const containerClass = 'mx-auto w-full max-w-screen-2xl px-3 sm:px-4 md:px-6 lg:px-8 2xl:px-10';
 const isPreviewMobile = (device) => device === 'mobile' || device === 'smallMobile';
 const isPreviewNarrow = (device) => isPreviewMobile(device) || device === 'tablet';
 
@@ -243,34 +265,34 @@ export function ReferenceStorefrontHeader({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const logoPosition = theme.header?.logoPosition || 'Left';
     const forcedDesktopLayoutClass = logoPosition === 'Center'
-        ? 'grid-cols-[minmax(320px,1fr)_minmax(210px,auto)_minmax(360px,1fr)]'
+        ? 'grid-cols-[minmax(0,1fr)_minmax(190px,auto)_minmax(0,1fr)]'
         : logoPosition === 'Right'
-            ? 'grid-cols-[minmax(320px,1fr)_minmax(360px,1fr)_minmax(210px,auto)]'
-            : 'grid-cols-[minmax(210px,0.8fr)_minmax(320px,1fr)_minmax(360px,1.2fr)]';
+            ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(190px,auto)]'
+            : 'grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]';
     const desktopLayoutClass = logoPosition === 'Center'
-        ? 'lg:grid-cols-[minmax(320px,1fr)_minmax(210px,auto)_minmax(360px,1fr)]'
+        ? 'lg:grid-cols-[minmax(0,1fr)_minmax(190px,auto)_minmax(0,1fr)]'
         : logoPosition === 'Right'
-            ? 'lg:grid-cols-[minmax(320px,1fr)_minmax(360px,1fr)_minmax(210px,auto)]'
-            : 'lg:grid-cols-[minmax(210px,0.8fr)_minmax(320px,1fr)_minmax(360px,1.2fr)]';
+            ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(190px,auto)]'
+            : 'lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]';
     const brandSlot = (
         <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0">
             <BrandMark theme={theme} brandName={brandName} />
         </LinkSlot>
     );
     const searchSlot = (
-        <div className={`flex ${logoPosition === 'Left' ? 'justify-center' : 'justify-start'}`}>
+        <div className={`flex min-w-0 ${logoPosition === 'Left' ? 'justify-center' : 'justify-start'}`}>
             <button
                 type="button"
                 onClick={onSearch}
-                className="flex h-11 w-full max-w-[420px] items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-5 text-sm font-semibold text-slate-500 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-slate-900"
+                className="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-slate-900 xl:px-5"
             >
-                <Search size={17} />
-                <span>Search products</span>
+                <Search size={17} className="shrink-0" />
+                <span className="truncate">Search products</span>
             </button>
         </div>
     );
     const actionSlot = (
-        <div className={`flex items-center gap-2 ${logoPosition === 'Right' ? 'justify-start' : 'justify-end'}`}>
+        <div className={`flex min-w-0 items-center gap-1 xl:gap-2 ${logoPosition === 'Right' ? 'justify-start' : 'justify-end'}`}>
             <nav className="mr-2 hidden max-w-full items-center gap-1 overflow-visible text-sm font-bold text-slate-700 xl:flex">
                 {headerNavLinks.slice(0, 5).map((item, index) => (
                     <HeaderNavItem
@@ -280,21 +302,21 @@ export function ReferenceStorefrontHeader({
                     />
                 ))}
             </nav>
-            <LinkSlot LinkComponent={LinkComponent} href="/track" className="inline-flex h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]">
-                <Truck size={17} />
-                Track Order
+            <LinkSlot LinkComponent={LinkComponent} href="/track" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)] xl:px-3">
+                <Truck size={17} className="shrink-0" />
+                <span className="hidden xl:inline">Track Order</span>
             </LinkSlot>
-            <LinkSlot LinkComponent={LinkComponent} href="/account" className="inline-flex h-11 items-center gap-2 rounded-full px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)]">
-                <User size={17} />
-                Account
+            <LinkSlot LinkComponent={LinkComponent} href="/account" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-[var(--sf-accent)] xl:px-3">
+                <User size={17} className="shrink-0" />
+                <span className="hidden xl:inline">Account</span>
             </LinkSlot>
             <LinkSlot
                 LinkComponent={LinkComponent}
                 href="/cart"
-                className="relative inline-flex h-11 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800"
+                className="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-slate-950 px-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 xl:px-4"
             >
-                <ShoppingBag size={17} />
-                Cart
+                <ShoppingBag size={17} className="shrink-0" />
+                <span className="hidden xl:inline">Cart</span>
                 {cartCount > 0 && (
                     <span className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sf-accent)] px-1 text-[10px] font-black text-white">
                         {cartCount}
@@ -452,7 +474,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
             style={{ animationDelay: `${(index % 8) * 35}ms` }}
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
-            <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === 'rounded-none' ? '' : 'm-3 mb-0'} ${imageRadiusClass}`}>
+            <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === 'rounded-none' ? '' : 'm-2 mb-0 sm:m-3 sm:mb-0'} ${imageRadiusClass}`}>
                 {imageUrl ? (
                     <img
                         src={imageUrl}
@@ -466,20 +488,20 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     </div>
                 )}
                 {productCard?.showWishlist !== false && (
-                    <button type="button" className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)]">
+                    <button type="button" className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)] sm:right-3 sm:top-3 sm:h-9 sm:w-9">
                         <Heart size={16} />
                     </button>
                 )}
                 {hasDiscount && productCard?.showDiscountBadge !== false && (
-                    <span className="absolute left-3 top-3 z-20 rounded-full bg-[var(--sf-sale-badge-bg)] px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[var(--sf-sale-badge-text)]">
+                    <span className="absolute left-2 top-2 z-20 rounded-full bg-[var(--sf-sale-badge-bg)] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-[var(--sf-sale-badge-text)] sm:left-3 sm:top-3 sm:px-2.5 sm:text-[10px]">
                         {activeDiscount}% off
                     </span>
                 )}
             </div>
-            <div className="flex flex-1 flex-col p-4">
+            <div className="flex flex-1 flex-col p-2.5 sm:p-4">
                 {showRating && (
-                    <div className="mb-2 flex items-center justify-between text-xs font-bold">
-                        <span className="flex items-center gap-0.5 text-amber-400">
+                    <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-1 text-[11px] font-bold sm:text-xs">
+                        <span className="flex shrink-0 items-center gap-0.5 text-amber-400">
                             {[1, 2, 3, 4, 5].map(star => (
                                 <Star
                                     key={star}
@@ -489,7 +511,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                                 />
                             ))}
                         </span>
-                        <span className="text-slate-400">{rating.toFixed(1)}{showReviews ? ` (${product.numReviews})` : ''}</span>
+                        <span className="min-w-0 truncate text-slate-400">{rating.toFixed(1)}{showReviews ? ` (${product.numReviews})` : ''}</span>
                     </div>
                 )}
                 <h3 className={`line-clamp-2 leading-snug text-slate-950 ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800 }}>{product.title}</h3>
@@ -502,8 +524,8 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                         {productCard?.showSku && sku && <p>SKU: {sku}</p>}
                     </div>
                 )}
-                <div className="mt-auto flex items-end justify-between gap-3 pt-4">
-                    <div>
+                <div className="mt-auto flex flex-col gap-3 pt-3 sm:flex-row sm:items-end sm:justify-between sm:pt-4">
+                    <div className="min-w-0">
                         <p className={`${priceSizeClass} font-black`} style={{ color: priceColor }}>{formatPrice(price)}</p>
                         {hasDiscount && originalPrice > price && (
                             <p className="text-xs font-semibold text-slate-400 line-through">{formatPrice(originalPrice)}</p>
@@ -514,7 +536,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                             type="button"
                             disabled={stock <= 0}
                             onClick={handleAdd}
-                            className={`relative z-20 border px-4 py-2 text-xs font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white ${buttonShapeClass}`}
+                            className={`relative z-20 inline-flex h-9 w-full items-center justify-center whitespace-nowrap border px-3 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white sm:w-auto sm:min-w-[96px] sm:px-4 sm:text-xs ${buttonShapeClass}`}
                             style={stock <= 0 ? undefined : buttonInlineStyle}
                         >
                             Add to Cart
@@ -535,15 +557,15 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
 
     if (section.type === 'FeaturedProducts') {
         const products = sectionProducts?.[section.id || section._id] || catalogProducts.slice(0, 4);
-        const mobileGridClass = Number(mobileSettings.columns) === 1 ? 'grid-cols-1' : 'grid-cols-2';
+        const mobileGridClass = Number(mobileSettings.columns) === 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 max-[360px]:grid-cols-1';
         const featuredGridClass = previewDevice
-            ? (isPreviewMobile(previewDevice) ? mobileGridClass : 'grid-cols-4')
-            : `${mobileGridClass} md:grid-cols-4`;
+            ? (isPreviewMobile(previewDevice) ? mobileGridClass : `${mobileGridClass} md:grid-cols-3 lg:grid-cols-4`)
+            : `${mobileGridClass} md:grid-cols-3 lg:grid-cols-4`;
         if (products.length === 0) return null;
         return (
             <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
-                <div className="mb-5 flex items-end justify-between gap-4">
-                    <div>
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+                    <div className="min-w-0">
                         <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{section.title || 'Featured Products'}</h2>
                         <p className="mt-1 text-sm font-semibold text-slate-500">Handpicked products from this store</p>
                     </div>
@@ -579,12 +601,12 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
         const mobileImageUrl = mobileDisplayImages[mobileImageIndex] || imageUrl;
         return (
             <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
-                <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || '#products'} className="group relative block min-h-[240px] overflow-hidden rounded-[1.75rem] bg-slate-950 shadow-sm sm:min-h-[320px]">
+                <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || '#products'} className="group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] bg-slate-950 shadow-sm sm:min-h-[280px] sm:rounded-[1.75rem] lg:min-h-[320px]">
                     {mobileImageUrl && mobileImageUrl !== imageUrl && <img src={mobileImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover md:hidden" />}
                     {imageUrl && <img src={imageUrl} alt="" className={`${mobileImageUrl && mobileImageUrl !== imageUrl ? 'hidden md:block' : ''} absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105`} />}
                     <div className="absolute inset-0 bg-gradient-to-r from-slate-950/78 via-slate-950/36 to-transparent" />
-                    <div className="relative z-10 flex min-h-[240px] max-w-2xl flex-col justify-end p-6 text-white sm:min-h-[320px] sm:p-10">
-                        <h2 className="text-3xl font-black leading-tight sm:text-5xl">{section.settings?.title || section.title || 'Promotional banner'}</h2>
+                    <div className="relative z-10 flex min-h-[220px] max-w-2xl flex-col justify-end p-5 text-white sm:min-h-[280px] sm:p-8 lg:min-h-[320px] lg:p-10">
+                        <h2 className="text-2xl font-black leading-tight sm:text-4xl lg:text-5xl">{section.settings?.title || section.title || 'Promotional banner'}</h2>
                         {section.settings?.subtitle && <p className="mt-3 max-w-xl text-sm leading-6 text-white/75 sm:text-base">{section.settings.subtitle}</p>}
                         {section.settings?.buttonText && <span className="mt-5 inline-flex w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950">{section.settings.buttonText}</span>}
                     </div>
@@ -619,9 +641,9 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
         const reviews = sectionReviews?.[section.id || section._id] || [];
         if (!reviewText && reviews.length === 0) return null;
         return (
-            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 shadow-sm md:mt-12`}>
+            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem] md:p-7`}>
                 <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Customer Reviews'}</h2>
-                <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {reviews.length > 0 ? reviews.map(review => (
                         <div key={review._id} className="rounded-2xl bg-slate-50 p-4">
                             <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>
@@ -649,11 +671,11 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
         const mobileColumns = Math.min(Math.max(Number(mobileSettings.columns) || 2, 1), 4);
         const desktopColumns = Math.min(Math.max(Number(section.settings?.columns) || 4, 1), 4);
         const categoryGridClass = previewDevice
-            ? (isPreviewMobile(previewDevice) ? categoryGridClasses[mobileColumns] : categoryGridClasses[desktopColumns])
-            : `${categoryGridClasses[mobileColumns]} ${categoryDesktopGridClasses[desktopColumns]}`;
+            ? (isPreviewMobile(previewDevice) ? `${categoryGridClasses[mobileColumns]} max-[360px]:grid-cols-1` : categoryGridClasses[desktopColumns])
+            : `${categoryGridClasses[mobileColumns]} max-[360px]:grid-cols-1 ${categoryDesktopGridClasses[desktopColumns]}`;
         if (visibleCategories.length === 0) return null;
         return (
-            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm md:mt-12`}>
+            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem]`}>
                 <h2 className="text-2xl font-black text-slate-950">{section.title || 'Shop by category'}</h2>
                 <div className={`mt-4 grid gap-2 ${categoryGridClass}`}>
                     {visibleCategories.map(category => (
@@ -675,7 +697,7 @@ const HomepageSection = memo(function HomepageSection({ section, categories, sec
 });
 
 const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange }) => (
-    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-5 flex items-center justify-between">
             <h3 className="text-base font-black text-slate-950">Filter Products</h3>
             <SlidersHorizontal size={17} className="text-slate-400" />
@@ -690,7 +712,7 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
         </div>
         <div className="my-5 h-px bg-slate-200" />
         <h4 className="mb-3 text-sm font-black text-slate-950">Price Range</h4>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 max-[360px]:grid-cols-1">
             <input type="number" placeholder="Min" value={priceInput.min} onChange={onMinPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
             <input type="number" placeholder="Max" value={priceInput.max} onChange={onMaxPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
         </div>
@@ -747,6 +769,13 @@ export function ReferenceStorefrontHome({
 }) {
     const theme = normalizeTheme(themeCandidate);
     const hero = theme.hero || {};
+    const heroSlides = getHeroSlides(hero);
+    const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+    const activeHeroSlide = heroSlides[activeHeroIndex % heroSlides.length] || normalizeHeroSlide({}, 0, hero);
+    const activeHeroImage = activeHeroSlide.desktopImage || activeHeroSlide.mobileImage;
+    const activeMobileHeroImage = activeHeroSlide.mobileImage || activeHeroImage;
+    const hasMultipleHeroSlides = heroSlides.length > 1;
+    const heroOfferText = activeHeroSlide.discountText || (storewideDiscount > 0 ? `${storewideDiscount}% OFF SITEWIDE` : '');
     const layout = theme.layout || {};
     const productCard = theme.productCard || {};
     const allProducts = theme.allProducts || {};
@@ -758,7 +787,7 @@ export function ReferenceStorefrontHome({
     const desktopColumns = Math.min(Math.max(allProducts.desktopColumns || layout.productColumnsDesktop || 3, 2), 5);
     const tabletColumns = Math.min(Math.max(allProducts.tabletColumns || 2, 1), 4);
     const mobileColumns = Math.min(Math.max(allProducts.mobileColumns || layout.productColumnsMobile || 2, 1), 2);
-    const liveGridClass = `${mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
+    const liveGridClass = `${mobileColumns === 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 max-[360px]:grid-cols-1'} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
     const gridClass = previewDevice
         ? (isPreviewMobile(previewDevice)
             ? plainGridClasses[mobileColumns]
@@ -769,35 +798,35 @@ export function ReferenceStorefrontHome({
     const gridGapClass = productGridGapClasses[layout.productGap || theme.productGridStyle] || productGridGapClasses.Comfortable;
     const forcedMobilePreview = isPreviewMobile(previewDevice);
     const forcedNarrowPreview = isPreviewNarrow(previewDevice);
-    const heroClass = previewDevice
-        ? `relative overflow-hidden rounded-[1.75rem] bg-slate-950 ${forcedMobilePreview ? 'p-5' : 'p-10'} text-white shadow-xl shadow-slate-200/70 ${previewDevice === 'desktop' ? 'min-h-[420px]' : 'min-h-[360px]'}`
-        : 'relative overflow-hidden rounded-[1.75rem] bg-slate-950 p-6 text-white shadow-xl shadow-slate-200/70 sm:p-10 lg:min-h-[420px]';
-    const heroGridClass = previewDevice
-        ? `relative z-10 grid gap-8 ${previewDevice === 'desktop' ? 'grid-cols-[0.9fr_1fr] items-center' : ''}`
-        : 'relative z-10 grid gap-8 lg:grid-cols-[0.9fr_1fr] lg:items-center';
+    const heroHeightClass = hero.height === 'Compact'
+        ? 'min-h-[420px] sm:min-h-[460px] lg:min-h-[500px]'
+        : hero.height === 'Tall'
+            ? 'min-h-[520px] sm:min-h-[600px] lg:min-h-[680px]'
+            : 'min-h-[460px] sm:min-h-[520px] lg:min-h-[580px]';
+    const heroClass = `relative isolate overflow-hidden rounded-[1.5rem] bg-slate-950 text-white shadow-2xl shadow-slate-300/60 sm:rounded-[2rem] ${heroHeightClass}`;
     const heroTitleClass = previewDevice
-        ? `max-w-xl font-black leading-[0.95] tracking-tight ${forcedMobilePreview ? 'text-4xl' : previewDevice === 'tablet' ? 'text-5xl' : 'text-7xl'}`
-        : 'max-w-xl text-4xl font-black leading-[0.95] tracking-tight sm:text-5xl lg:text-7xl';
-    const serviceGridClass = previewDevice
+        ? `max-w-4xl font-black leading-[0.95] tracking-tight text-white drop-shadow-sm ${forcedMobilePreview ? 'text-4xl max-[360px]:text-3xl' : previewDevice === 'tablet' ? 'text-5xl' : 'text-7xl'}`
+        : 'max-w-4xl text-4xl font-black leading-[0.95] tracking-tight text-white drop-shadow-sm max-[360px]:text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
+    const heroBenefitsClass = previewDevice
         ? (forcedMobilePreview
-            ? 'mt-5 grid auto-cols-[82%] grid-flow-col gap-4 overflow-x-auto pb-2'
-            : 'mt-5 grid grid-cols-3 gap-4 pb-2')
-        : 'mt-5 grid auto-cols-[82%] grid-flow-col gap-4 overflow-x-auto pb-2 sm:auto-cols-fr sm:grid-flow-row sm:grid-cols-3 sm:overflow-visible';
+            ? 'grid gap-2'
+            : 'grid grid-cols-3 gap-3')
+        : 'grid gap-2 sm:grid-cols-3 sm:gap-3 lg:max-w-5xl';
     const allProductsHeaderClass = forcedNarrowPreview
         ? 'mb-6 flex flex-col gap-4'
         : 'mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between';
     const catalogControlsClass = forcedMobilePreview
         ? 'flex flex-col gap-3'
-        : 'flex flex-col gap-3 sm:flex-row';
+        : 'flex w-full flex-col gap-3 sm:flex-row lg:w-auto';
     const catalogSearchClass = forcedMobilePreview
-        ? 'relative min-w-0'
-        : 'relative min-w-0 sm:min-w-[320px]';
+        ? 'relative w-full min-w-0'
+        : 'relative w-full min-w-0 sm:flex-1 lg:w-[min(36vw,420px)] lg:flex-none';
     const catalogSelectClass = forcedMobilePreview
         ? 'rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100'
-        : 'rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36';
+        : 'w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36';
     const productLayoutClass = forcedNarrowPreview
         ? 'grid gap-6'
-        : 'grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]';
+        : 'grid min-w-0 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]';
     const filterAsideClass = forcedNarrowPreview ? 'hidden' : 'hidden lg:block';
     const filterButtonClass = forcedNarrowPreview
         ? 'inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700'
@@ -807,74 +836,111 @@ export function ReferenceStorefrontHome({
         : 'fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm lg:hidden';
 
     return (
-        <div className="bg-white" style={getReferenceThemeStyle(theme)}>
+        <div className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
             <div className={`${containerClass} py-5 sm:py-8`}>
                 <section className={heroClass}>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(20,184,166,.35),transparent_30rem)]" />
-                    <button type="button" disabled className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-950 shadow-md disabled:opacity-90 md:flex" aria-label="Previous slide">
-                        <ChevronLeft size={19} />
-                    </button>
-                    <button type="button" disabled className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-950 shadow-md disabled:opacity-90 md:flex" aria-label="Next slide">
-                        <ChevronRight size={19} />
-                    </button>
-                    <div className={heroGridClass}>
-                        <div className="max-w-2xl">
-                            {hero.title && (
-                                <h1 className={heroTitleClass}>
-                                    {hero.title}
-                                </h1>
+                    {activeHeroImage ? (
+                        <picture>
+                            {activeMobileHeroImage && activeMobileHeroImage !== activeHeroImage && (
+                                <source media="(max-width: 640px)" srcSet={activeMobileHeroImage} />
                             )}
-                            {hero.subtitle && (
-                                <p className="mt-5 max-w-lg text-base font-semibold leading-7 text-white/70 sm:text-lg">
-                                    {hero.subtitle}
+                            <img
+                                src={activeHeroImage}
+                                alt={activeHeroSlide.title || hero.title || 'Store banner'}
+                                className="absolute inset-0 h-full w-full object-cover"
+                            />
+                        </picture>
+                    ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900" />
+                    )}
+                    <div className="absolute inset-0 hidden bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-slate-950/20 sm:block" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-slate-950/92 via-slate-950/76 to-slate-950/54 sm:hidden" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(20,184,166,.26),transparent_34%)]" />
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950/82 via-slate-950/38 to-transparent" />
+                    {hasMultipleHeroSlides && (
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setActiveHeroIndex(prev => (prev - 1 + heroSlides.length) % heroSlides.length)}
+                                className="absolute left-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur transition hover:bg-white/25 md:flex"
+                                aria-label="Previous banner slide"
+                            >
+                                <ChevronLeft size={19} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveHeroIndex(prev => (prev + 1) % heroSlides.length)}
+                                className="absolute right-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/15 text-white shadow-lg backdrop-blur transition hover:bg-white/25 md:flex"
+                                aria-label="Next banner slide"
+                            >
+                                <ChevronRight size={19} />
+                            </button>
+                        </>
+                    )}
+                    <div className={`relative z-10 flex ${heroHeightClass} flex-col justify-between p-5 max-[360px]:p-4 sm:p-8 lg:p-12`}>
+                        <div className="max-w-4xl pt-2 sm:pt-4 lg:pt-6">
+                            {(activeHeroSlide.badgeText || 'Limited time offer') && (
+                                <p className="inline-flex rounded-full border border-teal-200/25 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-teal-100 shadow-lg shadow-teal-950/20 backdrop-blur sm:text-xs">
+                                    {activeHeroSlide.badgeText || 'Limited time offer'}
                                 </p>
                             )}
-                            <div className="mt-7 flex flex-wrap gap-3">
-                                <LinkSlot LinkComponent={LinkComponent} href="#products" className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-slate-100">
-                                    {hero.ctaLabel || 'Shop Now'}
+                            <h1 className={`${heroTitleClass} mt-5`}>
+                                {activeHeroSlide.title || hero.title || 'Discover Your Favorite Products'}
+                            </h1>
+                            {heroOfferText && (
+                                <p className="mt-5 inline-flex w-fit rounded-2xl border border-white/15 bg-slate-950/45 px-4 py-3 text-sm font-black uppercase tracking-wide text-teal-100 shadow-xl backdrop-blur sm:text-base">
+                                    {heroOfferText}
+                                </p>
+                            )}
+                            {(activeHeroSlide.subtitle || hero.subtitle) && (
+                                <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-white/78 sm:text-base md:text-lg">
+                                    {activeHeroSlide.subtitle || hero.subtitle}
+                                </p>
+                            )}
+                            <div className="mt-7 flex flex-col gap-3 min-[420px]:flex-row min-[420px]:flex-wrap">
+                                <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || '#products'} className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-teal-50 sm:min-h-12 sm:px-6">
+                                    {activeHeroSlide.primaryCtaText || 'Shop Now'}
+                                    <ChevronRight size={16} className="ml-1" />
                                 </LinkSlot>
-                                <LinkSlot LinkComponent={LinkComponent} href="#products" className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/10">
-                                    Explore Collection
-                                </LinkSlot>
+                                {activeHeroSlide.secondaryCtaText && (
+                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || '#products'} className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15 sm:min-h-12 sm:px-6">
+                                        {activeHeroSlide.secondaryCtaText}
+                                        <ChevronRight size={16} className="ml-1" />
+                                    </LinkSlot>
+                                )}
                             </div>
                         </div>
-                        <div className="relative min-h-[250px] overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-cyan-100 to-teal-900 shadow-2xl sm:min-h-[330px]">
-                            {hero.imageUrl ? (
-                                <img src={hero.imageUrl} alt={hero.title || 'Store hero'} className="absolute inset-0 h-full w-full object-cover" />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center bg-slate-900/20 text-white/50">
-                                    <ShoppingBag size={54} />
-                                </div>
-                            )}
-                            {storewideDiscount > 0 && (
-                                <div className="absolute bottom-5 left-5 rounded-2xl bg-white px-5 py-4 text-slate-950 shadow-xl">
-                                    <p className="text-xs font-black text-slate-400">Today only</p>
-                                    <p className="text-2xl font-black">{storewideDiscount}% off</p>
+                        <div className="mt-8 space-y-5">
+                            <div className={heroBenefitsClass}>
+                                {serviceCards.map(({ icon: Icon, title, text }) => (
+                                    <div key={title} className="rounded-2xl border border-white/12 bg-white/10 p-3 shadow-lg shadow-slate-950/10 backdrop-blur-md sm:p-4">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-300/16 text-teal-100">
+                                                <Icon size={18} />
+                                            </span>
+                                            <div className="min-w-0">
+                                                <h3 className="truncate text-sm font-black text-white">{title}</h3>
+                                                <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-4 text-white/66 sm:text-xs">{text}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {hasMultipleHeroSlides && (
+                                <div className="flex justify-center gap-2">
+                                    {heroSlides.map((slide, index) => (
+                                        <button
+                                            key={slide.id || index}
+                                            type="button"
+                                            onClick={() => setActiveHeroIndex(index)}
+                                            className={`h-2 rounded-full transition ${index === activeHeroIndex % heroSlides.length ? 'w-9 bg-white' : 'w-2.5 bg-white/45 hover:bg-white/70'}`}
+                                            aria-label={`Show banner slide ${index + 1}`}
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </div>
                     </div>
-                    <div className="relative z-10 mt-6 flex justify-center gap-2">
-                        <span className="h-2 w-8 rounded-full bg-white" />
-                        <span className="h-2 w-2 rounded-full bg-white/40" />
-                        <span className="h-2 w-2 rounded-full bg-white/40" />
-                    </div>
-                </section>
-
-                <section className={serviceGridClass}>
-                    {serviceCards.map(({ icon: Icon, title, text }) => (
-                        <div key={title} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
-                            <div className="flex items-center gap-4">
-                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]">
-                                    <Icon size={20} />
-                                </span>
-                                <div>
-                                    <h3 className="text-base font-black text-slate-950">{title}</h3>
-                                    <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">{text}</p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
                 </section>
 
                 {enabledSections.map((section, index) => (
@@ -940,7 +1006,7 @@ export function ReferenceStorefrontHome({
                                     />
                                 </div>
                             </aside>
-                            <main>
+                            <main className="min-w-0">
                                 {loading ? (
                                     <div className={`grid ${gridClass} ${gridGapClass}`}>
                                         {Array.from({ length: 6 }, (_, index) => <div key={index} className="h-72 animate-pulse rounded-[1.35rem] bg-white" />)}
@@ -1053,7 +1119,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
         : getSortedNavigation(theme).map(item => ({ label: item.label, href: item.url }));
     const columns = navLinks.length ? [{ title: 'Store Links', links: navLinks.slice(0, 8) }] : [];
     const forceNarrowFooter = isPreviewNarrow(previewDevice);
-    const footerGridClass = `grid gap-8 ${columns.length && !forceNarrowFooter ? 'lg:grid-cols-[1.3fr_minmax(0,1fr)]' : ''}`;
+    const footerGridClass = `grid min-w-0 gap-8 ${columns.length && !forceNarrowFooter ? 'lg:grid-cols-[1.3fr_minmax(0,1fr)]' : ''}`;
     const desktopColumnsClass = forceNarrowFooter ? 'hidden' : 'hidden contents lg:contents';
     const mobileColumnsClass = forceNarrowFooter ? 'block' : 'lg:hidden';
     const bottomNavClass = `${preview ? 'sticky bottom-0' : 'fixed inset-x-0 bottom-0'} z-50 ${previewDevice ? (previewDevice === 'desktop' ? 'hidden' : 'grid') : 'grid md:hidden'} grid-cols-5 border-t border-slate-200 bg-white/95 px-1 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur`;
@@ -1067,14 +1133,14 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
 
     return (
         <>
-            <footer className="border-t border-slate-200 bg-white pb-20 pt-10 md:pb-8" style={getReferenceThemeStyle(theme)}>
+            <footer className="min-w-0 overflow-x-hidden border-t border-slate-200 bg-white pb-20 pt-10 md:pb-8" style={getReferenceThemeStyle(theme)}>
                 <div className={containerClass}>
                     <div className={footerGridClass}>
-                        <div>
+                        <div className="min-w-0">
                             <div className="flex items-center gap-3">
                                 <span className="h-10 w-10 rounded-full bg-[var(--sf-accent)]" />
-                                <div>
-                                    <h2 className="text-lg font-black text-slate-950">{brandName}</h2>
+                                <div className="min-w-0">
+                                    <h2 className="truncate text-lg font-black text-slate-950">{brandName}</h2>
                                     <p className="text-xs font-semibold text-slate-500">Storefront</p>
                                 </div>
                             </div>
@@ -1083,9 +1149,9 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                     {theme.footer.text}
                                 </p>
                             )}
-                            <form className="mt-5 flex max-w-sm gap-2 rounded-full border border-slate-200 bg-slate-50 p-1">
-                                <input type="email" placeholder="Email for updates" className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400" />
-                                <button type="button" className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Subscribe</button>
+                            <form className="mt-5 flex max-w-sm flex-col gap-2 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-1 min-[420px]:flex-row min-[420px]:rounded-full">
+                                <input type="email" placeholder="Email for updates" className="min-h-11 min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400" />
+                                <button type="button" className="min-h-11 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Subscribe</button>
                             </form>
                         </div>
                         <div className={desktopColumnsClass}>
@@ -1096,9 +1162,9 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                             {navLinks.length > 0 && <FooterAccordion title="Store Links" links={navLinks.slice(0, 6)} LinkComponent={LinkComponent} />}
                         </div>
                     </div>
-                    <div className="mt-8 flex flex-col gap-4 border-t border-slate-200 pt-5 text-xs font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                        <p>© {new Date().getFullYear()} {brandName}. Powered by Commerce SaaS.</p>
-                        <div className="flex items-center gap-3">
+                    <div className="mt-8 flex min-w-0 flex-col gap-4 border-t border-slate-200 pt-5 text-xs font-semibold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="min-w-0 break-words">© {new Date().getFullYear()} {brandName}. Powered by Commerce SaaS.</p>
+                        <div className="flex flex-wrap items-center gap-3">
                             <Mail size={16} />
                             {['f', 'ig', 'x'].map(item => (
                                 <span key={item} className="flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-100 px-1 text-[10px] font-black uppercase text-slate-500">

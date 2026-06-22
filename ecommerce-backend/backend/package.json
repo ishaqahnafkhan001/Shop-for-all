@@ -17,7 +17,9 @@
   "scripts": {
     "start": "node app.js",
     "test": "node --test tests/*.test.js",
-    "migrate:identity": "node scripts/migrate-accounts-memberships.js"
+    "migrate:identity": "node scripts/migrate-accounts-memberships.js",
+    "worker": "node workers/index.js",
+    "rollup:analytics": "node scripts/runAnalyticsRollup.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

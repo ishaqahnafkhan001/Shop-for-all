@@ -18,20 +18,26 @@ const StatusPill = ({ status }) => (
     </span>
 );
 
-const ImagePreview = ({ label, url }) => (
+const DocumentAccess = ({ label, document, onOpen }) => (
     <div>
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p>
-        {url ? (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                <img src={url} alt={label} className="h-56 w-full object-cover" />
-            </a>
+        {document?.available ? (
+            <button
+                type="button"
+                onClick={onOpen}
+                className="flex h-56 w-full flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+            >
+                <Eye className="mb-2 h-8 w-8" />
+                Open signed document
+                {document.requiresMigration && <span className="mt-1 text-xs font-semibold text-amber-600">Legacy file will be secured on view</span>}
+            </button>
         ) : (
             <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-400">No image</div>
         )}
     </div>
 );
 
-const DetailModal = ({ item, onClose, onApprove, onReject, rejectReason, setRejectReason, actionLoading }) => {
+const DetailModal = ({ item, onClose, onApprove, onReject, onOpenDocument, rejectReason, setRejectReason, actionLoading }) => {
     if (!item) return null;
 
     return (
@@ -86,8 +92,16 @@ const DetailModal = ({ item, onClose, onApprove, onReject, rejectReason, setReje
                     )}
 
                     <div className="grid gap-4 md:grid-cols-2">
-                        <ImagePreview label="NID front" url={item.nidFrontUrl} />
-                        <ImagePreview label="NID back" url={item.nidBackUrl} />
+                        <DocumentAccess
+                            label="NID front"
+                            document={item.documents?.front}
+                            onOpen={() => onOpenDocument(item, 'front')}
+                        />
+                        <DocumentAccess
+                            label="NID back"
+                            document={item.documents?.back}
+                            onOpen={() => onOpenDocument(item, 'back')}
+                        />
                     </div>
 
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -204,6 +218,16 @@ const VendorVerifications = () => {
             toast.error(err.response?.data?.error || 'Failed to reject verification');
         } finally {
             setActionLoading(false);
+        }
+    };
+
+    const openDocument = async (item, type) => {
+        if (!item?._id) return;
+        try {
+            const { data } = await API.get(`/super-admin/vendor-verifications/${item._id}/document/${type}`);
+            if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Unable to open signed NID document');
         }
     };
 
@@ -332,6 +356,7 @@ const VendorVerifications = () => {
                 onClose={() => setSelected(null)}
                 onApprove={approveSelected}
                 onReject={rejectSelected}
+                onOpenDocument={openDocument}
                 rejectReason={rejectReason}
                 setRejectReason={setRejectReason}
                 actionLoading={actionLoading}

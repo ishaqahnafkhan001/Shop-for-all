@@ -4,6 +4,7 @@ import { useCart } from '@/context/CartContext';
 import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, ShieldCheck, Truck } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
 
 export default function CartPage() {
     const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart();
@@ -79,6 +80,7 @@ export default function CartPage() {
                                                 alt={item.title}
                                                 fill
                                                 sizes="(max-width: 640px) 100vw, 112px"
+                                                unoptimized={shouldUseUnoptimizedImage(getCartImageUrl(item))}
                                                 className="object-cover"
                                             />
                                         ) : (

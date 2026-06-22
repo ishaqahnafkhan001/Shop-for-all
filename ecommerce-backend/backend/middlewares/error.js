@@ -1,8 +1,19 @@
+const logger = require('../services/logger');
+
 exports.errorHandler = (err, req, res, next) => {
     // FIX: err.stack.red crashes the handler itself if the `colors` package is not
     // installed or not imported. Use err.stack directly — terminal colouring belongs
     // in the logger layer, not in error handling middleware.
-    console.error(err.stack);
+    logger.error('unhandled_error', {
+        requestId: req.id,
+        method: req.method,
+        path: req.originalUrl || req.url,
+        status: res.statusCode,
+        userId: req.user?._id || req.user?.id || null,
+        role: req.user?.role || null,
+        shopId: req.tenantId || req.user?.shop_id || null,
+        error: err
+    });
 
     let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
     let message = err.message || "Internal Server Error";
@@ -28,6 +39,7 @@ exports.errorHandler = (err, req, res, next) => {
 
     res.status(statusCode).json({
         error: message,
+        requestId: req.id,
         // Only show the stack trace in development
         stack: process.env.NODE_ENV === 'production' ? null : err.stack,
     });

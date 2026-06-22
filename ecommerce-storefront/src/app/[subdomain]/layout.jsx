@@ -1,6 +1,7 @@
 import Navbar from '@/components/storefront/Navbar';
 import StorefrontFooter from '@/components/storefront/StorefrontFooter';
 import StorefrontThemeProvider from '@/components/storefront/StorefrontThemeProvider';
+import AnalyticsConsentBanner from '@/components/storefront/AnalyticsConsentBanner';
 // ✨ IMPORT THE CART PROVIDER ✨
 import { CartProvider } from '@/context/CartContext';
 // (Make sure to also import your Toaster if you are using react-hot-toast!)
@@ -11,7 +12,7 @@ export default async function VendorLayout({ children, params }) {
 
     return (
         <StorefrontThemeProvider subdomain={subdomain}>
-            <div className="min-h-screen bg-[var(--sf-background)] flex flex-col">
+            <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-[var(--sf-background)]">
 
                 {/* Wrap everything in the CartProvider and pass the subdomain */}
                 <CartProvider subdomain={subdomain}>
@@ -21,9 +22,11 @@ export default async function VendorLayout({ children, params }) {
 
                     <Navbar subdomain={subdomain} />
 
-                    <main className="flex-grow">{children}</main>
+                    <main className="min-w-0 flex-grow">{children}</main>
 
                     <StorefrontFooter subdomain={subdomain} />
+
+                    <AnalyticsConsentBanner />
 
                 </CartProvider>
 

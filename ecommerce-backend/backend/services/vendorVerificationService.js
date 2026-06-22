@@ -3,8 +3,13 @@ const VendorVerification = require('../models/VendorVerification');
 const { logAudit } = require('./auditLogService');
 const { logPlatformAudit } = require('./platformAuditLogService');
 const { createNotification } = require('./notificationService');
+const {
+    documentSummaries,
+    maskNidNumber
+} = require('./vendorVerificationPrivacyService');
 
 const VERIFICATION_DEADLINE_DAYS = 20;
+const REJECTED_NID_RETENTION_DAYS = 180;
 const VERIFICATION_SUSPENSION_REASON = 'Store verification deadline expired. Submit NID verification for Super Admin approval.';
 
 const addDays = (date, days) => {
@@ -90,9 +95,8 @@ const buildStatusPayload = ({ shop, verification }) => {
         canSubmit: status !== 'approved',
         documents: verification ? {
             nidName: verification.nidName || '',
-            nidNumber: verification.nidNumber || '',
-            nidFrontUrl: verification.nidFrontUrl || '',
-            nidBackUrl: verification.nidBackUrl || ''
+            nidNumber: maskNidNumber(verification.nidNumber),
+            ...documentSummaries(verification)
         } : null
     };
 };
@@ -198,6 +202,8 @@ const approveVerification = async ({ verification, reviewer, req }) => {
     const reviewerRef = getReviewerRef(reviewer);
     verification.status = 'approved';
     verification.approvedAt = new Date();
+    verification.retentionUntil = null;
+    verification.retentionReason = 'active_verified_shop';
     verification.rejectedAt = null;
     verification.rejectionReason = '';
     verification.suspendedAt = verification.suspendedAt || null;
@@ -255,6 +261,8 @@ const rejectVerification = async ({ verification, reviewer, rejectionReason, adm
     verification.status = 'rejected';
     verification.rejectedAt = new Date();
     verification.approvedAt = null;
+    verification.retentionUntil = addDays(verification.rejectedAt, REJECTED_NID_RETENTION_DAYS);
+    verification.retentionReason = 'rejected_review_retention';
     verification.rejectionReason = rejectionReason;
     verification.adminNote = adminNote;
     verification.reviewedBy = reviewerRef.reviewedBy;
@@ -303,6 +311,7 @@ const rejectVerification = async ({ verification, reviewer, rejectionReason, adm
 
 module.exports = {
     VERIFICATION_DEADLINE_DAYS,
+    REJECTED_NID_RETENTION_DAYS,
     VERIFICATION_SUSPENSION_REASON,
     addDays,
     getDefaultDeadline,
