@@ -1,5 +1,6 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import API from '@/api/api';
 
 // 1. Create the context
@@ -25,11 +26,13 @@ const getCurrentSubdomain = () => {
 
 // 2. Create the Provider component
 export const AuthProvider = ({ children }) => {
+    const pathname = usePathname() || '';
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const authCheckedRef = useRef(false);
 
     // 🧠 Check if user is logged in on first load
-    const checkAuthStatus = async (subdomain) => {
+    const checkAuthStatus = useCallback(async (subdomain) => {
         try {
             // The browser automatically attaches the HttpOnly cookie to this request
             const currentSubdomain = subdomain || getCurrentSubdomain();
@@ -44,12 +47,35 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setLoading(false); // Stop the loading spinner
         }
-    };
+    }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => checkAuthStatus(), 0);
+        const isAuthCriticalPath = pathname.includes('/account') || pathname.includes('/checkout');
+
+        if (isAuthCriticalPath) {
+            const timer = setTimeout(() => {
+                authCheckedRef.current = true;
+                checkAuthStatus();
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+
+        if (authCheckedRef.current) return undefined;
+
+        setLoading(false);
+        const runDeferredCheck = () => {
+            authCheckedRef.current = true;
+            checkAuthStatus();
+        };
+
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            const idleId = window.requestIdleCallback(runDeferredCheck, { timeout: 2500 });
+            return () => window.cancelIdleCallback(idleId);
+        }
+
+        const timer = setTimeout(runDeferredCheck, 1500);
         return () => clearTimeout(timer);
-    }, []);
+    }, [checkAuthStatus, pathname]);
 
     // 🔓 Login Function
     const login = async (email, password, subdomain) => {

@@ -3,6 +3,7 @@ const Shop = require('../models/Shop');
 const User = require('../models/User');
 const VendorVerification = require('../models/VendorVerification');
 const cache = require('../services/cacheService');
+const { invalidateTenantCache } = require('../middlewares/tenant');
 const { logAudit } = require('../services/auditLogService');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
 const { createNotification } = require('../services/notificationService');
@@ -72,7 +73,7 @@ const getVerificationSummary = async () => {
 const invalidateShopCache = async (shop) => {
     if (!shop?._id) return;
     await Promise.all([
-        shop.subdomain ? cache.del(`tenant:${shop.subdomain}`) : Promise.resolve(),
+        shop.subdomain ? invalidateTenantCache(shop.subdomain) : Promise.resolve(),
         cache.del(`storefront:settings:${shop._id}`),
         cache.delPattern(`storefront:bootstrap:${shop._id}:*`)
     ]);

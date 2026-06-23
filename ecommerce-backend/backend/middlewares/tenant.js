@@ -3,6 +3,7 @@ const cache = require('../services/cacheService');
 const { ensureShopVerificationStatus } = require('../services/vendorVerificationService');
 const tenantCache = new Map();
 const TENANT_CACHE_TTL = 5 * 60 * 1000;
+const TENANT_AVAILABILITY_CHECK_TTL = 30 * 1000;
 
 const unavailableResponse = (res) => res.status(423).json({
     success: false,
@@ -10,8 +11,28 @@ const unavailableResponse = (res) => res.status(423).json({
     error: 'This store is temporarily unavailable.'
 });
 
+const normalizeSubdomain = (subdomain = '') => String(subdomain || '').toLowerCase();
+
+const isAvailabilityFresh = (shop = {}) => (
+    shop.availabilityCheckedAt &&
+    Date.now() - Number(shop.availabilityCheckedAt) < TENANT_AVAILABILITY_CHECK_TTL &&
+    shop.isActive !== false &&
+    shop.approvalStatus !== 'Suspended'
+);
+
+const buildCachedTenant = (shop) => ({
+    _id: shop._id,
+    shopName: shop.shopName,
+    isActive: shop.isActive,
+    approvalStatus: shop.approvalStatus,
+    suspensionReason: shop.suspensionReason,
+    availabilityCheckedAt: Date.now()
+});
+
 const attachActiveTenant = async ({ req, res, shop, subdomain, cacheKey }) => {
-    const checked = await ensureShopVerificationStatus(shop._id);
+    const checked = isAvailabilityFresh(shop)
+        ? { shop }
+        : await ensureShopVerificationStatus(shop);
     const currentShop = checked.shop || shop;
 
     if (!currentShop || currentShop.isActive === false || currentShop.approvalStatus === 'Suspended') {
@@ -20,10 +41,7 @@ const attachActiveTenant = async ({ req, res, shop, subdomain, cacheKey }) => {
         return unavailableResponse(res);
     }
 
-    const tenant = {
-        _id: currentShop._id,
-        shopName: currentShop.shopName
-    };
+    const tenant = buildCachedTenant(currentShop);
 
     await cache.set(cacheKey, tenant, TENANT_CACHE_TTL / 1000);
     tenantCache.set(subdomain, {
@@ -38,7 +56,7 @@ const attachActiveTenant = async ({ req, res, shop, subdomain, cacheKey }) => {
 
 exports.resolveTenant = async (req, res, next) => {
     try {
-        const subdomain = req.params.subdomain?.toLowerCase();
+        const subdomain = normalizeSubdomain(req.params.subdomain);
 
         if (!subdomain) {
             return res.status(400).json({ error: "Subdomain is required to fetch store data." });
@@ -75,4 +93,11 @@ exports.resolveTenant = async (req, res, next) => {
         console.error("Tenant Resolution Error:", err);
         res.status(500).json({ error: "Server error resolving store data." });
     }
+};
+
+exports.invalidateTenantCache = async (subdomain) => {
+    const normalized = normalizeSubdomain(subdomain);
+    if (!normalized) return;
+    tenantCache.delete(normalized);
+    await cache.del(`tenant:${normalized}`);
 };

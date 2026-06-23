@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useCallback, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useCart }    from '@/context/CartContext';
 import { useAuth }    from '@/context/AuthContext';
 import { useRouter }  from 'next/navigation';
@@ -39,8 +39,7 @@ function PageSpinner() {
 }
 
 /* ─── Page component ─────────────────────────────────────────── */
-export default function ProductDetails({ params }) {
-    const { subdomain, id } = React.use(params);
+export default function ProductDetails({ subdomain, id, initialProduct = null }) {
     const { addToCart }     = useCart();
     const { user }          = useAuth();
     const router            = useRouter();
@@ -54,7 +53,7 @@ export default function ProductDetails({ params }) {
         selectedAttributes, availableAttributes, currentVariant,
         displayStock, baseOriginalPrice, displayDiscount, displayFinalPrice,
         handleAttributeSelect, refreshProductStats,
-    } = useProductData(subdomain, id);
+    } = useProductData(subdomain, id, initialProduct);
     const customerId = user?.role === 'Customer' ? (user._id || user.id) : null;
 
     useEffect(() => {

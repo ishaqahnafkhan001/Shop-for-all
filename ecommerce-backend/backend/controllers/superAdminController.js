@@ -8,6 +8,7 @@ const AbuseReport = require('../models/AbuseReport');
 const VendorVerification = require('../models/VendorVerification');
 const PlatformAuditLog = require('../models/PlatformAuditLog');
 const cache = require('../services/cacheService');
+const { invalidateTenantCache } = require('../middlewares/tenant');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
 const { VERIFICATION_SUSPENSION_REASON, isVerificationSuspension } = require('../services/vendorVerificationService');
 
@@ -54,7 +55,7 @@ const requireReason = (res, reason, message = 'Reason is required') => {
 const invalidateShopCache = async (shop) => {
     if (!shop?._id) return;
     await Promise.all([
-        shop.subdomain ? cache.del(`tenant:${shop.subdomain}`) : Promise.resolve(),
+        shop.subdomain ? invalidateTenantCache(shop.subdomain) : Promise.resolve(),
         cache.del(`storefront:settings:${shop._id}`),
         cache.delPattern(`storefront:bootstrap:${shop._id}:*`)
     ]);

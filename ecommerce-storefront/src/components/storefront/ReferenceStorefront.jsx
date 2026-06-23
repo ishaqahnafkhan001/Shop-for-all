@@ -125,6 +125,22 @@ const formatPrice = (value) => {
     return `৳ ${number.toLocaleString('en-BD', { maximumFractionDigits: 2 })}`;
 };
 const getImageUrl = (product) => product?.imageUrl || product?.images?.[0] || '';
+const optimizeCloudinaryImage = (src = '', { width = 900, quality = 'auto:eco', crop = 'limit' } = {}) => {
+    if (!src || typeof src !== 'string' || src.startsWith('/') || src.startsWith('data:') || src.startsWith('blob:')) return src;
+
+    try {
+        const url = new URL(src);
+        const uploadSegment = '/image/upload/';
+        if (url.hostname !== 'res.cloudinary.com' || !url.pathname.includes(uploadSegment)) return src;
+
+        const [prefix, suffix] = url.pathname.split(uploadSegment);
+        const transformation = `f_auto,q_${quality},c_${crop},w_${width}`;
+        url.pathname = `${prefix}${uploadSegment}${transformation}/${suffix}`;
+        return url.toString();
+    } catch {
+        return src;
+    }
+};
 const getPrice = (product) => product?.finalPrice || product?.sellingPrice || product?.pricing?.sellingPrice || product?.price || 0;
 const normalizeImageList = (...lists) => [...new Set(lists.flat().filter(Boolean).map(String))];
 const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';
@@ -238,9 +254,13 @@ const BrandMark = ({ theme, brandName }) => (
     <span className="flex min-w-0 items-center gap-2.5 sm:gap-3">
         {theme.logoUrl ? (
             <img
-                src={theme.logoUrl}
+                src={optimizeCloudinaryImage(theme.logoUrl, { width: 96 })}
                 alt={brandName}
+                width="40"
+                height="40"
                 className="h-9 w-9 rounded-2xl border border-slate-200 object-cover shadow-sm sm:h-10 sm:w-10"
+                loading="eager"
+                decoding="async"
             />
         ) : (
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 sm:h-10 sm:w-10">
@@ -537,10 +557,13 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
             <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === 'rounded-none' ? '' : 'm-1.5 mb-0 sm:m-3 sm:mb-0'} ${imageRadiusClass}`}>
                 {imageUrl ? (
                     <img
-                        src={imageUrl}
+                        src={optimizeCloudinaryImage(imageUrl, { width: 560 })}
                         alt={product.title}
+                        width="560"
+                        height="560"
                         className={`h-full w-full ${imageFitClass} ${imagePaddingClass} transition-transform duration-500 ${productCard?.hoverZoom === false ? '' : 'group-hover:scale-105'}`}
-                        loading={index < 6 ? 'eager' : 'lazy'}
+                        loading="lazy"
+                        decoding="async"
                     />
                 ) : (
                     <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-300">
@@ -672,8 +695,28 @@ const HomepageSection = memo(function HomepageSection({ section, sectionIndex, c
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
                 <section className={`${mobileVisibilityClass} mt-8 md:mt-12`}>
                 <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || '#products'} className="group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] bg-slate-950 shadow-sm sm:min-h-[280px] sm:rounded-[1.75rem] lg:min-h-[320px]">
-                    {mobileImageUrl && mobileImageUrl !== imageUrl && <img src={mobileImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover md:hidden" />}
-                    {imageUrl && <img src={imageUrl} alt="" className={`${mobileImageUrl && mobileImageUrl !== imageUrl ? 'hidden md:block' : ''} absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105`} />}
+                    {mobileImageUrl && mobileImageUrl !== imageUrl && (
+                        <img
+                            src={optimizeCloudinaryImage(mobileImageUrl, { width: 760, crop: 'fill' })}
+                            alt=""
+                            width="760"
+                            height="520"
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 h-full w-full object-cover md:hidden"
+                        />
+                    )}
+                    {imageUrl && (
+                        <img
+                            src={optimizeCloudinaryImage(imageUrl, { width: 1600, crop: 'fill' })}
+                            alt=""
+                            width="1600"
+                            height="700"
+                            loading="lazy"
+                            decoding="async"
+                            className={`${mobileImageUrl && mobileImageUrl !== imageUrl ? 'hidden md:block' : ''} absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105`}
+                        />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-r from-slate-950/78 via-slate-950/36 to-transparent" />
                     <div className="relative z-10 flex min-h-[220px] max-w-2xl flex-col justify-end p-5 text-white sm:min-h-[280px] sm:p-8 lg:min-h-[320px] lg:p-10">
                         <h2 className="text-2xl font-black leading-tight sm:text-4xl lg:text-5xl">{section.settings?.title || section.title || 'Promotional banner'}</h2>
@@ -935,13 +978,18 @@ export function ReferenceStorefrontHome({
                     {activeHeroImage ? (
                         <picture>
                             {activeMobileHeroImage && activeMobileHeroImage !== activeHeroImage && (
-                                <source media="(max-width: 640px)" srcSet={activeMobileHeroImage} />
+                                <source media="(max-width: 640px)" srcSet={optimizeCloudinaryImage(activeMobileHeroImage, { width: 760, crop: 'fill' })} />
                             )}
-                            <img
-                                src={activeHeroImage}
-                                alt={activeHeroSlide.title || hero.title || 'Store banner'}
-                                className="absolute inset-0 h-full w-full object-cover"
-                            />
+	                            <img
+	                                src={optimizeCloudinaryImage(activeHeroImage, { width: 1920, crop: 'fill' })}
+	                                alt={activeHeroSlide.title || hero.title || 'Store banner'}
+	                                width="1920"
+	                                height="720"
+	                                loading="eager"
+	                                fetchPriority="high"
+	                                decoding="async"
+	                                className="absolute inset-0 h-full w-full object-cover"
+	                            />
                         </picture>
                     ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900" />

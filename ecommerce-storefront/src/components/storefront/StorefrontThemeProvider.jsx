@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import API from '@/api/api';
 import { FALLBACK_THEME, getThemeCssVars, normalizeTheme } from '@/lib/theme';
 
@@ -8,12 +9,20 @@ const StorefrontThemeContext = createContext({
     settings: null,
     theme: FALLBACK_THEME,
     cssTheme: getThemeCssVars(FALLBACK_THEME),
+    hydrateThemeSettings: () => {},
 });
 
 export const useStorefrontTheme = () => useContext(StorefrontThemeContext);
 
 export default function StorefrontThemeProvider({ subdomain, children }) {
+    const pathname = usePathname();
     const [settings, setSettings] = useState(null);
+    const isTenantHomepage = Boolean(subdomain) && (pathname === '/' || pathname === '');
+
+    const hydrateThemeSettings = useCallback((nextSettings) => {
+        if (!nextSettings) return;
+        setSettings(nextSettings);
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -23,6 +32,8 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
                 setSettings(null);
                 return;
             }
+
+            if (isTenantHomepage) return;
 
             try {
                 const response = await API.get(`/store-builder/storefront/${subdomain}`);
@@ -37,7 +48,7 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         return () => {
             isMounted = false;
         };
-    }, [subdomain]);
+    }, [isTenantHomepage, subdomain]);
 
     const theme = useMemo(() => normalizeTheme(settings?.theme || {}), [settings?.theme]);
     const cssTheme = useMemo(() => getThemeCssVars(theme), [theme]);
@@ -88,7 +99,8 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         settings,
         theme,
         cssTheme,
-    }), [settings, theme, cssTheme]);
+        hydrateThemeSettings,
+    }), [settings, theme, cssTheme, hydrateThemeSettings]);
 
     return (
         <StorefrontThemeContext.Provider value={contextValue}>

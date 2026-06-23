@@ -37,4 +37,6 @@ const bannerSchema = new Schema({
     }
 }, { timestamps: true });
 
+bannerSchema.index({ shop_id: 1, isActive: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Banner', bannerSchema);

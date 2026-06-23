@@ -134,6 +134,9 @@ productSchema.index({ shop_id: 1, status: 1, isActive: 1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, status: 1, isActive: 1, createdAt: -1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, category: 1, createdAt: -1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, 'pricing.sellingPrice': 1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, isActive: 1, status: 1, category: 1, createdAt: -1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, isActive: 1, status: 1, averageRating: -1, numReviews: -1 });
+productSchema.index({ shop_id: 1, isDeleted: 1, isActive: 1, status: 1, title: 1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, 'variants.sku': 1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, 'variants.optionKey': 1 });
 productSchema.index({ shop_id: 1, slug: 1 }, {

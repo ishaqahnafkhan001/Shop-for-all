@@ -239,6 +239,7 @@ exports.getShopProducts = async (req, res) => {
             status,
             minPrice,
             maxPrice,
+            minRating,
             sort,
             lowStock
         } = req.query;
@@ -269,6 +270,7 @@ exports.getShopProducts = async (req, res) => {
             if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
             if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
         }
+        if (minRating) query.averageRating = { $gte: Math.min(Math.max(Number(minRating) || 0, 0), 5) };
         if (lowStock === 'true') {
             query.$expr = {
                 $lt: [
@@ -283,6 +285,8 @@ exports.getShopProducts = async (req, res) => {
         if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
         if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
+        if (sort === 'ratingDesc') sortQuery = { averageRating: -1, numReviews: -1, _id: 1 };
+        if (sort === 'ratingAsc') sortQuery = { averageRating: 1, numReviews: 1, _id: 1 };
         if (sort === 'oldest') sortQuery = { createdAt: 1, _id: 1 };
 
         const skip = (page - 1) * limit;
