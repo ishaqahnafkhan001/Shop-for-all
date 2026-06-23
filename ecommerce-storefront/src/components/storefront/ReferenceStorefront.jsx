@@ -56,10 +56,10 @@ const desktopGridClasses = {
 
 const plainGridClasses = {
     1: 'grid-cols-1',
-    2: 'grid-cols-2 max-[360px]:grid-cols-1',
-    3: 'grid-cols-2 max-[360px]:grid-cols-1 md:grid-cols-3',
-    4: 'grid-cols-2 max-[360px]:grid-cols-1 md:grid-cols-3 xl:grid-cols-4',
-    5: 'grid-cols-2 max-[360px]:grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+    2: 'grid-cols-2',
+    3: 'grid-cols-2 md:grid-cols-3',
+    4: 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4',
+    5: 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
 };
 
 const cardRadiusClasses = {
@@ -235,15 +235,15 @@ const EditorSelectionFrame = ({ editor, id, label, locked = false, children }) =
 };
 
 const BrandMark = ({ theme, brandName }) => (
-    <span className="flex min-w-0 items-center gap-3">
+    <span className="flex min-w-0 items-center gap-2.5 sm:gap-3">
         {theme.logoUrl ? (
             <img
                 src={theme.logoUrl}
                 alt={brandName}
-                className="h-10 w-10 rounded-2xl border border-slate-200 object-cover shadow-sm"
+                className="h-9 w-9 rounded-2xl border border-slate-200 object-cover shadow-sm sm:h-10 sm:w-10"
             />
         ) : (
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 sm:h-10 sm:w-10">
                 {brandName.slice(0, 1).toUpperCase()}
             </span>
         )}
@@ -388,11 +388,11 @@ export function ReferenceStorefrontHeader({
         ? (forceNarrowHeader ? 'hidden' : `grid h-[76px] items-center gap-6 ${forcedDesktopLayoutClass}`)
         : `hidden h-[76px] items-center gap-6 lg:grid ${desktopLayoutClass}`;
     const mobileHeaderClass = previewDevice
-        ? (forceNarrowHeader ? 'flex h-[66px] items-center justify-between gap-3' : 'hidden')
-        : 'flex h-[66px] items-center justify-between gap-3 lg:hidden';
+        ? (forceNarrowHeader ? 'flex h-[58px] items-center justify-between gap-2.5 sm:h-[64px]' : 'hidden')
+        : 'flex h-[58px] items-center justify-between gap-2.5 sm:h-[64px] lg:hidden';
     const mobileSearchClass = previewDevice
-        ? (forceNarrowHeader ? 'pb-3' : 'hidden')
-        : 'pb-3 lg:hidden';
+        ? (forceNarrowHeader ? 'pb-2.5' : 'hidden')
+        : 'pb-2.5 lg:hidden';
 
     return (
         <>
@@ -407,7 +407,7 @@ export function ReferenceStorefrontHeader({
                             <button
                                 type="button"
                                 onClick={() => setMobileMenuOpen(true)}
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[var(--sf-navbar-text)]"
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[var(--sf-navbar-text)] sm:h-11 sm:w-11"
                                 aria-label="Open menu"
                             >
                                 <Menu size={20} />
@@ -418,7 +418,7 @@ export function ReferenceStorefrontHeader({
                             <LinkSlot
                                 LinkComponent={LinkComponent}
                                 href="/cart"
-                                className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white"
+                                className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm sm:h-11 sm:w-11"
                                 aria-label="Cart"
                             >
                                 <ShoppingBag size={18} />
@@ -435,10 +435,10 @@ export function ReferenceStorefrontHeader({
                                 type="button"
                                 onClick={onSearch}
                                 aria-label="Search products"
-                                className="flex h-11 w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500"
+                                className="flex h-10 w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 text-sm font-semibold text-slate-500 shadow-sm shadow-slate-200/50"
                             >
-                                <Search size={17} />
-                                <span>Search products</span>
+                                <Search size={16} className="shrink-0" />
+                                <span className="truncate">Search products</span>
                             </button>
                         </div>
                     </div>
@@ -534,7 +534,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
             }}
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
-            <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === 'rounded-none' ? '' : 'm-2 mb-0 sm:m-3 sm:mb-0'} ${imageRadiusClass}`}>
+            <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === 'rounded-none' ? '' : 'm-1.5 mb-0 sm:m-3 sm:mb-0'} ${imageRadiusClass}`}>
                 {imageUrl ? (
                     <img
                         src={imageUrl}
@@ -548,24 +548,24 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                     </div>
                 )}
                 {productCard?.showWishlist !== false && (
-                    <button type="button" aria-label={`Save ${product.title} to wishlist`} className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)] sm:right-3 sm:top-3 sm:h-9 sm:w-9">
-                        <Heart size={16} />
+                    <button type="button" aria-label={`Save ${product.title} to wishlist`} className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm backdrop-blur transition hover:text-[var(--sf-accent)] sm:right-3 sm:top-3 sm:h-9 sm:w-9">
+                        <Heart size={14} className="sm:h-4 sm:w-4" />
                     </button>
                 )}
                 {hasDiscount && productCard?.showDiscountBadge !== false && (
-                    <span className="absolute left-2 top-2 z-20 rounded-full bg-[var(--sf-sale-badge-bg)] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-[var(--sf-sale-badge-text)] sm:left-3 sm:top-3 sm:px-2.5 sm:text-[10px]">
+                    <span className="absolute left-2 top-2 z-20 rounded-full bg-[var(--sf-sale-badge-bg)] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-[var(--sf-sale-badge-text)] sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
                         {activeDiscount}% off
                     </span>
                 )}
             </div>
-            <div className="flex flex-1 flex-col p-2.5 sm:p-4">
+            <div className="flex flex-1 flex-col p-2.5 pt-2 sm:p-4">
                 {showRating && (
-                    <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-1 text-[11px] font-bold sm:text-xs">
+                    <div className="mb-1.5 flex min-w-0 items-center justify-between gap-1 text-[10px] font-bold sm:mb-2 sm:text-xs">
                         <span className="flex shrink-0 items-center gap-0.5 text-[var(--sf-rating-color)]">
                             {[1, 2, 3, 4, 5].map(star => (
                                 <Star
                                     key={star}
-                                    size={12}
+                                    size={11}
                                     fill={star <= Math.round(rating) ? 'currentColor' : 'none'}
                                     className={star <= Math.round(rating) ? '' : 'text-slate-300'}
                                 />
@@ -576,19 +576,23 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                 )}
                 <h3 className={`line-clamp-2 leading-snug text-slate-950 ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800 }}>{product.title}</h3>
                 {productCard?.showCategory !== false && product.category && (
-                    <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">{product.category}</p>
+                    <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-slate-500 sm:text-xs">{product.category}</p>
                 )}
                 {(productCard?.showStock !== false || productCard?.showSku) && (
-                    <div className="mt-2 space-y-1 text-[11px] font-bold text-slate-400">
-                        {productCard?.showStock !== false && <p>{stockText}</p>}
-                        {productCard?.showSku && sku && <p>SKU: {sku}</p>}
+                    <div className="mt-2 flex flex-wrap gap-1 text-[10px] font-bold text-slate-500 sm:text-[11px]">
+                        {productCard?.showStock !== false && (
+                            <p className={`max-w-full truncate rounded-full px-2 py-1 ${stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                                {stockText}
+                            </p>
+                        )}
+                        {productCard?.showSku && sku && <p className="hidden max-w-full truncate rounded-full bg-slate-50 px-2 py-1 text-slate-400 sm:block">SKU: {sku}</p>}
                     </div>
                 )}
-                <div className="mt-auto flex flex-col gap-3 pt-3 sm:flex-row sm:items-end sm:justify-between sm:pt-4">
+                <div className="mt-auto flex flex-col gap-2.5 pt-3 sm:flex-row sm:items-end sm:justify-between sm:gap-3 sm:pt-4">
                     <div className="min-w-0">
                         <p className={`${priceSizeClass} font-black`} style={{ color: priceColor }}>{formatPrice(price)}</p>
                         {hasDiscount && originalPrice > price && (
-                            <p className="text-xs font-semibold text-slate-400 line-through">{formatPrice(originalPrice)}</p>
+                            <p className="text-[11px] font-semibold text-slate-400 line-through sm:text-xs">{formatPrice(originalPrice)}</p>
                         )}
                     </div>
                     {productCard?.showQuickBuy !== false && (
@@ -597,7 +601,7 @@ const ProductCard = memo(function ProductCard({ product, index, storewideDiscoun
                             disabled={stock <= 0}
                             onClick={handleAdd}
                             aria-label={`${stock > 0 ? 'Add' : 'Unavailable'} ${product.title} to cart`}
-                            className={`relative z-20 inline-flex h-9 w-full items-center justify-center whitespace-nowrap border px-3 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white sm:w-auto sm:min-w-[96px] sm:px-4 sm:text-xs ${buttonShapeClass}`}
+                            className={`relative z-20 inline-flex h-10 w-full items-center justify-center whitespace-nowrap border px-3 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white sm:h-9 sm:w-auto sm:min-w-[96px] sm:px-4 sm:text-xs ${buttonShapeClass}`}
                             style={stock <= 0 ? undefined : buttonInlineStyle}
                         >
                             Add to Cart
@@ -620,18 +624,18 @@ const HomepageSection = memo(function HomepageSection({ section, sectionIndex, c
 
     if (section.type === 'FeaturedProducts') {
         const products = sectionProducts?.[section.id || section._id] || catalogProducts.slice(0, 4);
-        const mobileGridClass = Number(mobileSettings.columns) === 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 max-[360px]:grid-cols-1';
+        const mobileGridClass = Number(mobileSettings.columns) === 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2';
         const featuredGridClass = previewDevice
             ? (isPreviewMobile(previewDevice) ? mobileGridClass : `${mobileGridClass} md:grid-cols-3 lg:grid-cols-4`)
             : `${mobileGridClass} md:grid-cols-3 lg:grid-cols-4`;
         if (products.length === 0) return null;
         return (
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-                <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
-                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+                <section className={`${mobileVisibilityClass} mt-8 md:mt-12`}>
+                <div className="mb-4 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
                     <div className="min-w-0">
-                        <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{section.title || 'Featured Products'}</h2>
-                        <p className="mt-1 text-sm font-semibold text-slate-500">Handpicked products from this store</p>
+                        <h2 className="text-xl font-black tracking-tight text-slate-950 sm:text-3xl">{section.title || 'Featured Products'}</h2>
+                        <p className="mt-1 text-xs font-semibold text-slate-500 sm:text-sm">Handpicked products from this store</p>
                     </div>
                     <LinkSlot LinkComponent={LinkComponent} href="#products" className="hidden rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-[var(--sf-accent-soft)] hover:text-[var(--sf-accent)] sm:inline-flex">
                         View all
@@ -666,7 +670,7 @@ const HomepageSection = memo(function HomepageSection({ section, sectionIndex, c
         const mobileImageUrl = mobileDisplayImages[mobileImageIndex] || imageUrl;
         return (
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-                <section className={`${mobileVisibilityClass} mt-10 md:mt-12`}>
+                <section className={`${mobileVisibilityClass} mt-8 md:mt-12`}>
                 <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || '#products'} className="group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] bg-slate-950 shadow-sm sm:min-h-[280px] sm:rounded-[1.75rem] lg:min-h-[320px]">
                     {mobileImageUrl && mobileImageUrl !== imageUrl && <img src={mobileImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover md:hidden" />}
                     {imageUrl && <img src={imageUrl} alt="" className={`${mobileImageUrl && mobileImageUrl !== imageUrl ? 'hidden md:block' : ''} absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105`} />}
@@ -709,8 +713,8 @@ const HomepageSection = memo(function HomepageSection({ section, sectionIndex, c
         if (!reviewText && reviews.length === 0) return null;
         return (
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-                <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem] md:p-7`}>
-                <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Customer Reviews'}</h2>
+	                <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem] md:p-7`}>
+	                <h2 className="text-xl font-black text-slate-950 sm:text-3xl">{section.title || 'Customer Reviews'}</h2>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {reviews.length > 0 ? reviews.map(review => (
                         <div key={review._id} className="rounded-2xl bg-slate-50 p-4">
@@ -740,13 +744,13 @@ const HomepageSection = memo(function HomepageSection({ section, sectionIndex, c
         const mobileColumns = Math.min(Math.max(Number(mobileSettings.columns) || 2, 1), 4);
         const desktopColumns = Math.min(Math.max(Number(section.settings?.columns) || 4, 1), 4);
         const categoryGridClass = previewDevice
-            ? (isPreviewMobile(previewDevice) ? `${categoryGridClasses[mobileColumns]} max-[360px]:grid-cols-1` : categoryGridClasses[desktopColumns])
-            : `${categoryGridClasses[mobileColumns]} max-[360px]:grid-cols-1 ${categoryDesktopGridClasses[desktopColumns]}`;
+            ? (isPreviewMobile(previewDevice) ? categoryGridClasses[mobileColumns] : categoryGridClasses[desktopColumns])
+            : `${categoryGridClasses[mobileColumns]} ${categoryDesktopGridClasses[desktopColumns]}`;
         if (visibleCategories.length === 0) return null;
         return (
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-                <section className={`${mobileVisibilityClass} mt-10 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem]`}>
-                <h2 className="text-2xl font-black text-slate-950">{section.title || 'Shop by category'}</h2>
+                <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem]`}>
+                <h2 className="text-xl font-black text-slate-950 sm:text-2xl">{section.title || 'Shop by category'}</h2>
                 <div className={`mt-4 grid gap-2 ${categoryGridClass}`}>
                     {visibleCategories.map(category => (
                         <LinkSlot key={category} LinkComponent={LinkComponent} href={`/?category=${encodeURIComponent(category)}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
@@ -761,8 +765,8 @@ const HomepageSection = memo(function HomepageSection({ section, sectionIndex, c
 
     return (
         <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-            <section className={`${mobileVisibilityClass} mt-10 rounded-[1.75rem] border border-slate-200 bg-white p-7 text-center shadow-sm md:mt-12 sm:p-10`}>
-                <h2 className="text-2xl font-black text-slate-950 sm:text-3xl">{section.title || 'Store update'}</h2>
+	            <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-5 text-center shadow-sm md:mt-12 md:rounded-[1.75rem] sm:p-10`}>
+	                <h2 className="text-xl font-black text-slate-950 sm:text-3xl">{section.title || 'Store update'}</h2>
                 {section.settings?.text && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">{section.settings.text}</p>}
             </section>
         </EditorSelectionFrame>
@@ -863,7 +867,7 @@ export function ReferenceStorefrontHome({
     const desktopColumns = Math.min(Math.max(allProducts.desktopColumns || layout.productColumnsDesktop || 3, 2), 5);
     const tabletColumns = Math.min(Math.max(allProducts.tabletColumns || 2, 1), 4);
     const mobileColumns = Math.min(Math.max(allProducts.mobileColumns || layout.productColumnsMobile || 2, 1), 2);
-    const liveGridClass = `${mobileColumns === 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 max-[360px]:grid-cols-1'} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
+    const liveGridClass = `${mobileColumns === 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2'} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
     const gridClass = previewDevice
         ? (isPreviewMobile(previewDevice)
             ? plainGridClasses[mobileColumns]
@@ -875,38 +879,41 @@ export function ReferenceStorefrontHome({
     const forcedMobilePreview = isPreviewMobile(previewDevice);
     const forcedNarrowPreview = isPreviewNarrow(previewDevice);
     const heroHeightClass = hero.height === 'Compact'
-        ? 'min-h-[420px] sm:min-h-[460px] lg:min-h-[500px]'
+        ? 'min-h-[350px] sm:min-h-[460px] lg:min-h-[500px]'
         : hero.height === 'Tall'
-            ? 'min-h-[520px] sm:min-h-[600px] lg:min-h-[680px]'
-            : 'min-h-[460px] sm:min-h-[520px] lg:min-h-[580px]';
-    const heroClass = `relative isolate overflow-hidden rounded-[1.5rem] bg-slate-950 text-white shadow-2xl shadow-slate-300/60 sm:rounded-[2rem] ${heroHeightClass}`;
+            ? 'min-h-[430px] sm:min-h-[600px] lg:min-h-[680px]'
+            : 'min-h-[390px] sm:min-h-[520px] lg:min-h-[580px]';
+    const heroClass = `relative isolate overflow-hidden rounded-[1.25rem] bg-slate-950 text-white shadow-xl shadow-slate-300/50 sm:rounded-[2rem] sm:shadow-2xl sm:shadow-slate-300/60 ${heroHeightClass}`;
     const heroTitleClass = previewDevice
-        ? `max-w-4xl font-black leading-[0.95] tracking-tight text-white drop-shadow-sm ${forcedMobilePreview ? 'text-4xl max-[360px]:text-3xl' : previewDevice === 'tablet' ? 'text-5xl' : 'text-7xl'}`
-        : 'max-w-4xl text-4xl font-black leading-[0.95] tracking-tight text-white drop-shadow-sm max-[360px]:text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
+        ? `max-w-4xl font-black leading-[0.95] tracking-tight text-white drop-shadow-sm ${forcedMobilePreview ? 'text-[2rem] max-[360px]:text-[1.75rem]' : previewDevice === 'tablet' ? 'text-5xl' : 'text-7xl'}`
+        : 'max-w-4xl text-[2rem] font-black leading-[0.95] tracking-tight text-white drop-shadow-sm max-[360px]:text-[1.75rem] sm:text-5xl md:text-6xl lg:text-7xl';
     const heroBenefitsClass = previewDevice
         ? (forcedMobilePreview
-            ? 'grid gap-2'
+            ? 'flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
             : 'grid grid-cols-3 gap-3')
-        : 'grid gap-2 sm:grid-cols-3 sm:gap-3 lg:max-w-5xl';
+        : 'flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:snap-none sm:grid-cols-3 sm:gap-3 lg:max-w-5xl';
+    const heroBenefitCardClass = forcedMobilePreview
+        ? 'min-w-[132px]'
+        : 'min-w-[132px] sm:min-w-0';
     const allProductsHeaderClass = forcedNarrowPreview
-        ? 'mb-6 flex flex-col gap-4'
-        : 'mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between';
+        ? 'mb-4 flex flex-col gap-3'
+        : 'mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-4 lg:flex-row lg:items-end lg:justify-between';
     const catalogControlsClass = forcedMobilePreview
-        ? 'flex flex-col gap-3'
-        : 'flex w-full flex-col gap-3 sm:flex-row lg:w-auto';
+        ? 'grid w-full grid-cols-2 gap-2'
+        : 'grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3 lg:w-auto';
     const catalogSearchClass = forcedMobilePreview
-        ? 'relative w-full min-w-0'
-        : 'relative w-full min-w-0 sm:flex-1 lg:w-[min(36vw,420px)] lg:flex-none';
+        ? 'relative col-span-2 w-full min-w-0'
+        : 'relative col-span-2 w-full min-w-0 sm:col-auto sm:flex-1 lg:w-[min(36vw,420px)] lg:flex-none';
     const catalogSelectClass = forcedMobilePreview
-        ? 'rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100'
-        : 'w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36';
+        ? 'min-h-11 w-full rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100'
+        : 'min-h-11 w-full rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36 sm:px-4';
     const productLayoutClass = forcedNarrowPreview
         ? 'grid gap-6'
         : 'grid min-w-0 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]';
     const filterAsideClass = forcedNarrowPreview ? 'hidden' : 'hidden lg:block';
     const filterButtonClass = forcedNarrowPreview
-        ? 'inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700'
-        : 'inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 lg:hidden';
+        ? 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700'
+        : 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 lg:hidden';
     const mobileFilterOverlayClass = forcedNarrowPreview
         ? 'fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm'
         : 'fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm lg:hidden';
@@ -922,7 +929,7 @@ export function ReferenceStorefrontHome({
 
     return (
         <div className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
-            <div className={`${containerClass} py-5 sm:py-8`}>
+            <div className={`${containerClass} py-3.5 sm:py-8`}>
                 <EditorSelectionFrame editor={editor} id="hero" label="Hero Banner" locked>
                 <section className={heroClass}>
                     {activeHeroImage ? (
@@ -963,50 +970,50 @@ export function ReferenceStorefrontHome({
                             </button>
                         </>
                     )}
-                    <div className={`relative z-10 flex ${heroHeightClass} flex-col justify-between p-5 max-[360px]:p-4 sm:p-8 lg:p-12`}>
-                        <div className="max-w-4xl pt-2 sm:pt-4 lg:pt-6">
+                    <div className={`relative z-10 flex ${heroHeightClass} flex-col justify-between p-4 max-[360px]:p-3.5 sm:p-8 lg:p-12`}>
+                        <div className="max-w-4xl sm:pt-4 lg:pt-6">
                             {(activeHeroSlide.badgeText || 'Limited time offer') && (
-                                <p className="inline-flex rounded-full border border-teal-200/25 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-teal-100 shadow-lg shadow-teal-950/20 backdrop-blur sm:text-xs">
+                                <p className="inline-flex rounded-full border border-teal-200/25 bg-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-teal-100 shadow-lg shadow-teal-950/20 backdrop-blur sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.22em]">
                                     {activeHeroSlide.badgeText || 'Limited time offer'}
                                 </p>
                             )}
-                            <h1 className={`${heroTitleClass} mt-5`}>
+                            <h1 className={`${heroTitleClass} mt-3.5 sm:mt-5`}>
                                 {activeHeroSlide.title || hero.title || 'Discover Your Favorite Products'}
                             </h1>
                             {heroOfferText && (
-                                <p className="mt-5 inline-flex w-fit rounded-2xl border border-white/15 bg-slate-950/45 px-4 py-3 text-sm font-black uppercase tracking-wide text-teal-100 shadow-xl backdrop-blur sm:text-base">
+                                <p className="mt-3 inline-flex w-fit rounded-2xl border border-white/15 bg-slate-950/45 px-3 py-2 text-xs font-black uppercase tracking-wide text-teal-100 shadow-xl backdrop-blur sm:mt-5 sm:px-4 sm:py-3 sm:text-base">
                                     {heroOfferText}
                                 </p>
                             )}
                             {(activeHeroSlide.subtitle || hero.subtitle) && (
-                                <p className="mt-5 max-w-2xl text-sm font-semibold leading-7 text-white/78 sm:text-base md:text-lg">
+                                <p className="mt-3 line-clamp-2 max-w-2xl text-sm font-semibold leading-6 text-white/78 sm:mt-5 sm:line-clamp-none sm:text-base sm:leading-7 md:text-lg">
                                     {activeHeroSlide.subtitle || hero.subtitle}
                                 </p>
                             )}
-                            <div className="mt-7 flex flex-col gap-3 min-[420px]:flex-row min-[420px]:flex-wrap">
-                                <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || '#products'} className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-teal-50 sm:min-h-12 sm:px-6">
+                            <div className="mt-5 flex flex-col gap-2.5 min-[380px]:flex-row min-[380px]:flex-wrap sm:mt-7 sm:gap-3">
+                                <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || '#products'} className="inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-teal-50 sm:min-h-12 sm:px-6 sm:py-3">
                                     {activeHeroSlide.primaryCtaText || 'Shop Now'}
                                     <ChevronRight size={16} className="ml-1" />
                                 </LinkSlot>
                                 {activeHeroSlide.secondaryCtaText && (
-                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || '#products'} className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15 sm:min-h-12 sm:px-6">
+                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || '#products'} className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15 sm:min-h-12 sm:px-6 sm:py-3">
                                         {activeHeroSlide.secondaryCtaText}
                                         <ChevronRight size={16} className="ml-1" />
                                     </LinkSlot>
                                 )}
                             </div>
                         </div>
-                        <div className="mt-8 space-y-5">
+                        <div className="mt-5 space-y-3 sm:mt-8 sm:space-y-5">
                             <div className={heroBenefitsClass}>
                                 {serviceCards.map(({ icon: Icon, title, text }) => (
-                                    <div key={title} className="rounded-2xl border border-white/12 bg-white/10 p-3 shadow-lg shadow-slate-950/10 backdrop-blur-md sm:p-4">
-                                        <div className="flex min-w-0 items-center gap-3">
-                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-300/16 text-teal-100">
-                                                <Icon size={18} />
+                                    <div key={title} className={`${heroBenefitCardClass} snap-start rounded-2xl border border-white/12 bg-white/10 p-2.5 shadow-lg shadow-slate-950/10 backdrop-blur-md sm:p-4`}>
+                                        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-300/16 text-teal-100 sm:h-10 sm:w-10 sm:rounded-2xl">
+                                                <Icon size={16} className="sm:h-[18px] sm:w-[18px]" />
                                             </span>
                                             <div className="min-w-0">
-                                                <h3 className="truncate text-sm font-black text-white">{title}</h3>
-                                                <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-4 text-white/66 sm:text-xs">{text}</p>
+                                                <h3 className="truncate text-xs font-black text-white sm:text-sm">{title}</h3>
+                                                <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-4 text-white/66 sm:line-clamp-2 sm:text-xs">{text}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -1052,17 +1059,17 @@ export function ReferenceStorefrontHome({
 
             {allProducts.isEnabled !== false && (
                 <EditorSelectionFrame editor={editor} id="allProducts" label="All Products" locked>
-                <section id="products" className="bg-slate-50 py-9 sm:py-12">
+                <section id="products" className="bg-slate-50 py-7 sm:py-12">
                     <div className={containerClass}>
                         <div className={allProductsHeaderClass}>
                             <div>
-                                <h2 className="text-3xl font-black tracking-tight text-slate-950">{allProducts.title || 'All Products'}</h2>
-                                <p className="mt-1 text-sm font-semibold text-slate-500">{allProducts.subtitle || "Browse this shop's latest catalog"}</p>
+                                <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{allProducts.title || 'All Products'}</h2>
+                                <p className="mt-1 text-xs font-semibold text-slate-500 sm:text-sm">{allProducts.subtitle || "Browse this shop's latest catalog"}</p>
                             </div>
                             <div className={catalogControlsClass}>
                                 <label className={catalogSearchClass}>
                                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="w-full rounded-full border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
+                                    <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="min-h-11 w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
                                 </label>
                                 <select value={filters.sort} onChange={onSortChange} aria-label="Sort products" className={catalogSelectClass}>
                                     <option value="newest">Newest</option>
@@ -1080,7 +1087,7 @@ export function ReferenceStorefrontHome({
                             </div>
                         </div>
 
-                        <div className="mb-5 flex flex-col gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className="mb-4 flex flex-col gap-2 px-1 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[1.25rem] sm:border sm:border-slate-200 sm:bg-white sm:p-3 sm:shadow-sm">
                             <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                                 Showing {filteredProducts.length} product{filteredProducts.length === 1 ? '' : 's'}
                             </p>
@@ -1103,7 +1110,7 @@ export function ReferenceStorefrontHome({
                                     </button>
                                 </div>
                             ) : (
-                                <span className="text-xs font-semibold text-slate-400">Use filters to narrow results</span>
+                                <span className="hidden text-xs font-semibold text-slate-400 sm:inline">Use filters to narrow results</span>
                             )}
                         </div>
 
@@ -1252,7 +1259,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
     return (
         <>
             <EditorSelectionFrame editor={editor} id="footer" label="Footer" locked>
-                <footer className="min-w-0 overflow-x-hidden border-t border-slate-200 bg-[var(--sf-footer-background)] pb-20 pt-10 text-[var(--sf-footer-text)] md:pb-8" style={getReferenceThemeStyle(theme)}>
+                <footer className="min-w-0 overflow-x-hidden border-t border-slate-200 bg-[var(--sf-footer-background)] pb-20 pt-8 text-[var(--sf-footer-text)] md:pb-8 md:pt-10" style={getReferenceThemeStyle(theme)}>
                     <div className={containerClass}>
                         <div className={footerGridClass}>
                             <div className="min-w-0">
@@ -1268,9 +1275,9 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                         {theme.footer.text}
                                     </p>
                                 )}
-                                <form className="mt-5 flex max-w-sm flex-col gap-2 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-1 min-[420px]:flex-row min-[420px]:rounded-full" onSubmit={event => event.preventDefault()}>
-                                    <input type="email" aria-label="Email for updates" placeholder="Email for updates" className="min-h-11 min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400" />
-                                    <button type="submit" className="min-h-11 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Subscribe</button>
+                                <form className="mt-5 flex max-w-sm flex-col gap-2 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-1.5 min-[420px]:flex-row min-[420px]:rounded-full min-[420px]:p-1" onSubmit={event => event.preventDefault()}>
+                                    <input type="email" aria-label="Email for updates" placeholder="Email for updates" className="min-h-10 min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400 min-[420px]:min-h-11 min-[420px]:px-4" />
+                                    <button type="submit" className="min-h-10 rounded-full bg-slate-950 px-5 py-2 text-sm font-black text-white min-[420px]:min-h-11 min-[420px]:py-2.5">Subscribe</button>
                                 </form>
                             </div>
                             <div className={desktopColumnsClass}>
@@ -1280,9 +1287,9 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                 {columns.map(column => <FooterAccordion key={column.title} {...column} LinkComponent={LinkComponent} />)}
                             </div>
                         </div>
-                        <div className="mt-8 flex min-w-0 flex-col gap-4 border-t border-slate-200 pt-5 text-xs font-semibold text-[var(--sf-footer-text)] sm:flex-row sm:items-center sm:justify-between">
+                        <div className="mt-6 flex min-w-0 flex-col gap-3 border-t border-slate-200 pt-4 text-xs font-semibold text-[var(--sf-footer-text)] sm:mt-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pt-5">
                             <p className="min-w-0 break-words">© {new Date().getFullYear()} {brandName}. Powered by Commerce SaaS.</p>
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                                 <Mail size={16} />
                                 {['f', 'ig', 'x'].map(item => (
                                     <span key={item} className="flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-100 px-1 text-[10px] font-black uppercase text-[var(--sf-footer-text)]">
