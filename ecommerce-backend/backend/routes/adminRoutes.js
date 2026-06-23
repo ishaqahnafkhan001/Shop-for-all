@@ -87,6 +87,9 @@ const {
     getAdminDataRequests,
     updateAdminDataRequest
 } = require('../controllers/privacyController');
+const {
+    getVendorOnboarding
+} = require('../controllers/onboardingController');
 
 // =========================
 // Upload Config
@@ -99,6 +102,17 @@ const vendorNidUpload = nidUpload.fields([
     { name: 'nidFront', maxCount: 1 },
     { name: 'nidBack', maxCount: 1 }
 ]);
+
+// ======================================================
+// VENDOR ONBOARDING
+// ======================================================
+
+router.get(
+    '/onboarding',
+    protect,
+    authorize('VendorAdmin'),
+    getVendorOnboarding
+);
 
 // ======================================================
 // VENDOR VERIFICATION

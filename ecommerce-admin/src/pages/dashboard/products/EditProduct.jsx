@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Boxes, DollarSign, FileText, ListChecks, PackagePlus, Plus, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
+import { AdminLoadingState } from '../../../components/ui/AdminState.jsx';
+import {
+    ProductFormSection,
+    ReadinessChecklist,
+    SellerHint
+} from '../../../components/products/ProductFormUX.jsx';
 
 /**
  * EditProduct
@@ -324,6 +330,15 @@ const EditProduct = () => {
     const discount   = Number(formData.pricing.discount)     || 0;
     const finalPrice = selling - (selling * discount / 100);
     const profit     = finalPrice - buying;
+    const totalStock = formData.variants.reduce((sum, variant) => sum + Number(getDisplayStock(variant) || 0), 0);
+    const readinessItems = [
+        { label: 'Product title is clear', done: Boolean(formData.title.trim()), helper: 'Use the name customers search for.' },
+        { label: 'Category is selected', done: Boolean(formData.category.trim()), helper: 'Categories help filters and sections work correctly.' },
+        { label: 'Selling price is set', done: selling > 0, helper: 'A product needs a customer-facing price.' },
+        { label: 'Stock is available', done: totalStock > 0, helper: 'Keep stock updated to avoid cancelled orders.' },
+        { label: 'Description helps shoppers', done: formData.description.trim().length >= 20, helper: 'Explain material, use case, or key benefit.' },
+        { label: 'Product is published', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
+    ];
 
     // ── Main submit (scalar + stock changes + new variants) ───────────────────
     const handleSubmit = async (e) => {
@@ -412,10 +427,19 @@ const EditProduct = () => {
     };
 
     // ─────────────────────────────────────────────────────────────────────────
-    if (loading) return <div className="text-center py-10 text-gray-400">Loading…</div>;
+    if (loading) {
+        return (
+            <div className="mx-auto max-w-4xl px-4 py-10">
+                <AdminLoadingState
+                    title="Loading product"
+                    description="We are opening the product details, variants, pricing, and stock."
+                />
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
             {/* Header */}
             <div className="flex justify-between items-center">
@@ -428,14 +452,16 @@ const EditProduct = () => {
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="space-y-6">
 
                 {/* ── BASIC ─────────────────────────────────────────────── */}
-                <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <div>
-                        <h2 className="font-semibold text-gray-700">Basic Info</h2>
-                        <p className="text-xs text-gray-500 mt-1">Published products are visible to shoppers. Draft products stay hidden.</p>
-                    </div>
+                <ProductFormSection
+                    title="1. Product basics"
+                    description="Keep the title, category, and description easy for shoppers to understand."
+                    icon={PackagePlus}
+                >
+                    <SellerHint>Published products are visible to shoppers. Draft products stay hidden until you are ready.</SellerHint>
                     <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Input id="slug" label="Product Slug" value={formData.slug} onChange={handleChange} />
@@ -463,6 +489,13 @@ const EditProduct = () => {
                             <option>Archived</option>
                         </select>
                     </label>
+                </ProductFormSection>
+
+                <ProductFormSection
+                    title="2. SEO details"
+                    description="Optional search text for Google and shared links."
+                    icon={Search}
+                >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
                             id="seoTitle"
@@ -477,14 +510,14 @@ const EditProduct = () => {
                             onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, description: e.target.value } }))}
                         />
                     </div>
-                </div>
+                </ProductFormSection>
 
                 {/* ── PRICING ───────────────────────────────────────────── */}
-                <div className="bg-white p-5 rounded-xl border space-y-4">
-                    <div>
-                        <h2 className="font-semibold text-gray-700">Pricing</h2>
-                        <p className="text-xs text-gray-500 mt-1">Selling price and discount update the live storefront after saving.</p>
-                    </div>
+                <ProductFormSection
+                    title="3. Pricing"
+                    description="Selling price and discount update the live storefront after saving."
+                    icon={DollarSign}
+                >
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Input id="buyingPrice"  label="Buying"     type="number" value={buying}   onChange={handlePricing} />
                         <Input id="sellingPrice" label="Selling"    type="number" value={selling}  onChange={handlePricing} />
@@ -502,13 +535,16 @@ const EditProduct = () => {
                             </span>
                         </div>
                     </div>
-                </div>
+                </ProductFormSection>
 
                 {/* ── VARIANTS ──────────────────────────────────────────── */}
-                <div className="bg-white p-5 rounded-xl border space-y-4">
+                <ProductFormSection
+                    title="4. Stock and product variants"
+                    description="Variants are sellable options like size, color, storage, or style."
+                    icon={Boxes}
+                >
                     <div className="flex justify-between items-start">
                         <div>
-                            <h2 className="font-semibold text-gray-700">Variants</h2>
                             <p className="text-xs text-gray-400 mt-0.5">Edit stock directly. Pending changes are saved only when you update the product.</p>
                         </div>
                         <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
@@ -831,11 +867,24 @@ const EditProduct = () => {
                         )}
                     </div>
 
-                </div>
+                </ProductFormSection>
 
                 {/* ── FEATURES / SPECS / COMMENTS ───────────────────────── */}
-                {['features', 'specifications', 'comments'].map((type) => (
-                    <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
+                {['features', 'specifications', 'comments'].map((type, index) => (
+                    <ProductFormSection
+                        key={type}
+                        title={`${5 + index}. ${type === 'features' ? 'Selling points' : type === 'specifications' ? 'Specifications' : 'Extra notes'}`}
+                        description={type === 'features' ? 'Short benefits shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
+                        icon={type === 'features' ? ListChecks : type === 'specifications' ? FileText : Search}
+                        actions={(
+                            <button
+                                type="button" onClick={() => addKV(type)}
+                                className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700"
+                            >
+                                <Plus size={14} /> Add
+                            </button>
+                        )}
+                    >
                         <div className="flex justify-between items-center">
                             <div>
                                 <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
@@ -843,12 +892,6 @@ const EditProduct = () => {
                                     {type === 'features' ? 'Short selling points shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
                                 </p>
                             </div>
-                            <button
-                                type="button" onClick={() => addKV(type)}
-                                className="text-indigo-600 text-sm flex items-center gap-1 hover:text-indigo-700"
-                            >
-                                <Plus size={14} /> Add
-                            </button>
                         </div>
                         {formData[type].map((item, i) => (
                             <div key={i} className="grid grid-cols-2 gap-2 relative pr-6">
@@ -875,12 +918,23 @@ const EditProduct = () => {
                         {formData[type].length === 0 && (
                             <p className="text-xs text-gray-400">Nothing added yet. Add details if they help shoppers decide.</p>
                         )}
-                    </div>
+                    </ProductFormSection>
                 ))}
 
                 <Button type="submit" isLoading={isSubmitting}>
                     Update Product
                 </Button>
+                </div>
+
+                <div className="space-y-4">
+                    <ReadinessChecklist items={readinessItems} title="Product health" />
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">
+                        <p className="font-black text-slate-950">Seller note</p>
+                        <p className="mt-2">
+                            Changes to price, stock, variants, and status affect the live storefront after you click Update Product.
+                        </p>
+                    </div>
+                </div>
 
             </form>
         </div>

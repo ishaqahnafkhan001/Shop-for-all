@@ -17,6 +17,7 @@ import API from '../../api/api';
 import Table from '../../components/ui/Table';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
+import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 
 const rangeOptions = [
     { label: 'Last 7 days', value: '7' },
@@ -41,6 +42,67 @@ const labelText = {
     low_interest: 'Low interest',
     not_enough_data: 'Needs data'
 };
+
+const sellerActionCopy = {
+    winner: {
+        title: 'Advertise next',
+        problem: 'This product already has the strongest buying signal.',
+        why: 'A product with views, carts, and orders is safer to promote because customers are already responding.',
+        action: 'Use this product for your next Facebook or Instagram test campaign.',
+        benefit: 'Spend ad budget on a product with better odds of converting.'
+    },
+    fix_before_ads: {
+        title: 'Fix before ads',
+        problem: 'People are looking, but not enough are adding it to cart.',
+        why: 'Ads will send more traffic, but weak product pages can waste that traffic.',
+        action: 'Improve the product image, title, price, description, and offer before promoting it.',
+        benefit: 'Better product clarity can lift add-to-cart rate before you spend money.'
+    },
+    checkout_problem: {
+        title: 'Reduce checkout friction',
+        problem: 'Customers show buying intent but do not complete enough orders.',
+        why: 'Checkout drop-off often means pricing, delivery, payment, or trust needs attention.',
+        action: 'Review delivery charge, COD/payment message, coupon setup, and checkout reassurance.',
+        benefit: 'A smoother checkout can recover orders without needing more visitors.'
+    },
+    hidden_gem: {
+        title: 'Watch this hidden gem',
+        problem: 'This product has promising interest but not enough volume yet.',
+        why: 'Hidden gems can become winners after better placement or a small campaign test.',
+        action: 'Feature it on the homepage, improve images, and test a small ad budget.',
+        benefit: 'You may find a new winning product before competitors notice demand.'
+    },
+    not_enough_data: {
+        title: 'Collect more data',
+        problem: 'There is not enough traffic to make a confident decision.',
+        why: 'A few visits can be misleading, so decisions are safer after more customer activity.',
+        action: 'Share the store, add products to homepage sections, and check again after more visits.',
+        benefit: 'Better data helps you avoid guessing which products deserve attention.'
+    },
+    low_interest: {
+        title: 'Improve discovery',
+        problem: 'This product is not getting enough attention yet.',
+        why: 'Low views can mean shoppers are not finding the product or the title/image is not attractive.',
+        action: 'Improve the first image, title, category, and homepage placement before judging demand.',
+        benefit: 'Better visibility can reveal whether the product has real potential.'
+    }
+};
+
+const actionPriority = ['winner', 'fix_before_ads', 'checkout_problem', 'hidden_gem', 'not_enough_data'];
+
+const buildSellerActions = (products = [], recommendations = []) => (
+    actionPriority.map(label => {
+        const source = products.find(item => item.label === label)
+            || recommendations.find(item => item.label === label)
+            || (label === 'winner' ? products[0] : null);
+        const copy = sellerActionCopy[label];
+        return {
+            label,
+            productTitle: source?.product?.title || (label === 'not_enough_data' ? 'Your catalog' : 'No matching product yet'),
+            ...copy
+        };
+    })
+);
 
 const formatNumber = (value) => Number(value || 0).toLocaleString();
 const formatCurrency = (value) => `BDT ${Math.round(Number(value || 0)).toLocaleString()}`;
@@ -126,6 +188,7 @@ const GrowthCenter = () => {
     const summary = overview?.summary || {};
     const bestProduct = overview?.bestProduct?.product?.title || 'No winner yet';
     const needsAttention = overview?.needsAttention?.product?.title || 'Nothing urgent';
+    const sellerActions = useMemo(() => buildSellerActions(products, recommendations), [products, recommendations]);
 
     const tableColumns = useMemo(() => [
         {
@@ -222,9 +285,10 @@ const GrowthCenter = () => {
             </div>
 
             {loading ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-8 text-sm text-slate-500 shadow-sm">
-                    Loading Growth Center...
-                </div>
+                <AdminLoadingState
+                    title="Loading Growth Center"
+                    description="We are checking product views, carts, checkout starts, orders, searches, and seller recommendations."
+                />
             ) : (
                 <>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -237,6 +301,25 @@ const GrowthCenter = () => {
                         <StatCard title="Needs Attention" value={needsAttention} icon={Megaphone} tone="rose" helper="Fix before spending on ads." />
                         <StatCard title="Search Terms" value={formatNumber(searchTerms.length)} icon={Search} tone="cyan" helper="Unique terms in this period." />
                     </div>
+
+                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <h2 className="text-lg font-black text-slate-950">What should I do today?</h2>
+                                <p className="mt-1 text-sm leading-6 text-slate-500">
+                                    Seller-friendly actions based on your views → cart → checkout → orders funnel.
+                                </p>
+                            </div>
+                            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
+                                {range} day view
+                            </span>
+                        </div>
+                        <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-5">
+                            {sellerActions.map(action => (
+                                <SellerActionCard key={action.label} action={action} />
+                            ))}
+                        </div>
+                    </section>
 
                     <section className="space-y-4">
                         <div>
@@ -264,7 +347,12 @@ const GrowthCenter = () => {
                             </div>
                             <div className="space-y-3">
                                 {searchTerms.length === 0 ? (
-                                    <p className="rounded-lg bg-slate-50 px-4 py-5 text-sm text-slate-500">No storefront searches tracked yet.</p>
+                                    <AdminEmptyState
+                                        title="No searches tracked yet"
+                                        description="When shoppers use storefront search, popular terms and zero-result searches will appear here."
+                                        icon={Search}
+                                        className="shadow-none"
+                                    />
                                 ) : searchTerms.slice(0, 8).map(term => (
                                     <div key={term.query} className="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3">
                                         <div>
@@ -288,7 +376,12 @@ const GrowthCenter = () => {
                             </div>
                             <div className="space-y-3">
                                 {recommendations.length === 0 ? (
-                                    <p className="rounded-lg bg-slate-50 px-4 py-5 text-sm text-slate-500">Recommendations appear after products collect enough funnel activity.</p>
+                                    <AdminEmptyState
+                                        title="Recommendations need traffic"
+                                        description="After products receive views, carts, checkouts, and orders, this area will show what deserves ads and what needs fixing."
+                                        icon={Megaphone}
+                                        className="shadow-none"
+                                    />
                                 ) : recommendations.slice(0, 6).map(item => (
                                     <div key={item.product?._id} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -346,7 +439,7 @@ const GrowthCenter = () => {
                             <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <h3 className="font-black text-slate-950">Ad Copy Helper</h3>
-                                    <p className="text-xs text-slate-500">Template-based copy. No ad account connection needed.</p>
+                                    <p className="text-xs text-slate-500">Planning assistant for Facebook/Instagram ads. It does not publish ads or connect to your ad account.</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <select
@@ -438,6 +531,31 @@ const GrowthCenter = () => {
 };
 
 const rateSafe = (part, total) => total > 0 ? (part / total) * 100 : 0;
+
+const SellerActionCard = ({ action }) => (
+    <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex items-start justify-between gap-3">
+            <div>
+                <p className="text-sm font-black text-slate-950">{action.title}</p>
+                <p className="mt-1 line-clamp-1 text-xs font-semibold text-slate-500">{action.productTitle}</p>
+            </div>
+            <LabelBadge label={action.label} />
+        </div>
+        <div className="mt-4 space-y-3 text-sm leading-6">
+            <SellerActionLine label="Problem" value={action.problem} />
+            <SellerActionLine label="Why it matters" value={action.why} />
+            <SellerActionLine label="Suggested action" value={action.action} />
+            <SellerActionLine label="Expected benefit" value={action.benefit} />
+        </div>
+    </article>
+);
+
+const SellerActionLine = ({ label, value }) => (
+    <div>
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+        <p className="mt-0.5 text-slate-700">{value}</p>
+    </div>
+);
 
 const MiniMetric = ({ label, value }) => (
     <div className="rounded-xl border border-slate-200 bg-white p-4">

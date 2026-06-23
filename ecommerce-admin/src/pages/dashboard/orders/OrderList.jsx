@@ -7,6 +7,7 @@ import OrderDetailsModal from '../../../components/dashboard/OrderDetailsModal';
 import PathaoSyncModal from './PathaoSyncModal';
 import EmailNotificationModal from '../../../components/order/EmailNotificationModal.jsx';
 import {useAuth} from "../../../context/AuthContext.jsx"; // <-- Import the new modal
+import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 
 const OrderList = () => {
     const { user } = useAuth();
@@ -248,7 +249,16 @@ const OrderList = () => {
             </div>
 
             {loading ? (
-                <div className="py-10 text-center text-gray-500">Loading your orders...</div>
+                <AdminLoadingState
+                    title="Loading orders"
+                    description="We are checking customer orders, delivery status, courier sync, and payment totals."
+                />
+            ) : filteredOrders.length === 0 ? (
+                <AdminEmptyState
+                    icon={Package}
+                    title={searchQuery ? 'No matching orders' : 'No orders yet'}
+                    description={searchQuery ? 'Try the last 6 characters of an order ID or clear your search.' : 'Orders will appear here after customers buy from your storefront. Share your store link or create a promotion to bring shoppers in.'}
+                />
             ) : (
                 <>
                     <div className="hidden md:block">
@@ -256,12 +266,7 @@ const OrderList = () => {
                     </div>
 
                     <div className="md:hidden space-y-4">
-                        {filteredOrders.length === 0 ? (
-                            <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
-                                {searchQuery ? 'No orders match your search.' : 'No orders yet. Share your store link or create a promotion to bring shoppers in.'}
-                            </div>
-                        ) : (
-                            filteredOrders.map((order) => (
+                        {filteredOrders.map((order) => (
                                 <div key={order._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>
@@ -294,8 +299,7 @@ const OrderList = () => {
                                         </div>
                                     </div>
                                 </div>
-                            ))
-                        )}
+                            ))}
                     </div>
                 </>
             )}

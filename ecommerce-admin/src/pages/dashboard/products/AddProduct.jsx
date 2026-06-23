@@ -1,10 +1,16 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Plus, Trash2, X, Image as ImageIcon, Video, Sparkles, Loader2, Eye } from 'lucide-react';
+import { Boxes, DollarSign, FileText, ListChecks, PackagePlus, Plus, Search, Trash2, X, Image as ImageIcon, Video, Sparkles, Loader2, Eye } from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
+import {
+    ImageEmptyState,
+    ProductFormSection,
+    ReadinessChecklist,
+    SellerHint
+} from '../../../components/products/ProductFormUX.jsx';
 
 // ── Pure helpers (mirrors backend variantMatrix.js) ───────────────────────────
 
@@ -72,6 +78,15 @@ const AddProduct = () => {
 
     const finalPrice = formData.pricing.sellingPrice - (formData.pricing.sellingPrice * formData.pricing.discount) / 100;
     const profit     = (finalPrice || 0) - (Number(formData.pricing.buyingPrice) || 0);
+    const readinessItems = [
+        { label: 'Product title added', done: Boolean(formData.title.trim()), helper: 'Use a clear name customers would search for.' },
+        { label: 'Category selected', done: Boolean(formData.category.trim()), helper: 'Categories help filters and storefront sections.' },
+        { label: 'Selling price added', done: Number(formData.pricing.sellingPrice) > 0, helper: 'This is the price customers see.' },
+        { label: 'At least one image added', done: imageFiles.length > 0, helper: 'The first image becomes the product card cover.' },
+        { label: 'Stock added', done: Number(defaultStock) > 0 || Object.values(stockOverrides).some(value => Number(value) > 0), helper: 'Stock lets customers buy without overselling.' },
+        { label: 'Description written', done: Boolean(formData.description.trim()), helper: 'Explain benefits, usage, and what comes in the box.' },
+        { label: 'Ready to publish', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
+    ];
 
     useEffect(() => {
         let isMounted = true;
@@ -395,11 +410,12 @@ const AddProduct = () => {
                 <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
 
                     {/* ── BASIC ─────────────────────────────────────────────── */}
-                    <div className="bg-white p-5 rounded-xl border space-y-4">
-                        <div>
-                            <h2 className="font-semibold text-gray-700">Basic Info</h2>
-                            <p className="text-xs text-gray-500 mt-1">Title, category, slug, and SEO text affect how shoppers find this product.</p>
-                        </div>
+                    <ProductFormSection
+                        title="1. Product basics"
+                        description="Start with the details shoppers scan first: name, category, status, and description."
+                        icon={PackagePlus}
+                    >
+                        <SellerHint>Keep the title specific. Example: “Premium Cotton Panjabi - White” works better than “New Product”.</SellerHint>
 
                         <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
 
@@ -492,16 +508,15 @@ const AddProduct = () => {
                                 required
                             />
                         </div>
-                    </div>
+                    </ProductFormSection>
 
                     {/* ── MEDIA ─────────────────────────────────────────────── */}
-                    <div className="bg-white p-5 rounded-xl border space-y-4">
-                        <div>
-                            <h2 className="font-semibold flex items-center gap-2">
-                                <ImageIcon size={16} /> Media
-                            </h2>
-                            <p className="text-xs text-gray-500 mt-1">Use clear product images from multiple angles. The first image becomes the product card cover.</p>
-                        </div>
+                    <ProductFormSection
+                        title="2. Product images and videos"
+                        description="Use clear product images from multiple angles. The first image becomes the storefront cover."
+                        icon={ImageIcon}
+                    >
+                        <ImageEmptyState selectedCount={imageFiles.length} max={5} />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-gray-600">Images (max 5)</label>
@@ -528,14 +543,14 @@ const AddProduct = () => {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </ProductFormSection>
 
                     {/* ── PRICING ───────────────────────────────────────────── */}
-                    <div className="bg-white p-5 rounded-xl border space-y-4">
-                        <div>
-                            <h2 className="font-semibold text-gray-700">Pricing</h2>
-                            <p className="text-xs text-gray-500 mt-1">Buying price is private. Selling price and discount are visible to shoppers.</p>
-                        </div>
+                    <ProductFormSection
+                        title="3. Pricing"
+                        description="Buying price is private. Selling price and discount are visible to shoppers."
+                        icon={DollarSign}
+                    >
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <Input id="buyingPrice"  label="Buying Price"     type="number" onChange={handlePricing} required />
                             <Input id="sellingPrice" label="Selling Price"    type="number" onChange={handlePricing} required />
@@ -553,15 +568,20 @@ const AddProduct = () => {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </ProductFormSection>
 
                     {/* ── VARIANT MATRIX ────────────────────────────────────── */}
-                    <div className="bg-white p-5 rounded-xl border space-y-5">
+                    <ProductFormSection
+                        title="4. Stock and variants"
+                        description="Use variants for options like size, color, storage, material, or bundle quantity."
+                        icon={Boxes}
+                    >
+                        <SellerHint tone="slate">No variants? Leave options empty and set default stock. The system will create one simple variant for this product.</SellerHint>
                         <div className="flex justify-between items-center">
                             <div>
-                                <h2 className="font-semibold text-gray-700">Variants</h2>
+                                <h2 className="font-semibold text-gray-700">Product variants</h2>
                                 <p className="text-xs text-gray-400 mt-0.5">
-                                    Optional. Add options like color or size, or leave this empty for a simple product.
+                                    Optional. Add options like size, color, storage, or leave this empty for a simple product.
                                 </p>
                             </div>
                             {combinations.length > 0 && (
@@ -837,11 +857,16 @@ const AddProduct = () => {
                                 No options added. This will be saved as one simple product variant using the default stock.
                             </p>
                         )}
-                    </div>
+                    </ProductFormSection>
 
                     {/* ── FEATURES / SPECS / COMMENTS ───────────────────────── */}
                     {['features', 'specifications', 'comments'].map((type) => (
-                        <div key={type} className="bg-white p-5 rounded-xl border space-y-3">
+                        <ProductFormSection
+                            key={type}
+                            title={type === 'features' ? '5. Selling points' : type === 'specifications' ? '6. Specifications' : '7. Extra notes'}
+                            description={type === 'features' ? 'Short benefits that help shoppers decide faster.' : type === 'specifications' ? 'Structured details such as material, size, model, or warranty.' : 'Optional notes for shoppers or internal product context.'}
+                            icon={type === 'features' ? ListChecks : type === 'specifications' ? FileText : Search}
+                        >
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
@@ -881,7 +906,7 @@ const AddProduct = () => {
                             {formData[type].length === 0 && (
                                 <p className="text-xs text-gray-400">Nothing added yet. Add details if they help shoppers decide.</p>
                             )}
-                        </div>
+                        </ProductFormSection>
                     ))}
 
                     <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">
@@ -892,6 +917,8 @@ const AddProduct = () => {
                 {/* ── RIGHT COLUMN: LIVE PREVIEW ───────────────────────────────── */}
                 <div className="lg:col-span-1">
                     <div className="sticky top-6 space-y-4">
+                        <ReadinessChecklist items={readinessItems} />
+
                         <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                             <Eye size={16} /> Live Storefront Preview
                         </h2>

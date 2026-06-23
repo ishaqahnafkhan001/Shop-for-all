@@ -1,0 +1,29 @@
+name: shop-for-all-test-mongo
+
+services:
+  mongo-test:
+    image: mongo:7
+    container_name: shop-for-all-test-mongo
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27018:27017"
+    volumes:
+      - shop_for_all_test_mongo_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --eval \"try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }\""
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    labels:
+      com.scaleup.purpose: "launch-safety-tests-only"
+
+volumes:
+  shop_for_all_test_mongo_data:
+    labels:
+      com.scaleup.purpose: "launch-safety-tests-only"

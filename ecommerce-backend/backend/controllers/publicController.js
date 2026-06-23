@@ -57,7 +57,6 @@ exports.createPublicOrder = async (req, res) => {
             shippingZone,
             shipping,
             items,
-            shippingCost,
             promotionCode,
             source,
             consent
@@ -104,13 +103,7 @@ exports.createPublicOrder = async (req, res) => {
             throw new Error('Invalid shipping zone');
         }
 
-        const normalizedShippingCost = Number.isFinite(Number(shipping?.cost))
-            ? Number(shipping.cost)
-            : Number.isFinite(Number(shippingCost))
-                ? Number(shippingCost)
-                : requestedZone === 'Inside Dhaka'
-                    ? 80
-                    : 120;
+        const normalizedShippingCost = requestedZone === 'Inside Dhaka' ? 80 : 120;
 
         let normalizedAddress = shipping?.address;
 

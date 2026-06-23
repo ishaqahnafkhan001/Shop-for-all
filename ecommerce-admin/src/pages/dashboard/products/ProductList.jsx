@@ -9,6 +9,7 @@ import {
 import Table from '../../../components/ui/Table';
 import ProductDetailModal from '../../../components/products/ProductDetailModal.jsx';
 import API from '../../../api/api';
+import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 
 // Hooks
 import { useProducts } from '../../../hooks/useProducts';
@@ -181,41 +182,24 @@ const ProductList = () => {
 
             {/* --- MAIN CONTENT --- */}
             {loading ? (
-                // Modern Skeleton Loader
-                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-                    <div className="space-y-6 animate-pulse">
-                        <div className="h-6 bg-slate-100 rounded w-1/4 hidden md:block"></div>
-                        {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="flex items-center gap-6">
-                                <div className="h-14 w-14 bg-slate-100 rounded-xl flex-shrink-0"></div>
-                                <div className="flex-1 space-y-2">
-                                    <div className="h-4 bg-slate-100 rounded w-1/3"></div>
-                                    <div className="h-3 bg-slate-50 rounded w-1/4"></div>
-                                </div>
-                                <div className="hidden md:block h-6 bg-slate-100 rounded w-24"></div>
-                                <div className="hidden md:block h-6 bg-slate-100 rounded w-20"></div>
-                                <div className="hidden md:block h-8 bg-slate-100 rounded w-24"></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <AdminLoadingState
+                    title="Loading products"
+                    description="We are fetching your catalog, stock, variants, pricing, and publish status."
+                />
             ) : products?.length === 0 ? (
-                // Refined Empty State
-                <div className="bg-white border border-dashed border-slate-200 rounded-2xl py-24 text-center px-4">
-                    <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5">
-                        <Package size={36} className="text-blue-500" strokeWidth={1.5} />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">No products found</h3>
-                    <p className="text-slate-500 max-w-sm mx-auto mb-8">
-                        Add your first product with images, price, stock, and at least one variant. Draft products stay hidden until published.
-                    </p>
-                    <Link
-                        to="/dashboard/products/add"
-                        className="inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-all"
-                    >
-                        <Plus size={18} className="mr-2" /> Add Your First Product
-                    </Link>
-                </div>
+                <AdminEmptyState
+                    icon={Package}
+                    title="Add your first product"
+                    description="Start with title, category, price, stock, and clear images. Draft products stay hidden until published."
+                    action={(
+                        <Link
+                            to="/dashboard/products/add"
+                            className="inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-all"
+                        >
+                            <Plus size={18} className="mr-2" /> Add Your First Product
+                        </Link>
+                    )}
+                />
             ) : (
                 <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
 

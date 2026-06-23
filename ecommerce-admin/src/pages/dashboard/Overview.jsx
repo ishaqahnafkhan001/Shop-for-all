@@ -8,6 +8,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import API from '../../api/api';
+import { useAuth } from '../../context/AuthContext';
+import VendorOnboardingChecklist from '../../components/dashboard/VendorOnboardingChecklist.jsx';
+import { AdminLoadingState } from '../../components/ui/AdminState.jsx';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -26,6 +29,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const Overview = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
   const [revenue, setRevenue] = useState({});
@@ -62,24 +66,11 @@ const Overview = () => {
   // ---------------------------------------------------------
   if (loading) {
     return (
-        <div className="space-y-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto py-8 animate-pulse">
-          <div className="h-8 bg-gray-200 rounded-md w-64 mb-2"></div>
-          <div className="h-4 bg-gray-100 rounded-md w-48 mb-8"></div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 h-32"></div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 h-96"></div>
-            <div className="flex flex-col gap-6">
-              {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl border border-gray-100 h-40"></div>
-              ))}
-            </div>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <AdminLoadingState
+              title="Loading your dashboard"
+              description="We are checking sales, orders, stock alerts, and seller setup progress."
+          />
         </div>
     );
   }
@@ -112,6 +103,8 @@ const Overview = () => {
             <p className="text-sm text-gray-500 mt-1">Start here each day: review sales, active orders, low stock, and recent inventory changes.</p>
           </div>
         </div>
+
+        {user?.role === 'VendorAdmin' && <VendorOnboardingChecklist />}
 
         {/* STAT CARDS - Custom Inline Styling for Modern Look */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

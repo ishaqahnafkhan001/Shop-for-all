@@ -5,182 +5,29 @@ const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
 const { logAudit } = require('../services/auditLogService');
 const {
-    expandMatrix,
-    makeVariantKey,
-    generateNewOptionCombos,
-    normalizeProductOptions
-} = require('../helpers/variantMatrix');
+    parseProductPayload,
+    resolveVariantImageReferences
+} = require('../services/products/productMediaService');
 const {
-    PUBLIC_PRODUCT_CARD_PROJECT
-} = require('../services/publicProductSerializer');
-
-const slugify = (value = '') =>
-    value
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 80);
-
-const getUniqueSlug = async ({ shopId, requestedSlug, title, session }) => {
-    const baseSlug = (slugify(requestedSlug || title) || `product-${Date.now()}`).slice(0, 80);
-    let candidate = baseSlug;
-    let suffix = 2;
-
-    while (await Product.findOne({
-        shop_id: shopId,
-        slug: candidate,
-        isDeleted: false
-    }).select('_id').session(session || null)) {
-        const suffixText = `-${suffix}`;
-        candidate = `${baseSlug.slice(0, 80 - suffixText.length)}${suffixText}`;
-        suffix += 1;
-    }
-
-    return candidate;
-};
-
-const productCategoryCache = new Map();
-const CATEGORY_CACHE_TTL = 5 * 60 * 1000;
-
-const getCachedCategories = async (shopId, categoryQuery) => {
-    const key = `${shopId}:${JSON.stringify(categoryQuery)}`;
-    const cached = productCategoryCache.get(key);
-
-    if (cached && cached.expiresAt > Date.now()) {
-        return cached.value;
-    }
-
-    const value = await Product.distinct('category', categoryQuery);
-    productCategoryCache.set(key, {
-        value,
-        expiresAt: Date.now() + CATEGORY_CACHE_TTL
-    });
-
-    return value;
-};
-
-const addComputedProductFields = (product) => {
-    const sellingPrice = Number(product.pricing?.sellingPrice) || 0;
-    const discount = Number(product.pricing?.discount) || 0;
-
-    return {
-        ...product,
-        finalPrice: discount > 0
-            ? Math.round(sellingPrice - ((sellingPrice * discount) / 100))
-            : sellingPrice
-    };
-};
-
-const parseProductPayload = (body) => {
-    const parsedBody = { ...body };
-    const jsonFields = [
-        'pricing',
-        'variants',
-        'variantMatrix',
-        'options',
-        'features',
-        'specifications',
-        'comments',
-        'collections',
-        'seo',
-        'addAttributeOption',
-        'removeVariants'
-    ];
-
-    for (const field of jsonFields) {
-        if (typeof parsedBody[field] === 'string') {
-            try {
-                parsedBody[field] = JSON.parse(parsedBody[field]);
-            } catch {
-                throw new Error(`Invalid JSON in field: "${field}"`);
-            }
-        }
-    }
-
-    if (typeof parsedBody.tags === 'string') {
-        if (parsedBody.tags.trim().startsWith('[')) {
-            parsedBody.tags = JSON.parse(parsedBody.tags);
-        } else {
-            parsedBody.tags = parsedBody.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-        }
-    }
-
-    return parsedBody;
-};
+    slugify,
+    getUniqueSlug,
+    getCachedCategories,
+    addComputedProductFields,
+    buildProductListQuery,
+    getProductSort,
+    getSummaryProjection
+} = require('../services/products/productQueryService');
+const {
+    normalizeIncomingVariant,
+    buildSimpleVariant,
+    snapshotVariantStock,
+    applyVariantOperations,
+    buildStockAdjustmentLogs,
+    expandMatrix,
+    normalizeProductOptions
+} = require('../services/products/productVariantService');
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-const normalizeIncomingVariant = (variant) => {
-    const stock = Number(variant.inventory?.stock ?? variant.stock ?? 0);
-    const status = variant.status || (variant.isActive === false ? 'draft' : 'active');
-
-    return {
-        ...variant,
-        stock,
-        inventory: {
-            trackQuantity: true,
-            allowOversell: false,
-            reservedStock: 0,
-            lowStockThreshold: 5,
-            ...(variant.inventory || {}),
-            stock
-        },
-        pricing: {
-            ...(variant.priceOverride !== undefined ? { price: variant.priceOverride } : {}),
-            ...(variant.pricing || {})
-        },
-        status,
-        isActive: status === 'active' && variant.isActive !== false
-    };
-};
-
-const buildSimpleVariant = ({ stock = 0, pricing = {}, lowStockThreshold = 5 }) => ({
-    sku: '',
-    attributes: [],
-    stock: Number(stock) || 0,
-    pricing: {
-        price: pricing.sellingPrice,
-        costPrice: pricing.buyingPrice
-    },
-    inventory: {
-        stock: Number(stock) || 0,
-        reservedStock: 0,
-        lowStockThreshold: Number(lowStockThreshold) || 5,
-        trackQuantity: true,
-        allowOversell: false
-    },
-    status: 'active',
-    tax: { taxable: true },
-    isActive: true
-});
-
-const resolveImageReference = (value, imageUrls = []) => {
-    const raw = String(value || '').trim();
-    if (!raw.startsWith('product-image:')) return raw;
-
-    const index = Number(raw.replace('product-image:', ''));
-    return Number.isInteger(index) && imageUrls[index] ? imageUrls[index] : '';
-};
-
-const resolveVariantImageReferences = (payload, imageUrls = []) => {
-    if (payload.variantMatrix?.overrides) {
-        for (const override of Object.values(payload.variantMatrix.overrides)) {
-            if (override?.image) override.image = resolveImageReference(override.image, imageUrls);
-            if (override?.image === '') delete override.image;
-        }
-    }
-
-    if (Array.isArray(payload.variants)) {
-        payload.variants = payload.variants.map(variant => ({
-            ...variant,
-            image: variant.image ? resolveImageReference(variant.image, imageUrls) : variant.image
-        }));
-    }
-
-    return payload;
-};
 
 
 // ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...
@@ -231,63 +78,17 @@ exports.getShopProducts = async (req, res) => {
     try {
         const shopId = req.tenantId;
         const shopObjectId = new mongoose.Types.ObjectId(shopId);
-        const {
-            search,
-            category,
-            collection,
-            tag,
-            status,
-            minPrice,
-            maxPrice,
-            minRating,
-            sort,
-            lowStock
-        } = req.query;
+        const { sort } = req.query;
 
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
         const isStorefrontRequest = !req.user || req.user.role === 'Customer';
-
-        // Product query (filtered)
-        const query = {
-            shop_id: shopObjectId,
-            isDeleted: false
-        };
-
-        if (isStorefrontRequest) {
-            query.isActive = true;
-            query.status = 'Published';
-        } else if (status && status !== 'All') {
-            query.status = status;
-        }
-
-        if (category && category !== 'All') query.category = category;
-        if (collection) query.collections = collection;
-        if (tag) query.tags = tag.toLowerCase();
-        if (search) query.$text = { $search: search };
-        if (minPrice || maxPrice) {
-            query['pricing.sellingPrice'] = {};
-            if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
-            if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
-        }
-        if (minRating) query.averageRating = { $gte: Math.min(Math.max(Number(minRating) || 0, 0), 5) };
-        if (lowStock === 'true') {
-            query.$expr = {
-                $lt: [
-                    { $sum: '$variants.stock' },
-                    '$lowStockThreshold'
-                ]
-            };
-        }
-
-        let sortQuery = { createdAt: -1, _id: 1 };
-        if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
-        if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
-        if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
-        if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
-        if (sort === 'ratingDesc') sortQuery = { averageRating: -1, numReviews: -1, _id: 1 };
-        if (sort === 'ratingAsc') sortQuery = { averageRating: 1, numReviews: 1, _id: 1 };
-        if (sort === 'oldest') sortQuery = { createdAt: 1, _id: 1 };
+        const query = buildProductListQuery({
+            shopId,
+            filters: req.query,
+            isStorefrontRequest
+        });
+        const sortQuery = getProductSort(sort);
 
         const skip = (page - 1) * limit;
         const categoryQuery = {
@@ -296,27 +97,7 @@ exports.getShopProducts = async (req, res) => {
             ...(isStorefrontRequest ? { isActive: true, status: 'Published' } : {})
         };
 
-        // ✨ THE FIX: Add Product.distinct to fetch all categories for this shop
-        const adminSummaryProjection = {
-            title: 1,
-            slug: 1,
-            category: 1,
-            tags: 1,
-            collections: 1,
-            images: { $slice: ['$images', 1] },
-            status: 1,
-            isActive: 1,
-            pricing: 1,
-            averageRating: 1,
-            numReviews: 1,
-            lowStockThreshold: 1,
-            createdAt: 1,
-            totalStock: { $sum: '$variants.stock' },
-            variantCount: { $size: { $ifNull: ['$variants', []] } }
-        };
-        const summaryProjection = isStorefrontRequest
-            ? PUBLIC_PRODUCT_CARD_PROJECT
-            : adminSummaryProjection;
+        const summaryProjection = getSummaryProjection(isStorefrontRequest);
 
         const [products, total, uniqueCategories] = await Promise.all([
             Product.aggregate([
@@ -564,13 +345,7 @@ exports.updateProduct = async (req, res) => {
         };
 
         // ── 4. Snapshot current stock for inventory logging ───────────────────
-        const oldStockById  = new Map(); // variantId  → stock
-        const oldVariantByKey = new Map(); // stableKey → variant snapshot (for matrix matching)
-
-        for (const v of product.variants) {
-            oldStockById.set(v._id.toString(), v.stock);
-            oldVariantByKey.set(makeVariantKey(v.attributes), v.toObject ? v.toObject() : v);
-        }
+        const { oldStockById, oldVariantByKey } = snapshotVariantStock(product);
 
         // ── 5. Update scalar fields ───────────────────────────────────────────
         const SCALAR = [
@@ -598,106 +373,18 @@ exports.updateProduct = async (req, res) => {
             product.pricing = { ...product.pricing.toObject(), ...value.pricing };
         }
 
-        // ── 6. Variant operations ─────────────────────────────────────────────
-        //   Priority order: variantMatrix > addAttributeOption > removeVariants > variants
-        //   In practice callers should only send one; the priority just prevents
-        //   ambiguous or conflicting operations from silently combining.
-
-        if (value.variantMatrix) {
-            // ── Op B: matrix regeneration ─────────────────────────────────────
-            // Existing stock is preserved wherever attribute combos match.
-            product.options = value.options || normalizeProductOptions(value.variantMatrix.attributes);
-            product.variants = expandMatrix(value.variantMatrix, oldVariantByKey);
-
-        } else if (value.addAttributeOption) {
-            // ── Op C: add one new option to an existing dimension ─────────────
-            const { name, option, defaultStock, defaultPrice } = value.addAttributeOption;
-
-            const { newVariants, error: opError } = generateNewOptionCombos(
-                product.variants,
-                name,
-                option,
-                defaultStock,
-                defaultPrice
-            );
-
-            if (opError) throw new Error(opError);
-
-            // Append — existing variants untouched
-            product.variants.push(...newVariants);
-
-        } else if (value.removeVariants) {
-            // ── Op D: remove by _id ───────────────────────────────────────────
-            const removeSet = new Set(value.removeVariants);
-            const remaining = product.variants.filter(v => !removeSet.has(v._id.toString()));
-
-            if (remaining.length === 0) {
-                throw new Error('Cannot remove all variants. A product must have at least one variant.');
-            }
-
-            // Verify all requested IDs actually existed
-            const foundIds = new Set(product.variants.map(v => v._id.toString()));
-            for (const id of removeSet) {
-                if (!foundIds.has(id)) throw new Error(`Variant not found: ${id}`);
-            }
-
-            product.variants = remaining;
-
-        } else if (value.variants) {
-            // ── Op A: flat patch ──────────────────────────────────────────────
-            for (const incoming of value.variants) {
-                if (incoming._id) {
-                    const existing = product.variants.id(incoming._id);
-                    if (!existing) {
-                        throw new Error(
-                            `Variant not found: ${incoming._id}. Omit _id to create a new variant.`
-                        );
-                    }
-                    const normalized = normalizeIncomingVariant(incoming);
-                    existing.stock         = normalized.stock;
-                    existing.attributes    = normalized.attributes;
-                    existing.priceOverride = normalized.priceOverride ?? normalized.pricing?.price;
-                    existing.pricing       = normalized.pricing;
-                    existing.inventory     = normalized.inventory;
-                    existing.image         = normalized.image;
-                    existing.barcode       = normalized.barcode;
-                    existing.weight        = normalized.weight;
-                    existing.dimensions    = normalized.dimensions;
-                    existing.tax           = normalized.tax;
-                    existing.status        = normalized.status;
-                    existing.isActive      = normalized.isActive;
-                    if (incoming.sku !== undefined) existing.sku = incoming.sku;
-                } else {
-                    product.variants.push(normalizeIncomingVariant(incoming));
-                }
-            }
-        }
+        applyVariantOperations({ product, value, oldVariantByKey });
 
         // ── 7. Save ───────────────────────────────────────────────────────────
         await product.save({ session });
 
         // ── 8. Batch inventory logs (single insertMany, not N awaits) ─────────
-        const logsToInsert = [];
-
-        for (const v of product.variants) {
-            const oldStock = oldStockById.get(v._id.toString()) ?? 0;
-            const diff     = v.stock - oldStock;
-
-            if (diff !== 0) {
-                logsToInsert.push({
-                    shop_id:     shopId,
-                    productId:   product._id,
-                    variantId:   v._id,
-                    change:      diff,
-                    type:        'MANUAL',
-                    referenceId: product._id,
-                    beforeStock: oldStock,
-                    afterStock:  v.stock,
-                    user:        req.user._id,
-                    note:        'Product update — manual stock change'
-                });
-            }
-        }
+        const logsToInsert = buildStockAdjustmentLogs({
+            product,
+            oldStockById,
+            shopId,
+            userId: req.user._id
+        });
 
         if (logsToInsert.length > 0) {
             await InventoryLog.insertMany(logsToInsert, { session });

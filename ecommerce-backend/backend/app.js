@@ -30,7 +30,6 @@ const superAdminRoutes = require('./routes/superAdminRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
-connectDB();
 
 const buildInfo = {
     version: 'mail-resend-2026-06-07-02',
@@ -159,15 +158,26 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(
-        `🚀 Server running in ${
-            process.env.NODE_ENV || 'development'
-        } mode on port ${PORT}`
-    );
-    console.log(
-        `[Build] version=${buildInfo.version} commit=${buildInfo.commit}`
-    );
-});
+const startServer = async () => {
+    await connectDB();
+
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(
+            `🚀 Server running in ${
+                process.env.NODE_ENV || 'development'
+            } mode on port ${PORT}`
+        );
+        console.log(
+            `[Build] version=${buildInfo.version} commit=${buildInfo.commit}`
+        );
+    });
+};
+
+if (require.main === module) {
+    startServer().catch((error) => {
+        console.error(`Failed to start server: ${error.message}`);
+        process.exit(1);
+    });
+}
 
 module.exports = app;

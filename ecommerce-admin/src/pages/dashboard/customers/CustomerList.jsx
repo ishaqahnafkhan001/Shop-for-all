@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Mail } from 'lucide-react';
+import { Mail, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
 import SendMailModal from './SendMailModal';
+import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 
 // 👇 1. Import your auth hook (adjust the path if necessary)
 import { useAuth } from '../../../context/AuthContext';
@@ -133,7 +134,16 @@ const CustomerList = () => {
 
             {/* Data Rendering */}
             {loading ? (
-                <div className="py-10 text-center text-gray-500">Loading your customers...</div>
+                <AdminLoadingState
+                    title="Loading customers"
+                    description="We are checking registered customers and shopper accounts for this store."
+                />
+            ) : filteredCustomers.length === 0 ? (
+                <AdminEmptyState
+                    icon={Users}
+                    title={searchQuery ? 'No matching customers' : 'Customers will appear here'}
+                    description={searchQuery ? 'Try searching by a different name or email address.' : 'Customer profiles appear after shoppers sign up or place an order.'}
+                />
             ) : (
                 <>
                     {/* Desktop View */}
@@ -143,12 +153,7 @@ const CustomerList = () => {
 
                     {/* Mobile View */}
                     <div className="md:hidden space-y-4">
-                        {filteredCustomers.length === 0 ? (
-                            <div className="py-10 text-center text-gray-500 bg-white rounded-xl border border-gray-100">
-                                {searchQuery ? 'No customers match your search.' : 'Customers appear here after they sign up or place an order.'}
-                            </div>
-                        ) : (
-                            filteredCustomers.map((cust) => (
+                        {filteredCustomers.map((cust) => (
                                 <div key={cust._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center space-x-3">
@@ -180,8 +185,7 @@ const CustomerList = () => {
                                         <div>{renderActions(cust)}</div>
                                     </div>
                                 </div>
-                            ))
-                        )}
+                            ))}
                     </div>
                 </>
             )}

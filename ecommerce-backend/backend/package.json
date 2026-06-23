@@ -17,6 +17,12 @@
   "scripts": {
     "start": "node app.js",
     "test": "node --test tests/*.test.js",
+    "test:integration": "node --test --test-concurrency=1 tests/integration/*.test.js",
+    "test:launch": "npm test && npm run test:integration",
+    "test:mongo:up": "node scripts/check-test-docker.js && docker compose -f ../../docker-compose.test-mongo.yml up -d && node scripts/wait-for-test-mongo.js",
+    "test:mongo:down": "docker compose -f ../../docker-compose.test-mongo.yml down -v",
+    "test:integration:local": "MONGO_URI_TEST=\"mongodb://127.0.0.1:27018/shop_for_all_launch_test?directConnection=true&replicaSet=rs0\" npm run test:integration",
+    "test:launch:local": "npm test && npm run test:mongo:up && npm run test:integration:local; status=$?; npm run test:mongo:down; exit $status",
     "migrate:identity": "node scripts/migrate-accounts-memberships.js",
     "worker": "node workers/index.js",
     "rollup:analytics": "node scripts/runAnalyticsRollup.js"

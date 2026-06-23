@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, TicketPercent, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
+import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 
 const emptyForm = {
     name: '',
@@ -174,9 +175,18 @@ const Promotions = () => {
                     </div>
 
                     {loading ? (
-                        <div className="p-5 text-sm text-slate-500">Loading promotions...</div>
+                        <AdminLoadingState
+                            title="Loading promotions"
+                            description="We are checking active, paused, expired, and usage-limited discount codes."
+                            className="m-5 shadow-none"
+                        />
                     ) : promotions.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-slate-500">No promotions yet. Create a percentage, free-shipping, or first-order coupon to encourage checkout.</div>
+                        <AdminEmptyState
+                            icon={TicketPercent}
+                            title="Create your first offer"
+                            description="Use a percentage, free-shipping, first-order, or seasonal code to encourage checkout."
+                            className="m-5 shadow-none"
+                        />
                     ) : (
                         <div className="divide-y divide-slate-100">
                             {promotions.map(promotion => (
