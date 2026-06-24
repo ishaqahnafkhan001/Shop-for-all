@@ -13,6 +13,7 @@ import {
     BarChart3,
     TrendingUp,
     Shield,
+    ShieldCheck,
     Crown,
     Boxes,
     RefreshCcw,
@@ -40,6 +41,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText },
         { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },
         { name: 'Verification', path: '/dashboard/verification', icon: BadgeCheck },
+        { name: 'Trusted Badge', path: '/dashboard/badges', icon: ShieldCheck, adminOnly: true },
         { name: 'Billing', path: '/dashboard/billing', icon: CreditCard },
         { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent, feature: 'coupons' },
         { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp, feature: 'growthCenter' },
@@ -57,6 +59,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const superAdminNavItems = [
         { name: 'Super Admin', path: '/super-admin', icon: Crown },
         { name: 'Billing', path: '/super-admin/billing', icon: CreditCard },
+        { name: 'Trusted Badges', path: '/super-admin/badges', icon: ShieldCheck },
         { name: 'Vendor Verification', path: '/super-admin/vendor-verifications', icon: BadgeCheck },
         { name: 'Platform Audit Logs', path: '/super-admin/audit-logs', icon: History }
     ];

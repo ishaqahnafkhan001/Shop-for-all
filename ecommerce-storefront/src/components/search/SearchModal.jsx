@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Search, ShoppingBag, X } from "lucide-react";
+import { ArrowRight, Search, X } from "lucide-react";
 import { trackStorefrontEvent } from "@/utils/analyticsTracker";
-import { shouldUseUnoptimizedImage } from "@/lib/imageDomains";
+import SafeProductImage from "@/components/storefront/SafeProductImage";
 
 export default function SearchModal({
                                         isOpen,
@@ -100,24 +99,19 @@ export default function SearchModal({
                                         {products.slice(0, 4).map((product) => (
                                             <Link
                                                 key={product._id}
-                                                href={`/products/${product._id}`}
+                                                href={`/products/${product.slug || product._id}`}
                                                 onClick={onClose}
                                                 className="flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:border-[var(--sf-accent)] hover:bg-slate-50"
                                             >
-                                                {product.imageUrl ? (
-                                                    <Image
-                                                        src={product.imageUrl}
-                                                        alt={product.title}
-                                                        width={56}
-                                                        height={56}
-                                                        unoptimized={shouldUseUnoptimizedImage(product.imageUrl)}
-                                                        className="h-14 w-14 rounded-xl bg-slate-100 object-cover"
-                                                    />
-                                                ) : (
-                                                    <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
-                                                        <ShoppingBag size={20} />
-                                                    </span>
-                                                )}
+                                                <SafeProductImage
+                                                    src={product.imageUrl}
+                                                    alt={product.title}
+                                                    width={56}
+                                                    height={56}
+                                                    className="h-14 w-14 rounded-xl bg-slate-100 object-cover"
+                                                    fallbackClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-300"
+                                                    iconClassName="h-5 w-5"
+                                                />
                                                 <div className="min-w-0 flex-1">
                                                     <p className="line-clamp-1 text-sm font-bold text-slate-950">{product.title}</p>
                                                     <p className="mt-1 text-xs font-semibold text-slate-500">৳ {product.finalPrice}</p>
@@ -145,24 +139,19 @@ export default function SearchModal({
                         {filteredProducts.map((product) => (
                             <Link
                                 key={product._id}
-                                href={`/products/${product._id}`}
+                                href={`/products/${product.slug || product._id}`}
                                 onClick={onClose}
                                 className="flex items-center gap-4 p-4 transition hover:bg-slate-50 sm:p-5"
                             >
-                                {product.imageUrl ? (
-                                    <Image
-                                        src={product.imageUrl}
-                                        alt={product.title}
-                                        width={64}
-                                        height={64}
-                                        unoptimized={shouldUseUnoptimizedImage(product.imageUrl)}
-                                        className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
-                                    />
-                                ) : (
-                                    <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-300">
-                                        <ShoppingBag size={22} />
-                                    </span>
-                                )}
+                                <SafeProductImage
+                                    src={product.imageUrl}
+                                    alt={product.title}
+                                    width={64}
+                                    height={64}
+                                    className="h-16 w-16 rounded-2xl bg-slate-100 object-cover"
+                                    fallbackClassName="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-300"
+                                    iconClassName="h-5 w-5"
+                                />
 
                                 <div className="flex-1 min-w-0">
                                     <h3 className="line-clamp-1 text-sm font-black text-slate-950">

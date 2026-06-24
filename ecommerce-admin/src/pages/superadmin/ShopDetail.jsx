@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, BadgeCheck, Building2, ClipboardList, Flag, Globe, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Building2, ClipboardList, Flag, Globe, ShieldAlert, ShieldCheck } from 'lucide-react';
 import API from '../../api/api';
 import { EmptyState, ReasonModal, SectionCard, StatusBadge } from './SuperAdminComponents.jsx';
 
@@ -196,6 +196,18 @@ const ShopDetail = () => {
                         <p><span className="font-bold text-slate-950">Approved:</span> {verification?.approvedAt ? new Date(verification.approvedAt).toLocaleString() : '-'}</p>
                         <p><span className="font-bold text-slate-950">Rejected:</span> {verification?.rejectedAt ? new Date(verification.rejectedAt).toLocaleString() : '-'}</p>
                         {verification?._id && <Link to="/super-admin/vendor-verifications" className="inline-flex text-sm font-bold text-indigo-700 hover:text-indigo-900">Open verification queue</Link>}
+                    </div>
+                </SectionCard>
+
+                <SectionCard title="Trusted Badge Summary" icon={ShieldCheck}>
+                    <div className="space-y-3 p-5 text-sm">
+                        <p><span className="font-bold text-slate-950">Badge status:</span> {shop.badgeStatus || 'none'}</p>
+                        <p><span className="font-bold text-slate-950">Badge type:</span> {shop.badgeType || '-'}</p>
+                        <p><span className="font-bold text-slate-950">Approved:</span> {shop.badgeApprovedAt ? new Date(shop.badgeApprovedAt).toLocaleString() : '-'}</p>
+                        <p><span className="font-bold text-slate-950">Expires:</span> {shop.badgeExpiresAt ? new Date(shop.badgeExpiresAt).toLocaleString() : '-'}</p>
+                        <p><span className="font-bold text-slate-950">Revoked:</span> {shop.badgeRevokedAt ? new Date(shop.badgeRevokedAt).toLocaleString() : '-'}</p>
+                        {shop.badgeRevokedReason && <p><span className="font-bold text-slate-950">Revocation reason:</span> {shop.badgeRevokedReason}</p>}
+                        <Link to="/super-admin/badges" className="inline-flex text-sm font-bold text-indigo-700 hover:text-indigo-900">Open badge queue</Link>
                     </div>
                 </SectionCard>
 

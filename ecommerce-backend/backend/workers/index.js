@@ -8,6 +8,10 @@ const {
 } = require('../services/jobQueueService');
 const { processShopEventJob } = require('../services/shopEventNotificationService');
 const { processPathaoSyncJob } = require('../services/pathaoSyncJobService');
+const {
+    processBadgeAnalysisJob,
+    markBadgeAnalysisFailed
+} = require('../services/badges/badgeAnalysisService');
 const logger = require('../services/logger');
 
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 3000);
@@ -15,7 +19,8 @@ let shuttingDown = false;
 
 const handlers = {
     notifications: processShopEventJob,
-    courier: processPathaoSyncJob
+    courier: processPathaoSyncJob,
+    badges: processBadgeAnalysisJob
 };
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -35,6 +40,9 @@ const processNextJob = async () => {
         await completeJob(job);
         logger.info('job_completed', { jobId: job._id, queue: job.queue, name: job.name });
     } catch (error) {
+        if (job.queue === 'badges') {
+            await markBadgeAnalysisFailed(job, error);
+        }
         await failJob(job, error);
     }
 

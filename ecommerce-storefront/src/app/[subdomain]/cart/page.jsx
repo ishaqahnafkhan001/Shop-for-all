@@ -3,8 +3,7 @@ import React from 'react';
 import { useCart } from '@/context/CartContext';
 import { CheckCircle, Headphones, Minus, Plus, ShieldCheck, ShoppingBag, Tag, Trash2, Truck } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
+import SafeProductImage from '@/components/storefront/SafeProductImage';
 
 export default function CartPage() {
     const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart();
@@ -87,20 +86,15 @@ export default function CartPage() {
                                 <div className="flex w-full min-w-0 flex-1 items-start gap-4 sm:gap-5">
                                     {/* Product Image */}
                                     <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-indigo-50 sm:h-28 sm:w-28">
-                                        {getCartImageUrl(item) ? (
-                                            <Image
-                                                src={getCartImageUrl(item)}
-                                                alt={item.title}
-                                                fill
-                                                sizes="(max-width: 640px) 100vw, 112px"
-                                                unoptimized={shouldUseUnoptimizedImage(getCartImageUrl(item))}
-                                                className="object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex h-full w-full items-center justify-center text-slate-300">
-                                                <ShoppingBag size={26} />
-                                            </div>
-                                        )}
+                                        <SafeProductImage
+                                            src={getCartImageUrl(item)}
+                                            alt={item.title}
+                                            fill
+                                            sizes="(max-width: 640px) 100vw, 112px"
+                                            className="object-cover"
+                                            fallbackClassName="flex h-full w-full items-center justify-center text-slate-300"
+                                            iconClassName="h-6 w-6"
+                                        />
                                     </div>
 
                                     {/* Product Details */}

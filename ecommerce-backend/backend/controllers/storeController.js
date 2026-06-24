@@ -2,6 +2,7 @@ const Shop = require('../models/Shop');
 const Product = require('../models/Product');
 const Banner = require('../models/Banner');
 const Review = require('../models/Review');
+const Subscription = require('../models/Subscription');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
@@ -12,8 +13,29 @@ const {
     sanitizePublicProducts
 } = require('../services/publicProductSerializer');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status isActive approvalStatus';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
+
+const getPublicTrustedBadge = async (shop) => {
+    if (!shop || shop.badgeStatus !== 'active') return null;
+    if (shop.isActive === false || shop.approvalStatus !== 'Approved') return null;
+    if (shop.verification?.status !== 'approved') return null;
+    if (shop.badgeExpiresAt && new Date(shop.badgeExpiresAt) <= new Date()) return null;
+    if (shop.badgeRevokedAt) return null;
+
+    const subscription = await Subscription.findOne({ shopId: shop._id, status: 'active' })
+        .select('_id status')
+        .lean();
+    if (!subscription) return null;
+
+    return {
+        active: true,
+        type: shop.badgeType || 'trusted_seller',
+        label: shop.badgeType === 'verified_seller' ? 'Verified Seller' : 'ScaleUp Trusted',
+        tooltip: 'Verified by ScaleUp based on identity verification, sales history, store age, and customer review quality.',
+        approvedAt: shop.badgeApprovedAt || null
+    };
+};
 
 const getManualSectionProductIds = (sections = []) => {
     const idsBySection = {};
@@ -48,6 +70,15 @@ exports.getStoreInfo = async (req, res) => {
         if (!shop) {
             return res.status(404).json({ error: "Shop details not found." });
         }
+        shop.trustedBadge = await getPublicTrustedBadge(shop);
+        delete shop.badgeStatus;
+        delete shop.badgeType;
+        delete shop.badgeApprovedAt;
+        delete shop.badgeExpiresAt;
+        delete shop.badgeRevokedAt;
+        delete shop.verification;
+        delete shop.isActive;
+        delete shop.approvalStatus;
 
         res.status(200).json(shop);
     } catch (err) {
@@ -129,6 +160,15 @@ exports.getStorefrontBootstrap = async (req, res) => {
         }
 
         await ensureThemeSectionArchitecture(shop);
+        shop.trustedBadge = await getPublicTrustedBadge(shop);
+        delete shop.badgeStatus;
+        delete shop.badgeType;
+        delete shop.badgeApprovedAt;
+        delete shop.badgeExpiresAt;
+        delete shop.badgeRevokedAt;
+        delete shop.verification;
+        delete shop.isActive;
+        delete shop.approvalStatus;
 
         const manualIdsBySection = getManualSectionProductIds(shop.theme?.homepageSections || []);
         const allManualProductIds = [...new Set(Object.values(manualIdsBySection).flat())];
@@ -227,13 +267,25 @@ exports.getStoreProducts = async (req, res) => {
 
 exports.getSingleProduct = async (req, res) => {
     try {
-        const product = await Product.findOne({
-            _id: req.params.id,
+        const slugOrId = String(req.params.id || '').trim();
+        const baseQuery = {
             shop_id: req.tenantId,
             isDeleted: false,
             isActive: true,
             status: 'Published'
+        };
+
+        let product = await Product.findOne({
+            ...baseQuery,
+            slug: slugOrId.toLowerCase()
         });
+
+        if (!product && mongoose.Types.ObjectId.isValid(slugOrId)) {
+            product = await Product.findOne({
+                ...baseQuery,
+                _id: slugOrId
+            });
+        }
 
         if (!product) {
             return res.status(404).json({ error: "Product not found." });

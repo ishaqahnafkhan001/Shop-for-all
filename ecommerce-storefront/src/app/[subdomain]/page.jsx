@@ -1,5 +1,14 @@
 import StorefrontHomeClient from './StorefrontHomeClient';
 import { fetchStorefrontBootstrap } from '@/lib/storefrontServer';
+import { headers } from 'next/headers';
+import {
+    buildMetadata,
+    getHomepageCanonicalUrl,
+    getHomepageSeoDescription,
+    getHomepageSeoTitle,
+    getOgImage,
+    noindexMetadata
+} from '@/lib/seo';
 
 const getInitialStorefrontData = async (subdomain) => {
     try {
@@ -20,6 +29,34 @@ const getInitialStorefrontData = async (subdomain) => {
         return null;
     }
 };
+
+export async function generateMetadata({ params }) {
+    const { subdomain } = await params;
+    const headerStore = await headers();
+    const host = headerStore.get('host') || '';
+
+    try {
+        const initialData = await fetchStorefrontBootstrap(subdomain, {
+            page: 1,
+            limit: 9,
+            sort: 'newest',
+        });
+        const shop = initialData?.shop;
+        if (!shop) return noindexMetadata('Store unavailable', 'This storefront is currently unavailable.');
+
+        const url = getHomepageCanonicalUrl({ host, subdomain, shop });
+        return buildMetadata({
+            title: getHomepageSeoTitle(shop),
+            description: getHomepageSeoDescription(shop),
+            url,
+            image: getOgImage(null, shop),
+            type: 'website',
+            isIndexable: true
+        });
+    } catch (error) {
+        return noindexMetadata('Store unavailable', error.body?.error || error.message || 'This storefront is currently unavailable.');
+    }
+}
 
 export default async function VendorHomePage({ params }) {
     const { subdomain } = await params;

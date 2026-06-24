@@ -18,5 +18,14 @@ export const shouldUseUnoptimizedImage = (src = '') => {
     if (!src || typeof src !== 'string') return false;
     if (src.startsWith('/') || src.startsWith('data:') || src.startsWith('blob:')) return false;
 
+    try {
+        const url = new URL(src);
+        if (url.hostname === 'res.cloudinary.com' && url.pathname.startsWith('/demo/')) {
+            return true;
+        }
+    } catch {
+        return true;
+    }
+
     return !isNextImageAllowed(src);
 };

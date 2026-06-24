@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { Heart, ShoppingBag, Star } from "lucide-react";
 
 import {
@@ -29,6 +29,7 @@ export const ProductCard = memo(function ProductCard({ product, index, storewide
     const showRating = productCard?.showRating !== false && rating > 0;
     const showReviews = productCard?.showReviews !== false && Number(product.numReviews || 0) > 0;
     const imageUrl = getImageUrl(product);
+    const [imageFailed, setImageFailed] = useState(false);
     const cardRadiusClass = cardRadiusClasses[productCard?.borderRadius || "Rounded"] || cardRadiusClasses.Rounded;
     const imageRadiusClass = imageRadiusClasses[productCard?.imageRadius || "Rounded"] || imageRadiusClasses.Rounded;
     const shadowClass = cardShadowClasses[productCard?.shadow || "Soft"] || cardShadowClasses.Soft;
@@ -47,6 +48,10 @@ export const ProductCard = memo(function ProductCard({ product, index, storewide
     const stockText = stock > 0 ? `${stock} in stock` : "Out of stock";
     const sku = product.sku || product.variants?.[0]?.sku || (product._id ? `ID ${String(product._id).slice(-6)}` : "");
 
+    useEffect(() => {
+        setImageFailed(false);
+    }, [imageUrl]);
+
     const handleAdd = (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -62,14 +67,15 @@ export const ProductCard = memo(function ProductCard({ product, index, storewide
                 borderColor: "var(--sf-card-border)",
             }}
         >
-            <LinkSlot LinkComponent={LinkComponent} href={`/products/${product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
+            <LinkSlot LinkComponent={LinkComponent} href={`/products/${product.slug || product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
             <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === "rounded-none" ? "" : "m-1.5 mb-0 sm:m-3 sm:mb-0"} ${imageRadiusClass}`}>
-                {imageUrl ? (
+                {imageUrl && !imageFailed ? (
                     <img
                         src={optimizeCloudinaryImage(imageUrl, { width: 560 })}
                         alt={product.title}
                         width="560"
                         height="560"
+                        onError={() => setImageFailed(true)}
                         className={`h-full w-full ${imageFitClass} ${imagePaddingClass} transition-transform duration-500 ${productCard?.hoverZoom === false ? "" : "group-hover:scale-105"}`}
                         loading="lazy"
                         decoding="async"

@@ -1,11 +1,10 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ChevronDown, ChevronUp, Package, ExternalLink, Lock } from 'lucide-react';
 import API from '@/api/api'; // Added API import for password reset
 import { toast } from 'react-hot-toast'; // Added toast for notifications
-import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
+import SafeProductImage from '@/components/storefront/SafeProductImage';
 
 export function OrderHistoryTab({ orders, subdomain = "" }) {
     // State to track which order is currently expanded
@@ -83,25 +82,24 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                         <h4 className="mb-4 text-xs font-black uppercase tracking-wider text-slate-400">Order Items</h4>
                                         <div className="space-y-4">
                                             {order.items.map((item, index) => {
-                                                const productId = item.productId || item.product?._id || item.product || item._id;
+                                                const productId = item.slug || item.product?.slug || item.productId || item.product?._id || item.product || item._id;
                                                 const productUrl = subdomain ? `/${subdomain}/products/${productId}` : `/products/${productId}`;
 
                                                 return (
                                                     <div key={index} className="flex items-start justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                                         <div className="flex gap-4">
                                                             {/* Clickable Image */}
-                                                            {item.imageUrl && (
-                                                                <Link href={productUrl} className="shrink-0">
-                                                                    <Image
-                                                                        src={item.imageUrl}
-                                                                        alt={item.title}
-                                                                        width={64}
-                                                                        height={64}
-                                                                        unoptimized={shouldUseUnoptimizedImage(item.imageUrl)}
-                                                                        className="h-16 w-16 rounded-xl border border-slate-200 object-cover transition-opacity hover:opacity-80"
-                                                                    />
-                                                                </Link>
-                                                            )}
+                                                            <Link href={productUrl} className="shrink-0">
+                                                                <SafeProductImage
+                                                                    src={item.imageUrl}
+                                                                    alt={item.title}
+                                                                    width={64}
+                                                                    height={64}
+                                                                    className="h-16 w-16 rounded-xl border border-slate-200 object-cover transition-opacity hover:opacity-80"
+                                                                    fallbackClassName="flex h-16 w-16 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-300"
+                                                                    iconClassName="h-5 w-5"
+                                                                />
+                                                            </Link>
                                                             <div>
                                                                 {/* Clickable Title */}
                                                                 <Link href={productUrl} className="group/link flex items-center gap-1.5 w-fit">

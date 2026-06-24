@@ -2,6 +2,31 @@ const Review = require('../models/Review');
 const Product = require('../models/Product');
 const User = require('../models/User'); // 🌟 Import the User model
 const { addReviewSchema } = require('../validations/productValidation');
+const mongoose = require('mongoose');
+
+const resolvePublicProductId = async (shopId, slugOrId) => {
+    const raw = String(slugOrId || '').trim();
+    const baseQuery = {
+        shop_id: shopId,
+        isDeleted: false,
+        isActive: true,
+        status: 'Published'
+    };
+
+    let product = await Product.findOne({
+        ...baseQuery,
+        slug: raw.toLowerCase()
+    }).select('_id').lean();
+
+    if (!product && mongoose.Types.ObjectId.isValid(raw)) {
+        product = await Product.findOne({
+            ...baseQuery,
+            _id: raw
+        }).select('_id').lean();
+    }
+
+    return product?._id || null;
+};
 
 exports.addProductReview = async (req, res) => {
     try {
@@ -9,16 +34,10 @@ exports.addProductReview = async (req, res) => {
         if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
         const shopId = req.tenantId;   // Injected by resolveTenant
-        const productId = req.params.id;
+        const productId = await resolvePublicProductId(shopId, req.params.id);
         const userId = req.user._id;   // Injected by auth middleware
 
-        // 🛡️ Verify product belongs to this specific shop
-        const productExists = await Product.exists({
-            _id: productId,
-            shop_id: shopId
-        });
-
-        if (!productExists) {
+        if (!productId) {
             return res.status(404).json({ success: false, message: 'Product not found in this store' });
         }
 
@@ -51,8 +70,12 @@ exports.addProductReview = async (req, res) => {
 exports.getProductReviews = async (req, res) => {
     try {
         const shopId = req.tenantId;
-        const productId = req.params.id;
+        const productId = await resolvePublicProductId(shopId, req.params.id);
         const { page = 1, limit = 10 } = req.query;
+
+        if (!productId) {
+            return res.status(404).json({ success: false, message: 'Product not found in this store' });
+        }
 
         // 🛡️ Always query by shop_id to maintain tenant boundaries
         const reviews = await Review.find({ shop_id: shopId, product_id: productId })

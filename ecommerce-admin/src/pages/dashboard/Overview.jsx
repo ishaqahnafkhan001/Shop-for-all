@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import VendorOnboardingChecklist from '../../components/dashboard/VendorOnboardingChecklist.jsx';
 import { AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import BillingAlert from '../../components/dashboard/BillingAlert.jsx';
+import TrustedBadgeStatusCard from '../../components/dashboard/TrustedBadgeStatusCard.jsx';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -107,6 +108,7 @@ const Overview = () => {
 
         {user?.role === 'VendorAdmin' && <VendorOnboardingChecklist />}
         {user?.role === 'VendorAdmin' && <BillingAlert />}
+        {user?.role === 'VendorAdmin' && <TrustedBadgeStatusCard />}
 
         {/* STAT CARDS - Custom Inline Styling for Modern Look */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -36,12 +36,14 @@ const {
     rejectVendorVerification
 } = require('../controllers/vendorVerificationController');
 const superAdminBillingRoutes = require('./superAdminBillingRoutes');
+const superAdminBadgeRoutes = require('./superAdminBadgeRoutes');
 
 router.use(protect);
 router.use(authorize('SuperAdmin'));
 
 router.get('/overview', getPlatformOverview);
 router.use('/billing', superAdminBillingRoutes);
+router.use('/badges', superAdminBadgeRoutes);
 router.get('/shops', getShops);
 router.get('/shops/:shopId', getShopDetail);
 router.patch('/shops/:shopId/status', updateShopStatus);

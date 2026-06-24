@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import SafeProductImage from "@/components/storefront/SafeProductImage";
 
 import {
     ArrowLeft,
@@ -479,20 +480,15 @@ function CheckoutOrderItem({
             className="rounded-3xl border border-slate-200 p-5"
         >
             <div className="flex gap-4">
-                {imageUrl ? (
-                    <Image
-                        src={imageUrl}
-                        alt={item.title}
-                        width={96}
-                        height={96}
-                        unoptimized={shouldUseUnoptimizedImage(imageUrl)}
-                        className="h-20 w-20 rounded-2xl border border-slate-200 object-cover sm:h-24 sm:w-24"
-                    />
-                ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-300 sm:h-24 sm:w-24">
-                        <Package size={28} />
-                    </div>
-                )}
+                <SafeProductImage
+                    src={imageUrl}
+                    alt={item.title}
+                    width={96}
+                    height={96}
+                    className="h-20 w-20 rounded-2xl border border-slate-200 object-cover sm:h-24 sm:w-24"
+                    fallbackClassName="flex h-20 w-20 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-300 sm:h-24 sm:w-24"
+                    iconClassName="h-7 w-7"
+                />
 
                 <div className="flex-1">
                     <h3 className="line-clamp-2 font-black text-slate-950">

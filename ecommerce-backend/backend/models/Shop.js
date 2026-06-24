@@ -383,6 +383,25 @@ const shopSchema = new mongoose.Schema({
         growthCenter: { type: Boolean, default: true },
         aiAdGenerator: { type: Boolean, default: true }
     },
+    badgeStatus: {
+        type: String,
+        enum: ['none', 'active', 'revoked'],
+        default: 'none',
+        index: true
+    },
+    badgeType: {
+        type: String,
+        enum: ['trusted_seller', 'verified_seller', ''],
+        default: ''
+    },
+    badgeApprovedAt: Date,
+    badgeExpiresAt: Date,
+    badgeRevokedAt: Date,
+    badgeRevokedReason: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     // ✨ NEW: Storewide Discount Feature
     storewideDiscount: {
         type: Number,

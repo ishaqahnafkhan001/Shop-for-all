@@ -44,6 +44,21 @@ export const fetchStorefrontBootstrap = async (subdomain, params = {}) => {
     return response.data || null;
 };
 
+export const fetchStorefrontInfo = async (subdomain) => (
+    fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/info`, {
+        revalidate: 30,
+    })
+);
+
+export const fetchStorefrontProducts = async (subdomain, params = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/products`, {
+        params,
+        revalidate: 60,
+    });
+
+    return response || {};
+};
+
 export const fetchStorefrontProduct = async (subdomain, productId) => (
     fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/products/${encodeURIComponent(productId)}`, {
         revalidate: 30,

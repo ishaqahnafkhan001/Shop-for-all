@@ -30,11 +30,13 @@ const ActivityLogs = lazy(() => import('./pages/dashboard/ActivityLogs.jsx'));
 const Verification = lazy(() => import('./pages/dashboard/Verification.jsx'));
 const PrivacyRequests = lazy(() => import('./pages/dashboard/PrivacyRequests.jsx'));
 const Billing = lazy(() => import('./pages/dashboard/Billing.jsx'));
+const TrustedBadge = lazy(() => import('./pages/dashboard/TrustedBadge.jsx'));
 const SuperAdminPanel = lazy(() => import('./pages/superadmin/SuperAdminPanel.jsx'));
 const VendorVerifications = lazy(() => import('./pages/superadmin/VendorVerifications.jsx'));
 const ShopDetail = lazy(() => import('./pages/superadmin/ShopDetail.jsx'));
 const PlatformAuditLogs = lazy(() => import('./pages/superadmin/PlatformAuditLogs.jsx'));
 const SuperAdminBilling = lazy(() => import('./pages/superadmin/SuperAdminBilling.jsx'));
+const SuperAdminBadges = lazy(() => import('./pages/superadmin/SuperAdminBadges.jsx'));
 
 // Helper to determine where logged-in users should go if they hit /login or a 404
 const getRedirectPath = (role) => {
@@ -78,6 +80,7 @@ function App() {
                         <Route index element={withSuspense(<SuperAdminPanel />)} />
                         <Route path="shops/:shopId" element={withSuspense(<ShopDetail />)} />
                         <Route path="vendor-verifications" element={withSuspense(<VendorVerifications />)} />
+                        <Route path="badges" element={withSuspense(<SuperAdminBadges />)} />
                         <Route path="billing" element={withSuspense(<SuperAdminBilling />)} />
                         <Route path="audit-logs" element={withSuspense(<PlatformAuditLogs />)} />
                     </Route>
@@ -94,6 +97,7 @@ function App() {
                             <Route path="store-builder" element={withSuspense(withFeature('storeBuilder', <StoreBuilder />))} />
                             <Route path="staff" element={withSuspense(withFeature('staffAccounts', <StaffPermissions />))} />
                             <Route path="activity-logs" element={withSuspense(<ActivityLogs />)} />
+                            <Route path="badges" element={withSuspense(<TrustedBadge />)} />
                         </Route>
 
                         {/* 🟢 ADMIN & STAFF ROUTES */}

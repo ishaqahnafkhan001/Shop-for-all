@@ -6,6 +6,7 @@ import {
     ChevronDown,
     Menu,
     Search,
+    ShieldCheck,
     ShoppingBag,
     Truck,
     User,
@@ -23,7 +24,22 @@ import {
     optimizeCloudinaryImage,
 } from "./referenceCore";
 
-const BrandMark = ({ theme, brandName }) => (
+const TrustedBadge = ({ badge }) => {
+    if (!badge?.active) return null;
+
+    return (
+        <span
+            className="mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100"
+            title={badge.tooltip || "Verified by ScaleUp based on identity verification, sales history, store age, and customer review quality."}
+            aria-label={`${badge.label || "ScaleUp Trusted"}: ${badge.tooltip || "Verified by ScaleUp"}`}
+        >
+            <ShieldCheck className="h-3 w-3 shrink-0" />
+            <span className="truncate">{badge.label || "ScaleUp Trusted"}</span>
+        </span>
+    );
+};
+
+const BrandMark = ({ theme, brandName, trustedBadge }) => (
     <span className="flex min-w-0 items-center gap-2.5 sm:gap-3">
         {theme.logoUrl ? (
             <img
@@ -43,6 +59,7 @@ const BrandMark = ({ theme, brandName }) => (
         <span className="min-w-0">
             <span className="block truncate text-sm font-black leading-tight text-[var(--sf-navbar-text)] sm:text-base">{brandName}</span>
             <span className="hidden truncate text-xs font-semibold text-[var(--sf-navbar-text)] opacity-60 sm:block">Storefront</span>
+            <TrustedBadge badge={trustedBadge} />
         </span>
     </span>
 );
@@ -102,6 +119,7 @@ export function ReferenceStorefrontHeader({
     preview = false,
     previewDevice,
     editor,
+    trustedBadge,
 }) {
     const theme = normalizeTheme(themeCandidate);
     const brandName = shopName || subdomain || "Storefront";
@@ -121,7 +139,7 @@ export function ReferenceStorefrontHeader({
             : "lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
     const brandSlot = (
         <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0">
-            <BrandMark theme={theme} brandName={brandName} />
+            <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} />
         </LinkSlot>
     );
     const searchSlot = (
@@ -206,7 +224,7 @@ export function ReferenceStorefrontHeader({
                                 <Menu size={20} />
                             </button>
                             <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0 flex-1">
-                                <BrandMark theme={theme} brandName={brandName} />
+                                <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} />
                             </LinkSlot>
                             <LinkSlot
                                 LinkComponent={LinkComponent}
@@ -242,7 +260,7 @@ export function ReferenceStorefrontHeader({
                 <div className="fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
                     <aside className="h-full w-[86vw] max-w-sm bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
                         <div className="mb-6 flex items-center justify-between gap-4">
-                            <BrandMark theme={theme} brandName={brandName} />
+                            <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} />
                             <button type="button" onClick={() => setMobileMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Close menu">
                                 <X size={20} />
                             </button>

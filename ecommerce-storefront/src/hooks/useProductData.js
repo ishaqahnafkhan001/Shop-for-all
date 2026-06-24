@@ -42,13 +42,13 @@ export function useProductData(subdomain, id, initialProduct = null) {
                 const all = Array.isArray(rel) ? rel : (rel.products || rel.data || []);
                 setRelatedProducts(
                     all
-                        .filter(p => p.category === normalized.category && p._id !== id)
+                        .filter(p => p.category === normalized.category && p._id !== normalized._id)
                         .map(normalizeProduct)
                         .slice(0, 5)
                 );
             })
             .catch(err => console.error('Failed to fetch related products:', err));
-    }, [id, subdomain]);
+    }, [subdomain]);
 
     /* ---------- initial load ---------- */
     useEffect(() => {

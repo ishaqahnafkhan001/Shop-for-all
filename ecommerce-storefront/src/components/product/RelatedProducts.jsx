@@ -1,11 +1,9 @@
 "use client";
 import React, { memo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ShoppingBag } from 'lucide-react';
-import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
+import SafeProductImage from '@/components/storefront/SafeProductImage';
 
-const RelatedProducts = memo(function RelatedProducts({ subdomain, products }) {
+const RelatedProducts = memo(function RelatedProducts({ products }) {
     if (!products?.length) return null;
 
     return (
@@ -25,25 +23,20 @@ const RelatedProducts = memo(function RelatedProducts({ subdomain, products }) {
                     const image = item.images?.[0] || item.imageUrl || '';
                     return (
                         <Link
-                            href={`/${subdomain}/products/${item._id}`}
+                            href={`/products/${item.slug || item._id}`}
                             key={item._id}
                             className="group w-64 flex-shrink-0 snap-start rounded-3xl border border-slate-200 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/70"
                         >
                             <div className="relative mb-4 flex aspect-[4/5] items-center justify-center overflow-hidden rounded-2xl bg-slate-50 p-4">
-                                {image ? (
-                                    <Image
-                                        src={image}
-                                        alt={`${item.title} product image`}
-                                        fill
-                                        sizes="288px"
-                                        unoptimized={shouldUseUnoptimizedImage(image)}
-                                        className="object-contain transition-transform duration-700 group-hover:scale-105"
-                                    />
-                                ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-slate-300">
-                                        <ShoppingBag size={34} />
-                                    </div>
-                                )}
+                                <SafeProductImage
+                                    src={image}
+                                    alt={`${item.title} product image`}
+                                    fill
+                                    sizes="288px"
+                                    className="object-contain transition-transform duration-700 group-hover:scale-105"
+                                    fallbackClassName="flex h-full w-full items-center justify-center text-slate-300"
+                                    iconClassName="h-8 w-8"
+                                />
                                 {item.discount > 0 && (
                                     <div className="absolute right-3 top-3 rounded-full bg-red-600 px-2.5 py-1 text-xs font-black text-white shadow-md shadow-red-500/30">
                                         -{item.discount}%

@@ -50,6 +50,7 @@ export default function Navbar({ subdomain }) {
                 theme={theme}
                 shopName={shopSettings?.shopName}
                 subdomain={subdomain}
+                trustedBadge={shopSettings?.trustedBadge}
                 cartCount={cartCount}
                 onSearch={() => setSearchOpen(true)}
                 LinkComponent={Link}

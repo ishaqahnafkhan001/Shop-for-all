@@ -20,7 +20,15 @@ const statusTone = {
     info: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
     approved: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     pending: 'bg-amber-50 text-amber-700 ring-amber-100',
+    pending_analysis: 'bg-amber-50 text-amber-700 ring-amber-100',
+    analyzing: 'bg-amber-50 text-amber-700 ring-amber-100',
+    analysis_completed: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
+    pending_super_admin_review: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
     rejected: 'bg-rose-50 text-rose-700 ring-rose-100',
+    revoked: 'bg-rose-50 text-rose-700 ring-rose-100',
+    approve: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+    review: 'bg-amber-50 text-amber-700 ring-amber-100',
+    reject: 'bg-rose-50 text-rose-700 ring-rose-100',
     suspended: 'bg-rose-50 text-rose-700 ring-rose-100',
     not_submitted: 'bg-slate-100 text-slate-600 ring-slate-200'
 };
