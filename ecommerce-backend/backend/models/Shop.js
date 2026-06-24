@@ -379,7 +379,9 @@ const shopSchema = new mongoose.Schema({
         analytics: { type: Boolean, default: true },
         customDomain: { type: Boolean, default: false },
         staffAccounts: { type: Boolean, default: true },
-        bulkProductTools: { type: Boolean, default: true }
+        bulkProductTools: { type: Boolean, default: true },
+        growthCenter: { type: Boolean, default: true },
+        aiAdGenerator: { type: Boolean, default: true }
     },
     // ✨ NEW: Storewide Discount Feature
     storewideDiscount: {

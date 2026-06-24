@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute'; // 🛡️ NEW: Import the wrapper
+import RequireFeature from './components/RequireFeature.jsx';
 
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
@@ -28,10 +29,12 @@ const Notifications = lazy(() => import('./pages/dashboard/Notifications.jsx'));
 const ActivityLogs = lazy(() => import('./pages/dashboard/ActivityLogs.jsx'));
 const Verification = lazy(() => import('./pages/dashboard/Verification.jsx'));
 const PrivacyRequests = lazy(() => import('./pages/dashboard/PrivacyRequests.jsx'));
+const Billing = lazy(() => import('./pages/dashboard/Billing.jsx'));
 const SuperAdminPanel = lazy(() => import('./pages/superadmin/SuperAdminPanel.jsx'));
 const VendorVerifications = lazy(() => import('./pages/superadmin/VendorVerifications.jsx'));
 const ShopDetail = lazy(() => import('./pages/superadmin/ShopDetail.jsx'));
 const PlatformAuditLogs = lazy(() => import('./pages/superadmin/PlatformAuditLogs.jsx'));
+const SuperAdminBilling = lazy(() => import('./pages/superadmin/SuperAdminBilling.jsx'));
 
 // Helper to determine where logged-in users should go if they hit /login or a 404
 const getRedirectPath = (role) => {
@@ -49,6 +52,10 @@ const PageFallback = () => (
 
 const withSuspense = (element) => (
     <Suspense fallback={<PageFallback />}>{element}</Suspense>
+);
+
+const withFeature = (feature, element) => (
+    <RequireFeature feature={feature}>{element}</RequireFeature>
 );
 
 function App() {
@@ -71,6 +78,7 @@ function App() {
                         <Route index element={withSuspense(<SuperAdminPanel />)} />
                         <Route path="shops/:shopId" element={withSuspense(<ShopDetail />)} />
                         <Route path="vendor-verifications" element={withSuspense(<VendorVerifications />)} />
+                        <Route path="billing" element={withSuspense(<SuperAdminBilling />)} />
                         <Route path="audit-logs" element={withSuspense(<PlatformAuditLogs />)} />
                     </Route>
                 </Route>
@@ -83,8 +91,8 @@ function App() {
                         <Route element={<ProtectedRoute allowedRoles={['VendorAdmin']} />}>
                             <Route index element={withSuspense(<Overview />)} />
                             {/* Note: You might want to move 'settings' here too depending on your business logic */}
-                            <Route path="store-builder" element={withSuspense(<StoreBuilder />)} />
-                            <Route path="staff" element={withSuspense(<StaffPermissions />)} />
+                            <Route path="store-builder" element={withSuspense(withFeature('storeBuilder', <StoreBuilder />))} />
+                            <Route path="staff" element={withSuspense(withFeature('staffAccounts', <StaffPermissions />))} />
                             <Route path="activity-logs" element={withSuspense(<ActivityLogs />)} />
                         </Route>
 
@@ -92,17 +100,18 @@ function App() {
                         <Route path="products" element={withSuspense(<ProductList />)} />
                         <Route path="products/add" element={withSuspense(<AddProduct />)} />
                         <Route path="products/edit/:id" element={withSuspense(<EditProduct />)} />
-                        <Route path="catalog-tools" element={withSuspense(<CatalogTools />)} />
+                        <Route path="catalog-tools" element={withSuspense(withFeature('bulkProductTools', <CatalogTools />))} />
                         <Route path="orders" element={withSuspense(<OrderList />)} />
                         <Route path="returns" element={withSuspense(<Returns />)} />
                         <Route path="notifications" element={withSuspense(<Notifications />)} />
                         <Route path="verification" element={withSuspense(<Verification />)} />
-                        <Route path="promotions" element={withSuspense(<Promotions />)} />
+                        <Route path="billing" element={withSuspense(<Billing />)} />
+                        <Route path="promotions" element={withSuspense(withFeature('coupons', <Promotions />))} />
                         <Route path="banners" element={<Navigate to="/dashboard/store-builder" replace />} />
                         <Route path="customers" element={withSuspense(<CustomerList />)} />
                         <Route path="privacy-requests" element={withSuspense(<PrivacyRequests />)} />
-                        <Route path="growth" element={withSuspense(<GrowthCenter />)} />
-                        <Route path="analytics" element={withSuspense(<AdvancedAnalytics />)} />
+                        <Route path="growth" element={withSuspense(withFeature('growthCenter', <GrowthCenter />))} />
+                        <Route path="analytics" element={withSuspense(withFeature('analytics', <AdvancedAnalytics />))} />
                         <Route path="shipping" element={withSuspense(<ShippingSettings />)} />
                         <Route path="settings" element={withSuspense(<ShopSettings />)} />
                     </Route>

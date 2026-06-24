@@ -14,6 +14,7 @@ const { protect } = require("../middlewares/auth");
 const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
+const { requireShopFeature } = require('../middlewares/featureGate');
 
 // --- PUBLIC ROUTES (Storefront) ---
 // Uses resolveTenant because it reads the subdomain from the URL
@@ -24,6 +25,7 @@ router.get('/storefront/:subdomain/active', resolveTenant, getActiveBanners);
 router.use(protect);
 router.use(authorize('VendorAdmin', 'VendorStaff'));
 router.use(requirePermission('storeBuilder'));
+router.use(requireShopFeature('storeBuilder'));
 
 router.get('/', getAllBanners);
 

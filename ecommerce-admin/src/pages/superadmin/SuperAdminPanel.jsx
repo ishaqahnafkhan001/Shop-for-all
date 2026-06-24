@@ -15,8 +15,8 @@ import {
 import API from '../../api/api';
 import { EmptyState, PaginationControls, ReasonModal, SectionCard, StatusBadge } from './SuperAdminComponents.jsx';
 
-const featureKeys = ['storeBuilder', 'coupons', 'analytics', 'customDomain', 'staffAccounts', 'bulkProductTools'];
-const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts']);
+const featureKeys = ['storeBuilder', 'coupons', 'analytics', 'customDomain', 'staffAccounts', 'bulkProductTools', 'growthCenter', 'aiAdGenerator'];
+const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts', 'growthCenter']);
 
 const defaultPagination = { page: 1, limit: 10, total: 0, pages: 1 };
 const defaultAnnouncement = { title: '', message: '', severity: 'Info', audience: 'All', expiresAt: '' };

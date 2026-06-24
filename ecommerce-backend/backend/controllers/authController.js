@@ -35,7 +35,9 @@ const {
     consumeRegistrationOtp
 } = require('../services/registrationOtpService');
 const { notifyCustomerRegistered } = require('../services/shopEventNotificationService');
-const { getDefaultDeadline } = require('../services/vendorVerificationService');
+const { getDefaultDeadline, isVerificationSuspension } = require('../services/vendorVerificationService');
+const { getShopFeatureFlags } = require('../services/shops/featureAccessService');
+const { createTrialForShop, isBillingSuspension } = require('../services/billing/subscriptionService');
 
 const signSessionToken = ({ account, membership, user }) => jwt.sign(
     {
@@ -77,6 +79,29 @@ const getCookieOptions = () => {
         // Keep the session cookie scoped to the API host. A shared root-domain
         // cookie lets any tenant subdomain initiate credentialed requests.
         domain: undefined,
+    };
+};
+
+const getSessionShopPayload = async (shopOrId) => {
+    if (!shopOrId) return { shop: null, effectiveFeatures: {} };
+
+    const shop = typeof shopOrId === 'object' && shopOrId._id
+        ? shopOrId
+        : await Shop.findById(shopOrId)
+            .select('shopName subdomain plan featureFlags isActive approvalStatus suspensionReason')
+            .lean();
+
+    if (!shop) return { shop: null, effectiveFeatures: {} };
+
+    const effectiveFeatures = await getShopFeatureFlags(shop);
+    return {
+        shop: {
+            id: shop._id,
+            _id: shop._id,
+            shopName: shop.shopName,
+            subdomain: shop.subdomain
+        },
+        effectiveFeatures
     };
 };
 
@@ -236,6 +261,8 @@ exports.registerVendor = async (req, res) => {
             status: 'not_submitted',
             verificationDeadline: newShop.verification?.deadline || getDefaultDeadline(newShop)
         }], { session });
+
+        await createTrialForShop(newShop, { session });
 
         await session.commitTransaction();
 
@@ -536,7 +563,7 @@ exports.login = async (req, res) => {
         let shop = null;
 
         if (subdomain) {
-            shop = await Shop.findOne({ subdomain }).select('_id shopName subdomain isActive approvalStatus');
+            shop = await Shop.findOne({ subdomain }).select('_id shopName subdomain isActive approvalStatus suspensionReason plan featureFlags');
             if (!shop) return res.status(404).json({ error: 'Shop not found' });
         }
 
@@ -544,15 +571,25 @@ exports.login = async (req, res) => {
             account_id: account._id,
             status: 'Active',
             ...(shop ? { shop_id: shop._id } : {})
-        }).populate('legacyUser_id').populate('shop_id', 'shopName subdomain isActive approvalStatus');
+        }).populate('legacyUser_id').populate('shop_id', 'shopName subdomain isActive approvalStatus suspensionReason plan featureFlags');
 
         memberships = memberships.filter(item => {
             const user = item.legacyUser_id;
             const memberShop = item.shop_id;
+            const isVendorRole = ['VendorAdmin', 'VendorStaff'].includes(user?.role);
+            const canRecover = isVendorRole && (
+                isVerificationSuspension(memberShop) ||
+                isBillingSuspension(memberShop)
+            );
             return user &&
                 user.status === 'Active' &&
-                memberShop?.isActive !== false &&
-                memberShop?.approvalStatus !== 'Suspended';
+                (
+                    (
+                        memberShop?.isActive !== false &&
+                        memberShop?.approvalStatus !== 'Suspended'
+                    ) ||
+                    canRecover
+                );
         });
 
         if (memberships.length === 0) {
@@ -577,6 +614,7 @@ exports.login = async (req, res) => {
         const user = membership.legacyUser_id;
         const userShop = membership.shop_id;
         const token = signSessionToken({ account, membership, user });
+        const { shop: sessionShop, effectiveFeatures } = await getSessionShopPayload(userShop);
 
         res.cookie('token', token, getCookieOptions());
 
@@ -589,7 +627,9 @@ exports.login = async (req, res) => {
                 shopId: user.shop_id,
                 email: user.email,
                 subdomain: userShop?.subdomain,
-                shopName: userShop?.shopName
+                shopName: userShop?.shopName,
+                shop: sessionShop,
+                effectiveFeatures
             }
         });
 
@@ -784,12 +824,15 @@ exports.getMe = async (req, res) => {
 
         if (user.shop_id) {
             const shop = await Shop.findById(user.shop_id)
-                .select('shopName subdomain')
+                .select('shopName subdomain plan featureFlags isActive approvalStatus suspensionReason')
                 .lean();
 
             if (shop) {
                 user.shopName = shop.shopName;
                 user.subdomain = shop.subdomain;
+                const { shop: sessionShop, effectiveFeatures } = await getSessionShopPayload(shop);
+                user.shop = sessionShop;
+                user.effectiveFeatures = effectiveFeatures;
             }
         }
 

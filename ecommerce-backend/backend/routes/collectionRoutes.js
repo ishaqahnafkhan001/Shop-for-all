@@ -5,6 +5,7 @@ const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
+const { requireShopFeature } = require('../middlewares/featureGate');
 const {
     getCollections,
     createCollection,
@@ -15,6 +16,7 @@ const {
 router.use(protect);
 router.use(authorize('VendorAdmin', 'VendorStaff'));
 router.use(requirePermission('products'));
+router.use(requireShopFeature('bulkProductTools'));
 
 router.get('/', getCollections);
 router.post('/', authorize('VendorAdmin'), blockVerificationSuspendedShop, createCollection);

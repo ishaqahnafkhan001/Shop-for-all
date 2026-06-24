@@ -19,8 +19,11 @@ import {
     Bell,
     History,
     BadgeCheck,
-    FileText
+    FileText,
+    LockKeyhole,
+    CreditCard
 } from 'lucide-react';
+import { FEATURE_LABELS, hasFeature } from '../../utils/featureAccess';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user } = useAuth();
@@ -30,18 +33,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const vendorNavItems = [
         { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Products', path: '/dashboard/products', icon: Package },
-        { name: 'Catalog Tools', path: '/dashboard/catalog-tools', icon: Boxes },
+        { name: 'Catalog Tools', path: '/dashboard/catalog-tools', icon: Boxes, feature: 'bulkProductTools' },
         { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart },
         { name: 'Returns', path: '/dashboard/returns', icon: RefreshCcw },
         { name: 'Customers', path: '/dashboard/customers', icon: Users },
         { name: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText },
         { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },
         { name: 'Verification', path: '/dashboard/verification', icon: BadgeCheck },
-        { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent },
-        { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp },
-        { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3 },
-        { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, adminOnly: true },
-        { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true },
+        { name: 'Billing', path: '/dashboard/billing', icon: CreditCard },
+        { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent, feature: 'coupons' },
+        { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp, feature: 'growthCenter' },
+        { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, feature: 'analytics' },
+        { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, adminOnly: true, feature: 'storeBuilder' },
+        { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true, feature: 'staffAccounts' },
         { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, adminOnly: true },
 
         // 🚚 NEW: Added the Shipping link here
@@ -52,6 +56,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     const superAdminNavItems = [
         { name: 'Super Admin', path: '/super-admin', icon: Crown },
+        { name: 'Billing', path: '/super-admin/billing', icon: CreditCard },
         { name: 'Vendor Verification', path: '/super-admin/vendor-verifications', icon: BadgeCheck },
         { name: 'Platform Audit Logs', path: '/super-admin/audit-logs', icon: History }
     ];
@@ -63,6 +68,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         .filter(item => item.path === '/dashboard' ? location.pathname === item.path : location.pathname.startsWith(item.path))
         .sort((a, b) => b.path.length - a.path.length)[0] || navItems[0];
     const ActiveIcon = activeItem?.icon;
+    const activeItemLocked = activeItem ? !hasFeature(user, activeItem.feature) : false;
 
     return (
         <>
@@ -100,7 +106,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                         <p className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
                             Current page
                         </p>
-                        {activeItem && (
+                        {activeItem && activeItemLocked ? (
+                            <div
+                                title={`${FEATURE_LABELS[activeItem.feature] || activeItem.name} is not available on your current plan.`}
+                                className="group flex cursor-not-allowed items-center rounded-lg bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-400 ring-1 ring-slate-100"
+                            >
+                                <ActiveIcon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-300" />
+                                <span className="min-w-0 flex-1 truncate">{activeItem.name}</span>
+                                <LockKeyhole className="ml-2 h-3.5 w-3.5 flex-shrink-0 text-slate-300" />
+                            </div>
+                        ) : activeItem && (
                             <NavLink
                                 to={activeItem.path}
                                 end={activeItem.path === '/dashboard'}
@@ -120,6 +135,21 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                     .filter(item => item.path !== activeItem?.path)
                     .map((item) => {
                         const Icon = item.icon;
+                        const locked = !hasFeature(user, item.feature);
+
+                        if (locked) {
+                            return (
+                                <div
+                                    key={item.name}
+                                    title={`${FEATURE_LABELS[item.feature] || item.name} is not available on your current plan.`}
+                                    className="group flex cursor-not-allowed items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-400"
+                                >
+                                    <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-300" />
+                                    <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                                    <LockKeyhole className="ml-2 h-3.5 w-3.5 flex-shrink-0 text-slate-300" />
+                                </div>
+                            );
+                        }
 
                         return (
                             <NavLink

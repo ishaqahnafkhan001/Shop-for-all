@@ -8,6 +8,12 @@ const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
+const { requireShopFeature } = require('../middlewares/featureGate');
+const {
+    blockBillingSuspendedShop,
+    requireProductLimit,
+    requireStaffLimit
+} = require('../middlewares/billingGate');
 const { upload, nidUpload } = require('../config/cloudinary');
 
 // =========================
@@ -240,6 +246,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockBillingSuspendedShop,
     createReturn
 );
 
@@ -248,6 +255,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockBillingSuspendedShop,
     updateReturnStatus
 );
 
@@ -256,6 +264,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockBillingSuspendedShop,
     updateReturnRefund
 );
 
@@ -264,6 +273,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockBillingSuspendedShop,
     updateReturn
 );
 
@@ -272,6 +282,7 @@ router.delete(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockBillingSuspendedShop,
     deleteReturns
 );
 
@@ -355,6 +366,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    requireShopFeature('bulkProductTools'),
     exportProductsCsv
 );
 
@@ -362,6 +374,9 @@ router.post(
     '/products/bulk-import',
     protect,
     authorize('VendorAdmin'),
+    requireShopFeature('bulkProductTools'),
+    blockBillingSuspendedShop,
+    requireProductLimit((req) => Array.isArray(req.body?.products) ? Math.min(req.body.products.length, 200) : 1),
     blockVerificationSuspendedShop,
     bulkImportProducts
 );
@@ -371,6 +386,8 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    requireShopFeature('bulkProductTools'),
+    blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     bulkUpdateProducts
 );
@@ -388,6 +405,8 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    blockBillingSuspendedShop,
+    requireProductLimit(),
     blockVerificationSuspendedShop,
     productMediaUpload,
     createProduct
@@ -398,6 +417,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     productMediaUpload,
     updateProduct
@@ -407,6 +427,7 @@ router.delete(
     '/products/:id',
     protect,
     authorize('VendorAdmin'),
+    blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     deleteProduct
 );
@@ -428,6 +449,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     updateOrderStatus
 );
@@ -437,6 +459,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('orders'),
+    blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     syncOrderToPathao
 );
@@ -468,6 +491,7 @@ router.get(
     '/users',
     protect,
     authorize('VendorAdmin'),
+    requireShopFeature('staffAccounts'),
     getShopUsers
 );
 
@@ -475,6 +499,8 @@ router.post(
     '/users',
     protect,
     authorize('VendorAdmin'),
+    requireShopFeature('staffAccounts'),
+    requireStaffLimit,
     createShopUser
 );
 
@@ -482,6 +508,7 @@ router.patch(
     '/users/:id/permissions',
     protect,
     authorize('VendorAdmin'),
+    requireShopFeature('staffAccounts'),
     updateShopUserPermissions
 );
 
@@ -494,6 +521,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('analytics'),
+    requireShopFeature('analytics'),
     getDashboardOverview
 );
 
@@ -502,6 +530,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('analytics'),
+    requireShopFeature('analytics'),
     getDashboardStats
 );
 

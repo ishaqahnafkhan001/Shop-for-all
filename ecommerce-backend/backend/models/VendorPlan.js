@@ -11,6 +11,10 @@ const vendorPlanSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    yearlyPrice: {
+        type: Number,
+        default: 0
+    },
     productLimit: {
         type: Number,
         default: 100
@@ -25,7 +29,17 @@ const vendorPlanSchema = new mongoose.Schema({
         analytics: { type: Boolean, default: true },
         customDomain: { type: Boolean, default: false },
         staffAccounts: { type: Boolean, default: true },
-        bulkProductTools: { type: Boolean, default: true }
+        bulkProductTools: { type: Boolean, default: true },
+        growthCenter: { type: Boolean, default: true },
+        aiAdGenerator: { type: Boolean, default: true }
+    },
+    badgeEligible: {
+        type: Boolean,
+        default: false
+    },
+    prioritySupport: {
+        type: Boolean,
+        default: false
     },
     isActive: {
         type: Boolean,

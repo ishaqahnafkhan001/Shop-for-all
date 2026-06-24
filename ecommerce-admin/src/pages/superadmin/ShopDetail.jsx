@@ -5,8 +5,8 @@ import { ArrowLeft, BadgeCheck, Building2, ClipboardList, Flag, Globe, ShieldAle
 import API from '../../api/api';
 import { EmptyState, ReasonModal, SectionCard, StatusBadge } from './SuperAdminComponents.jsx';
 
-const featureKeys = ['storeBuilder', 'coupons', 'analytics', 'customDomain', 'staffAccounts', 'bulkProductTools'];
-const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts']);
+const featureKeys = ['storeBuilder', 'coupons', 'analytics', 'customDomain', 'staffAccounts', 'bulkProductTools', 'growthCenter', 'aiAdGenerator'];
+const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts', 'growthCenter']);
 
 const ShopDetail = () => {
     const { shopId } = useParams();

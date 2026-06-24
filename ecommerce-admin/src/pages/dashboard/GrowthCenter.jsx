@@ -18,6 +18,8 @@ import Table from '../../components/ui/Table';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
+import { useAuth } from '../../context/AuthContext';
+import { hasFeature } from '../../utils/featureAccess';
 
 const rangeOptions = [
     { label: 'Last 7 days', value: '7' },
@@ -140,6 +142,7 @@ const LabelBadge = ({ label }) => (
 );
 
 const GrowthCenter = () => {
+    const { user } = useAuth();
     const [range, setRange] = useState('30');
     const [loading, setLoading] = useState(true);
     const [overview, setOverview] = useState(null);
@@ -189,6 +192,7 @@ const GrowthCenter = () => {
     const bestProduct = overview?.bestProduct?.product?.title || 'No winner yet';
     const needsAttention = overview?.needsAttention?.product?.title || 'Nothing urgent';
     const sellerActions = useMemo(() => buildSellerActions(products, recommendations), [products, recommendations]);
+    const canUseAdGenerator = hasFeature(user, 'aiAdGenerator');
 
     const tableColumns = useMemo(() => [
         {
@@ -235,6 +239,11 @@ const GrowthCenter = () => {
     };
 
     const generateAdCopy = async () => {
+        if (!canUseAdGenerator) {
+            toast.error('The ad generator is not enabled for your store.');
+            return;
+        }
+
         const productId = selectedProduct?.product?._id;
         if (!productId) return;
 
@@ -451,11 +460,16 @@ const GrowthCenter = () => {
                                         <option value="bn">Bangla</option>
                                         <option value="banglish">Banglish</option>
                                     </select>
-                                    <Button size="sm" onClick={generateAdCopy} isLoading={adCopyLoading}>
+                                    <Button size="sm" onClick={generateAdCopy} isLoading={adCopyLoading} disabled={!canUseAdGenerator}>
                                         Generate
                                     </Button>
                                 </div>
                             </div>
+                            {!canUseAdGenerator && (
+                                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                    The ad generator is not available on your current plan. Growth insights remain available.
+                                </div>
+                            )}
                             {adCopy && (
                                 <div className="space-y-4">
                                     <AdHelperSection

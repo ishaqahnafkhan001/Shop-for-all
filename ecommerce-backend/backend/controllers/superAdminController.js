@@ -14,7 +14,7 @@ const { VERIFICATION_SUSPENSION_REASON, isVerificationSuspension } = require('..
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
-const CRITICAL_FEATURE_FLAGS = new Set(['storeBuilder', 'analytics', 'staffAccounts']);
+const CRITICAL_FEATURE_FLAGS = new Set(['storeBuilder', 'analytics', 'staffAccounts', 'growthCenter']);
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -417,14 +417,35 @@ exports.updateShopGovernance = async (req, res) => {
             return exports.updateShopFeatureFlags(req, res);
         }
 
+        const reason = getReason(req.body);
+        if (req.body.isActive === false && requireReason(res, reason, 'Suspension reason is required')) return;
+        if (req.body.customDomain?.status === 'Failed' && requireReason(res, reason, 'Reason is required when marking a domain as failed')) return;
+
+        const updatePayload = { ...req.body };
+        if (updatePayload.isActive === false && !updatePayload.suspensionReason) {
+            updatePayload.suspensionReason = reason;
+        }
+
         const shop = await Shop.findByIdAndUpdate(
             req.params.id,
-            { $set: req.body },
+            { $set: updatePayload },
             { new: true, runValidators: true }
         );
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
         await invalidateShopCache(shop);
+        await logPlatformAudit({
+            req,
+            action: 'shop.governance_updated',
+            entityType: 'Shop',
+            entityId: shop._id,
+            entityLabel: shop.shopName,
+            shop_id: shop._id,
+            message: 'Shop governance fields updated',
+            reason,
+            metadata: { updatedFields: Object.keys(updatePayload) },
+            severity: updatePayload.isActive === false ? 'warning' : 'info'
+        });
 
         res.status(200).json({ success: true, data: shop });
     } catch (err) {

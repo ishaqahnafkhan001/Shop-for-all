@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Shop = require('../models/Shop');
 const ShopMembership = require('../models/ShopMembership');
 const { isVerificationSuspension } = require('../services/vendorVerificationService');
+const { isBillingSuspension } = require('../services/billing/subscriptionService');
 
 const getTokenFromRequest = (req) => {
     if (req.cookies && req.cookies.token) return req.cookies.token;
@@ -55,8 +56,10 @@ const attachUserFromToken = async (req, token) => {
 
             const canAccessVerificationRecovery = isVerificationSuspension(shop) &&
                 ['VendorAdmin', 'VendorStaff'].includes(legacyUser.role);
+            const canAccessBillingRecovery = isBillingSuspension(shop) &&
+                ['VendorAdmin', 'VendorStaff'].includes(legacyUser.role);
 
-            if (!shop || ((shop.isActive === false || shop.approvalStatus === 'Suspended') && !canAccessVerificationRecovery)) {
+            if (!shop || ((shop.isActive === false || shop.approvalStatus === 'Suspended') && !canAccessVerificationRecovery && !canAccessBillingRecovery)) {
                 throw new Error('Shop inactive');
             }
         }
@@ -87,7 +90,8 @@ const attachUserFromToken = async (req, token) => {
             .select('isActive approvalStatus suspensionReason verification')
             .lean();
         const canAccessVerificationRecovery = isVerificationSuspension(shop);
-        if (!shop || ((shop.isActive === false || shop.approvalStatus === 'Suspended') && !canAccessVerificationRecovery)) {
+        const canAccessBillingRecovery = isBillingSuspension(shop);
+        if (!shop || ((shop.isActive === false || shop.approvalStatus === 'Suspended') && !canAccessVerificationRecovery && !canAccessBillingRecovery)) {
             throw new Error('Shop inactive');
         }
     }
