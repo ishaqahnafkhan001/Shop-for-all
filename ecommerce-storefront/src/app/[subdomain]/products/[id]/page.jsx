@@ -12,6 +12,7 @@ import {
     getProductSeoDescription,
     getProductSeoTitle,
     isObjectId,
+    isShopSearchVisible,
     noindexMetadata
 } from '@/lib/seo';
 
@@ -61,7 +62,8 @@ export async function generateMetadata({ params }) {
         url,
         image: getOgImage(product, shop),
         type: 'website',
-        isIndexable: true
+        isIndexable: isShopSearchVisible(shop),
+        googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''
     });
 }
 

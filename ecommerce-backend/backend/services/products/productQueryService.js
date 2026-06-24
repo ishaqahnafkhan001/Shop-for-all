@@ -115,6 +115,7 @@ const getSummaryProjection = (isStorefrontRequest) => {
         category: 1,
         tags: 1,
         collections: 1,
+        imageAltText: 1,
         images: { $slice: ['$images', 1] },
         status: 1,
         isActive: 1,

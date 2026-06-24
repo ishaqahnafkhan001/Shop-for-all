@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { shouldUseUnoptimizedImage } from "@/lib/imageDomains";
+import { getImageUrlFromValue } from "@/lib/seo";
 
 export default function SafeProductImage({
     src,
@@ -20,7 +21,7 @@ export default function SafeProductImage({
     ...props
 }) {
     const [failedSrc, setFailedSrc] = useState("");
-    const safeSrc = typeof src === "string" ? src.trim() : "";
+    const safeSrc = String(getImageUrlFromValue(src) || "").trim();
     const failed = Boolean(safeSrc && failedSrc === safeSrc);
 
     if (!safeSrc || failed) {

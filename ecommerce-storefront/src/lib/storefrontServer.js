@@ -64,3 +64,20 @@ export const fetchStorefrontProduct = async (subdomain, productId) => (
         revalidate: 30,
     })
 );
+
+export const fetchStorefrontCollections = async (subdomain) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/collections`, {
+        revalidate: 60,
+    });
+
+    return response.data || [];
+};
+
+export const fetchStorefrontCollection = async (subdomain, slug, params = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/collections/${encodeURIComponent(slug)}`, {
+        params,
+        revalidate: 60,
+    });
+
+    return response.data || null;
+};

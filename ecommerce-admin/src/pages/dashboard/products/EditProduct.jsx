@@ -11,6 +11,8 @@ import {
     ReadinessChecklist,
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
+import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
+import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
 
 /**
  * EditProduct
@@ -38,9 +40,11 @@ const EditProduct = () => {
         tags:           '',
         status:         'Published',
         lowStockThreshold: 5,
+        imageAltText:   '',
         seo:            { title: '', description: '' },
         pricing:        { buyingPrice: 0, sellingPrice: 0, discount: 0 },
         variants:       [],    // live variant list (reflects DB state + local additions)
+        images:         [],
         features:       [],
         specifications: [],
         comments:       []
@@ -88,6 +92,7 @@ const EditProduct = () => {
                     tags:           (product.tags || []).join(', '),
                     status:         product.status         || (product.isActive ? 'Published' : 'Draft'),
                     lowStockThreshold: product.lowStockThreshold || 5,
+                    imageAltText:   product.imageAltText   || '',
                     seo:            product.seo || { title: '', description: '' },
                     pricing: {
                         buyingPrice:  product.pricing?.buyingPrice  || 0,
@@ -95,6 +100,7 @@ const EditProduct = () => {
                         discount:     product.pricing?.discount     || 0
                     },
                     variants:       product.variants       || [],
+                    images:         product.images         || [],
                     features:       product.features       || [],
                     specifications: product.specifications || [],
                     comments:       product.comments       || []
@@ -331,14 +337,36 @@ const EditProduct = () => {
     const finalPrice = selling - (selling * discount / 100);
     const profit     = finalPrice - buying;
     const totalStock = formData.variants.reduce((sum, variant) => sum + Number(getDisplayStock(variant) || 0), 0);
+    const productSeoPreview = buildProductSeoPreview({ product: formData, shopName: 'Your Store' });
+    const productSeoHealth = scoreProductSeo({
+        product: { ...formData, stock: totalStock },
+        hasImage: Boolean(formData.images?.length || formData.variants.some(variant => variant.image))
+    });
     const readinessItems = [
         { label: 'Product title is clear', done: Boolean(formData.title.trim()), helper: 'Use the name customers search for.' },
         { label: 'Category is selected', done: Boolean(formData.category.trim()), helper: 'Categories help filters and sections work correctly.' },
         { label: 'Selling price is set', done: selling > 0, helper: 'A product needs a customer-facing price.' },
+        { label: 'Image alt text added', done: Boolean(formData.imageAltText.trim()), helper: 'Describe the main product image for search and accessibility.' },
         { label: 'Stock is available', done: totalStock > 0, helper: 'Keep stock updated to avoid cancelled orders.' },
         { label: 'Description helps shoppers', done: formData.description.trim().length >= 20, helper: 'Explain material, use case, or key benefit.' },
         { label: 'Product is published', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
     ];
+
+    const handleGenerateSeo = () => {
+        if (!formData.title.trim()) {
+            toast.error('Add a product title first.');
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            seo: {
+                title: prev.seo.title || truncateSeoText(`${prev.title}${prev.category ? ` | ${prev.category}` : ''}`, 70),
+                description: prev.seo.description || truncateSeoText(prev.description || `Buy ${prev.title} online from this store.`, 160)
+            }
+        }));
+        toast.success('SEO preview filled from product info. Review it before updating.');
+    };
 
     // ── Main submit (scalar + stock changes + new variants) ───────────────────
     const handleSubmit = async (e) => {
@@ -354,6 +382,7 @@ const EditProduct = () => {
                 tags:           formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
                 status:         formData.status,
                 lowStockThreshold: Number(formData.lowStockThreshold || 5),
+                imageAltText:   formData.imageAltText,
                 seo:            formData.seo,
                 pricing:        formData.pricing,
                 features:       formData.features,
@@ -464,7 +493,7 @@ const EditProduct = () => {
                     <SellerHint>Published products are visible to shoppers. Draft products stay hidden until you are ready.</SellerHint>
                     <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <Input id="slug" label="Product Slug" value={formData.slug} onChange={handleChange} />
+                        <Input id="slug" label="Product URL slug" value={formData.slug} onChange={handleChange} helperText="Changing the product URL may affect shared links. Old ID links redirect when supported." />
                         <Input id="tags" label="Tags" value={formData.tags} onChange={handleChange} />
                         <Input id="lowStockThreshold" label="Low Stock Alert" type="number" value={formData.lowStockThreshold} onChange={handleChange} />
                     </div>
@@ -496,20 +525,46 @@ const EditProduct = () => {
                     description="Optional search text for Google and shared links."
                     icon={Search}
                 >
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            id="seoTitle"
-                            label="SEO Title"
-                            value={formData.seo.title}
-                            onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, title: e.target.value } }))}
-                        />
-                        <Input
-                            id="seoDescription"
-                            label="SEO Description"
-                            value={formData.seo.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, description: e.target.value } }))}
-                        />
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-slate-500">Preview and improve how this product appears in Google.</p>
+                        <button
+                            type="button"
+                            onClick={handleGenerateSeo}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-50"
+                        >
+                            Generate from product info
+                        </button>
                     </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <Input
+                                id="seoTitle"
+                                label="SEO title"
+                                value={formData.seo.title}
+                                onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, title: e.target.value } }))}
+                                helperText="Recommended: 50-70 characters."
+                            />
+                            <SeoLengthHint value={formData.seo.title} min={50} max={70} label="SEO title" />
+                        </div>
+                        <div>
+                            <Input
+                                id="seoDescription"
+                                label="SEO description"
+                                value={formData.seo.description}
+                                onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, description: e.target.value } }))}
+                                helperText="Recommended: 120-160 characters."
+                            />
+                            <SeoLengthHint value={formData.seo.description} min={120} max={160} label="SEO description" />
+                        </div>
+                    </div>
+                    <SeoSnippetPreview {...productSeoPreview} />
+                    <Input
+                        id="imageAltText"
+                        label="Product image alt text"
+                        value={formData.imageAltText}
+                        onChange={handleChange}
+                        helperText="Describe the main product image. This improves accessibility and image SEO."
+                    />
                 </ProductFormSection>
 
                 {/* ── PRICING ───────────────────────────────────────────── */}
@@ -928,6 +983,12 @@ const EditProduct = () => {
 
                 <div className="space-y-4">
                     <ReadinessChecklist items={readinessItems} title="Product health" />
+                    <SeoHealthCard
+                        title="Product SEO score"
+                        score={productSeoHealth.score}
+                        tasks={productSeoHealth.tasks}
+                        description={`This product SEO score is ${productSeoHealth.score}/100. Fix missing basics before publishing.`}
+                    />
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">
                         <p className="font-black text-slate-950">Seller note</p>
                         <p className="mt-2">

@@ -9,6 +9,7 @@ import {
     cardRadiusClasses,
     cardShadowClasses,
     formatPrice,
+    getCardImageAlt,
     getImageUrl,
     getPrice,
     imageAspectClasses,
@@ -72,7 +73,7 @@ export const ProductCard = memo(function ProductCard({ product, index, storewide
                 {imageUrl && !imageFailed ? (
                     <img
                         src={optimizeCloudinaryImage(imageUrl, { width: 560 })}
-                        alt={product.title}
+                        alt={getCardImageAlt(product)}
                         width="560"
                         height="560"
                         onError={() => setImageFailed(true)}

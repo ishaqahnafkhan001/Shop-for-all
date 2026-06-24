@@ -19,6 +19,7 @@ const allowedThemeKeys = [
     'checkoutBranding',
     'mobile',
     'paymentSettings',
+    'seo',
     'homepageSections',
     'allProducts',
     'migrations',
@@ -50,6 +51,19 @@ const sanitizeUrlValue = (value = '') => {
     return '#';
 };
 
+const sanitizeGoogleSiteVerification = (value = '') => {
+    const raw = cleanTextValue(value).slice(0, 500);
+    if (!raw) return '';
+
+    const contentMatch = raw.match(/content\s*=\s*["']([^"']+)["']/i);
+    const content = contentMatch ? contentMatch[1] : raw;
+
+    return String(content)
+        .replace(/[<>"'`]/g, '')
+        .replace(/\s+/g, '')
+        .slice(0, 200);
+};
+
 const sanitizeThemeValue = (value, key = '') => {
     if (Array.isArray(value)) {
         return value.map(item => sanitizeThemeValue(item, key));
@@ -69,7 +83,13 @@ const sanitizeThemeValue = (value, key = '') => {
         : cleanTextValue(value);
 };
 
-const sanitizeThemePayload = (theme = {}) => sanitizeThemeValue(theme);
+const sanitizeThemePayload = (theme = {}) => {
+    const cleanTheme = sanitizeThemeValue(theme);
+    if (cleanTheme?.seo && typeof cleanTheme.seo === 'object') {
+        cleanTheme.seo.googleSiteVerification = sanitizeGoogleSiteVerification(cleanTheme.seo.googleSiteVerification);
+    }
+    return cleanTheme;
+};
 
 const pickThemePayload = (payload = {}) => {
     return allowedThemeKeys.reduce((acc, key) => {

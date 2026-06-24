@@ -2,6 +2,7 @@
 
 import { ChevronDown, Headphones, ShieldCheck, Truck } from "lucide-react";
 
+import { getImageUrlFromValue, getProductImageAlt } from "../../../lib/seo";
 import { getThemeCssVars } from "../../../lib/theme";
 
 export const REFERENCE_SAMPLE_PRODUCTS = [];
@@ -106,7 +107,8 @@ export const formatPrice = (value) => {
     return `৳ ${number.toLocaleString("en-BD", { maximumFractionDigits: 2 })}`;
 };
 
-export const getImageUrl = (product) => product?.imageUrl || product?.images?.[0] || "";
+export const getImageUrl = (product) => getImageUrlFromValue(product?.imageUrl) || getImageUrlFromValue(product?.images?.[0]) || "";
+export const getCardImageAlt = (product) => getProductImageAlt({ product, image: product?.images?.[0] });
 
 export const optimizeCloudinaryImage = (src = "", { width = 900, quality = "auto:eco", crop = "limit" } = {}) => {
     if (!src || typeof src !== "string" || src.startsWith("/") || src.startsWith("data:") || src.startsWith("blob:")) return src;

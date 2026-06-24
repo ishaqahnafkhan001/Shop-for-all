@@ -1,8 +1,10 @@
-import { fetchStorefrontInfo, fetchStorefrontProducts } from "@/lib/storefrontServer";
+import { fetchStorefrontCollections, fetchStorefrontInfo, fetchStorefrontProducts } from "@/lib/storefrontServer";
 import {
+    getCollectionCanonicalUrl,
     getHomepageCanonicalUrl,
     getPolicyCanonicalUrl,
-    getProductCanonicalUrl
+    getProductCanonicalUrl,
+    isShopSearchVisible
 } from "@/lib/seo";
 
 const POLICY_TYPES = ["privacy", "terms", "refund", "shipping"];
@@ -36,12 +38,21 @@ export async function GET(request, { params }) {
     const host = request.headers.get("host") || "";
 
     try {
-        const [shop, productsResponse] = await Promise.all([
+        const [shop, productsResponse, collections] = await Promise.all([
             fetchStorefrontInfo(subdomain),
-            fetchStorefrontProducts(subdomain, { page: 1, limit: 2500, sort: "newest" })
+            fetchStorefrontProducts(subdomain, { page: 1, limit: 2500, sort: "newest" }),
+            fetchStorefrontCollections(subdomain)
         ]);
 
         const products = productsResponse.products || productsResponse.data || [];
+        if (!isShopSearchVisible(shop)) {
+            return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`, {
+                headers: {
+                    "content-type": "application/xml; charset=utf-8",
+                    "cache-control": "public, s-maxage=300, stale-while-revalidate=3600"
+                }
+            });
+        }
         const urls = [
             urlNode({
                 loc: getHomepageCanonicalUrl({ host, subdomain, shop }),
@@ -56,6 +67,14 @@ export async function GET(request, { params }) {
                     lastmod: product.updatedAt || product.createdAt,
                     changefreq: "weekly",
                     priority: "0.8"
+                })),
+            ...(collections || [])
+                .filter(collection => collection?.slug && Number(collection.productCount || 0) > 0)
+                .map(collection => urlNode({
+                    loc: getCollectionCanonicalUrl({ host, subdomain, shop, collection }),
+                    lastmod: collection.updatedAt || collection.createdAt,
+                    changefreq: "weekly",
+                    priority: "0.6"
                 })),
             ...POLICY_TYPES
                 .filter(type => hasPolicyContent(shop, type))

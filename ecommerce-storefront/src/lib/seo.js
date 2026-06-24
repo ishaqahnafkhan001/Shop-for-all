@@ -75,9 +75,14 @@ const absoluteUrl = (baseUrl, path = "") => {
 };
 
 export const getProductPathSegment = (product = {}) => encodeURIComponent(product.slug || product._id || product.id || "");
+export const getCollectionPathSegment = (collection = {}) => encodeURIComponent(collection.slug || collection._id || collection.id || "");
 
 export const getProductCanonicalUrl = ({ host, subdomain, shop, product } = {}) => {
     return absoluteUrl(getShopBaseUrl({ host, subdomain, shop }), `/products/${getProductPathSegment(product)}`);
+};
+
+export const getCollectionCanonicalUrl = ({ host, subdomain, shop, collection } = {}) => {
+    return absoluteUrl(getShopBaseUrl({ host, subdomain, shop }), `/collections/${getCollectionPathSegment(collection)}`);
 };
 
 export const getHomepageCanonicalUrl = ({ host, subdomain, shop } = {}) => getShopBaseUrl({ host, subdomain, shop });
@@ -121,6 +126,20 @@ export const getHomepageSeoDescription = (shop = {}) => {
     );
 };
 
+export const getCollectionSeoTitle = (collection = {}, shop = {}) => {
+    const storeName = shop?.shopName || shop?.name || "Store";
+    return truncateMetaTitle(collection?.seo?.title || `${collection?.title || "Collection"} | ${storeName}`);
+};
+
+export const getCollectionSeoDescription = (collection = {}, shop = {}) => {
+    const storeName = shop?.shopName || shop?.name || "this store";
+    return truncateMetaDescription(
+        collection?.seo?.description ||
+        collection?.description ||
+        `Shop ${collection?.title || "collection"} products from ${storeName}.`
+    );
+};
+
 const firstHeroImage = (shop = {}) => {
     const hero = shop?.theme?.hero || {};
     const firstSlide = Array.isArray(hero.slides) ? hero.slides.find(slide => slide?.desktopImage || slide?.mobileImage) : null;
@@ -128,18 +147,52 @@ const firstHeroImage = (shop = {}) => {
 };
 
 export const getOgImage = (product = null, shop = {}) => {
-    if (product?.images?.[0]) return product.images[0];
+    if (product?.images?.[0]) return getImageUrlFromValue(product.images[0]);
     if (product?.imageUrl) return product.imageUrl;
-    return shop?.theme?.logoUrl || firstHeroImage(shop) || "";
+    const seo = shop?.theme?.seo || {};
+    return seo.socialImage || seo.image || seo.defaultSocialImage || shop?.theme?.logoUrl || firstHeroImage(shop) || "";
 };
 
-export const getRobotsForPage = ({ isIndexable = true } = {}) => ({
+export const getCollectionOgImage = (collection = {}, products = [], shop = {}) => {
+    if (collection?.image) return collection.image;
+    const firstProductImage = products.find(product => product?.images?.[0] || product?.imageUrl);
+    return getOgImage(firstProductImage || null, shop);
+};
+
+export const getImageUrlFromValue = (image) => {
+    if (!image) return "";
+    if (typeof image === "string") return image;
+    return image.url || image.src || image.secureUrl || "";
+};
+
+export const getImageAltFromValue = (image) => {
+    if (!image || typeof image === "string") return "";
+    return cleanTextForMeta(image.alt || image.altText || image.title || "");
+};
+
+export const getProductImageAlt = ({ product = {}, image, shop = {} } = {}) => (
+    getImageAltFromValue(image) ||
+    cleanTextForMeta(product.imageAltText) ||
+    cleanTextForMeta(product.title) ||
+    cleanTextForMeta(shop?.shopName || shop?.name) ||
+    "Product image"
+);
+
+export const getProductImageUrls = (product = {}) => {
+    const images = Array.isArray(product.images) ? product.images.map(getImageUrlFromValue).filter(Boolean) : [];
+    if (product.imageUrl) images.unshift(product.imageUrl);
+    return [...new Set(images)];
+};
+
+export const isShopSearchVisible = (shop = {}) => shop?.theme?.seo?.searchEngineVisibility !== false;
+
+export const getRobotsForPage = ({ isIndexable = true, isFollowable = isIndexable } = {}) => ({
     index: Boolean(isIndexable),
-    follow: Boolean(isIndexable),
+    follow: Boolean(isFollowable),
     nocache: !isIndexable,
     googleBot: {
         index: Boolean(isIndexable),
-        follow: Boolean(isIndexable)
+        follow: Boolean(isFollowable)
     }
 });
 
@@ -149,17 +202,19 @@ export const buildMetadata = ({
     url,
     image,
     type = "website",
-    isIndexable = true
+    isIndexable = true,
+    isFollowable = true,
+    googleSiteVerification = ""
 } = {}) => {
     const safeTitle = truncateMetaTitle(title);
     const safeDescription = truncateMetaDescription(description);
     const images = image ? [{ url: image }] : [];
 
-    return {
+    const metadata = {
         title: safeTitle,
         description: safeDescription,
         alternates: { canonical: url },
-        robots: getRobotsForPage({ isIndexable }),
+        robots: getRobotsForPage({ isIndexable, isFollowable }),
         openGraph: {
             type,
             title: safeTitle,
@@ -174,6 +229,12 @@ export const buildMetadata = ({
             images: image ? [image] : []
         }
     };
+
+    if (googleSiteVerification) {
+        metadata.verification = { google: googleSiteVerification };
+    }
+
+    return metadata;
 };
 
 const productPrice = (product = {}) => {
@@ -198,7 +259,7 @@ export const buildProductJsonLd = ({ product, shop, url } = {}) => {
         "@type": "Product",
         name: cleanTextForMeta(product.title),
         description: getProductSeoDescription(product, shop),
-        image: Array.isArray(product.images) ? product.images.filter(Boolean) : [],
+        image: getProductImageUrls(product),
         sku: product.variants?.find(variant => variant?.sku)?.sku || product.sku || undefined,
         brand: {
             "@type": "Brand",
@@ -224,6 +285,27 @@ export const buildProductJsonLd = ({ product, shop, url } = {}) => {
     }
 
     return JSON.parse(JSON.stringify(jsonLd));
+};
+
+export const buildCollectionItemListJsonLd = ({ collection, products = [], shop, host, subdomain } = {}) => {
+    const itemListElement = products
+        .filter(product => product?.title && (product?.slug || product?._id))
+        .map((product, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            url: getProductCanonicalUrl({ host, subdomain, shop, product }),
+            name: cleanTextForMeta(product.title),
+            image: getProductImageUrls(product)[0] || undefined
+        }));
+
+    if (!collection?.title || itemListElement.length === 0) return null;
+
+    return JSON.parse(JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: cleanTextForMeta(collection.title),
+        itemListElement
+    }));
 };
 
 export const buildBreadcrumbJsonLd = ({ items = [] } = {}) => ({

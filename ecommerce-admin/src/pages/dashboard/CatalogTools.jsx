@@ -3,6 +3,17 @@ import { Download, Upload, Layers, Wand2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 
+const emptyCollectionForm = {
+    title: '',
+    slug: '',
+    description: '',
+    image: '',
+    seo: {
+        title: '',
+        description: ''
+    }
+};
+
 const parseCsvLine = (line) => {
     const cells = [];
     let current = '';
@@ -48,7 +59,7 @@ const CatalogTools = () => {
     const [collections, setCollections] = useState([]);
     const [selected, setSelected] = useState([]);
     const [bulk, setBulk] = useState({ category: '', status: '', stock: '', discount: '', lowStockThreshold: '' });
-    const [collectionForm, setCollectionForm] = useState({ title: '', slug: '', description: '' });
+    const [collectionForm, setCollectionForm] = useState(emptyCollectionForm);
 
     const selectedCount = selected.length;
 
@@ -132,11 +143,21 @@ const CatalogTools = () => {
                 productIds: selected
             });
             toast.success('Collection created from selected products.');
-            setCollectionForm({ title: '', slug: '', description: '' });
+            setCollectionForm(emptyCollectionForm);
             loadData();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to create collection');
         }
+    };
+
+    const updateCollectionSeo = (field, value) => {
+        setCollectionForm(prev => ({
+            ...prev,
+            seo: {
+                ...(prev.seo || {}),
+                [field]: value
+            }
+        }));
     };
 
     return (
@@ -228,6 +249,15 @@ const CatalogTools = () => {
                         <input required value={collectionForm.title} onChange={e => setCollectionForm(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Collection title" />
                         <input value={collectionForm.slug} onChange={e => setCollectionForm(prev => ({ ...prev, slug: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Slug" />
                         <textarea value={collectionForm.description} onChange={e => setCollectionForm(prev => ({ ...prev, description: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" rows={3} placeholder="Description" />
+                        <input value={collectionForm.image} onChange={e => setCollectionForm(prev => ({ ...prev, image: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Collection image URL" />
+                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-3">
+                            <div>
+                                <div className="text-sm font-semibold text-slate-800">Collection SEO</div>
+                                <p className="text-xs text-slate-500">Optional. These improve the public collection page title and search preview.</p>
+                            </div>
+                            <input value={collectionForm.seo?.title || ''} onChange={e => updateCollectionSeo('title', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" maxLength={70} placeholder="SEO title" />
+                            <textarea value={collectionForm.seo?.description || ''} onChange={e => updateCollectionSeo('description', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" maxLength={170} rows={2} placeholder="SEO description" />
+                        </div>
                         <button className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
                             Create from selected
                         </button>

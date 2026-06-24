@@ -11,6 +11,8 @@ import {
     ReadinessChecklist,
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
+import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
+import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
 
 // ── Pure helpers (mirrors backend variantMatrix.js) ───────────────────────────
 
@@ -52,6 +54,7 @@ const AddProduct = () => {
         tags:           '',
         status:         'Published',
         lowStockThreshold: 5,
+        imageAltText:   '',
         seo:            { title: '', description: '' },
         pricing:        { buyingPrice: '', sellingPrice: '', discount: 0 },
         features:       [],
@@ -83,10 +86,32 @@ const AddProduct = () => {
         { label: 'Category selected', done: Boolean(formData.category.trim()), helper: 'Categories help filters and storefront sections.' },
         { label: 'Selling price added', done: Number(formData.pricing.sellingPrice) > 0, helper: 'This is the price customers see.' },
         { label: 'At least one image added', done: imageFiles.length > 0, helper: 'The first image becomes the product card cover.' },
+        { label: 'Image alt text added', done: Boolean(formData.imageAltText.trim()), helper: 'Describe the product image for search engines and accessibility.' },
         { label: 'Stock added', done: Number(defaultStock) > 0 || Object.values(stockOverrides).some(value => Number(value) > 0), helper: 'Stock lets customers buy without overselling.' },
         { label: 'Description written', done: Boolean(formData.description.trim()), helper: 'Explain benefits, usage, and what comes in the box.' },
         { label: 'Ready to publish', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
     ];
+    const productSeoPreview = useMemo(() => buildProductSeoPreview({ product: formData, shopName: 'Your Store' }), [formData]);
+    const productSeoHealth = useMemo(() => scoreProductSeo({
+        product: { ...formData, defaultStock, collections: selectedCollections },
+        hasImage: imageFiles.length > 0
+    }), [defaultStock, formData, imageFiles.length, selectedCollections]);
+
+    const handleGenerateSeo = () => {
+        if (!formData.title.trim()) {
+            toast.error('Add a product title first.');
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            seo: {
+                title: prev.seo.title || truncateSeoText(`${prev.title}${prev.category ? ` | ${prev.category}` : ''}`, 70),
+                description: prev.seo.description || truncateSeoText(prev.description || `Buy ${prev.title} online from this store.`, 160)
+            }
+        }));
+        toast.success('SEO preview filled from product info. Review it before saving.');
+    };
 
     useEffect(() => {
         let isMounted = true;
@@ -361,6 +386,7 @@ const AddProduct = () => {
             data.append('tags',           formData.tags);
             data.append('status',         formData.status);
             data.append('lowStockThreshold', String(formData.lowStockThreshold || 5));
+            data.append('imageAltText',    formData.imageAltText);
             data.append('seo',            JSON.stringify(formData.seo));
             data.append('pricing',        JSON.stringify(formData.pricing));
             data.append('collections',    JSON.stringify(selectedCollections));
@@ -445,7 +471,7 @@ const AddProduct = () => {
                         )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <Input id="slug" label="Product Slug" value={formData.slug} onChange={handleChange} />
+                            <Input id="slug" label="Product URL slug" value={formData.slug} onChange={handleChange} helperText="Changing the product URL may affect shared links. Old ID links redirect when supported." />
                             <Input id="tags" label="Tags" value={formData.tags} onChange={handleChange} />
                             <Input id="lowStockThreshold" label="Low Stock Alert" type="number" value={formData.lowStockThreshold} onChange={handleChange} />
                         </div>
@@ -464,19 +490,46 @@ const AddProduct = () => {
                             </select>
                         </label>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input
-                                id="seoTitle"
-                                label="SEO Title"
-                                value={formData.seo.title}
-                                onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, title: e.target.value } }))}
-                            />
-                            <Input
-                                id="seoDescription"
-                                label="SEO Description"
-                                value={formData.seo.description}
-                                onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, description: e.target.value } }))}
-                            />
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-sm font-black text-slate-950">Search result preview</p>
+                                    <p className="text-xs text-slate-500">This controls how the product can appear in Google and shared links.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateSeo}
+                                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-bold text-indigo-700 transition hover:bg-indigo-50"
+                                >
+                                    <Sparkles size={14} />
+                                    Generate from product info
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <Input
+                                        id="seoTitle"
+                                        label="SEO title"
+                                        value={formData.seo.title}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, title: e.target.value } }))}
+                                        helperText="Recommended: 50-70 characters."
+                                    />
+                                    <SeoLengthHint value={formData.seo.title} min={50} max={70} label="SEO title" />
+                                </div>
+                                <div>
+                                    <Input
+                                        id="seoDescription"
+                                        label="SEO description"
+                                        value={formData.seo.description}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, seo: { ...prev.seo, description: e.target.value } }))}
+                                        helperText="Recommended: 120-160 characters."
+                                    />
+                                    <SeoLengthHint value={formData.seo.description} min={120} max={160} label="SEO description" />
+                                </div>
+                            </div>
+                            <div className="mt-4">
+                                <SeoSnippetPreview {...productSeoPreview} />
+                            </div>
                         </div>
 
                         {/* ✨ AI Description Section */}
@@ -517,6 +570,13 @@ const AddProduct = () => {
                         icon={ImageIcon}
                     >
                         <ImageEmptyState selectedCount={imageFiles.length} max={5} />
+                        <Input
+                            id="imageAltText"
+                            label="Product image alt text"
+                            value={formData.imageAltText}
+                            onChange={handleChange}
+                            helperText="Describe the main product image. Example: White cotton panjabi for men."
+                        />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-gray-600">Images (max 5)</label>
@@ -918,6 +978,12 @@ const AddProduct = () => {
                 <div className="lg:col-span-1">
                     <div className="sticky top-6 space-y-4">
                         <ReadinessChecklist items={readinessItems} />
+                        <SeoHealthCard
+                            title="Product SEO score"
+                            score={productSeoHealth.score}
+                            tasks={productSeoHealth.tasks}
+                            description={`This product SEO score is ${productSeoHealth.score}/100. Add missing basics before publishing.`}
+                        />
 
                         <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                             <Eye size={16} /> Live Storefront Preview
@@ -929,7 +995,7 @@ const AddProduct = () => {
                                 {previewImageUrl ? (
                                     <img
                                         src={previewImageUrl}
-                                        alt="Preview"
+                                        alt={formData.imageAltText || formData.title || 'Product preview'}
                                         className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
                                     />
                                 ) : (

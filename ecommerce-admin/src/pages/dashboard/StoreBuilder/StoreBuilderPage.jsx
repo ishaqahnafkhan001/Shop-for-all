@@ -38,6 +38,8 @@ import { StoreBuilderSidebar } from './StoreBuilderSidebar.jsx';
 import { StoreBuilderEditorPanel } from './StoreBuilderEditorPanel.jsx';
 import { StoreBuilderPreviewPanel } from './StoreBuilderPreviewPanel.jsx';
 import { AdminLoadingState } from '../../../components/ui/AdminState.jsx';
+import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
+import { buildStoreSeoPreview, scoreStoreSeo } from '../../../utils/seoHealth.js';
 import {
     previewPages,
     usePreviewMode
@@ -75,6 +77,7 @@ const StoreBuilderPage = () => {
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [uploadingThemeImage, setUploadingThemeImage] = useState(false);
     const [shopName, setShopName] = useState('');
+    const [shopSubdomain, setShopSubdomain] = useState('');
     const [theme, setTheme] = useState(defaultTheme);
     const [availableProducts, setAvailableProducts] = useState([]);
     const [productOptions, setProductOptions] = useState([]);
@@ -117,6 +120,34 @@ const StoreBuilderPage = () => {
         const sectionIndex = Number(activeElement.replace('section-', ''));
         return isHomepageSectionLocked(theme.homepageSections?.[sectionIndex]);
     }, [activeElement, theme.homepageSections]);
+    const storeSeoPreview = useMemo(() => buildStoreSeoPreview({
+        theme,
+        shopName,
+        subdomain: shopSubdomain,
+        domain: customDomain?.status === 'Verified' ? customDomain.domain : ''
+    }), [customDomain, shopName, shopSubdomain, theme]);
+    const storeSeoSignals = useMemo(() => {
+        const productsWithAltText = availableProducts.filter(product => String(product.imageAltText || '').trim()).length;
+        const collectionIds = new Set(
+            availableProducts
+                .flatMap(product => Array.isArray(product.collections) ? product.collections : [])
+                .map(String)
+                .filter(Boolean)
+        );
+
+        return {
+            collectionCount: collectionIds.size,
+            imageAltCoverage: availableProducts.length ? Math.round((productsWithAltText / availableProducts.length) * 100) : 0
+        };
+    }, [availableProducts]);
+    const storeSeoHealth = useMemo(() => scoreStoreSeo({
+        theme,
+        shopName,
+        productCount: availableProducts.length,
+        customDomain,
+        collectionCount: storeSeoSignals.collectionCount,
+        imageAltCoverage: storeSeoSignals.imageAltCoverage
+    }), [availableProducts.length, customDomain, shopName, storeSeoSignals, theme]);
 
     const selectEditorTarget = (target) => {
         if (!target) return;
@@ -268,6 +299,7 @@ const StoreBuilderPage = () => {
                 const initialProducts = productsResponse.data?.data || [];
                 const initialReviews = [...(reviewsResponse.data?.data || []), ...(selectedReviewsResponse.data?.data || [])];
                 setShopName(shop.shopName || '');
+                setShopSubdomain(shop.subdomain || '');
                 setTheme(nextTheme);
                 setAvailableProducts(initialProducts);
                 setProductOptions(initialProducts);
@@ -1289,6 +1321,79 @@ const StoreBuilderPage = () => {
                     </BuilderCard>
                 );
             }
+            case 'seo':
+                return (
+                    <div className="space-y-4">
+                        <BuilderCard title="Homepage SEO" description="Control how your store homepage appears in Google and social shares." icon={Search}>
+                            <BuilderInput
+                                label="Homepage SEO title"
+                                value={theme.seo?.title || ''}
+                                onChange={e => setThemeGroup('seo', 'title', e.target.value)}
+                                placeholder={`${shopName || 'Your Store'} - Online Store`}
+                                help="Recommended length: 50-70 characters. If empty, the hero title or store name is used."
+                            />
+                            <SeoLengthHint value={theme.seo?.title || ''} min={50} max={70} label="SEO title" />
+                            <BuilderTextarea
+                                label="Homepage SEO description"
+                                value={theme.seo?.description || ''}
+                                onChange={e => setThemeGroup('seo', 'description', e.target.value)}
+                                placeholder={`Shop products from ${shopName || 'this store'}.`}
+                                help="Recommended length: 120-160 characters. This can appear under your Google result."
+                            />
+                            <SeoLengthHint value={theme.seo?.description || ''} min={120} max={160} label="SEO description" />
+                            <BuilderInput
+                                label="Default social share image"
+                                value={theme.seo?.socialImage || ''}
+                                onChange={e => setThemeGroup('seo', 'socialImage', e.target.value)}
+                                placeholder="https://..."
+                                help="Used when your homepage is shared and no product image is available."
+                            />
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                                <Upload size={16} />
+                                {uploadingThemeImage ? 'Uploading...' : 'Upload social image'}
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    className="hidden"
+                                    disabled={uploadingThemeImage}
+                                    onChange={event => handleThemeImageUpload(event, url => setThemeGroup('seo', 'socialImage', url))}
+                                />
+                            </label>
+                            {theme.seo?.socialImage && (
+                                <div className="overflow-hidden rounded-xl border border-slate-200">
+                                    <img src={theme.seo.socialImage} alt="" className="h-32 w-full object-cover" />
+                                </div>
+                            )}
+                            <BuilderInput
+                                label="Facebook page URL"
+                                value={theme.seo?.facebookUrl || ''}
+                                onChange={e => setThemeGroup('seo', 'facebookUrl', e.target.value)}
+                                placeholder="https://facebook.com/your-page"
+                                help="Helps shoppers and search engines connect your store with your social presence."
+                            />
+                            <BuilderInput
+                                label="Google Search Console verification code"
+                                value={theme.seo?.googleSiteVerification || ''}
+                                onChange={e => setThemeGroup('seo', 'googleSiteVerification', e.target.value)}
+                                placeholder="abc123"
+                                help="Paste only the content value from Google's meta tag. If you paste the full tag, the backend stores only the safe verification code."
+                            />
+                            <BuilderToggle
+                                label="Allow search engines to index this store"
+                                help="Turn this off only if you want Google and other search engines to avoid showing this storefront."
+                                checked={theme.seo?.searchEngineVisibility !== false}
+                                onChange={e => setThemeGroup('seo', 'searchEngineVisibility', e.target.checked)}
+                            />
+                        </BuilderCard>
+                        <SeoSnippetPreview {...storeSeoPreview} />
+                        <SeoHealthCard
+                            title="Store SEO score"
+                            score={storeSeoHealth.score}
+                            tasks={storeSeoHealth.tasks}
+                            description={`Your store SEO score is ${storeSeoHealth.score}/100. Improve the missing items to help shoppers find and trust your store.`}
+                        />
+                    </div>
+                );
             case 'products':
                 return (
                     <div className="space-y-4">

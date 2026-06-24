@@ -2,6 +2,7 @@
 import React, { memo } from 'react';
 import Link from 'next/link';
 import SafeProductImage from '@/components/storefront/SafeProductImage';
+import { getImageUrlFromValue, getProductImageAlt } from '@/lib/seo';
 
 const RelatedProducts = memo(function RelatedProducts({ products }) {
     if (!products?.length) return null;
@@ -29,8 +30,8 @@ const RelatedProducts = memo(function RelatedProducts({ products }) {
                         >
                             <div className="relative mb-4 flex aspect-[4/5] items-center justify-center overflow-hidden rounded-2xl bg-slate-50 p-4">
                                 <SafeProductImage
-                                    src={image}
-                                    alt={`${item.title} product image`}
+                                    src={getImageUrlFromValue(image)}
+                                    alt={getProductImageAlt({ product: item, image })}
                                     fill
                                     sizes="288px"
                                     className="object-contain transition-transform duration-700 group-hover:scale-105"

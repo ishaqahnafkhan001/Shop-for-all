@@ -5,6 +5,7 @@ import {
     buildMetadata,
     cleanTextForMeta,
     getPolicyCanonicalUrl,
+    isShopSearchVisible,
     noindexMetadata,
     truncateMetaDescription,
     truncateMetaTitle
@@ -60,7 +61,8 @@ export async function generateMetadata({ params }) {
         url: getPolicyCanonicalUrl({ host, subdomain, shop, type }),
         image: shop?.theme?.logoUrl || "",
         type: "article",
-        isIndexable: Boolean(POLICY_LABELS[type] && content)
+        isIndexable: Boolean(POLICY_LABELS[type] && content && isShopSearchVisible(shop)),
+        googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""
     });
 }
 
@@ -68,4 +70,3 @@ export default async function PolicyPage({ params }) {
     const { type } = await params;
     return <PolicyPageClient type={type} />;
 }
-

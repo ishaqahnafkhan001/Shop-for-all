@@ -46,6 +46,10 @@ const {
 const {
     createCustomerDataRequest
 } = require('../controllers/privacyController');
+const {
+    getPublicCollections,
+    getPublicCollectionBySlug
+} = require('../controllers/collectionController');
 
 // ======================================================
 // STORE INFO
@@ -61,6 +65,22 @@ router.get(
     '/:subdomain/info',
     resolveTenant,
     getStoreInfo
+);
+
+// ======================================================
+// COLLECTION ROUTES
+// ======================================================
+
+router.get(
+    '/:subdomain/collections',
+    resolveTenant,
+    getPublicCollections
+);
+
+router.get(
+    '/:subdomain/collections/:slug',
+    resolveTenant,
+    getPublicCollectionBySlug
 );
 
 // ======================================================

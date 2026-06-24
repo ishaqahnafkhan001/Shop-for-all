@@ -1,5 +1,13 @@
 const Collection = require('../models/Collection');
 const Product = require('../models/Product');
+const mongoose = require('mongoose');
+const {
+    PUBLIC_PRODUCT_CARD_PROJECT,
+    sanitizePublicProducts
+} = require('../services/publicProductSerializer');
+const {
+    getProductSort
+} = require('../services/products/productQueryService');
 
 const slugify = (value = '') =>
     value
@@ -9,6 +17,46 @@ const slugify = (value = '') =>
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         .slice(0, 80);
+
+const PUBLIC_COLLECTION_FIELDS = '_id title slug description image seo productIds isActive createdAt updatedAt';
+const MAX_PUBLIC_COLLECTION_PRODUCTS = 48;
+
+const sanitizePublicCollection = (collection = {}, productCount = 0) => ({
+    _id: collection._id,
+    title: collection.title,
+    slug: collection.slug,
+    description: collection.description || '',
+    image: collection.image || '',
+    seo: collection.seo || {},
+    productCount,
+    createdAt: collection.createdAt,
+    updatedAt: collection.updatedAt
+});
+
+const getPublicProductMatch = (shopId, extra = {}) => ({
+    shop_id: new mongoose.Types.ObjectId(shopId),
+    isDeleted: false,
+    isActive: true,
+    status: 'Published',
+    ...extra
+});
+
+const getCollectionProductCounts = async ({ shopId, collectionIds }) => {
+    if (!collectionIds.length) return new Map();
+
+    const counts = await Product.aggregate([
+        {
+            $match: getPublicProductMatch(shopId, {
+                collections: { $in: collectionIds }
+            })
+        },
+        { $unwind: '$collections' },
+        { $match: { collections: { $in: collectionIds } } },
+        { $group: { _id: '$collections', count: { $sum: 1 } } }
+    ]);
+
+    return new Map(counts.map(item => [String(item._id), item.count]));
+};
 
 exports.getCollections = async (req, res) => {
     try {
@@ -20,6 +68,83 @@ exports.getCollections = async (req, res) => {
     } catch (err) {
         console.error('Get collections error:', err);
         res.status(500).json({ success: false, error: 'Failed to fetch collections' });
+    }
+};
+
+exports.getPublicCollections = async (req, res) => {
+    try {
+        const collections = await Collection.find({
+            shop_id: req.tenantId,
+            isActive: true
+        })
+            .select(PUBLIC_COLLECTION_FIELDS)
+            .sort({ createdAt: -1 })
+            .lean();
+        const collectionIds = collections.map(collection => collection._id);
+        const countMap = await getCollectionProductCounts({ shopId: req.tenantId, collectionIds });
+
+        res.status(200).json({
+            success: true,
+            data: collections.map(collection => sanitizePublicCollection(
+                collection,
+                countMap.get(String(collection._id)) || 0
+            ))
+        });
+    } catch (err) {
+        console.error('Get public collections error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch collections' });
+    }
+};
+
+exports.getPublicCollectionBySlug = async (req, res) => {
+    try {
+        const slug = String(req.params.slug || '').trim().toLowerCase();
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), MAX_PUBLIC_COLLECTION_PRODUCTS);
+        const skip = (page - 1) * limit;
+
+        const collection = await Collection.findOne({
+            shop_id: req.tenantId,
+            slug,
+            isActive: true
+        })
+            .select(PUBLIC_COLLECTION_FIELDS)
+            .lean();
+
+        if (!collection) {
+            return res.status(404).json({ success: false, error: 'Collection not found' });
+        }
+
+        const productMatch = getPublicProductMatch(req.tenantId, {
+            collections: collection._id
+        });
+        const sortQuery = getProductSort(req.query.sort);
+        const [products, total] = await Promise.all([
+            Product.aggregate([
+                { $match: productMatch },
+                { $sort: sortQuery },
+                { $skip: skip },
+                { $limit: limit },
+                { $project: PUBLIC_PRODUCT_CARD_PROJECT }
+            ]),
+            Product.countDocuments(productMatch)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                collection: sanitizePublicCollection(collection, total),
+                products: sanitizePublicProducts(products),
+                pagination: {
+                    total,
+                    page,
+                    pages: Math.ceil(total / limit) || 1
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Get public collection error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch collection' });
     }
 };
 

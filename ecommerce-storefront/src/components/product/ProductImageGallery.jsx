@@ -3,14 +3,23 @@ import React, { useEffect, useMemo, useState, memo } from 'react';
 import Image from 'next/image';
 import { ImageOff, Zap } from 'lucide-react';
 import { shouldUseUnoptimizedImage } from '@/lib/imageDomains';
+import { getImageUrlFromValue, getProductImageAlt } from '@/lib/seo';
 
-const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount, productTitle }) {
+const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount, productTitle, imageAltText }) {
     const [activeIdx,    setActiveIdx]    = useState(0);
     const [isZoomed,     setIsZoomed]     = useState(false);
     const [failedImages, setFailedImages] = useState(() => new Set());
-    const safeImages = useMemo(() => images?.filter(Boolean) || [], [images]);
+    const safeImages = useMemo(() => (images || [])
+        .map(image => ({
+            src: getImageUrlFromValue(image),
+            alt: getProductImageAlt({
+                product: { title: productTitle, imageAltText },
+                image
+            })
+        }))
+        .filter(image => image.src), [imageAltText, images, productTitle]);
     const displayImages = useMemo(
-        () => safeImages.filter(image => !failedImages.has(image)),
+        () => safeImages.filter(image => !failedImages.has(image.src)),
         [safeImages, failedImages]
     );
     const primaryImage = displayImages?.[0];
@@ -27,7 +36,7 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
     const handleImageError = (image) => {
         setFailedImages(prev => {
             const next = new Set(prev);
-            next.add(image);
+            next.add(image.src);
             return next;
         });
     };
@@ -41,13 +50,13 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
             >
                 {activeImage ? (
                     <Image
-                        src={activeImage}
-                        alt={productTitle ? `${productTitle} product image` : 'Product image'}
+                        src={activeImage.src}
+                        alt={activeImage.alt}
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
                         priority={activeIdx === 0}
                         onError={() => handleImageError(activeImage)}
-                        unoptimized={shouldUseUnoptimizedImage(activeImage)}
+                        unoptimized={shouldUseUnoptimizedImage(activeImage.src)}
                         className={`object-contain p-3 transition-transform duration-700 ease-out sm:p-5 ${isZoomed ? 'scale-105' : 'scale-100'}`}
                     />
                 ) : (
@@ -79,7 +88,7 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                     <div className="flex gap-3 overflow-x-auto px-1 py-2 scrollbar-hide">
                     {displayImages.map((img, idx) => (
                         <button
-                            key={img}
+                            key={img.src}
                             type="button"
                             onClick={() => setActiveIdx(idx)}
                             aria-label={`View product image ${idx + 1}`}
@@ -90,7 +99,7 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
                                 : 'border border-slate-200 opacity-75 hover:border-[var(--sf-accent)]/50 hover:opacity-100'
                             }`}
                         >
-                            <Image src={img} alt={`${productTitle || 'Product'} thumbnail ${idx + 1}`} fill sizes="80px" onError={() => handleImageError(img)} unoptimized={shouldUseUnoptimizedImage(img)} className="object-cover" />
+                            <Image src={img.src} alt={`${img.alt} thumbnail ${idx + 1}`} fill sizes="80px" onError={() => handleImageError(img)} unoptimized={shouldUseUnoptimizedImage(img.src)} className="object-cover" />
                         </button>
                     ))}
                     </div>

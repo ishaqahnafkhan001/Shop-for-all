@@ -7,6 +7,7 @@ import {
     getHomepageSeoDescription,
     getHomepageSeoTitle,
     getOgImage,
+    isShopSearchVisible,
     noindexMetadata
 } from '@/lib/seo';
 
@@ -51,7 +52,8 @@ export async function generateMetadata({ params }) {
             url,
             image: getOgImage(null, shop),
             type: 'website',
-            isIndexable: true
+            isIndexable: isShopSearchVisible(shop),
+            googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''
         });
     } catch (error) {
         return noindexMetadata('Store unavailable', error.body?.error || error.message || 'This storefront is currently unavailable.');

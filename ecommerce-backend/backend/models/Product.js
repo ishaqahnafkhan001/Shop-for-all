@@ -74,6 +74,7 @@ const productSchema = new Schema({
     tags: [{ type: String, trim: true, lowercase: true, index: true }],
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection', index: true }],
     images: [String],
+    imageAltText: { type: String, trim: true, maxlength: 160, default: '' },
     videos: [String],
     options: [productOptionSchema],
     status: {

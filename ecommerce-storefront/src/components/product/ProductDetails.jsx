@@ -13,6 +13,7 @@ import VariantSelector       from './VariantSelector';
 import ActionButtons         from './ActionButtons';
 import { ProductFeatures, ProductSpecifications, ExpertNotes } from './ProductExtras';
 import { trackStorefrontEvent } from '@/utils/analyticsTracker';
+import { getImageUrlFromValue } from '@/lib/seo';
 
 // Below-the-fold sections are lazily loaded — they're not needed for LCP
 const ReviewSection   = lazy(() => import('./ReviewSection'));
@@ -83,7 +84,7 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
             sku: currentVariant?.sku,
             finalPrice: displayFinalPrice,
             cartPrice: displayFinalPrice,
-            imageUrl: currentVariant?.image || product.images?.[0]
+            imageUrl: currentVariant?.image || getImageUrlFromValue(product.images?.[0])
         }, quantity);
 
         trackStorefrontEvent({
@@ -156,6 +157,7 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
                         category={product.category}
                         displayDiscount={displayDiscount}
                         productTitle={product.title}
+                        imageAltText={product.imageAltText}
                     />
 
                     <aside className="lg:sticky lg:top-28">

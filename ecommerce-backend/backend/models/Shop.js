@@ -326,6 +326,14 @@ const shopSchema = new mongoose.Schema({
                 paypal: { type: Boolean, default: false }
             }
         },
+        seo: {
+            title: { type: String, trim: true, maxlength: 70, default: '' },
+            description: { type: String, trim: true, maxlength: 170, default: '' },
+            socialImage: { type: String, trim: true, default: '' },
+            facebookUrl: { type: String, trim: true, default: '' },
+            searchEngineVisibility: { type: Boolean, default: true },
+            googleSiteVerification: { type: String, trim: true, maxlength: 200, default: '' }
+        },
         homepageSections: {
             type: [homepageSectionSchema],
             default: [

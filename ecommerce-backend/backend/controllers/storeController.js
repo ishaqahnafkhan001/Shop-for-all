@@ -315,7 +315,7 @@ exports.getBatchProducts = async (req, res) => {
             isActive: true,
             status: 'Published'
         })
-            .select('title slug category collections images pricing variants averageRating numReviews')
+            .select('title slug category collections imageAltText images pricing variants averageRating numReviews')
             .lean({ virtuals: true });
 
         res.status(200).json({ success: true, data: sanitizePublicProducts(products) });

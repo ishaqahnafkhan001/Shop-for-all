@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import API from '../api/api';
+import { getImageUrlFromValue } from '../lib/seo';
 
 const normalizeProduct = (p) => {
     const sellingPrice = p?.pricing?.sellingPrice ?? p?.sellingPrice ?? 0;
@@ -11,7 +12,7 @@ const normalizeProduct = (p) => {
         discount,
         finalPrice,
         stock: p?.totalStock ?? p?.stock ?? 0,
-        imageUrl: p?.imageUrl || p?.images?.[0] || '',
+        imageUrl: getImageUrlFromValue(p?.imageUrl) || getImageUrlFromValue(p?.images?.[0]) || '',
     };
 };
 

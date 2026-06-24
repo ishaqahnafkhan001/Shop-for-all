@@ -355,6 +355,7 @@ exports.updateProduct = async (req, res) => {
             'category',
             'tags',
             'collections',
+            'imageAltText',
             'status',
             'seo',
             'lowStockThreshold',

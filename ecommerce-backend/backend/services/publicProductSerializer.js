@@ -3,6 +3,7 @@ const PUBLIC_PRODUCT_CARD_PROJECT = {
     slug: 1,
     category: 1,
     collections: 1,
+    imageAltText: 1,
     images: { $slice: ['$images', 1] },
     pricing: {
         sellingPrice: '$pricing.sellingPrice',

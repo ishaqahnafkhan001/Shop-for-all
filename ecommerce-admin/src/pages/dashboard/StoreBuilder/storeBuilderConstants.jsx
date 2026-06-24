@@ -5,6 +5,7 @@ import {
     LayoutTemplate,
     Link as LinkIcon,
     Palette,
+    Search,
     ShoppingBag,
     Smartphone
 } from 'lucide-react';
@@ -146,6 +147,7 @@ export const settingsGroups = [
     { id: 'layout', label: 'Layout', icon: LayoutTemplate, description: 'Width, spacing, and product grid' },
     { id: 'navigation', label: 'Header and navigation', icon: LinkIcon, description: 'Top menu links' },
     { id: 'hero', label: 'Hero', icon: LayoutTemplate, description: 'Homepage opening banner' },
+    { id: 'seo', label: 'SEO and sharing', icon: Search, description: 'Homepage search preview' },
     { id: 'products', label: 'Product cards', icon: ShoppingBag, description: 'Product grid appearance' },
     { id: 'sections', label: 'Homepage sections', icon: LayoutTemplate, description: 'Order and visibility' },
     { id: 'checkout', label: 'Checkout', icon: CreditCard, description: 'Checkout trust and branding' },
@@ -172,6 +174,7 @@ export const structureTree = [
         children: [
             { id: 'hero', label: 'Hero', group: 'hero' },
             { id: 'heroButton', label: 'Hero button', group: 'hero' },
+            { id: 'homepageSeo', label: 'Homepage SEO', group: 'seo' },
             { id: 'sections', label: 'Dynamic sections', group: 'sections' },
             { id: 'allProducts', label: 'All products', group: 'products' }
         ]
@@ -203,6 +206,7 @@ export const groupElementMap = {
     layout: 'layout',
     navigation: 'navigation',
     hero: 'hero',
+    seo: 'homepageSeo',
     products: 'productCard',
     sections: 'sections',
     checkout: 'checkoutBranding',
@@ -230,6 +234,7 @@ export const editorComponentRegistry = {
     layout: { label: 'Layout', group: 'layout' },
     mobile: { label: 'Mobile', group: 'mobile' },
     domain: { label: 'Domain', group: 'domain' },
+    homepageSeo: { label: 'Homepage SEO', group: 'seo' },
     heroTitle: { label: 'Hero title', group: 'hero' },
     heroSubtitle: { label: 'Hero subtitle', group: 'hero' },
     heroButton: { label: 'Hero button', group: 'hero' }

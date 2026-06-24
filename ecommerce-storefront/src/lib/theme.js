@@ -118,6 +118,14 @@ export const FALLBACK_THEME = {
             paypal: false,
         },
     },
+    seo: {
+        title: '',
+        description: '',
+        socialImage: '',
+        facebookUrl: '',
+        searchEngineVisibility: true,
+        googleSiteVerification: '',
+    },
     homepageSections: [
         {
             id: 'featured-products',
@@ -248,6 +256,7 @@ export const normalizeTheme = (theme = {}) => ({
     },
     footer: mergeObject(FALLBACK_THEME.footer, theme.footer),
     policies: mergeObject(FALLBACK_THEME.policies, theme.policies),
+    seo: mergeObject(FALLBACK_THEME.seo, theme.seo),
     homepageSections: normalizeHomepageSections(Array.isArray(theme.homepageSections)
         ? theme.homepageSections
         : FALLBACK_THEME.homepageSections),
