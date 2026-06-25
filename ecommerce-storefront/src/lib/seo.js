@@ -1,5 +1,5 @@
-const DEFAULT_TITLE = "ShopForAll | Multi-Tenant E-commerce";
-const DEFAULT_DESCRIPTION = "Shop quality products from trusted stores.";
+const DEFAULT_TITLE = "Scaleup | Launch Your Online Store Without Coding";
+const DEFAULT_DESCRIPTION = "Create a professional online store with Scaleup.";
 const DEFAULT_CURRENCY = "BDT";
 
 export const isObjectId = (value = "") => /^[a-f\d]{24}$/i.test(String(value));

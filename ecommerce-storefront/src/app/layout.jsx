@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-    title: "ShopForAll | Multi-Tenant E-commerce",
-    description: "The ultimate platform for independent vendors.",
+    metadataBase: new URL("https://www.scaleup.codes"),
+    title: {
+        default: "Scaleup | Launch Your Online Store Without Coding",
+        template: "%s | Scaleup",
+    },
+    description: "Create a professional online store with Scaleup. Build your storefront, manage products, orders, customers, themes, SEO, and growth tools from one simple dashboard.",
 };
 
 export default function RootLayout({ children }) {

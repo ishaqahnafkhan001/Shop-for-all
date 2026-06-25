@@ -4,6 +4,9 @@ const test = require('node:test');
 const {
     computeEffectiveFeatures
 } = require('../services/shops/featureAccessService');
+const {
+    shouldRequireCustomDomainFeature
+} = require('../middlewares/featureGate');
 
 test('feature access uses plan defaults and denies explicit shop overrides', () => {
     const shop = {
@@ -89,4 +92,13 @@ test('feature access denies operational features for billing-suspended subscript
     assert.equal(effective.analytics, false);
     assert.equal(effective.storeBuilder, false);
     assert.equal(effective.coupons, false);
+});
+
+test('store builder publish does not require custom domain feature unless domain changes', () => {
+    assert.equal(shouldRequireCustomDomainFeature(undefined, { domain: '' }), false);
+    assert.equal(shouldRequireCustomDomainFeature({ domain: '' }, { domain: '' }), false);
+    assert.equal(shouldRequireCustomDomainFeature({ domain: 'shop.example.com' }, { domain: 'shop.example.com' }), false);
+    assert.equal(shouldRequireCustomDomainFeature({ domain: 'SHOP.EXAMPLE.COM ' }, { domain: 'shop.example.com' }), false);
+    assert.equal(shouldRequireCustomDomainFeature({ domain: 'new.example.com' }, { domain: 'shop.example.com' }), true);
+    assert.equal(shouldRequireCustomDomainFeature({ domain: 'new.example.com' }, { domain: '' }), true);
 });

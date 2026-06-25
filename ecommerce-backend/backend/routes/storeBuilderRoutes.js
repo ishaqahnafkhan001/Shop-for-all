@@ -5,7 +5,7 @@ const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { resolveTenant } = require('../middlewares/tenant');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
-const { requireShopFeature, requireShopFeatureWhenBodyField } = require('../middlewares/featureGate');
+const { requireShopFeature, requireShopFeatureWhenCustomDomainChanges } = require('../middlewares/featureGate');
 const { upload } = require('../config/cloudinary');
 const {
     getStoreBuilderSettings,
@@ -29,7 +29,7 @@ router.patch(
     protect,
     authorize('VendorAdmin'),
     requireShopFeature('storeBuilder'),
-    requireShopFeatureWhenBodyField('customDomain', 'customDomain'),
+    requireShopFeatureWhenCustomDomainChanges('customDomain'),
     blockVerificationSuspendedShop,
     updateStoreBuilderSettings
 );

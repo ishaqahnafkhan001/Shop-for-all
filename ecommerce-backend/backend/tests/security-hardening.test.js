@@ -215,7 +215,7 @@ test('shop feature flags are enforced on backend routes and vendor frontend rout
     assert.match(growthRoutes, /requireShopFeature\('growthCenter'\)/);
     assert.match(growthRoutes, /requireShopFeature\('aiAdGenerator'\)/);
     assert.match(storeBuilderRoutes, /requireShopFeature\('storeBuilder'\)/);
-    assert.match(storeBuilderRoutes, /requireShopFeatureWhenBodyField\('customDomain',\s*'customDomain'\)/);
+    assert.match(storeBuilderRoutes, /requireShopFeatureWhenCustomDomainChanges\('customDomain'\)/);
     assert.match(promotionRoutes, /requireShopFeature\('coupons'\)/);
     assert.match(adminRoutes, /requireShopFeature\('bulkProductTools'\)/);
     assert.match(adminRoutes, /requireShopFeature\('staffAccounts'\)/);

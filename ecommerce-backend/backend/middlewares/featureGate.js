@@ -1,3 +1,4 @@
+const Shop = require('../models/Shop');
 const { hasFeature } = require('../services/shops/featureAccessService');
 
 const featureDenied = (res, feature) => res.status(403).json({
@@ -39,7 +40,54 @@ const requireShopFeatureWhenBodyField = (feature, fieldName) => async (req, res,
     return requireShopFeature(feature)(req, res, next);
 };
 
+const normalizeDomainValue = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value.trim().toLowerCase();
+    return String(value.domain || '').trim().toLowerCase();
+};
+
+const shouldRequireCustomDomainFeature = (incomingCustomDomain, currentCustomDomain) => {
+    if (incomingCustomDomain === undefined) return false;
+
+    const incomingDomain = normalizeDomainValue(incomingCustomDomain);
+    if (!incomingDomain) return false;
+
+    return incomingDomain !== normalizeDomainValue(currentCustomDomain);
+};
+
+const requireShopFeatureWhenCustomDomainChanges = (feature = 'customDomain') => async (req, res, next) => {
+    try {
+        if (req.body?.customDomain === undefined) return next();
+
+        const shopId = req.tenantId || req.user?.shop_id || req.user?.shopId;
+        if (!shopId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Shop context is required',
+                code: 'SHOP_CONTEXT_REQUIRED'
+            });
+        }
+
+        const shop = await Shop.findById(shopId).select('customDomain.domain').lean();
+        if (!shouldRequireCustomDomainFeature(req.body.customDomain, shop?.customDomain)) {
+            return next();
+        }
+
+        return requireShopFeature(feature)(req, res, next);
+    } catch (err) {
+        console.error('Custom domain feature gate error:', err);
+        return res.status(500).json({
+            success: false,
+            error: 'Unable to verify feature access',
+            code: 'FEATURE_CHECK_FAILED',
+            feature
+        });
+    }
+};
+
 module.exports = {
     requireShopFeature,
-    requireShopFeatureWhenBodyField
+    requireShopFeatureWhenBodyField,
+    requireShopFeatureWhenCustomDomainChanges,
+    shouldRequireCustomDomainFeature
 };

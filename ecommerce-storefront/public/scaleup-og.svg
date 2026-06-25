@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Scaleup online store builder</title>
+  <desc id="desc">Scaleup landing page social preview image</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#134e4a"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1004" cy="110" r="210" fill="#14b8a6" opacity="0.18"/>
+  <circle cx="180" cy="580" r="260" fill="#4f46e5" opacity="0.18"/>
+  <g transform="translate(96 84)">
+    <rect x="0" y="0" width="92" height="92" rx="24" fill="#ffffff"/>
+    <path d="M28 56V36c0-9 7-16 16-16h4c9 0 16 7 16 16v20" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round"/>
+    <path d="M30 52h32" stroke="#14b8a6" stroke-width="8" stroke-linecap="round"/>
+    <text x="118" y="58" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="40" font-weight="800">Scaleup</text>
+  </g>
+  <text x="96" y="250" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="900" letter-spacing="-2">
+    Launch Your Online
+  </text>
+  <text x="96" y="334" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="900" letter-spacing="-2">
+    Store Without Coding
+  </text>
+  <text x="100" y="400" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="600">
+    Shopify-style storefronts for Bangladesh online sellers.
+  </text>
+  <g transform="translate(790 160)">
+    <rect x="0" y="0" width="320" height="330" rx="34" fill="url(#card)" opacity="0.98"/>
+    <rect x="34" y="38" width="252" height="72" rx="22" fill="#0f172a"/>
+    <rect x="34" y="132" width="112" height="124" rx="22" fill="#ccfbf1"/>
+    <rect x="174" y="132" width="112" height="124" rx="22" fill="#dbeafe"/>
+    <rect x="34" y="280" width="252" height="18" rx="9" fill="#14b8a6"/>
+  </g>
+</svg>

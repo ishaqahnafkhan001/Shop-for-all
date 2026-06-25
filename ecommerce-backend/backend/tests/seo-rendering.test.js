@@ -38,6 +38,8 @@ test('storefront SEO helpers build canonical metadata and safe product JSON-LD',
     const seo = readRepo('ecommerce-storefront/src/lib/seo.js');
 
     assert.match(seo, /export const buildMetadata/);
+    assert.match(seo, /Scaleup \| Launch Your Online Store Without Coding/);
+    assert.doesNotMatch(seo, /ShopForAll/);
     assert.match(seo, /alternates:\s*\{\s*canonical:\s*url\s*\}/);
     assert.match(seo, /openGraph/);
     assert.match(seo, /twitter/);
@@ -61,6 +63,40 @@ test('storefront SEO helpers build canonical metadata and safe product JSON-LD',
     assert.match(seo, /verification = \{ google: googleSiteVerification \}/);
     assert.match(seo, /getProductImageAlt/);
     assert.match(seo, /imageAltText/);
+});
+
+test('root Scaleup landing page has production SEO and conversion sections', () => {
+    const page = readRepo('ecommerce-storefront/src/app/page.jsx');
+    const layout = readRepo('ecommerce-storefront/src/app/layout.jsx');
+    const client = readRepo('ecommerce-storefront/src/app/LandingPageClient.jsx');
+    const content = readRepo('ecommerce-storefront/src/app/landingContent.js');
+    const robots = readRepo('ecommerce-storefront/src/app/robots.txt/route.js');
+    const sitemap = readRepo('ecommerce-storefront/src/app/sitemap.xml/route.js');
+
+    assert.match(page, /export const metadata/);
+    assert.match(page, /LANDING_TITLE/);
+    assert.match(page, /alternates:\s*\{\s*canonical:\s*LANDING_SITE_URL/);
+    assert.match(page, /openGraph:\s*\{/);
+    assert.match(page, /type:\s*"website"/);
+    assert.match(page, /twitter:\s*\{/);
+    assert.match(page, /SoftwareApplication/);
+    assert.match(page, /FAQPage/);
+    assert.match(page, /application\/ld\+json/);
+    assert.match(layout, /Scaleup \| Launch Your Online Store Without Coding/);
+    assert.doesNotMatch(layout, /ShopForAll/);
+    assert.match(client, /Start 14-Day Free Trial/);
+    assert.match(client, /Built for Bangladesh online sellers/);
+    assert.match(client, /id="pricing"/);
+    assert.match(client, /href="\/login"/);
+    assert.match(client, /footerColumns/);
+    assert.match(content, /Starter/);
+    assert.match(content, /Growth/);
+    assert.match(content, /Pro/);
+    assert.match(content, /৳999/);
+    assert.match(content, /support@scaleup\.codes/);
+    assert.match(robots, /Sitemap: \$\{LANDING_SITE_URL\}\/sitemap\.xml/);
+    assert.match(sitemap, /legalPages/);
+    assert.doesNotMatch(page + layout + content, /ShopForAll/);
 });
 
 test('homepage, product, and policy routes render server metadata', () => {
