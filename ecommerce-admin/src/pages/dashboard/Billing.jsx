@@ -65,6 +65,7 @@ const formatDate = (value) => {
 
 const statusClass = (status) => ({
     trialing: 'bg-sky-50 text-sky-700 ring-sky-100',
+    pending_approval: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
     active: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     grace: 'bg-amber-50 text-amber-700 ring-amber-100',
     past_due: 'bg-amber-50 text-amber-700 ring-amber-100',
@@ -75,6 +76,7 @@ const statusClass = (status) => ({
     paid: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     rejected: 'bg-rose-50 text-rose-700 ring-rose-100',
     pending: 'bg-amber-50 text-amber-700 ring-amber-100',
+    approved: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     verified: 'bg-emerald-50 text-emerald-700 ring-emerald-100'
 }[status] || 'bg-slate-100 text-slate-600 ring-slate-200');
 
@@ -126,6 +128,20 @@ const BillingBanner = ({ subscription, latestInvoice }) => {
                             Pay invoice
                         </a>
                     )}
+                </div>
+            </div>
+        );
+    }
+
+    if (subscription.status === 'pending_approval') {
+        return (
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-indigo-950">
+                <div className="flex gap-3">
+                    <CreditCard className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-600" />
+                    <div>
+                        <p className="font-black">Payment submitted and waiting for Super Admin approval.</p>
+                        <p className="mt-1 text-sm text-indigo-800">Your selected plan will become active after the platform owner verifies your manual payment.</p>
+                    </div>
                 </div>
             </div>
         );
@@ -290,7 +306,7 @@ const Billing = () => {
                     <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-xl bg-slate-50 p-4">
                             <p className="text-xs font-bold uppercase text-slate-400">Plan</p>
-                            <p className="mt-1 font-black text-slate-950">{current?.plan?.name || 'Starter'}</p>
+                            <p className="mt-1 font-black text-slate-950">{current?.displayPlan || current?.plan?.name || 'Trial'}</p>
                         </div>
                         <div className="rounded-xl bg-slate-50 p-4">
                             <p className="text-xs font-bold uppercase text-slate-400">Billing cycle</p>

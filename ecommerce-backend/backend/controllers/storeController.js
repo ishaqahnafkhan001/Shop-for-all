@@ -12,9 +12,20 @@ const {
     sanitizePublicProduct,
     sanitizePublicProducts
 } = require('../services/publicProductSerializer');
+const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status isActive approvalStatus';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
+
+const applyDefaultPoliciesToShopPayload = (shop) => {
+    if (!shop) return shop;
+    const result = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
+    shop.theme = {
+        ...(shop.theme || {}),
+        policies: result.policies
+    };
+    return shop;
+};
 
 const getPublicTrustedBadge = async (shop) => {
     if (!shop || shop.badgeStatus !== 'active') return null;
@@ -70,6 +81,7 @@ exports.getStoreInfo = async (req, res) => {
         if (!shop) {
             return res.status(404).json({ error: "Shop details not found." });
         }
+        applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;
@@ -160,6 +172,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         }
 
         await ensureThemeSectionArchitecture(shop);
+        applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;

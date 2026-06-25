@@ -7,10 +7,13 @@ const Order = require('../models/Order');
 const InventoryLog = require('../models/InventoryLog');
 const User = require('../models/User'); // We need this to create Guest customers
 const Promotion = require('../models/Promotion');
+const ReturnRequest = require('../models/ReturnRequest');
 const { evaluatePromotion } = require('../services/promotionService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
 const ConsentLog = require('../models/ConsentLog');
+const { createNotification } = require('../services/notificationService');
+const { logAudit } = require('../services/auditLogService');
 const {
     PUBLIC_PRODUCT_CARD_PROJECT,
     sanitizePublicProduct
@@ -20,9 +23,13 @@ const {
 } = require('../services/orderPrivacyService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
+const RETURN_WINDOW_HOURS = 24;
+const RETURN_WINDOW_MS = RETURN_WINDOW_HOURS * 60 * 60 * 1000;
+const ACTIVE_RETURN_STATUSES = ['Requested', 'Approved', 'Received'];
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const normalizePhone = (value) => String(value || '').replace(/\D/g, '');
+const cleanText = (value, max = 500) => String(value || '').replace(/<[^>]*>/g, '').trim().slice(0, max);
 
 const phonesMatch = (savedPhone, submittedPhone) => {
     const saved = normalizePhone(savedPhone);
@@ -43,6 +50,163 @@ const getPublicShopBySubdomain = async (subdomain, session = null) => {
     if (session) query.session(session);
 
     return query.lean();
+};
+
+const buildPublicOrderQuery = (orderLookup, shopId) => ({
+    shop_id: shopId,
+    isDeleted: false,
+    ...(isObjectId(orderLookup)
+        ? { _id: orderLookup }
+        : {
+            $expr: {
+                $regexMatch: {
+                    input: { $toString: '$_id' },
+                    regex: `${escapeRegex(orderLookup)}$`,
+                    options: 'i'
+                }
+            }
+        })
+});
+
+const getReturnWindowEndsAt = (order) => {
+    const deliveredAt = order?.shipping?.deliveredAt || order?.updatedAt || order?.createdAt;
+    if (!deliveredAt) return null;
+    return new Date(new Date(deliveredAt).getTime() + RETURN_WINDOW_MS);
+};
+
+const summarizeReturnRequest = (request) => {
+    if (!request) return null;
+
+    return {
+        exists: true,
+        id: request._id,
+        status: request.status,
+        reason: request.reason,
+        customerNote: request.customerNote || '',
+        refund: {
+            status: request.refund?.status || 'Pending',
+            amount: request.refund?.amount || 0
+        },
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt
+    };
+};
+
+const buildReturnEligibility = ({ order, returnRequest }) => {
+    if (!order) {
+        return { canRequestReturn: false, reason: 'Order not found.' };
+    }
+
+    if (order.status !== 'Delivered') {
+        return {
+            canRequestReturn: false,
+            reason: 'Return is available after delivery.'
+        };
+    }
+
+    if (returnRequest && ACTIVE_RETURN_STATUSES.includes(returnRequest.status)) {
+        return {
+            canRequestReturn: false,
+            reason: 'A return request is already submitted.'
+        };
+    }
+
+    const returnWindowEndsAt = getReturnWindowEndsAt(order);
+    if (returnWindowEndsAt && returnWindowEndsAt.getTime() < Date.now()) {
+        return {
+            canRequestReturn: false,
+            reason: 'Return window has expired. Returns must be requested within 24 hours of delivery.',
+            returnWindowEndsAt
+        };
+    }
+
+    return {
+        canRequestReturn: true,
+        reason: null,
+        returnWindowEndsAt
+    };
+};
+
+const restoreCancelledOrderInventory = async ({ order, shopId, userId = null, session }) => {
+    const logs = [];
+
+    for (const item of order.items || []) {
+        const product = await Product.findOne({
+            _id: item.productId,
+            shop_id: shopId,
+            isDeleted: false
+        }).session(session);
+
+        if (!product) {
+            throw new Error(`Product not found while restoring stock: ${item.title}`);
+        }
+
+        const variant = product.variants.id(item.variantId);
+        if (!variant) {
+            throw new Error(`Variant not found while restoring stock: ${item.title}`);
+        }
+
+        const quantity = Number(item.quantity) || 0;
+        const beforeStock = Number(variant.stock || 0);
+        variant.stock = beforeStock + quantity;
+        if (variant.inventory) variant.inventory.stock = variant.stock;
+
+        await product.save({ session });
+
+        logs.push({
+            shop_id: shopId,
+            productId: product._id,
+            variantId: variant._id,
+            change: quantity,
+            type: 'CANCEL',
+            referenceId: order._id,
+            beforeStock,
+            afterStock: variant.stock,
+            user: userId,
+            note: 'Customer cancelled pending order — stock restored'
+        });
+    }
+
+    if (logs.length > 0) {
+        await InventoryLog.insertMany(logs, { session });
+    }
+
+    return logs;
+};
+
+const buildReturnItemsFromOrder = (order, submittedItems = []) => {
+    const requested = Array.isArray(submittedItems) && submittedItems.length > 0
+        ? submittedItems
+        : order.items.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity
+        }));
+
+    return requested.map(requestedItem => {
+        const orderItem = order.items.find(item => (
+            String(item.productId?._id || item.productId) === String(requestedItem.productId) &&
+            (!requestedItem.variantId || String(item.variantId) === String(requestedItem.variantId))
+        ));
+
+        if (!orderItem) {
+            throw new Error('Return item does not belong to this order.');
+        }
+
+        const quantity = Number(requestedItem.quantity);
+        if (!Number.isFinite(quantity) || quantity < 1 || quantity > Number(orderItem.quantity || 0)) {
+            throw new Error(`Invalid return quantity for ${orderItem.title}.`);
+        }
+
+        return {
+            productId: orderItem.productId?._id || orderItem.productId,
+            variantId: orderItem.variantId,
+            title: orderItem.title,
+            sku: orderItem.sku || '',
+            quantity,
+            refundAmount: Math.max(0, Number(orderItem.price || 0) * quantity)
+        };
+    });
 };
 
 exports.createPublicOrder = async (req, res) => {
@@ -584,47 +748,305 @@ exports.trackPublicOrder = async (req, res) => {
             shopId = shop._id;
         }
 
-        const orderQuery = {
-            shop_id: shopId,
-            ...(isObjectId(orderLookup)
-                ? { _id: orderLookup }
-                : {
-                    $expr: {
-                        $regexMatch: {
-                            input: { $toString: '$_id' },
-                            regex: `${escapeRegex(orderLookup)}$`,
-                            options: 'i'
-                        }
-                    }
-                })
-        };
+        const orderQuery = buildPublicOrderQuery(orderLookup, shopId);
 
         const order = await Order.findOne(orderQuery)
             // Optional: Populating product titles/images makes the tracking page look better!
             .populate('items.productId', 'title images category')
-            .select('items pricing shipping status createdAt')
+            .select('items pricing payment shipping status cancellation timeline createdAt updatedAt')
             .lean();
 
         if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
             return res.status(404).json({ error: "Order not found. Please check your ID." });
         }
 
+        const [returnRequest, activeReturnRequest] = await Promise.all([
+            ReturnRequest.findOne({
+                shop_id: shopId,
+                order_id: order._id,
+                isDeleted: false
+            }).sort({ createdAt: -1 }).lean(),
+            ReturnRequest.findOne({
+                shop_id: shopId,
+                order_id: order._id,
+                status: { $in: ACTIVE_RETURN_STATUSES },
+                isDeleted: false
+            }).sort({ createdAt: -1 }).lean()
+        ]);
+
+        const returnEligibility = buildReturnEligibility({ order, returnRequest: activeReturnRequest });
+
         res.status(200).json({
             _id: order._id,
             status: order.status,
             createdAt: order.createdAt,
+            paymentMethod: order.payment?.method || '',
+            paymentStatus: order.payment?.status || 'Pending',
+            customerName: order.shipping?.address?.fullName || '',
             items: (order.items || []).map(item => {
                 const clean = item && typeof item === 'object' ? { ...item } : item;
                 if (clean && typeof clean === 'object') delete clean.buyingPrice;
                 return clean;
             }),
-            shippingAddress: order.shipping?.address?.city || order.shipping?.zone || '',
+            shippingAddress: order.shipping?.address || null,
             shippingZone: order.shipping?.zone,
             shippingCost: order.pricing?.shipping || order.shipping?.cost || 0,
-            totalAmount: order.pricing?.total || 0
+            subtotal: order.pricing?.subtotal || 0,
+            discount: order.pricing?.discount || 0,
+            totalAmount: order.pricing?.total || 0,
+            cancellation: order.cancellation || null,
+            timeline: order.timeline || [],
+            canCancel: order.status === 'Pending',
+            cancelUnavailableReason: order.status === 'Pending'
+                ? null
+                : 'This order can only be cancelled while it is pending.',
+            returnRequest: summarizeReturnRequest(returnRequest),
+            returnEligibility
         });
     } catch (err) {
         console.error("Tracking Error:", err);
         res.status(500).json({ error: "Server error while tracking order." });
+    }
+};
+
+exports.cancelTrackedOrder = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const phone = String(req.body.phone || req.query.phone || '').trim();
+        const reason = cleanText(req.body.reason || 'Customer requested cancellation', 160);
+        const note = cleanText(req.body.note || '', 500);
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!phone) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: 'Phone number is required to cancel this order.' });
+        }
+
+        if (!reason) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: 'Cancellation reason is required.' });
+        }
+
+        const order = await Order.findOne(buildPublicOrderQuery(orderLookup, shopId)).session(session);
+
+        if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+        }
+
+        if (order.status !== 'Pending') {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                code: 'ORDER_CANCEL_NOT_ALLOWED',
+                message: 'This order can only be cancelled while it is pending.'
+            });
+        }
+
+        const cancelledAt = new Date();
+        const updatedOrder = await Order.findOneAndUpdate(
+            {
+                _id: order._id,
+                shop_id: shopId,
+                isDeleted: false,
+                status: 'Pending'
+            },
+            {
+                $set: {
+                    status: 'Cancelled',
+                    cancellation: {
+                        cancelledBy: 'customer',
+                        reason,
+                        note,
+                        cancelledAt
+                    }
+                },
+                $push: {
+                    timeline: {
+                        type: 'order.cancelled',
+                        actorType: 'customer',
+                        message: 'Customer cancelled the order.',
+                        reason,
+                        createdAt: cancelledAt
+                    }
+                }
+            },
+            { new: true, session }
+        );
+
+        if (!updatedOrder) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                code: 'ORDER_CANCEL_NOT_ALLOWED',
+                message: 'This order can only be cancelled while it is pending.'
+            });
+        }
+
+        await restoreCancelledOrderInventory({
+            order,
+            shopId,
+            userId: order.customer,
+            session
+        });
+
+        await session.commitTransaction();
+
+        await Promise.all([
+            createNotification({
+                shop_id: shopId,
+                type: 'order',
+                title: 'Order cancelled by customer',
+                message: `Order #${String(order._id).slice(-6).toUpperCase()} was cancelled while pending.`,
+                entityType: 'Order',
+                entityId: order._id,
+                severity: 'warning',
+                metadata: { reason }
+            }),
+            logAudit({
+                req,
+                shop_id: shopId,
+                action: 'order.cancelled_by_customer',
+                entityType: 'Order',
+                entityId: order._id,
+                entityLabel: `Order #${String(order._id).slice(-6).toUpperCase()}`,
+                severity: 'warning',
+                before: { status: 'Pending' },
+                after: { status: 'Cancelled', cancellation: updatedOrder.cancellation },
+                metadata: { reason }
+            })
+        ]);
+
+        const refundMessage = order.payment?.status === 'Paid'
+            ? ' Your order was cancelled. Refund processing may take time.'
+            : '';
+
+        return res.status(200).json({
+            success: true,
+            message: `Order cancelled successfully.${refundMessage}`,
+            data: {
+                orderId: order._id,
+                status: 'Cancelled',
+                cancelledBy: 'customer',
+                cancelledAt
+            }
+        });
+    } catch (err) {
+        await session.abortTransaction();
+        console.error('Cancel tracked order error:', err);
+        return res.status(500).json({
+            success: false,
+            error: err.message || 'Failed to cancel order.'
+        });
+    } finally {
+        session.endSession();
+    }
+};
+
+exports.createTrackedReturnRequest = async (req, res) => {
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const phone = String(req.body.phone || req.query.phone || '').trim();
+        const reason = cleanText(req.body.reason, 160);
+        const customerNote = cleanText(req.body.description || req.body.customerNote || '', 1000);
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!phone) {
+            return res.status(400).json({ success: false, error: 'Phone number is required to submit a return request.' });
+        }
+
+        if (!reason) {
+            return res.status(400).json({ success: false, error: 'Return reason is required.' });
+        }
+
+        const order = await Order.findOne(buildPublicOrderQuery(orderLookup, shopId)).lean();
+
+        if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
+            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+        }
+
+        const activeReturnRequest = await ReturnRequest.findOne({
+            shop_id: shopId,
+            order_id: order._id,
+            status: { $in: ACTIVE_RETURN_STATUSES },
+            isDeleted: false
+        }).sort({ createdAt: -1 }).lean();
+
+        const eligibility = buildReturnEligibility({ order, returnRequest: activeReturnRequest });
+        if (!eligibility.canRequestReturn) {
+            return res.status(400).json({
+                success: false,
+                code: 'RETURN_NOT_ALLOWED',
+                message: eligibility.reason || 'Return request is not available for this order.'
+            });
+        }
+
+        const returnItems = buildReturnItemsFromOrder(order, req.body.items);
+        const refundAmount = returnItems.reduce((sum, item) => sum + (Number(item.refundAmount) || 0), 0);
+
+        const request = await ReturnRequest.create({
+            shop_id: shopId,
+            order_id: order._id,
+            customer_id: order.customer,
+            items: returnItems,
+            reason,
+            customerNote,
+            requestedBy: null,
+            updatedBy: null,
+            refund: {
+                status: refundAmount > 0 ? 'Pending' : 'NotRequired',
+                amount: refundAmount
+            }
+        });
+
+        await Promise.all([
+            createNotification({
+                shop_id: shopId,
+                type: 'return',
+                title: 'New return request',
+                message: `A customer submitted a return request for order #${String(order._id).slice(-6).toUpperCase()}.`,
+                entityType: 'ReturnRequest',
+                entityId: request._id,
+                severity: 'warning',
+                metadata: { orderId: order._id, reason }
+            }),
+            logAudit({
+                req,
+                shop_id: shopId,
+                action: 'return.requested_by_customer',
+                entityType: 'ReturnRequest',
+                entityId: request._id,
+                entityLabel: `Return for order #${String(order._id).slice(-6).toUpperCase()}`,
+                after: { status: request.status, refund: request.refund },
+                metadata: { reason }
+            })
+        ]);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Return request submitted successfully.',
+            data: {
+                returnRequestId: request._id,
+                status: request.status
+            }
+        });
+    } catch (err) {
+        console.error('Create tracked return request error:', err);
+        return res.status(400).json({
+            success: false,
+            error: err.message || 'Failed to submit return request.'
+        });
     }
 };

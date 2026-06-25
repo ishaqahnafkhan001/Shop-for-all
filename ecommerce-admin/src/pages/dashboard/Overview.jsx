@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   DollarSign, Package, ShoppingCart, TrendingUp, AlertTriangle,
-  BarChart2, ArrowUpDown, SlidersHorizontal, ChevronRight
+  BarChart2, ArrowUpDown, SlidersHorizontal, ChevronRight, Megaphone
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import {
@@ -39,6 +39,29 @@ const Overview = () => {
   const [adjustments, setAdjustments] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [lowStock, setLowStock] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const canViewPlatformAnnouncements = user?.role === 'VendorAdmin' || user?.role === 'VendorStaff';
+
+  useEffect(() => {
+    if (!canViewPlatformAnnouncements) return;
+
+    let cancelled = false;
+
+    const fetchAnnouncements = async () => {
+      try {
+        const announcementRes = await API.get('/admin/announcements');
+        if (!cancelled) setAnnouncements(announcementRes.data.data || []);
+      } catch {
+        if (!cancelled) setAnnouncements([]);
+      }
+    };
+
+    fetchAnnouncements();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canViewPlatformAnnouncements]);
 
 	useEffect(() => {
 	    const fetchData = async () => {
@@ -61,7 +84,7 @@ const Overview = () => {
     };
 
     fetchData();
-  }, []);
+  }, [user?.role]);
 
   // ---------------------------------------------------------
   // SKELETON LOADING STATE (Modern UI UX)
@@ -105,6 +128,39 @@ const Overview = () => {
             <p className="text-sm text-gray-500 mt-1">Start here each day: review sales, active orders, low stock, and recent inventory changes.</p>
           </div>
         </div>
+
+        {canViewPlatformAnnouncements && announcements.length > 0 && (
+          <div className="rounded-2xl border border-indigo-100 bg-white shadow-sm">
+            <div className="flex items-center gap-2 border-b border-indigo-50 px-5 py-4">
+              <span className="rounded-xl bg-indigo-50 p-2 text-indigo-600">
+                <Megaphone size={18} />
+              </span>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Platform announcements</h2>
+                <p className="text-xs text-gray-500">Important messages from the Super Admin team.</p>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {announcements.map(item => {
+                const tone = item.severity === 'Critical'
+                  ? 'bg-rose-50 text-rose-700 border-rose-100'
+                  : item.severity === 'Warning'
+                    ? 'bg-amber-50 text-amber-700 border-amber-100'
+                    : 'bg-indigo-50 text-indigo-700 border-indigo-100';
+
+                return (
+                  <div key={item._id} className="px-5 py-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-gray-950">{item.title}</h3>
+                      <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${tone}`}>{item.severity}</span>
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-gray-600">{item.message}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {user?.role === 'VendorAdmin' && <VendorOnboardingChecklist />}
         {user?.role === 'VendorAdmin' && <BillingAlert />}

@@ -28,7 +28,30 @@ test('public order tracking requires tenant and phone verification', () => {
     assert.match(block, /shop_id:\s*shopId/);
     assert.match(block, /phonesMatch\(order\.shipping\?\.address\?\.phone,\s*phone\)/);
     assert.match(block, /Phone number is required/);
-    assert.match(block, /\.select\('items pricing shipping status createdAt'\)/);
+    assert.match(block, /\.select\('items pricing payment shipping status cancellation timeline createdAt updatedAt'\)/);
+    assert.match(block, /returnEligibility/);
+    assert.match(block, /returnRequest/);
+});
+
+test('public order tracking actions are tenant scoped and phone verified', () => {
+    const controller = read('controllers/publicController.js');
+    const storefrontRoutes = read('routes/storefrontRoutes.js');
+
+    assert.match(storefrontRoutes, /'\/:subdomain\/orders\/:orderId\/cancel'[\s\S]*resolveTenant[\s\S]*cancelTrackedOrder/);
+    assert.match(storefrontRoutes, /'\/:subdomain\/orders\/:orderId\/returns'[\s\S]*resolveTenant[\s\S]*createTrackedReturnRequest/);
+    assert.match(controller, /exports\.cancelTrackedOrder/);
+    assert.match(controller, /exports\.createTrackedReturnRequest/);
+    assert.match(controller, /buildPublicOrderQuery\(orderLookup,\s*shopId\)/);
+    assert.match(controller, /phonesMatch\(order\.shipping\?\.address\?\.phone,\s*phone\)/);
+    assert.match(controller, /status:\s*'Pending'/);
+    assert.match(controller, /code:\s*'ORDER_CANCEL_NOT_ALLOWED'/);
+    assert.match(controller, /restoreCancelledOrderInventory/);
+    assert.match(controller, /ReturnRequest\.create/);
+    assert.match(controller, /code:\s*'RETURN_NOT_ALLOWED'/);
+    assert.match(controller, /order\.status !== 'Delivered'/);
+    assert.match(controller, /RETURN_WINDOW_HOURS\s*=\s*24/);
+    assert.match(controller, /shipping\?\.deliveredAt/);
+    assert.match(controller, /A return request is already submitted/);
 });
 
 test('customer-facing product and order responses hide vendor cost fields', () => {
@@ -368,7 +391,13 @@ test('super admin data models constrain governance values', () => {
     const shop = read('models/Shop.js');
 
     assert.match(announcement, /enum:\s*\['All', 'VendorAdmin', 'VendorStaff'\]/);
+    assert.match(announcement, /targetAudience/);
+    assert.match(announcement, /enum:\s*\['all_vendors', 'all_shops', 'plan', 'shop'\]/);
     assert.match(announcement, /enum:\s*\['Info', 'Warning', 'Critical'\]/);
+    assert.match(announcement, /targetPlan/);
+    assert.match(announcement, /targetPlanId/);
+    assert.match(announcement, /targetShopId/);
+    assert.match(announcement, /startAt/);
     assert.match(announcement, /maxlength:\s*140/);
     assert.match(announcement, /maxlength:\s*1000/);
     assert.match(plan, /name:[\s\S]*required:\s*true[\s\S]*unique:\s*true/);
@@ -379,13 +408,25 @@ test('super admin data models constrain governance values', () => {
 test('announcements use soft archive lifecycle', () => {
     const model = read('models/PlatformAnnouncement.js');
     const routes = read('routes/superAdminRoutes.js');
+    const adminRoutes = read('routes/adminRoutes.js');
     const controller = read('controllers/superAdminController.js');
+    const vendorController = read('controllers/platformAnnouncementController.js');
 
     assert.match(model, /isPublished/);
     assert.match(model, /archivedAt/);
     assert.match(routes, /router\.patch\('\/announcements\/:id\/publish',\s*publishAnnouncement\)/);
     assert.match(routes, /router\.patch\('\/announcements\/:id\/unpublish',\s*unpublishAnnouncement\)/);
     assert.match(routes, /router\.delete\('\/announcements\/:id',\s*archiveAnnouncement\)/);
+    assert.match(adminRoutes, /router\.get\([\s\S]*'\/announcements'[\s\S]*getVendorAnnouncements[\s\S]*\)/);
+    assert.match(controller, /normalizeAnnouncementPayload/);
+    assert.match(controller, /payload\.targetAudience = 'shop'/);
+    assert.match(controller, /payload\.targetAudience = 'plan'/);
+    assert.match(vendorController, /targetPlan/);
+    assert.match(vendorController, /targetPlanId/);
+    assert.match(vendorController, /targetShopId/);
+    assert.match(vendorController, /matchesAnnouncementTarget/);
+    assert.match(vendorController, /serializeVendorAnnouncement/);
+    assert.doesNotMatch(vendorController, /metadata/);
     assert.match(controller, /announcement\.archived/);
     assert.doesNotMatch(controller, /PlatformAnnouncement\.findByIdAndDelete/);
 });

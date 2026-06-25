@@ -38,6 +38,7 @@ const { notifyCustomerRegistered } = require('../services/shopEventNotificationS
 const { getDefaultDeadline, isVerificationSuspension } = require('../services/vendorVerificationService');
 const { getShopFeatureFlags } = require('../services/shops/featureAccessService');
 const { createTrialForShop, isBillingSuspension } = require('../services/billing/subscriptionService');
+const { buildDefaultPolicies } = require('../services/policies/defaultPolicyTemplates');
 
 const signSessionToken = ({ account, membership, user }) => jwt.sign(
     {
@@ -232,7 +233,10 @@ exports.registerVendor = async (req, res) => {
 
         const [newShop] = await Shop.create([{
             shopName,
-            subdomain
+            subdomain,
+            theme: {
+                policies: buildDefaultPolicies({ storeName: shopName })
+            }
         }], { session });
 
         const salt = await bcrypt.genSalt(10);

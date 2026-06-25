@@ -3,6 +3,7 @@ const Review = require('../models/Review');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { ensureThemeSectionArchitecture, normalizeDynamicSections } = require('../services/themeSectionService');
+const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
 
 const allowedThemeKeys = [
     'version',
@@ -107,6 +108,21 @@ exports.getStoreBuilderSettings = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
         await ensureThemeSectionArchitecture(shop);
+        const policyDefaults = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
+        if (policyDefaults.added.length > 0) {
+            shop.theme = {
+                ...(shop.theme || {}),
+                policies: policyDefaults.policies
+            };
+            await Shop.updateOne(
+                { _id: req.tenantId },
+                { $set: { 'theme.policies': policyDefaults.policies } }
+            );
+            await Promise.all([
+                cache.del(`storefront:settings:${req.tenantId}`),
+                cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
+            ]);
+        }
 
         res.status(200).json({ success: true, data: shop });
     } catch (err) {
@@ -325,6 +341,11 @@ exports.getPublicStorefrontSettings = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
         await ensureThemeSectionArchitecture(shop);
+        const policyDefaults = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
+        shop.theme = {
+            ...(shop.theme || {}),
+            policies: policyDefaults.policies
+        };
 
         const response = { success: true, data: shop };
         await cache.set(cacheKey, response, 60);

@@ -53,8 +53,11 @@ test('billing models include required statuses and tenant indexes', () => {
 
     assert.match(subscription, /shopId:[\s\S]*unique:\s*true/);
     assert.match(subscription, /trialing/);
+    assert.match(subscription, /pending_approval/);
     assert.match(subscription, /grace/);
     assert.match(subscription, /suspended/);
+    assert.match(subscription, /pendingPlanId/);
+    assert.match(subscription, /pendingPlanName/);
 
     assert.match(invoice, /invoiceNumber:[\s\S]*unique:\s*true/);
     assert.match(invoice, /submitted/);
@@ -64,6 +67,7 @@ test('billing models include required statuses and tenant indexes', () => {
     assert.match(payment, /manual_bkash/);
     assert.match(payment, /manual_nagad/);
     assert.match(payment, /manual_bank/);
+    assert.match(payment, /approved/);
     assert.match(payment, /invoiceId:\s*1,\s*status:\s*1/);
 });
 
@@ -81,6 +85,9 @@ test('billing routes are protected and mounted under vendor and super admin APIs
     assert.match(superRoutes, /router\.use\(authorize\('SuperAdmin'\)\)/);
     assert.match(superBillingRoutes, /\/payments\/:id\/verify/);
     assert.match(superBillingRoutes, /\/payments\/:id\/reject/);
+    assert.match(superRoutes, /router\.get\('\/notifications'/);
+    assert.match(superRoutes, /router\.patch\('\/notifications\/read-all'/);
+    assert.match(superRoutes, /router\.patch\('\/notifications\/:id\/read'/);
 });
 
 test('new vendor registration creates a trial subscription in the existing transaction', () => {
@@ -90,6 +97,9 @@ test('new vendor registration creates a trial subscription in the existing trans
     assert.match(authController, /await createTrialForShop\(newShop,\s*\{\s*session\s*\}\)/);
     assert.match(authController, /isBillingSuspension\(memberShop\)/);
     assert.match(authController, /isVerificationSuspension\(memberShop\)/);
+    const subscriptionService = read('services/billing/subscriptionService.js');
+    assert.match(subscriptionService, /'plan\.name':\s*'Trial'/);
+    assert.match(subscriptionService, /'plan\.status':\s*'Trialing'/);
     assert.equal(TRIAL_DAYS, 14);
     assert.equal(GRACE_DAYS, 3);
 });
@@ -101,8 +111,16 @@ test('manual payment verification and rejection create platform audit entries', 
     assert.match(service, /billing\.payment_submitted/);
     assert.match(service, /billing\.payment_verified/);
     assert.match(service, /billing\.payment_rejected/);
+    assert.match(service, /markPendingApproval/);
+    assert.match(service, /subscription\.pending_approval/);
+    assert.match(service, /createPlatformNotification/);
+    assert.match(service, /sendSuperAdminPaymentSubmittedEmailSafe/);
+    assert.match(service, /payment\.status = 'approved'/);
+    assert.match(service, /returnToTrialOrPastDueAfterRejection/);
     assert.match(service, /Rejection reason is required/);
     assert.match(service, /createNotification/);
+    assert.match(controller, /pendingApprovalSubscriptions/);
+    assert.match(controller, /getPlanDisplayForSubscription/);
     assert.match(controller, /exports\.createVendorInvoice/);
     assert.match(controller, /Billing invoice created/);
 });

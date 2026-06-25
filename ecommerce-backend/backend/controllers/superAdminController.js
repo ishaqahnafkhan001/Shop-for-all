@@ -3,6 +3,9 @@ const Shop = require('../models/Shop');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const VendorPlan = require('../models/VendorPlan');
+const Subscription = require('../models/Subscription');
+const Invoice = require('../models/Invoice');
+const PaymentTransaction = require('../models/PaymentTransaction');
 const PlatformAnnouncement = require('../models/PlatformAnnouncement');
 const AbuseReport = require('../models/AbuseReport');
 const VendorVerification = require('../models/VendorVerification');
@@ -72,10 +75,71 @@ const getOwnerMap = async (shops) => {
     return new Map(admins.map(admin => [String(admin.shop_id), admin]));
 };
 
-const serializeShop = (shop, ownerMap) => ({
-    ...shop,
-    owner: ownerMap.get(String(shop._id)) || null
-});
+const daysUntil = (date) => {
+    if (!date) return null;
+    return Math.ceil((new Date(date).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+};
+
+const getBillingDisplay = (subscription, latestPayment = null) => {
+    if (!subscription) {
+        return {
+            status: 'trialing',
+            planDisplay: 'Trial',
+            pendingPlan: '',
+            trialDaysLeft: null,
+            paymentStatus: latestPayment?.status || ''
+        };
+    }
+
+    if (subscription.status === 'trialing') {
+        return {
+            status: 'trialing',
+            planDisplay: 'Trial',
+            pendingPlan: '',
+            trialDaysLeft: daysUntil(subscription.trialEndsAt),
+            paymentStatus: latestPayment?.status || ''
+        };
+    }
+
+    if (subscription.status === 'pending_approval') {
+        return {
+            status: 'pending_approval',
+            planDisplay: `Pending ${subscription.pendingPlanName || 'plan'}`,
+            pendingPlan: subscription.pendingPlanName || '',
+            trialDaysLeft: daysUntil(subscription.trialEndsAt),
+            paymentStatus: latestPayment?.status || 'pending'
+        };
+    }
+
+    if (subscription.status === 'active') {
+        return {
+            status: 'active',
+            planDisplay: subscription.planId?.name || 'Active plan',
+            pendingPlan: '',
+            trialDaysLeft: null,
+            paymentStatus: latestPayment?.status || ''
+        };
+    }
+
+    return {
+        status: subscription.status,
+        planDisplay: subscription.status === 'past_due' ? 'Trial expired' : 'Payment required',
+        pendingPlan: subscription.pendingPlanName || '',
+        trialDaysLeft: daysUntil(subscription.trialEndsAt),
+        paymentStatus: latestPayment?.status || ''
+    };
+};
+
+const serializeShop = (shop, ownerMap, subscriptionMap = new Map(), paymentMap = new Map()) => {
+    const subscription = subscriptionMap.get(String(shop._id)) || null;
+    const latestPayment = paymentMap.get(String(shop._id)) || null;
+    return {
+        ...shop,
+        owner: ownerMap.get(String(shop._id)) || null,
+        billing: getBillingDisplay(subscription, latestPayment),
+        subscription
+    };
+};
 
 const buildShopSearchIds = async (search) => {
     if (!search) return null;
@@ -215,10 +279,25 @@ exports.getShops = async (req, res) => {
             Shop.countDocuments(query)
         ]);
         const ownerMap = await getOwnerMap(shops);
+        const shopIds = shops.map(shop => shop._id);
+        const [subscriptions, payments] = await Promise.all([
+            Subscription.find({ shopId: { $in: shopIds } })
+                .populate('planId', 'name')
+                .lean(),
+            PaymentTransaction.find({ shopId: { $in: shopIds } })
+                .sort({ createdAt: -1 })
+                .lean()
+        ]);
+        const subscriptionMap = new Map(subscriptions.map(item => [String(item.shopId), item]));
+        const paymentMap = payments.reduce((acc, payment) => {
+            const key = String(payment.shopId);
+            if (!acc.has(key)) acc.set(key, payment);
+            return acc;
+        }, new Map());
 
         res.status(200).json({
             success: true,
-            data: shops.map(shop => serializeShop(shop, ownerMap)),
+            data: shops.map(shop => serializeShop(shop, ownerMap, subscriptionMap, paymentMap)),
             pagination: paginationPayload({ page, limit, total })
         });
     } catch (err) {
@@ -232,12 +311,15 @@ exports.getShopDetail = async (req, res) => {
         const shopId = asObjectId(req.params.shopId);
         if (!shopId) return res.status(400).json({ success: false, error: 'Invalid shop id' });
 
-        const [shop, owner, verification, abuseReports, recentAuditLogs] = await Promise.all([
+        const [shop, owner, verification, abuseReports, recentAuditLogs, subscription, latestInvoice, latestPayment] = await Promise.all([
             Shop.findById(shopId).lean(),
             User.findOne({ shop_id: shopId, role: 'VendorAdmin' }).select('fullName email status').lean(),
             VendorVerification.findOne({ shop_id: shopId }).sort({ updatedAt: -1 }).lean(),
             AbuseReport.find({ shop_id: shopId }).sort({ createdAt: -1 }).limit(10).lean(),
-            PlatformAuditLog.find({ shop_id: shopId }).sort({ createdAt: -1 }).limit(10).lean()
+            PlatformAuditLog.find({ shop_id: shopId }).sort({ createdAt: -1 }).limit(10).lean(),
+            Subscription.findOne({ shopId }).populate('planId', 'name monthlyPrice yearlyPrice').lean(),
+            Invoice.findOne({ shopId }).sort({ createdAt: -1 }).lean(),
+            PaymentTransaction.findOne({ shopId }).sort({ createdAt: -1 }).lean()
         ]);
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
@@ -265,6 +347,12 @@ exports.getShopDetail = async (req, res) => {
                     isVerificationSuspension: isVerificationSuspension(shop)
                 },
                 domain: shop.customDomain || null,
+                billing: {
+                    ...getBillingDisplay(subscription, latestPayment),
+                    subscription,
+                    latestInvoice,
+                    latestPayment
+                },
                 abuseReports,
                 recentAuditLogs
             }
@@ -633,10 +721,45 @@ exports.getAnnouncements = async (req, res) => {
     }
 };
 
+const normalizeAnnouncementPayload = (body = {}) => {
+    const payload = { ...body };
+
+    payload.targetPlan = String(payload.targetPlan || '').trim();
+    payload.targetPlanId = payload.targetPlanId ? asObjectId(payload.targetPlanId) : null;
+    payload.targetShopId = payload.targetShopId ? asObjectId(payload.targetShopId) : null;
+
+    const parseDateField = (value, boundary) => {
+        if (!value) return null;
+
+        const raw = String(value).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            return new Date(`${raw}T${boundary === 'end' ? '23:59:59.999' : '00:00:00.000'}`);
+        }
+
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    if ('startAt' in payload) payload.startAt = parseDateField(payload.startAt, 'start');
+    if ('expiresAt' in payload) payload.expiresAt = parseDateField(payload.expiresAt, 'end');
+
+    if (!['all_vendors', 'all_shops', 'plan', 'shop'].includes(payload.targetAudience)) {
+        if (payload.targetShopId) {
+            payload.targetAudience = 'shop';
+        } else if (payload.targetPlan || payload.targetPlanId) {
+            payload.targetAudience = 'plan';
+        } else {
+            payload.targetAudience = 'all_vendors';
+        }
+    }
+
+    return payload;
+};
+
 exports.createAnnouncement = async (req, res) => {
     try {
         const payload = {
-            ...req.body,
+            ...normalizeAnnouncementPayload(req.body),
             isPublished: req.body.isPublished !== false,
             isActive: req.body.isPublished !== false,
             publishedAt: req.body.isPublished === false ? null : (req.body.publishedAt || new Date())
@@ -659,9 +782,10 @@ exports.createAnnouncement = async (req, res) => {
 
 exports.updateAnnouncement = async (req, res) => {
     try {
+        const payload = normalizeAnnouncementPayload(req.body);
         const announcement = await PlatformAnnouncement.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            payload,
             { new: true, runValidators: true }
         );
 
@@ -674,7 +798,7 @@ exports.updateAnnouncement = async (req, res) => {
             entityId: announcement._id,
             entityLabel: announcement.title,
             message: `Announcement updated: ${announcement.title}`,
-            metadata: { update: req.body }
+            metadata: { update: payload }
         });
 
         res.status(200).json({ success: true, data: announcement });

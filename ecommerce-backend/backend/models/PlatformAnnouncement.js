@@ -18,6 +18,29 @@ const platformAnnouncementSchema = new mongoose.Schema({
         enum: ['All', 'VendorAdmin', 'VendorStaff'],
         default: 'All'
     },
+    targetAudience: {
+        type: String,
+        enum: ['all_vendors', 'all_shops', 'plan', 'shop'],
+        default: 'all_vendors',
+        index: true
+    },
+    targetPlan: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    targetPlanId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'VendorPlan',
+        default: null,
+        index: true
+    },
+    targetShopId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Shop',
+        default: null,
+        index: true
+    },
     severity: {
         type: String,
         enum: ['Info', 'Warning', 'Critical'],
@@ -36,6 +59,10 @@ const platformAnnouncementSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    startAt: {
+        type: Date,
+        default: null
+    },
     expiresAt: {
         type: Date,
         default: null
@@ -49,5 +76,6 @@ const platformAnnouncementSchema = new mongoose.Schema({
 
 platformAnnouncementSchema.index({ isPublished: 1, archivedAt: 1, createdAt: -1 });
 platformAnnouncementSchema.index({ severity: 1, audience: 1, createdAt: -1 });
+platformAnnouncementSchema.index({ targetAudience: 1, targetPlan: 1, targetPlanId: 1, targetShopId: 1, expiresAt: 1 });
 
 module.exports = mongoose.model('PlatformAnnouncement', platformAnnouncementSchema);

@@ -9,6 +9,7 @@ import {
     getReferenceThemeStyle
 } from '../../../../../ecommerce-storefront/src/components/storefront/ReferenceStorefront.jsx';
 import { FALLBACK_THEME, normalizeTheme } from '../../../../../ecommerce-storefront/src/lib/theme.js';
+import { getPolicyContent } from '../../../../../ecommerce-storefront/src/lib/defaultPolicies.js';
 
 const deviceClasses = {
     desktop: 'w-[1180px] max-w-none',
@@ -322,7 +323,7 @@ const PolicyPreviewPage = ({ theme, shopName }) => {
     ];
     const activePolicy = policyItems.find(([key]) => policies[key]?.trim()) || policyItems[0];
     const [key, label] = activePolicy;
-    const content = policies[key]?.trim();
+    const content = getPolicyContent(policies, key, { storeName: shopName || 'this store' });
 
     return (
         <div className="bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -348,11 +349,7 @@ const PolicyPreviewPage = ({ theme, shopName }) => {
                         ))}
                     </div>
                     <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
-                        {content ? (
-                            <p className="whitespace-pre-wrap">{content}</p>
-                        ) : (
-                            <p className="text-slate-500">Add policy text in Store Builder to make this page useful for customers.</p>
-                        )}
+                        <p className="whitespace-pre-wrap">{content}</p>
                     </div>
                 </div>
             </div>

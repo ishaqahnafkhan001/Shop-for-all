@@ -135,6 +135,57 @@ const paymentSchema = new Schema({
 
 }, { _id: false });
 
+const cancellationSchema = new Schema({
+    cancelledBy: {
+        type: String,
+        enum: ['customer', 'vendor', 'system', ''],
+        default: ''
+    },
+    reason: {
+        type: String,
+        trim: true,
+        maxlength: 160,
+        default: ''
+    },
+    note: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+        default: ''
+    },
+    cancelledAt: {
+        type: Date,
+        default: null
+    }
+}, { _id: false });
+
+const timelineEventSchema = new Schema({
+    type: {
+        type: String,
+        trim: true,
+        required: true
+    },
+    actorType: {
+        type: String,
+        enum: ['customer', 'vendor', 'system'],
+        default: 'system'
+    },
+    message: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    reason: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+}, { _id: false });
+
 /**
  * 🔹 Shipping Schema
  */
@@ -300,6 +351,16 @@ const orderSchema = new Schema({
         type: String,
         trim: true,
         default: ''
+    },
+
+    cancellation: {
+        type: cancellationSchema,
+        default: () => ({})
+    },
+
+    timeline: {
+        type: [timelineEventSchema],
+        default: []
     },
 
     source: {

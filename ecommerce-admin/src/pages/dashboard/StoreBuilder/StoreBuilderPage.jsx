@@ -37,6 +37,10 @@ import { CheckoutBrandingPreview } from './StorefrontPreview.jsx';
 import { StoreBuilderSidebar } from './StoreBuilderSidebar.jsx';
 import { StoreBuilderEditorPanel } from './StoreBuilderEditorPanel.jsx';
 import { StoreBuilderPreviewPanel } from './StoreBuilderPreviewPanel.jsx';
+import {
+    POLICY_LABELS,
+    getDefaultPolicyText
+} from '../../../../../ecommerce-storefront/src/lib/defaultPolicies.js';
 import { AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import { buildStoreSeoPreview, scoreStoreSeo } from '../../../utils/seoHealth.js';
@@ -767,6 +771,12 @@ const StoreBuilderPage = () => {
             ...prev,
             policies: { ...prev.policies, [key]: value }
         }));
+    };
+
+    const resetPolicyToDefault = (key) => {
+        const confirmed = window.confirm(`Reset ${POLICY_LABELS[key] || 'this policy'} to the default template? This will replace the current text in the editor.`);
+        if (!confirmed) return;
+        updatePolicy(key, getDefaultPolicyText(key, { storeName: shopName || 'this store' }));
     };
 
     const updateFooter = (key, value) => {
@@ -2108,9 +2118,25 @@ const StoreBuilderPage = () => {
                 );
             case 'policies':
                 return (
-                    <BuilderCard title="Policies" description="Policies appear on checkout when text is added. Empty policies stay hidden." icon={FileText}>
+                    <BuilderCard title="Policies" description="Default policy templates are editable. Keep them accurate for your own store before publishing." icon={FileText}>
                         {['refund', 'shipping', 'privacy', 'terms'].map(key => (
-                            <BuilderTextarea key={key} label={`${key.charAt(0).toUpperCase()}${key.slice(1)} policy`} value={theme.policies?.[key] || ''} onChange={e => updatePolicy(key, e.target.value)} help={theme.policies?.[key]?.trim() ? 'Visible on checkout.' : 'Hidden on checkout until text is added.'} />
+                            <div key={key} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm font-black text-slate-950">{POLICY_LABELS[key]}</p>
+                                        <p className="text-xs text-slate-500">Shown on policy pages and checkout.</p>
+                                    </div>
+                                    <BuilderButton type="button" variant="secondary" onClick={() => resetPolicyToDefault(key)} className="text-xs">
+                                        Reset template
+                                    </BuilderButton>
+                                </div>
+                                <BuilderTextarea
+                                    label={`${POLICY_LABELS[key]} body`}
+                                    value={theme.policies?.[key] || getDefaultPolicyText(key, { storeName: shopName || 'this store' })}
+                                    onChange={e => updatePolicy(key, e.target.value)}
+                                    help="Customers can read this before and during checkout. This is a basic template, not legal advice."
+                                />
+                            </div>
                         ))}
                     </BuilderCard>
                 );

@@ -62,6 +62,18 @@ const userSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    staffTitle: {
+        type: String,
+        trim: true,
+        maxlength: 80,
+        default: ''
+    },
+    staffNote: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+        default: ''
+    },
     // 🔥 NEW: Array to keep track of the user's orders
     orders: [{
         type: mongoose.Schema.Types.ObjectId,

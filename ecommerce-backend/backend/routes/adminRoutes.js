@@ -48,7 +48,10 @@ const {
     getShopUsers,
     createShopUser,
     toggleCustomerStatus,
-    updateShopUserPermissions
+    updateShopUserPermissions,
+    updateShopUser,
+    removeShopStaff,
+    getStaffSummary
 } = require('../controllers/userController');
 
 // Store / Pathao Controllers
@@ -96,6 +99,9 @@ const {
 const {
     getVendorOnboarding
 } = require('../controllers/onboardingController');
+const {
+    getVendorAnnouncements
+} = require('../controllers/platformAnnouncementController');
 
 // =========================
 // Upload Config
@@ -118,6 +124,13 @@ router.get(
     protect,
     authorize('VendorAdmin'),
     getVendorOnboarding
+);
+
+router.get(
+    '/announcements',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    getVendorAnnouncements
 );
 
 // ======================================================
@@ -488,6 +501,13 @@ router.patch(
 // ======================================================
 
 router.get(
+    '/staff/summary',
+    protect,
+    authorize('VendorAdmin'),
+    getStaffSummary
+);
+
+router.get(
     '/users',
     protect,
     authorize('VendorAdmin'),
@@ -510,6 +530,22 @@ router.patch(
     authorize('VendorAdmin'),
     requireShopFeature('staffAccounts'),
     updateShopUserPermissions
+);
+
+router.patch(
+    '/users/:id',
+    protect,
+    authorize('VendorAdmin'),
+    requireShopFeature('staffAccounts'),
+    updateShopUser
+);
+
+router.delete(
+    '/users/:id',
+    protect,
+    authorize('VendorAdmin'),
+    requireShopFeature('staffAccounts'),
+    removeShopStaff
 );
 
 // ======================================================

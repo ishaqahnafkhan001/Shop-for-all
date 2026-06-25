@@ -26,6 +26,18 @@ const baseUserObj = {
         .allow('')
         .optional(),
 
+    staffTitle: Joi.string()
+        .trim()
+        .max(80)
+        .allow('')
+        .optional(),
+
+    staffNote: Joi.string()
+        .trim()
+        .max(500)
+        .allow('')
+        .optional(),
+
     password: Joi.string()
         .min(6)
         .required()

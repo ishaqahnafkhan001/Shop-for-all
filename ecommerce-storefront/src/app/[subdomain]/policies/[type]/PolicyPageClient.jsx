@@ -3,18 +3,14 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { useStorefrontTheme } from "@/components/storefront/StorefrontThemeProvider";
-
-const POLICY_LABELS = {
-    privacy: "Privacy Policy",
-    terms: "Terms & Conditions",
-    refund: "Return & Refund Policy",
-    shipping: "Shipping Policy"
-};
+import { POLICY_LABELS, getPolicyContent } from "@/lib/defaultPolicies";
 
 export default function PolicyPageClient({ type }) {
-    const { theme } = useStorefrontTheme();
+    const { settings, theme } = useStorefrontTheme();
     const label = POLICY_LABELS[type] || "Store Policy";
-    const content = theme?.policies?.[type] || "";
+    const content = getPolicyContent(theme?.policies || {}, type, {
+        storeName: settings?.shopName || settings?.name || "this store"
+    });
 
     return (
         <div className="sf-page">
@@ -30,15 +26,9 @@ export default function PolicyPageClient({ type }) {
                         </div>
                     </div>
 
-                    {content ? (
-                        <article className="prose prose-slate max-w-none whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base">
-                            {content}
-                        </article>
-                    ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
-                            This policy has not been configured by the store yet.
-                        </div>
-                    )}
+                    <article className="prose prose-slate max-w-none whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base">
+                        {content}
+                    </article>
 
                     <Link href="/" className="sf-btn sf-btn-secondary mt-8 inline-flex">
                         Back to store
@@ -48,4 +38,3 @@ export default function PolicyPageClient({ type }) {
         </div>
     );
 }
-

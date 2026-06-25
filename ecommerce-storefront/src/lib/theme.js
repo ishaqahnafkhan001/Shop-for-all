@@ -1,3 +1,5 @@
+import { buildDefaultPolicies } from './defaultPolicies.js';
+
 export const THEME_SCHEMA_VERSION = 2;
 
 export const FALLBACK_THEME = {
@@ -151,18 +153,14 @@ export const FALLBACK_THEME = {
     },
     navigation: [
         { label: 'Shop', url: '/', sortOrder: 0, children: [], megaMenu: false },
-        { label: 'Track Order', url: '/track', sortOrder: 1, children: [], megaMenu: false },
+        { label: 'Policies', url: '/policies', sortOrder: 1, children: [], megaMenu: false },
+        { label: 'Track Order', url: '/track', sortOrder: 2, children: [], megaMenu: false },
     ],
     footer: {
         text: '',
         links: [],
     },
-    policies: {
-        refund: '',
-        shipping: '',
-        privacy: '',
-        terms: '',
-    },
+    policies: buildDefaultPolicies({ storeName: 'this store' }),
 };
 
 const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
@@ -181,6 +179,35 @@ const mergeObject = (base, incoming) => ({
     ...base,
     ...(incoming || {}),
 });
+
+const mergePolicies = (base = {}, incoming = {}) => Object.keys(base).reduce((acc, key) => {
+    const value = incoming?.[key];
+    acc[key] = typeof value === 'string' && value.trim() ? value : base[key];
+    return acc;
+}, {});
+
+const ensurePolicyNavigationLink = (navigation = []) => {
+    const links = Array.isArray(navigation) ? navigation : [];
+    const hasPolicyLink = links.some(item => {
+        const label = String(item?.label || '').toLowerCase();
+        const url = String(item?.url || '').toLowerCase();
+        return label.includes('polic') || url === '/policies' || url.startsWith('/policies/');
+    });
+
+    if (hasPolicyLink) return links;
+
+    const maxSortOrder = links.reduce((max, item, index) => Math.max(max, Number(item?.sortOrder ?? index)), -1);
+    return [
+        ...links,
+        {
+            label: 'Policies',
+            url: '/policies',
+            sortOrder: maxSortOrder + 1,
+            children: [],
+            megaMenu: false,
+        },
+    ];
+};
 
 const normalizeHomepageSections = (sections = []) => sections
     .filter(section => {
@@ -255,14 +282,14 @@ export const normalizeTheme = (theme = {}) => ({
         },
     },
     footer: mergeObject(FALLBACK_THEME.footer, theme.footer),
-    policies: mergeObject(FALLBACK_THEME.policies, theme.policies),
+    policies: mergePolicies(FALLBACK_THEME.policies, theme.policies),
     seo: mergeObject(FALLBACK_THEME.seo, theme.seo),
     homepageSections: normalizeHomepageSections(Array.isArray(theme.homepageSections)
         ? theme.homepageSections
         : FALLBACK_THEME.homepageSections),
-    navigation: Array.isArray(theme.navigation)
+    navigation: ensurePolicyNavigationLink(Array.isArray(theme.navigation)
         ? theme.navigation
-        : FALLBACK_THEME.navigation,
+        : FALLBACK_THEME.navigation),
 });
 
 export const getThemeCssVars = (themeCandidate = {}) => {

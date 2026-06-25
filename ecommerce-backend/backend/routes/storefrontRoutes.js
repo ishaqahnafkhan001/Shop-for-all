@@ -41,7 +41,9 @@ const {
 
 // Public Controllers
 const {
-    trackPublicOrder
+    trackPublicOrder,
+    cancelTrackedOrder,
+    createTrackedReturnRequest
 } = require('../controllers/publicController');
 const {
     createCustomerDataRequest
@@ -155,6 +157,18 @@ router.get(
     '/:subdomain/track-order/:orderId',
     resolveTenant,
     trackPublicOrder
+);
+
+router.post(
+    '/:subdomain/orders/:orderId/cancel',
+    resolveTenant,
+    cancelTrackedOrder
+);
+
+router.post(
+    '/:subdomain/orders/:orderId/returns',
+    resolveTenant,
+    createTrackedReturnRequest
 );
 
 router.post(

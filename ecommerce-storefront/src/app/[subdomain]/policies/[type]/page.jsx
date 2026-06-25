@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import PolicyPageClient from "./PolicyPageClient";
 import { fetchStorefrontInfo } from "@/lib/storefrontServer";
+import { POLICY_LABELS, getPolicyContent as getDefaultedPolicyContent } from "@/lib/defaultPolicies";
 import {
     buildMetadata,
     cleanTextForMeta,
@@ -10,13 +12,6 @@ import {
     truncateMetaDescription,
     truncateMetaTitle
 } from "@/lib/seo";
-
-const POLICY_LABELS = {
-    privacy: "Privacy Policy",
-    terms: "Terms & Conditions",
-    refund: "Return & Refund Policy",
-    shipping: "Shipping Policy"
-};
 
 const POLICY_FIELD_BY_TYPE = {
     privacy: "privacyPolicy",
@@ -38,7 +33,14 @@ const getStoreInfo = async (subdomain) => {
 
 const getPolicyContent = (shop, type) => {
     const policies = shop?.theme?.policies || {};
-    return policies[type] || policies[POLICY_FIELD_BY_TYPE[type]] || "";
+    return getDefaultedPolicyContent(
+        {
+            ...policies,
+            [type]: policies[type] || policies[POLICY_FIELD_BY_TYPE[type]]
+        },
+        type,
+        { storeName: shop?.shopName || shop?.name || "this store" }
+    );
 };
 
 export async function generateMetadata({ params }) {
@@ -68,5 +70,7 @@ export async function generateMetadata({ params }) {
 
 export default async function PolicyPage({ params }) {
     const { type } = await params;
+    if (!POLICY_LABELS[type]) notFound();
+
     return <PolicyPageClient type={type} />;
 }

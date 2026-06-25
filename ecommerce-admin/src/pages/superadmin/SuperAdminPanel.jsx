@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
     AlertTriangle,
+    Bell,
     Building2,
     CreditCard,
     ExternalLink,
@@ -19,7 +20,7 @@ const featureKeys = ['storeBuilder', 'coupons', 'analytics', 'customDomain', 'st
 const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts', 'growthCenter']);
 
 const defaultPagination = { page: 1, limit: 10, total: 0, pages: 1 };
-const defaultAnnouncement = { title: '', message: '', severity: 'Info', audience: 'All', expiresAt: '' };
+const defaultAnnouncement = { title: '', message: '', severity: 'Info', audience: 'All', targetPlan: '', targetShopId: '', expiresAt: '' };
 
 const formatMoney = (value) => `BDT ${(Number(value) || 0).toLocaleString()}`;
 
@@ -30,6 +31,8 @@ const SuperAdminPanel = () => {
     const [domains, setDomains] = useState([]);
     const [failedPayments, setFailedPayments] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
     const [abuseReports, setAbuseReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [reasonModal, setReasonModal] = useState(null);
@@ -59,6 +62,7 @@ const SuperAdminPanel = () => {
                 domainsRes,
                 paymentsRes,
                 announcementsRes,
+                notificationsRes,
                 abuseRes
             ] = await Promise.all([
                 API.get('/super-admin/overview'),
@@ -67,6 +71,7 @@ const SuperAdminPanel = () => {
                 API.get('/super-admin/domains', { params: { ...domainFilters, limit: 10 } }),
                 API.get('/super-admin/failed-payments', { params: { page: failedPaymentPagination.page, limit: 5 } }),
                 API.get('/super-admin/announcements', { params: { ...announcementFilters, limit: 10 } }),
+                API.get('/super-admin/notifications', { params: { limit: 5 } }),
                 API.get('/super-admin/abuse-reports', { params: { ...abuseFilters, limit: 10 } })
             ]);
 
@@ -88,6 +93,8 @@ const SuperAdminPanel = () => {
             setFailedPaymentPagination(paymentsRes.data.pagination || defaultPagination);
             setAnnouncements(announcementsRes.data.data || []);
             setAnnouncementPagination(announcementsRes.data.pagination || defaultPagination);
+            setNotifications(notificationsRes.data.data || []);
+            setNotificationUnreadCount(notificationsRes.data.unreadCount || 0);
             setAbuseReports(abuseRes.data.data || []);
             setAbusePagination(abuseRes.data.pagination || defaultPagination);
         } catch {
@@ -143,16 +150,6 @@ const SuperAdminPanel = () => {
         await run('');
     };
 
-    const updateShopPlan = async (shop, planName) => {
-        try {
-            await API.patch(`/super-admin/shops/${shop._id}/plan`, { plan: { ...(shop.plan || {}), name: planName } });
-            toast.success('Shop plan updated');
-            await load();
-        } catch {
-            toast.error('Failed to update plan');
-        }
-    };
-
     const toggleFeatureFlag = async (shop, key) => {
         const nextValue = !shop.featureFlags?.[key];
         const run = async (actionReason = '') => {
@@ -194,7 +191,9 @@ const SuperAdminPanel = () => {
         try {
             const payload = {
                 ...announcementForm,
-                expiresAt: announcementForm.expiresAt || null
+                expiresAt: announcementForm.expiresAt || null,
+                targetPlan: announcementForm.targetPlan || '',
+                targetShopId: announcementForm.targetShopId?.trim() || null
             };
             if (editingAnnouncementId) {
                 await API.patch(`/super-admin/announcements/${editingAnnouncementId}`, payload);
@@ -218,8 +217,20 @@ const SuperAdminPanel = () => {
             message: announcement.message || '',
             severity: announcement.severity || 'Info',
             audience: announcement.audience || 'All',
+            targetPlan: announcement.targetPlan || '',
+            targetShopId: announcement.targetShopId || '',
             expiresAt: announcement.expiresAt ? new Date(announcement.expiresAt).toISOString().slice(0, 10) : ''
         });
+    };
+
+    const markNotificationsRead = async () => {
+        try {
+            await API.patch('/super-admin/notifications/read-all');
+            setNotifications(prev => prev.map(item => ({ ...item, readAt: item.readAt || new Date().toISOString() })));
+            setNotificationUnreadCount(0);
+        } catch {
+            toast.error('Failed to update notifications');
+        }
     };
 
     const announcementAction = async (announcement, action) => {
@@ -322,6 +333,34 @@ const SuperAdminPanel = () => {
             </SectionCard>
 
             <SectionCard
+                title={`Super Admin Notifications${notificationUnreadCount ? ` (${notificationUnreadCount} unread)` : ''}`}
+                icon={Bell}
+                actions={notificationUnreadCount > 0 && (
+                    <button onClick={markNotificationsRead} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                        Mark all read
+                    </button>
+                )}
+            >
+                <div className="divide-y divide-slate-100">
+                    {notifications.length === 0 ? <EmptyState message="No Super Admin notifications yet." /> : notifications.map(item => (
+                        <div key={item._id} className={`px-5 py-4 ${item.readAt ? 'bg-white' : 'bg-indigo-50/40'}`}>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-bold text-slate-950">{item.title}</p>
+                                <StatusBadge value={item.severity || 'info'} />
+                                {!item.readAt && <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-bold text-white">New</span>}
+                            </div>
+                            <p className="mt-1 text-sm text-slate-500">{item.message}</p>
+                            {item.type === 'subscription.pending_approval' && (
+                                <Link to="/super-admin/billing" className="mt-2 inline-flex text-xs font-bold text-indigo-600 hover:text-indigo-700">
+                                    Open billing approval
+                                </Link>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </SectionCard>
+
+            <SectionCard
                 title="Shops"
                 icon={Building2}
                 actions={(
@@ -345,17 +384,19 @@ const SuperAdminPanel = () => {
                             <tr>
                                 <th className="px-4 py-3">Shop</th>
                                 <th className="px-4 py-3">Owner</th>
-                                <th className="px-4 py-3">Status</th>
+                                <th className="px-4 py-3">Shop status</th>
+                                <th className="px-4 py-3">Billing</th>
                                 <th className="px-4 py-3">Plan</th>
+                                <th className="px-4 py-3">Trial</th>
                                 <th className="px-4 py-3">Flags</th>
                                 <th className="px-4 py-3 text-right">Detail</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">Loading shops...</td></tr>
+                                <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-500">Loading shops...</td></tr>
                             ) : shops.length === 0 ? (
-                                <tr><td colSpan={6}><EmptyState message="No shops found." /></td></tr>
+                                <tr><td colSpan={8}><EmptyState message="No shops found." /></td></tr>
                             ) : shops.map(shop => (
                                 <tr key={shop._id} className="align-top hover:bg-slate-50">
                                     <td className="px-4 py-3">
@@ -372,11 +413,15 @@ const SuperAdminPanel = () => {
                                         {shop.suspensionReason && <p className="mt-1 max-w-xs text-xs text-rose-600">{shop.suspensionReason}</p>}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <select value={shop.plan?.name || 'Starter'} onChange={event => updateShopPlan(shop, event.target.value)} className="rounded-lg border border-slate-200 px-2 py-1">
-                                            <option>Starter</option>
-                                            <option>Growth</option>
-                                            <option>Enterprise</option>
-                                        </select>
+                                        <StatusBadge value={shop.billing?.status || 'trialing'} />
+                                        {shop.billing?.paymentStatus && <p className="mt-1 text-xs text-slate-500">Payment: {shop.billing.paymentStatus}</p>}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <p className="font-bold text-slate-800">{shop.billing?.planDisplay || 'Trial'}</p>
+                                        {shop.billing?.pendingPlan && <p className="text-xs text-indigo-600">Pending: {shop.billing.pendingPlan}</p>}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-slate-600">
+                                        {shop.billing?.trialDaysLeft === null || shop.billing?.trialDaysLeft === undefined ? '-' : `${Math.max(shop.billing.trialDaysLeft, 0)} days`}
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex max-w-md flex-wrap gap-2">
@@ -433,6 +478,22 @@ const SuperAdminPanel = () => {
                             </select>
                             <input type="date" value={announcementForm.expiresAt} onChange={event => setAnnouncementForm(prev => ({ ...prev, expiresAt: event.target.value }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" />
                         </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <label className="block">
+                                <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Target plan</span>
+                                <select value={announcementForm.targetPlan} onChange={event => setAnnouncementForm(prev => ({ ...prev, targetPlan: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                                    <option value="">All plans</option>
+                                    <option value="Trial">Trial</option>
+                                    <option value="Starter">Starter</option>
+                                    <option value="Growth">Growth</option>
+                                    <option value="Pro">Pro</option>
+                                </select>
+                            </label>
+                            <label className="block">
+                                <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Target shop ID</span>
+                                <input value={announcementForm.targetShopId} onChange={event => setAnnouncementForm(prev => ({ ...prev, targetShopId: event.target.value }))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Optional Mongo shop ID" />
+                            </label>
+                        </div>
                     </div>
                     <div className="mt-4 flex gap-2">
                         <button className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800">{editingAnnouncementId ? 'Update' : 'Publish'}</button>
@@ -464,6 +525,8 @@ const SuperAdminPanel = () => {
                                     <p className="font-bold text-slate-950">{item.title}</p>
                                     <StatusBadge value={item.severity} />
                                     <StatusBadge value={item.isPublished ? 'Active' : 'Dismissed'} />
+                                    {item.targetPlan && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">Plan: {item.targetPlan}</span>}
+                                    {item.targetShopId && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">Shop targeted</span>}
                                 </div>
                                 <p className="mt-1 line-clamp-2 text-sm text-slate-500">{item.message}</p>
                             </div>

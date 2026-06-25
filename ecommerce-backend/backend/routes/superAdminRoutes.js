@@ -37,11 +37,19 @@ const {
 } = require('../controllers/vendorVerificationController');
 const superAdminBillingRoutes = require('./superAdminBillingRoutes');
 const superAdminBadgeRoutes = require('./superAdminBadgeRoutes');
+const {
+    getSuperAdminNotifications,
+    markSuperAdminNotificationRead,
+    markAllSuperAdminNotificationsRead
+} = require('../controllers/platformNotificationController');
 
 router.use(protect);
 router.use(authorize('SuperAdmin'));
 
 router.get('/overview', getPlatformOverview);
+router.get('/notifications', getSuperAdminNotifications);
+router.patch('/notifications/read-all', markAllSuperAdminNotificationsRead);
+router.patch('/notifications/:id/read', markSuperAdminNotificationRead);
 router.use('/billing', superAdminBillingRoutes);
 router.use('/badges', superAdminBadgeRoutes);
 router.get('/shops', getShops);

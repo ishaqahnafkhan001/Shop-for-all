@@ -4,6 +4,7 @@
 
 - Confirm all production environment variables are present.
 - Confirm `JWT_SECRET`, `CSRF_SECRET`, Cloudinary secrets, mail provider keys, and courier credentials are not committed.
+- Configure `SUPER_ADMIN_EMAIL` so subscription payment submissions notify the platform owner.
 - Run backend tests.
 - Run admin lint/build.
 - Run storefront lint/build.

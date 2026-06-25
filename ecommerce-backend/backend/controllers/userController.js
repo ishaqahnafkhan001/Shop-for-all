@@ -9,6 +9,10 @@ const {
     createMembershipArtifacts
 } = require('../services/identityService');
 const { logAudit } = require('../services/auditLogService');
+const {
+    sanitizeStaffPermissions,
+    getStaffCapacity
+} = require('../services/staff/staffCapacityService');
 
 
 /**
@@ -95,6 +99,12 @@ exports.createShopUser = async (req, res) => {
     try {
         const { error, value } = createUserSchema.validate(req.body);
         if (error) return res.status(400).json({ error: error.details[0].message });
+        if (value.role !== 'VendorStaff') {
+            return res.status(400).json({
+                success: false,
+                error: 'Only staff accounts can be created from staff management.'
+            });
+        }
 
         const currentShopId = req.user.shopId;
         const cleanEmail = normalizeEmail(value.email);
@@ -133,8 +143,11 @@ exports.createShopUser = async (req, res) => {
             shopId: currentShopId,
             role: value.role,
             fullName: value.fullName,
+            phone: value.phone || '',
+            staffTitle: value.staffTitle || '',
+            staffNote: value.staffNote || '',
             passwordHash: account.passwordHash || hashedPassword,
-            permissions: value.permissions,
+            permissions: sanitizeStaffPermissions(value.permissions),
             session: null
         });
 
@@ -153,7 +166,17 @@ exports.createShopUser = async (req, res) => {
 
         res.status(201).json({
             message: `${value.role} created successfully`,
-            user: { id: newUser._id, email: newUser.email, role: newUser.role }
+            user: {
+                id: newUser._id,
+                fullName: newUser.fullName,
+                email: newUser.email,
+                phone: newUser.phone,
+                staffTitle: newUser.staffTitle,
+                staffNote: newUser.staffNote,
+                role: newUser.role,
+                status: newUser.status,
+                permissions: newUser.permissions
+            }
         });
     } catch (err) {
         res.status(500).json({ error: "Failed to create user" });
@@ -176,7 +199,23 @@ exports.getShopUsers = async (req, res) => {
     }
 };
 
-exports.updateShopUserPermissions = async (req, res) => {
+exports.getStaffSummary = async (req, res) => {
+    try {
+        const summary = await getStaffCapacity(req.user.shopId);
+        res.status(200).json({
+            success: true,
+            data: summary
+        });
+    } catch (err) {
+        console.error('Get staff summary error:', err);
+        res.status(err.statusCode || 500).json({
+            success: false,
+            error: err.message || 'Failed to load staff summary'
+        });
+    }
+};
+
+const updateShopUser = async (req, res) => {
     try {
         const user = await User.findOne({
             _id: req.params.id,
@@ -187,17 +226,72 @@ exports.updateShopUserPermissions = async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'Staff member not found' });
         }
+
+        if (String(user._id) === String(req.user._id || req.user.id)) {
+            return res.status(400).json({ error: 'You cannot edit your own staff access here.' });
+        }
+
         const beforeAudit = {
+            fullName: user.fullName,
+            phone: user.phone,
+            staffTitle: user.staffTitle,
+            staffNote: user.staffNote,
             status: user.status,
             permissions: user.permissions?.toObject?.() || user.permissions || {}
         };
 
-        user.permissions = {
-            ...(user.permissions?.toObject?.() || user.permissions || {}),
-            ...req.body.permissions
-        };
+        if (Object.prototype.hasOwnProperty.call(req.body, 'fullName')) {
+            const fullName = String(req.body.fullName || '').trim();
+            if (fullName.length < 3 || fullName.length > 50) {
+                return res.status(400).json({ error: 'Staff name must be between 3 and 50 characters.' });
+            }
+            user.fullName = fullName;
+        }
 
-        if (user.membership_id) {
+        if (Object.prototype.hasOwnProperty.call(req.body, 'phone')) {
+            user.phone = String(req.body.phone || '').trim().slice(0, 40);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'staffTitle')) {
+            user.staffTitle = String(req.body.staffTitle || '').trim().slice(0, 80);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'staffNote')) {
+            user.staffNote = String(req.body.staffNote || '').trim().slice(0, 500);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'permissions')) {
+            user.permissions = sanitizeStaffPermissions(
+                req.body.permissions,
+                user.permissions?.toObject?.() || user.permissions || {}
+            );
+        }
+
+        if (req.body.status && ['Active', 'Suspended'].includes(req.body.status)) {
+            if (req.body.status === 'Active' && user.status !== 'Active') {
+                const capacity = await getStaffCapacity(req.user.shopId);
+                if (!capacity.canAddStaff) {
+                    return res.status(403).json({
+                        success: false,
+                        code: 'STAFF_LIMIT_REACHED',
+                        error: capacity.message || 'You have reached your staff limit for this plan.',
+                        limit: capacity.staffLimit,
+                        current: capacity.usedStaffCount,
+                        remainingStaffSlots: capacity.remainingStaffSlots
+                    });
+                }
+            }
+            user.status = req.body.status;
+            if (user.membership_id) {
+                await ShopMembership.findByIdAndUpdate(user.membership_id, {
+                    status: req.body.status
+                });
+            }
+        }
+
+        await user.save();
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'permissions') && user.membership_id) {
             await StaffPermission.findOneAndUpdate(
                 {
                     membership_id: user.membership_id,
@@ -214,26 +308,19 @@ exports.updateShopUserPermissions = async (req, res) => {
             );
         }
 
-        if (req.body.status && ['Active', 'Suspended'].includes(req.body.status)) {
-            user.status = req.body.status;
-            if (user.membership_id) {
-                await ShopMembership.findByIdAndUpdate(user.membership_id, {
-                    status: req.body.status
-                });
-            }
-        }
-
-        await user.save();
-
         await logAudit({
             req,
             shop_id: req.user.shopId,
-            action: 'staff.permissions_updated',
+            action: 'staff.updated',
             entityType: 'User',
             entityId: user._id,
             entityLabel: user.fullName || user.email,
             before: beforeAudit,
             after: {
+                fullName: user.fullName,
+                phone: user.phone,
+                staffTitle: user.staffTitle,
+                staffNote: user.staffNote,
                 status: user.status,
                 permissions: user.permissions?.toObject?.() || user.permissions || {}
             }
@@ -246,13 +333,78 @@ exports.updateShopUserPermissions = async (req, res) => {
                 id: user._id,
                 fullName: user.fullName,
                 email: user.email,
+                phone: user.phone,
+                staffTitle: user.staffTitle,
+                staffNote: user.staffNote,
                 role: user.role,
                 status: user.status,
                 permissions: user.permissions
             }
         });
     } catch (err) {
-        console.error('Update staff permissions error:', err);
-        res.status(500).json({ error: 'Failed to update staff permissions' });
+        console.error('Update staff error:', err);
+        res.status(500).json({ error: 'Failed to update staff member' });
+    }
+};
+
+exports.updateShopUser = updateShopUser;
+exports.updateShopUserPermissions = updateShopUser;
+
+exports.removeShopStaff = async (req, res) => {
+    try {
+        const user = await User.findOne({
+            _id: req.params.id,
+            shop_id: req.user.shopId,
+            role: 'VendorStaff'
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'Staff member not found' });
+        }
+
+        if (String(user._id) === String(req.user._id || req.user.id)) {
+            return res.status(400).json({ error: 'You cannot remove yourself from staff management.' });
+        }
+
+        const previousStatus = user.status;
+        user.status = 'Suspended';
+        await user.save();
+
+        if (user.membership_id) {
+            await ShopMembership.findByIdAndUpdate(user.membership_id, {
+                status: 'Suspended'
+            });
+        }
+
+        await logAudit({
+            req,
+            shop_id: req.user.shopId,
+            action: 'staff.removed',
+            entityType: 'User',
+            entityId: user._id,
+            entityLabel: user.fullName || user.email,
+            severity: 'warning',
+            before: { status: previousStatus },
+            after: { status: user.status }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Staff account deactivated',
+            user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                phone: user.phone,
+                staffTitle: user.staffTitle,
+                staffNote: user.staffNote,
+                role: user.role,
+                status: user.status,
+                permissions: user.permissions
+            }
+        });
+    } catch (err) {
+        console.error('Remove staff error:', err);
+        res.status(500).json({ error: 'Failed to remove staff member' });
     }
 };

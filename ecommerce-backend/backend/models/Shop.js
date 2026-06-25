@@ -367,7 +367,8 @@ const shopSchema = new mongoose.Schema({
             type: [linkSchema],
             default: [
                 { label: 'Shop', url: '/', sortOrder: 0 },
-                { label: 'Track Order', url: '/track', sortOrder: 1 }
+                { label: 'Policies', url: '/policies', sortOrder: 1 },
+                { label: 'Track Order', url: '/track', sortOrder: 2 }
             ]
         },
         footer: {

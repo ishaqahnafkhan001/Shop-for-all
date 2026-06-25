@@ -23,6 +23,8 @@ const createMembershipArtifacts = async ({
                                              role,
                                              fullName,
                                              phone = '',
+                                             staffTitle = '',
+                                             staffNote = '',
                                              passwordHash,
                                              permissions,
                                              session
@@ -41,6 +43,8 @@ const createMembershipArtifacts = async ({
         fullName,
         email: account.email,
         phone,
+        staffTitle,
+        staffNote,
         password: passwordHash,
         role,
         shop_id: shopId,

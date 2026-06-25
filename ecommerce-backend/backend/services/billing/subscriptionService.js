@@ -72,9 +72,10 @@ const createTrialForShop = async (shopOrId, options = {}) => {
             { _id: shop._id },
             {
                 $set: {
-                    'plan.name': planName,
+                    'plan.name': 'Trial',
                     'plan.status': 'Trialing',
-                    'plan.trialEndsAt': trialEndsAt
+                    'plan.trialEndsAt': trialEndsAt,
+                    'plan.productLimit': shop.plan?.productLimit || 100
                 }
             }
         ),
@@ -82,6 +83,27 @@ const createTrialForShop = async (shopOrId, options = {}) => {
     );
 
     return subscription;
+};
+
+const markPendingApproval = async ({
+    subscription,
+    subscriptionId,
+    planId,
+    planName = '',
+    billingCycle = 'monthly',
+    invoiceId = null
+}) => {
+    const current = subscription || await Subscription.findById(subscriptionId);
+    if (!current) throw new Error('Subscription not found');
+
+    current.status = 'pending_approval';
+    current.pendingPlanId = planId || null;
+    current.pendingPlanName = planName || '';
+    current.billingCycle = billingCycle || current.billingCycle || 'monthly';
+    current.lastInvoiceId = invoiceId || current.lastInvoiceId || null;
+    await current.save();
+
+    return current;
 };
 
 const ensureSubscriptionExists = async (shopOrId, options = {}) => {
@@ -156,6 +178,9 @@ const activateSubscription = async ({
     current.billingCycle = billingCycle;
     current.currentPeriodStart = now;
     current.currentPeriodEnd = addDays(now, periodDays);
+    current.activatedAt = now;
+    current.pendingPlanId = null;
+    current.pendingPlanName = '';
     current.graceEndsAt = undefined;
     current.suspendedAt = undefined;
     current.suspensionReason = '';
@@ -217,6 +242,29 @@ const markPastDue = async (subscription, options = {}) => {
     const now = options.now || new Date();
     subscription.status = 'past_due';
     subscription.graceEndsAt = addDays(now, GRACE_DAYS);
+    await subscription.save();
+    return subscription;
+};
+
+const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) => {
+    const now = options.now || new Date();
+    const trialEndsAt = subscription.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
+    subscription.pendingPlanId = null;
+    subscription.pendingPlanName = '';
+
+    if (subscription.status === 'active') {
+        await subscription.save();
+        return subscription;
+    }
+
+    if (trialEndsAt && trialEndsAt.getTime() > now.getTime()) {
+        subscription.status = 'trialing';
+        subscription.graceEndsAt = undefined;
+    } else {
+        subscription.status = 'past_due';
+        subscription.graceEndsAt = addDays(now, GRACE_DAYS);
+    }
+
     await subscription.save();
     return subscription;
 };
@@ -304,6 +352,8 @@ module.exports = {
     createTrialForShop,
     ensureSubscriptionExists,
     activateSubscription,
+    markPendingApproval,
+    returnToTrialOrPastDueAfterRejection,
     markPastDue,
     enterGracePeriod,
     suspendForBilling,

@@ -15,7 +15,7 @@ const subscriptionSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['trialing', 'active', 'past_due', 'grace', 'suspended', 'cancelled'],
+        enum: ['trialing', 'pending_approval', 'active', 'past_due', 'grace', 'suspended', 'cancelled'],
         default: 'trialing',
         index: true
     },
@@ -28,6 +28,17 @@ const subscriptionSchema = new mongoose.Schema({
     trialEndsAt: Date,
     currentPeriodStart: Date,
     currentPeriodEnd: Date,
+    activatedAt: Date,
+    pendingPlanId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'VendorPlan',
+        default: null
+    },
+    pendingPlanName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     graceEndsAt: Date,
     lastInvoiceId: {
         type: mongoose.Schema.Types.ObjectId,

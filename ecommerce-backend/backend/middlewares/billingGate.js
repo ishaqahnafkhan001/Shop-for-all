@@ -1,9 +1,9 @@
 const Product = require('../models/Product');
-const User = require('../models/User');
 const Shop = require('../models/Shop');
 const VendorPlan = require('../models/VendorPlan');
 const { ensureSubscriptionExists, isBillingSuspension } = require('../services/billing/subscriptionService');
 const { getPlanByNameOrDefault, mergePlan } = require('../services/billing/billingPlanService');
+const { getStaffCapacity } = require('../services/staff/staffCapacityService');
 
 const billingDenied = (res, message = 'Billing is required to use this feature') => res.status(403).json({
     success: false,
@@ -88,26 +88,20 @@ const requireStaffLimit = async (req, res, next) => {
     try {
         if (req.body?.role && req.body.role !== 'VendorStaff') return next();
 
-        const { shopId, subscription, plan } = await getBillingContext(req);
+        const { subscription } = await getBillingContext(req);
         if (['suspended', 'cancelled'].includes(subscription.status)) {
             return billingDenied(res, 'Your store billing is not active. Please submit payment for verification.');
         }
 
-        const limit = Number(plan.staffLimit || 0);
-        if (!limit) return next();
-
-        const existingStaff = await User.countDocuments({
-            shop_id: shopId,
-            role: 'VendorStaff'
-        });
-
-        if (existingStaff >= limit) {
+        const capacity = await getStaffCapacity(getShopId(req));
+        if (!capacity.canAddStaff) {
             return res.status(403).json({
                 success: false,
-                error: `Your current plan allows up to ${limit} staff account${limit === 1 ? '' : 's'}. Upgrade your plan to add more.`,
+                error: capacity.message || 'You have reached your staff limit for this plan.',
                 code: 'STAFF_LIMIT_REACHED',
-                limit,
-                current: existingStaff
+                limit: capacity.staffLimit,
+                current: capacity.usedStaffCount,
+                remainingStaffSlots: capacity.remainingStaffSlots
             });
         }
 

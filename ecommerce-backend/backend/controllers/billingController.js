@@ -62,11 +62,14 @@ const serializeSubscription = (subscription) => {
         planId: plain.planId,
         status: plain.status,
         billingCycle: plain.billingCycle,
+        pendingPlanId: plain.pendingPlanId,
+        pendingPlanName: plain.pendingPlanName || '',
         trialStartedAt: plain.trialStartedAt,
         trialEndsAt: plain.trialEndsAt,
         trialDaysLeft: daysUntil(plain.trialEndsAt),
         currentPeriodStart: plain.currentPeriodStart,
         currentPeriodEnd: plain.currentPeriodEnd,
+        activatedAt: plain.activatedAt,
         graceEndsAt: plain.graceEndsAt,
         graceDaysLeft: daysUntil(plain.graceEndsAt),
         lastInvoiceId: plain.lastInvoiceId,
@@ -138,6 +141,15 @@ const serializePayment = (payment) => {
 
 const getShopIdFromReq = (req) => req.tenantId || req.user?.shopId || req.user?.shop_id;
 
+const getPlanDisplayForSubscription = ({ subscription, activePlan, pendingPlan }) => {
+    if (!subscription) return activePlan?.name || 'Trial';
+    if (subscription.status === 'trialing') return 'Trial';
+    if (subscription.status === 'pending_approval') return `Pending ${subscription.pendingPlanName || pendingPlan?.name || 'plan'}`;
+    if (subscription.status === 'active') return activePlan?.name || 'Active plan';
+    if (['past_due', 'grace', 'suspended', 'cancelled'].includes(subscription.status)) return activePlan?.name || 'Trial expired';
+    return activePlan?.name || 'Trial';
+};
+
 exports.getVendorBillingCurrent = async (req, res) => {
     try {
         const shopId = getShopIdFromReq(req);
@@ -145,8 +157,15 @@ exports.getVendorBillingCurrent = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
         const subscription = await ensureSubscriptionExists(shop);
-        const planName = shop.plan?.name || 'Starter';
-        const plan = await getPlanByNameOrDefault(planName);
+        const activePlan = subscription.planId
+            ? await VendorPlan.findById(subscription.planId).lean()
+            : null;
+        const pendingPlan = subscription.pendingPlanId
+            ? await VendorPlan.findById(subscription.pendingPlanId).lean()
+            : null;
+        const plan = subscription.status === 'active' && activePlan
+            ? activePlan
+            : await getPlanByNameOrDefault(activePlan?.name || shop.plan?.name || 'Starter');
         const latestInvoice = await Invoice.findOne({ shopId }).sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -154,6 +173,9 @@ exports.getVendorBillingCurrent = async (req, res) => {
             data: {
                 subscription: serializeSubscription(subscription),
                 plan,
+                activePlan,
+                pendingPlan,
+                displayPlan: getPlanDisplayForSubscription({ subscription, activePlan, pendingPlan }),
                 latestInvoice: serializeInvoice(latestInvoice),
                 trialDays: TRIAL_DAYS,
                 graceDays: GRACE_DAYS
@@ -332,6 +354,7 @@ exports.getSuperAdminBillingOverview = async (req, res) => {
                 summary: {
                     activeSubscriptions: subCount.active || 0,
                     trialingShops: subCount.trialing || 0,
+                    pendingApprovalSubscriptions: subCount.pending_approval || 0,
                     trialsEndingSoon,
                     pastDueShops: (subCount.past_due || 0) + (subCount.grace || 0),
                     pendingManualPayments: paymentCount.pending || 0,
@@ -355,7 +378,13 @@ exports.getSuperAdminSubscriptions = async (req, res) => {
         if (req.query.shopId && isValidObjectId(req.query.shopId)) query.shopId = req.query.shopId;
 
         const [items, total] = await Promise.all([
-            Subscription.find(query).populate('shopId', 'shopName subdomain approvalStatus isActive suspensionReason').populate('planId', 'name monthlyPrice yearlyPrice').sort({ updatedAt: -1 }).skip(skip).limit(limit),
+            Subscription.find(query)
+                .populate('shopId', 'shopName subdomain approvalStatus isActive suspensionReason')
+                .populate('planId', 'name monthlyPrice yearlyPrice')
+                .populate('pendingPlanId', 'name monthlyPrice yearlyPrice')
+                .sort({ updatedAt: -1 })
+                .skip(skip)
+                .limit(limit),
             Subscription.countDocuments(query)
         ]);
         const shopIds = items.map(item => item.shopId?._id || item.shopId).filter(Boolean);
@@ -382,6 +411,12 @@ exports.getSuperAdminSubscriptions = async (req, res) => {
                     ...row,
                     shop: item.shopId && typeof item.shopId === 'object' ? item.shopId : null,
                     plan: item.planId && typeof item.planId === 'object' ? item.planId : null,
+                    pendingPlan: item.pendingPlanId && typeof item.pendingPlanId === 'object' ? item.pendingPlanId : null,
+                    displayPlan: getPlanDisplayForSubscription({
+                        subscription: row,
+                        activePlan: item.planId && typeof item.planId === 'object' ? item.planId : null,
+                        pendingPlan: item.pendingPlanId && typeof item.pendingPlanId === 'object' ? item.pendingPlanId : null
+                    }),
                     owner: ownerMap[shopId] || null,
                     metrics: {
                         products: productMap[shopId] || 0,
@@ -442,7 +477,16 @@ exports.getSuperAdminPayments = async (req, res) => {
         if (req.query.search) query.transactionId = { $regex: String(req.query.search), $options: 'i' };
 
         const [items, total] = await Promise.all([
-            PaymentTransaction.find(query).populate('shopId', 'shopName subdomain').populate('invoiceId', 'invoiceNumber amount status billingCycle').sort({ createdAt: -1 }).skip(skip).limit(limit),
+            PaymentTransaction.find(query)
+                .populate('shopId', 'shopName subdomain')
+                .populate({
+                    path: 'invoiceId',
+                    select: 'invoiceNumber amount status billingCycle planId',
+                    populate: { path: 'planId', select: 'name' }
+                })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
             PaymentTransaction.countDocuments(query)
         ]);
 
@@ -466,7 +510,7 @@ exports.updateSuperAdminSubscriptionStatus = async (req, res) => {
         if (!subscription) return res.status(404).json({ success: false, error: 'Subscription not found' });
 
         const { status, reason, billingCycle } = req.body;
-        if (!['trialing', 'active', 'past_due', 'grace', 'suspended', 'cancelled'].includes(status)) {
+        if (!['trialing', 'pending_approval', 'active', 'past_due', 'grace', 'suspended', 'cancelled'].includes(status)) {
             return res.status(400).json({ success: false, error: 'Valid subscription status is required' });
         }
 

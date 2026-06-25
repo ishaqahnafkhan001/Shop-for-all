@@ -24,6 +24,7 @@
     "test:integration:local": "MONGO_URI_TEST=\"mongodb://127.0.0.1:27018/shop_for_all_launch_test?directConnection=true&replicaSet=rs0\" npm run test:integration",
     "test:launch:local": "npm test && npm run test:mongo:up && npm run test:integration:local; status=$?; npm run test:mongo:down; exit $status",
     "migrate:identity": "node scripts/migrate-accounts-memberships.js",
+    "backfill:policies": "node scripts/backfillDefaultPolicies.js",
     "worker": "node workers/index.js",
     "rollup:analytics": "node scripts/runAnalyticsRollup.js"
   },

@@ -45,6 +45,7 @@ const daysLeft = (value) => {
 
 const statusTone = {
     trialing: 'bg-sky-50 text-sky-700 ring-sky-100',
+    pending_approval: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
     active: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     grace: 'bg-amber-50 text-amber-700 ring-amber-100',
     past_due: 'bg-amber-50 text-amber-700 ring-amber-100',
@@ -55,6 +56,7 @@ const statusTone = {
     paid: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     rejected: 'bg-rose-50 text-rose-700 ring-rose-100',
     pending: 'bg-amber-50 text-amber-700 ring-amber-100',
+    approved: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     verified: 'bg-emerald-50 text-emerald-700 ring-emerald-100'
 };
 
@@ -178,6 +180,7 @@ const SuperAdminBilling = () => {
     const overviewCards = [
         { label: 'Active subscriptions', value: summary.activeSubscriptions || 0, icon: CheckCircle2, tone: 'emerald' },
         { label: 'Trialing shops', value: summary.trialingShops || 0, icon: CalendarClock, tone: 'sky' },
+        { label: 'Pending approval', value: summary.pendingApprovalSubscriptions || 0, icon: CreditCard, tone: 'indigo' },
         { label: 'Trials ending soon', value: summary.trialsEndingSoon || 0, icon: AlertTriangle, tone: 'amber' },
         { label: 'Past due shops', value: summary.pastDueShops || 0, icon: ShieldAlert, tone: 'amber' },
         { label: 'Pending payments', value: summary.pendingManualPayments || 0, icon: CreditCard, tone: 'indigo' },
@@ -365,6 +368,7 @@ const SuperAdminBilling = () => {
                     >
                         <option value="">All subscription statuses</option>
                         <option value="trialing">Trialing</option>
+                        <option value="pending_approval">Pending approval</option>
                         <option value="active">Active</option>
                         <option value="past_due">Past due</option>
                         <option value="grace">Grace</option>
@@ -404,7 +408,10 @@ const SuperAdminBilling = () => {
                                             <p className="font-semibold text-slate-700">{item.owner?.fullName || '-'}</p>
                                             <p className="text-xs text-slate-500">{item.owner?.email || '-'}</p>
                                         </td>
-                                        <td className="px-5 py-4">{item.plan?.name || '-'}</td>
+                                        <td className="px-5 py-4">
+                                            <p className="font-bold text-slate-800">{item.displayPlan || item.plan?.name || 'Trial'}</p>
+                                            {item.pendingPlan?.name && <p className="text-xs text-indigo-600">Pending: {item.pendingPlan.name}</p>}
+                                        </td>
                                         <td className="px-5 py-4"><StatusBadge value={item.status} /></td>
                                         <td className="px-5 py-4 capitalize">{item.billingCycle}</td>
                                         <td className="px-5 py-4">{formatDate(item.trialEndsAt)}</td>
@@ -444,6 +451,7 @@ const SuperAdminBilling = () => {
                             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                                 <tr>
                                     <th className="px-5 py-3">Invoice</th>
+                                    <th className="px-5 py-3">Plan</th>
                                     <th className="px-5 py-3">Shop</th>
                                     <th className="px-5 py-3">Plan</th>
                                     <th className="px-5 py-3">Amount</th>
@@ -494,7 +502,7 @@ const SuperAdminBilling = () => {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {payments.length === 0 ? (
-                                    <tr><td colSpan={9}><EmptyState message="No pending manual payments." /></td></tr>
+                                    <tr><td colSpan={10}><EmptyState message="No pending manual payments." /></td></tr>
                                 ) : payments.map(payment => (
                                     <tr key={payment.id}>
                                         <td className="px-5 py-4">
@@ -502,6 +510,7 @@ const SuperAdminBilling = () => {
                                             <p className="text-xs text-slate-500">{payment.shop?.subdomain || '-'}</p>
                                         </td>
                                         <td className="px-5 py-4">{payment.invoice?.invoiceNumber || '-'}</td>
+                                        <td className="px-5 py-4">{payment.invoice?.planId?.name || '-'}</td>
                                         <td className="px-5 py-4">{String(payment.provider || '').replace('manual_', '')}</td>
                                         <td className="px-5 py-4">{money(payment.amount)}</td>
                                         <td className="px-5 py-4 font-mono text-xs">{payment.transactionId || '-'}</td>

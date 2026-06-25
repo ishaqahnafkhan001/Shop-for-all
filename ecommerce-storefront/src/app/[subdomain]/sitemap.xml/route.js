@@ -60,6 +60,12 @@ export async function GET(request, { params }) {
                 changefreq: "daily",
                 priority: "1.0"
             }),
+            urlNode({
+                loc: `${getHomepageCanonicalUrl({ host, subdomain, shop }).replace(/\/$/, "")}/policies`,
+                lastmod: shop?.updatedAt,
+                changefreq: "monthly",
+                priority: "0.5"
+            }),
             ...products
                 .filter(product => product?.slug)
                 .map(product => urlNode({

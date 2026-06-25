@@ -66,6 +66,7 @@ test('storefront SEO helpers build canonical metadata and safe product JSON-LD',
 test('homepage, product, and policy routes render server metadata', () => {
     const homepage = readRepo('ecommerce-storefront/src/app/[subdomain]/page.jsx');
     const productPage = readRepo('ecommerce-storefront/src/app/[subdomain]/products/[id]/page.jsx');
+    const policyIndexPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/page.jsx');
     const policyPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/[type]/page.jsx');
 
     assert.match(homepage, /export async function generateMetadata/);
@@ -83,6 +84,13 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.doesNotMatch(productPage, /type:\s*'product'/);
     assert.match(productPage, /isShopSearchVisible\(shop\)/);
     assert.match(productPage, /googleSiteVerification/);
+
+    assert.match(policyIndexPage, /export async function generateMetadata/);
+    assert.match(policyIndexPage, /Store Policies/);
+    assert.match(policyIndexPage, /\/policies/);
+    assert.match(policyIndexPage, /getPolicyContent/);
+    assert.match(policyIndexPage, /isShopSearchVisible\(shop\)/);
+    assert.match(policyIndexPage, /googleSiteVerification/);
 
     assert.match(policyPage, /export async function generateMetadata/);
     assert.match(policyPage, /getPolicyCanonicalUrl/);
@@ -104,6 +112,7 @@ test('sitemap and robots expose only public SEO URLs and noindex private pages',
     assert.match(sitemap, /collection\?\.slug/);
     assert.match(sitemap, /collection\.productCount/);
     assert.match(sitemap, /getPolicyCanonicalUrl/);
+    assert.match(sitemap, /\/policies/);
     assert.match(sitemap, /isShopSearchVisible\(shop\)/);
     assert.match(sitemap, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"><\/urlset>/);
 
