@@ -16,15 +16,15 @@ const shopRegistrationSchema = Joi.object({
         .trim()
         .lowercase()
         .min(3)
-        .max(20)
-        // Regex: Exact same rule as Mongoose to keep them synced
-        .pattern(/^[a-z0-9]+$/)
+        .max(40)
+        // Keep this synced with the Shop model and availability service.
+        .pattern(/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/)
         .required()
         .messages({
             'string.empty': 'Subdomain cannot be empty',
-            'string.pattern.base': 'Subdomain can only contain letters and numbers (no spaces or special characters)',
+            'string.pattern.base': 'Store URL can only contain lowercase letters, numbers, and hyphens. It must start and end with a letter or number.',
             'string.min': 'Subdomain must be at least 3 characters',
-            'string.max': 'Subdomain cannot exceed 20 characters',
+            'string.max': 'Subdomain cannot exceed 40 characters',
             'any.required': 'Subdomain is required'
         }),
 
@@ -32,7 +32,17 @@ const shopRegistrationSchema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().min(6).required(),
     fullName: Joi.string().required(),
-    otp: Joi.string().length(6).required()
+    otp: Joi.string().length(6).required(),
+    selectedPlanSlug: Joi.string()
+        .trim()
+        .lowercase()
+        .max(80)
+        .allow('')
+        .optional(),
+    selectedPlanId: Joi.string()
+        .trim()
+        .allow('')
+        .optional()
 });
 
 module.exports = { shopRegistrationSchema };

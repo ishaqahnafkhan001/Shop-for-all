@@ -51,6 +51,7 @@ const copyRequestHeaders = (request) => {
     const host = request.headers.get('host') || '';
     const hostname = host.split(':')[0].toLowerCase();
     let subdomain = '';
+    headers.set('x-storefront-host', hostname);
 
     if (hostname.includes('.localhost')) {
         subdomain = hostname.split('.localhost')[0];

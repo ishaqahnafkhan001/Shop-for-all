@@ -99,6 +99,7 @@ test('store builder publish does not require custom domain feature unless domain
     assert.equal(shouldRequireCustomDomainFeature({ domain: '' }, { domain: '' }), false);
     assert.equal(shouldRequireCustomDomainFeature({ domain: 'shop.example.com' }, { domain: 'shop.example.com' }), false);
     assert.equal(shouldRequireCustomDomainFeature({ domain: 'SHOP.EXAMPLE.COM ' }, { domain: 'shop.example.com' }), false);
+    assert.equal(shouldRequireCustomDomainFeature({ domain: 'https://shop.example.com/path' }, { domain: 'shop.example.com' }), false);
     assert.equal(shouldRequireCustomDomainFeature({ domain: 'new.example.com' }, { domain: 'shop.example.com' }), true);
     assert.equal(shouldRequireCustomDomainFeature({ domain: 'new.example.com' }, { domain: '' }), true);
 });

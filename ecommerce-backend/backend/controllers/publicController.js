@@ -21,8 +21,12 @@ const {
 const {
     sanitizeOrderForCustomer
 } = require('../services/orderPrivacyService');
+const {
+    normalizeCustomDomain,
+    buildVerifiedCustomDomainQuery
+} = require('../utils/domainUtils');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.status';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting';
 const RETURN_WINDOW_HOURS = 24;
 const RETURN_WINDOW_MS = RETURN_WINDOW_HOURS * 60 * 60 * 1000;
 const ACTIVE_RETURN_STATUSES = ['Requested', 'Approved', 'Received'];
@@ -40,12 +44,20 @@ const phonesMatch = (savedPhone, submittedPhone) => {
 };
 
 const getPublicShopBySubdomain = async (subdomain, session = null) => {
-    if (!subdomain) return null;
+    const identifier = normalizeCustomDomain(subdomain);
+    if (!identifier) return null;
 
-    const query = Shop.findOne({
-        subdomain: String(subdomain).trim().toLowerCase(),
-        isActive: true
-    }).select('_id subdomain');
+    const shopQuery = identifier.includes('.')
+        ? {
+            ...buildVerifiedCustomDomainQuery(identifier),
+            isActive: true
+        }
+        : {
+            subdomain: identifier,
+            isActive: true
+        };
+
+    const query = Shop.findOne(shopQuery).select('_id subdomain');
 
     if (session) query.session(session);
 

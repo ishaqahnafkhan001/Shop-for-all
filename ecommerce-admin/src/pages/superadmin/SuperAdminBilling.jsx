@@ -409,8 +409,13 @@ const SuperAdminBilling = () => {
                                             <p className="text-xs text-slate-500">{item.owner?.email || '-'}</p>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <p className="font-bold text-slate-800">{item.displayPlan || item.plan?.name || 'Trial'}</p>
-                                            {item.pendingPlan?.name && <p className="text-xs text-indigo-600">Pending: {item.pendingPlan.name}</p>}
+                                            <p className="font-bold text-slate-800">{item.billingDisplay?.displayPlan || item.displayPlan || item.plan?.name || 'Trial'}</p>
+                                            {item.billingDisplay?.intendedPlanName && item.status === 'trialing' && (
+                                                <p className="text-xs text-slate-500">Intended: {item.billingDisplay.intendedPlanName}</p>
+                                            )}
+                                            {item.billingDisplay?.pendingPlanName && (
+                                                <p className="text-xs text-indigo-600">Pending: {item.billingDisplay.pendingPlanName}</p>
+                                            )}
                                         </td>
                                         <td className="px-5 py-4"><StatusBadge value={item.status} /></td>
                                         <td className="px-5 py-4 capitalize">{item.billingCycle}</td>
@@ -451,7 +456,6 @@ const SuperAdminBilling = () => {
                             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                                 <tr>
                                     <th className="px-5 py-3">Invoice</th>
-                                    <th className="px-5 py-3">Plan</th>
                                     <th className="px-5 py-3">Shop</th>
                                     <th className="px-5 py-3">Plan</th>
                                     <th className="px-5 py-3">Amount</th>
@@ -467,7 +471,7 @@ const SuperAdminBilling = () => {
                                     <tr key={invoice.id}>
                                         <td className="px-5 py-4 font-bold text-slate-950">{invoice.invoiceNumber}</td>
                                         <td className="px-5 py-4">{invoice.shop?.shopName || '-'}</td>
-                                        <td className="px-5 py-4">{invoice.plan?.name || '-'}</td>
+                                        <td className="px-5 py-4">{invoice.plan?.name || invoice.planName || '-'}</td>
                                         <td className="px-5 py-4">{money(invoice.amount)}</td>
                                         <td className="px-5 py-4"><StatusBadge value={invoice.status} /></td>
                                         <td className="px-5 py-4">{formatDate(invoice.dueDate)}</td>
@@ -491,6 +495,7 @@ const SuperAdminBilling = () => {
                                 <tr>
                                     <th className="px-5 py-3">Shop</th>
                                     <th className="px-5 py-3">Invoice</th>
+                                    <th className="px-5 py-3">Plan</th>
                                     <th className="px-5 py-3">Provider</th>
                                     <th className="px-5 py-3">Amount</th>
                                     <th className="px-5 py-3">Transaction</th>
@@ -510,7 +515,7 @@ const SuperAdminBilling = () => {
                                             <p className="text-xs text-slate-500">{payment.shop?.subdomain || '-'}</p>
                                         </td>
                                         <td className="px-5 py-4">{payment.invoice?.invoiceNumber || '-'}</td>
-                                        <td className="px-5 py-4">{payment.invoice?.planId?.name || '-'}</td>
+                                        <td className="px-5 py-4">{payment.invoice?.planId?.name || payment.invoice?.planName || payment.planName || '-'}</td>
                                         <td className="px-5 py-4">{String(payment.provider || '').replace('manual_', '')}</td>
                                         <td className="px-5 py-4">{money(payment.amount)}</td>
                                         <td className="px-5 py-4 font-mono text-xs">{payment.transactionId || '-'}</td>

@@ -115,3 +115,76 @@ test('non-VendorAdmin roles cannot mutate Store Builder theme', async (t) => {
     });
     assert.equal(customerSave.status, 403);
 });
+
+test('vendor custom domain save normalizes, validates, and resets verification state', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+
+    await Shop.updateOne(
+        { _id: shopA._id },
+        {
+            $set: {
+                'plan.name': 'Growth',
+                'customDomain.domain': 'old-domain.example.com',
+                'customDomain.status': 'Verified',
+                'customDomain.ownershipVerified': true,
+                'customDomain.routingVerified': true,
+                'customDomain.manuallyVerifiedRouting': false,
+                'customDomain.verifiedAt': new Date()
+            }
+        }
+    );
+
+    const save = await vendorA.unsafePatch('/api/store-builder/admin', {
+        theme: { hero: { title: 'Custom domain save' } },
+        customDomain: { domain: 'https://New-Domain.example.com/products/a?x=1' }
+    });
+
+    assert.equal(save.status, 200);
+    assert.equal(save.body.data.customDomain.domain, 'new-domain.example.com');
+    assert.equal(save.body.data.customDomain.status, 'PendingVerification');
+    assert.equal(save.body.data.customDomain.verifiedAt || null, null);
+
+    const persisted = await Shop.findById(shopA._id).lean();
+    assert.equal(persisted.customDomain.domain, 'new-domain.example.com');
+    assert.equal(persisted.customDomain.status, 'PendingVerification');
+});
+
+test('custom domain save rejects platform, duplicate, and plan-disabled domains', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA, shopB } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+
+    const blockedByFeature = await vendorA.unsafePatch('/api/store-builder/admin', {
+        customDomain: { domain: 'starter-domain.example.com' }
+    });
+    assert.equal(blockedByFeature.status, 403);
+    assert.equal(blockedByFeature.body.code, 'FEATURE_NOT_AVAILABLE');
+
+    await Shop.updateOne({ _id: shopA._id }, { $set: { 'plan.name': 'Growth' } });
+    await Shop.updateOne(
+        { _id: shopB._id },
+        {
+            $set: {
+                'customDomain.domain': 'taken-domain.example.com',
+                'customDomain.status': 'Verified',
+                'customDomain.ownershipVerified': true,
+                'customDomain.routingVerified': true,
+                'customDomain.manuallyVerifiedRouting': false
+            }
+        }
+    );
+
+    const platformDomain = await vendorA.unsafePatch('/api/store-builder/admin', {
+        customDomain: { domain: 'scaleup.codes' }
+    });
+    assert.equal(platformDomain.status, 400);
+    assert.match(platformDomain.body.error, /Platform domains/);
+
+    const duplicateDomain = await vendorA.unsafePatch('/api/store-builder/admin', {
+        customDomain: { domain: 'taken-domain.example.com' }
+    });
+    assert.equal(duplicateDomain.status, 400);
+    assert.equal(duplicateDomain.body.error, 'This domain is already connected to another shop.');
+});

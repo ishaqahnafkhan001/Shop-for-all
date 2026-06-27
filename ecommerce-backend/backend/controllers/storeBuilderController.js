@@ -2,8 +2,17 @@ const Shop = require('../models/Shop');
 const Review = require('../models/Review');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
+const { invalidateTenantCache } = require('../middlewares/tenant');
 const { ensureThemeSectionArchitecture, normalizeDynamicSections } = require('../services/themeSectionService');
 const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
+const {
+    normalizeCustomDomain,
+    isValidCustomDomain,
+    isPlatformDomain
+} = require('../utils/domainUtils');
+const {
+    buildCustomDomainVerificationFields
+} = require('../services/domain/dnsVerificationService');
 
 const allowedThemeKeys = [
     'version',
@@ -99,6 +108,58 @@ const pickThemePayload = (payload = {}) => {
     }, {});
 };
 
+const assertCustomDomainAvailable = async (domain, shopId) => {
+    const existingShop = await Shop.findOne({
+        _id: { $ne: shopId },
+        'customDomain.domain': domain
+    }).select('_id').lean();
+
+    if (existingShop) {
+        const error = new Error('This domain is already connected to another shop.');
+        error.statusCode = 400;
+        throw error;
+    }
+};
+
+const setCustomDomainDnsFields = (update, fields = {}) => {
+    Object.entries(fields).forEach(([key, value]) => {
+        update[`customDomain.${key}`] = value;
+    });
+};
+
+const clearCustomDomainDnsFields = (update) => {
+    setCustomDomainDnsFields(update, {
+        verificationToken: '',
+        verificationMethod: 'TXT',
+        dnsTarget: '',
+        expectedTxtValue: '',
+        ownershipVerified: false,
+        routingVerified: false,
+        manuallyVerifiedRouting: false,
+        lastDnsCheckStatus: '',
+        lastDnsCheckError: '',
+        lastOwnershipCheckStatus: '',
+        lastRoutingCheckStatus: '',
+        lastDnsRecords: { txt: [], cname: [], a: [] }
+    });
+};
+
+const ensureCustomDomainVerificationFieldsForResponse = async (shop) => {
+    const domain = normalizeCustomDomain(shop?.customDomain?.domain);
+    if (!shop?._id || !domain || shop.customDomain?.verificationToken) return shop;
+
+    const fields = buildCustomDomainVerificationFields(shop._id, domain);
+    await Shop.updateOne(
+        { _id: shop._id },
+        { $set: Object.fromEntries(Object.entries(fields).map(([key, value]) => [`customDomain.${key}`, value])) }
+    );
+    shop.customDomain = {
+        ...(shop.customDomain || {}),
+        ...fields
+    };
+    return shop;
+};
+
 exports.getStoreBuilderSettings = async (req, res) => {
     try {
         const shop = await Shop.findById(req.tenantId)
@@ -106,6 +167,8 @@ exports.getStoreBuilderSettings = async (req, res) => {
             .lean();
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+
+        await ensureCustomDomainVerificationFieldsForResponse(shop);
 
         await ensureThemeSectionArchitecture(shop);
         const policyDefaults = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
@@ -135,6 +198,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
     try {
         const { theme = {}, customDomain, storewideDiscount } = req.body;
         const update = {};
+        let domainCacheKeys = [];
         const cleanTheme = sanitizeThemePayload(pickThemePayload(theme));
         if (cleanTheme.homepageSections !== undefined) {
             cleanTheme.homepageSections = normalizeDynamicSections(cleanTheme.homepageSections);
@@ -145,9 +209,44 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         }
 
         if (customDomain !== undefined) {
-            update['customDomain.domain'] = customDomain.domain || '';
-            update['customDomain.status'] = customDomain.domain ? 'PendingVerification' : 'NotConfigured';
-            update['customDomain.lastCheckedAt'] = new Date();
+            const normalizedDomain = normalizeCustomDomain(customDomain);
+            const currentShop = await Shop.findById(req.tenantId).select('customDomain').lean();
+            const currentDomain = normalizeCustomDomain(currentShop?.customDomain?.domain);
+            domainCacheKeys = [currentDomain, normalizedDomain].filter(Boolean);
+
+            if (!normalizedDomain) {
+                update['customDomain.domain'] = '';
+                update['customDomain.status'] = 'NotConfigured';
+                update['customDomain.verifiedAt'] = null;
+                update['customDomain.lastCheckedAt'] = new Date();
+                update['customDomain.adminNote'] = '';
+                clearCustomDomainDnsFields(update);
+            } else {
+                if (isPlatformDomain(normalizedDomain)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Platform domains cannot be used as store custom domains.'
+                    });
+                }
+
+                if (!isValidCustomDomain(normalizedDomain)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Invalid custom domain.'
+                    });
+                }
+
+                await assertCustomDomainAvailable(normalizedDomain, req.tenantId);
+                update['customDomain.domain'] = normalizedDomain;
+
+                if (normalizedDomain !== currentDomain) {
+                    update['customDomain.status'] = 'PendingVerification';
+                    update['customDomain.verifiedAt'] = null;
+                    update['customDomain.lastCheckedAt'] = new Date();
+                    update['customDomain.adminNote'] = '';
+                    setCustomDomainDnsFields(update, buildCustomDomainVerificationFields(req.tenantId, normalizedDomain));
+                }
+            }
         }
 
         if (storewideDiscount !== undefined) {
@@ -166,7 +265,8 @@ exports.updateStoreBuilderSettings = async (req, res) => {
 
         await Promise.all([
             cache.del(`storefront:settings:${req.tenantId}`),
-            cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
+            cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`),
+            ...domainCacheKeys.map(domain => invalidateTenantCache(domain))
         ]);
 
         res.status(200).json({
@@ -176,7 +276,11 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         });
     } catch (err) {
         console.error('Update store builder settings error:', err);
-        res.status(400).json({ success: false, error: err.message || 'Failed to update store builder settings' });
+        const duplicateDomain = err?.code === 11000 && String(err?.message || '').includes('customDomain');
+        res.status(err.statusCode || 400).json({
+            success: false,
+            error: duplicateDomain ? 'This domain is already connected to another shop.' : err.message || 'Failed to update store builder settings'
+        });
     }
 };
 

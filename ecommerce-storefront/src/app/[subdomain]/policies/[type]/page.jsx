@@ -20,9 +20,9 @@ const POLICY_FIELD_BY_TYPE = {
     shipping: "shippingPolicy"
 };
 
-const getStoreInfo = async (subdomain) => {
+const getStoreInfo = async (subdomain, host = "") => {
     try {
-        return await fetchStorefrontInfo(subdomain);
+        return await fetchStorefrontInfo(subdomain, { storefrontHost: host });
     } catch (error) {
         if (![404, 423].includes(error.status)) {
             console.error("Server policy shop info fetch error:", error.message);
@@ -46,14 +46,14 @@ const getPolicyContent = (shop, type) => {
 export async function generateMetadata({ params }) {
     const { subdomain, type } = await params;
     const label = POLICY_LABELS[type] || "Store Policy";
-    const shop = await getStoreInfo(subdomain);
+    const headerStore = await headers();
+    const host = headerStore.get("host") || "";
+    const shop = await getStoreInfo(subdomain, host);
 
     if (!shop) {
         return noindexMetadata(label, "This store policy is currently unavailable.");
     }
 
-    const headerStore = await headers();
-    const host = headerStore.get("host") || "";
     const content = cleanTextForMeta(getPolicyContent(shop, type));
     const storeName = shop.shopName || shop.name || "Store";
 

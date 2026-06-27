@@ -54,6 +54,14 @@ const fetchCsrfToken = async () => {
 };
 
 API.interceptors.request.use(async (config) => {
+    if (typeof window !== 'undefined') {
+        const hostname = String(window.location.hostname || '').trim().toLowerCase();
+        if (hostname) {
+            config.headers = config.headers || {};
+            config.headers['x-storefront-host'] = hostname;
+        }
+    }
+
     if (!shouldAttachCsrf(config)) return config;
 
     const token = await fetchCsrfToken();

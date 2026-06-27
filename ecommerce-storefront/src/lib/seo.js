@@ -43,11 +43,21 @@ const isPlatformRootHost = (host = "") => {
     ].includes(cleanHost);
 };
 
+export const isCustomDomainFullyVerified = (customDomain = {}) => (
+    customDomain?.status === "Verified" &&
+    Boolean(customDomain?.domain) &&
+    customDomain?.ownershipVerified === true &&
+    (
+        customDomain?.routingVerified === true ||
+        customDomain?.manuallyVerifiedRouting === true
+    )
+);
+
 export const getShopBaseUrl = ({ host, subdomain, shop, customDomain } = {}) => {
     const currentHost = normalizeHost(host || "");
     const verifiedCustomDomain = normalizeHost(
         customDomain ||
-        (shop?.customDomain?.status === "Verified" ? shop?.customDomain?.domain : "")
+        (isCustomDomainFullyVerified(shop?.customDomain) ? shop?.customDomain?.domain : "")
     );
 
     if (verifiedCustomDomain) {

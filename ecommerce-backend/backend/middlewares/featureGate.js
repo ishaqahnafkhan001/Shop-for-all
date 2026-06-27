@@ -1,5 +1,6 @@
 const Shop = require('../models/Shop');
 const { hasFeature } = require('../services/shops/featureAccessService');
+const { normalizeCustomDomain } = require('../utils/domainUtils');
 
 const featureDenied = (res, feature) => res.status(403).json({
     success: false,
@@ -41,9 +42,7 @@ const requireShopFeatureWhenBodyField = (feature, fieldName) => async (req, res,
 };
 
 const normalizeDomainValue = (value) => {
-    if (!value) return '';
-    if (typeof value === 'string') return value.trim().toLowerCase();
-    return String(value.domain || '').trim().toLowerCase();
+    return normalizeCustomDomain(value);
 };
 
 const shouldRequireCustomDomainFeature = (incomingCustomDomain, currentCustomDomain) => {

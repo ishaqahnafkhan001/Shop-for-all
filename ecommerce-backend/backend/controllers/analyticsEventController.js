@@ -1,6 +1,14 @@
 const mongoose = require('mongoose');
 const AnalyticsEvent = require('../models/AnalyticsEvent');
 const Shop = require('../models/Shop');
+const {
+    normalizeCustomDomain,
+    getHostnameFromHostHeader,
+    getPlatformSubdomainFromHostname,
+    isPlatformRootHost,
+    isValidCustomDomain,
+    buildVerifiedCustomDomainQuery
+} = require('../utils/domainUtils');
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''));
 
@@ -11,17 +19,15 @@ const toObjectIdOrNull = (value) => (
 const cleanText = (value, max = 1000) => String(value || '').trim().slice(0, max);
 
 const getSubdomainFromRequest = (req) => {
-    const explicitSubdomain = req.body?.subdomain || req.query?.subdomain || req.headers['x-shop-subdomain'];
-    if (explicitSubdomain) return cleanText(explicitSubdomain, 80).toLowerCase();
+    const explicitSubdomain = req.body?.subdomain || req.query?.subdomain || req.headers['x-shop-subdomain'] || req.headers['x-storefront-host'];
+    if (explicitSubdomain) return normalizeCustomDomain(cleanText(explicitSubdomain, 120));
 
     const origin = req.headers.origin || req.headers.referer || '';
     try {
-        const hostname = new URL(origin).hostname.toLowerCase();
-        if (hostname.includes('.localhost')) return hostname.split('.localhost')[0];
-        if (hostname.endsWith('.scaleup.codes')) {
-            const [subdomain] = hostname.split('.');
-            return ['www', 'api', 'admin'].includes(subdomain) ? '' : subdomain;
-        }
+        const hostname = getHostnameFromHostHeader(new URL(origin).hostname);
+        const platformSubdomain = getPlatformSubdomainFromHostname(hostname);
+        if (platformSubdomain) return platformSubdomain;
+        if (!isPlatformRootHost(hostname) && isValidCustomDomain(hostname)) return hostname;
     } catch {
         return '';
     }
@@ -62,10 +68,17 @@ exports.trackAnalyticsEvent = async (req, res) => {
             });
         }
 
-        const shop = await Shop.findOne({
-            subdomain,
-            isActive: true
-        }).select('_id').lean();
+        const shopQuery = subdomain.includes('.')
+            ? {
+                ...buildVerifiedCustomDomainQuery(subdomain),
+                isActive: true
+            }
+            : {
+                subdomain,
+                isActive: true
+            };
+
+        const shop = await Shop.findOne(shopQuery).select('_id').lean();
 
         if (!shop) {
             return res.status(404).json({

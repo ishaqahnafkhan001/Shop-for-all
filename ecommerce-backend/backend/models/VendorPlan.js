@@ -7,6 +7,12 @@ const vendorPlanSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    slug: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
     monthlyPrice: {
         type: Number,
         default: 0
@@ -46,5 +52,13 @@ const vendorPlanSchema = new mongoose.Schema({
         default: true
     }
 }, { timestamps: true });
+
+vendorPlanSchema.index(
+    { slug: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { slug: { $type: 'string', $ne: '' } }
+    }
+);
 
 module.exports = mongoose.model('VendorPlan', vendorPlanSchema);

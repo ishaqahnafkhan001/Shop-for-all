@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ArrowRight,
     BadgeCheck,
@@ -53,6 +53,31 @@ const iconMap = {
 };
 
 const proofIcons = [Store, ShoppingBag, LayoutDashboard, Truck, BarChart3, Palette];
+const RESERVED_SUBDOMAINS = new Set([
+    "www",
+    "admin",
+    "api",
+    "app",
+    "dashboard",
+    "super-admin",
+    "support",
+    "help",
+    "blog",
+    "pricing",
+    "login",
+    "signup",
+    "register",
+    "auth",
+    "checkout",
+    "cart",
+    "account",
+    "track",
+    "store",
+    "stores",
+    "scaleup",
+    "scaleup-codes",
+]);
+const SUBDOMAIN_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 
 const getBaseDomain = () => {
     const configured = (process.env.NEXT_PUBLIC_BASE_DOMAIN || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -61,6 +86,26 @@ const getBaseDomain = () => {
     }
     return configured || "scaleup.codes";
 };
+
+const validateStoreUrl = (value = "") => {
+    const subdomain = String(value || "").trim().toLowerCase();
+    if (!subdomain) return "Choose your store URL.";
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(subdomain) || /[/?#.:@]/.test(subdomain)) {
+        return "Enter only the store URL name, not a full website address.";
+    }
+    if (subdomain.length < 3) return "Store URL must be at least 3 characters.";
+    if (subdomain.length > 40) return "Store URL cannot exceed 40 characters.";
+    if (!SUBDOMAIN_PATTERN.test(subdomain)) return "Use only letters, numbers, and hyphens.";
+    if (subdomain.includes("--")) return "Store URL cannot contain consecutive hyphens.";
+    if (RESERVED_SUBDOMAINS.has(subdomain)) return "This store URL is reserved. Please choose another one.";
+    return "";
+};
+
+const getPlanSlug = (plan) => String(plan?.slug || plan?.name || "starter")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "starter";
 
 function SectionHeading({ eyebrow, title, text, align = "center", tone = "light" }) {
     const dark = tone === "dark";
@@ -80,7 +125,13 @@ function SectionHeading({ eyebrow, title, text, align = "center", tone = "light"
     );
 }
 
-function TextField({ label, helper, error, suffix, ...props }) {
+function TextField({ label, helper, error, suffix, status = "neutral", ...props }) {
+    const statusClass = status === "success"
+        ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-100"
+        : status === "warning" || error
+            ? "border-red-300 focus:border-red-500 focus:ring-red-100"
+            : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100";
+
     return (
         <label className="block">
             <span className="text-sm font-semibold text-slate-800">{label}</span>
@@ -90,7 +141,7 @@ function TextField({ label, helper, error, suffix, ...props }) {
                     aria-invalid={Boolean(error)}
                     className={`w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
                         suffix ? "pr-36 sm:pr-48" : ""
-                    } ${error ? "border-red-300" : "border-slate-200"}`}
+                    } ${statusClass}`}
                 />
                 {suffix && (
                     <span className="pointer-events-none absolute inset-y-0 right-4 flex max-w-[44%] items-center truncate text-xs font-bold text-slate-400">
@@ -222,34 +273,137 @@ export default function LandingPageClient() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [selectedPlanSlug, setSelectedPlanSlug] = useState("starter");
+    const [subdomainStatus, setSubdomainStatus] = useState({
+        state: "idle",
+        message: "Choose your store URL.",
+        normalizedSubdomain: "",
+        lastCheckedSubdomain: "",
+        suggestions: [],
+    });
+    const subdomainRequestRef = useRef(0);
 
     const baseDomain = getBaseDomain();
+    const selectedPlan = useMemo(() => (
+        pricingPlans.find((plan) => getPlanSlug(plan) === selectedPlanSlug) || pricingPlans[0]
+    ), [selectedPlanSlug]);
 
     const validation = useMemo(() => {
         const emailValid = /^\S+@\S+\.\S+$/.test(formData.email.trim());
-        const subdomainValid = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/.test(formData.subdomain.trim().toLowerCase());
+        const subdomainError = validateStoreUrl(formData.subdomain);
 
         return {
             shopName: formData.shopName.trim().length < 2 ? "Use at least 2 characters for your store name." : "",
             fullName: formData.fullName.trim().length < 2 ? "Enter the owner name customers and staff can recognize." : "",
-            subdomain: !formData.subdomain.trim()
-                ? `Your store will be available at yourstore.${baseDomain}`
-                : subdomainValid
-                    ? ""
-                    : "Use 3-63 lowercase letters, numbers, or hyphens. Start and end with a letter or number.",
+            subdomain: subdomainError,
             email: !formData.email.trim() ? "We will send your verification code here." : emailValid ? "" : "Enter a valid email address.",
             password: formData.password.length < 8 ? "Use at least 8 characters." : "",
             otp: formData.otp.trim().length !== 6 ? "Enter the 6-digit code sent to your email." : "",
         };
-    }, [formData, baseDomain]);
+    }, [formData]);
+    const cleanSubdomain = formData.subdomain.trim().toLowerCase();
+    const storeUrlPreview = cleanSubdomain || "yourstore";
+    const subdomainIsAvailable = subdomainStatus.state === "available" &&
+        subdomainStatus.lastCheckedSubdomain === cleanSubdomain;
+    const subdomainIsChecking = subdomainStatus.state === "checking";
+    const canSendOtp = !isLoading &&
+        !validation.shopName &&
+        !validation.subdomain &&
+        !validation.fullName &&
+        !validation.email &&
+        !validation.password &&
+        subdomainIsAvailable;
 
-    const completedFields = ["shopName", "subdomain", "fullName", "email", "password"].filter((field) => !validation[field]).length;
+    const completedFields = ["shopName", "fullName", "email", "password"].filter((field) => !validation[field]).length + (subdomainIsAvailable ? 1 : 0);
     const setupProgress = Math.round((completedFields / 5) * 100);
+
+    const checkSubdomainAvailability = useCallback(async (value, { force = false } = {}) => {
+        const subdomain = String(value || "").trim().toLowerCase();
+        const localError = validateStoreUrl(subdomain);
+        if (localError) {
+            setSubdomainStatus({
+                state: subdomain ? "invalid" : "idle",
+                message: localError,
+                normalizedSubdomain: subdomain,
+                lastCheckedSubdomain: "",
+                suggestions: [],
+            });
+            return { available: false, message: localError };
+        }
+
+        const requestId = subdomainRequestRef.current + 1;
+        subdomainRequestRef.current = requestId;
+        setSubdomainStatus((prev) => ({
+            ...prev,
+            state: "checking",
+            message: "Checking availability...",
+            normalizedSubdomain: subdomain,
+            suggestions: [],
+        }));
+
+        try {
+            const { data } = await API.get("/auth/check-subdomain", {
+                params: { subdomain },
+            });
+            if (!force && requestId !== subdomainRequestRef.current) return { stale: true, available: false };
+
+            const state = data.available ? "available" : "unavailable";
+            const message = data.available
+                ? `${data.normalizedSubdomain}.${baseDomain} is available.`
+                : `${data.normalizedSubdomain || subdomain}.${baseDomain} is already taken.`;
+            setSubdomainStatus({
+                state,
+                message,
+                normalizedSubdomain: data.normalizedSubdomain || subdomain,
+                lastCheckedSubdomain: data.normalizedSubdomain || subdomain,
+                suggestions: data.suggestions || [],
+            });
+            return data;
+        } catch (err) {
+            if (!force && requestId !== subdomainRequestRef.current) return { stale: true, available: false };
+            const message = err.response?.data?.message || err.response?.data?.error || "Could not check this store URL.";
+            setSubdomainStatus({
+                state: "invalid",
+                message,
+                normalizedSubdomain: subdomain,
+                lastCheckedSubdomain: "",
+                suggestions: err.response?.data?.suggestions || [],
+            });
+            return { available: false, message };
+        }
+    }, [baseDomain]);
+
+    useEffect(() => {
+        const subdomain = cleanSubdomain;
+        const localError = validateStoreUrl(subdomain);
+        if (!subdomain || localError) {
+            subdomainRequestRef.current += 1;
+            return undefined;
+        }
+
+        const timer = window.setTimeout(() => {
+            checkSubdomainAvailability(subdomain);
+        }, 500);
+
+        return () => window.clearTimeout(timer);
+    }, [cleanSubdomain, checkSubdomainAvailability]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
-        const nextValue = name === "subdomain" ? value.toLowerCase().replace(/[^a-z0-9-]/g, "") : value;
+        const nextValue = name === "subdomain" ? value.toLowerCase() : value;
         setFormData((prev) => ({ ...prev, [name]: nextValue }));
+        if (name === "subdomain") {
+            const normalized = nextValue.trim().toLowerCase();
+            const localError = validateStoreUrl(normalized);
+            subdomainRequestRef.current += 1;
+            setSubdomainStatus({
+                state: normalized ? (localError ? "invalid" : "idle") : "idle",
+                message: localError || `Your store will be available at ${normalized || "yourstore"}.${baseDomain}`,
+                normalizedSubdomain: normalized,
+                lastCheckedSubdomain: "",
+                suggestions: [],
+            });
+        }
         setError("");
         setSuccess("");
     };
@@ -259,11 +413,21 @@ export default function LandingPageClient() {
         document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
+    const selectPlanAndRegister = (plan) => {
+        setSelectedPlanSlug(getPlanSlug(plan));
+        scrollToSection("registration");
+    };
+
     const handleSendOtp = async (event) => {
         event.preventDefault();
         const stepErrors = ["shopName", "subdomain", "fullName", "email", "password"].filter((field) => validation[field]);
         if (stepErrors.length > 0) {
             setError("Please fix the highlighted fields before continuing.");
+            return;
+        }
+        const finalAvailability = await checkSubdomainAvailability(cleanSubdomain, { force: true });
+        if (!finalAvailability.available) {
+            setError("Please choose an available store URL before continuing.");
             return;
         }
 
@@ -298,6 +462,7 @@ export default function LandingPageClient() {
                 email: formData.email.trim(),
                 subdomain: formData.subdomain.trim().toLowerCase(),
                 otp: formData.otp.trim(),
+                selectedPlanSlug,
             };
             await API.post("/auth/register", payload);
             setSuccess("Store launched successfully. Redirecting to your storefront...");
@@ -307,6 +472,15 @@ export default function LandingPageClient() {
                 window.location.href = `${protocol}//${payload.subdomain}.${baseDomain}`;
             }, 1500);
         } catch (err) {
+            if (err.response?.data?.code === "SUBDOMAIN_TAKEN") {
+                setStep(1);
+                setSubdomainStatus((prev) => ({
+                    ...prev,
+                    state: "unavailable",
+                    message: `${formData.subdomain.trim().toLowerCase()}.${baseDomain} is already taken.`,
+                    lastCheckedSubdomain: formData.subdomain.trim().toLowerCase(),
+                }));
+            }
             setError(err.response?.data?.error || "Registration failed. The code may be expired or the store URL may already be taken.");
         } finally {
             setIsLoading(false);
@@ -410,7 +584,7 @@ export default function LandingPageClient() {
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                                 <button
                                     type="button"
-                                    onClick={() => scrollToSection("registration")}
+                                    onClick={() => selectPlanAndRegister(plan)}
                                     className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-black text-slate-950 shadow-2xl shadow-cyan-200/10 transition hover:-translate-y-0.5 hover:bg-cyan-50"
                                 >
                                     Start 14-Day Free Trial
@@ -591,8 +765,8 @@ export default function LandingPageClient() {
                                             : "border border-slate-200 text-slate-800 hover:bg-slate-50"
                                     }`}
                                 >
-                                    {plan.cta}
-                                </button>
+                                {plan.cta}
+                            </button>
                             </article>
                         ))}
                     </div>
@@ -665,8 +839,25 @@ export default function LandingPageClient() {
                                 <div className="h-full rounded-full bg-indigo-600 transition-all duration-500" style={{ width: `${setupProgress}%` }} />
                             </div>
                             <p className="mt-4 text-sm leading-6 text-slate-600">
-                                {step === 1 ? "Start with a 14-day free trial. You can choose a plan after setup." : "Enter your code to create the store and open the storefront."}
+                                {step === 1
+                                    ? `Start with a 14-day free trial. Intended plan: ${selectedPlan?.name || "Starter"}. Payment activates only after Super Admin approval.`
+                                    : "Enter your code to create the store and open the storefront."}
                             </p>
+                            <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm">
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="font-black text-slate-950">{selectedPlan?.name || "Starter"} selected</p>
+                                        <p className="mt-1 text-xs font-semibold text-slate-500">Trial features start with Starter. Your selected plan unlocks after payment verification.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => scrollToSection("pricing")}
+                                        className="rounded-xl bg-white px-3 py-2 text-xs font-black text-indigo-700 ring-1 ring-indigo-100 hover:bg-indigo-100"
+                                    >
+                                        Change plan
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -720,10 +911,52 @@ export default function LandingPageClient() {
                                     onChange={handleChange}
                                     placeholder="yourstore"
                                     suffix={`.${baseDomain}`}
-                                    helper={`Your store will be available at yourstore.${baseDomain}`}
-                                    error={formData.subdomain ? validation.subdomain : ""}
+                                    helper={`Your store will be available at ${storeUrlPreview}.${baseDomain}`}
+                                    error={formData.subdomain && subdomainStatus.state === "invalid" ? subdomainStatus.message : ""}
+                                    status={subdomainStatus.state === "available" ? "success" : subdomainStatus.state === "unavailable" || subdomainStatus.state === "invalid" ? "warning" : "neutral"}
                                     required
                                 />
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <div className="flex items-start gap-2 text-xs font-semibold">
+                                        {subdomainIsChecking ? (
+                                            <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin" />
+                                        ) : subdomainStatus.state === "available" ? (
+                                            <Check size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                                        ) : subdomainStatus.state === "unavailable" || subdomainStatus.state === "invalid" ? (
+                                            <X size={16} className="mt-0.5 shrink-0 text-red-600" />
+                                        ) : (
+                                            <Globe2 size={16} className="mt-0.5 shrink-0 text-slate-400" />
+                                        )}
+                                        <span className={`leading-5 ${
+                                            subdomainStatus.state === "available"
+                                                ? "text-emerald-700"
+                                                : subdomainStatus.state === "unavailable" || subdomainStatus.state === "invalid"
+                                                    ? "text-red-700"
+                                                    : "text-slate-500"
+                                        }`}>
+                                            {subdomainStatus.message || `Your store will be available at ${storeUrlPreview}.${baseDomain}`}
+                                        </span>
+                                    </div>
+                                    {subdomainStatus.suggestions?.length > 0 && (
+                                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                                            <span className="text-xs font-bold text-slate-500">Try:</span>
+                                            {subdomainStatus.suggestions.map((suggestion) => (
+                                                <button
+                                                    key={suggestion}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData((prev) => ({ ...prev, subdomain: suggestion }));
+                                                        setError("");
+                                                        setSuccess("");
+                                                    }}
+                                                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                                >
+                                                    {suggestion}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="grid gap-5 sm:grid-cols-2">
                                     <TextField
@@ -752,12 +985,17 @@ export default function LandingPageClient() {
 
                                 <button
                                     type="submit"
-                                    disabled={isLoading}
+                                    disabled={!canSendOtp}
                                     className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--sf-accent)] px-6 text-sm font-black text-white shadow-lg shadow-teal-200 transition hover:-translate-y-0.5 hover:bg-[var(--sf-accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isLoading ? <span className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : "Send verification code"}
                                     {!isLoading && <ArrowRight size={18} />}
                                 </button>
+                                {!canSendOtp && (
+                                    <p className="text-center text-xs font-semibold text-slate-500">
+                                        Please choose an available store URL before continuing.
+                                    </p>
+                                )}
                             </form>
                         ) : (
                             <form onSubmit={handleFinalRegister} className="space-y-7">

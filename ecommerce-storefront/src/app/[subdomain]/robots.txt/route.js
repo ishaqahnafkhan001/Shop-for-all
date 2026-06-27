@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
     const host = request.headers.get("host") || "";
 
     try {
-        const shop = await fetchStorefrontInfo(subdomain);
+        const shop = await fetchStorefrontInfo(subdomain, { storefrontHost: host });
         const baseUrl = getShopBaseUrl({ host, subdomain, shop });
         const body = [
             "User-agent: *",

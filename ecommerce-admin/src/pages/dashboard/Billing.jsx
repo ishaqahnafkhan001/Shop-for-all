@@ -203,6 +203,7 @@ const Billing = () => {
 
     const latestInvoice = current?.latestInvoice;
     const subscription = current?.subscription;
+    const billingDisplay = current?.billingDisplay || {};
     const selectedInvoice = useMemo(() => {
         return invoices.find(invoice => String(invoice.id || invoice._id) === String(selectedInvoiceId));
     }, [invoices, selectedInvoiceId]);
@@ -306,7 +307,13 @@ const Billing = () => {
                     <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-xl bg-slate-50 p-4">
                             <p className="text-xs font-bold uppercase text-slate-400">Plan</p>
-                            <p className="mt-1 font-black text-slate-950">{current?.displayPlan || current?.plan?.name || 'Trial'}</p>
+                            <p className="mt-1 font-black text-slate-950">{billingDisplay.displayPlan || current?.displayPlan || current?.plan?.name || 'Trial'}</p>
+                            {subscription?.status === 'trialing' && billingDisplay.intendedPlanName && (
+                                <p className="mt-1 text-xs font-semibold text-slate-500">Intended after trial: {billingDisplay.intendedPlanName}</p>
+                            )}
+                            {subscription?.status === 'pending_approval' && billingDisplay.pendingPlanName && (
+                                <p className="mt-1 text-xs font-semibold text-indigo-600">Waiting to activate: {billingDisplay.pendingPlanName}</p>
+                            )}
                         </div>
                         <div className="rounded-xl bg-slate-50 p-4">
                             <p className="text-xs font-bold uppercase text-slate-400">Billing cycle</p>
@@ -324,7 +331,12 @@ const Billing = () => {
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-lg font-black text-slate-950">Plan features</h2>
+                    <h2 className="text-lg font-black text-slate-950">Available features now</h2>
+                    {billingDisplay.effectivePlanName && (
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                            Based on your current effective plan: {billingDisplay.effectivePlanName}.
+                        </p>
+                    )}
                     <div className="mt-4 space-y-2 text-sm text-slate-600">
                         {(current?.plan?.features ? Object.entries(current.plan.features) : []).slice(0, 8).map(([key, enabled]) => (
                             <div key={key} className="flex items-center justify-between gap-2">
@@ -470,7 +482,9 @@ const Billing = () => {
                             >
                                 <option value="">Choose invoice</option>
                                 {invoices.filter(invoice => invoice.status !== 'paid').map(invoice => (
-                                    <option key={invoice.id} value={invoice.id}>{invoice.invoiceNumber} · {money(invoice.amount)}</option>
+                                    <option key={invoice.id} value={invoice.id}>
+                                        {invoice.invoiceNumber} · {invoice.planName || 'Plan'} · {money(invoice.amount)}
+                                    </option>
                                 ))}
                             </select>
                         </label>
@@ -547,7 +561,9 @@ const Billing = () => {
                             <div key={payment.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
                                 <div>
                                     <p className="font-bold text-slate-950">{providerLabels[payment.provider] || payment.provider}</p>
-                                    <p className="text-xs text-slate-500">{payment.transactionId || 'No transaction ID'}</p>
+                                    <p className="text-xs text-slate-500">
+                                        {[payment.planName, payment.transactionId || 'No transaction ID'].filter(Boolean).join(' · ')}
+                                    </p>
                                 </div>
                                 <StatusBadge value={payment.status} />
                             </div>

@@ -6,7 +6,10 @@ const { logPlatformAudit } = require('../platformAuditLogService');
 const { createNotification } = require('../notificationService');
 const {
     getPlanByNameOrDefault,
-    normalizePlanName
+    getPlanByIdOrNameOrDefault,
+    getPlanSlug,
+    normalizePlanName,
+    normalizePlanSlug
 } = require('./billingPlanService');
 
 const TRIAL_DAYS = 14;
@@ -46,6 +49,48 @@ const findPlanId = async (planName, session) => {
     return plan?._id || null;
 };
 
+const findPlanDocument = async (planRef, session) => {
+    if (!planRef) return null;
+
+    if (String(planRef).match(/^[a-f\d]{24}$/i)) {
+        const byId = await queryWithSession(
+            VendorPlan.findById(planRef).lean(),
+            session
+        );
+        if (byId) return byId;
+    }
+
+    const rawValue = String(planRef || '').trim();
+    const name = normalizePlanName(planRef);
+    const slug = normalizePlanSlug(planRef);
+    const rawSlug = rawValue
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return queryWithSession(
+        VendorPlan.findOne({
+            isActive: { $ne: false },
+            $or: [
+                { name: rawValue },
+                { slug: rawSlug },
+                { name },
+                { slug }
+            ]
+        }).lean(),
+        session
+    );
+};
+
+const getPlanIdentity = async (planRef = 'Starter', session) => {
+    const storedPlan = await findPlanDocument(planRef, session);
+    const plan = storedPlan || await getPlanByIdOrNameOrDefault(planRef || 'Starter');
+    return {
+        id: storedPlan?._id || plan?._id || null,
+        name: plan?.name || normalizePlanName(planRef),
+        slug: plan?.slug || getPlanSlug(plan?.name || planRef)
+    };
+};
+
 const createTrialForShop = async (shopOrId, options = {}) => {
     const { session, now = new Date() } = options;
     const shop = await getShopDocument(shopOrId, session);
@@ -54,13 +99,23 @@ const createTrialForShop = async (shopOrId, options = {}) => {
     const existing = await getCurrentSubscriptionForShop(shop._id, { session });
     if (existing) return existing;
 
-    const planName = normalizePlanName(shop.plan?.name || 'Starter');
+    const effectiveTrialPlan = await getPlanIdentity('Starter', session);
+    const intendedPlanRef = options.intendedPlanId ||
+        options.intendedPlanSlug ||
+        options.selectedPlanSlug ||
+        options.intendedPlanName ||
+        shop.plan?.intendedPlanSlug ||
+        shop.plan?.intendedPlanName ||
+        'Starter';
+    const intendedPlan = await getPlanIdentity(intendedPlanRef, session);
     const trialEndsAt = shop.plan?.trialEndsAt || addDays(now, TRIAL_DAYS);
-    const planId = await findPlanId(planName, session);
 
     const [subscription] = await Subscription.create([{
         shopId: shop._id,
-        planId,
+        planId: effectiveTrialPlan.id,
+        intendedPlanId: intendedPlan.id,
+        intendedPlanName: intendedPlan.name,
+        intendedPlanSlug: intendedPlan.slug,
         status: 'trialing',
         billingCycle: 'monthly',
         trialStartedAt: now,
@@ -75,7 +130,9 @@ const createTrialForShop = async (shopOrId, options = {}) => {
                     'plan.name': 'Trial',
                     'plan.status': 'Trialing',
                     'plan.trialEndsAt': trialEndsAt,
-                    'plan.productLimit': shop.plan?.productLimit || 100
+                    'plan.productLimit': shop.plan?.productLimit || 100,
+                    'plan.intendedPlanName': intendedPlan.name,
+                    'plan.intendedPlanSlug': intendedPlan.slug
                 }
             }
         ),
@@ -90,6 +147,7 @@ const markPendingApproval = async ({
     subscriptionId,
     planId,
     planName = '',
+    planSlug = '',
     billingCycle = 'monthly',
     invoiceId = null
 }) => {
@@ -99,6 +157,7 @@ const markPendingApproval = async ({
     current.status = 'pending_approval';
     current.pendingPlanId = planId || null;
     current.pendingPlanName = planName || '';
+    current.pendingPlanSlug = planSlug || getPlanSlug(planName || 'Starter');
     current.billingCycle = billingCycle || current.billingCycle || 'monthly';
     current.lastInvoiceId = invoiceId || current.lastInvoiceId || null;
     await current.save();
@@ -116,6 +175,7 @@ const ensureSubscriptionExists = async (shopOrId, options = {}) => {
 
     const planName = normalizePlanName(shop.plan?.name || 'Starter');
     const planId = await findPlanId(planName, session);
+    const planSlug = getPlanSlug(planName);
     const legacyStatus = shop.plan?.status || 'Trialing';
 
     if (legacyStatus === 'Active') {
@@ -123,6 +183,8 @@ const ensureSubscriptionExists = async (shopOrId, options = {}) => {
         const [subscription] = await Subscription.create([{
             shopId: shop._id,
             planId,
+            activePlanName: planName,
+            activePlanSlug: planSlug,
             status: 'active',
             billingCycle: 'monthly',
             currentPeriodStart: now,
@@ -135,6 +197,8 @@ const ensureSubscriptionExists = async (shopOrId, options = {}) => {
         const [subscription] = await Subscription.create([{
             shopId: shop._id,
             planId,
+            activePlanName: planName,
+            activePlanSlug: planSlug,
             status: 'past_due',
             billingCycle: 'monthly',
             graceEndsAt: addDays(now, GRACE_DAYS)
@@ -146,6 +210,8 @@ const ensureSubscriptionExists = async (shopOrId, options = {}) => {
         const [subscription] = await Subscription.create([{
             shopId: shop._id,
             planId,
+            activePlanName: planName,
+            activePlanSlug: planSlug,
             status: 'cancelled',
             billingCycle: 'monthly',
             cancelledAt: now
@@ -168,12 +234,13 @@ const activateSubscription = async ({
     const current = subscription || await Subscription.findById(subscriptionId);
     if (!current) throw new Error('Subscription not found');
 
-    const plan = planId
-        ? await VendorPlan.findById(planId).lean()
-        : await getPlanByNameOrDefault('Starter');
+    const effectivePlanRef = planId || current.pendingPlanId || current.planId || current.pendingPlanSlug || current.pendingPlanName || 'Starter';
+    const plan = await getPlanIdentity(effectivePlanRef);
 
     const periodDays = billingCycle === 'yearly' ? 365 : 30;
-    current.planId = plan?._id || current.planId || null;
+    current.planId = plan.id || null;
+    current.activePlanName = plan.name;
+    current.activePlanSlug = plan.slug;
     current.status = 'active';
     current.billingCycle = billingCycle;
     current.currentPeriodStart = now;
@@ -181,6 +248,7 @@ const activateSubscription = async ({
     current.activatedAt = now;
     current.pendingPlanId = null;
     current.pendingPlanName = '';
+    current.pendingPlanSlug = '';
     current.graceEndsAt = undefined;
     current.suspendedAt = undefined;
     current.suspensionReason = '';
@@ -189,12 +257,15 @@ const activateSubscription = async ({
 
     const shop = await Shop.findById(current.shopId);
     if (shop) {
+        const hydratedPlan = await getPlanByNameOrDefault(plan.name || 'Starter');
         const planName = plan?.name || shop.plan?.name || 'Starter';
         const update = {
             'plan.name': planName,
             'plan.status': 'Active',
             'plan.renewsAt': current.currentPeriodEnd,
-            'plan.productLimit': plan?.productLimit || shop.plan?.productLimit || 100
+            'plan.productLimit': hydratedPlan?.productLimit || shop.plan?.productLimit || 100,
+            'plan.activePlanName': planName,
+            'plan.activePlanSlug': plan.slug
         };
 
         if (isBillingSuspension(shop) && !isVerificationSuspension(shop)) {
@@ -216,6 +287,7 @@ const activateSubscription = async ({
         metadata: {
             billingCycle,
             planId: current.planId,
+            planName: current.activePlanName,
             currentPeriodEnd: current.currentPeriodEnd
         }
     });
@@ -224,13 +296,14 @@ const activateSubscription = async ({
         shop_id: current.shopId,
         type: 'system',
         title: 'Subscription activated',
-        message: 'Your subscription is active. Your store billing is healthy.',
+        message: `Your ${current.activePlanName || 'selected'} subscription is active. Your store billing is healthy.`,
         entityType: 'Subscription',
         entityId: current._id,
         severity: 'success',
         metadata: {
             billingCycle,
             planId: current.planId,
+            planName: current.activePlanName,
             currentPeriodEnd: current.currentPeriodEnd
         }
     });
@@ -251,6 +324,7 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
     const trialEndsAt = subscription.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
     subscription.pendingPlanId = null;
     subscription.pendingPlanName = '';
+    subscription.pendingPlanSlug = '';
 
     if (subscription.status === 'active') {
         await subscription.save();

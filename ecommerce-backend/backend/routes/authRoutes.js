@@ -15,6 +15,7 @@ const { issueCsrfToken } = require('../middlewares/csrf');
 const {
     registerVendor,
     registerCustomer,
+    checkSubdomain,
     login,
     logout,
     getMe,
@@ -32,6 +33,11 @@ const {
 router.get(
     '/csrf-token',
     issueCsrfToken
+);
+
+router.get(
+    '/check-subdomain',
+    checkSubdomain
 );
 
 // Vendor Registration

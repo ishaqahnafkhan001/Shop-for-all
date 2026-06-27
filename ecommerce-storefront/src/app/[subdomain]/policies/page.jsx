@@ -14,9 +14,9 @@ import {
     truncateMetaTitle
 } from "@/lib/seo";
 
-const getStoreInfo = async (subdomain) => {
+const getStoreInfo = async (subdomain, host = "") => {
     try {
-        return await fetchStorefrontInfo(subdomain);
+        return await fetchStorefrontInfo(subdomain, { storefrontHost: host });
     } catch (error) {
         if (![404, 423].includes(error.status)) {
             console.error("Server policy index shop info fetch error:", error.message);
@@ -27,14 +27,14 @@ const getStoreInfo = async (subdomain) => {
 
 export async function generateMetadata({ params }) {
     const { subdomain } = await params;
-    const shop = await getStoreInfo(subdomain);
+    const headerStore = await headers();
+    const host = headerStore.get("host") || "";
+    const shop = await getStoreInfo(subdomain, host);
 
     if (!shop) {
         return noindexMetadata("Store Policies", "This store policy page is currently unavailable.");
     }
 
-    const headerStore = await headers();
-    const host = headerStore.get("host") || "";
     const storeName = shop.shopName || shop.name || "Store";
     const summary = POLICY_TYPES
         .map(type => cleanTextForMeta(getPolicyContent(shop?.theme?.policies || {}, type, { storeName })))
@@ -53,7 +53,9 @@ export async function generateMetadata({ params }) {
 
 export default async function PoliciesPage({ params }) {
     const { subdomain } = await params;
-    const shop = await getStoreInfo(subdomain);
+    const headerStore = await headers();
+    const host = headerStore.get("host") || "";
+    const shop = await getStoreInfo(subdomain, host);
     const storeName = shop?.shopName || shop?.name || "this store";
     const policies = shop?.theme?.policies || {};
 

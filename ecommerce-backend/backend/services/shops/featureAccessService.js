@@ -1,7 +1,6 @@
 const Shop = require('../../models/Shop');
-const VendorPlan = require('../../models/VendorPlan');
 const { isVerificationSuspension } = require('../vendorVerificationService');
-const { getPlanByNameOrDefault } = require('../billing/billingPlanService');
+const { getPlanByIdOrNameOrDefault } = require('../billing/billingPlanService');
 const { ensureSubscriptionExists } = require('../billing/subscriptionService');
 
 const FEATURE_KEYS = [
@@ -39,28 +38,31 @@ const getNestedFeature = (source, featureName) => {
     return plain?.[featureName];
 };
 
-const getPlanFeatures = async (shop) => {
+const getEffectivePlanRef = (shop, subscription) => {
     const plainShop = toPlain(shop);
-    const embeddedFeatures = plainShop.plan?.features;
-    if (embeddedFeatures) {
-        return { ...LEGACY_DEFAULT_FEATURES, ...toPlain(embeddedFeatures) };
+    const plainSubscription = toPlain(subscription);
+    const status = plainSubscription?.status || 'active';
+
+    if (status === 'trialing') return 'Starter';
+
+    if (status === 'pending_approval') {
+        return plainSubscription.activePlanSlug ||
+            plainSubscription.activePlanName ||
+            plainSubscription.planId ||
+            'Starter';
     }
 
-    const planName = plainShop.plan?.name;
-    if (!planName) return { ...LEGACY_DEFAULT_FEATURES };
+    return plainSubscription.activePlanSlug ||
+        plainSubscription.activePlanName ||
+        plainSubscription.planId ||
+        plainShop.plan?.activePlanSlug ||
+        plainShop.plan?.activePlanName ||
+        plainShop.plan?.name ||
+        'Starter';
+};
 
-    const plan = await VendorPlan.findOne({ name: planName, isActive: { $ne: false } })
-        .select('features')
-        .lean();
-
-    if (!plan) {
-        const fallbackPlan = await getPlanByNameOrDefault(planName);
-        return {
-            ...LEGACY_DEFAULT_FEATURES,
-            ...(fallbackPlan?.features || {})
-        };
-    }
-
+const getPlanFeatures = async (shop, subscription = null) => {
+    const plan = await getPlanByIdOrNameOrDefault(getEffectivePlanRef(shop, subscription));
     return {
         ...LEGACY_DEFAULT_FEATURES,
         ...(plan?.features || {})
@@ -110,7 +112,7 @@ const getShopFeatureFlags = async (shopOrId) => {
     }
 
     const subscription = await ensureSubscriptionExists(shop);
-    const planFeatures = await getPlanFeatures(shop);
+    const planFeatures = await getPlanFeatures(shop, subscription);
     return computeEffectiveFeatures(shop, planFeatures, subscription.status);
 };
 
@@ -124,6 +126,7 @@ module.exports = {
     LEGACY_DEFAULT_FEATURES,
     BILLING_ALLOWED_STATUSES,
     computeEffectiveFeatures,
+    getEffectivePlanRef,
     getPlanFeatures,
     getShopFeatureFlags,
     hasFeature

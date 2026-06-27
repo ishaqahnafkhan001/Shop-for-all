@@ -13,6 +13,33 @@ const subscriptionSchema = new mongoose.Schema({
         ref: 'VendorPlan',
         default: null
     },
+    activePlanName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    activePlanSlug: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
+    intendedPlanId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'VendorPlan',
+        default: null
+    },
+    intendedPlanName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    intendedPlanSlug: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
     status: {
         type: String,
         enum: ['trialing', 'pending_approval', 'active', 'past_due', 'grace', 'suspended', 'cancelled'],
@@ -37,6 +64,12 @@ const subscriptionSchema = new mongoose.Schema({
     pendingPlanName: {
         type: String,
         trim: true,
+        default: ''
+    },
+    pendingPlanSlug: {
+        type: String,
+        trim: true,
+        lowercase: true,
         default: ''
     },
     graceEndsAt: Date,

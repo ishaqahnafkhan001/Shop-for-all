@@ -11,12 +11,14 @@ import {
     noindexMetadata
 } from '@/lib/seo';
 
-const getInitialStorefrontData = async (subdomain) => {
+const getInitialStorefrontData = async (subdomain, host = '') => {
     try {
         return await fetchStorefrontBootstrap(subdomain, {
             page: 1,
             limit: 9,
             sort: 'newest',
+        }, {
+            storefrontHost: host,
         });
     } catch (error) {
         if ([404, 423].includes(error.status)) {
@@ -41,6 +43,8 @@ export async function generateMetadata({ params }) {
             page: 1,
             limit: 9,
             sort: 'newest',
+        }, {
+            storefrontHost: host,
         });
         const shop = initialData?.shop;
         if (!shop) return noindexMetadata('Store unavailable', 'This storefront is currently unavailable.');
@@ -62,7 +66,9 @@ export async function generateMetadata({ params }) {
 
 export default async function VendorHomePage({ params }) {
     const { subdomain } = await params;
-    const initialData = await getInitialStorefrontData(subdomain);
+    const headerStore = await headers();
+    const host = headerStore.get('host') || '';
+    const initialData = await getInitialStorefrontData(subdomain, host);
 
     return <StorefrontHomeClient subdomain={subdomain} initialData={initialData} />;
 }

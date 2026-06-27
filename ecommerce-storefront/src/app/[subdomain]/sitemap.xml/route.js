@@ -39,9 +39,9 @@ export async function GET(request, { params }) {
 
     try {
         const [shop, productsResponse, collections] = await Promise.all([
-            fetchStorefrontInfo(subdomain),
-            fetchStorefrontProducts(subdomain, { page: 1, limit: 2500, sort: "newest" }),
-            fetchStorefrontCollections(subdomain)
+            fetchStorefrontInfo(subdomain, { storefrontHost: host }),
+            fetchStorefrontProducts(subdomain, { page: 1, limit: 2500, sort: "newest" }, { storefrontHost: host }),
+            fetchStorefrontCollections(subdomain, { storefrontHost: host })
         ]);
 
         const products = productsResponse.products || productsResponse.data || [];

@@ -9,6 +9,7 @@ import {
     ExternalLink,
     Globe,
     Megaphone,
+    RefreshCw,
     Search,
     ShieldAlert,
     ToggleLeft
@@ -21,8 +22,32 @@ const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts
 
 const defaultPagination = { page: 1, limit: 10, total: 0, pages: 1 };
 const defaultAnnouncement = { title: '', message: '', severity: 'Info', audience: 'All', targetPlan: '', targetShopId: '', expiresAt: '' };
+const CUSTOM_DOMAIN_DNS_TARGET = import.meta.env.VITE_CUSTOM_DOMAIN_DNS_TARGET || import.meta.env.NEXT_PUBLIC_CUSTOM_DOMAIN_DNS_TARGET || '';
 
 const formatMoney = (value) => `BDT ${(Number(value) || 0).toLocaleString()}`;
+const warningLabel = {
+    duplicate: 'Duplicate domain',
+    platform_domain: 'Platform domain',
+    invalid_domain: 'Invalid domain'
+};
+
+const DOMAIN_STATUSES = ['PendingVerification', 'OwnershipVerified', 'RoutingPending', 'Verified', 'Failed', 'NotConfigured'];
+
+const getDomainConnectionLabels = (customDomain = {}, dnsTarget = '') => {
+    const ownershipVerified = customDomain?.ownershipVerified === true;
+    const routingConnected = customDomain?.routingVerified === true || customDomain?.manuallyVerifiedRouting === true;
+    const rawStatus = customDomain?.status || 'NotConfigured';
+    return {
+        displayStatus: rawStatus === 'Verified' && !routingConnected
+            ? (ownershipVerified || customDomain?.lastDnsCheckStatus === 'verified' ? 'RoutingPending' : 'PendingVerification')
+            : rawStatus,
+        ownership: ownershipVerified ? 'Verified' : 'Not verified',
+        routing: routingConnected
+            ? (customDomain?.manuallyVerifiedRouting ? 'Manually approved' : 'Connected')
+            : (dnsTarget ? 'Not connected' : 'Not configured'),
+        browserAccess: routingConnected ? 'Ready' : 'Not ready'
+    };
+};
 
 const SuperAdminPanel = () => {
     const [overview, setOverview] = useState({});
@@ -51,6 +76,7 @@ const SuperAdminPanel = () => {
     const [editingAnnouncementId, setEditingAnnouncementId] = useState(null);
     const [planForm, setPlanForm] = useState({ name: 'Starter', monthlyPrice: 0, productLimit: 100, staffLimit: 2 });
     const [domainDrafts, setDomainDrafts] = useState({});
+    const [checkingDomainId, setCheckingDomainId] = useState('');
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -251,7 +277,7 @@ const SuperAdminPanel = () => {
         const run = async (actionReason = '') => {
             await API.patch(`/super-admin/domains/${shop._id}`, {
                 status: draft.status,
-                adminNote: draft.adminNote,
+                adminNote: draft.adminNote || actionReason,
                 reason: actionReason
             });
             toast.success('Domain updated');
@@ -269,7 +295,32 @@ const SuperAdminPanel = () => {
             return;
         }
 
+        if (draft.status === 'Verified' && !String(draft.adminNote || '').trim()) {
+            openReasonModal({
+                title: 'Manually verify domain',
+                warning: `Only verify ${shop.customDomain?.domain} after confirming ownership and storefront routing. This allows SEO and storefront routing to use the domain.`,
+                confirmLabel: 'Verify domain',
+                onConfirm: run,
+                error: 'Failed to verify domain'
+            });
+            return;
+        }
+
         await run('');
+    };
+
+    const checkDomainDns = async (shop) => {
+        setCheckingDomainId(shop._id);
+        try {
+            const { data } = await API.post(`/super-admin/domains/${shop._id}/check-dns`);
+            toast.success(data.data?.message || 'Domain DNS verified');
+            await load();
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.response?.data?.error || 'DNS verification failed');
+            await load();
+        } finally {
+            setCheckingDomainId('');
+        }
     };
 
     const updateReport = async (report, status) => {
@@ -547,20 +598,67 @@ const SuperAdminPanel = () => {
                         <div className="grid gap-2 sm:grid-cols-2">
                             <input value={domainFilters.search} onChange={event => setDomainFilters(prev => ({ ...prev, search: event.target.value, page: 1 }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Search domains" />
                             <select value={domainFilters.status} onChange={event => setDomainFilters(prev => ({ ...prev, status: event.target.value, page: 1 }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <option value="all">All statuses</option><option>PendingVerification</option><option>Verified</option><option>Failed</option><option>NotConfigured</option>
+                                <option value="all">All statuses</option>{DOMAIN_STATUSES.map(status => <option key={status}>{status}</option>)}
                             </select>
                         </div>
                         {domains.length === 0 ? <EmptyState message="No domains found." /> : domains.map(shop => {
                             const draft = domainDrafts[shop._id] || { status: shop.customDomain?.status || 'NotConfigured', adminNote: shop.customDomain?.adminNote || '' };
+                            const warnings = shop.customDomainWarnings || [];
+                            const domainUrl = shop.customDomain?.domain ? `https://${shop.customDomain.domain}` : '';
+                            const expectedTxtValue = shop.customDomain?.expectedTxtValue || (shop.customDomain?.verificationToken ? `scaleup-verification=${shop.customDomain.verificationToken}` : '');
+                            const dnsTarget = shop.customDomain?.dnsTarget || CUSTOM_DOMAIN_DNS_TARGET;
+                            const connection = getDomainConnectionLabels(shop.customDomain, dnsTarget);
                             return (
                                 <div key={shop._id} className="rounded-xl bg-slate-50 p-3 text-sm">
-                                    <div className="font-bold text-slate-950">{shop.customDomain?.domain}</div>
-                                    <div className="text-xs text-slate-500">{shop.shopName}</div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="break-all font-bold text-slate-950">{shop.customDomain?.domain}</div>
+                                            <div className="text-xs text-slate-500">{shop.shopName} · {shop.owner?.email || 'Owner unavailable'}</div>
+                                        </div>
+                                        {domainUrl && (
+                                            <a href={domainUrl} target="_blank" rel="noreferrer" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-900" aria-label="Open domain">
+                                                <ExternalLink className="h-4 w-4" />
+                                            </a>
+                                        )}
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <StatusBadge value={connection.displayStatus} />
+                                        {warnings.map(item => (
+                                            <span key={item} className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-100">
+                                                {warningLabel[item] || item}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="mt-2 grid gap-1 text-xs text-slate-500">
+                                        <span>Ownership: {connection.ownership}</span>
+                                        <span>Routing: {connection.routing}</span>
+                                        <span>Browser access: {connection.browserAccess}</span>
+                                        <span>Last checked: {shop.customDomain?.lastCheckedAt ? new Date(shop.customDomain.lastCheckedAt).toLocaleString() : '-'}</span>
+                                        <span>Verified: {shop.customDomain?.verifiedAt ? new Date(shop.customDomain.verifiedAt).toLocaleString() : '-'}</span>
+                                        <span>DNS check: {shop.customDomain?.lastDnsCheckStatus || 'Not checked'}</span>
+                                        <span>DNS target: {dnsTarget || 'Not configured. Ask vendor to contact support.'}</span>
+                                        {expectedTxtValue && <span className="break-all">TXT value: {expectedTxtValue}</span>}
+                                    </div>
+                                    {shop.customDomain?.lastDnsCheckError && (
+                                        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 ring-1 ring-amber-100">
+                                            {shop.customDomain.lastDnsCheckError}
+                                        </p>
+                                    )}
                                     <select value={draft.status} onChange={event => setDomainDrafts(prev => ({ ...prev, [shop._id]: { ...draft, status: event.target.value } }))} className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1">
-                                        <option>PendingVerification</option><option>Verified</option><option>Failed</option><option>NotConfigured</option>
+                                        {DOMAIN_STATUSES.map(status => <option key={status}>{status}</option>)}
                                     </select>
-                                    <input value={draft.adminNote} onChange={event => setDomainDrafts(prev => ({ ...prev, [shop._id]: { ...draft, adminNote: event.target.value } }))} className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1" placeholder="Admin note" />
-                                    <button onClick={() => updateDomain(shop, draft)} className="mt-2 rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">Save domain</button>
+                                    <input value={draft.adminNote} onChange={event => setDomainDrafts(prev => ({ ...prev, [shop._id]: { ...draft, adminNote: event.target.value } }))} className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1" placeholder="Admin note for manual verification or failure details" />
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <button onClick={() => updateDomain(shop, draft)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white">Save domain</button>
+                                        <button
+                                            onClick={() => checkDomainDns(shop)}
+                                            disabled={!shop.customDomain?.domain || checkingDomainId === shop._id}
+                                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            <RefreshCw className={`h-3.5 w-3.5 ${checkingDomainId === shop._id ? 'animate-spin' : ''}`} />
+                                            {checkingDomainId === shop._id ? 'Checking...' : 'Check DNS'}
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}

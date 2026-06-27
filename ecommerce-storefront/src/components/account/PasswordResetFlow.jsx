@@ -30,6 +30,7 @@ const getCurrentSubdomain = () => {
     if (typeof window === 'undefined') return '';
 
     const hostname = window.location.hostname.toLowerCase();
+    const reservedHosts = ['localhost', '127.0.0.1', 'scaleup.codes', 'www.scaleup.codes', 'shop.scaleup.codes', 'admin.scaleup.codes'];
 
     if (hostname.includes('.localhost')) {
         const localSubdomain = hostname.split('.localhost')[0];
@@ -41,7 +42,7 @@ const getCurrentSubdomain = () => {
         return ['www', 'api', 'admin', 'shop', 'scaleup'].includes(tenant) ? '' : tenant;
     }
 
-    return '';
+    return reservedHosts.includes(hostname) ? '' : hostname;
 };
 
 export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {

@@ -119,6 +119,7 @@ export const proofCards = [
 export const pricingPlans = [
     {
         name: "Starter",
+        slug: "starter",
         price: "৳999",
         period: "/month",
         yearly: "৳9,990/year",
@@ -138,6 +139,7 @@ export const pricingPlans = [
     },
     {
         name: "Growth",
+        slug: "growth",
         price: "৳2,499",
         period: "/month",
         yearly: "৳24,990/year",
@@ -158,6 +160,7 @@ export const pricingPlans = [
     },
     {
         name: "Pro",
+        slug: "pro",
         price: "৳5,999",
         period: "/month",
         yearly: "৳59,990/year",

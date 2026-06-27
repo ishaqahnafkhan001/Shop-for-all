@@ -42,6 +42,7 @@ const {
     markSuperAdminNotificationRead,
     markAllSuperAdminNotificationsRead
 } = require('../controllers/platformNotificationController');
+const { checkSuperAdminCustomDomainDns } = require('../controllers/customDomainController');
 
 router.use(protect);
 router.use(authorize('SuperAdmin'));
@@ -66,6 +67,7 @@ router.patch('/vendor-verifications/:id/reject', rejectVendorVerification);
 router.get('/plans', getPlans);
 router.post('/plans', upsertPlan);
 router.get('/domains', getDomains);
+router.post('/domains/:shopId/check-dns', checkSuperAdminCustomDomainDns);
 router.patch('/domains/:shopId', updateDomain);
 router.get('/failed-payments', getFailedPayments);
 router.get('/announcements', getAnnouncements);

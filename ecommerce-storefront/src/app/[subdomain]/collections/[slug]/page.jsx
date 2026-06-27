@@ -15,11 +15,11 @@ import {
     noindexMetadata
 } from "@/lib/seo";
 
-const getCollectionPageData = async (subdomain, slug) => {
+const getCollectionPageData = async (subdomain, slug, host = "") => {
     try {
         const [shop, collectionData] = await Promise.all([
-            fetchStorefrontInfo(subdomain),
-            fetchStorefrontCollection(subdomain, slug, { page: 1, limit: 48, sort: "newest" })
+            fetchStorefrontInfo(subdomain, { storefrontHost: host }),
+            fetchStorefrontCollection(subdomain, slug, { page: 1, limit: 48, sort: "newest" }, { storefrontHost: host })
         ]);
 
         return {
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }) {
     const { subdomain, slug } = await params;
     const headerStore = await headers();
     const host = headerStore.get("host") || "";
-    const data = await getCollectionPageData(subdomain, slug);
+    const data = await getCollectionPageData(subdomain, slug, host);
 
     if (!data?.collection || !data?.shop) {
         return noindexMetadata("Collection unavailable", "This collection is currently unavailable.");
@@ -62,12 +62,12 @@ export async function generateMetadata({ params }) {
 
 export default async function CollectionPage({ params }) {
     const { subdomain, slug } = await params;
-    const data = await getCollectionPageData(subdomain, slug);
+    const headerStore = await headers();
+    const host = headerStore.get("host") || "";
+    const data = await getCollectionPageData(subdomain, slug, host);
 
     if (!data?.collection || !data?.shop) notFound();
 
-    const headerStore = await headers();
-    const host = headerStore.get("host") || "";
     const collectionUrl = getCollectionCanonicalUrl({
         host,
         subdomain,

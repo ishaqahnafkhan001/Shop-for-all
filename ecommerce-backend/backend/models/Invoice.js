@@ -18,6 +18,17 @@ const invoiceSchema = new mongoose.Schema({
         ref: 'VendorPlan',
         default: null
     },
+    planName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    planSlug: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
     invoiceNumber: {
         type: String,
         required: true,

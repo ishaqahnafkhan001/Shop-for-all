@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const DEFAULT_PLAN_DEFINITIONS = {
     Starter: {
         name: 'Starter',
+        slug: 'starter',
         monthlyPrice: 999,
         yearlyPrice: 9990,
         productLimit: 100,
@@ -23,6 +24,7 @@ const DEFAULT_PLAN_DEFINITIONS = {
     },
     Growth: {
         name: 'Growth',
+        slug: 'growth',
         monthlyPrice: 2499,
         yearlyPrice: 24990,
         productLimit: 500,
@@ -42,6 +44,7 @@ const DEFAULT_PLAN_DEFINITIONS = {
     },
     Pro: {
         name: 'Pro',
+        slug: 'pro',
         monthlyPrice: 5999,
         yearlyPrice: 59990,
         productLimit: 2000,
@@ -61,9 +64,34 @@ const DEFAULT_PLAN_DEFINITIONS = {
     }
 };
 
+const slugifyPlanName = (value = 'Starter') => String(value || 'Starter')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'starter';
+
+const PLAN_SLUG_TO_NAME = Object.values(DEFAULT_PLAN_DEFINITIONS).reduce((acc, plan) => {
+    acc[plan.slug] = plan.name;
+    return acc;
+}, {});
+
 const normalizePlanName = (name) => {
     const value = String(name || 'Starter').trim();
-    return DEFAULT_PLAN_DEFINITIONS[value] ? value : 'Starter';
+    if (DEFAULT_PLAN_DEFINITIONS[value]) return value;
+    return PLAN_SLUG_TO_NAME[slugifyPlanName(value)] || 'Starter';
+};
+
+const normalizePlanSlug = (value) => {
+    const slug = slugifyPlanName(value || 'starter');
+    return PLAN_SLUG_TO_NAME[slug] ? slug : DEFAULT_PLAN_DEFINITIONS[normalizePlanName(value)]?.slug || 'starter';
+};
+
+const getPlanSlug = (planOrName = 'Starter') => {
+    if (planOrName && typeof planOrName === 'object') {
+        return planOrName.slug || slugifyPlanName(planOrName.name || 'Starter');
+    }
+
+    return DEFAULT_PLAN_DEFINITIONS[normalizePlanName(planOrName)]?.slug || slugifyPlanName(planOrName);
 };
 
 const mergePlan = (storedPlan, fallbackName = 'Starter') => {
@@ -71,6 +99,7 @@ const mergePlan = (storedPlan, fallbackName = 'Starter') => {
     return {
         ...fallback,
         ...(storedPlan || {}),
+        slug: storedPlan?.slug || fallback.slug || slugifyPlanName(storedPlan?.name || fallback.name),
         yearlyPrice: storedPlan?.yearlyPrice ?? storedPlan?.annualPrice ?? fallback.yearlyPrice,
         features: {
             ...fallback.features,
@@ -80,9 +109,24 @@ const mergePlan = (storedPlan, fallbackName = 'Starter') => {
 };
 
 const getPlanByNameOrDefault = async (planName = 'Starter') => {
+    const rawValue = String(planName || 'Starter').trim() || 'Starter';
     const normalizedName = normalizePlanName(planName);
-    const storedPlan = await VendorPlan.findOne({ name: normalizedName, isActive: { $ne: false } }).lean();
-    return mergePlan(storedPlan, normalizedName);
+    const normalizedSlug = normalizePlanSlug(planName);
+    const rawSlug = slugifyPlanName(rawValue);
+    const storedPlan = await VendorPlan.findOne({
+        isActive: { $ne: false },
+        $or: [
+            { name: rawValue },
+            { slug: rawSlug },
+            { name: normalizedName },
+            { slug: normalizedSlug }
+        ]
+    }).lean();
+    return mergePlan(storedPlan, storedPlan?.name || normalizedName);
+};
+
+const getPlanBySlugOrNameOrDefault = async (planSlugOrName = 'starter') => {
+    return getPlanByNameOrDefault(planSlugOrName);
 };
 
 const getPlanByIdOrNameOrDefault = async (planRef = 'Starter') => {
@@ -125,9 +169,14 @@ const calculatePlanPrice = async (planOrName = 'Starter', billingCycle = 'monthl
 
 module.exports = {
     DEFAULT_PLAN_DEFINITIONS,
+    PLAN_SLUG_TO_NAME,
+    slugifyPlanName,
     normalizePlanName,
+    normalizePlanSlug,
+    getPlanSlug,
     mergePlan,
     getPlanByNameOrDefault,
+    getPlanBySlugOrNameOrDefault,
     getPlanByIdOrNameOrDefault,
     getPlanLimits,
     getPlanFeatures,

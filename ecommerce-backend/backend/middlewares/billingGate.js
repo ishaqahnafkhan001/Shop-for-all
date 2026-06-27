@@ -1,9 +1,9 @@
 const Product = require('../models/Product');
 const Shop = require('../models/Shop');
-const VendorPlan = require('../models/VendorPlan');
 const { ensureSubscriptionExists, isBillingSuspension } = require('../services/billing/subscriptionService');
-const { getPlanByNameOrDefault, mergePlan } = require('../services/billing/billingPlanService');
+const { getPlanByIdOrNameOrDefault } = require('../services/billing/billingPlanService');
 const { getStaffCapacity } = require('../services/staff/staffCapacityService');
+const { getEffectivePlanRef } = require('../services/shops/featureAccessService');
 
 const billingDenied = (res, message = 'Billing is required to use this feature') => res.status(403).json({
     success: false,
@@ -14,12 +14,7 @@ const billingDenied = (res, message = 'Billing is required to use this feature')
 const getShopId = (req) => req.tenantId || req.user?.shopId || req.user?.shop_id;
 
 const getEffectivePlan = async (shop, subscription) => {
-    if (subscription?.planId) {
-        const storedPlan = await VendorPlan.findById(subscription.planId).lean();
-        if (storedPlan) return mergePlan(storedPlan, storedPlan.name);
-    }
-
-    return getPlanByNameOrDefault(shop?.plan?.name || 'Starter');
+    return getPlanByIdOrNameOrDefault(getEffectivePlanRef(shop, subscription));
 };
 
 const getBillingContext = async (req) => {

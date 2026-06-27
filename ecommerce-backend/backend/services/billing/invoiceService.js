@@ -1,6 +1,6 @@
 const Invoice = require('../../models/Invoice');
 const Subscription = require('../../models/Subscription');
-const { calculatePlanPrice } = require('./billingPlanService');
+const { calculatePlanPrice, getPlanSlug, normalizePlanName } = require('./billingPlanService');
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -15,6 +15,8 @@ const createInvoice = async ({
     shopId,
     subscriptionId,
     planId = null,
+    planName = '',
+    planSlug = '',
     billingCycle = 'monthly',
     amount,
     dueDate,
@@ -25,10 +27,14 @@ const createInvoice = async ({
     if (!subscription) throw new Error('Subscription not found');
 
     const finalAmount = amount ?? await calculatePlanPrice(planId || 'Starter', billingCycle);
+    const finalPlanName = planName || normalizePlanName(planSlug || 'Starter');
+    const finalPlanSlug = planSlug || getPlanSlug(finalPlanName);
     const [invoice] = await Invoice.create([{
         shopId,
         subscriptionId,
         planId,
+        planName: finalPlanName,
+        planSlug: finalPlanSlug,
         invoiceNumber: generateInvoiceNumber(),
         amount: Number(finalAmount || 0),
         billingCycle,

@@ -1,9 +1,8 @@
 const User = require('../../models/User');
 const Shop = require('../../models/Shop');
-const VendorPlan = require('../../models/VendorPlan');
-const { getPlanByNameOrDefault, mergePlan } = require('../billing/billingPlanService');
+const { getPlanByIdOrNameOrDefault } = require('../billing/billingPlanService');
 const { ensureSubscriptionExists } = require('../billing/subscriptionService');
-const { computeEffectiveFeatures, getPlanFeatures } = require('../shops/featureAccessService');
+const { computeEffectiveFeatures, getEffectivePlanRef, getPlanFeatures } = require('../shops/featureAccessService');
 
 const STAFF_PERMISSION_KEYS = [
     'products',
@@ -45,12 +44,7 @@ const sanitizeStaffPermissions = (input = {}, base = DEFAULT_STAFF_PERMISSIONS) 
 };
 
 const getEffectivePlanForShop = async (shop, subscription) => {
-    if (subscription?.planId) {
-        const storedPlan = await VendorPlan.findById(subscription.planId).lean();
-        if (storedPlan) return mergePlan(storedPlan, storedPlan.name);
-    }
-
-    return getPlanByNameOrDefault(shop?.plan?.name || 'Starter');
+    return getPlanByIdOrNameOrDefault(getEffectivePlanRef(shop, subscription));
 };
 
 const getStaffCapacity = async (shopId) => {
@@ -66,7 +60,7 @@ const getStaffCapacity = async (shopId) => {
 
     const subscription = await ensureSubscriptionExists(shop);
     const [planFeatures, usedStaffCount] = await Promise.all([
-        getPlanFeatures(shop),
+        getPlanFeatures(shop, subscription),
         User.countDocuments({
             shop_id: shopId,
             role: 'VendorStaff',

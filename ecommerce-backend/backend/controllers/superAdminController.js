@@ -14,6 +14,11 @@ const cache = require('../services/cacheService');
 const { invalidateTenantCache } = require('../middlewares/tenant');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
 const { VERIFICATION_SUSPENSION_REASON, isVerificationSuspension } = require('../services/vendorVerificationService');
+const {
+    normalizeCustomDomain,
+    isValidCustomDomain,
+    isPlatformDomain
+} = require('../utils/domainUtils');
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
@@ -59,6 +64,7 @@ const invalidateShopCache = async (shop) => {
     if (!shop?._id) return;
     await Promise.all([
         shop.subdomain ? invalidateTenantCache(shop.subdomain) : Promise.resolve(),
+        shop.customDomain?.domain ? invalidateTenantCache(shop.customDomain.domain) : Promise.resolve(),
         cache.del(`storefront:settings:${shop._id}`),
         cache.delPattern(`storefront:bootstrap:${shop._id}:*`)
     ]);
@@ -96,6 +102,7 @@ const getBillingDisplay = (subscription, latestPayment = null) => {
             status: 'trialing',
             planDisplay: 'Trial',
             pendingPlan: '',
+            intendedPlan: subscription.intendedPlanName || 'Starter',
             trialDaysLeft: daysUntil(subscription.trialEndsAt),
             paymentStatus: latestPayment?.status || ''
         };
@@ -106,6 +113,7 @@ const getBillingDisplay = (subscription, latestPayment = null) => {
             status: 'pending_approval',
             planDisplay: `Pending ${subscription.pendingPlanName || 'plan'}`,
             pendingPlan: subscription.pendingPlanName || '',
+            intendedPlan: subscription.intendedPlanName || subscription.pendingPlanName || '',
             trialDaysLeft: daysUntil(subscription.trialEndsAt),
             paymentStatus: latestPayment?.status || 'pending'
         };
@@ -114,8 +122,9 @@ const getBillingDisplay = (subscription, latestPayment = null) => {
     if (subscription.status === 'active') {
         return {
             status: 'active',
-            planDisplay: subscription.planId?.name || 'Active plan',
+            planDisplay: subscription.activePlanName || subscription.planId?.name || 'Active plan',
             pendingPlan: '',
+            intendedPlan: subscription.intendedPlanName || '',
             trialDaysLeft: null,
             paymentStatus: latestPayment?.status || ''
         };
@@ -152,6 +161,29 @@ const buildShopSearchIds = async (search) => {
         regex,
         ownerShopIds: owners.map(owner => owner.shop_id).filter(Boolean)
     };
+};
+
+const assertCustomDomainAvailable = async (domain, shopId) => {
+    const existingShop = await Shop.findOne({
+        _id: { $ne: shopId },
+        'customDomain.domain': domain
+    }).select('_id shopName subdomain').lean();
+
+    if (existingShop) {
+        const error = new Error('This domain is already connected to another shop.');
+        error.statusCode = 400;
+        throw error;
+    }
+};
+
+const getDomainWarnings = (domain, duplicateCount = 1) => {
+    const normalizedDomain = normalizeCustomDomain(domain);
+    const warnings = [];
+    if (!normalizedDomain) return warnings;
+    if (duplicateCount > 1) warnings.push('duplicate');
+    if (isPlatformDomain(normalizedDomain)) warnings.push('platform_domain');
+    if (!isValidCustomDomain(normalizedDomain)) warnings.push('invalid_domain');
+    return [...new Set(warnings)];
 };
 
 const getVerificationSummaryCounts = async () => {
@@ -193,7 +225,10 @@ const getPriorityAlerts = async () => {
         AbuseReport.countDocuments({ status: 'Open' }),
         Shop.countDocuments({ $or: [{ isActive: false }, { approvalStatus: 'Suspended' }] }),
         Order.countDocuments({ 'payment.status': 'Failed' }),
-        Shop.countDocuments({ 'customDomain.domain': { $ne: '' }, 'customDomain.status': 'PendingVerification' })
+        Shop.countDocuments({
+            'customDomain.domain': { $ne: '' },
+            'customDomain.status': { $in: ['PendingVerification', 'OwnershipVerified', 'RoutingPending'] }
+        })
     ]);
 
     return {
@@ -364,9 +399,13 @@ exports.getShopDetail = async (req, res) => {
 };
 
 const updateShopAndLog = async ({ req, shop, update, action, message, reason = '', metadata = {}, severity = 'info' }) => {
+    const previousCustomDomain = shop.customDomain?.domain;
     Object.entries(update).forEach(([key, value]) => shop.set(key, value));
     await shop.save();
-    await invalidateShopCache(shop);
+    await Promise.all([
+        invalidateShopCache(shop),
+        previousCustomDomain ? invalidateTenantCache(previousCustomDomain) : Promise.resolve()
+    ]);
     await logPlatformAudit({
         req,
         action,
@@ -600,10 +639,26 @@ exports.getDomains = async (req, res) => {
                 .lean(),
             Shop.countDocuments(query)
         ]);
+        const ownerMap = await getOwnerMap(shops);
+        const domains = shops.map(shop => normalizeCustomDomain(shop.customDomain?.domain)).filter(Boolean);
+        const duplicateCounts = domains.length > 0
+            ? await Shop.aggregate([
+                { $match: { 'customDomain.domain': { $in: domains } } },
+                { $group: { _id: '$customDomain.domain', count: { $sum: 1 } } }
+            ])
+            : [];
+        const countMap = new Map(duplicateCounts.map(item => [item._id, item.count]));
 
         res.status(200).json({
             success: true,
-            data: shops,
+            data: shops.map(shop => {
+                const domain = normalizeCustomDomain(shop.customDomain?.domain);
+                return {
+                    ...shop,
+                    owner: ownerMap.get(String(shop._id)) || null,
+                    customDomainWarnings: getDomainWarnings(domain, countMap.get(domain) || 1)
+                };
+            }),
             pagination: paginationPayload({ page, limit, total })
         });
     } catch (err) {
@@ -616,20 +671,56 @@ exports.updateDomain = async (req, res) => {
         const shop = await Shop.findById(req.params.shopId);
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        const allowedStatuses = ['NotConfigured', 'PendingVerification', 'Verified', 'Failed'];
+        const allowedStatuses = ['NotConfigured', 'PendingVerification', 'OwnershipVerified', 'RoutingPending', 'Verified', 'Failed'];
         const status = req.body.status || shop.customDomain?.status || 'NotConfigured';
         if (!allowedStatuses.includes(status)) {
             return res.status(400).json({ success: false, error: 'Invalid domain status' });
         }
         const reason = getReason(req.body);
         if (status === 'Failed' && requireReason(res, reason, 'Reason is required when marking a domain as failed')) return;
+        const adminNote = String(req.body.adminNote ?? shop.customDomain?.adminNote ?? '').trim();
+        if (status === 'Verified' && !adminNote && requireReason(res, reason, 'Admin note or reason is required for manual domain verification')) return;
 
+        const existingDomain = normalizeCustomDomain(shop.customDomain?.domain);
+        if (status === 'Verified') {
+            if (!existingDomain) {
+                return res.status(400).json({ success: false, error: 'Custom domain is required before verification.' });
+            }
+            if (isPlatformDomain(existingDomain)) {
+                return res.status(400).json({ success: false, error: 'Platform domains cannot be used as store custom domains.' });
+            }
+            if (!isValidCustomDomain(existingDomain)) {
+                return res.status(400).json({ success: false, error: 'Invalid custom domain.' });
+            }
+            await assertCustomDomainAvailable(existingDomain, shop._id);
+        }
+
+        const now = new Date();
+        const ownershipVerified = ['OwnershipVerified', 'RoutingPending', 'Verified'].includes(status);
+        const routingVerified = Boolean(status === 'Verified' && shop.customDomain?.routingVerified);
+        const manuallyVerifiedRouting = status === 'Verified' && !shop.customDomain?.routingVerified;
         const customDomain = {
             ...(shop.customDomain?.toObject ? shop.customDomain.toObject() : shop.customDomain || {}),
+            domain: existingDomain,
             status,
-            adminNote: req.body.adminNote ?? shop.customDomain?.adminNote ?? '',
-            lastCheckedAt: req.body.lastCheckedAt ? new Date(req.body.lastCheckedAt) : new Date(),
-            verifiedAt: status === 'Verified' ? new Date() : shop.customDomain?.verifiedAt || null
+            adminNote,
+            ownershipVerified,
+            routingVerified,
+            manuallyVerifiedRouting,
+            lastCheckedAt: req.body.lastCheckedAt ? new Date(req.body.lastCheckedAt) : now,
+            verifiedAt: status === 'Verified' ? now : null,
+            lastDnsCheckStatus: status === 'Verified'
+                ? (manuallyVerifiedRouting ? 'manual_verified' : 'verified')
+                : (status === 'Failed' ? 'failed' : shop.customDomain?.lastDnsCheckStatus || ''),
+            lastDnsCheckError: status === 'Verified'
+                ? ''
+                : (status === 'Failed' ? reason : shop.customDomain?.lastDnsCheckError || ''),
+            lastOwnershipCheckStatus: ownershipVerified
+                ? (status === 'Verified' && manuallyVerifiedRouting ? 'manual_verified' : 'verified')
+                : '',
+            lastRoutingCheckStatus: status === 'Verified'
+                ? (manuallyVerifiedRouting ? 'manual_verified' : 'verified')
+                : (ownershipVerified ? 'not_verified' : '')
         };
 
         const updated = await updateShopAndLog({
@@ -637,16 +728,22 @@ exports.updateDomain = async (req, res) => {
             shop,
             update: { customDomain },
             action: 'domain.status_changed',
-            message: `Domain status changed to ${status}`,
-            reason,
-            metadata: { customDomain },
+            message: status === 'Verified' && manuallyVerifiedRouting
+                ? `Domain manually verified for ${existingDomain}`
+                : `Domain status changed to ${status}`,
+            reason: reason || (status === 'Verified' ? adminNote : ''),
+            metadata: { customDomain, manualRoutingVerification: manuallyVerifiedRouting },
             severity: status === 'Failed' ? 'warning' : 'info'
         });
 
         res.status(200).json({ success: true, data: updated });
     } catch (err) {
         console.error('Update domain error:', err);
-        res.status(400).json({ success: false, error: err.message || 'Failed to update domain' });
+        const duplicateDomain = err?.code === 11000 && String(err?.message || '').includes('customDomain');
+        res.status(err.statusCode || 400).json({
+            success: false,
+            error: duplicateDomain ? 'This domain is already connected to another shop.' : err.message || 'Failed to update domain'
+        });
     }
 };
 

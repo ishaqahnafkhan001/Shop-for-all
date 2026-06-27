@@ -53,7 +53,9 @@ const shopSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        match: [/^[a-z0-9]+$/, 'Subdomain can only contain lowercase letters and numbers']
+        minlength: 3,
+        maxlength: 40,
+        match: [/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/, 'Subdomain can only contain lowercase letters, numbers, and hyphens and must start and end with a letter or number']
     },
     isActive: {
         type: Boolean,
@@ -104,12 +106,32 @@ const shopSchema = new mongoose.Schema({
         domain: { type: String, trim: true, lowercase: true, default: '' },
         status: {
             type: String,
-            enum: ['NotConfigured', 'PendingVerification', 'Verified', 'Failed'],
+            enum: ['NotConfigured', 'PendingVerification', 'OwnershipVerified', 'RoutingPending', 'Verified', 'Failed'],
             default: 'NotConfigured'
         },
+        ownershipVerified: { type: Boolean, default: false },
+        routingVerified: { type: Boolean, default: false },
+        manuallyVerifiedRouting: { type: Boolean, default: false },
         verifiedAt: Date,
         lastCheckedAt: Date,
-        adminNote: { type: String, trim: true, default: '' }
+        adminNote: { type: String, trim: true, default: '' },
+        verificationToken: { type: String, trim: true, default: '' },
+        verificationMethod: {
+            type: String,
+            enum: ['TXT', 'CNAME'],
+            default: 'TXT'
+        },
+        dnsTarget: { type: String, trim: true, lowercase: true, default: '' },
+        expectedTxtValue: { type: String, trim: true, default: '' },
+        lastDnsCheckStatus: { type: String, trim: true, default: '' },
+        lastDnsCheckError: { type: String, trim: true, default: '' },
+        lastOwnershipCheckStatus: { type: String, trim: true, default: '' },
+        lastRoutingCheckStatus: { type: String, trim: true, default: '' },
+        lastDnsRecords: {
+            txt: { type: [String], default: [] },
+            cname: { type: [String], default: [] },
+            a: { type: [String], default: [] }
+        }
     },
     theme: {
         version: { type: Number, default: 2, min: 1 },
@@ -433,6 +455,7 @@ const shopSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 shopSchema.index({ 'customDomain.domain': 1 }, {
+    unique: true,
     sparse: true,
     partialFilterExpression: { 'customDomain.domain': { $type: 'string', $ne: '' } }
 });

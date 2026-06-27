@@ -13,6 +13,10 @@ const {
     createAccountForLegacyUser,
     createMembershipForLegacyUser
 } = require('./identityService');
+const {
+    normalizeCustomDomain,
+    buildVerifiedCustomDomainQuery
+} = require('../utils/domainUtils');
 
 const RESET_LIMITS = Object.freeze({
     otpDigits: 6,
@@ -78,6 +82,23 @@ const getResetKey = ({ email, audience, shopId }) =>
 
 const getRolesForAudience = (audience) =>
     audience === 'customer' ? ['Customer'] : ['VendorAdmin', 'VendorStaff'];
+
+const findShopByTenantIdentifier = (identifier) => {
+    const cleanIdentifier = normalizeCustomDomain(identifier);
+    if (!cleanIdentifier) return null;
+
+    const query = cleanIdentifier.includes('.')
+        ? {
+            ...buildVerifiedCustomDomainQuery(cleanIdentifier),
+            isActive: true
+        }
+        : {
+            subdomain: cleanIdentifier,
+            isActive: true
+        };
+
+    return Shop.findOne(query).select('_id shopName subdomain approvalStatus').lean();
+};
 
 const findOrCreateAccountFromLegacy = async ({ email, audience, shop }) => {
     const roles = getRolesForAudience(audience);
@@ -145,14 +166,11 @@ const createMembershipFromLegacyIfSafe = async ({ email, audience, shop, account
 const resolveResetTargetWithReason = async ({ email, subdomain, audience = 'customer' }) => {
     const cleanEmail = normalizeEmail(email);
     const normalizedAudience = audience === 'admin' ? 'admin' : 'customer';
-    const cleanSubdomain = String(subdomain || '').trim().toLowerCase();
+    const cleanSubdomain = normalizeCustomDomain(subdomain);
 
     let shop = null;
     if (cleanSubdomain) {
-        shop = await Shop.findOne({
-            subdomain: cleanSubdomain,
-            isActive: true
-        }).select('_id shopName subdomain approvalStatus').lean();
+        shop = await findShopByTenantIdentifier(cleanSubdomain);
 
         if (!shop) {
             return {

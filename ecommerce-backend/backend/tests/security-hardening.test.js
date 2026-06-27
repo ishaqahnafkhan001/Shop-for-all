@@ -167,7 +167,9 @@ test('analytics event endpoint resolves tenant and validates event types', () =>
 
     assert.match(route, /router\.post\('\/event',\s*trackAnalyticsEvent\)/);
     assert.match(controller, /getSubdomainFromRequest/);
-    assert.match(controller, /Shop\.findOne\(\{[\s\S]*subdomain[\s\S]*isActive:\s*true/);
+    assert.match(controller, /const shopQuery = subdomain\.includes\('\.'\)/);
+    assert.match(controller, /buildVerifiedCustomDomainQuery\(subdomain\)/);
+    assert.match(controller, /subdomain,\s*[\r\n\s]*isActive:\s*true/);
     assert.match(controller, /AnalyticsEvent\.EVENT_TYPES\.includes\(eventType\)/);
     assert.doesNotMatch(controller, /shop_id:\s*req\.body/);
     assert.match(model, /shop_id[\s\S]*required:\s*true/);
@@ -402,7 +404,10 @@ test('super admin data models constrain governance values', () => {
     assert.match(announcement, /maxlength:\s*1000/);
     assert.match(plan, /name:[\s\S]*required:\s*true[\s\S]*unique:\s*true/);
     assert.match(plan, /features:[\s\S]*storeBuilder[\s\S]*analytics[\s\S]*staffAccounts/);
-    assert.match(shop, /customDomain:[\s\S]*status:[\s\S]*enum:\s*\['NotConfigured', 'PendingVerification', 'Verified', 'Failed'\]/);
+    assert.match(shop, /customDomain:[\s\S]*status:[\s\S]*enum:\s*\['NotConfigured', 'PendingVerification', 'OwnershipVerified', 'RoutingPending', 'Verified', 'Failed'\]/);
+    assert.match(shop, /customDomain:[\s\S]*ownershipVerified/);
+    assert.match(shop, /customDomain:[\s\S]*routingVerified/);
+    assert.match(shop, /customDomain:[\s\S]*manuallyVerifiedRouting/);
 });
 
 test('announcements use soft archive lifecycle', () => {

@@ -6,6 +6,8 @@ const statusTone = {
     Verified: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     Pending: 'bg-amber-50 text-amber-700 ring-amber-100',
     PendingVerification: 'bg-amber-50 text-amber-700 ring-amber-100',
+    OwnershipVerified: 'bg-cyan-50 text-cyan-700 ring-cyan-100',
+    RoutingPending: 'bg-amber-50 text-amber-700 ring-amber-100',
     Reviewing: 'bg-amber-50 text-amber-700 ring-amber-100',
     Suspended: 'bg-rose-50 text-rose-700 ring-rose-100',
     Failed: 'bg-rose-50 text-rose-700 ring-rose-100',

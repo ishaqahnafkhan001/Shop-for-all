@@ -16,9 +16,9 @@ import {
     noindexMetadata
 } from '@/lib/seo';
 
-const getInitialProduct = async (subdomain, id) => {
+const getInitialProduct = async (subdomain, id, host = '') => {
     try {
-        return await fetchStorefrontProduct(subdomain, id);
+        return await fetchStorefrontProduct(subdomain, id, { storefrontHost: host });
     } catch (error) {
         if (![404, 423].includes(error.status)) {
             console.error('Server product detail fetch error:', error.message);
@@ -27,9 +27,9 @@ const getInitialProduct = async (subdomain, id) => {
     }
 };
 
-const getStoreInfo = async (subdomain) => {
+const getStoreInfo = async (subdomain, host = '') => {
     try {
-        return await fetchStorefrontInfo(subdomain);
+        return await fetchStorefrontInfo(subdomain, { storefrontHost: host });
     } catch (error) {
         if (![404, 423].includes(error.status)) {
             console.error('Server shop info fetch error:', error.message);
@@ -46,8 +46,8 @@ export async function generateMetadata({ params }) {
     const host = headerStore.get('host') || '';
 
     const [product, shop] = await Promise.all([
-        getInitialProduct(subdomain, id),
-        getStoreInfo(subdomain)
+        getInitialProduct(subdomain, id, host),
+        getStoreInfo(subdomain, host)
     ]);
 
     if (!product) {
@@ -69,17 +69,17 @@ export async function generateMetadata({ params }) {
 
 export default async function Page({ params }) {
     const { subdomain, id } = await params;
+    const headerStore = await headers();
+    const host = headerStore.get('host') || '';
     const [initialProduct, shop] = await Promise.all([
-        getInitialProduct(subdomain, id),
-        getStoreInfo(subdomain)
+        getInitialProduct(subdomain, id, host),
+        getStoreInfo(subdomain, host)
     ]);
 
     if (initialProduct?.slug && isObjectId(id)) {
         redirect(`/products/${initialProduct.slug}`);
     }
 
-    const headerStore = await headers();
-    const host = headerStore.get('host') || '';
     const productUrl = initialProduct
         ? getProductCanonicalUrl({ host, subdomain, shop, product: initialProduct })
         : '';

@@ -13,6 +13,22 @@ const paymentTransactionSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    planId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'VendorPlan',
+        default: null
+    },
+    planName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    planSlug: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
     provider: {
         type: String,
         enum: ['manual_bkash', 'manual_nagad', 'manual_bank', 'other'],

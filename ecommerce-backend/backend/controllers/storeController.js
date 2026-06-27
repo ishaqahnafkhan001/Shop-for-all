@@ -14,7 +14,7 @@ const {
 } = require('../services/publicProductSerializer');
 const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status isActive approvalStatus';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status isActive approvalStatus';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const applyDefaultPoliciesToShopPayload = (shop) => {

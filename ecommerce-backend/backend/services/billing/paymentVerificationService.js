@@ -9,6 +9,7 @@ const { createNotification } = require('../notificationService');
 const { createPlatformNotification } = require('../platformNotificationService');
 const { sendSuperAdminPaymentSubmittedEmailSafe } = require('../superAdminEmailService');
 const { markInvoiceSubmitted, markInvoicePaid, rejectInvoice } = require('./invoiceService');
+const { getPlanSlug } = require('./billingPlanService');
 const {
     activateSubscription,
     markPendingApproval,
@@ -37,9 +38,18 @@ const submitManualPayment = async ({
     if (invoice.status === 'paid') throw new Error('Invoice is already paid');
     if (invoice.status === 'submitted') throw new Error('This invoice already has a payment waiting for approval');
 
+    const plan = invoice.planId
+        ? await VendorPlan.findById(invoice.planId).select('name slug').lean()
+        : null;
+    const pendingPlanName = plan?.name || invoice.planName || 'Selected plan';
+    const pendingPlanSlug = plan?.slug || invoice.planSlug || getPlanSlug(pendingPlanName);
+
     const payment = await PaymentTransaction.create({
         shopId,
         invoiceId,
+        planId: invoice.planId || null,
+        planName: pendingPlanName,
+        planSlug: pendingPlanSlug,
         provider,
         amount: Number(amount || invoice.amount || 0),
         transactionId,
@@ -49,18 +59,17 @@ const submitManualPayment = async ({
         submittedBy: getActorId(req)
     });
 
-    const [submittedInvoice, plan, shop, owner] = await Promise.all([
+    const [submittedInvoice, shop, owner] = await Promise.all([
         markInvoiceSubmitted(invoiceId),
-        invoice.planId ? VendorPlan.findById(invoice.planId).select('name').lean() : null,
         Shop.findById(shopId).select('shopName subdomain').lean(),
         getShopOwner(shopId)
     ]);
-    const pendingPlanName = plan?.name || 'Selected plan';
 
     await markPendingApproval({
         subscriptionId: submittedInvoice.subscriptionId,
         planId: submittedInvoice.planId,
         planName: pendingPlanName,
+        planSlug: pendingPlanSlug,
         billingCycle: submittedInvoice.billingCycle,
         invoiceId: submittedInvoice._id
     });
@@ -139,7 +148,7 @@ const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) =>
     const paidInvoice = await markInvoicePaid(invoice._id, { notes: adminNote });
     await activateSubscription({
         subscriptionId: paidInvoice.subscriptionId,
-        planId: paidInvoice.planId,
+        planId: paidInvoice.planId || paidInvoice.planSlug || paidInvoice.planName,
         billingCycle: paidInvoice.billingCycle,
         invoiceId: paidInvoice._id,
         req

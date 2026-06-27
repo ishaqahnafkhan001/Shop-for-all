@@ -109,7 +109,10 @@ export const scoreStoreSeo = ({ theme = {}, shopName = '', productCount = 0, cus
     const policyCount = ['privacy', 'terms', 'refund', 'shipping'].filter(key => cleanSeoText(policies[key]).length > 0).length;
     const hasContact = Boolean(cleanSeoText(footer.email || footer.phone || footer.contactEmail || footer.contactPhone || footer.text));
     const hasSocial = Boolean(cleanSeoText(seo.facebookUrl || footer.facebookUrl || footer.instagramUrl));
-    const customDomainConnected = customDomain?.status === 'Verified' && Boolean(customDomain?.domain);
+    const customDomainConnected = customDomain?.status === 'Verified' &&
+        Boolean(customDomain?.domain) &&
+        customDomain?.ownershipVerified === true &&
+        (customDomain?.routingVerified === true || customDomain?.manuallyVerifiedRouting === true);
     const homepageTitle = cleanSeoText(seo.title || theme.hero?.title || shopName);
     const homepageDescription = cleanSeoText(seo.description || theme.hero?.subtitle);
     const googleVerification = cleanSeoText(seo.googleSiteVerification);

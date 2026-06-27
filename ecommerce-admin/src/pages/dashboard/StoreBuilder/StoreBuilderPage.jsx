@@ -12,6 +12,7 @@ import {
     Lock,
     Palette,
     Plus,
+    RefreshCw,
     ShoppingBag,
     Search,
     Smartphone,
@@ -75,11 +76,60 @@ import {
     syncHeroLegacyFields
 } from './storeBuilderThemeUtils.js';
 
+const CUSTOM_DOMAIN_DNS_TARGET = import.meta.env.VITE_CUSTOM_DOMAIN_DNS_TARGET || import.meta.env.NEXT_PUBLIC_CUSTOM_DOMAIN_DNS_TARGET || '';
+
+const getDomainRecordHint = (domain = '') => {
+    const cleanDomain = String(domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
+    const labels = cleanDomain.split('.').filter(Boolean);
+    if (!cleanDomain || labels.length < 2) return null;
+
+    if (labels.length > 2) {
+        return {
+            type: 'CNAME',
+            host: labels.slice(0, -2).join('.'),
+            target: CUSTOM_DOMAIN_DNS_TARGET
+        };
+    }
+
+    return {
+        type: 'ALIAS / ANAME',
+        host: '@',
+        target: CUSTOM_DOMAIN_DNS_TARGET
+    };
+};
+
+const isCustomDomainConnected = (customDomain = {}) => (
+    customDomain?.status === 'Verified' &&
+    Boolean(customDomain?.domain) &&
+    customDomain?.ownershipVerified === true &&
+    (customDomain?.routingVerified === true || customDomain?.manuallyVerifiedRouting === true)
+);
+
+const getDomainConnectionLabels = (customDomain = {}, dnsTarget = '') => {
+    const ownershipVerified = customDomain?.ownershipVerified === true;
+    const routingConnected = customDomain?.routingVerified === true || customDomain?.manuallyVerifiedRouting === true;
+    const rawStatus = customDomain?.status || 'NotConfigured';
+    const displayStatus = rawStatus === 'Verified' && !routingConnected
+        ? (ownershipVerified || customDomain?.lastDnsCheckStatus === 'verified' ? 'RoutingPending' : 'PendingVerification')
+        : rawStatus;
+    const routingLabel = routingConnected
+        ? (customDomain?.manuallyVerifiedRouting ? 'Manually approved' : 'Connected')
+        : (dnsTarget ? 'Not connected' : 'Not configured');
+
+    return {
+        displayStatus,
+        ownershipLabel: ownershipVerified ? 'Verified' : 'Not verified',
+        routingLabel,
+        browserReady: routingConnected ? 'Ready' : 'Not ready'
+    };
+};
+
 const StoreBuilderPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [uploadingThemeImage, setUploadingThemeImage] = useState(false);
+    const [checkingDomain, setCheckingDomain] = useState(false);
     const [shopName, setShopName] = useState('');
     const [shopSubdomain, setShopSubdomain] = useState('');
     const [theme, setTheme] = useState(defaultTheme);
@@ -128,7 +178,7 @@ const StoreBuilderPage = () => {
         theme,
         shopName,
         subdomain: shopSubdomain,
-        domain: customDomain?.status === 'Verified' ? customDomain.domain : ''
+        domain: isCustomDomainConnected(customDomain) ? customDomain.domain : ''
     }), [customDomain, shopName, shopSubdomain, theme]);
     const storeSeoSignals = useMemo(() => {
         const productsWithAltText = availableProducts.filter(product => String(product.imageAltText || '').trim()).length;
@@ -165,6 +215,16 @@ const StoreBuilderPage = () => {
         setActiveGroup(groupId);
         setActiveElement(groupElementMap[groupId] || groupId);
         setMobileWorkspace('edit');
+    };
+
+    const copyDomainValue = async (value, label = 'Value') => {
+        if (!value) return;
+        try {
+            await navigator.clipboard.writeText(value);
+            toast.success(`${label} copied`);
+        } catch {
+            toast.error('Could not copy value');
+        }
     };
 
     const validation = useMemo(() => {
@@ -980,8 +1040,15 @@ const StoreBuilderPage = () => {
                 customDomain,
                 storewideDiscount: Math.max(0, Math.min(100, Number(storewideDiscount) || 0))
             };
-            await API.patch('/store-builder/admin', payload);
-            const publishedSnapshot = stableStringify({ theme, customDomain, storewideDiscount: payload.storewideDiscount });
+            const { data } = await API.patch('/store-builder/admin', payload);
+            const savedShop = data.data || {};
+            const nextTheme = savedShop.theme ? mergeTheme(defaultTheme, savedShop.theme) : theme;
+            const nextDomain = savedShop.customDomain || customDomain;
+            const nextDiscount = Number(savedShop.storewideDiscount ?? payload.storewideDiscount) || 0;
+            setTheme(nextTheme);
+            setCustomDomain(nextDomain);
+            setStorewideDiscount(nextDiscount);
+            const publishedSnapshot = stableStringify({ theme: nextTheme, customDomain: nextDomain, storewideDiscount: nextDiscount });
             const publishedAt = new Date().toISOString();
             setInitialSnapshot(publishedSnapshot);
             setLastSavedAt(publishedAt);
@@ -993,6 +1060,40 @@ const StoreBuilderPage = () => {
             toast.error(err.response?.data?.error || 'Failed to save store builder');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleCheckCustomDomain = async () => {
+        if (!customDomain?.domain) {
+            toast.error('Add and publish a custom domain first.');
+            return;
+        }
+        if (hasUnsavedChanges) {
+            toast.error('Publish your latest domain changes before checking DNS.');
+            return;
+        }
+
+        setCheckingDomain(true);
+        try {
+            const { data } = await API.post('/store-builder/admin/custom-domain/check');
+            const nextDomain = { ...customDomain, ...(data.data || {}) };
+            setCustomDomain(nextDomain);
+            const nextSnapshot = stableStringify({ theme, customDomain: nextDomain, storewideDiscount: Number(storewideDiscount) || 0 });
+            setInitialSnapshot(nextSnapshot);
+            lastHistorySnapshotRef.current = nextSnapshot;
+            toast.success(data.data?.message || 'Domain verification checked');
+        } catch (err) {
+            const nextData = err.response?.data?.data;
+            if (nextData) {
+                const nextDomain = { ...customDomain, ...nextData };
+                setCustomDomain(nextDomain);
+                const nextSnapshot = stableStringify({ theme, customDomain: nextDomain, storewideDiscount: Number(storewideDiscount) || 0 });
+                setInitialSnapshot(nextSnapshot);
+                lastHistorySnapshotRef.current = nextSnapshot;
+            }
+            toast.error(err.response?.data?.message || err.response?.data?.error || 'Domain verification failed');
+        } finally {
+            setCheckingDomain(false);
         }
     };
 
@@ -2140,15 +2241,99 @@ const StoreBuilderPage = () => {
                         ))}
                     </BuilderCard>
                 );
-            case 'domain':
+            case 'domain': {
+                const domainRecord = getDomainRecordHint(customDomain.domain || '');
+                const expectedTxtValue = customDomain.expectedTxtValue || (customDomain.verificationToken ? `scaleup-verification=${customDomain.verificationToken}` : '');
+                const dnsTarget = customDomain.dnsTarget || CUSTOM_DOMAIN_DNS_TARGET;
+                const connectionLabels = getDomainConnectionLabels(customDomain, dnsTarget);
+                const canCheckDomain = Boolean(customDomain.domain) && !hasUnsavedChanges && !checkingDomain;
                 return (
                     <BuilderCard title="Domain" description="Use this after your domain DNS points to the platform." icon={Globe}>
-                        <BuilderInput label="Custom domain" value={customDomain.domain || ''} onChange={e => setCustomDomain(prev => ({ ...prev, domain: e.target.value }))} placeholder="www.example.com" help="Customers can use this instead of the default subdomain after verification." />
-                        <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                            Status: <span className="font-semibold text-slate-900">{customDomain.status || 'NotConfigured'}</span>
+                        <BuilderInput label="Custom domain" value={customDomain.domain || ''} onChange={e => setCustomDomain(prev => ({ ...prev, domain: e.target.value }))} placeholder="www.example.com" help="Customers can use this instead of the default subdomain after Super Admin verification." />
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                            <div className="flex items-center justify-between gap-3">
+                                <span>Status</span>
+                                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-900 ring-1 ring-slate-200">{connectionLabels.displayStatus}</span>
+                            </div>
+                            <div className="mt-2 grid gap-1 text-xs text-slate-500">
+                                <span>Ownership: {connectionLabels.ownershipLabel}</span>
+                                <span>Routing: {connectionLabels.routingLabel}</span>
+                                <span>Browser access: {connectionLabels.browserReady}</span>
+                                <span>Last checked: {customDomain.lastCheckedAt ? new Date(customDomain.lastCheckedAt).toLocaleString() : 'Not checked yet'}</span>
+                                <span>DNS result: {customDomain.lastDnsCheckStatus || 'Not checked'}</span>
+                            </div>
+                            {customDomain.lastDnsCheckError && (
+                                <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 ring-1 ring-amber-100">
+                                    {customDomain.lastDnsCheckError}
+                                </p>
+                            )}
+                            {customDomain.adminNote && (
+                                <p className="mt-2 rounded-lg bg-white px-3 py-2 text-xs leading-5 text-slate-600 ring-1 ring-slate-200">
+                                    Admin note: {customDomain.adminNote}
+                                </p>
+                            )}
+                        </div>
+                        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-600">
+                            <div className="font-bold text-slate-950">DNS instructions</div>
+                            {customDomain.domain && expectedTxtValue ? (
+                                <div className="mt-3 space-y-2">
+                                    <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs">
+                                        <div className="mb-2 font-bold text-slate-800">Step 1: Add TXT record to prove ownership</div>
+                                        <div className="grid gap-2 sm:grid-cols-3">
+                                            <span><strong>Type</strong><br />TXT</span>
+                                            <span><strong>Name</strong><br />_scaleup</span>
+                                            <span className="min-w-0"><strong>Value</strong><br /><span className="break-all">{expectedTxtValue}</span></span>
+                                        </div>
+                                        <p className="mt-2 text-slate-500">This only proves that you own the domain. It does not connect the domain to your storefront.</p>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            <BuilderButton variant="secondary" className="px-2 py-1 text-xs" onClick={() => copyDomainValue('_scaleup', 'TXT host')}><Copy size={13} /> Copy host</BuilderButton>
+                                            <BuilderButton variant="secondary" className="px-2 py-1 text-xs" onClick={() => copyDomainValue(expectedTxtValue, 'TXT value')}><Copy size={13} /> Copy value</BuilderButton>
+                                        </div>
+                                    </div>
+                                    {dnsTarget && domainRecord ? (
+                                        <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs">
+                                            <div className="mb-2 font-bold text-slate-800">Step 2: Point your domain to Scaleup</div>
+                                            <div className="grid gap-2 sm:grid-cols-3">
+                                                <span><strong>Type</strong><br />{domainRecord.type}</span>
+                                                <span><strong>Name</strong><br />{domainRecord.host}</span>
+                                                <span className="min-w-0"><strong>Target</strong><br /><span className="break-all">{dnsTarget}</span></span>
+                                            </div>
+                                            <p className="mt-2 text-slate-500">
+                                                This routing record is required before customers can open your storefront on this domain.
+                                            </p>
+                                            {domainRecord.host === '@' && (
+                                                <p className="mt-2 rounded-md bg-white px-2 py-1 text-slate-600 ring-1 ring-slate-200">
+                                                    Root domains often need ALIAS/ANAME or hosting support. If your DNS provider does not support this, contact support.
+                                                </p>
+                                            )}
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                <BuilderButton variant="secondary" className="px-2 py-1 text-xs" onClick={() => copyDomainValue(domainRecord.host, 'DNS host')}><Copy size={13} /> Copy host</BuilderButton>
+                                                <BuilderButton variant="secondary" className="px-2 py-1 text-xs" onClick={() => copyDomainValue(dnsTarget, 'DNS target')}><Copy size={13} /> Copy target</BuilderButton>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 ring-1 ring-amber-100">
+                                            Contact support to connect your domain. DNS target is not configured yet.
+                                        </p>
+                                    )}
+                                    <p className="text-xs leading-5 text-slate-500">After updating DNS, click Check verification. DNS changes may take a few minutes to several hours.</p>
+                                    <BuilderButton onClick={handleCheckCustomDomain} disabled={!canCheckDomain} className="w-full">
+                                        <RefreshCw size={15} className={checkingDomain ? 'animate-spin' : ''} />
+                                        {checkingDomain ? 'Checking DNS...' : 'Check verification'}
+                                    </BuilderButton>
+                                    {hasUnsavedChanges && (
+                                        <p className="text-xs leading-5 text-slate-500">Publish your latest domain changes before checking DNS.</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="mt-2 text-xs leading-5 text-slate-500">
+                                    Add and publish a custom domain first. We will generate a TXT verification value after the domain is saved.
+                                </p>
+                            )}
                         </div>
                     </BuilderCard>
                 );
+            }
             default:
                 return null;
         }

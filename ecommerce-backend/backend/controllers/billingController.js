@@ -10,10 +10,12 @@ const Order = require('../models/Order');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
 const { createNotification } = require('../services/notificationService');
 const {
-    getPlanByNameOrDefault,
+    getPlanBySlugOrNameOrDefault,
     calculatePlanPrice,
+    getPlanSlug,
     normalizePlanName
 } = require('../services/billing/billingPlanService');
+const { getBillingDisplayForSubscription } = require('../services/billing/billingDisplayService');
 const {
     ensureSubscriptionExists,
     getCurrentSubscriptionForShop,
@@ -60,10 +62,16 @@ const serializeSubscription = (subscription) => {
         id: plain._id,
         shopId: plain.shopId,
         planId: plain.planId,
+        activePlanName: plain.activePlanName || '',
+        activePlanSlug: plain.activePlanSlug || '',
+        intendedPlanId: plain.intendedPlanId || null,
+        intendedPlanName: plain.intendedPlanName || '',
+        intendedPlanSlug: plain.intendedPlanSlug || '',
         status: plain.status,
         billingCycle: plain.billingCycle,
         pendingPlanId: plain.pendingPlanId,
         pendingPlanName: plain.pendingPlanName || '',
+        pendingPlanSlug: plain.pendingPlanSlug || '',
         trialStartedAt: plain.trialStartedAt,
         trialEndsAt: plain.trialEndsAt,
         trialDaysLeft: daysUntil(plain.trialEndsAt),
@@ -103,6 +111,8 @@ const serializeInvoice = (invoice) => {
         shopId: plain.shopId,
         subscriptionId: plain.subscriptionId,
         planId: plain.planId,
+        planName: plain.planName || '',
+        planSlug: plain.planSlug || '',
         invoiceNumber: plain.invoiceNumber,
         amount: plain.amount,
         currency: plain.currency,
@@ -123,6 +133,9 @@ const serializePayment = (payment) => {
         id: plain._id,
         shopId: plain.shopId,
         invoiceId: plain.invoiceId,
+        planId: plain.planId || null,
+        planName: plain.planName || '',
+        planSlug: plain.planSlug || '',
         provider: plain.provider,
         amount: plain.amount,
         transactionId: plain.transactionId,
@@ -141,15 +154,6 @@ const serializePayment = (payment) => {
 
 const getShopIdFromReq = (req) => req.tenantId || req.user?.shopId || req.user?.shop_id;
 
-const getPlanDisplayForSubscription = ({ subscription, activePlan, pendingPlan }) => {
-    if (!subscription) return activePlan?.name || 'Trial';
-    if (subscription.status === 'trialing') return 'Trial';
-    if (subscription.status === 'pending_approval') return `Pending ${subscription.pendingPlanName || pendingPlan?.name || 'plan'}`;
-    if (subscription.status === 'active') return activePlan?.name || 'Active plan';
-    if (['past_due', 'grace', 'suspended', 'cancelled'].includes(subscription.status)) return activePlan?.name || 'Trial expired';
-    return activePlan?.name || 'Trial';
-};
-
 exports.getVendorBillingCurrent = async (req, res) => {
     try {
         const shopId = getShopIdFromReq(req);
@@ -163,9 +167,10 @@ exports.getVendorBillingCurrent = async (req, res) => {
         const pendingPlan = subscription.pendingPlanId
             ? await VendorPlan.findById(subscription.pendingPlanId).lean()
             : null;
-        const plan = subscription.status === 'active' && activePlan
+        const display = getBillingDisplayForSubscription({ subscription, activePlan, pendingPlan });
+        const plan = ['active', 'past_due', 'grace', 'suspended', 'cancelled'].includes(subscription.status) && activePlan
             ? activePlan
-            : await getPlanByNameOrDefault(activePlan?.name || shop.plan?.name || 'Starter');
+            : await getPlanBySlugOrNameOrDefault(display.effectivePlanSlug || display.effectivePlanName || 'starter');
         const latestInvoice = await Invoice.findOne({ shopId }).sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -175,7 +180,8 @@ exports.getVendorBillingCurrent = async (req, res) => {
                 plan,
                 activePlan,
                 pendingPlan,
-                displayPlan: getPlanDisplayForSubscription({ subscription, activePlan, pendingPlan }),
+                displayPlan: display.displayPlan,
+                billingDisplay: display,
                 latestInvoice: serializeInvoice(latestInvoice),
                 trialDays: TRIAL_DAYS,
                 graceDays: GRACE_DAYS
@@ -268,10 +274,15 @@ exports.createVendorInvoice = async (req, res) => {
         const shop = await Shop.findById(shopId).select('plan');
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        const planName = normalizePlanName(req.body.planName || req.body.plan || shop.plan?.name || 'Starter');
+        const requestedPlan = req.body.planName || req.body.planSlug || req.body.plan || shop.plan?.intendedPlanSlug || shop.plan?.name || 'Starter';
+        const fallbackPlan = await getPlanBySlugOrNameOrDefault(requestedPlan);
+        const planName = fallbackPlan.name || normalizePlanName(requestedPlan);
+        const planSlug = fallbackPlan.slug || getPlanSlug(planName);
         const billingCycle = req.body.billingCycle === 'yearly' ? 'yearly' : 'monthly';
-        const plan = await VendorPlan.findOne({ name: planName, isActive: { $ne: false } });
-        const fallbackPlan = await getPlanByNameOrDefault(planName);
+        const plan = await VendorPlan.findOne({
+            isActive: { $ne: false },
+            $or: [{ name: planName }, { slug: planSlug }]
+        });
         const subscription = await ensureSubscriptionExists(shop);
         const amount = await calculatePlanPrice(plan?._id || planName, billingCycle);
         const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
@@ -280,6 +291,8 @@ exports.createVendorInvoice = async (req, res) => {
             shopId,
             subscriptionId: subscription._id,
             planId: plan?._id || null,
+            planName,
+            planSlug,
             billingCycle,
             amount,
             dueDate,
@@ -380,8 +393,8 @@ exports.getSuperAdminSubscriptions = async (req, res) => {
         const [items, total] = await Promise.all([
             Subscription.find(query)
                 .populate('shopId', 'shopName subdomain approvalStatus isActive suspensionReason')
-                .populate('planId', 'name monthlyPrice yearlyPrice')
-                .populate('pendingPlanId', 'name monthlyPrice yearlyPrice')
+                .populate('planId', 'name slug monthlyPrice yearlyPrice')
+                .populate('pendingPlanId', 'name slug monthlyPrice yearlyPrice')
                 .sort({ updatedAt: -1 })
                 .skip(skip)
                 .limit(limit),
@@ -407,16 +420,18 @@ exports.getSuperAdminSubscriptions = async (req, res) => {
             data: items.map(item => {
                 const row = serializeSubscription(item);
                 const shopId = String(item.shopId?._id || item.shopId || '');
+                const billingDisplay = getBillingDisplayForSubscription({
+                    subscription: row,
+                    activePlan: item.planId && typeof item.planId === 'object' ? item.planId : null,
+                    pendingPlan: item.pendingPlanId && typeof item.pendingPlanId === 'object' ? item.pendingPlanId : null
+                });
                 return {
                     ...row,
                     shop: item.shopId && typeof item.shopId === 'object' ? item.shopId : null,
                     plan: item.planId && typeof item.planId === 'object' ? item.planId : null,
                     pendingPlan: item.pendingPlanId && typeof item.pendingPlanId === 'object' ? item.pendingPlanId : null,
-                    displayPlan: getPlanDisplayForSubscription({
-                        subscription: row,
-                        activePlan: item.planId && typeof item.planId === 'object' ? item.planId : null,
-                        pendingPlan: item.pendingPlanId && typeof item.pendingPlanId === 'object' ? item.pendingPlanId : null
-                    }),
+                    billingDisplay,
+                    displayPlan: billingDisplay.displayPlan,
                     owner: ownerMap[shopId] || null,
                     metrics: {
                         products: productMap[shopId] || 0,
@@ -440,7 +455,7 @@ exports.getSuperAdminInvoices = async (req, res) => {
         if (req.query.search) query.invoiceNumber = { $regex: String(req.query.search), $options: 'i' };
 
         const [items, total] = await Promise.all([
-            Invoice.find(query).populate('shopId', 'shopName subdomain').populate('planId', 'name').sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Invoice.find(query).populate('shopId', 'shopName subdomain').populate('planId', 'name slug').sort({ createdAt: -1 }).skip(skip).limit(limit),
             Invoice.countDocuments(query)
         ]);
         const payments = await PaymentTransaction.find({
@@ -481,8 +496,8 @@ exports.getSuperAdminPayments = async (req, res) => {
                 .populate('shopId', 'shopName subdomain')
                 .populate({
                     path: 'invoiceId',
-                    select: 'invoiceNumber amount status billingCycle planId',
-                    populate: { path: 'planId', select: 'name' }
+                    select: 'invoiceNumber amount status billingCycle planId planName planSlug',
+                    populate: { path: 'planId', select: 'name slug' }
                 })
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -566,6 +581,8 @@ exports.createSuperAdminInvoice = async (req, res) => {
             shopId,
             subscriptionId: subscription._id,
             planId: finalPlanId,
+            planName: req.body.planName || '',
+            planSlug: req.body.planSlug || '',
             billingCycle,
             amount: finalAmount,
             dueDate,

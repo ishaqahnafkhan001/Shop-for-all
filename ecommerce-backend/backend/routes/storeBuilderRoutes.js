@@ -15,6 +15,7 @@ const {
     uploadStoreBuilderImage,
     getPublicStorefrontSettings
 } = require('../controllers/storeBuilderController');
+const { checkVendorCustomDomainDns } = require('../controllers/customDomainController');
 
 router.get(
     '/admin',
@@ -32,6 +33,16 @@ router.patch(
     requireShopFeatureWhenCustomDomainChanges('customDomain'),
     blockVerificationSuspendedShop,
     updateStoreBuilderSettings
+);
+
+router.post(
+    '/admin/custom-domain/check',
+    protect,
+    authorize('VendorAdmin'),
+    requireShopFeature('storeBuilder'),
+    requireShopFeature('customDomain'),
+    blockVerificationSuspendedShop,
+    checkVendorCustomDomainDns
 );
 
 router.get(

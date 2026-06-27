@@ -39,6 +39,18 @@ const { getDefaultDeadline, isVerificationSuspension } = require('../services/ve
 const { getShopFeatureFlags } = require('../services/shops/featureAccessService');
 const { createTrialForShop, isBillingSuspension } = require('../services/billing/subscriptionService');
 const { buildDefaultPolicies } = require('../services/policies/defaultPolicyTemplates');
+const {
+    validateSubdomain,
+    checkSubdomainAvailability
+} = require('../services/subdomainAvailabilityService');
+const {
+    normalizeCustomDomain,
+    getHostnameFromHostHeader,
+    getPlatformSubdomainFromHostname,
+    isPlatformRootHost,
+    isValidCustomDomain,
+    buildVerifiedCustomDomainQuery
+} = require('../utils/domainUtils');
 
 const signSessionToken = ({ account, membership, user }) => jwt.sign(
     {
@@ -107,19 +119,11 @@ const getSessionShopPayload = async (shopOrId) => {
 };
 
 const extractSubdomainFromHost = (host = '') => {
-    const hostname = String(host).split(':')[0].toLowerCase();
-
-    if (hostname.includes('.localhost')) {
-        const localSubdomain = hostname.split('.localhost')[0];
-        return localSubdomain && localSubdomain !== 'localhost' ? localSubdomain : '';
-    }
-
-    if (hostname.endsWith('.scaleup.codes')) {
-        const [subdomain] = hostname.split('.');
-        return ['www', 'api', 'admin', 'shop', 'scaleup'].includes(subdomain) ? '' : subdomain;
-    }
-
-    return '';
+    const hostname = getHostnameFromHostHeader(host);
+    const platformSubdomain = getPlatformSubdomainFromHostname(hostname);
+    if (platformSubdomain) return platformSubdomain;
+    if (isPlatformRootHost(hostname)) return '';
+    return isValidCustomDomain(hostname) ? normalizeCustomDomain(hostname) : '';
 };
 
 const extractSubdomainFromUrl = (value = '') => {
@@ -134,9 +138,49 @@ const getResetPayload = (req) => ({
     ...req.body,
     subdomain: req.body?.subdomain ||
         req.get('x-shop-subdomain') ||
+        req.get('x-storefront-host') ||
         extractSubdomainFromUrl(req.get('origin')) ||
         extractSubdomainFromUrl(req.get('referer'))
 });
+
+const findShopByTenantIdentifier = (identifier, projection = '_id', options = {}) => {
+    const cleanIdentifier = normalizeCustomDomain(identifier);
+    if (!cleanIdentifier) return null;
+
+    const query = cleanIdentifier.includes('.')
+        ? buildVerifiedCustomDomainQuery(cleanIdentifier)
+        : { subdomain: cleanIdentifier };
+
+    const shopQuery = Shop.findOne(query).select(projection);
+    if (options.session) shopQuery.session(options.session);
+    return shopQuery;
+};
+
+exports.checkSubdomain = async (req, res) => {
+    try {
+        const result = await checkSubdomainAvailability(req.query.subdomain);
+
+        if (result.valid === false || result.success === false) {
+            return res.status(400).json({
+                success: false,
+                available: false,
+                code: result.code || 'INVALID_SUBDOMAIN',
+                normalizedSubdomain: result.normalizedSubdomain || '',
+                message: result.message || 'Invalid store URL.'
+            });
+        }
+
+        return res.status(200).json(result);
+    } catch (err) {
+        console.error('Check subdomain error:', err);
+        return res.status(500).json({
+            success: false,
+            available: false,
+            error: 'Failed to check store URL availability.'
+        });
+    }
+};
+
 exports.sendOTP = async (req, res) => {
     try {
         const email = normalizeEmail(req.body.email);
@@ -196,9 +240,20 @@ exports.registerVendor = async (req, res) => {
             email,
             password,
             fullName,
-            otp
+            otp,
+            selectedPlanSlug,
+            selectedPlanId
         } = value;
         const cleanEmail = normalizeEmail(email);
+        const subdomainValidation = validateSubdomain(subdomain);
+        if (!subdomainValidation.valid) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                code: subdomainValidation.code,
+                error: subdomainValidation.message
+            });
+        }
 
         const otpResult = await consumeRegistrationOtp({
             email: cleanEmail,
@@ -218,7 +273,9 @@ exports.registerVendor = async (req, res) => {
         if (existingShop) {
             await session.abortTransaction();
             return res.status(400).json({
-                error: 'Subdomain already taken.'
+                success: false,
+                code: 'SUBDOMAIN_TAKEN',
+                error: 'This store URL was just taken. Please choose another one.'
             });
         }
 
@@ -266,7 +323,11 @@ exports.registerVendor = async (req, res) => {
             verificationDeadline: newShop.verification?.deadline || getDefaultDeadline(newShop)
         }], { session });
 
-        await createTrialForShop(newShop, { session });
+        await createTrialForShop(newShop, {
+            session,
+            selectedPlanSlug: selectedPlanSlug || 'starter',
+            intendedPlanId: selectedPlanId || null
+        });
 
         await session.commitTransaction();
 
@@ -286,6 +347,14 @@ exports.registerVendor = async (req, res) => {
     } catch (err) {
         await session.abortTransaction();
         console.error('Register Vendor Error:', err);
+
+        if (err.code === 11000 && err.keyPattern?.subdomain) {
+            return res.status(409).json({
+                success: false,
+                code: 'SUBDOMAIN_TAKEN',
+                error: 'This store URL was just taken. Please choose another one.'
+            });
+        }
 
         res.status(500).json({
             error: 'Registration failed'
@@ -331,7 +400,7 @@ exports.registerCustomer = async (req, res) => {
             });
         }
 
-        const targetShop = await Shop.findOne({ subdomain }).session(session);
+        const targetShop = await findShopByTenantIdentifier(subdomain, '_id shopName subdomain', { session });
 
         if (!targetShop) {
             await session.abortTransaction();
@@ -485,7 +554,7 @@ exports.login = async (req, res) => {
         if (!account) {
             let legacyShop = null;
             if (subdomain) {
-                legacyShop = await Shop.findOne({ subdomain }).select('_id');
+                legacyShop = await findShopByTenantIdentifier(subdomain, '_id');
             }
 
             const legacyUsers = await User.find({
@@ -567,7 +636,7 @@ exports.login = async (req, res) => {
         let shop = null;
 
         if (subdomain) {
-            shop = await Shop.findOne({ subdomain }).select('_id shopName subdomain isActive approvalStatus suspensionReason plan featureFlags');
+            shop = await findShopByTenantIdentifier(subdomain, '_id shopName subdomain isActive approvalStatus suspensionReason plan featureFlags');
             if (!shop) return res.status(404).json({ error: 'Shop not found' });
         }
 
@@ -805,9 +874,7 @@ exports.getMe = async (req, res) => {
         }
 
         if (requestedSubdomain && req.user?.role !== 'SuperAdmin') {
-            const requestedShop = await Shop.findOne({ subdomain: requestedSubdomain })
-                .select('_id subdomain')
-                .lean();
+            const requestedShop = await findShopByTenantIdentifier(requestedSubdomain, '_id subdomain');
 
             if (!requestedShop || String(requestedShop._id) !== String(req.user.shop_id || req.user.shopId)) {
                 return res.status(401).json({
