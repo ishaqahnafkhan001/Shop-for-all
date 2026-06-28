@@ -8,8 +8,14 @@ const statusCopy = {
     approved: {
         tone: 'border-emerald-200 bg-emerald-50 text-emerald-900',
         icon: BadgeCheck,
-        title: 'Store verified',
-        body: 'Your NID verification is approved.'
+        title: 'NID approved',
+        body: 'Verify the owner phone number to complete vendor verification.'
+    },
+    verified: {
+        tone: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+        icon: BadgeCheck,
+        title: 'Vendor verified',
+        body: 'Your NID and owner phone verification are complete.'
     },
     pending: {
         tone: 'border-amber-200 bg-amber-50 text-amber-950',
@@ -32,13 +38,14 @@ const statusCopy = {
     default: {
         tone: 'border-indigo-200 bg-indigo-50 text-indigo-950',
         icon: ShieldCheck,
-        title: 'NID verification required',
-        body: 'Submit your NID within the verification deadline to keep the store active.'
+        title: 'Vendor verification required',
+        body: 'Submit your NID and verify owner phone within the deadline to keep the store active.'
     }
 };
 
 const getStatusConfig = (status) => {
     if (status?.isSuspended) return statusCopy.suspended;
+    if (status?.isVendorVerified) return statusCopy.verified;
     return statusCopy[status?.status] || statusCopy.default;
 };
 
@@ -75,7 +82,7 @@ const VerificationBanner = () => {
                     <p className="font-bold">{config.title}</p>
                     <p className="mt-0.5 leading-5">
                         {config.body}
-                        {status.status !== 'approved' && (
+                        {!status.isVendorVerified && (
                             <span className="ml-1 font-semibold">
                                 {status.daysLeft > 0 ? `${status.daysLeft} days left.` : `Deadline: ${deadline}.`}
                             </span>
@@ -87,7 +94,7 @@ const VerificationBanner = () => {
                 to="/dashboard/verification"
                 className="inline-flex shrink-0 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-bold text-slate-900 shadow-sm ring-1 ring-black/5 transition hover:bg-slate-50"
             >
-                {status.status === 'approved' ? 'View details' : 'Open verification'}
+                {status.isVendorVerified ? 'View details' : 'Open verification'}
             </Link>
         </div>
     );

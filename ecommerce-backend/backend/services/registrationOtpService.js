@@ -2,6 +2,14 @@ const crypto = require('crypto');
 
 const OTP = require('../models/OTP');
 const { normalizeEmail } = require('./identityService');
+const {
+    INVALID_OTP_RESPONSE,
+    PURPOSES,
+    createOtp,
+    verifyOtp,
+    generateOtp,
+    hashValue
+} = require('./otpService');
 
 const REGISTRATION_OTP_LIMITS = Object.freeze({
     digits: 6,
@@ -10,8 +18,6 @@ const REGISTRATION_OTP_LIMITS = Object.freeze({
 });
 
 const PURPOSE = 'registration';
-const INVALID_OTP_RESPONSE = 'Invalid or expired verification code.';
-
 const getOtpSecret = () => {
     const secret = process.env.REGISTRATION_OTP_SECRET || process.env.JWT_SECRET || process.env.RESET_PASSWORD || process.env.PASS;
 
@@ -22,10 +28,7 @@ const getOtpSecret = () => {
     return secret || 'development-registration-otp-secret';
 };
 
-const generateRegistrationOtp = () =>
-    crypto.randomInt(0, 10 ** REGISTRATION_OTP_LIMITS.digits)
-        .toString()
-        .padStart(REGISTRATION_OTP_LIMITS.digits, '0');
+const generateRegistrationOtp = () => generateOtp();
 
 const getOtpKey = (email) => `${PURPOSE}:${normalizeEmail(email)}`;
 
@@ -48,35 +51,31 @@ const verifyRegistrationOtpHash = (email, otp, expectedHash) => {
 
 const createOrReplaceRegistrationOtp = async ({ email, session }) => {
     const cleanEmail = normalizeEmail(email);
-    const otp = generateRegistrationOtp();
-    const now = new Date();
+    const result = await createOtp({
+        identifier: cleanEmail,
+        channel: 'email',
+        purpose: PURPOSES.legacyRegistration,
+        session,
+        enforceCooldown: false
+    });
 
-    await OTP.findOneAndUpdate(
-        { email: cleanEmail, purpose: PURPOSE },
-        {
-            $set: {
-                email: cleanEmail,
-                purpose: PURPOSE,
-                otpHash: hashRegistrationOtp(cleanEmail, otp),
-                attempts: 0,
-                usedAt: null,
-                expiresAt: new Date(now.getTime() + REGISTRATION_OTP_LIMITS.expiresMs),
-                createdAt: now
-            },
-            $unset: { otp: '' }
-        },
-        {
-            upsert: true,
-            new: true,
-            session
-        }
-    );
-
-    return otp;
+    if (!result.success) throw new Error(result.error || 'Unable to create OTP');
+    return result.otp;
 };
 
 const consumeRegistrationOtp = async ({ email, otp, session }) => {
     const cleanEmail = normalizeEmail(email);
+    const modernResult = await verifyOtp({
+        identifier: cleanEmail,
+        channel: 'email',
+        purpose: PURPOSES.legacyRegistration,
+        otp,
+        session,
+        consume: true
+    });
+
+    if (modernResult.success) return { success: true };
+
     const record = await OTP.findOne({ email: cleanEmail, purpose: PURPOSE }).session(session || null);
     const now = new Date();
 
@@ -84,6 +83,7 @@ const consumeRegistrationOtp = async ({ email, otp, session }) => {
         !record ||
         !record.otpHash ||
         record.usedAt ||
+        record.consumedAt ||
         !record.expiresAt ||
         record.expiresAt <= now ||
         record.attempts >= REGISTRATION_OTP_LIMITS.maxAttempts
@@ -99,6 +99,7 @@ const consumeRegistrationOtp = async ({ email, otp, session }) => {
     }
 
     record.usedAt = now;
+    record.consumedAt = now;
     await record.save({ session });
 
     return { success: true };
@@ -112,5 +113,6 @@ module.exports = {
     createOrReplaceRegistrationOtp,
     generateRegistrationOtp,
     hashRegistrationOtp,
+    hashValue,
     verifyRegistrationOtpHash
 };

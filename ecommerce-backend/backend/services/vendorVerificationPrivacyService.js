@@ -2,6 +2,7 @@ const {
     createSignedNidUrl,
     migrateLegacyNidDocument
 } = require('../config/cloudinary');
+const { buildVendorVerificationStatus } = require('./verification/vendorVerificationStatusService');
 
 const DOCUMENT_TYPES = Object.freeze({
     front: 'front',
@@ -50,12 +51,14 @@ const serializeVerificationPrivacy = (verification, options = {}) => {
     const owner = doc.owner_id && typeof doc.owner_id === 'object' ? doc.owner_id : null;
     const reviewer = doc.reviewedBy && typeof doc.reviewedBy === 'object' ? doc.reviewedBy : null;
     const nidNumber = includeFullNid ? doc.nidNumber || '' : maskNidNumber(doc.nidNumber);
+    const overallVerification = buildVendorVerificationStatus({ shop, verification: doc });
 
     const sanitized = {
         ...doc,
         nidNumber,
         nidNumberMasked: maskNidNumber(doc.nidNumber),
         documents: documentSummaries(doc),
+        overallVerification,
         shop,
         owner,
         reviewer

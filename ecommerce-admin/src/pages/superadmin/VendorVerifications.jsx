@@ -56,7 +56,7 @@ const DetailModal = ({ item, onClose, onApprove, onReject, onOpenDocument, rejec
                 <div className="space-y-6 p-5">
                     <div className="grid gap-4 sm:grid-cols-4">
                         <div className="rounded-xl bg-slate-50 p-4">
-                            <p className="text-xs font-bold uppercase text-slate-400">Status</p>
+                            <p className="text-xs font-bold uppercase text-slate-400">NID Status</p>
                             <div className="mt-2"><StatusPill status={item.status} /></div>
                         </div>
                         <div className="rounded-xl bg-slate-50 p-4">
@@ -70,6 +70,25 @@ const DetailModal = ({ item, onClose, onApprove, onReject, onOpenDocument, rejec
                         <div className="rounded-xl bg-slate-50 p-4">
                             <p className="text-xs font-bold uppercase text-slate-400">Submitted</p>
                             <p className="mt-2 text-sm font-semibold text-slate-900">{item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : '-'}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="rounded-xl border border-slate-200 p-4">
+                            <p className="text-xs font-bold uppercase text-slate-400">Overall vendor status</p>
+                            <p className="mt-2 font-black text-slate-950">{item.overallVerification?.badgeLabel || 'Not verified'}</p>
+                            {item.overallVerification?.reason && <p className="mt-1 text-xs text-slate-500">{item.overallVerification.reason}</p>}
+                        </div>
+                        <div className="rounded-xl border border-slate-200 p-4">
+                            <p className="text-xs font-bold uppercase text-slate-400">Phone verification</p>
+                            <p className={`mt-2 font-black ${item.overallVerification?.phoneVerified ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                {item.overallVerification?.phoneVerified ? 'Verified' : 'Not verified'}
+                            </p>
+                            {item.overallVerification?.phoneVerifiedAt && <p className="mt-1 text-xs text-slate-500">{new Date(item.overallVerification.phoneVerifiedAt).toLocaleString()}</p>}
+                        </div>
+                        <div className="rounded-xl border border-slate-200 p-4">
+                            <p className="text-xs font-bold uppercase text-slate-400">Registration OTP</p>
+                            <p className="mt-2 font-black uppercase text-slate-950">{item.overallVerification?.registrationOtpChannel || '-'}</p>
                         </div>
                     </div>
 
@@ -297,7 +316,7 @@ const VendorVerifications = () => {
                 <div className="border-b border-slate-100 px-5 py-4">
                     <div className="flex items-center gap-2 font-black text-slate-950">
                         <ShieldAlert className="h-5 w-5 text-indigo-600" />
-                        NID submissions
+                        Vendor verification submissions
                     </div>
                 </div>
                 <div className="overflow-auto">

@@ -21,6 +21,7 @@ import {
 import { useCheckoutCartProducts } from "./hooks/useCheckoutCartProducts";
 import { useCheckoutCoupon } from "./hooks/useCheckoutCoupon";
 import { useCheckoutFormState } from "./hooks/useCheckoutFormState";
+import { useCheckoutPhoneOtp } from "./hooks/useCheckoutPhoneOtp";
 import { useCheckoutTotals } from "./hooks/useCheckoutTotals";
 
 export default function CheckoutPage({ params }) {
@@ -118,6 +119,52 @@ export default function CheckoutPage({ params }) {
             || product?.variants?.[0]?._id;
     };
 
+    const buildCheckoutItems = () => cartItems.map((item) => {
+        const selectedVariantId = resolveCartVariantId(item);
+
+        if (!selectedVariantId) {
+            throw new Error(`No variant found for ${item.title}`);
+        }
+
+        return {
+            productId: item._id,
+            variantId: selectedVariantId,
+            quantity: item.quantity,
+        };
+    });
+
+    const checkoutResetKey = useMemo(() => (
+        [
+            formData.phone,
+            formData.city,
+            cartItems.map((item) => `${item._id}:${item.variantId || item.selectedVariant?._id || "default"}:${item.quantity}`).join("|"),
+        ].join("::")
+    ), [cartItems, formData.city, formData.phone]);
+
+    const phoneOtp = useCheckoutPhoneOtp({ subdomain, resetKey: checkoutResetKey });
+
+    const sendPhoneOtp = () => {
+        try {
+            phoneOtp.sendOtp({
+                phone: formData.phone,
+                items: buildCheckoutItems(),
+            });
+        } catch (error) {
+            toast.error(error.message || "Complete your cart before phone verification");
+        }
+    };
+
+    const verifyPhoneOtp = () => {
+        try {
+            phoneOtp.verifyOtp({
+                phone: formData.phone,
+                items: buildCheckoutItems(),
+            });
+        } catch (error) {
+            toast.error(error.message || "Complete your cart before phone verification");
+        }
+    };
+
     const handlePlaceOrder = async (event) => {
         event.preventDefault();
 
@@ -131,26 +178,20 @@ export default function CheckoutPage({ params }) {
             return;
         }
 
+        if (!phoneOtp.verified) {
+            toast.error("Please verify your phone number before placing the order");
+            return;
+        }
+
         setLoading(true);
 
         try {
             let savedOrderData;
 
             if (user?.role === "Customer") {
+                const secureItems = buildCheckoutItems();
                 const securePayload = {
-                    items: cartItems.map((item) => {
-                        const selectedVariantId = resolveCartVariantId(item);
-
-                        if (!selectedVariantId) {
-                            throw new Error(`No variant found for ${item.title}`);
-                        }
-
-                        return {
-                            productId: item._id,
-                            variantId: selectedVariantId,
-                            quantity: item.quantity,
-                        };
-                    }),
+                    items: secureItems,
                     shipping: {
                         zone: isDhaka
                             ? "Inside Dhaka"
@@ -171,6 +212,8 @@ export default function CheckoutPage({ params }) {
                         checkoutPolicyAccepted: true,
                         version: "checkout_policy_v1",
                     },
+                    checkoutSessionId: phoneOtp.checkoutSessionId,
+                    phoneVerificationToken: phoneOtp.phoneVerificationToken,
                 };
 
                 const response = await API.post(
@@ -182,6 +225,7 @@ export default function CheckoutPage({ params }) {
                     _id: response.data.orderId,
                 };
             } else {
+                const secureItems = buildCheckoutItems();
                 const guestPayload = {
                     subdomain,
                     customer: {
@@ -193,9 +237,9 @@ export default function CheckoutPage({ params }) {
                     shippingZone: isDhaka
                         ? "Inside Dhaka"
                         : "Outside Dhaka",
-                    items: cartItems.map((item) => ({
+                    items: cartItems.map((item, index) => ({
                         product: item._id,
-                        variantId: resolveCartVariantId(item),
+                        variantId: secureItems[index]?.variantId,
                         quantity: item.quantity,
                         price:
                             item.cartPrice ||
@@ -210,6 +254,8 @@ export default function CheckoutPage({ params }) {
                         checkoutPolicyAccepted: true,
                         version: "checkout_policy_v1",
                     },
+                    checkoutSessionId: phoneOtp.checkoutSessionId,
+                    phoneVerificationToken: phoneOtp.phoneVerificationToken,
                 };
 
                 const response = await API.post(
@@ -280,6 +326,7 @@ export default function CheckoutPage({ params }) {
             mobileStickyBar={(
                 <CheckoutMobileStickyBar
                     loading={loading}
+                    phoneVerified={phoneOtp.verified}
                     policyAccepted={policyAccepted}
                     totalAmount={totalAmount}
                 />
@@ -289,6 +336,16 @@ export default function CheckoutPage({ params }) {
                 formData={formData}
                 isDhaka={isDhaka}
                 onInputChange={handleInputChange}
+                phoneOtp={{
+                    maskedPhone: phoneOtp.maskedPhone,
+                    onSendOtp: sendPhoneOtp,
+                    onVerifyOtp: verifyPhoneOtp,
+                    otp: phoneOtp.otp,
+                    sending: phoneOtp.sending,
+                    setOtp: phoneOtp.setOtp,
+                    verified: phoneOtp.verified,
+                    verifying: phoneOtp.verifying,
+                }}
             />
 
             <CheckoutOrderSummary
@@ -303,6 +360,7 @@ export default function CheckoutPage({ params }) {
                 promotionCode={promotionCode}
                 promotionDiscount={promotionDiscount}
                 promotionMessage={promotionMessage}
+                phoneVerified={phoneOtp.verified}
                 removeFromCart={removeFromCart}
                 setPolicyAccepted={setPolicyAccepted}
                 setPromotionCode={setPromotionCode}

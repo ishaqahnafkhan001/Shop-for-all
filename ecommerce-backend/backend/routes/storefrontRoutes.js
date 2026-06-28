@@ -8,6 +8,7 @@ const router = express.Router();
 // =========================
 const { resolveTenant } = require('../middlewares/tenant');
 const { protect } = require('../middlewares/auth');
+const { otpRateLimiter } = require('../middlewares/otpRateLimiter');
 
 // =========================
 // Controllers
@@ -32,6 +33,10 @@ const {
     getOrderById,
     createOrder
 } = require('../controllers/orderController');
+const {
+    sendCheckoutOtp,
+    verifyCheckoutOtp
+} = require('../controllers/checkoutOtpController');
 
 // Review Controllers
 const {
@@ -127,6 +132,20 @@ router.post(
 // ======================================================
 // ORDER ROUTES
 // ======================================================
+
+router.post(
+    '/:subdomain/checkout/send-otp',
+    resolveTenant,
+    otpRateLimiter,
+    sendCheckoutOtp
+);
+
+router.post(
+    '/:subdomain/checkout/verify-otp',
+    resolveTenant,
+    otpRateLimiter,
+    verifyCheckoutOtp
+);
 
 router.post(
     '/:subdomain/orders',

@@ -74,7 +74,7 @@ export const ExpertNotes = memo(function ExpertNotes({ comments }) {
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">Buying guide</p>
                     <h3 className="mt-2 flex items-center text-xl font-black text-white">
                         <Zap size={22} className="mr-3 fill-current text-yellow-400" />
-                        Expert Notes
+                        Extra notes
                     </h3>
                 </div>
                 <div className="divide-y divide-white/10">

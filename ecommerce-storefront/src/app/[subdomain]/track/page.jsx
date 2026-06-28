@@ -6,11 +6,15 @@ import {
     Box,
     Calendar,
     CheckCircle,
+    ClipboardList,
+    CreditCard,
     MapPin,
     Package,
+    Phone,
     RefreshCcw,
     Search,
     ShieldCheck,
+    Tag,
     Truck,
     X,
     XCircle
@@ -37,6 +41,17 @@ const returnReasons = [
 ];
 
 const formatMoney = (value) => `৳ ${Number(value || 0).toLocaleString('en-BD')}`;
+const formatDateTime = (value) => (
+    value
+        ? new Date(value).toLocaleString('en-BD', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        : 'Not available'
+);
 const shortOrderId = (value) => `#${String(value || '').slice(-8).toUpperCase()}`;
 const getProductId = (item) => String(item?.productId?._id || item?.productId || '');
 const getVariantId = (item) => String(item?.variantId || '');
@@ -94,7 +109,7 @@ export default function TrackOrderPage({ params }) {
     const [returnDescription, setReturnDescription] = useState('');
     const [selectedReturnItems, setSelectedReturnItems] = useState([]);
 
-    const steps = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+    const steps = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
     const currentStepIndex = order ? steps.indexOf(order.status) : -1;
     const progressWidth = currentStepIndex === -1 ? '0%' : `${(currentStepIndex / (steps.length - 1)) * 100}%`;
     const address = order?.shippingAddress;
@@ -272,6 +287,9 @@ export default function TrackOrderPage({ params }) {
                                         <Calendar size={16} className="text-slate-400" />
                                         {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </p>
+                                    <p className="mt-1 text-xs font-semibold text-slate-400">
+                                        Updated {formatDateTime(order.updatedAt)}
+                                    </p>
                                 </div>
                             </div>
 
@@ -310,9 +328,10 @@ export default function TrackOrderPage({ params }) {
                                                             ${isCurrent ? 'scale-110 ring-4 ring-[var(--sf-accent-ring)]' : ''}
                                                         `}>
                                                             {index === 0 && <Box size={20} />}
-                                                            {index === 1 && <Package size={20} />}
-                                                            {index === 2 && <Truck size={20} />}
-                                                            {index === 3 && <CheckCircle size={20} />}
+                                                            {index === 1 && <CheckCircle size={20} />}
+                                                            {index === 2 && <Package size={20} />}
+                                                            {index === 3 && <Truck size={20} />}
+                                                            {index === 4 && <CheckCircle size={20} />}
                                                         </div>
                                                         <p className={`mt-3 text-center text-xs font-black sm:text-sm ${isCompleted ? 'text-slate-950' : 'text-slate-400'}`}>
                                                             {step}
@@ -335,10 +354,46 @@ export default function TrackOrderPage({ params }) {
                                         <p className="leading-relaxed text-slate-600">
                                             {[address?.addressLine, address?.city].filter(Boolean).join(', ') || order.shippingZone}
                                         </p>
+                                        {address?.phone && (
+                                            <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-600">
+                                                <Phone size={15} className="text-slate-400" />
+                                                {address.phone}
+                                            </p>
+                                        )}
                                         <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
                                             <span className="text-sm text-slate-500">Zone</span>
                                             <span className="font-bold text-slate-950">{order.shippingZone}</span>
                                         </div>
+                                        {(order.shippingCourier || order.shippingTrackingId || order.shippedAt || order.deliveredAt) && (
+                                            <div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+                                                <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+                                                    <Truck size={16} className="text-[var(--sf-accent)]" />
+                                                    Courier details
+                                                </div>
+                                                <div className="grid gap-2 text-sm text-slate-600">
+                                                    {order.shippingCourier && (
+                                                        <div className="flex justify-between gap-3">
+                                                            <span>Courier</span>
+                                                            <span className="font-bold text-slate-950">{order.shippingCourier}</span>
+                                                        </div>
+                                                    )}
+                                                    {order.shippingTrackingId && (
+                                                        <div className="flex justify-between gap-3">
+                                                            <span>Tracking ID</span>
+                                                            <span className="font-mono text-xs font-bold text-slate-950">{order.shippingTrackingId}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between gap-3">
+                                                        <span>Shipped</span>
+                                                        <span className="font-semibold text-slate-950">{formatDateTime(order.shippedAt)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between gap-3">
+                                                        <span>Delivered</span>
+                                                        <span className="font-semibold text-slate-950">{formatDateTime(order.deliveredAt)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -358,10 +413,24 @@ export default function TrackOrderPage({ params }) {
                                                     <span className="font-bold text-emerald-700">- {formatMoney(order.discount)}</span>
                                                 </div>
                                             )}
+                                            {order.promotion?.code && (
+                                                <div className="flex justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm">
+                                                    <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                                                        <Tag size={14} /> Coupon
+                                                    </span>
+                                                    <span className="font-mono font-black text-emerald-800">{order.promotion.code}</span>
+                                                </div>
+                                            )}
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-slate-600">Shipping</span>
                                                 <span className="font-bold text-slate-950">{formatMoney(order.shippingCost)}</span>
                                             </div>
+                                            {Number(order.tax || 0) > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-600">Tax</span>
+                                                    <span className="font-bold text-slate-950">{formatMoney(order.tax)}</span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex items-center justify-between border-t border-slate-200 pt-4">
                                             <span className="font-black text-slate-950">Total</span>
@@ -413,6 +482,28 @@ export default function TrackOrderPage({ params }) {
                             </section>
 
                             <section className="space-y-4">
+                                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                                            <CreditCard size={22} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="font-black text-slate-950">Payment details</h2>
+                                            <p className="mt-1 text-sm leading-6 text-slate-500">
+                                                {order.paymentMethod || 'COD'} payment is currently {order.paymentStatus || 'Pending'}.
+                                            </p>
+                                            {order.paymentTransactionId && (
+                                                <p className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs font-bold text-slate-700">
+                                                    Transaction: {order.paymentTransactionId}
+                                                </p>
+                                            )}
+                                            {order.paidAt && (
+                                                <p className="mt-2 text-xs font-semibold text-slate-500">Paid at {formatDateTime(order.paidAt)}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
                                     <div className="flex items-start gap-3">
                                         <div className="rounded-2xl bg-rose-50 p-3 text-rose-600">
@@ -490,6 +581,28 @@ export default function TrackOrderPage({ params }) {
                                 </div>
                             </section>
                         </div>
+
+                        {Array.isArray(order.timeline) && order.timeline.length > 0 && (
+                            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <ClipboardList size={18} className="text-[var(--sf-accent)]" />
+                                    <h2 className="text-lg font-black text-slate-950">Order timeline</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {order.timeline.map((event, index) => (
+                                        <div key={`${event.type}-${event.createdAt}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                                <p className="font-black text-slate-950">{event.message || event.type}</p>
+                                                <p className="text-xs font-bold text-slate-400">{formatDateTime(event.createdAt)}</p>
+                                            </div>
+                                            {event.reason && (
+                                                <p className="mt-2 text-sm text-slate-600">Reason: {event.reason}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
                     </div>
                 )}
             </div>

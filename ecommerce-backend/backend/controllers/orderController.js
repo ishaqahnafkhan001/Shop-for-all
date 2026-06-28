@@ -34,6 +34,7 @@ const {
     getDashboardOverviewResponse,
     getRevenueAnalyticsData
 } = require('../services/orders/orderAnalyticsService');
+const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpService');
 
 
 
@@ -169,7 +170,7 @@ exports.createOrder = async (req, res) => {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
-        const { items, shipping, payment, promotionCode, source, consent } = value;
+        const { items, shipping, payment, promotionCode, source, consent, checkoutSessionId, phoneVerificationToken } = value;
         const shopId = req.tenantId;
         const userId = req.user?._id;
 
@@ -179,6 +180,15 @@ exports.createOrder = async (req, res) => {
         const customer = await User.findById(userId).select('status fullName email phone').session(session);
         if (!customer) throw new Error("Customer not found");
         if (customer.status === 'Suspended') throw new Error("Your account is suspended.");
+
+        await consumeCheckoutPhoneProof({
+            shopId,
+            phone: shipping.address.phone,
+            checkoutSessionId,
+            items,
+            verificationToken: phoneVerificationToken,
+            session
+        });
 
         let subtotal = 0;
         const orderItems = [];
@@ -297,6 +307,16 @@ exports.createOrder = async (req, res) => {
             order,
             customer
         });
+
+        logAudit({
+            req,
+            shop_id: shopId,
+            action: 'order.created_after_phone_verification',
+            entityType: 'Order',
+            entityId: order._id,
+            entityLabel: `Order #${String(order._id).slice(-6).toUpperCase()}`,
+            severity: 'info'
+        }).catch(() => {});
 
         res.status(201).json({
             success: true,

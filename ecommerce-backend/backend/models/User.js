@@ -62,6 +62,16 @@ const userSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    phoneVerified: {
+        type: Boolean,
+        default: false
+    },
+    phoneVerifiedAt: Date,
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerifiedAt: Date,
     staffTitle: {
         type: String,
         trim: true,

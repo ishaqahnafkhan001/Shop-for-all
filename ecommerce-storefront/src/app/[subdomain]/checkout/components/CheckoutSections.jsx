@@ -357,13 +357,83 @@ export function CheckoutPaymentMethod() {
     );
 }
 
-export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange }) {
+export function CheckoutPhoneOtpBox({
+    maskedPhone,
+    onSendOtp,
+    onVerifyOtp,
+    otp,
+    sending,
+    setOtp,
+    verified,
+    verifying,
+}) {
+    return (
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                    <ShieldCheck size={20} />
+                </span>
+                <div>
+                    <h2 className="text-2xl font-black text-slate-950">Verify delivery phone</h2>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
+                        We send a 6-digit code before placing the order. Stock is reserved only after verification.
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <button
+                    type="button"
+                    onClick={onSendOtp}
+                    disabled={sending || verified}
+                    className="sf-btn sf-btn-secondary min-h-0 justify-center px-5 py-3 text-sm disabled:opacity-50"
+                >
+                    {sending ? <Loader2 size={17} className="animate-spin" /> : <Phone size={17} />}
+                    {verified ? "Phone verified" : "Send OTP"}
+                </button>
+                <div className="flex min-w-0 flex-1 gap-2">
+                    <input
+                        value={otp}
+                        onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="000000"
+                        inputMode="numeric"
+                        maxLength={6}
+                        disabled={verified}
+                        className="sf-field min-w-0 flex-1"
+                        aria-label="Phone verification code"
+                    />
+                    <button
+                        type="button"
+                        onClick={onVerifyOtp}
+                        disabled={verifying || verified || otp.length !== 6}
+                        className="sf-btn sf-btn-primary min-h-0 px-5 py-3 text-sm disabled:opacity-50"
+                    >
+                        {verifying ? <Loader2 size={17} className="animate-spin" /> : "Verify"}
+                    </button>
+                </div>
+            </div>
+
+            <p className={`mt-3 rounded-2xl px-4 py-3 text-xs font-bold ${
+                verified ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-500"
+            }`}>
+                {verified
+                    ? `Verified ${maskedPhone || "delivery phone"}.`
+                    : maskedPhone
+                        ? `Code sent to ${maskedPhone}.`
+                        : "Enter your phone above, then send a verification code."}
+            </p>
+        </div>
+    );
+}
+
+export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange, phoneOtp }) {
     return (
         <div className="space-y-7">
             <CheckoutCustomerInfo
                 formData={formData}
                 onInputChange={onInputChange}
             />
+            <CheckoutPhoneOtpBox {...phoneOtp} />
             <CheckoutDeliveryChargeNotice />
             <CheckoutDeliveryMethod isDhaka={isDhaka} />
             <CheckoutPaymentMethod />
@@ -584,6 +654,7 @@ export function CheckoutOrderSummary({
     removeFromCart,
     setPolicyAccepted,
     setPromotionCode,
+    phoneVerified,
     subtotal,
     totalAmount,
     updateQuantity,
@@ -677,7 +748,7 @@ export function CheckoutOrderSummary({
 
                     <button
                         type="submit"
-                        disabled={loading || !policyAccepted}
+                        disabled={loading || !policyAccepted || !phoneVerified}
                         className="sf-btn sf-btn-primary mt-7 w-full py-5 text-lg disabled:opacity-50"
                         style={{ borderRadius: "var(--sf-checkout-radius)" }}
                     >
@@ -689,7 +760,7 @@ export function CheckoutOrderSummary({
                         ) : (
                             <>
                                 <Lock size={18} />
-                                Place Order
+                                {phoneVerified ? "Place Order" : "Verify phone first"}
                             </>
                         )}
                     </button>
@@ -717,7 +788,7 @@ export function CheckoutOrderSummary({
     );
 }
 
-export function CheckoutMobileStickyBar({ loading, policyAccepted, totalAmount }) {
+export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted, totalAmount }) {
     return (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-xl items-center gap-3">
@@ -727,11 +798,11 @@ export function CheckoutMobileStickyBar({ loading, policyAccepted, totalAmount }
                 </div>
                 <button
                     type="submit"
-                    disabled={loading || !policyAccepted}
+                    disabled={loading || !policyAccepted || !phoneVerified}
                     className="sf-btn sf-btn-primary min-h-0 rounded-full px-5 py-3 text-sm disabled:opacity-50"
                 >
                     {loading ? <Loader2 size={17} className="animate-spin" /> : <Lock size={16} />}
-                    Place order
+                    {phoneVerified ? "Place order" : "Verify phone"}
                 </button>
             </div>
         </div>

@@ -34,6 +34,13 @@ const {
     createOrReplaceRegistrationOtp,
     consumeRegistrationOtp
 } = require('../services/registrationOtpService');
+const {
+    PURPOSES,
+    createOtp,
+    verifyOtp
+} = require('../services/otpService');
+const { sendSms } = require('../services/sms/smsProviderService');
+const { maskPhone, normalizeBDPhone } = require('../utils/phoneUtils');
 const { notifyCustomerRegistered } = require('../services/shopEventNotificationService');
 const { getDefaultDeadline, isVerificationSuspension } = require('../services/vendorVerificationService');
 const { getShopFeatureFlags } = require('../services/shops/featureAccessService');
@@ -183,9 +190,78 @@ exports.checkSubdomain = async (req, res) => {
 
 exports.sendOTP = async (req, res) => {
     try {
-        const email = normalizeEmail(req.body.email);
+        const channel = String(req.body.channel || 'email').trim().toLowerCase();
+        const purpose = String(req.body.purpose || '').trim().toLowerCase();
+        const isVendorRegistration = purpose === 'vendor_registration';
 
-        const otp = await createOrReplaceRegistrationOtp({ email });
+        if (!['email', 'sms'].includes(channel)) {
+            return res.status(400).json({ success: false, message: 'OTP channel must be email or sms.' });
+        }
+
+        if (channel === 'sms') {
+            if (!isVendorRegistration) {
+                return res.status(400).json({ success: false, message: 'SMS OTP is only available for vendor registration.' });
+            }
+
+            const phone = normalizeBDPhone(req.body.phone);
+            if (!phone) {
+                return res.status(400).json({ success: false, message: 'Enter a valid Bangladesh mobile number.' });
+            }
+
+            const otpResult = await createOtp({
+                identifier: phone,
+                channel: 'sms',
+                purpose: PURPOSES.vendorRegistrationPhone
+            });
+
+            if (!otpResult.success) {
+                return res.status(429).json({
+                    success: false,
+                    code: otpResult.code,
+                    message: otpResult.error,
+                    retryAfterSeconds: otpResult.retryAfterSeconds
+                });
+            }
+
+            await sendSms({
+                mobile: phone,
+                message: `Your Scaleup verification code is ${otpResult.otp}. It will expire in 5 minutes.`
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: 'OTP sent by SMS',
+                destination: maskPhone(phone)
+            });
+        }
+
+        const email = normalizeEmail(req.body.email);
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required.' });
+        }
+
+        let otp;
+        if (isVendorRegistration) {
+            const otpResult = await createOtp({
+                identifier: email,
+                channel: 'email',
+                purpose: PURPOSES.vendorRegistrationEmail
+            });
+
+            if (!otpResult.success) {
+                return res.status(429).json({
+                    success: false,
+                    code: otpResult.code,
+                    message: otpResult.error,
+                    retryAfterSeconds: otpResult.retryAfterSeconds
+                });
+            }
+
+            otp = otpResult.otp;
+        } else {
+            otp = await createOrReplaceRegistrationOtp({ email });
+        }
+
 
         await sendMail({
             type: 'reset',
@@ -207,7 +283,8 @@ exports.sendOTP = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: 'OTP sent to email'
+            message: 'OTP sent to email',
+            destination: email.replace(/^(.).+(@.+)$/, '$1***$2')
         });
 
     } catch (error) {
@@ -241,10 +318,20 @@ exports.registerVendor = async (req, res) => {
             password,
             fullName,
             otp,
+            phone,
+            otpChannel,
             selectedPlanSlug,
             selectedPlanId
         } = value;
         const cleanEmail = normalizeEmail(email);
+        const normalizedPhone = normalizeBDPhone(phone);
+        if (!normalizedPhone) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                error: 'Enter a valid Bangladesh mobile number.'
+            });
+        }
         const subdomainValidation = validateSubdomain(subdomain);
         if (!subdomainValidation.valid) {
             await session.abortTransaction();
@@ -255,13 +342,29 @@ exports.registerVendor = async (req, res) => {
             });
         }
 
-        const otpResult = await consumeRegistrationOtp({
-            email: cleanEmail,
-            otp,
-            session
-        });
+        const otpResult = otpChannel === 'sms'
+            ? await verifyOtp({
+                identifier: normalizedPhone,
+                channel: 'sms',
+                purpose: PURPOSES.vendorRegistrationPhone,
+                otp,
+                session,
+                consume: true
+            })
+            : await verifyOtp({
+                identifier: cleanEmail,
+                channel: 'email',
+                purpose: PURPOSES.vendorRegistrationEmail,
+                otp,
+                session,
+                consume: true
+            });
 
-        if (!otpResult.success) {
+        const legacyOtpResult = otpChannel === 'email' && !otpResult.success
+            ? await consumeRegistrationOtp({ email: cleanEmail, otp, session })
+            : null;
+
+        if (!otpResult.success && !legacyOtpResult?.success) {
             await session.abortTransaction();
             return res.status(400).json({
                 error: otpResult.error
@@ -288,9 +391,29 @@ exports.registerVendor = async (req, res) => {
             });
         }
 
+        if (otpChannel === 'sms') {
+            const existingVerifiedPhone = await Account.findOne({
+                phone: normalizedPhone,
+                phoneVerified: true
+            }).session(session);
+
+            if (existingVerifiedPhone) {
+                await session.abortTransaction();
+                return res.status(400).json({
+                    success: false,
+                    error: 'This phone number is already verified for another account.'
+                });
+            }
+        }
+
         const [newShop] = await Shop.create([{
             shopName,
             subdomain,
+            verification: {
+                phoneVerified: otpChannel === 'sms',
+                phoneVerifiedAt: otpChannel === 'sms' ? new Date() : null,
+                registrationOtpChannel: otpChannel
+            },
             theme: {
                 policies: buildDefaultPolicies({ storeName: shopName })
             }
@@ -303,7 +426,12 @@ exports.registerVendor = async (req, res) => {
         const [account] = await Account.create([{
             fullName,
             email: cleanEmail,
-            passwordHash: hashedPassword
+            phone: normalizedPhone,
+            passwordHash: hashedPassword,
+            emailVerified: otpChannel === 'email',
+            emailVerifiedAt: otpChannel === 'email' ? new Date() : null,
+            phoneVerified: otpChannel === 'sms',
+            phoneVerifiedAt: otpChannel === 'sms' ? new Date() : null
         }], { session });
 
         const { legacyUser: newAdmin, membership } = await createMembershipArtifacts({
@@ -311,6 +439,11 @@ exports.registerVendor = async (req, res) => {
             shopId: newShop._id,
             role: 'VendorAdmin',
             fullName,
+            phone: normalizedPhone,
+            emailVerified: otpChannel === 'email',
+            emailVerifiedAt: otpChannel === 'email' ? new Date() : null,
+            phoneVerified: otpChannel === 'sms',
+            phoneVerifiedAt: otpChannel === 'sms' ? new Date() : null,
             passwordHash: hashedPassword,
             session
         });

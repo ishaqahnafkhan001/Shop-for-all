@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { AlertTriangle, BadgeCheck, Clock, Eye, FileImage, ShieldCheck, UploadCloud } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Clock, Eye, FileImage, Phone, ShieldCheck, UploadCloud } from 'lucide-react';
 import API from '../../api/api';
 
 const emptyForm = {
@@ -13,8 +13,8 @@ const emptyForm = {
 const stateContent = {
     approved: {
         icon: BadgeCheck,
-        title: 'Store verified',
-        body: 'Your NID verification is approved. No further action is required.',
+        title: 'NID approved',
+        body: 'Your NID verification is approved. Complete phone verification too for the Verified seller badge.',
         tone: 'bg-emerald-50 text-emerald-800 border-emerald-200'
     },
     pending: {
@@ -37,8 +37,8 @@ const stateContent = {
     },
     default: {
         icon: ShieldCheck,
-        title: 'NID verification required',
-        body: 'Submit NID details before the deadline to keep your storefront active.',
+        title: 'Vendor verification required',
+        body: 'Submit NID details and verify the owner phone before the deadline to keep your storefront active.',
         tone: 'bg-indigo-50 text-indigo-900 border-indigo-200'
     }
 };
@@ -81,6 +81,8 @@ const Verification = () => {
     const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [phoneSubmitting, setPhoneSubmitting] = useState(false);
+    const [phoneForm, setPhoneForm] = useState({ phone: '', otp: '' });
     const [form, setForm] = useState(emptyForm);
 
     const loadStatus = useCallback(async () => {
@@ -133,6 +135,38 @@ const Verification = () => {
         }
     };
 
+    const sendPhoneOtp = async () => {
+        setPhoneSubmitting(true);
+        try {
+            const { data } = await API.post('/admin/vendor-verification/phone/send-otp', {
+                phone: phoneForm.phone
+            });
+            toast.success(data.message || 'Phone verification code sent');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to send phone verification code');
+        } finally {
+            setPhoneSubmitting(false);
+        }
+    };
+
+    const verifyPhoneOtp = async () => {
+        setPhoneSubmitting(true);
+        try {
+            const { data } = await API.post('/admin/vendor-verification/phone/verify-otp', {
+                phone: phoneForm.phone,
+                otp: phoneForm.otp
+            });
+            toast.success(data.message || 'Phone verified');
+            setPhoneForm({ phone: '', otp: '' });
+            setStatus(data.data || null);
+            await loadStatus();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to verify phone');
+        } finally {
+            setPhoneSubmitting(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
@@ -150,7 +184,7 @@ const Verification = () => {
         <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6 lg:p-8">
             <div>
                 <h1 className="text-2xl font-black text-slate-950">Vendor Verification</h1>
-                <p className="mt-1 text-sm text-slate-500">Verify the store owner with NID documents. Documents are visible only to you and Super Admin reviewers.</p>
+                <p className="mt-1 text-sm text-slate-500">Verify the store owner with NID documents and phone OTP. Documents are visible only to you and Super Admin reviewers.</p>
             </div>
 
             <section className={`rounded-2xl border p-5 shadow-sm ${content.tone}`}>
@@ -174,6 +208,63 @@ const Verification = () => {
                     </div>
                 </div>
             </section>
+
+            <section className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Overall status</p>
+                    <p className="mt-2 text-lg font-black text-slate-950">{status?.badgeLabel || 'Not verified'}</p>
+                    {status?.verificationReason && <p className="mt-1 text-sm text-slate-500">{status.verificationReason}</p>}
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">NID verification</p>
+                    <p className="mt-2 text-lg font-black capitalize text-slate-950">{String(status?.nidStatus || status?.status || 'not submitted').replace(/_/g, ' ')}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Phone verification</p>
+                    <p className={`mt-2 text-lg font-black ${status?.phoneVerified ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {status?.phoneVerified ? 'Verified' : 'Not verified'}
+                    </p>
+                    {status?.phoneVerifiedAt && <p className="mt-1 text-xs text-slate-500">{new Date(status.phoneVerifiedAt).toLocaleString()}</p>}
+                </div>
+            </section>
+
+            {!status?.phoneVerified && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="mb-5 flex items-center gap-3">
+                        <div className="rounded-xl bg-emerald-50 p-2 text-emerald-700">
+                            <Phone className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h2 className="font-black text-slate-950">Verify owner phone</h2>
+                            <p className="text-sm text-slate-500">Use a Bangladesh mobile number. A 6-digit code will be sent by SMS.</p>
+                        </div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-[1fr_12rem_10rem]">
+                        <input
+                            value={phoneForm.phone}
+                            onChange={event => setPhoneForm(prev => ({ ...prev, phone: event.target.value }))}
+                            placeholder="01712345678"
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                        />
+                        <input
+                            value={phoneForm.otp}
+                            onChange={event => setPhoneForm(prev => ({ ...prev, otp: event.target.value.replace(/\D/g, '').slice(0, 6) }))}
+                            placeholder="OTP code"
+                            inputMode="numeric"
+                            maxLength={6}
+                            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                        />
+                        <button
+                            type="button"
+                            onClick={phoneForm.otp.length === 6 ? verifyPhoneOtp : sendPhoneOtp}
+                            disabled={phoneSubmitting}
+                            className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                        >
+                            {phoneSubmitting ? 'Working...' : phoneForm.otp.length === 6 ? 'Verify phone' : 'Send OTP'}
+                        </button>
+                    </div>
+                </section>
+            )}
 
             <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
                 <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

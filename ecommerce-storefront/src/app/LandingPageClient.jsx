@@ -78,6 +78,7 @@ const RESERVED_SUBDOMAINS = new Set([
     "scaleup-codes",
 ]);
 const SUBDOMAIN_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
+const BD_PHONE_PATTERN = /^(?:\+?88)?01[3-9]\d{8}$/;
 
 const getBaseDomain = () => {
     const configured = (process.env.NEXT_PUBLIC_BASE_DOMAIN || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -99,6 +100,21 @@ const validateStoreUrl = (value = "") => {
     if (subdomain.includes("--")) return "Store URL cannot contain consecutive hyphens.";
     if (RESERVED_SUBDOMAINS.has(subdomain)) return "This store URL is reserved. Please choose another one.";
     return "";
+};
+
+const normalizeBDPhone = (value = "") => {
+    const compact = String(value || "").trim().replace(/[\s-]/g, "");
+    const withoutPlus = compact.startsWith("+") ? compact.slice(1) : compact;
+    if (/^01[3-9]\d{8}$/.test(withoutPlus)) return `88${withoutPlus}`;
+    if (/^8801[3-9]\d{8}$/.test(withoutPlus)) return withoutPlus;
+    return "";
+};
+
+const maskPhone = (value = "") => {
+    const normalized = normalizeBDPhone(value);
+    if (!normalized) return "";
+    const local = normalized.slice(2);
+    return `${local.slice(0, 3)}****${local.slice(-4)}`;
 };
 
 const getPlanSlug = (plan) => String(plan?.slug || plan?.name || "starter")
@@ -265,9 +281,11 @@ export default function LandingPageClient() {
         subdomain: "",
         fullName: "",
         email: "",
+        phone: "",
         password: "",
         otp: "",
     });
+    const [otpChannel, setOtpChannel] = useState("email");
     const [step, setStep] = useState(1);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -297,8 +315,13 @@ export default function LandingPageClient() {
             fullName: formData.fullName.trim().length < 2 ? "Enter the owner name customers and staff can recognize." : "",
             subdomain: subdomainError,
             email: !formData.email.trim() ? "We will send your verification code here." : emailValid ? "" : "Enter a valid email address.",
+            phone: !formData.phone.trim()
+                ? "Enter a Bangladesh mobile number."
+                : BD_PHONE_PATTERN.test(formData.phone.trim().replace(/[\s-]/g, "")) && normalizeBDPhone(formData.phone)
+                    ? ""
+                    : "Use a valid BD mobile number like 01712345678.",
             password: formData.password.length < 8 ? "Use at least 8 characters." : "",
-            otp: formData.otp.trim().length !== 6 ? "Enter the 6-digit code sent to your email." : "",
+            otp: formData.otp.trim().length !== 6 ? "Enter the 6-digit code sent to your selected destination." : "",
         };
     }, [formData]);
     const cleanSubdomain = formData.subdomain.trim().toLowerCase();
@@ -311,11 +334,12 @@ export default function LandingPageClient() {
         !validation.subdomain &&
         !validation.fullName &&
         !validation.email &&
+        !validation.phone &&
         !validation.password &&
         subdomainIsAvailable;
 
-    const completedFields = ["shopName", "fullName", "email", "password"].filter((field) => !validation[field]).length + (subdomainIsAvailable ? 1 : 0);
-    const setupProgress = Math.round((completedFields / 5) * 100);
+    const completedFields = ["shopName", "fullName", "email", "phone", "password"].filter((field) => !validation[field]).length + (subdomainIsAvailable ? 1 : 0);
+    const setupProgress = Math.round((completedFields / 6) * 100);
 
     const checkSubdomainAvailability = useCallback(async (value, { force = false } = {}) => {
         const subdomain = String(value || "").trim().toLowerCase();
@@ -420,7 +444,7 @@ export default function LandingPageClient() {
 
     const handleSendOtp = async (event) => {
         event.preventDefault();
-        const stepErrors = ["shopName", "subdomain", "fullName", "email", "password"].filter((field) => validation[field]);
+        const stepErrors = ["shopName", "subdomain", "fullName", "email", "phone", "password"].filter((field) => validation[field]);
         if (stepErrors.length > 0) {
             setError("Please fix the highlighted fields before continuing.");
             return;
@@ -434,11 +458,20 @@ export default function LandingPageClient() {
         setIsLoading(true);
         setError("");
         try {
-            await API.post("/auth/send-otp", { email: formData.email.trim() });
+            await API.post("/auth/send-otp", {
+                purpose: "vendor_registration",
+                channel: otpChannel,
+                email: formData.email.trim(),
+                phone: formData.phone.trim(),
+            });
             setStep(2);
-            setSuccess("Verification code sent. Check your inbox to launch your store.");
+            setSuccess(
+                otpChannel === "sms"
+                    ? `Verification code sent to ${maskPhone(formData.phone)}.`
+                    : "Verification code sent. Check your inbox to launch your store."
+            );
         } catch (err) {
-            setError(err.response?.data?.error || "Could not send the verification code. Please check your email and try again.");
+            setError(err.response?.data?.error || err.response?.data?.message || "Could not send the verification code. Please check your details and try again.");
         } finally {
             setIsLoading(false);
         }
@@ -460,8 +493,10 @@ export default function LandingPageClient() {
                 shopName: formData.shopName.trim(),
                 fullName: formData.fullName.trim(),
                 email: formData.email.trim(),
+                phone: formData.phone.trim(),
                 subdomain: formData.subdomain.trim().toLowerCase(),
                 otp: formData.otp.trim(),
+                otpChannel,
                 selectedPlanSlug,
             };
             await API.post("/auth/register", payload);
@@ -869,7 +904,7 @@ export default function LandingPageClient() {
                                         {item}
                                     </div>
                                     <div className="hidden sm:block">
-                                        <p className="text-sm font-bold text-slate-950">{item === 1 ? "Store details" : "Email verification"}</p>
+                                        <p className="text-sm font-bold text-slate-950">{item === 1 ? "Store details" : "OTP verification"}</p>
                                         <p className="text-xs text-slate-500">{item === 1 ? "Tell us what to create" : "Confirm ownership"}</p>
                                     </div>
                                 </div>
@@ -971,6 +1006,53 @@ export default function LandingPageClient() {
                                         required
                                     />
                                     <TextField
+                                        label="Phone number"
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        placeholder="01712345678"
+                                        helper="Used for SMS verification and vendor trust."
+                                        error={formData.phone ? validation.phone : ""}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-sm font-black text-slate-950">Send verification code by</p>
+                                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                        {[
+                                            { value: "email", title: "Email", text: "Code goes to your inbox. Phone can be verified later." },
+                                            { value: "sms", title: "SMS", text: "Code goes to your phone and verifies it now." },
+                                        ].map((option) => (
+                                            <label
+                                                key={option.value}
+                                                className={`cursor-pointer rounded-2xl border p-4 transition ${
+                                                    otpChannel === option.value
+                                                        ? "border-indigo-300 bg-white text-slate-950 shadow-sm"
+                                                        : "border-slate-200 bg-white/60 text-slate-600 hover:bg-white"
+                                                }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="otpChannel"
+                                                    value={option.value}
+                                                    checked={otpChannel === option.value}
+                                                    onChange={() => setOtpChannel(option.value)}
+                                                    className="sr-only"
+                                                />
+                                                <span className="flex items-center gap-2 text-sm font-black">
+                                                    {otpChannel === option.value && <Check size={16} className="text-emerald-600" />}
+                                                    {option.title}
+                                                </span>
+                                                <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{option.text}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-5 sm:grid-cols-1">
+                                    <TextField
                                         label="Password"
                                         type="password"
                                         name="password"
@@ -1000,9 +1082,14 @@ export default function LandingPageClient() {
                         ) : (
                             <form onSubmit={handleFinalRegister} className="space-y-7">
                                 <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                                    <p className="text-sm font-bold text-slate-950">Check your email</p>
-                                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                                        Enter the 6-digit code sent to <span className="font-semibold text-slate-900">{formData.email}</span>.
+                                        <p className="text-sm font-bold text-slate-950">
+                                            {otpChannel === "sms" ? "Check your phone" : "Check your email"}
+                                        </p>
+                                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                                            Enter the 6-digit code sent to{" "}
+                                            <span className="font-semibold text-slate-900">
+                                                {otpChannel === "sms" ? maskPhone(formData.phone) : formData.email}
+                                            </span>.
                                     </p>
                                 </div>
 
@@ -1014,7 +1101,7 @@ export default function LandingPageClient() {
                                     placeholder="000000"
                                     inputMode="numeric"
                                     maxLength={6}
-                                    helper="Enter the 6-digit code sent to your email."
+                                    helper={otpChannel === "sms" ? "Enter the 6-digit code sent to your phone." : "Enter the 6-digit code sent to your email."}
                                     error={formData.otp ? validation.otp : ""}
                                     autoFocus
                                     required

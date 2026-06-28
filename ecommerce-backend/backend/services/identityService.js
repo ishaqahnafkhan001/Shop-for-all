@@ -27,6 +27,10 @@ const createMembershipArtifacts = async ({
                                              staffNote = '',
                                              passwordHash,
                                              permissions,
+                                             phoneVerified = false,
+                                             phoneVerifiedAt = null,
+                                             emailVerified = false,
+                                             emailVerifiedAt = null,
                                              session
                                          }) => {
     const existingMembership = await ShopMembership.findOne({
@@ -43,6 +47,10 @@ const createMembershipArtifacts = async ({
         fullName,
         email: account.email,
         phone,
+        phoneVerified,
+        phoneVerifiedAt,
+        emailVerified,
+        emailVerifiedAt,
         staffTitle,
         staffNote,
         password: passwordHash,
@@ -91,6 +99,10 @@ const createAccountForLegacyUser = async (legacyUser, session) => {
         passwordHash: legacyUser.password,
         fullName: legacyUser.fullName,
         phone: legacyUser.phone || '',
+        phoneVerified: Boolean(legacyUser.phoneVerified),
+        phoneVerifiedAt: legacyUser.phoneVerifiedAt || null,
+        emailVerified: Boolean(legacyUser.emailVerified),
+        emailVerifiedAt: legacyUser.emailVerifiedAt || null,
         status: legacyUser.status || 'Active',
         platformRole: legacyUser.role === 'SuperAdmin' ? 'SuperAdmin' : 'None'
     }], { session });

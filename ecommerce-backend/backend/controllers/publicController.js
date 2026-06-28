@@ -11,6 +11,7 @@ const ReturnRequest = require('../models/ReturnRequest');
 const { evaluatePromotion } = require('../services/promotionService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
+const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpService');
 const ConsentLog = require('../models/ConsentLog');
 const { createNotification } = require('../services/notificationService');
 const { logAudit } = require('../services/auditLogService');
@@ -25,8 +26,10 @@ const {
     normalizeCustomDomain,
     buildVerifiedCustomDomainQuery
 } = require('../utils/domainUtils');
+const { normalizeBDPhone } = require('../utils/phoneUtils');
+const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
 const RETURN_WINDOW_HOURS = 24;
 const RETURN_WINDOW_MS = RETURN_WINDOW_HOURS * 60 * 60 * 1000;
 const ACTIVE_RETURN_STATUSES = ['Requested', 'Approved', 'Received'];
@@ -235,7 +238,9 @@ exports.createPublicOrder = async (req, res) => {
             items,
             promotionCode,
             source,
-            consent
+            consent,
+            checkoutSessionId,
+            phoneVerificationToken
         } = req.body;
 
         // =========================
@@ -247,6 +252,11 @@ exports.createPublicOrder = async (req, res) => {
 
         if (!customer?.email || !customer?.fullName || !customer?.phone) {
             throw new Error('Customer fullName, email and phone are required');
+        }
+
+        const normalizedCustomerPhone = normalizeBDPhone(customer.phone);
+        if (!normalizedCustomerPhone) {
+            throw new Error('Enter a valid Bangladesh mobile number.');
         }
 
         if (!Array.isArray(items) || items.length === 0) {
@@ -286,7 +296,7 @@ exports.createPublicOrder = async (req, res) => {
         if (!normalizedAddress && shippingAddress && typeof shippingAddress === 'object') {
             normalizedAddress = {
                 fullName: shippingAddress.fullName || customer.fullName,
-                phone: shippingAddress.phone || customer.phone,
+                phone: shippingAddress.phone || normalizedCustomerPhone,
                 addressLine: shippingAddress.addressLine || shippingAddress.address,
                 city: shippingAddress.city
             };
@@ -305,10 +315,14 @@ exports.createPublicOrder = async (req, res) => {
 
             normalizedAddress = {
                 fullName: customer.fullName,
-                phone: customer.phone,
+                phone: normalizedCustomerPhone,
                 addressLine,
                 city
             };
+        }
+
+        if (normalizedAddress?.phone) {
+            normalizedAddress.phone = normalizeBDPhone(normalizedAddress.phone) || normalizedAddress.phone;
         }
 
         if (
@@ -321,6 +335,15 @@ exports.createPublicOrder = async (req, res) => {
                 'Shipping address is incomplete. fullName, phone, addressLine and city are required.'
             );
         }
+
+        await consumeCheckoutPhoneProof({
+            shopId: shop._id,
+            phone: normalizedCustomerPhone,
+            checkoutSessionId,
+            items,
+            verificationToken: phoneVerificationToken,
+            session
+        });
 
         // =========================
         // CUSTOMER / GUEST USER
@@ -340,7 +363,7 @@ exports.createPublicOrder = async (req, res) => {
                 shop_id: shop._id,
                 fullName: customer.fullName,
                 email: customer.email,
-                phone: customer.phone,
+                phone: normalizedCustomerPhone,
                 role: 'Customer',
                 password: hashedPassword
             }], { session });
@@ -592,6 +615,16 @@ exports.createPublicOrder = async (req, res) => {
             customer: orderCustomer
         });
 
+        logAudit({
+            req,
+            shop_id: shop._id,
+            action: 'order.created_after_phone_verification',
+            entityType: 'Order',
+            entityId: newOrder._id,
+            entityLabel: `Order #${String(newOrder._id).slice(-6).toUpperCase()}`,
+            severity: 'info'
+        }).catch(() => {});
+
         return res.status(201).json({
             success: true,
             message: 'Order placed successfully',
@@ -626,6 +659,10 @@ exports.getPublicShopDetails = async (req, res) => {
             .select(PUBLIC_SHOP_FIELDS)
             .lean();
         if (!shop) return res.status(404).json({ error: "Shop not found" });
+        shop.shopVerification = buildPublicShopVerification(shop);
+        delete shop.verification;
+        delete shop.isActive;
+        delete shop.approvalStatus;
 
         const { category, minPrice, maxPrice, sort } = req.query; // ✨ ADDED 'sort'
         let query = {
@@ -765,7 +802,7 @@ exports.trackPublicOrder = async (req, res) => {
         const order = await Order.findOne(orderQuery)
             // Optional: Populating product titles/images makes the tracking page look better!
             .populate('items.productId', 'title images category')
-            .select('items pricing payment shipping status cancellation timeline createdAt updatedAt')
+            .select('items pricing promotion payment shipping status cancellation timeline createdAt updatedAt')
             .lean();
 
         if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
@@ -792,8 +829,11 @@ exports.trackPublicOrder = async (req, res) => {
             _id: order._id,
             status: order.status,
             createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
             paymentMethod: order.payment?.method || '',
             paymentStatus: order.payment?.status || 'Pending',
+            paymentTransactionId: order.payment?.transactionId || '',
+            paidAt: order.payment?.paidAt || null,
             customerName: order.shipping?.address?.fullName || '',
             items: (order.items || []).map(item => {
                 const clean = item && typeof item === 'object' ? { ...item } : item;
@@ -803,9 +843,15 @@ exports.trackPublicOrder = async (req, res) => {
             shippingAddress: order.shipping?.address || null,
             shippingZone: order.shipping?.zone,
             shippingCost: order.pricing?.shipping || order.shipping?.cost || 0,
+            shippingCourier: order.shipping?.courier || '',
+            shippingTrackingId: order.shipping?.trackingId || '',
+            shippedAt: order.shipping?.shippedAt || null,
+            deliveredAt: order.shipping?.deliveredAt || null,
             subtotal: order.pricing?.subtotal || 0,
             discount: order.pricing?.discount || 0,
+            tax: order.pricing?.tax || 0,
             totalAmount: order.pricing?.total || 0,
+            promotion: order.promotion || null,
             cancellation: order.cancellation || null,
             timeline: order.timeline || [],
             canCancel: order.status === 'Pending',

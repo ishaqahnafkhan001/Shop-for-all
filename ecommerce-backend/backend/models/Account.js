@@ -26,6 +26,16 @@ const accountSchema = new Schema({
         trim: true,
         default: ''
     },
+    phoneVerified: {
+        type: Boolean,
+        default: false
+    },
+    phoneVerifiedAt: Date,
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerifiedAt: Date,
     status: {
         type: String,
         enum: ['Active', 'Suspended'],

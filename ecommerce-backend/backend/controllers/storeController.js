@@ -13,8 +13,9 @@ const {
     sanitizePublicProducts
 } = require('../services/publicProductSerializer');
 const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
+const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status isActive approvalStatus';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const applyDefaultPoliciesToShopPayload = (shop) => {
@@ -30,7 +31,7 @@ const applyDefaultPoliciesToShopPayload = (shop) => {
 const getPublicTrustedBadge = async (shop) => {
     if (!shop || shop.badgeStatus !== 'active') return null;
     if (shop.isActive === false || shop.approvalStatus !== 'Approved') return null;
-    if (shop.verification?.status !== 'approved') return null;
+    if (shop.verification?.status !== 'approved' || !shop.verification?.phoneVerified) return null;
     if (shop.badgeExpiresAt && new Date(shop.badgeExpiresAt) <= new Date()) return null;
     if (shop.badgeRevokedAt) return null;
 
@@ -83,6 +84,7 @@ exports.getStoreInfo = async (req, res) => {
         }
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
+        shop.shopVerification = buildPublicShopVerification(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;
         delete shop.badgeApprovedAt;
@@ -174,6 +176,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         await ensureThemeSectionArchitecture(shop);
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
+        shop.shopVerification = buildPublicShopVerification(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;
         delete shop.badgeApprovedAt;

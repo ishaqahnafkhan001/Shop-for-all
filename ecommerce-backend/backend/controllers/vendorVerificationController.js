@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Account = require('../models/Account');
 const Shop = require('../models/Shop');
 const User = require('../models/User');
 const VendorVerification = require('../models/VendorVerification');
@@ -17,6 +18,14 @@ const {
     approveVerification,
     rejectVerification
 } = require('../services/vendorVerificationService');
+const {
+    PURPOSES,
+    createOtp,
+    verifyOtp
+} = require('../services/otpService');
+const { sendSms } = require('../services/sms/smsProviderService');
+const { maskPhone, normalizeBDPhone } = require('../utils/phoneUtils');
+const { syncShopVendorVerifiedFlag } = require('../services/verification/vendorVerificationStatusService');
 const {
     DOCUMENT_TYPES,
     getSignedNidDocumentUrl,
@@ -239,6 +248,219 @@ exports.getVendorVerificationDocument = async (req, res) => {
     } catch (err) {
         console.error('Get vendor verification document error:', err);
         res.status(404).json({ success: false, error: err.message || 'Document not found' });
+    }
+};
+
+const getOwnerAccountAndUser = async (req) => {
+    const [account, user] = await Promise.all([
+        req.user?.accountId || req.user?.account_id
+            ? Account.findById(req.user.accountId || req.user.account_id)
+            : Promise.resolve(null),
+        User.findById(req.user?._id || req.user?.id)
+    ]);
+    return { account, user };
+};
+
+exports.sendVendorPhoneOtp = async (req, res) => {
+    try {
+        if (!req.tenantId) {
+            return res.status(400).json({ success: false, error: 'Shop context is required' });
+        }
+
+        const shop = await Shop.findById(req.tenantId);
+        if (!shop) {
+            return res.status(404).json({ success: false, error: 'Shop not found' });
+        }
+
+        const { account, user } = await getOwnerAccountAndUser(req);
+        const requestedPhone = req.body.phone || account?.phone || user?.phone || '';
+        const phone = normalizeBDPhone(requestedPhone);
+        if (!phone) {
+            return res.status(400).json({ success: false, error: 'Enter a valid Bangladesh mobile number.' });
+        }
+
+        const existingVerifiedPhone = await Account.findOne({
+            _id: { $ne: account?._id },
+            phone,
+            phoneVerified: true
+        }).lean();
+        if (existingVerifiedPhone) {
+            return res.status(400).json({ success: false, error: 'This phone number is already verified for another account.' });
+        }
+
+        const result = await createOtp({
+            identifier: phone,
+            channel: 'sms',
+            purpose: PURPOSES.vendorPhoneVerification,
+            metadata: {
+                shopId: String(shop._id),
+                userId: String(req.user?._id || req.user?.id || '')
+            }
+        });
+
+        if (!result.success) {
+            return res.status(429).json({
+                success: false,
+                code: result.code,
+                error: result.error,
+                retryAfterSeconds: result.retryAfterSeconds
+            });
+        }
+
+        await sendSms({
+            mobile: phone,
+            message: `Your Scaleup phone verification code is ${result.otp}. It will expire in 5 minutes.`
+        });
+
+        const phoneChanged = (account?.phone && account.phone !== phone) || (user?.phone && user.phone !== phone);
+
+        if (account && account.phone !== phone) {
+            account.phone = phone;
+            account.phoneVerified = false;
+            account.phoneVerifiedAt = null;
+            await account.save();
+        }
+        if (user && user.phone !== phone) {
+            user.phone = phone;
+            user.phoneVerified = false;
+            user.phoneVerifiedAt = null;
+            await user.save();
+        }
+        if (phoneChanged && shop.verification?.phoneVerified) {
+            shop.verification = {
+                ...(shop.verification?.toObject ? shop.verification.toObject() : shop.verification || {}),
+                phoneVerified: false,
+                phoneVerifiedAt: null,
+                isVendorVerified: false,
+                verifiedAt: null
+            };
+            await shop.save();
+            await invalidateShopCache(shop);
+        }
+
+        await logAudit({
+            req,
+            shop_id: shop._id,
+            action: 'vendor.phone_otp_sent',
+            entityType: 'Shop',
+            entityId: shop._id,
+            entityLabel: maskPhone(phone),
+            severity: 'info'
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Phone verification code sent',
+            maskedPhone: maskPhone(phone),
+            expiresAt: result.expiresAt,
+            resendAvailableAt: result.resendAvailableAt
+        });
+    } catch (err) {
+        console.error('Send vendor phone OTP error:', err);
+        return res.status(400).json({ success: false, error: err.message || 'Failed to send phone verification code' });
+    }
+};
+
+exports.verifyVendorPhoneOtp = async (req, res) => {
+    try {
+        if (!req.tenantId) {
+            return res.status(400).json({ success: false, error: 'Shop context is required' });
+        }
+
+        const shop = await Shop.findById(req.tenantId);
+        if (!shop) {
+            return res.status(404).json({ success: false, error: 'Shop not found' });
+        }
+
+        const { account, user } = await getOwnerAccountAndUser(req);
+        const phone = normalizeBDPhone(req.body.phone || account?.phone || user?.phone || '');
+        if (!phone) {
+            return res.status(400).json({ success: false, error: 'Enter a valid Bangladesh mobile number.' });
+        }
+
+        const result = await verifyOtp({
+            identifier: phone,
+            channel: 'sms',
+            purpose: PURPOSES.vendorPhoneVerification,
+            otp: req.body.otp,
+            metadata: {
+                shopId: String(shop._id),
+                userId: String(req.user?._id || req.user?.id || '')
+            },
+            consume: true
+        });
+
+        if (!result.success) {
+            return res.status(400).json({ success: false, code: result.code || 'INVALID_OTP', error: result.error });
+        }
+
+        const now = new Date();
+        if (account) {
+            account.phone = phone;
+            account.phoneVerified = true;
+            account.phoneVerifiedAt = now;
+            await account.save();
+        }
+        if (user) {
+            user.phone = phone;
+            user.phoneVerified = true;
+            user.phoneVerifiedAt = now;
+            await user.save();
+        }
+
+        shop.verification = {
+            ...(shop.verification?.toObject ? shop.verification.toObject() : shop.verification || {}),
+            phoneVerified: true,
+            phoneVerifiedAt: now
+        };
+        await shop.save();
+
+        const verification = await VendorVerification.findOne({ shop_id: shop._id });
+        if (
+            verification?.status === 'approved' &&
+            shop.approvalStatus === 'Suspended' &&
+            shop.isActive === false &&
+            shop.suspensionReason === VERIFICATION_SUSPENSION_REASON
+        ) {
+            shop.approvalStatus = 'Approved';
+            shop.isActive = true;
+            shop.suspensionReason = '';
+            await shop.save();
+        }
+        const overall = await syncShopVendorVerifiedFlag({ shop, verification });
+        await invalidateShopCache(shop);
+
+        await Promise.all([
+            logAudit({
+                req,
+                shop_id: shop._id,
+                action: 'vendor.phone_verified',
+                entityType: 'Shop',
+                entityId: shop._id,
+                entityLabel: maskPhone(phone),
+                severity: 'info'
+            }),
+            overall?.isVendorVerified
+                ? logAudit({
+                    req,
+                    shop_id: shop._id,
+                    action: 'vendor.verification_completed',
+                    entityType: 'Shop',
+                    entityId: shop._id,
+                    entityLabel: shop.shopName,
+                    severity: 'success'
+                })
+                : Promise.resolve()
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            message: overall?.isVendorVerified ? 'Vendor verification completed' : 'Phone verified',
+            data: buildStatusPayload({ shop, verification })
+        });
+    } catch (err) {
+        console.error('Verify vendor phone OTP error:', err);
+        return res.status(400).json({ success: false, error: err.message || 'Failed to verify phone' });
     }
 };
 

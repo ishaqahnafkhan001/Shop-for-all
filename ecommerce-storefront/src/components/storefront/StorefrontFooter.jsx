@@ -15,6 +15,7 @@ export default function StorefrontFooter({ subdomain }) {
             shopName={settings?.shopName}
             subdomain={subdomain}
             cartCount={cartCount}
+            shopVerification={settings?.shopVerification}
             LinkComponent={Link}
         />
     );

@@ -158,6 +158,13 @@ export const FALLBACK_THEME = {
     ],
     footer: {
         text: '',
+        contactLabel: 'Contact store',
+        contactEmail: '',
+        facebookUrl: '',
+        instagramUrl: '',
+        twitterUrl: '',
+        youtubeUrl: '',
+        tiktokUrl: '',
         links: [],
     },
     policies: buildDefaultPolicies({ storeName: 'this store' }),

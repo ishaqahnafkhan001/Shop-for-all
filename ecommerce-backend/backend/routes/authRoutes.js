@@ -8,6 +8,7 @@ const router = express.Router();
 // =========================
 const { optionalAuth, protect } = require('../middlewares/auth');
 const { issueCsrfToken } = require('../middlewares/csrf');
+const { otpRateLimiter } = require('../middlewares/otpRateLimiter');
 
 // =========================
 // Controllers
@@ -55,6 +56,7 @@ router.post(
 // Send OTP
 router.post(
     '/send-otp',
+    otpRateLimiter,
     sendOTP
 );
 

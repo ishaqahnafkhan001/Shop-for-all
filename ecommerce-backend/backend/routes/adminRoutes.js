@@ -90,8 +90,11 @@ const {
 const {
     getVendorVerificationStatus,
     submitVendorVerification,
-    getVendorVerificationDocument
+    getVendorVerificationDocument,
+    sendVendorPhoneOtp,
+    verifyVendorPhoneOtp
 } = require('../controllers/vendorVerificationController');
+const { otpRateLimiter } = require('../middlewares/otpRateLimiter');
 const {
     getAdminDataRequests,
     updateAdminDataRequest
@@ -159,6 +162,22 @@ router.get(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('settings'),
     getVendorVerificationDocument
+);
+
+router.post(
+    '/vendor-verification/phone/send-otp',
+    protect,
+    authorize('VendorAdmin'),
+    otpRateLimiter,
+    sendVendorPhoneOtp
+);
+
+router.post(
+    '/vendor-verification/phone/verify-otp',
+    protect,
+    authorize('VendorAdmin'),
+    otpRateLimiter,
+    verifyVendorPhoneOtp
 );
 
 router.get(

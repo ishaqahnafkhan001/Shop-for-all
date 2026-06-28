@@ -76,6 +76,12 @@ const createOrderSchema = Joi.object({
     shipping: shippingSchema.required(),
     payment:  paymentSchema.required(),
     consent: consentSchema,
+    checkoutSessionId: Joi.string().trim().min(12).max(120).required().messages({
+        'any.required': 'Checkout phone verification is required'
+    }),
+    phoneVerificationToken: Joi.string().trim().min(20).max(200).required().messages({
+        'any.required': 'Please verify your phone number before placing the order'
+    }),
     promotionCode: Joi.string().trim().max(40).allow('').optional(),
     source: Joi.string().trim().max(80).allow('').optional()
 });

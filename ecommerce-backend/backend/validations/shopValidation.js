@@ -30,9 +30,14 @@ const shopRegistrationSchema = Joi.object({
 
     // We include password and email here because they usually come in the same registration request
     email: Joi.string().email().required(),
+    phone: Joi.string().trim().min(11).max(20).required().messages({
+        'any.required': 'Phone number is required',
+        'string.empty': 'Phone number is required'
+    }),
     password: Joi.string().min(6).required(),
     fullName: Joi.string().required(),
     otp: Joi.string().length(6).required(),
+    otpChannel: Joi.string().valid('email', 'sms').default('email'),
     selectedPlanSlug: Joi.string()
         .trim()
         .lowercase()

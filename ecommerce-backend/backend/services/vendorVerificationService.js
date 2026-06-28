@@ -7,10 +7,14 @@ const {
     documentSummaries,
     maskNidNumber
 } = require('./vendorVerificationPrivacyService');
+const {
+    buildVendorVerificationStatus,
+    syncShopVendorVerifiedFlag
+} = require('./verification/vendorVerificationStatusService');
 
 const VERIFICATION_DEADLINE_DAYS = 20;
 const REJECTED_NID_RETENTION_DAYS = 180;
-const VERIFICATION_SUSPENSION_REASON = 'Store verification deadline expired. Submit NID verification for Super Admin approval.';
+const VERIFICATION_SUSPENSION_REASON = 'Store verification deadline expired. Submit NID verification and verify owner phone for Super Admin approval.';
 
 const addDays = (date, days) => {
     const value = new Date(date || Date.now());
@@ -82,9 +86,18 @@ const buildStatusPayload = ({ shop, verification }) => {
     const status = normalizeStatus(verification?.status || shop?.verification?.status);
     const deadline = verification?.verificationDeadline || shop?.verification?.deadline || getDefaultDeadline(shop);
     const isSuspended = isVerificationSuspension(shop);
+    const overall = buildVendorVerificationStatus({ shop, verification });
 
     return {
         status,
+        nidStatus: status,
+        overallStatus: overall.badgeStatus,
+        badgeLabel: overall.badgeLabel,
+        isVendorVerified: overall.isVendorVerified,
+        phoneVerified: overall.phoneVerified,
+        phoneVerifiedAt: overall.phoneVerifiedAt,
+        registrationOtpChannel: overall.registrationOtpChannel,
+        verificationReason: overall.reason,
         deadline,
         daysLeft: getDaysLeft(deadline),
         isSuspended,
@@ -107,10 +120,14 @@ const syncShopVerification = async ({ shop, verification, status, suspendedAt = 
         status,
         deadline: verification.verificationDeadline || shop.verification?.deadline || getDefaultDeadline(shop),
         approvedAt: verification.approvedAt || shop.verification?.approvedAt || null,
-        suspendedAt: suspendedAt || shop.verification?.suspendedAt || null
+        suspendedAt: suspendedAt || shop.verification?.suspendedAt || null,
+        phoneVerified: Boolean(shop.verification?.phoneVerified),
+        phoneVerifiedAt: shop.verification?.phoneVerifiedAt || null,
+        registrationOtpChannel: shop.verification?.registrationOtpChannel || ''
     };
 
     await shop.save();
+    await syncShopVendorVerifiedFlag({ shop, verification });
 };
 
 const ensureShopVerificationStatus = async (shopOrId, options = {}) => {
@@ -120,7 +137,9 @@ const ensureShopVerificationStatus = async (shopOrId, options = {}) => {
     const verification = await getExistingVerification(shop, options.owner || {});
     const deadline = verification.verificationDeadline || shop.verification?.deadline || getDefaultDeadline(shop);
     const currentStatus = normalizeStatus(verification.status);
-    const expired = currentStatus !== 'approved' && new Date(deadline).getTime() < Date.now();
+    const phoneVerified = Boolean(shop.verification?.phoneVerified);
+    const verificationComplete = currentStatus === 'approved' && phoneVerified;
+    const expired = !verificationComplete && new Date(deadline).getTime() < Date.now();
     const shouldSuspend = expired && !isVerificationSuspension(shop);
     const shouldSetVerificationSuspensionReason = shouldSuspend && !isManuallySuspended(shop);
     let finalStatus = currentStatus;
@@ -138,7 +157,12 @@ const ensureShopVerificationStatus = async (shopOrId, options = {}) => {
         status: shopStatus,
         deadline,
         approvedAt: verification.approvedAt || shop.verification?.approvedAt || null,
-        suspendedAt: verification.suspendedAt || shop.verification?.suspendedAt || null
+        suspendedAt: verification.suspendedAt || shop.verification?.suspendedAt || null,
+        phoneVerified,
+        phoneVerifiedAt: shop.verification?.phoneVerifiedAt || null,
+        registrationOtpChannel: shop.verification?.registrationOtpChannel || '',
+        isVendorVerified: verificationComplete,
+        verifiedAt: verificationComplete ? (shop.verification?.verifiedAt || verification.approvedAt || new Date()) : null
     };
 
     if (expired) {
@@ -151,6 +175,7 @@ const ensureShopVerificationStatus = async (shopOrId, options = {}) => {
 
     if (verification.isModified()) await verification.save();
     if (shop.isModified()) await shop.save();
+    await syncShopVendorVerifiedFlag({ shop, verification });
 
     if (shouldSetVerificationSuspensionReason) {
         await Promise.all([
@@ -180,7 +205,7 @@ const ensureShopVerificationStatus = async (shopOrId, options = {}) => {
                 shop_id: shop._id,
                 type: 'system',
                 title: 'Store suspended for verification',
-                message: 'Your 20-day verification period has ended. Submit your NID verification for Super Admin approval.',
+                message: 'Your 20-day verification period has ended. Submit NID verification and verify the owner phone number for Super Admin approval.',
                 entityType: 'VendorVerification',
                 entityId: verification._id,
                 severity: 'critical'
@@ -215,16 +240,23 @@ const approveVerification = async ({ verification, reviewer, req }) => {
         status: 'approved',
         deadline: verification.verificationDeadline,
         approvedAt: verification.approvedAt,
-        suspendedAt: shop.verification?.suspendedAt || null
+        suspendedAt: shop.verification?.suspendedAt || null,
+        phoneVerified: Boolean(shop.verification?.phoneVerified),
+        phoneVerifiedAt: shop.verification?.phoneVerifiedAt || null,
+        registrationOtpChannel: shop.verification?.registrationOtpChannel || ''
     };
 
+    const phoneVerified = Boolean(shop.verification?.phoneVerified);
     if (isVerificationSuspension(shop)) {
-        shop.approvalStatus = 'Approved';
-        shop.isActive = true;
-        shop.suspensionReason = '';
+        if (phoneVerified) {
+            shop.approvalStatus = 'Approved';
+            shop.isActive = true;
+            shop.suspensionReason = '';
+        }
     }
 
     await Promise.all([verification.save(), shop.save()]);
+    const overall = await syncShopVendorVerifiedFlag({ shop, verification });
 
     await Promise.all([
         logAudit({
@@ -239,15 +271,17 @@ const approveVerification = async ({ verification, reviewer, req }) => {
         createNotification({
             shop_id: shop._id,
             type: 'system',
-            title: 'Store verification approved',
-            message: 'Your NID verification has been approved. Your store is verified.',
+            title: phoneVerified ? 'Vendor verification completed' : 'NID verification approved',
+            message: phoneVerified
+                ? 'Your NID and phone verification are complete. Your store is now a verified seller.'
+                : 'Your NID verification has been approved. Verify the owner phone number to complete vendor verification.',
             entityType: 'VendorVerification',
             entityId: verification._id,
             severity: 'success'
         })
     ]);
 
-    return { shop, verification };
+    return { shop, verification, overall };
 };
 
 const rejectVerification = async ({ verification, reviewer, rejectionReason, adminNote = '', req }) => {

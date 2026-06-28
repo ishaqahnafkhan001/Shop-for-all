@@ -84,7 +84,16 @@ const shopSchema = new mongoose.Schema({
             index: true
         },
         approvedAt: Date,
-        suspendedAt: Date
+        suspendedAt: Date,
+        phoneVerified: { type: Boolean, default: false },
+        phoneVerifiedAt: Date,
+        registrationOtpChannel: {
+            type: String,
+            enum: ['email', 'sms', ''],
+            default: ''
+        },
+        isVendorVerified: { type: Boolean, default: false },
+        verifiedAt: Date
     },
     suspensionReason: {
         type: String,
@@ -395,6 +404,13 @@ const shopSchema = new mongoose.Schema({
         },
         footer: {
             text: { type: String, default: '' },
+            contactLabel: { type: String, trim: true, default: 'Contact store' },
+            contactEmail: { type: String, trim: true, default: '' },
+            facebookUrl: { type: String, trim: true, default: '' },
+            instagramUrl: { type: String, trim: true, default: '' },
+            twitterUrl: { type: String, trim: true, default: '' },
+            youtubeUrl: { type: String, trim: true, default: '' },
+            tiktokUrl: { type: String, trim: true, default: '' },
             links: { type: [linkSchema], default: [] }
         },
         policies: {
