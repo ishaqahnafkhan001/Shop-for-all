@@ -639,7 +639,9 @@ test('confirmed order status email is sent through status update endpoint once',
     const validation = read('validations/orderValidation.js');
     const controller = read('controllers/orderController.js');
     const emailService = read('services/orders/orderEmailService.js');
+    const pathaoSyncJobService = read('services/pathaoSyncJobService.js');
     const orderList = readProject('ecommerce-admin/src/pages/dashboard/orders/OrderList.jsx');
+    const pathaoModal = readProject('ecommerce-admin/src/pages/dashboard/orders/PathaoSyncModal.jsx');
 
     assert.match(validation, /notifyCustomer/);
     assert.match(validation, /emailSubject/);
@@ -647,9 +649,19 @@ test('confirmed order status email is sent through status update endpoint once',
     assert.match(controller, /statusChanged && notifyCustomer/);
     assert.match(controller, /notifyCustomerOrderStatus/);
     assert.match(controller, /customerNotified/);
+    assert.match(controller, /Pathao sync is already queued[\s\S]*data:\s*order/);
     assert.match(emailService, /Your order has been confirmed/);
     assert.match(emailService, /sendMail/);
     assert.match(orderList, /notifyCustomer:\s*true/);
+    assert.match(orderList, /!updatedOrder\?\._id/);
+    assert.match(orderList, /getPathaoStatus/);
+    assert.match(orderList, /Retry Pathao/);
+    assert.match(orderList, /Pathao sync is already queued/);
     assert.match(orderList, /emailSubject:\s*emailData\?\.subject/);
     assert.doesNotMatch(orderList, /\/admin\/orders\/send-email/);
+    assert.match(pathaoSyncJobService, /toLocalBDPhone/);
+    assert.match(pathaoSyncJobService, /recipient_phone:\s*normalizePathaoPhone/);
+    assert.match(pathaoModal, /onConfirmBeforeSync/);
+    assert.match(pathaoModal, /onSyncSuccess\(data\.data \|\| null\)/);
+    assert.match(pathaoModal, /Courier order will be created after processing/);
 });

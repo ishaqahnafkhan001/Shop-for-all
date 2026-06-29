@@ -87,13 +87,19 @@ const OrderList = () => {
             if (data?.notification?.sent) {
                 toast.success('Customer email sent');
             }
+            return data?.data || true;
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to update status");
             fetchOrders();
+            return null;
         }
     };
 
     const handlePathaoSuccess = (updatedOrder) => {
+        if (!updatedOrder?._id) {
+            fetchOrders(pagination.page);
+            return;
+        }
         setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
     };
 
@@ -122,20 +128,57 @@ const OrderList = () => {
         }
     };
 
+    const getPathaoStatus = (order) => {
+        if (order?.isPathaoSynced) return 'synced';
+        return order?.pathaoSyncStatus || '';
+    };
+
+    const getPathaoStatusStyle = (status) => {
+        switch (status) {
+            case 'queued':  return 'bg-amber-50 text-amber-700 border-amber-200';
+            case 'syncing': return 'bg-blue-50 text-blue-700 border-blue-200';
+            case 'synced':  return 'bg-green-50 text-green-700 border-green-200';
+            case 'failed':  return 'bg-red-50 text-red-700 border-red-200';
+            default:        return 'bg-gray-50 text-gray-600 border-gray-200';
+        }
+    };
+
+    const getPathaoStatusLabel = (status) => {
+        switch (status) {
+            case 'queued':  return 'Queued';
+            case 'syncing': return 'Syncing';
+            case 'synced':  return 'Synced';
+            case 'failed':  return 'Failed';
+            default:        return '';
+        }
+    };
+
+    const renderPathaoBadge = (order) => {
+        const pathaoStatus = getPathaoStatus(order);
+        const label = getPathaoStatusLabel(pathaoStatus);
+        if (!label) return null;
+
+        return (
+            <span
+                title={order.pathaoLastError || `Pathao ${label.toLowerCase()}`}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${getPathaoStatusStyle(pathaoStatus)}`}
+            >
+                {pathaoStatus === 'synced' ? <CheckCircle size={12} /> : null}
+                Pathao {label}
+            </span>
+        );
+    };
+
     const columns = [
         {
             label: 'Order ID',
             key: '_id',
             render: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-sm font-semibold text-indigo-600">
                         #{row._id.slice(-6).toUpperCase()}
                     </span>
-                    {row.isPathaoSynced && (
-                        <span title="Synced to Pathao" className="text-green-500 bg-green-50 rounded-full p-0.5">
-                            <CheckCircle size={16} />
-                        </span>
-                    )}
+                    {renderPathaoBadge(row)}
                 </div>
             )
         },
@@ -177,45 +220,61 @@ const OrderList = () => {
         },
     ];
 
-    const renderActions = (row) => (
-        <div className="flex items-center justify-end space-x-3">
+    const renderActions = (row) => {
+        const pathaoStatus = getPathaoStatus(row);
+        const pathaoPending = ['queued', 'syncing'].includes(pathaoStatus);
+        const pathaoFailed = pathaoStatus === 'failed';
 
-            {row.status === 'Confirmed' && !row.isPathaoSynced && (
+        return (
+            <div className="flex items-center justify-end space-x-3">
+
+                {row.status === 'Confirmed' && !row.isPathaoSynced && (
+                    pathaoPending ? (
+                        <button
+                            disabled
+                            className="flex items-center text-xs font-bold text-amber-700 bg-amber-50 transition px-2 py-1.5 rounded-md opacity-80"
+                            title="Pathao sync is already queued and waiting for courier processing."
+                        >
+                            <Clock size={14} className="mr-1.5" /> Pathao {getPathaoStatusLabel(pathaoStatus)}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => { setOrderToSync(row); setPathaoModalOpen(true); }}
+                            className="flex items-center text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition px-2 py-1.5 rounded-md"
+                            title={pathaoFailed ? row.pathaoLastError || 'Retry Pathao courier sync' : 'Create a courier delivery for this confirmed order'}
+                        >
+                            <Send size={14} className="mr-1.5" /> {pathaoFailed ? 'Retry Pathao' : 'Send to Pathao'}
+                        </button>
+                    )
+                )}
+
                 <button
-                    onClick={() => { setOrderToSync(row); setPathaoModalOpen(true); }}
-                    className="flex items-center text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition px-2 py-1.5 rounded-md"
-                    title="Create a courier delivery for this confirmed order"
+                    onClick={() => setSelectedOrder(row)}
+                    className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 transition px-2 py-1.5 rounded-md hover:bg-indigo-50"
+                    title="View customer, items, payment, and delivery details"
                 >
-                    <Send size={14} className="mr-1.5" /> Send to Pathao
+                    <Eye size={18} className="mr-1.5" /> View
                 </button>
-            )}
 
-            <button
-                onClick={() => setSelectedOrder(row)}
-                className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 transition px-2 py-1.5 rounded-md hover:bg-indigo-50"
-                title="View customer, items, payment, and delivery details"
-            >
-                <Eye size={18} className="mr-1.5" /> View
-            </button>
-
-            {/* Changed onChange to trigger the modal instead of direct DB update */}
-            <select
-                value={['Cancelled', 'Returned'].includes(row.status) ? row.status : row.status}
-                onChange={(e) => handleStatusChangeClick(row, e.target.value)}
-                disabled={['Cancelled', 'Returned', 'Delivered'].includes(row.status)}
-                title="Changing status can notify the customer and affect dashboard revenue"
-                className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Processing">Processing</option>
-                <option value="Shipped">Shipped</option>
-                <option value="Delivered">Delivered</option>
-                {row.status === 'Cancelled' && <option value="Cancelled">Cancelled</option>}
-                {row.status === 'Returned'  && <option value="Returned">Returned</option>}
-            </select>
-        </div>
-    );
+                {/* Changed onChange to trigger the modal instead of direct DB update */}
+                <select
+                    value={['Cancelled', 'Returned'].includes(row.status) ? row.status : row.status}
+                    onChange={(e) => handleStatusChangeClick(row, e.target.value)}
+                    disabled={['Cancelled', 'Returned', 'Delivered'].includes(row.status)}
+                    title="Changing status can notify the customer and affect dashboard revenue"
+                    className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <option value="Pending">Pending</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    {row.status === 'Cancelled' && <option value="Cancelled">Cancelled</option>}
+                    {row.status === 'Returned'  && <option value="Returned">Returned</option>}
+                </select>
+            </div>
+        );
+    };
 
     const filteredOrders = orders.filter((order) =>
         order._id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -266,15 +325,11 @@ const OrderList = () => {
                                 <div key={order._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <span className="font-mono text-sm font-bold text-indigo-600">
                                                     #{order._id.slice(-6).toUpperCase()}
                                                 </span>
-                                                {order.isPathaoSynced && (
-                                                    <span title="Synced to Pathao" className="text-green-500 bg-green-50 rounded-full p-0.5">
-                                                        <CheckCircle size={16} />
-                                                    </span>
-                                                )}
+                                                {renderPathaoBadge(order)}
                                             </div>
                                             <p className="text-sm font-bold text-gray-900 mt-1">{order.customer?.fullName}</p>
                                             <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString('en-GB')}</p>
@@ -334,6 +389,7 @@ const OrderList = () => {
                 onClose={() => setPathaoModalOpen(false)}
                 order={orderToSync}
                 onSyncSuccess={handlePathaoSuccess}
+                onConfirmBeforeSync={() => updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true })}
                 onJustConfirm={() => {
                     updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true });
                     setPathaoModalOpen(false);

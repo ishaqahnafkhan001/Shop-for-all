@@ -3,7 +3,7 @@ import { X, Truck, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 
-const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm }) => {
+const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm, onConfirmBeforeSync }) => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         recipient_name: '',
@@ -43,9 +43,19 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm 
 
         setLoading(true);
         try {
+            if (order.status !== 'Confirmed' && typeof onConfirmBeforeSync === 'function') {
+                const confirmed = await onConfirmBeforeSync();
+                if (!confirmed) {
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const { data } = await API.post(`/admin/orders/${order._id}/pathao`, formData);
-            toast.success(data.message);
-            onSyncSuccess(data.data); // Update main table state
+            toast.success(data.status === 'queued'
+                ? 'Pathao sync queued. Courier order will be created after processing.'
+                : data.message || 'Pathao sync queued');
+            onSyncSuccess(data.data || null); // Update main table state, or refresh if backend omitted the order
             onClose();
         } catch (error) {
             toast.error(error.response?.data?.error || "Failed to sync with Pathao");

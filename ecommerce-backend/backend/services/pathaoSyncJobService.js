@@ -1,21 +1,32 @@
 const Order = require('../models/Order');
 const Shop = require('../models/Shop');
 const { getPathaoToken, createPathaoOrder } = require('./pathaoService');
+const { toLocalBDPhone } = require('../utils/phoneUtils');
+
+const normalizePathaoPhone = (phone) => {
+    const localPhone = toLocalBDPhone(phone);
+    return localPhone || phone;
+};
+
+const toPositiveNumber = (value, fallback) => {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? number : fallback;
+};
 
 const buildPathaoPayload = ({ order, shop, payload = {} }) => ({
     store_id: shop.pathaoStoreId,
     merchant_order_id: order._id.toString(),
     recipient_name: payload.recipient_name || order.shipping?.address?.fullName,
-    recipient_phone: payload.recipient_phone || order.shipping?.address?.phone,
+    recipient_phone: normalizePathaoPhone(payload.recipient_phone || order.shipping?.address?.phone),
     recipient_address: payload.recipient_address || order.shipping?.address?.addressLine,
     delivery_type: 48,
     item_type: 2,
     special_instruction: payload.special_instruction || '',
     item_quantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
-    item_weight: payload.item_weight || '0.5',
+    item_weight: toPositiveNumber(payload.item_weight, 0.5),
     amount_to_collect: payload.amount_to_collect !== undefined
-        ? payload.amount_to_collect
-        : (order.payment?.method === 'COD' ? order.pricing?.total : 0)
+        ? toPositiveNumber(payload.amount_to_collect, 0)
+        : (order.payment?.method === 'COD' ? toPositiveNumber(order.pricing?.total, 0) : 0)
 });
 
 const processPathaoSyncJob = async (job) => {

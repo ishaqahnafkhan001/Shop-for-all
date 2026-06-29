@@ -66,6 +66,7 @@ exports.syncOrderToPathao = async (req, res) => {
             return res.status(202).json({
                 success: true,
                 status: order.pathaoSyncStatus,
+                data: order,
                 message: 'Pathao sync is already queued'
             });
         }
