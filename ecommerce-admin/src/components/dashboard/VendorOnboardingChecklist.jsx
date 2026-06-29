@@ -157,6 +157,8 @@ const VendorOnboardingChecklist = () => {
         );
     }
 
+    if (progress >= 100) return null;
+
     return (
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

@@ -61,6 +61,7 @@ test('Store Builder sanitizes scriptable URLs and script tags across theme conte
                 ctaUrl: 'java\nscript:alert(4)'
             },
             footer: {
+                facebookUrl: 'javascript:alert(11)',
                 links: [{
                     label: 'Footer <script>alert(5)</script>',
                     url: 'vbscript:msgbox(1)'
@@ -91,6 +92,7 @@ test('Store Builder sanitizes scriptable URLs and script tags across theme conte
     assert.equal(theme.navigation[0].children[0].url, '#');
     assert.equal(theme.hero.imageUrl, '#');
     assert.equal(theme.hero.ctaUrl, '#');
+    assert.equal(theme.footer.facebookUrl, '#');
     assert.equal(theme.footer.links[0].url, '#');
     assert.equal(theme.homepageSections[0].settings.buttonLink, '#');
     assert.equal(theme.homepageSections[0].settings.desktopImage, '#');

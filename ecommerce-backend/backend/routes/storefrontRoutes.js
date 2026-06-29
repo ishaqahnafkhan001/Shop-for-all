@@ -9,6 +9,7 @@ const router = express.Router();
 const { resolveTenant } = require('../middlewares/tenant');
 const { protect } = require('../middlewares/auth');
 const { otpRateLimiter } = require('../middlewares/otpRateLimiter');
+const { upload } = require('../config/cloudinary');
 
 // =========================
 // Controllers
@@ -57,6 +58,11 @@ const {
     getPublicCollections,
     getPublicCollectionBySlug
 } = require('../controllers/collectionController');
+
+const returnProofUpload = upload.fields([
+    { name: 'proofImages', maxCount: 3 },
+    { name: 'proofVideo', maxCount: 1 }
+]);
 
 // ======================================================
 // STORE INFO
@@ -187,6 +193,7 @@ router.post(
 router.post(
     '/:subdomain/orders/:orderId/returns',
     resolveTenant,
+    returnProofUpload,
     createTrackedReturnRequest
 );
 

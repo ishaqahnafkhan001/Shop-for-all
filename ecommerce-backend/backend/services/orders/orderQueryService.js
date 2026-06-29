@@ -1,4 +1,5 @@
 const Order = require('../../models/Order');
+const { buildPagination } = require('../../utils/pagination');
 
 const getCustomerOrders = async ({ customerId, shopId }) => (
     Order.find({
@@ -23,7 +24,32 @@ const getShopOrdersPage = async ({ shopId, page = 1, limit = 25 }) => {
 
     const [orders, total] = await Promise.all([
         Order.find(query)
-            .select('customer items.title items.productId pricing payment shipping status source isPathaoSynced pathaoConsignmentId createdAt updatedAt')
+            .select([
+                'customer',
+                'items.productId',
+                'items.variantId',
+                'items.title',
+                'items.sku',
+                'items.attributes',
+                'items.quantity',
+                'items.price',
+                'items.total',
+                'pricing',
+                'promotion',
+                'payment',
+                'shipping',
+                'status',
+                'notes',
+                'cancellation',
+                'timeline',
+                'source',
+                'isPathaoSynced',
+                'pathaoConsignmentId',
+                'pathaoSyncStatus',
+                'pathaoLastError',
+                'createdAt',
+                'updatedAt'
+            ].join(' '))
             .populate('customer', 'fullName email')
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -34,11 +60,7 @@ const getShopOrdersPage = async ({ shopId, page = 1, limit = 25 }) => {
 
     return {
         orders,
-        pagination: {
-            total,
-            page: safePage,
-            pages: Math.ceil(total / safeLimit)
-        }
+        pagination: buildPagination({ total, page: safePage, limit: safeLimit })
     };
 };
 

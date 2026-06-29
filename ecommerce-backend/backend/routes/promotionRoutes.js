@@ -27,7 +27,8 @@ router.get(
 router.post(
     '/admin',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('promotions'),
     requireShopFeature('coupons'),
     blockVerificationSuspendedShop,
     createPromotion
@@ -36,7 +37,8 @@ router.post(
 router.patch(
     '/admin/:id',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('promotions'),
     requireShopFeature('coupons'),
     blockVerificationSuspendedShop,
     updatePromotion
@@ -45,7 +47,8 @@ router.patch(
 router.delete(
     '/admin/:id',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('promotions'),
     requireShopFeature('coupons'),
     blockVerificationSuspendedShop,
     deletePromotion

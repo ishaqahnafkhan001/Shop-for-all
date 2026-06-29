@@ -30,14 +30,21 @@ const userSchema = new mongoose.Schema({
         default: 'Active'
     },
     permissions: {
+        overview: { type: Boolean, default: false },
         products: { type: Boolean, default: true },
+        catalogTools: { type: Boolean, default: false },
         orders: { type: Boolean, default: true },
+        returns: { type: Boolean, default: false },
         customers: { type: Boolean, default: false },
+        privacyRequests: { type: Boolean, default: false },
         promotions: { type: Boolean, default: false },
+        notifications: { type: Boolean, default: false },
+        shipping: { type: Boolean, default: false },
         analytics: { type: Boolean, default: false },
+        growthCenter: { type: Boolean, default: false },
         storeBuilder: { type: Boolean, default: false },
         settings: { type: Boolean, default: false },
-        staff: { type: Boolean, default: false }
+        activityLogs: { type: Boolean, default: false }
     },
     shop_id: {
         type: mongoose.Schema.Types.ObjectId,

@@ -77,6 +77,13 @@ import {
 } from './storeBuilderThemeUtils.js';
 
 const CUSTOM_DOMAIN_DNS_TARGET = import.meta.env.VITE_CUSTOM_DOMAIN_DNS_TARGET || import.meta.env.NEXT_PUBLIC_CUSTOM_DOMAIN_DNS_TARGET || '';
+const footerSocialFields = [
+    { key: 'facebookUrl', label: 'Facebook URL', placeholder: 'https://facebook.com/your-store' },
+    { key: 'instagramUrl', label: 'Instagram URL', placeholder: 'https://instagram.com/your-store' },
+    { key: 'twitterUrl', label: 'X / Twitter URL', placeholder: 'https://x.com/your-store' },
+    { key: 'youtubeUrl', label: 'YouTube URL', placeholder: 'https://youtube.com/@your-store' },
+    { key: 'tiktokUrl', label: 'TikTok URL', placeholder: 'https://tiktok.com/@your-store' }
+];
 
 const getDomainRecordHint = (domain = '') => {
     const cleanDomain = String(domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').split(/[/?#]/)[0];
@@ -867,6 +874,18 @@ const StoreBuilderPage = () => {
                     ...(prev.footer?.links || []),
                     { label: 'New link', url: '/', isExternal: false, sortOrder: prev.footer?.links?.length || 0 }
                 ]
+            }
+        }));
+    };
+
+    const removeFooterLink = (index) => {
+        setTheme(prev => ({
+            ...prev,
+            footer: {
+                ...(prev.footer || {}),
+                links: (prev.footer?.links || [])
+                    .filter((_, i) => i !== index)
+                    .map((item, i) => ({ ...item, sortOrder: i }))
             }
         }));
     };
@@ -2182,23 +2201,72 @@ const StoreBuilderPage = () => {
                 return (
                     <BuilderCard
                         title="Footer"
-                        description="Add footer copy and links for policies, support, or important pages."
+                        description="Build a polished footer with store story, support links, contact, and social profiles."
                         icon={FileText}
-                        actions={<BuilderButton type="button" variant="secondary" onClick={addFooterLink}><Plus size={16} /> Add link</BuilderButton>}
                     >
-                        <BuilderTextarea
-                            label="Footer text"
-                            value={theme.footer?.text || ''}
-                            onChange={e => updateFooter('text', e.target.value)}
-                            help="Shown at the bottom of the storefront. Keep it short and trustworthy."
-                        />
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                            <p className="mb-3 text-sm font-black text-slate-950">Brand story</p>
+                            <BuilderTextarea
+                                label="Short footer description"
+                                value={theme.footer?.text || ''}
+                                onChange={e => updateFooter('text', e.target.value)}
+                                placeholder="Elegant accessories and jewellery selected for everyday and occasion wear."
+                                help="Shown beside your logo in the footer. Keep it short, warm, and customer-facing."
+                            />
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                            <p className="mb-3 text-sm font-black text-slate-950">Contact and social links</p>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <BuilderInput
+                                    label="Contact link text"
+                                    value={theme.footer?.contactLabel || ''}
+                                    onChange={e => updateFooter('contactLabel', e.target.value)}
+                                    placeholder="Contact store"
+                                />
+                                <BuilderInput
+                                    label="Contact email"
+                                    type="email"
+                                    value={theme.footer?.contactEmail || ''}
+                                    onChange={e => updateFooter('contactEmail', e.target.value)}
+                                    placeholder="support@yourstore.com"
+                                    help="Creates a mail link in the support column."
+                                />
+                                {footerSocialFields.map(field => (
+                                    <BuilderInput
+                                        key={field.key}
+                                        label={field.label}
+                                        value={theme.footer?.[field.key] || ''}
+                                        onChange={e => updateFooter(field.key, e.target.value)}
+                                        placeholder={field.placeholder}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-black text-slate-950">Extra support links</p>
+                                    <p className="text-xs text-slate-500">Policy links are added automatically. Add custom pages, collections, or help links here.</p>
+                                </div>
+                                <BuilderButton type="button" variant="secondary" onClick={addFooterLink} className="text-xs">
+                                    <Plus size={14} /> Add link
+                                </BuilderButton>
+                            </div>
                         {(theme.footer?.links || []).length === 0 && (
                             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                                No footer links yet. Add links for policies, contact, or collections.
+                                No custom support links yet. Your policy links still appear automatically.
                             </div>
                         )}
                         {(theme.footer?.links || []).map((item, index) => (
                             <div key={index} className="rounded-lg border border-slate-200 p-3">
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <p className="text-xs font-black uppercase tracking-wide text-slate-500">Link {index + 1}</p>
+                                    <BuilderButton type="button" variant="subtle" onClick={() => removeFooterLink(index)} className="text-xs text-red-600">
+                                        <Trash2 size={14} /> Remove
+                                    </BuilderButton>
+                                </div>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <BuilderInput
                                         label="Label"
@@ -2215,6 +2283,7 @@ const StoreBuilderPage = () => {
                                 </div>
                             </div>
                         ))}
+                        </div>
                     </BuilderCard>
                 );
             case 'policies':

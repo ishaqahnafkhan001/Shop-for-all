@@ -8,6 +8,7 @@ const {
 } = require('../services/jobQueueService');
 const { processShopEventJob } = require('../services/shopEventNotificationService');
 const { processPathaoSyncJob } = require('../services/pathaoSyncJobService');
+const { processCustomerEmailCampaignJob } = require('../services/customerEmailCampaignService');
 const {
     processBadgeAnalysisJob,
     markBadgeAnalysisFailed
@@ -20,7 +21,8 @@ let shuttingDown = false;
 const handlers = {
     notifications: processShopEventJob,
     courier: processPathaoSyncJob,
-    badges: processBadgeAnalysisJob
+    badges: processBadgeAnalysisJob,
+    'customer-email': processCustomerEmailCampaignJob
 };
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));

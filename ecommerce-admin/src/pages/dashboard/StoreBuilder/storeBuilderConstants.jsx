@@ -193,8 +193,9 @@ export const structureTree = [
         label: 'Footer',
         group: 'footer',
         children: [
-            { id: 'footerText', label: 'Footer text', group: 'footer' },
-            { id: 'footerLinks', label: 'Footer links', group: 'footer' }
+            { id: 'footerText', label: 'Brand story', group: 'footer' },
+            { id: 'footerSocial', label: 'Contact and social links', group: 'footer' },
+            { id: 'footerLinks', label: 'Support links', group: 'footer' }
         ]
     }
 ];

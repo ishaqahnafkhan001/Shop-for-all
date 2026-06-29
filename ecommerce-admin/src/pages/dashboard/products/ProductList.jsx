@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Plus, Edit, Trash2, Package, Layers,
-    TrendingDown, Eye, AlertCircle
+    TrendingDown, Eye, AlertCircle, Search
 } from 'lucide-react';
 
 // UI Components
@@ -16,15 +16,44 @@ import { useProducts } from '../../../hooks/useProducts';
 
 const ProductList = () => {
     const navigate = useNavigate();
-    const { products, loading, deleteProduct } = useProducts();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const {
+        products,
+        categories,
+        loading,
+        pagination,
+        queryParams,
+        goToPage,
+        updateFilters,
+        deleteProduct
+    } = useProducts();
 
     // --- State for Detail Modal ---
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    useEffect(() => {
+        const nextFilters = {};
+        ['search', 'category', 'status', 'sort'].forEach(key => {
+            const value = searchParams.get(key);
+            if (value) nextFilters[key] = value;
+        });
+        if (Object.keys(nextFilters).length > 0) updateFilters(nextFilters);
+        // Run once to hydrate filters from URL.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleFilterChange = (key, value) => {
+        const next = new URLSearchParams(searchParams);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        setSearchParams(next);
+        updateFilters({ [key]: value });
+    };
+
     // --- Action Handlers ---
     const handleEdit = (product) => {
-        navigate(`/dashboard/products/edit/${product._id}`, { state: { product } });
+        navigate(`/dashboard/products/edit/${product._id}`);
     };
 
     const handleOpenDetails = async (product) => {
@@ -180,6 +209,50 @@ const ProductList = () => {
                 </Link>
             </div>
 
+            <div className="grid gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_180px_150px_170px]">
+                <label className="relative block">
+                    <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                        value={queryParams.search}
+                        onChange={(event) => handleFilterChange('search', event.target.value)}
+                        className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        placeholder="Search products..."
+                    />
+                </label>
+                <select
+                    value={queryParams.category}
+                    onChange={(event) => handleFilterChange('category', event.target.value)}
+                    className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                    <option value="">All categories</option>
+                    {categories.filter(Boolean).map(category => (
+                        <option key={category} value={category}>{category}</option>
+                    ))}
+                </select>
+                <select
+                    value={queryParams.status}
+                    onChange={(event) => handleFilterChange('status', event.target.value)}
+                    className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                    <option value="">All status</option>
+                    <option value="Published">Published</option>
+                    <option value="Draft">Draft</option>
+                    <option value="Archived">Archived</option>
+                </select>
+                <select
+                    value={queryParams.sort}
+                    onChange={(event) => handleFilterChange('sort', event.target.value)}
+                    className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                    <option value="">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="nameAsc">Name A-Z</option>
+                    <option value="nameDesc">Name Z-A</option>
+                    <option value="priceAsc">Price low to high</option>
+                    <option value="priceDesc">Price high to low</option>
+                </select>
+            </div>
+
             {/* --- MAIN CONTENT --- */}
             {loading ? (
                 <AdminLoadingState
@@ -265,6 +338,30 @@ const ProductList = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {!loading && pagination.total > (pagination.limit || queryParams.limit) && (
+                <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm sm:flex-row">
+                    <span>
+                        Page {pagination.page} of {pagination.totalPages || pagination.pages} / {pagination.total} products
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => goToPage(pagination.page - 1)}
+                            disabled={!pagination.hasPrevPage && pagination.page <= 1}
+                            className="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => goToPage(pagination.page + 1)}
+                            disabled={!pagination.hasNextPage && pagination.page >= (pagination.totalPages || pagination.pages)}
+                            className="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             )}

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Mail, Users } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Mail, Send, ShoppingBag, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
 import SendMailModal from './SendMailModal';
+import CustomerCampaignModal from './CustomerCampaignModal';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 
 // 👇 1. Import your auth hook (adjust the path if necessary)
@@ -18,39 +19,46 @@ const CustomerList = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [pagination, setPagination] = useState({ page: 1, totalPages: 1, pages: 1, total: 0, limit: 25 });
 
     // Modal State
     const [isMailModalOpen, setIsMailModalOpen] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [campaignMode, setCampaignMode] = useState(null);
 
     // --- Fetch Data ---
+    const fetchCustomers = useCallback(async (page = 1) => {
+        setLoading(true);
+        try {
+            const { data } = await API.get('/admin/customers', {
+                params: {
+                    page,
+                    limit: 25,
+                    search: searchQuery || undefined,
+                    status: statusFilter || undefined
+                }
+            });
+            setCustomers(data.data || []);
+            setPagination(data.pagination || { page, totalPages: 1, pages: 1, total: data.data?.length || 0, limit: 25 });
+        } catch {
+            toast.error("Failed to load customers");
+            setCustomers([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [searchQuery, statusFilter]);
+
     useEffect(() => {
-        const fetchCustomers = async () => {
-            try {
-                const { data } = await API.get('/admin/customers');
-                setCustomers(Array.isArray(data) ? data : []);
-            } catch {
-                toast.error("Failed to load customers");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchCustomers();
-    }, []);
+        const timer = setTimeout(() => fetchCustomers(1), 250);
+        return () => clearTimeout(timer);
+    }, [fetchCustomers]);
 
     // --- Handlers ---
     const openMailModal = (customer) => {
         setSelectedCustomer(customer);
         setIsMailModalOpen(true);
     };
-
-    // --- Filter Logic ---
-    const filteredCustomers = useMemo(() => {
-        return customers.filter(cust =>
-            cust.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cust.email?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [customers, searchQuery]);
 
     // --- Table Configuration ---
     const columns = [
@@ -122,7 +130,7 @@ const CustomerList = () => {
             </div>
 
             {/* Search Bar */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 flex flex-col sm:flex-row gap-3">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
                 <input
                     type="text"
                     value={searchQuery}
@@ -130,6 +138,29 @@ const CustomerList = () => {
                     placeholder="Search customers by name or email..."
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+                <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                    className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                    <option value="">All status</option>
+                    <option value="Active">Active</option>
+                    <option value="Suspended">Suspended</option>
+                </select>
+                <button
+                    type="button"
+                    onClick={() => setCampaignMode('plain')}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
+                >
+                    <Send size={16} /> Email all customers
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setCampaignMode('product')}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                    <ShoppingBag size={16} /> Send product email
+                </button>
             </div>
 
             {/* Data Rendering */}
@@ -138,7 +169,7 @@ const CustomerList = () => {
                     title="Loading customers"
                     description="We are checking registered customers and shopper accounts for this store."
                 />
-            ) : filteredCustomers.length === 0 ? (
+            ) : customers.length === 0 ? (
                 <AdminEmptyState
                     icon={Users}
                     title={searchQuery ? 'No matching customers' : 'Customers will appear here'}
@@ -148,12 +179,12 @@ const CustomerList = () => {
                 <>
                     {/* Desktop View */}
                     <div className="hidden md:block">
-                        <Table columns={columns} data={filteredCustomers} actions={renderActions} />
+                        <Table columns={columns} data={customers} actions={renderActions} />
                     </div>
 
                     {/* Mobile View */}
                     <div className="md:hidden space-y-4">
-                        {filteredCustomers.map((cust) => (
+                        {customers.map((cust) => (
                                 <div key={cust._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center space-x-3">
@@ -187,6 +218,27 @@ const CustomerList = () => {
                                 </div>
                             ))}
                     </div>
+                    {pagination.total > pagination.limit && (
+                        <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-600 sm:flex-row">
+                            <span>Page {pagination.page} of {pagination.totalPages || pagination.pages} / {pagination.total} customers</span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => fetchCustomers(pagination.page - 1)}
+                                    disabled={!pagination.hasPrevPage && pagination.page <= 1}
+                                    className="rounded-lg border border-gray-200 px-3 py-1.5 font-semibold disabled:opacity-40"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={() => fetchCustomers(pagination.page + 1)}
+                                    disabled={!pagination.hasNextPage && pagination.page >= (pagination.totalPages || pagination.pages)}
+                                    className="rounded-lg border border-gray-200 px-3 py-1.5 font-semibold disabled:opacity-40"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
 
@@ -196,6 +248,13 @@ const CustomerList = () => {
                 onClose={() => setIsMailModalOpen(false)}
                 customer={selectedCustomer}
                 // 👇 3. Pass the dynamic shop name straight to the modal!
+                shopName={user?.shopName}
+            />
+            <CustomerCampaignModal
+                isOpen={Boolean(campaignMode)}
+                onClose={() => setCampaignMode(null)}
+                mode={campaignMode || 'plain'}
+                recipientCount={pagination.total}
                 shopName={user?.shopName}
             />
         </div>

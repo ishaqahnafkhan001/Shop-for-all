@@ -5,6 +5,11 @@ const Product = require('../models/Product');
 const InventoryLog = require('../models/InventoryLog');
 const { logAudit } = require('../services/auditLogService');
 const { createNotification } = require('../services/notificationService');
+const { buildPagination } = require('../utils/pagination');
+const {
+    parseMaybeJson,
+    buildProofFromFiles
+} = require('../services/returns/returnProofService');
 
 const VALID_TRANSITIONS = {
     Requested: ['Approved', 'Rejected', 'Cancelled'],
@@ -146,11 +151,7 @@ exports.getReturns = async (req, res) => {
         res.status(200).json({
             success: true,
             data: returns,
-            pagination: {
-                total,
-                page,
-                pages: Math.ceil(total / limit)
-            }
+            pagination: buildPagination({ total, page, limit })
         });
     } catch (err) {
         console.error('Get returns error:', err);
@@ -183,7 +184,9 @@ exports.getReturnById = async (req, res) => {
 exports.createReturn = async (req, res) => {
     try {
         const shopId = req.tenantId;
-        const { orderId, reason, customerNote, items } = req.body;
+        const { orderId, reason, customerNote } = req.body;
+        const items = parseMaybeJson(req.body.items, req.body.items);
+        const proof = buildProofFromFiles(req.files || {});
 
         if (!orderId || !reason) {
             return res.status(400).json({ success: false, error: 'Order and reason are required' });
@@ -209,6 +212,7 @@ exports.createReturn = async (req, res) => {
             items: returnItems,
             reason,
             customerNote: customerNote || '',
+            proof,
             requestedBy: req.user?._id,
             updatedBy: req.user?._id,
             refund: {

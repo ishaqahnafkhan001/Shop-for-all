@@ -96,7 +96,10 @@ const updateOrderStatusSchema = Joi.object({
         .messages({
             'any.required': 'Status is required',
             'any.only': 'Invalid status value'
-        })
+        }),
+    notifyCustomer: Joi.boolean().optional(),
+    emailSubject: Joi.string().trim().max(160).allow('').optional(),
+    emailMessage: Joi.string().trim().max(2000).allow('').optional()
 });
 
 module.exports = { createOrderSchema, updateOrderStatusSchema };

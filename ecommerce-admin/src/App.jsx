@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute'; // 🛡️ NEW: Import the wrapper
 import RequireFeature from './components/RequireFeature.jsx';
+import RequireStaffPermission from './components/RequireStaffPermission.jsx';
 
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
@@ -60,6 +61,10 @@ const withFeature = (feature, element) => (
     <RequireFeature feature={feature}>{element}</RequireFeature>
 );
 
+const withPermission = (permission, element) => (
+    <RequireStaffPermission permission={permission}>{element}</RequireStaffPermission>
+);
+
 function App() {
     const { user, loading } = useAuth();
 
@@ -90,34 +95,35 @@ function App() {
                 <Route element={<ProtectedRoute allowedRoles={['VendorAdmin', 'VendorStaff']} />}>
                     <Route path="/dashboard" element={<DashboardLayout />}>
 
+                        <Route index element={withSuspense(withPermission('overview', <Overview />))} />
+
                         {/* 🔴 ADMIN ONLY ROUTES */}
                         <Route element={<ProtectedRoute allowedRoles={['VendorAdmin']} />}>
-                            <Route index element={withSuspense(<Overview />)} />
                             {/* Note: You might want to move 'settings' here too depending on your business logic */}
-                            <Route path="store-builder" element={withSuspense(withFeature('storeBuilder', <StoreBuilder />))} />
                             <Route path="staff" element={withSuspense(withFeature('staffAccounts', <StaffPermissions />))} />
-                            <Route path="activity-logs" element={withSuspense(<ActivityLogs />)} />
                             <Route path="badges" element={withSuspense(<TrustedBadge />)} />
+                            <Route path="billing" element={withSuspense(<Billing />)} />
+                            <Route path="verification" element={withSuspense(<Verification />)} />
                         </Route>
 
                         {/* 🟢 ADMIN & STAFF ROUTES */}
-                        <Route path="products" element={withSuspense(<ProductList />)} />
-                        <Route path="products/add" element={withSuspense(<AddProduct />)} />
-                        <Route path="products/edit/:id" element={withSuspense(<EditProduct />)} />
-                        <Route path="catalog-tools" element={withSuspense(withFeature('bulkProductTools', <CatalogTools />))} />
-                        <Route path="orders" element={withSuspense(<OrderList />)} />
-                        <Route path="returns" element={withSuspense(<Returns />)} />
-                        <Route path="notifications" element={withSuspense(<Notifications />)} />
-                        <Route path="verification" element={withSuspense(<Verification />)} />
-                        <Route path="billing" element={withSuspense(<Billing />)} />
-                        <Route path="promotions" element={withSuspense(withFeature('coupons', <Promotions />))} />
+                        <Route path="products" element={withSuspense(withPermission('products', <ProductList />))} />
+                        <Route path="products/add" element={withSuspense(withPermission('products', <AddProduct />))} />
+                        <Route path="products/edit/:id" element={withSuspense(withPermission('products', <EditProduct />))} />
+                        <Route path="catalog-tools" element={withSuspense(withPermission('catalogTools', withFeature('bulkProductTools', <CatalogTools />)))} />
+                        <Route path="orders" element={withSuspense(withPermission('orders', <OrderList />))} />
+                        <Route path="returns" element={withSuspense(withPermission('returns', <Returns />))} />
+                        <Route path="notifications" element={withSuspense(withPermission('notifications', <Notifications />))} />
+                        <Route path="promotions" element={withSuspense(withPermission('promotions', withFeature('coupons', <Promotions />)))} />
                         <Route path="banners" element={<Navigate to="/dashboard/store-builder" replace />} />
-                        <Route path="customers" element={withSuspense(<CustomerList />)} />
-                        <Route path="privacy-requests" element={withSuspense(<PrivacyRequests />)} />
-                        <Route path="growth" element={withSuspense(withFeature('growthCenter', <GrowthCenter />))} />
-                        <Route path="analytics" element={withSuspense(withFeature('analytics', <AdvancedAnalytics />))} />
-                        <Route path="shipping" element={withSuspense(<ShippingSettings />)} />
-                        <Route path="settings" element={withSuspense(<ShopSettings />)} />
+                        <Route path="customers" element={withSuspense(withPermission('customers', <CustomerList />))} />
+                        <Route path="privacy-requests" element={withSuspense(withPermission('privacyRequests', <PrivacyRequests />))} />
+                        <Route path="growth" element={withSuspense(withPermission('growthCenter', withFeature('growthCenter', <GrowthCenter />)))} />
+                        <Route path="analytics" element={withSuspense(withPermission('analytics', withFeature('analytics', <AdvancedAnalytics />)))} />
+                        <Route path="store-builder" element={withSuspense(withPermission('storeBuilder', withFeature('storeBuilder', <StoreBuilder />)))} />
+                        <Route path="shipping" element={withSuspense(withPermission('shipping', <ShippingSettings />))} />
+                        <Route path="settings" element={withSuspense(withPermission('settings', <ShopSettings />))} />
+                        <Route path="activity-logs" element={withSuspense(withPermission('activityLogs', <ActivityLogs />))} />
                     </Route>
                 </Route>
 

@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const { buildPagination } = require('../utils/pagination');
 
 const getRecipientQuery = (req) => ({
     shop_id: req.tenantId,
@@ -31,11 +32,7 @@ exports.getNotifications = async (req, res) => {
         res.status(200).json({
             success: true,
             data: notifications,
-            pagination: {
-                total,
-                page,
-                pages: Math.ceil(total / limit)
-            }
+            pagination: buildPagination({ total, page, limit })
         });
     } catch (err) {
         console.error('Get notifications error:', err);

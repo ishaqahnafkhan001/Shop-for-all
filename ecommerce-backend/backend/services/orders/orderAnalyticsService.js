@@ -5,6 +5,88 @@ const User = require('../../models/User');
 const InventoryLog = require('../../models/InventoryLog');
 const cache = require('../cacheService');
 
+const DEFAULT_LOW_STOCK_LIMIT = 5;
+
+const formatVariantLabel = (variant = {}) => {
+    const attributes = Array.isArray(variant.attributes) ? variant.attributes : [];
+    const label = attributes
+        .map(attribute => `${attribute.name}: ${attribute.value}`)
+        .filter(Boolean)
+        .join(', ');
+
+    return label || variant.sku || 'Default variant';
+};
+
+const getVariantThreshold = (product, variant = {}) => {
+    const variantThreshold = variant.inventory?.lowStockThreshold;
+    if (variantThreshold !== undefined && variantThreshold !== null) return Number(variantThreshold);
+    if (product.lowStockThreshold !== undefined && product.lowStockThreshold !== null) return Number(product.lowStockThreshold);
+    return DEFAULT_LOW_STOCK_LIMIT;
+};
+
+const buildLowStockRows = (products = []) => {
+    const rows = [];
+
+    for (const product of products) {
+        for (const variant of product.variants || []) {
+            const stock = Number(variant.stock || 0);
+            const threshold = getVariantThreshold(product, variant);
+            if (stock <= threshold) {
+                rows.push({
+                    productId: product._id,
+                    variantId: variant._id,
+                    title: product.title,
+                    productTitle: product.title,
+                    variantLabel: formatVariantLabel(variant),
+                    sku: variant.sku || '',
+                    stock,
+                    threshold,
+                    currentStock: stock,
+                    isOutOfStock: stock <= 0
+                });
+            }
+        }
+    }
+
+    return rows
+        .sort((a, b) => (a.stock - b.stock) || (b.threshold - a.threshold))
+        .slice(0, 15);
+};
+
+const buildRecentMovementRows = (logs = []) => logs.map((log) => {
+    const product = log.productId || {};
+    const variant = (product.variants || []).find(item => String(item._id) === String(log.variantId)) || {};
+    const productTitle = product.title || 'Unknown product';
+    const variantLabel = formatVariantLabel(variant);
+    const orderShortId = log.referenceId ? `#${String(log.referenceId).slice(-6).toUpperCase()}` : '';
+    const stockDirection = Number(log.change || 0) > 0 ? 'increased' : 'decreased';
+    const absChange = Math.abs(Number(log.change || 0));
+
+    const typeLabels = {
+        ORDER: 'Order stock movement',
+        CANCEL: 'Order cancellation stock restore',
+        RETURN: 'Return stock restore',
+        RESTOCK: 'Product stock added',
+        MANUAL: 'Product stock updated'
+    };
+
+    return {
+        type: log.type,
+        title: typeLabels[log.type] || 'Inventory movement',
+        message: `${productTitle} — ${variantLabel} ${stockDirection} by ${absChange}.`,
+        productId: product._id || log.productId,
+        productTitle,
+        variantId: log.variantId,
+        variantLabel,
+        orderShortId,
+        change: log.change,
+        beforeStock: log.beforeStock,
+        afterStock: log.afterStock,
+        timestamp: log.createdAt,
+        severity: Number(log.afterStock || 0) <= getVariantThreshold(product, variant) ? 'warning' : 'info'
+    };
+});
+
 const getDashboardStatsData = async (tenantId) => {
     const shopId = new mongoose.Types.ObjectId(tenantId);
 
@@ -158,9 +240,10 @@ const getDashboardOverviewResponse = async (tenantId) => {
         totalCustomers,
         revenueAnalytics,
         movement,
+        recentMovementLogs,
         adjustments,
         topProducts,
-        lowStock
+        lowStockProducts
     ] = await Promise.all([
         Order.aggregate([
             { $match: deliveredMatch },
@@ -226,6 +309,11 @@ const getDashboardOverviewResponse = async (tenantId) => {
             { $project: { _id: 0, date: '$_id.date', stockIn: 1, stockOut: 1 } },
             { $sort: { date: 1 } }
         ]),
+        InventoryLog.find({ shop_id: shopId, createdAt: { $gte: thirtyDaysAgo } })
+            .populate('productId', 'title variants lowStockThreshold')
+            .sort({ createdAt: -1 })
+            .limit(12)
+            .lean(),
         InventoryLog.aggregate([
             { $match: { shop_id: shopId, type: 'MANUAL', createdAt: { $gte: thirtyDaysAgo } } },
             { $group: { _id: '$productId', totalAdjustment: { $sum: '$change' } } },
@@ -269,9 +357,8 @@ const getDashboardOverviewResponse = async (tenantId) => {
         ]),
         Product.find({
             shop_id: shopId,
-            isDeleted: false,
-            'variants.stock': { $lte: 5 }
-        }).select('title variants').limit(15).lean()
+            isDeleted: false
+        }).select('title variants lowStockThreshold').limit(500).lean()
     ]);
 
     const stats = {
@@ -291,9 +378,10 @@ const getDashboardOverviewResponse = async (tenantId) => {
                 monthlyData: revenueAnalytics
             },
             movement,
+            recentMovements: buildRecentMovementRows(recentMovementLogs),
             adjustments,
             topProducts,
-            lowStock
+            lowStock: buildLowStockRows(lowStockProducts)
         }
     };
 

@@ -105,7 +105,7 @@ const ProductDetailModal = ({ product, isOpen, onClose }) => {
                     {/* Dynamic Sections */}
                     <DetailSection title="Features" icon={Star} data={product.features} />
                     <DetailSection title="Specifications" icon={ShieldCheck} data={product.specifications} />
-                    <DetailSection title="Internal Comments" icon={Tag} data={product.comments} />
+                    <DetailSection title="Extra Notes" icon={Tag} data={product.comments} />
                 </div>
             </div>
         </div>

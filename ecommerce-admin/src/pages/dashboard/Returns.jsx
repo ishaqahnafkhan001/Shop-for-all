@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshCcw, Search, Eye, Trash2 } from 'lucide-react';
+import { RefreshCcw, Search, Eye, Trash2, Image as ImageIcon, Video, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API from '../../api/api';
 import Table from '../../components/ui/Table';
@@ -30,6 +30,8 @@ const Returns = () => {
     const [createOpen, setCreateOpen] = useState(false);
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({ orderId: '', reason: '', customerNote: '' });
+    const [proofImages, setProofImages] = useState([]);
+    const [proofVideo, setProofVideo] = useState(null);
     const [refundForm, setRefundForm] = useState({ status: 'Pending', amount: '', method: '', reference: '', note: '' });
 
     const fetchReturns = useCallback(async (page = 1) => {
@@ -61,12 +63,32 @@ const Returns = () => {
 
     const createReturn = async (event) => {
         event.preventDefault();
+        if (proofImages.length < 1) {
+            toast.error('Upload at least one proof image.');
+            return;
+        }
+        if (proofImages.length > 3) {
+            toast.error('You can upload up to 3 proof images.');
+            return;
+        }
+
+        const payload = new FormData();
+        payload.append('orderId', form.orderId);
+        payload.append('reason', form.reason);
+        payload.append('customerNote', form.customerNote || '');
+        proofImages.forEach(file => payload.append('proofImages', file));
+        if (proofVideo) payload.append('proofVideo', proofVideo);
+
         setSaving(true);
         try {
-            await API.post('/admin/returns', form);
+            await API.post('/admin/returns', payload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             toast.success('Return request created');
             setCreateOpen(false);
             setForm({ orderId: '', reason: '', customerNote: '' });
+            setProofImages([]);
+            setProofVideo(null);
             fetchReturns(1);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to create return');
@@ -126,6 +148,14 @@ const Returns = () => {
             reference: item.refund?.reference || '',
             note: item.refund?.note || ''
         });
+    };
+
+    const handleImageChange = (event) => {
+        const files = Array.from(event.target.files || []);
+        const next = [...proofImages, ...files].slice(0, 3);
+        if (proofImages.length + files.length > 3) toast.error('Only the first 3 proof images were added.');
+        setProofImages(next);
+        event.target.value = '';
     };
 
     const columns = [
@@ -241,12 +271,26 @@ const Returns = () => {
                 />
             )}
 
-            {pagination.pages > 1 && (
+            {(pagination.totalPages || pagination.pages || 1) > 1 && (
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                    <span>Page {pagination.page} of {pagination.pages} · {pagination.total} returns</span>
+                    <span>Page {pagination.page} of {pagination.totalPages || pagination.pages} · {pagination.total} returns</span>
                     <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" disabled={pagination.page <= 1} onClick={() => fetchReturns(pagination.page - 1)}>Previous</Button>
-                        <Button variant="secondary" size="sm" disabled={pagination.page >= pagination.pages} onClick={() => fetchReturns(pagination.page + 1)}>Next</Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={pagination.hasPrevPage === false || pagination.page <= 1}
+                            onClick={() => fetchReturns(pagination.page - 1)}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={pagination.hasNextPage === false || pagination.page >= (pagination.totalPages || pagination.pages)}
+                            onClick={() => fetchReturns(pagination.page + 1)}
+                        >
+                            Next
+                        </Button>
                     </div>
                 </div>
             )}
@@ -286,9 +330,47 @@ const Returns = () => {
                     <p className="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-500">
                         By default all order items are included. You can adjust item-level workflows later without losing this request history.
                     </p>
+                    <div className="rounded-xl border border-slate-200 p-4">
+                        <div className="flex items-start gap-2">
+                            <ImageIcon size={18} className="mt-0.5 text-indigo-600" />
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">Proof files</p>
+                                <p className="text-xs leading-5 text-slate-500">Upload at least 1 proof image. You can upload up to 3 images. Video is optional.</p>
+                            </div>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <label className="rounded-lg border border-dashed border-slate-300 p-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                                Add proof images
+                                <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleImageChange} className="hidden" />
+                            </label>
+                            <label className="rounded-lg border border-dashed border-slate-300 p-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                                Add optional video
+                                <input type="file" accept="video/mp4,video/quicktime" onChange={event => setProofVideo(event.target.files?.[0] || null)} className="hidden" />
+                            </label>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                            {proofImages.map((file, index) => (
+                                <div key={`${file.name}-${index}`} className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                    <img src={URL.createObjectURL(file)} alt={file.name} className="h-24 w-full object-cover" />
+                                    <button type="button" onClick={() => setProofImages(prev => prev.filter((_, itemIndex) => itemIndex !== index))} className="absolute right-1 top-1 rounded-full bg-white p-1 text-slate-600 shadow">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            {proofVideo && (
+                                <div className="relative flex h-24 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600">
+                                    <Video size={20} className="mr-1 shrink-0" />
+                                    <span className="truncate">{proofVideo.name}</span>
+                                    <button type="button" onClick={() => setProofVideo(null)} className="absolute right-1 top-1 rounded-full bg-white p-1 text-slate-600 shadow">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div className="flex justify-end gap-2">
                         <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                        <Button type="submit" isLoading={saving}>Create return</Button>
+                        <Button type="submit" isLoading={saving} disabled={proofImages.length < 1}>Create return</Button>
                     </div>
                 </form>
             </Modal>
@@ -331,6 +413,36 @@ const Returns = () => {
                                 ))}
                             </div>
                         </div>
+
+                        {(selectedReturn.proof?.images?.length > 0 || selectedReturn.proof?.video?.url) && (
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-950">Proof files</h3>
+                                <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                                    {(selectedReturn.proof?.images || []).map((image, index) => (
+                                        <a
+                                            key={image.publicId || image.url || index}
+                                            href={image.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                                        >
+                                            <img src={image.url} alt={`Return proof ${index + 1}`} className="h-28 w-full object-cover" />
+                                        </a>
+                                    ))}
+                                    {selectedReturn.proof?.video?.url && (
+                                        <a
+                                            href={selectedReturn.proof.video.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex h-28 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600"
+                                        >
+                                            <Video size={20} className="mr-2" />
+                                            View video
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid gap-2 sm:grid-cols-2">
                             {selectedNextStatuses.map(option => (

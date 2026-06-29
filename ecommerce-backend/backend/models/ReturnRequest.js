@@ -25,6 +25,19 @@ const refundSchema = new Schema({
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null }
 }, { _id: false });
 
+const proofFileSchema = new Schema({
+    url: { type: String, trim: true, default: '' },
+    publicId: { type: String, trim: true, default: '' },
+    originalName: { type: String, trim: true, default: '' },
+    mimeType: { type: String, trim: true, default: '' },
+    size: { type: Number, min: 0, default: 0 }
+}, { _id: false });
+
+const proofSchema = new Schema({
+    images: { type: [proofFileSchema], default: [] },
+    video: { type: proofFileSchema, default: undefined }
+}, { _id: false });
+
 const returnRequestSchema = new Schema({
     shop_id: { type: Schema.Types.ObjectId, ref: 'Shop', required: true, index: true },
     order_id: { type: Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
@@ -43,6 +56,7 @@ const returnRequestSchema = new Schema({
         index: true
     },
     resolution: { type: String, trim: true, default: '' },
+    proof: { type: proofSchema, default: () => ({ images: [] }) },
     refund: { type: refundSchema, default: () => ({}) },
     requestedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },

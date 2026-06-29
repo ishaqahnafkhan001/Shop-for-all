@@ -32,8 +32,8 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
 
         try {
             await API.post('/admin/customers/send-email', {
+                customerId: customer._id,
                 email: customer.email,
-                name: customer.fullName,
                 subject: subject,
                 message: message,
                 shopName: shopName || "Store Administration" // Send shopName to backend

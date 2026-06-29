@@ -4,6 +4,7 @@ const { createProductSchema, updateProductSchema } = require('../validations/pro
 const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
 const { logAudit } = require('../services/auditLogService');
+const { buildPagination } = require('../utils/pagination');
 const {
     parseProductPayload,
     resolveVariantImageReferences
@@ -80,8 +81,8 @@ exports.getShopProducts = async (req, res) => {
         const shopObjectId = new mongoose.Types.ObjectId(shopId);
         const { sort } = req.query;
 
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 10;
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 200);
         const isStorefrontRequest = !req.user || req.user.role === 'Customer';
         const query = buildProductListQuery({
             shopId,
@@ -115,11 +116,7 @@ exports.getShopProducts = async (req, res) => {
             success: true,
             data: products.map(addComputedProductFields),
             categories: uniqueCategories, // ✨ Send the categories back to the frontend
-            pagination: {
-                total,
-                page,
-                pages: Math.ceil(total / limit)
-            }
+            pagination: buildPagination({ total, page, limit })
         });
 
     } catch (err) {

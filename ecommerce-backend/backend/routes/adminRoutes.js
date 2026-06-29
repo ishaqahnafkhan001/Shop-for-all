@@ -66,7 +66,9 @@ const {
 // Email Controllers
 const {
     sendEmailToCustomer,
-    sendOrderStatusEmail
+    sendOrderStatusEmail,
+    createCustomerEmailCampaign,
+    createProductEmailCampaign
 } = require('../controllers/emailController');
 
 // Returns / Activity / Notifications
@@ -112,6 +114,10 @@ const {
 const productMediaUpload = upload.fields([
     { name: 'images', maxCount: 5 },
     { name: 'videos', maxCount: 2 }
+]);
+const returnProofUpload = upload.fields([
+    { name: 'proofImages', maxCount: 3 },
+    { name: 'proofVideo', maxCount: 1 }
 ]);
 const vendorNidUpload = nidUpload.fields([
     { name: 'nidFront', maxCount: 1 },
@@ -184,7 +190,7 @@ router.get(
     '/privacy/data-requests',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('customers'),
+    requirePermission('privacyRequests'),
     getAdminDataRequests
 );
 
@@ -192,7 +198,7 @@ router.patch(
     '/privacy/data-requests/:id',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('customers'),
+    requirePermission('privacyRequests'),
     updateAdminDataRequest
 );
 
@@ -203,8 +209,25 @@ router.patch(
 router.post(
     '/customers/send-email',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'),
     sendEmailToCustomer
+);
+
+router.post(
+    '/customers/email-campaigns',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'),
+    createCustomerEmailCampaign
+);
+
+router.post(
+    '/customers/product-email-campaigns',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'),
+    createProductEmailCampaign
 );
 
 router.post(
@@ -222,6 +245,7 @@ router.get(
     '/notifications',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('notifications'),
     getNotifications
 );
 
@@ -229,6 +253,7 @@ router.get(
     '/notifications/unread-count',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('notifications'),
     getUnreadCount
 );
 
@@ -236,6 +261,7 @@ router.patch(
     '/notifications/read-all',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('notifications'),
     markAllNotificationsRead
 );
 
@@ -243,6 +269,7 @@ router.patch(
     '/notifications/:id/read',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('notifications'),
     markNotificationRead
 );
 
@@ -250,6 +277,7 @@ router.delete(
     '/notifications/:id',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('notifications'),
     deleteNotification
 );
 
@@ -261,7 +289,7 @@ router.get(
     '/returns',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('orders'),
+    requirePermission('returns'),
     getReturns
 );
 
@@ -269,7 +297,7 @@ router.get(
     '/returns/:id',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('orders'),
+    requirePermission('returns'),
     getReturnById
 );
 
@@ -277,8 +305,9 @@ router.post(
     '/returns',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('orders'),
+    requirePermission('returns'),
     blockBillingSuspendedShop,
+    returnProofUpload,
     createReturn
 );
 
@@ -286,7 +315,7 @@ router.patch(
     '/returns/:id/status',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('orders'),
+    requirePermission('returns'),
     blockBillingSuspendedShop,
     updateReturnStatus
 );
@@ -295,7 +324,7 @@ router.patch(
     '/returns/:id/refund',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('orders'),
+    requirePermission('returns'),
     blockBillingSuspendedShop,
     updateReturnRefund
 );
@@ -304,7 +333,7 @@ router.patch(
     '/returns/:id',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('orders'),
+    requirePermission('returns'),
     blockBillingSuspendedShop,
     updateReturn
 );
@@ -313,7 +342,7 @@ router.delete(
     '/returns',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('orders'),
+    requirePermission('returns'),
     blockBillingSuspendedShop,
     deleteReturns
 );
@@ -325,7 +354,8 @@ router.delete(
 router.get(
     '/audit-logs',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('activityLogs'),
     getAuditLogs
 );
 
@@ -336,14 +366,16 @@ router.get(
 router.post(
     '/settings/pathao-link',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
     linkExistingPathaoAccount
 );
 
 router.post(
     '/settings/pathao-store',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
     setupVendorPathaoStore
 );
 
@@ -351,21 +383,24 @@ router.post(
 router.get(
     '/pathao/cities',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
     getCities
 );
 
 router.get(
     '/pathao/cities/:cityId/zones',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
     getZones
 );
 
 router.get(
     '/pathao/zones/:zoneId/areas',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
     getAreas
 );
 
@@ -397,7 +432,7 @@ router.get(
     '/products/export.csv',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('products'),
+    requirePermission('catalogTools'),
     requireShopFeature('bulkProductTools'),
     exportProductsCsv
 );
@@ -405,7 +440,8 @@ router.get(
 router.post(
     '/products/bulk-import',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('catalogTools'),
     requireShopFeature('bulkProductTools'),
     blockBillingSuspendedShop,
     requireProductLimit((req) => Array.isArray(req.body?.products) ? Math.min(req.body.products.length, 200) : 1),
@@ -417,7 +453,7 @@ router.patch(
     '/products/bulk',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('products'),
+    requirePermission('catalogTools'),
     requireShopFeature('bulkProductTools'),
     blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
@@ -575,8 +611,7 @@ router.get(
     '/dashboard-overview',
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
-    requirePermission('analytics'),
-    requireShopFeature('analytics'),
+    requirePermission('overview'),
     getDashboardOverview
 );
 

@@ -6,6 +6,7 @@ const { authorize } = require('../middlewares/role');
 const { resolveTenant } = require('../middlewares/tenant');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const { requireShopFeature, requireShopFeatureWhenCustomDomainChanges } = require('../middlewares/featureGate');
+const { requirePermission } = require('../middlewares/permission');
 const { upload } = require('../config/cloudinary');
 const {
     getStoreBuilderSettings,
@@ -20,7 +21,8 @@ const { checkVendorCustomDomainDns } = require('../controllers/customDomainContr
 router.get(
     '/admin',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     getStoreBuilderSettings
 );
@@ -28,7 +30,8 @@ router.get(
 router.patch(
     '/admin',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     requireShopFeatureWhenCustomDomainChanges('customDomain'),
     blockVerificationSuspendedShop,
@@ -38,7 +41,8 @@ router.patch(
 router.post(
     '/admin/custom-domain/check',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     requireShopFeature('customDomain'),
     blockVerificationSuspendedShop,
@@ -48,7 +52,8 @@ router.post(
 router.get(
     '/admin/reviews',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     getStoreBuilderReviews
 );
@@ -56,7 +61,8 @@ router.get(
 router.post(
     '/admin/logo',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     blockVerificationSuspendedShop,
     upload.single('logo'),
@@ -66,7 +72,8 @@ router.post(
 router.post(
     '/admin/image',
     protect,
-    authorize('VendorAdmin'),
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     blockVerificationSuspendedShop,
     upload.single('image'),

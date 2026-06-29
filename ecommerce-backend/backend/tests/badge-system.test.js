@@ -29,6 +29,12 @@ test('badge eligibility thresholds match trusted seller business rules', () => {
     assert.equal(hasFacebookLink({
         theme: {
             navigation: [],
+            footer: { facebookUrl: 'https://facebook.com/example-store', links: [] }
+        }
+    }), true);
+    assert.equal(hasFacebookLink({
+        theme: {
+            navigation: [],
             footer: { links: [{ label: 'Instagram', url: 'https://instagram.com/example-store' }] }
         }
     }), false);

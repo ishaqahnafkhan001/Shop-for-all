@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, Package, ShoppingCart, TrendingUp, AlertTriangle,
   BarChart2, ArrowUpDown, SlidersHorizontal, ChevronRight, Megaphone
@@ -13,6 +14,7 @@ import VendorOnboardingChecklist from '../../components/dashboard/VendorOnboardi
 import { AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import BillingAlert from '../../components/dashboard/BillingAlert.jsx';
 import TrustedBadgeStatusCard from '../../components/dashboard/TrustedBadgeStatusCard.jsx';
+import { hasFeature } from '../../utils/featureAccess.js';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -32,10 +34,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const Overview = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
   const [revenue, setRevenue] = useState({});
   const [movement, setMovement] = useState([]);
+  const [recentMovements, setRecentMovements] = useState([]);
   const [adjustments, setAdjustments] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [lowStock, setLowStock] = useState([]);
@@ -72,6 +76,7 @@ const Overview = () => {
 	        setStats(overviewData.stats || {});
 	        setRevenue(overviewData.revenue || {});
 	        setMovement(overviewData.movement || []);
+	        setRecentMovements(overviewData.recentMovements || []);
 	        setAdjustments(overviewData.adjustments || []);
 	        setTopProducts(overviewData.topProducts || []);
 	        setLowStock(overviewData.lowStock || []);
@@ -101,6 +106,9 @@ const Overview = () => {
   }
 
   const overview = revenue?.overview || {};
+  const goToTopProducts = () => {
+    navigate(hasFeature(user, 'growthCenter') ? '/dashboard/growth?focus=top-products' : '/dashboard/products');
+  };
 
   const chartData = (revenue?.monthlyData || []).map(item => {
     const d = new Date(item.year, item.month - 1);
@@ -240,17 +248,17 @@ const Overview = () => {
               </h2>
               <div className="space-y-1">
                 {lowStock.length > 0 ? (
-                    lowStock.slice(0, 5).map((p, i) => {
-                      const totalStock = p.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
-                      return (
-                          <div key={i} className="group flex justify-between items-center text-sm p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                            <span className="text-gray-700 font-medium truncate pr-3 group-hover:text-indigo-600 transition-colors">{p.title}</span>
-                            <span className="bg-red-100 text-red-700 py-0.5 px-2 rounded-full text-xs font-bold flex-shrink-0">
-                        {totalStock} left
-                      </span>
+                    lowStock.slice(0, 5).map((p, i) => (
+                        <div key={`${p.productId || p.title}-${p.variantId || i}`} className="group flex justify-between items-center gap-3 text-sm p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                          <div className="min-w-0">
+                            <span className="block text-gray-700 font-medium truncate group-hover:text-indigo-600 transition-colors">{p.productTitle || p.title}</span>
+                            <span className="block text-xs text-gray-400 truncate">{p.variantLabel || 'Default variant'} / alert at {p.threshold ?? 5}</span>
                           </div>
-                      );
-                    })
+                          <span className="bg-red-100 text-red-700 py-0.5 px-2 rounded-full text-xs font-bold flex-shrink-0">
+                            {p.stock ?? p.currentStock ?? 0} left
+                          </span>
+                        </div>
+                    ))
                 ) : (
                     <div className="text-center py-4 bg-gray-50 rounded-lg text-sm text-gray-500">No products are below their low-stock alert level.</div>
                 )}
@@ -266,7 +274,22 @@ const Overview = () => {
                 Recent Movements
               </h2>
               <div className="space-y-1">
-                {movement.length > 0 ? (
+                {recentMovements.length > 0 ? (
+                    recentMovements.slice(0, 5).map((m, i) => (
+                        <div key={`${m.timestamp || i}-${m.variantId || ''}`} className="rounded-lg p-2 -mx-2 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold text-gray-700">{m.title}</p>
+                              <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-gray-500">{m.message}</p>
+                              {m.orderShortId && <p className="mt-0.5 text-[11px] font-bold text-indigo-600">{m.orderShortId}</p>}
+                            </div>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${m.severity === 'warning' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                              {m.change > 0 ? '+' : ''}{m.change}
+                            </span>
+                          </div>
+                        </div>
+                    ))
+                ) : movement.length > 0 ? (
                     movement.slice(0, 5).map((m, i) => (
                         <div key={i} className="flex justify-between items-center text-sm p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors">
                           <span className="text-gray-500 text-xs font-medium">{m.date}</span>
@@ -320,7 +343,7 @@ const Overview = () => {
                   </div>
                   Top Selling Products
                 </h2>
-                <button className="text-sm text-blue-600 font-medium hover:text-blue-700 flex items-center gap-1 transition-colors">
+                <button onClick={goToTopProducts} className="text-sm text-blue-600 font-medium hover:text-blue-700 flex items-center gap-1 transition-colors">
                   View All <ChevronRight size={16} />
                 </button>
               </div>

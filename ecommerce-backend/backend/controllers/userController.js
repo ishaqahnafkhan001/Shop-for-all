@@ -13,6 +13,7 @@ const {
     sanitizeStaffPermissions,
     getStaffCapacity
 } = require('../services/staff/staffCapacityService');
+const { buildPagination } = require('../utils/pagination');
 
 
 /**
@@ -76,15 +77,55 @@ exports.toggleCustomerStatus = async (req, res) => {
  */
 exports.getShopCustomers = async (req, res) => {
     try {
-        // Find users linked to this specific shop with the 'Customer' role
-        const customers = await User.find({
-            shop_id: req.user.shopId,
+        const hasPaginationParams = ['page', 'limit', 'search', 'status'].some(key => req.query[key] !== undefined);
+        const shopId = req.tenantId || req.user.shopId;
+        const query = {
+            shop_id: shopId,
             role: 'Customer'
-        })
-            .select('-password') // Never send passwords to the frontend!
-            .sort({ createdAt: -1 }); // Newest customers first
+        };
 
-        res.status(200).json(customers);
+        if (req.query.status && req.query.status !== 'All') {
+            query.status = req.query.status;
+        }
+
+        if (req.query.search) {
+            const search = String(req.query.search || '').trim();
+            const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            query.$or = [
+                { fullName: regex },
+                { email: regex },
+                { phone: regex }
+            ];
+        }
+
+        if (!hasPaginationParams) {
+            const customers = await User.find(query)
+                .select('-password')
+                .sort({ createdAt: -1 });
+
+            return res.status(200).json(customers);
+        }
+
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
+        const skip = (page - 1) * limit;
+
+        // Find users linked to this specific shop with the 'Customer' role
+        const [customers, total] = await Promise.all([
+            User.find(query)
+            .select('-password') // Never send passwords to the frontend!
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            User.countDocuments(query)
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: customers,
+            pagination: buildPagination({ total, page, limit })
+        });
     } catch (err) {
         console.error("Error fetching customers:", err);
         res.status(500).json({ error: "Failed to fetch customers" });

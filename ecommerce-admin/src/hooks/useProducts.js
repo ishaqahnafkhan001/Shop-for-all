@@ -8,12 +8,14 @@ export const useProducts = (initialLimit = 10) => {
   const [loading, setLoading] = useState(true);
 
   // 1. Manage all query parameters in one state object
-  const [queryParams, setQueryParams] = useState({
-    page: 1,
-    limit: initialLimit,
-    search: '',
-    category: ''
-  });
+    const [queryParams, setQueryParams] = useState({
+        page: 1,
+        limit: initialLimit,
+        search: '',
+        category: '',
+        status: '',
+        sort: ''
+    });
 
   // 2. Align with your backend's pagination structure (page, pages, total)
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
@@ -28,6 +30,8 @@ export const useProducts = (initialLimit = 10) => {
       });
       if (queryParams.search) params.append('search', queryParams.search);
       if (queryParams.category) params.append('category', queryParams.category);
+      if (queryParams.status) params.append('status', queryParams.status);
+      if (queryParams.sort) params.append('sort', queryParams.sort);
 
       const res = await API.get(`/admin/products?${params.toString()}`);
 
@@ -38,7 +42,11 @@ export const useProducts = (initialLimit = 10) => {
         setPagination({
           page: res.data.pagination.page,
           pages: res.data.pagination.pages, // Note: backend sends 'pages', not 'totalPages'
-          total: res.data.pagination.total
+          total: res.data.pagination.total,
+          limit: res.data.pagination.limit || queryParams.limit,
+          totalPages: res.data.pagination.totalPages || res.data.pagination.pages,
+          hasNextPage: Boolean(res.data.pagination.hasNextPage),
+          hasPrevPage: Boolean(res.data.pagination.hasPrevPage)
         });
       }
     } catch (err) {
@@ -59,7 +67,7 @@ export const useProducts = (initialLimit = 10) => {
 
   // Easily change the page from your component
   const goToPage = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.pages) {
+    if (newPage >= 1 && newPage <= (pagination.totalPages || pagination.pages)) {
       setQueryParams((prev) => ({ ...prev, page: newPage }));
     }
   };

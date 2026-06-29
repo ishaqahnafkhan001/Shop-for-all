@@ -28,7 +28,10 @@ const {
     buildStatusUpdate,
     shouldBlockStatusUpdateForStockRestoration
 } = require('../services/orders/orderStatusService');
-const { notifyOrderCreated } = require('../services/orders/orderEmailService');
+const {
+    notifyOrderCreated,
+    notifyCustomerOrderStatus
+} = require('../services/orders/orderEmailService');
 const {
     getDashboardStatsData,
     getDashboardOverviewResponse,
@@ -464,7 +467,7 @@ exports.updateOrderStatus = async (req, res) => {
         }
 
         const shopId = req.tenantId;
-        const { status } = value;
+        const { status, notifyCustomer, emailSubject, emailMessage } = value;
 
         // ✅ Prevent bypassing the stock restoration logic
         if (shouldBlockStatusUpdateForStockRestoration(status)) {
@@ -492,6 +495,24 @@ exports.updateOrderStatus = async (req, res) => {
             return res.status(404).json({ success: false, error: "Order not found or access denied" });
         }
 
+        const statusChanged = previousOrder?.status !== order.status;
+        let emailResult = { sent: false };
+
+        if (statusChanged && notifyCustomer) {
+            try {
+                emailResult = await notifyCustomerOrderStatus({
+                    shopId,
+                    order,
+                    status: order.status,
+                    subject: emailSubject,
+                    message: emailMessage
+                });
+            } catch (emailError) {
+                emailResult = { sent: false, reason: emailError.message };
+                console.warn('Order status email failed:', emailError.message);
+            }
+        }
+
         await logAudit({
             req,
             shop_id: shopId,
@@ -500,12 +521,16 @@ exports.updateOrderStatus = async (req, res) => {
             entityId: order._id,
             entityLabel: `Order #${String(order._id).slice(-6).toUpperCase()}`,
             before: { status: previousOrder?.status },
-            after: { status: order.status }
+            after: {
+                status: order.status,
+                customerNotified: Boolean(emailResult.sent)
+            }
         });
 
         res.status(200).json({
             success: true,
             message: `Order status updated to "${status}"`,
+            notification: emailResult,
             data: order
         });
 

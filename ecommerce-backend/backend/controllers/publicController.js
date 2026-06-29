@@ -28,6 +28,10 @@ const {
 } = require('../utils/domainUtils');
 const { normalizeBDPhone } = require('../utils/phoneUtils');
 const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
+const {
+    parseMaybeJson,
+    buildProofFromFiles
+} = require('../services/returns/returnProofService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
 const RETURN_WINDOW_HOURS = 24;
@@ -101,6 +105,18 @@ const summarizeReturnRequest = (request) => {
         refund: {
             status: request.refund?.status || 'Pending',
             amount: request.refund?.amount || 0
+        },
+        proof: {
+            images: (request.proof?.images || []).map(image => ({
+                url: image.url,
+                originalName: image.originalName || ''
+            })).filter(image => image.url),
+            ...(request.proof?.video?.url ? {
+                video: {
+                    url: request.proof.video.url,
+                    originalName: request.proof.video.originalName || ''
+                }
+            } : {})
         },
         createdAt: request.createdAt,
         updatedAt: request.updatedAt
@@ -1051,7 +1067,8 @@ exports.createTrackedReturnRequest = async (req, res) => {
             });
         }
 
-        const returnItems = buildReturnItemsFromOrder(order, req.body.items);
+        const returnItems = buildReturnItemsFromOrder(order, parseMaybeJson(req.body.items, req.body.items));
+        const proof = buildProofFromFiles(req.files || {});
         const refundAmount = returnItems.reduce((sum, item) => sum + (Number(item.refundAmount) || 0), 0);
 
         const request = await ReturnRequest.create({
@@ -1061,6 +1078,7 @@ exports.createTrackedReturnRequest = async (req, res) => {
             items: returnItems,
             reason,
             customerNote,
+            proof,
             requestedBy: null,
             updatedBy: null,
             refund: {

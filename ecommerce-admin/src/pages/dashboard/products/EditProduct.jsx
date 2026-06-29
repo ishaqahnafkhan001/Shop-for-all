@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Boxes, DollarSign, FileText, ListChecks, PackagePlus, Plus, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import API from '../../../api/api';
@@ -23,10 +23,75 @@ import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../
  * 2. Remove button              → immediate PATCH      (Op D: removeVariants)
  * 3. Add Option                 → its own action       (Op C: addAttributeOption)
  */
+const normalizeKeyValueItems = (items = []) => (
+    Array.isArray(items)
+        ? items
+            .map(item => ({
+                title: String(item?.title || item?.name || item?.key || '').trim(),
+                value: String(item?.value || item?.description || item?.text || '').trim()
+            }))
+            .filter(item => item.title || item.value)
+        : []
+);
+
+const normalizeVariantForEdit = (variant = {}) => {
+    const stock = Number(variant.inventory?.stock ?? variant.stock ?? 0);
+    const status = variant.status || (variant.isActive === false ? 'draft' : 'active');
+
+    return {
+        ...variant,
+        attributes: Array.isArray(variant.attributes)
+            ? variant.attributes.map(attr => ({
+                name: String(attr?.name || '').trim(),
+                value: String(attr?.value || '').trim()
+            })).filter(attr => attr.name || attr.value)
+            : [],
+        stock,
+        inventory: {
+            lowStockThreshold: 5,
+            trackQuantity: true,
+            allowOversell: false,
+            reservedStock: 0,
+            ...(variant.inventory || {}),
+            stock
+        },
+        pricing: {
+            ...(variant.priceOverride !== undefined ? { price: variant.priceOverride } : {}),
+            ...(variant.pricing || {})
+        },
+        status,
+        isActive: status === 'active' && variant.isActive !== false
+    };
+};
+
+const buildProductFormState = (product = {}) => ({
+    title:          product.title          || '',
+    slug:           product.slug           || '',
+    description:    product.description    || '',
+    category:       product.category       || '',
+    tags:           (product.tags || []).join(', '),
+    status:         product.status         || (product.isActive ? 'Published' : 'Draft'),
+    lowStockThreshold: product.lowStockThreshold || 5,
+    imageAltText:   product.imageAltText   || '',
+    seo: {
+        title:       product.seo?.title       || '',
+        description: product.seo?.description || ''
+    },
+    pricing: {
+        buyingPrice:  product.pricing?.buyingPrice  || 0,
+        sellingPrice: product.pricing?.sellingPrice || 0,
+        discount:     product.pricing?.discount     || 0
+    },
+    variants:       (product.variants || []).map(normalizeVariantForEdit),
+    images:         product.images         || [],
+    features:       normalizeKeyValueItems(product.features),
+    specifications: normalizeKeyValueItems(product.specifications),
+    comments:       normalizeKeyValueItems(product.comments)
+});
+
 const EditProduct = () => {
     const navigate    = useNavigate();
     const { id }      = useParams();
-    const { state }   = useLocation();
 
     const [loading,      setLoading]      = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,39 +137,16 @@ const EditProduct = () => {
 
     // Derive the unique attribute names from current variants (for the dropdown)
     const existingAttrNames = [...new Set(
-        formData.variants.flatMap(v => v.attributes.map(a => a.name))
+        formData.variants.flatMap(v => (v.attributes || []).map(a => a.name).filter(Boolean))
     )];
 
     // ── Load product ──────────────────────────────────────────────────────────
     useEffect(() => {
         const load = async () => {
             try {
-                let product = state?.product;
-                if (!product) {
-                    const res = await API.get(`/admin/products/${id}`);
-                    product   = res.data.data || res.data;
-                }
-                setFormData({
-                    title:          product.title          || '',
-                    slug:           product.slug           || '',
-                    description:    product.description    || '',
-                    category:       product.category       || '',
-                    tags:           (product.tags || []).join(', '),
-                    status:         product.status         || (product.isActive ? 'Published' : 'Draft'),
-                    lowStockThreshold: product.lowStockThreshold || 5,
-                    imageAltText:   product.imageAltText   || '',
-                    seo:            product.seo || { title: '', description: '' },
-                    pricing: {
-                        buyingPrice:  product.pricing?.buyingPrice  || 0,
-                        sellingPrice: product.pricing?.sellingPrice || 0,
-                        discount:     product.pricing?.discount     || 0
-                    },
-                    variants:       product.variants       || [],
-                    images:         product.images         || [],
-                    features:       product.features       || [],
-                    specifications: product.specifications || [],
-                    comments:       product.comments       || []
-                });
+                const res = await API.get(`/admin/products/${id}`);
+                const product = res.data.data || res.data;
+                setFormData(buildProductFormState(product));
             } catch {
                 toast.error('Failed to load product');
                 navigate('/dashboard/products');
@@ -113,7 +155,7 @@ const EditProduct = () => {
             }
         };
         load();
-    }, [id, state, navigate]);
+    }, [id, navigate]);
 
     // ── Scalar handlers ───────────────────────────────────────────────────────
     const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -929,7 +971,7 @@ const EditProduct = () => {
                     <ProductFormSection
                         key={type}
                         title={`${5 + index}. ${type === 'features' ? 'Selling points' : type === 'specifications' ? 'Specifications' : 'Extra notes'}`}
-                        description={type === 'features' ? 'Short benefits shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
+                        description={type === 'features' ? 'Short benefits shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Customer-facing care, storage, sizing, or styling notes shown on the product page.'}
                         icon={type === 'features' ? ListChecks : type === 'specifications' ? FileText : Search}
                         actions={(
                             <button
@@ -942,9 +984,9 @@ const EditProduct = () => {
                     >
                         <div className="flex justify-between items-center">
                             <div>
-                                <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                                <h2 className="font-semibold capitalize text-gray-700">{type === 'comments' ? 'Extra notes' : type}</h2>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    {type === 'features' ? 'Short selling points shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
+                                    {type === 'features' ? 'Short selling points shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Customer-facing care, storage, sizing, or styling notes shown on the product page.'}
                                 </p>
                             </div>
                         </div>

@@ -1,4 +1,7 @@
 const { sendMail } = require('../services/mail/mailService');
+const User = require('../models/User');
+const { createCampaignJob } = require('../services/customerEmailCampaignService');
+const { logAudit } = require('../services/auditLogService');
 
 // Import your templates
 const { customerMessageTemplate } = require('../services/mail/templates/customMessageTemplate');
@@ -10,12 +13,27 @@ const { customerMessageTemplate } = require('../services/mail/templates/customMe
 // ============================================================================
 exports.sendEmailToCustomer = async (req, res) => {
     try {
-        const { email, name, subject, message, shopName, orderDetails } = req.body;
+        const { customerId, email, subject, message, shopName } = req.body;
 
-        if (!email || !subject || !message) {
+        if ((!email && !customerId) || !subject || !message) {
             return res.status(400).json({
                 success: false,
                 error: 'Missing required fields'
+            });
+        }
+
+        const customerQuery = {
+            shop_id: req.tenantId,
+            role: 'Customer'
+        };
+        if (customerId) customerQuery._id = customerId;
+        else customerQuery.email = String(email).trim().toLowerCase();
+
+        const customer = await User.findOne(customerQuery).select('fullName email').lean();
+        if (!customer) {
+            return res.status(404).json({
+                success: false,
+                error: 'Customer not found or access denied.'
             });
         }
 
@@ -23,19 +41,29 @@ exports.sendEmailToCustomer = async (req, res) => {
 
         const html = customerMessageTemplate({
             senderName,
-            name: name || 'Customer',
-            email,
+            name: customer.fullName || 'Customer',
+            email: customer.email,
             subject,
             message
         });
 
         await sendMail({
             type: 'admin', // Explicitly use the admin transporter
-            to: email,
+            to: customer.email,
             subject,
             senderName,
             html
         });
+
+        await logAudit({
+            req,
+            shop_id: req.tenantId,
+            action: 'customer.email_sent',
+            entityType: 'User',
+            entityId: customer._id,
+            entityLabel: customer.fullName || customer.email,
+            after: { subject }
+        }).catch(() => {});
 
         return res.status(200).json({
             success: true,
@@ -47,6 +75,94 @@ exports.sendEmailToCustomer = async (req, res) => {
         return res.status(500).json({
             success: false,
             error: 'Failed to send email'
+        });
+    }
+};
+
+exports.createCustomerEmailCampaign = async (req, res) => {
+    try {
+        const { subject, message } = req.body;
+        const { campaign, job } = await createCampaignJob({
+            shopId: req.tenantId,
+            sentBy: req.user._id,
+            type: 'plain',
+            subject,
+            message
+        });
+
+        await logAudit({
+            req,
+            shop_id: req.tenantId,
+            action: 'customer.email_campaign_queued',
+            entityType: 'CustomerEmailCampaign',
+            entityId: campaign._id,
+            entityLabel: campaign.subject,
+            after: {
+                type: campaign.type,
+                recipientCount: campaign.recipientCount,
+                jobId: job?._id
+            }
+        }).catch(() => {});
+
+        res.status(202).json({
+            success: true,
+            message: 'Customer email campaign queued.',
+            data: {
+                campaignId: campaign._id,
+                jobId: job?._id,
+                recipientCount: campaign.recipientCount,
+                status: campaign.status
+            }
+        });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            success: false,
+            error: error.message || 'Failed to queue customer email campaign.'
+        });
+    }
+};
+
+exports.createProductEmailCampaign = async (req, res) => {
+    try {
+        const { subject, message, productId } = req.body;
+        const { campaign, job } = await createCampaignJob({
+            shopId: req.tenantId,
+            sentBy: req.user._id,
+            type: 'product',
+            subject,
+            message,
+            productId
+        });
+
+        await logAudit({
+            req,
+            shop_id: req.tenantId,
+            action: 'customer.product_email_campaign_queued',
+            entityType: 'CustomerEmailCampaign',
+            entityId: campaign._id,
+            entityLabel: campaign.subject,
+            after: {
+                type: campaign.type,
+                productId,
+                recipientCount: campaign.recipientCount,
+                jobId: job?._id
+            }
+        }).catch(() => {});
+
+        res.status(202).json({
+            success: true,
+            message: 'Product email campaign queued.',
+            data: {
+                campaignId: campaign._id,
+                jobId: job?._id,
+                recipientCount: campaign.recipientCount,
+                status: campaign.status
+            }
+        });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            success: false,
+            error: error.message || 'Failed to queue product email campaign.'
         });
     }
 };

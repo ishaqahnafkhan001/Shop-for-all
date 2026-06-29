@@ -15,12 +15,12 @@ const {
 
 router.use(protect);
 router.use(authorize('VendorAdmin', 'VendorStaff'));
-router.use(requirePermission('products'));
+router.use(requirePermission('catalogTools'));
 router.use(requireShopFeature('bulkProductTools'));
 
 router.get('/', getCollections);
-router.post('/', authorize('VendorAdmin'), blockVerificationSuspendedShop, createCollection);
-router.patch('/:id', authorize('VendorAdmin'), blockVerificationSuspendedShop, updateCollection);
-router.delete('/:id', authorize('VendorAdmin'), blockVerificationSuspendedShop, deleteCollection);
+router.post('/', blockVerificationSuspendedShop, createCollection);
+router.patch('/:id', blockVerificationSuspendedShop, updateCollection);
+router.delete('/:id', blockVerificationSuspendedShop, deleteCollection);
 
 module.exports = router;

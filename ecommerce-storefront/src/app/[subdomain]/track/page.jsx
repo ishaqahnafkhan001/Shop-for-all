@@ -8,6 +8,7 @@ import {
     CheckCircle,
     ClipboardList,
     CreditCard,
+    Image as ImageIcon,
     MapPin,
     Package,
     Phone,
@@ -16,6 +17,7 @@ import {
     ShieldCheck,
     Tag,
     Truck,
+    Video,
     X,
     XCircle
 } from 'lucide-react';
@@ -108,6 +110,8 @@ export default function TrackOrderPage({ params }) {
     const [returnReason, setReturnReason] = useState(returnReasons[0]);
     const [returnDescription, setReturnDescription] = useState('');
     const [selectedReturnItems, setSelectedReturnItems] = useState([]);
+    const [returnProofImages, setReturnProofImages] = useState([]);
+    const [returnProofVideo, setReturnProofVideo] = useState(null);
 
     const steps = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
     const currentStepIndex = order ? steps.indexOf(order.status) : -1;
@@ -180,6 +184,8 @@ export default function TrackOrderPage({ params }) {
 
     const openReturnModal = () => {
         setSelectedReturnItems(orderItems.map(getItemKey));
+        setReturnProofImages([]);
+        setReturnProofVideo(null);
         setReturnOpen(true);
     };
 
@@ -197,6 +203,14 @@ export default function TrackOrderPage({ params }) {
             toast.error('Select at least one item to return.');
             return;
         }
+        if (returnProofImages.length < 1) {
+            toast.error('Upload at least one proof image.');
+            return;
+        }
+        if (returnProofImages.length > 3) {
+            toast.error('You can upload up to 3 proof images.');
+            return;
+        }
 
         const items = orderItems
             .filter(item => selectedReturnItems.includes(getItemKey(item)))
@@ -206,23 +220,40 @@ export default function TrackOrderPage({ params }) {
                 quantity: item.quantity
             }));
 
+        const payload = new FormData();
+        payload.append('phone', phone.trim());
+        payload.append('reason', returnReason);
+        payload.append('description', returnDescription);
+        payload.append('items', JSON.stringify(items));
+        returnProofImages.forEach(file => payload.append('proofImages', file));
+        if (returnProofVideo) payload.append('proofVideo', returnProofVideo);
+
         setActionLoading(true);
         try {
-            const { data } = await API.post(`/storefront/${subdomain}/orders/${order._id}/returns`, {
-                phone: phone.trim(),
-                reason: returnReason,
-                description: returnDescription,
-                items
+            const { data } = await API.post(`/storefront/${subdomain}/orders/${order._id}/returns`, payload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             toast.success(data.message || 'Return request submitted.');
             setReturnOpen(false);
             setReturnDescription('');
+            setReturnProofImages([]);
+            setReturnProofVideo(null);
             await fetchTrackedOrder();
         } catch (error) {
             toast.error(error.response?.data?.message || error.response?.data?.error || 'Could not submit return request.');
         } finally {
             setActionLoading(false);
         }
+    };
+
+    const handleReturnProofImages = (event) => {
+        const files = Array.from(event.target.files || []);
+        const next = [...returnProofImages, ...files].slice(0, 3);
+        if (returnProofImages.length + files.length > 3) {
+            toast.error('Only the first 3 proof images were added.');
+        }
+        setReturnProofImages(next);
+        event.target.value = '';
     };
 
     return (
@@ -554,6 +585,43 @@ export default function TrackOrderPage({ params }) {
                                             <div className="mt-3 border-t border-slate-200 pt-3 text-sm text-slate-500">
                                                 Refund: {order.returnRequest.refund?.status || 'Pending'} · {formatMoney(order.returnRequest.refund?.amount)}
                                             </div>
+                                            {(order.returnRequest.proof?.images?.length > 0 || order.returnRequest.proof?.video?.url) && (
+                                                <div className="mt-4 border-t border-slate-200 pt-3">
+                                                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Uploaded proof</p>
+                                                    <div className="mt-2 grid grid-cols-3 gap-2">
+                                                        {(order.returnRequest.proof?.images || []).map((image, index) => (
+                                                            <a
+                                                                key={image.publicId || image.url || index}
+                                                                href={image.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                                                            >
+                                                                <SafeProductImage
+                                                                    src={image.url}
+                                                                    alt={`Return proof ${index + 1}`}
+                                                                    width={120}
+                                                                    height={80}
+                                                                    sizes="120px"
+                                                                    className="h-20 w-full object-cover"
+                                                                    fallbackClassName="flex h-20 w-full items-center justify-center bg-slate-100 text-slate-300"
+                                                                />
+                                                            </a>
+                                                        ))}
+                                                        {order.returnRequest.proof?.video?.url && (
+                                                            <a
+                                                                href={order.returnRequest.proof.video.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="flex h-20 items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-black text-slate-600"
+                                                            >
+                                                                <Video size={18} className="mr-1" />
+                                                                Video
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : canRequestReturn ? (
                                         <button
@@ -698,9 +766,74 @@ export default function TrackOrderPage({ params }) {
                                 placeholder="Tell the seller what happened."
                             />
                         </label>
-                        <p className="rounded-2xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-                            Image proof upload is not available on this tracking page yet. Add details here and the seller can follow up from return management.
-                        </p>
+                        <div className="rounded-2xl border border-slate-200 p-4">
+                            <div className="flex items-start gap-2">
+                                <ImageIcon size={18} className="mt-0.5 text-[var(--sf-accent)]" />
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">Proof files</p>
+                                    <p className="text-xs leading-5 text-slate-500">
+                                        Upload at least 1 proof image. You can upload up to 3 images. Video is optional.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                <label className="rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50">
+                                    Add proof images
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        multiple
+                                        onChange={handleReturnProofImages}
+                                        className="hidden"
+                                    />
+                                </label>
+                                <label className="rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50">
+                                    Add optional video
+                                    <input
+                                        type="file"
+                                        accept="video/mp4,video/quicktime"
+                                        onChange={event => setReturnProofVideo(event.target.files?.[0] || null)}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                            {(returnProofImages.length > 0 || returnProofVideo) && (
+                                <div className="mt-3 grid grid-cols-3 gap-2">
+                                    {returnProofImages.map((file, index) => (
+                                        <div
+                                            key={`${file.name}-${index}`}
+                                            className="relative h-20 overflow-hidden rounded-xl border border-slate-200 bg-cover bg-center"
+                                            style={{ backgroundImage: `url(${URL.createObjectURL(file)})` }}
+                                            aria-label={file.name}
+                                            role="img"
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => setReturnProofImages(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+                                                className="absolute right-1 top-1 rounded-full bg-white p-1 text-slate-600 shadow"
+                                                aria-label="Remove proof image"
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {returnProofVideo && (
+                                        <div className="relative flex h-20 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-2 text-xs font-black text-slate-600">
+                                            <Video size={18} className="mr-1 shrink-0" />
+                                            <span className="truncate">{returnProofVideo.name}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setReturnProofVideo(null)}
+                                                className="absolute right-1 top-1 rounded-full bg-white p-1 text-slate-600 shadow"
+                                                aria-label="Remove proof video"
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 type="button"
@@ -711,7 +844,7 @@ export default function TrackOrderPage({ params }) {
                             </button>
                             <button
                                 type="submit"
-                                disabled={actionLoading}
+                                disabled={actionLoading || returnProofImages.length < 1}
                                 className="rounded-2xl bg-[var(--sf-accent)] px-4 py-3 text-sm font-black text-white hover:opacity-90 disabled:opacity-60"
                             >
                                 {actionLoading ? 'Submitting...' : 'Submit request'}

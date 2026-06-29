@@ -28,7 +28,7 @@ test('public order tracking requires tenant and phone verification', () => {
     assert.match(block, /shop_id:\s*shopId/);
     assert.match(block, /phonesMatch\(order\.shipping\?\.address\?\.phone,\s*phone\)/);
     assert.match(block, /Phone number is required/);
-    assert.match(block, /\.select\('items pricing payment shipping status cancellation timeline createdAt updatedAt'\)/);
+    assert.match(block, /\.select\('items pricing promotion payment shipping status cancellation timeline createdAt updatedAt'\)/);
     assert.match(block, /returnEligibility/);
     assert.match(block, /returnRequest/);
 });
@@ -61,7 +61,7 @@ test('customer-facing product and order responses hide vendor cost fields', () =
     const publicController = read('controllers/publicController.js');
     const orderController = read('controllers/orderController.js');
 
-    assert.match(productSerializer, /delete clean\.comments/);
+    assert.match(productSerializer, /clean\.comments = sanitizePublicKeyValueItems\(clean\.comments\)/);
     assert.match(productSerializer, /delete clean\.inventory/);
     assert.match(productSerializer, /delete clean\.tax/);
     assert.doesNotMatch(productSerializer, /buyingPrice/);
@@ -176,7 +176,7 @@ test('analytics event endpoint resolves tenant and validates event types', () =>
     assert.match(model, /analyticsEventSchema\.index\(\{ shop_id:\s*1,\s*eventType:\s*1,\s*createdAt:\s*-1 \}\)/);
 });
 
-test('growth center routes are tenant protected with analytics permission', () => {
+test('growth center routes are tenant protected with growth permission', () => {
     const app = read('app.js');
     const routes = read('routes/growthRoutes.js');
     const controller = read('controllers/growthController.js');
@@ -184,7 +184,7 @@ test('growth center routes are tenant protected with analytics permission', () =
     assert.match(app, /app\.use\('\/api\/admin\/growth',\s*growthRoutes\)/);
     assert.match(routes, /router\.use\(protect\)/);
     assert.match(routes, /router\.use\(authorize\('VendorAdmin', 'VendorStaff'\)\)/);
-    assert.match(routes, /router\.use\(requirePermission\('analytics'\)\)/);
+    assert.match(routes, /router\.use\(requirePermission\('growthCenter'\)\)/);
     assert.match(routes, /router\.use\(requireShopFeature\('growthCenter'\)\)/);
     assert.match(routes, /router\.post\('\/generate-ad-copy',\s*requireShopFeature\('aiAdGenerator'\),\s*generateAdCopy\)/);
     assert.match(routes, /router\.get\('\/overview',\s*getGrowthOverview\)/);
@@ -275,7 +275,7 @@ test('verification suspension blocks high-impact vendor mutations only after aut
     assert.match(adminRoutes, /'\/products'[\s\S]*requirePermission\('products'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*productMediaUpload[\s\S]*createProduct/);
     assert.match(adminRoutes, /'\/products\/:id'[\s\S]*requirePermission\('products'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*productMediaUpload[\s\S]*updateProduct/);
     assert.match(adminRoutes, /'\/orders\/:id\/status'[\s\S]*requirePermission\('orders'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*updateOrderStatus/);
-    assert.match(storeBuilderRoutes, /'\/admin'[\s\S]*authorize\('VendorAdmin'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*updateStoreBuilderSettings/);
+    assert.match(storeBuilderRoutes, /'\/admin'[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('storeBuilder'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*updateStoreBuilderSettings/);
     assert.match(storeBuilderRoutes, /'\/admin\/logo'[\s\S]*blockVerificationSuspendedShop[\s\S]*upload\.single\('logo'\)/);
 });
 
@@ -510,4 +510,146 @@ test('ci workflow and test docs exist', () => {
     assert.ok(fs.existsSync(path.join(root, '../../.github/workflows/ci.yml')));
     assert.ok(fs.existsSync(path.join(root, '../../docs/testing.md')));
     assert.ok(fs.existsSync(path.join(root, '.env.test.example')));
+});
+
+test('vendor admin pagination responses keep compatibility metadata', () => {
+    const pagination = read('utils/pagination.js');
+    const productController = read('controllers/productController.js');
+    const customerController = read('controllers/userController.js');
+    const returnController = read('controllers/returnController.js');
+    const notificationController = read('controllers/notificationController.js');
+    const adminProductList = readProject('ecommerce-admin/src/pages/dashboard/products/ProductList.jsx');
+    const adminCustomerList = readProject('ecommerce-admin/src/pages/dashboard/customers/CustomerList.jsx');
+    const adminReturns = readProject('ecommerce-admin/src/pages/dashboard/Returns.jsx');
+    const adminNotifications = readProject('ecommerce-admin/src/pages/dashboard/Notifications.jsx');
+
+    assert.match(pagination, /pages/);
+    assert.match(pagination, /totalPages/);
+    assert.match(pagination, /hasNextPage/);
+    assert.match(pagination, /hasPrevPage/);
+    assert.match(productController, /pagination:\s*buildPagination/);
+    assert.match(customerController, /hasPaginationParams/);
+    assert.match(customerController, /return res\.status\(200\)\.json\(customers\)/);
+    assert.match(customerController, /pagination:\s*buildPagination/);
+    assert.match(returnController, /pagination:\s*buildPagination/);
+    assert.match(notificationController, /pagination:\s*buildPagination/);
+    assert.match(adminProductList, /pagination\.totalPages \|\| pagination\.pages/);
+    assert.match(adminCustomerList, /pagination\.totalPages \|\| pagination\.pages/);
+    assert.match(adminReturns, /pagination\.totalPages \|\| pagination\.pages/);
+    assert.match(adminNotifications, /pagination\.totalPages \|\| pagination\.pages/);
+});
+
+test('return proof upload is required for new admin and tracked returns', () => {
+    const model = read('models/ReturnRequest.js');
+    const service = read('services/returns/returnProofService.js');
+    const adminRoutes = read('routes/adminRoutes.js');
+    const storefrontRoutes = read('routes/storefrontRoutes.js');
+    const returnController = read('controllers/returnController.js');
+    const publicController = read('controllers/publicController.js');
+    const adminReturns = readProject('ecommerce-admin/src/pages/dashboard/Returns.jsx');
+    const trackPage = readProject('ecommerce-storefront/src/app/[subdomain]/track/page.jsx');
+
+    assert.match(model, /proofFileSchema/);
+    assert.match(model, /proofSchema/);
+    assert.match(model, /proof:\s*\{/);
+    assert.match(service, /At least one proof image is required/);
+    assert.match(service, /You can upload up to 3 proof images/);
+    assert.match(adminRoutes, /returnProofUpload = upload\.fields/);
+    assert.match(adminRoutes, /name:\s*'proofImages',\s*maxCount:\s*3/);
+    assert.match(adminRoutes, /name:\s*'proofVideo',\s*maxCount:\s*1/);
+    assert.match(adminRoutes, /returnProofUpload[\s\S]*createReturn/);
+    assert.match(storefrontRoutes, /returnProofUpload[\s\S]*createTrackedReturnRequest/);
+    assert.match(returnController, /buildProofFromFiles\(req\.files \|\| \{\}\)/);
+    assert.match(publicController, /buildProofFromFiles\(req\.files \|\| \{\}\)/);
+    assert.match(publicController, /proof:\s*\{/);
+    assert.match(adminReturns, /proofImages/);
+    assert.match(adminReturns, /multipart\/form-data/);
+    assert.match(trackPage, /returnProofImages/);
+    assert.match(trackPage, /multipart\/form-data/);
+});
+
+test('customer email campaigns are tenant-scoped, queued, and product-safe', () => {
+    const adminRoutes = read('routes/adminRoutes.js');
+    const controller = read('controllers/emailController.js');
+    const model = read('models/CustomerEmailCampaign.js');
+    const service = read('services/customerEmailCampaignService.js');
+    const worker = read('workers/index.js');
+    const template = read('services/mail/templates/productPromotionTemplate.js');
+    const customers = readProject('ecommerce-admin/src/pages/dashboard/customers/CustomerList.jsx');
+    const modal = readProject('ecommerce-admin/src/pages/dashboard/customers/CustomerCampaignModal.jsx');
+
+    assert.match(adminRoutes, /'\/customers\/send-email'[\s\S]*requirePermission\('customers'\)[\s\S]*sendEmailToCustomer/);
+    assert.match(adminRoutes, /'\/customers\/email-campaigns'[\s\S]*requirePermission\('customers'\)[\s\S]*createCustomerEmailCampaign/);
+    assert.match(adminRoutes, /'\/customers\/product-email-campaigns'[\s\S]*requirePermission\('customers'\)[\s\S]*createProductEmailCampaign/);
+    assert.match(controller, /shop_id:\s*req\.tenantId/);
+    assert.match(controller, /createCampaignJob/);
+    assert.match(model, /CustomerEmailCampaign/);
+    assert.match(service, /queue:\s*'customer-email'/);
+    assert.match(service, /sanitizePublicProduct\(product\)/);
+    assert.match(service, /status:\s*'Published'/);
+    assert.match(worker, /'customer-email': processCustomerEmailCampaignJob/);
+    assert.match(template, /escapeHtml/);
+    assert.doesNotMatch(template, /buyingPrice|costPrice|supplier|adminNote|internal/);
+    assert.match(customers, /CustomerCampaignModal/);
+    assert.match(modal, /\/admin\/customers\/email-campaigns/);
+    assert.match(modal, /\/admin\/customers\/product-email-campaigns/);
+});
+
+test('staff permissions expose operational sections only and hide owner-only sections', () => {
+    const capacity = read('services/staff/staffCapacityService.js');
+    const staffModel = read('models/StaffPermission.js');
+    const userModel = read('models/User.js');
+    const permissionMiddleware = read('middlewares/permission.js');
+    const adminRoutes = read('routes/adminRoutes.js');
+    const collectionRoutes = read('routes/collectionRoutes.js');
+    const storeBuilderRoutes = read('routes/storeBuilderRoutes.js');
+    const growthRoutes = read('routes/growthRoutes.js');
+    const uiPermissions = readProject('ecommerce-admin/src/utils/staffPermissions.js');
+    const staffPage = readProject('ecommerce-admin/src/pages/dashboard/StaffPermissions.jsx');
+    const sidebar = readProject('ecommerce-admin/src/components/dashboard/Sidebar.jsx');
+    const app = readProject('ecommerce-admin/src/App.jsx');
+
+    assert.match(capacity, /overview/);
+    assert.match(capacity, /catalogTools/);
+    assert.match(capacity, /privacyRequests/);
+    assert.match(capacity, /growthCenter/);
+    assert.match(capacity, /activityLogs/);
+    assert.doesNotMatch(capacity, /'staff'/);
+    assert.doesNotMatch(staffModel, /staff:\s*\{/);
+    assert.doesNotMatch(userModel, /staff:\s*\{/);
+    assert.match(permissionMiddleware, /permissions\?\.\[permissionName\]/);
+    assert.match(adminRoutes, /requirePermission\('returns'\)/);
+    assert.match(adminRoutes, /requirePermission\('notifications'\)/);
+    assert.match(adminRoutes, /requirePermission\('privacyRequests'\)/);
+    assert.match(adminRoutes, /requirePermission\('activityLogs'\)/);
+    assert.match(collectionRoutes, /requirePermission\('catalogTools'\)/);
+    assert.match(storeBuilderRoutes, /requirePermission\('storeBuilder'\)/);
+    assert.match(growthRoutes, /requirePermission\('growthCenter'\)/);
+    assert.match(uiPermissions, /STAFF_OPERATIONAL_PERMISSIONS/);
+    assert.doesNotMatch(uiPermissions, /'staff'/);
+    assert.match(staffPage, /STAFF_OPERATIONAL_PERMISSIONS/);
+    assert.match(sidebar, /hasStaffPermission/);
+    assert.match(sidebar, /adminOnly:\s*true/);
+    assert.match(app, /RequireStaffPermission/);
+    assert.match(app, /withPermission\('storeBuilder'/);
+    assert.match(app, /allowedRoles=\{\['VendorAdmin'\]\}/);
+});
+
+test('confirmed order status email is sent through status update endpoint once', () => {
+    const validation = read('validations/orderValidation.js');
+    const controller = read('controllers/orderController.js');
+    const emailService = read('services/orders/orderEmailService.js');
+    const orderList = readProject('ecommerce-admin/src/pages/dashboard/orders/OrderList.jsx');
+
+    assert.match(validation, /notifyCustomer/);
+    assert.match(validation, /emailSubject/);
+    assert.match(validation, /emailMessage/);
+    assert.match(controller, /statusChanged && notifyCustomer/);
+    assert.match(controller, /notifyCustomerOrderStatus/);
+    assert.match(controller, /customerNotified/);
+    assert.match(emailService, /Your order has been confirmed/);
+    assert.match(emailService, /sendMail/);
+    assert.match(orderList, /notifyCustomer:\s*true/);
+    assert.match(orderList, /emailSubject:\s*emailData\?\.subject/);
+    assert.doesNotMatch(orderList, /\/admin\/orders\/send-email/);
 });

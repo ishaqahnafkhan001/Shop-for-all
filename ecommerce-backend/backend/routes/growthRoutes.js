@@ -16,7 +16,7 @@ const {
 
 router.use(protect);
 router.use(authorize('VendorAdmin', 'VendorStaff'));
-router.use(requirePermission('analytics'));
+router.use(requirePermission('growthCenter'));
 router.use(requireShopFeature('growthCenter'));
 
 router.get('/overview', getGrowthOverview);

@@ -2,39 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Edit3, Shield, UserMinus, UserPlus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
+import {
+    DEFAULT_STAFF_PERMISSIONS,
+    STAFF_OPERATIONAL_PERMISSIONS,
+    STAFF_PERMISSION_LABELS
+} from '../../utils/staffPermissions';
 
-const permissionKeys = [
-    'products',
-    'orders',
-    'customers',
-    'promotions',
-    'analytics',
-    'storeBuilder',
-    'settings',
-    'staff'
-];
-
-const permissionLabels = {
-    products: 'Products',
-    orders: 'Orders',
-    customers: 'Customers',
-    promotions: 'Coupons',
-    analytics: 'Analytics',
-    storeBuilder: 'Store Builder',
-    settings: 'Settings',
-    staff: 'Staff'
-};
-
-const defaultPermissions = {
-    products: true,
-    orders: true,
-    customers: false,
-    promotions: false,
-    analytics: false,
-    storeBuilder: false,
-    settings: false,
-    staff: false
-};
+const permissionKeys = STAFF_OPERATIONAL_PERMISSIONS;
+const permissionLabels = STAFF_PERMISSION_LABELS;
+const defaultPermissions = DEFAULT_STAFF_PERMISSIONS;
 
 const createEmptyForm = () => ({
     fullName: '',

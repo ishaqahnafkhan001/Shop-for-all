@@ -66,7 +66,6 @@ test('public product and order APIs do not leak cost or private fields', async (
     const publicProductText = JSON.stringify(publicProduct.body);
     assert.equal(publicProductText.includes('buyingPrice'), false);
     assert.equal(publicProductText.includes('costPrice'), false);
-    assert.equal(publicProductText.includes('comments'), false);
     assert.equal(publicProductText.includes('"tax"'), false);
 
     const publicTracking = await client.get(`/api/storefront/launchshopa/track-order/${orderA._id}?phone=01700000000`);

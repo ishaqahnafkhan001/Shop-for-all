@@ -43,6 +43,17 @@ const sanitizePublicVariant = (variant = {}) => {
     return clean;
 };
 
+const sanitizePublicKeyValueItems = (items = []) => (
+    Array.isArray(items)
+        ? items
+            .map(item => ({
+                title: String(item?.title || '').trim(),
+                value: String(item?.value || '').trim()
+            }))
+            .filter(item => item.title && item.value)
+        : []
+);
+
 const sanitizePublicProduct = (product) => {
     const clean = toPlainObject(product);
     if (!clean) return clean;
@@ -52,7 +63,7 @@ const sanitizePublicProduct = (product) => {
         clean.variants = clean.variants.map(sanitizePublicVariant);
     }
 
-    delete clean.comments;
+    clean.comments = sanitizePublicKeyValueItems(clean.comments);
     delete clean.__v;
 
     return clean;

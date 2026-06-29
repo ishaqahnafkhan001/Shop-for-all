@@ -101,7 +101,7 @@ const productSchema = new Schema({
 
     features: [keyValueSchema],
     specifications: [keyValueSchema],
-    comments: [keyValueSchema], // Admin notes
+    comments: [keyValueSchema], // Customer-facing extra notes
 
     // 🌟 FAST REVIEW METADATA
     averageRating: { type: Number, default: 0 },

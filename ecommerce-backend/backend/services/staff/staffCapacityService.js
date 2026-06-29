@@ -5,25 +5,39 @@ const { ensureSubscriptionExists } = require('../billing/subscriptionService');
 const { computeEffectiveFeatures, getEffectivePlanRef, getPlanFeatures } = require('../shops/featureAccessService');
 
 const STAFF_PERMISSION_KEYS = [
+    'overview',
     'products',
+    'catalogTools',
     'orders',
+    'returns',
     'customers',
+    'privacyRequests',
     'promotions',
+    'notifications',
+    'shipping',
     'analytics',
+    'growthCenter',
     'storeBuilder',
     'settings',
-    'staff'
+    'activityLogs'
 ];
 
 const DEFAULT_STAFF_PERMISSIONS = {
+    overview: false,
     products: true,
+    catalogTools: false,
     orders: true,
+    returns: false,
     customers: false,
+    privacyRequests: false,
     promotions: false,
+    notifications: false,
+    shipping: false,
     analytics: false,
+    growthCenter: false,
     storeBuilder: false,
     settings: false,
-    staff: false
+    activityLogs: false
 };
 
 const normalizeStaffLimit = (value) => {

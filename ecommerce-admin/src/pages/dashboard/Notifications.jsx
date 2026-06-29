@@ -119,12 +119,26 @@ const Notifications = () => {
                 )}
             </div>
 
-            {pagination.pages > 1 && (
+            {(pagination.totalPages || pagination.pages || 1) > 1 && (
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                    <span>Page {pagination.page} of {pagination.pages} · {pagination.total} notifications</span>
+                    <span>Page {pagination.page} of {pagination.totalPages || pagination.pages} · {pagination.total} notifications</span>
                     <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" disabled={pagination.page <= 1} onClick={() => fetchNotifications(pagination.page - 1)}>Previous</Button>
-                        <Button variant="secondary" size="sm" disabled={pagination.page >= pagination.pages} onClick={() => fetchNotifications(pagination.page + 1)}>Next</Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={pagination.hasPrevPage === false || pagination.page <= 1}
+                            onClick={() => fetchNotifications(pagination.page - 1)}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={pagination.hasNextPage === false || pagination.page >= (pagination.totalPages || pagination.pages)}
+                            onClick={() => fetchNotifications(pagination.page + 1)}
+                        >
+                            Next
+                        </Button>
                     </div>
                 </div>
             )}

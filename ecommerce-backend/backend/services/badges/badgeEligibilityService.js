@@ -36,6 +36,15 @@ const collectLinks = (theme = {}) => {
 
     (theme.navigation || []).forEach(pushLink);
     (theme.footer?.links || []).forEach(pushLink);
+    [
+        'facebookUrl',
+        'instagramUrl',
+        'twitterUrl',
+        'youtubeUrl',
+        'tiktokUrl'
+    ].forEach(key => {
+        if (theme.footer?.[key]) links.push(String(theme.footer[key]));
+    });
     return links;
 };
 

@@ -6,12 +6,9 @@ import Table from '../../../components/ui/Table';
 import OrderDetailsModal from '../../../components/dashboard/OrderDetailsModal';
 import PathaoSyncModal from './PathaoSyncModal';
 import EmailNotificationModal from '../../../components/order/EmailNotificationModal.jsx';
-import {useAuth} from "../../../context/AuthContext.jsx"; // <-- Import the new modal
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 
 const OrderList = () => {
-    const { user } = useAuth();
-    // console.log(user.shopName)
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -53,6 +50,11 @@ const OrderList = () => {
             return;
         }
 
+        if (newStatus === 'Confirmed') {
+            updateStatusInDB(order._id, newStatus, { notifyCustomer: true });
+            return;
+        }
+
         // Open the email modal and save the pending update
         setPendingStatusUpdate({ order, newStatus });
         setEmailModalOpen(true);
@@ -62,35 +64,29 @@ const OrderList = () => {
     const handleEmailModalDecision = async (shouldSendEmail, emailData = null) => {
         const { order, newStatus } = pendingStatusUpdate;
         setEmailModalOpen(false); // Close modal immediately
+        if (!order || !newStatus) return;
 
-        // 1. Send the email if the user clicked "Yes"
-        if (shouldSendEmail && emailData) {
-            try {
-                // Ensure the route matches your backend (e.g., /admin/orders/send-email)
-                await API.post('/admin/orders/send-email', {
-                    email: order.customer?.email,
-                    name: order.customer?.fullName,
-                    subject: emailData.subject,
-                    message: emailData.message,
-                    orderDetails: emailData.orderDetails,
-                    shopName:  user.shopName// Replace dynamically if needed
-                });
-                toast.success("Email sent to customer");
-            } catch (error) {
-                toast.error(error.response?.data?.error || "Failed to send email");
-                // We still proceed to update the status even if the email fails
-            }
-        }
-
-        // 2. Update the status in the DB
-        updateStatusInDB(order._id, newStatus);
+        updateStatusInDB(order._id, newStatus, {
+            notifyCustomer: shouldSendEmail,
+            emailSubject: emailData?.subject,
+            emailMessage: emailData?.message
+        });
     };
 
-    const updateStatusInDB = async (orderId, newStatus) => {
+    const updateStatusInDB = async (orderId, newStatus, options = {}) => {
         try {
             setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
-            await API.patch(`/admin/orders/${orderId}/status`, { status: newStatus });
+            const { data } = await API.patch(`/admin/orders/${orderId}/status`, {
+                status: newStatus,
+                ...options
+            });
+            if (data?.data) {
+                setOrders(prev => prev.map(o => o._id === orderId ? data.data : o));
+            }
             toast.success(`Order status updated to ${newStatus}`);
+            if (data?.notification?.sent) {
+                toast.success('Customer email sent');
+            }
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to update status");
             fetchOrders();
@@ -339,7 +335,7 @@ const OrderList = () => {
                 order={orderToSync}
                 onSyncSuccess={handlePathaoSuccess}
                 onJustConfirm={() => {
-                    updateStatusInDB(orderToSync._id, 'Confirmed');
+                    updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true });
                     setPathaoModalOpen(false);
                 }}
             />

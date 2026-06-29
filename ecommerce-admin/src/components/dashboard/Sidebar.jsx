@@ -25,6 +25,7 @@ import {
     CreditCard
 } from 'lucide-react';
 import { FEATURE_LABELS, hasFeature } from '../../utils/featureAccess';
+import { hasStaffPermission } from '../../utils/staffPermissions';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user } = useAuth();
@@ -32,28 +33,28 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const isSuperAdmin = user?.role === 'SuperAdmin';
 
     const vendorNavItems = [
-        { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
-        { name: 'Products', path: '/dashboard/products', icon: Package },
-        { name: 'Catalog Tools', path: '/dashboard/catalog-tools', icon: Boxes, feature: 'bulkProductTools' },
-        { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart },
-        { name: 'Returns', path: '/dashboard/returns', icon: RefreshCcw },
-        { name: 'Customers', path: '/dashboard/customers', icon: Users },
-        { name: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText },
-        { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },
-        { name: 'Verification', path: '/dashboard/verification', icon: BadgeCheck },
+        { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, permission: 'overview' },
+        { name: 'Products', path: '/dashboard/products', icon: Package, permission: 'products' },
+        { name: 'Catalog Tools', path: '/dashboard/catalog-tools', icon: Boxes, feature: 'bulkProductTools', permission: 'catalogTools' },
+        { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart, permission: 'orders' },
+        { name: 'Returns', path: '/dashboard/returns', icon: RefreshCcw, permission: 'returns' },
+        { name: 'Customers', path: '/dashboard/customers', icon: Users, permission: 'customers' },
+        { name: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText, permission: 'privacyRequests' },
+        { name: 'Notifications', path: '/dashboard/notifications', icon: Bell, permission: 'notifications' },
+        { name: 'Verification', path: '/dashboard/verification', icon: BadgeCheck, adminOnly: true },
         { name: 'Trusted Badge', path: '/dashboard/badges', icon: ShieldCheck, adminOnly: true },
-        { name: 'Billing', path: '/dashboard/billing', icon: CreditCard },
-        { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent, feature: 'coupons' },
-        { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp, feature: 'growthCenter' },
-        { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, feature: 'analytics' },
-        { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, adminOnly: true, feature: 'storeBuilder' },
+        { name: 'Billing', path: '/dashboard/billing', icon: CreditCard, adminOnly: true },
+        { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent, feature: 'coupons', permission: 'promotions' },
+        { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp, feature: 'growthCenter', permission: 'growthCenter' },
+        { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, feature: 'analytics', permission: 'analytics' },
+        { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, feature: 'storeBuilder', permission: 'storeBuilder' },
         { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true, feature: 'staffAccounts' },
-        { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, adminOnly: true },
+        { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, permission: 'activityLogs' },
 
         // 🚚 NEW: Added the Shipping link here
-        { name: 'Shipping', path: '/dashboard/shipping', icon: Truck },
+        { name: 'Shipping', path: '/dashboard/shipping', icon: Truck, permission: 'shipping' },
 
-        { name: 'Settings', path: '/dashboard/settings', icon: Settings },
+        { name: 'Settings', path: '/dashboard/settings', icon: Settings, permission: 'settings' },
     ];
 
     const superAdminNavItems = [
@@ -66,7 +67,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     const navItems = isSuperAdmin
         ? superAdminNavItems
-        : vendorNavItems.filter(item => !item.adminOnly || user?.role === 'VendorAdmin');
+        : vendorNavItems.filter(item => (
+            (!item.adminOnly || user?.role === 'VendorAdmin') &&
+            hasStaffPermission(user, item.permission)
+        ));
     const activeItem = navItems
         .filter(item => item.path === '/dashboard' ? location.pathname === item.path : location.pathname.startsWith(item.path))
         .sort((a, b) => b.path.length - a.path.length)[0] || navItems[0];
