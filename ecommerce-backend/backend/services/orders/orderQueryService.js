@@ -38,6 +38,8 @@ const getShopOrdersPage = async ({ shopId, page = 1, limit = 25 }) => {
                 'promotion',
                 'payment',
                 'shipping',
+                'shippingProvider',
+                'courierShipment',
                 'status',
                 'notes',
                 'cancellation',

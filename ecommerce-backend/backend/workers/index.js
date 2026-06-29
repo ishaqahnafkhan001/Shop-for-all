@@ -7,7 +7,7 @@ const {
     failJob
 } = require('../services/jobQueueService');
 const { processShopEventJob } = require('../services/shopEventNotificationService');
-const { processPathaoSyncJob } = require('../services/pathaoSyncJobService');
+const { processCourierJob } = require('../services/courierJobService');
 const { processCustomerEmailCampaignJob } = require('../services/customerEmailCampaignService');
 const {
     processBadgeAnalysisJob,
@@ -20,7 +20,7 @@ let shuttingDown = false;
 
 const handlers = {
     notifications: processShopEventJob,
-    courier: processPathaoSyncJob,
+    courier: processCourierJob,
     badges: processBadgeAnalysisJob,
     'customer-email': processCustomerEmailCampaignJob
 };

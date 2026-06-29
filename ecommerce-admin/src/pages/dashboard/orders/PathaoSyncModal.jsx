@@ -3,8 +3,9 @@ import { X, Truck, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 
-const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm, onConfirmBeforeSync }) => {
+const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm, onConfirmBeforeSync, courierSettings }) => {
     const [loading, setLoading] = useState(false);
+    const [provider, setProvider] = useState('pathao');
     const [formData, setFormData] = useState({
         recipient_name: '',
         recipient_phone: '',
@@ -13,11 +14,29 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
         item_weight: '0.5',
         special_instruction: ''
     });
+    const [redxData, setRedxData] = useState({
+        deliveryArea: '',
+        deliveryAreaId: '',
+        parcelWeight: 500,
+        instruction: '',
+        declaredValue: '',
+        isClosedBox: true
+    });
+    const [redxAreaSearch, setRedxAreaSearch] = useState({
+        districtName: '',
+        postCode: ''
+    });
+    const [redxAreaResults, setRedxAreaResults] = useState([]);
+    const [redxAreaLoading, setRedxAreaLoading] = useState(false);
 
     // Populate form when order changes
     useEffect(() => {
         if (order) {
             queueMicrotask(() => {
+                const pathaoConfigured = Boolean(courierSettings?.pathao?.configured);
+                const redxConfigured = Boolean(courierSettings?.redx?.configured && courierSettings?.redx?.enabled);
+                const preferredProvider = courierSettings?.defaultCourier || (pathaoConfigured ? 'pathao' : redxConfigured ? 'redx' : 'pathao');
+                setProvider(preferredProvider);
                 setFormData({
                     recipient_name: order.shipping?.address?.fullName || order.customer?.fullName || '',
                     recipient_phone: order.shipping?.address?.phone || '',
@@ -26,9 +45,15 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
                     item_weight: '0.5',
                     special_instruction: order.notes || ''
                 });
+                setRedxData(prev => ({
+                    ...prev,
+                    parcelWeight: 500,
+                    instruction: order.notes || '',
+                    declaredValue: order.pricing?.subtotal || order.pricing?.total || ''
+                }));
             });
         }
-    }, [order]);
+    }, [order, courierSettings]);
 
     if (!isOpen || !order) return null;
 
@@ -36,9 +61,28 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleSearchRedxAreas = async () => {
+        setRedxAreaLoading(true);
+        try {
+            const { data } = await API.post('/admin/shipping/couriers/redx/areas/search', {
+                districtName: redxAreaSearch.districtName,
+                postCode: redxAreaSearch.postCode
+            });
+            setRedxAreaResults(data.data?.areas || []);
+            if ((data.data?.areas || []).length === 0) toast('No RedX areas found for this search');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to search RedX areas');
+        } finally {
+            setRedxAreaLoading(false);
+        }
+    };
+
     const handleSyncPathao = async () => {
-        if (!formData.recipient_name || !formData.recipient_phone || !formData.recipient_address) {
+        if (provider === 'pathao' && (!formData.recipient_name || !formData.recipient_phone || !formData.recipient_address)) {
             return toast.error("Please fill in all required fields");
+        }
+        if (provider === 'redx' && (!redxData.deliveryArea || !redxData.deliveryAreaId)) {
+            return toast.error("RedX delivery area and area ID are required");
         }
 
         setLoading(true);
@@ -51,14 +95,26 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
                 }
             }
 
-            const { data } = await API.post(`/admin/orders/${order._id}/pathao`, formData);
+            const { data } = provider === 'redx'
+                ? await API.post(`/admin/orders/${order._id}/courier`, {
+                    provider: 'redx',
+                    shipmentInput: {
+                        deliveryArea: redxData.deliveryArea,
+                        deliveryAreaId: redxData.deliveryAreaId,
+                        parcelWeight: redxData.parcelWeight,
+                        instruction: redxData.instruction,
+                        declaredValue: redxData.declaredValue,
+                        isClosedBox: redxData.isClosedBox
+                    }
+                })
+                : await API.post(`/admin/orders/${order._id}/pathao`, formData);
             toast.success(data.status === 'queued'
-                ? 'Pathao sync queued. Courier order will be created after processing.'
-                : data.message || 'Pathao sync queued');
+                ? `${provider === 'redx' ? 'RedX parcel' : 'Pathao sync'} queued. Courier order will be created after processing.`
+                : data.message || 'Courier sync queued');
             onSyncSuccess(data.data || null); // Update main table state, or refresh if backend omitted the order
             onClose();
         } catch (error) {
-            toast.error(error.response?.data?.error || "Failed to sync with Pathao");
+            toast.error(error.response?.data?.error || "Failed to create courier shipment");
         } finally {
             setLoading(false);
         }
@@ -74,7 +130,7 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-red-50">
                     <h2 className="text-lg font-bold text-red-700 flex items-center">
-                        <Truck className="mr-2" size={20} /> Sync Order to Pathao
+                        <Truck className="mr-2" size={20} /> Create Courier Shipment
                     </h2>
                     <button onClick={onClose} className="text-red-400 hover:text-red-700 transition p-1 rounded-full hover:bg-red-100">
                         <X size={20} />
@@ -85,9 +141,25 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
                 <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
                     <div className="bg-blue-50 p-3 rounded-lg flex items-start text-sm text-blue-800 border border-blue-100">
                         <AlertCircle className="shrink-0 mr-2 mt-0.5" size={16} />
-                        <p>Review and modify details before creating the consignment in Pathao.</p>
+                        <p>Choose a courier and review parcel details before creating the shipment.</p>
                     </div>
 
+                    <div>
+                        <label className="block text-xs font-bold text-gray-700">Courier</label>
+                        <select
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value)}
+                            className={inputClass}
+                        >
+                            {courierSettings?.pathao?.configured && <option value="pathao">Pathao</option>}
+                            {courierSettings?.redx?.configured && courierSettings?.redx?.enabled && <option value="redx">RedX</option>}
+                        </select>
+                        {!courierSettings?.pathao?.configured && !courierSettings?.redx?.configured && (
+                            <p className="mt-2 text-xs font-semibold text-red-600">No courier is configured. Open Shipping Settings first.</p>
+                        )}
+                    </div>
+
+                    {provider === 'pathao' ? (
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-bold text-gray-700">Recipient Name</label>
@@ -123,6 +195,72 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
                             <input type="text" name="special_instruction" placeholder="e.g. Deliver before 5PM" value={formData.special_instruction} onChange={handleChange} className={inputClass} />
                         </div>
                     </div>
+                    ) : (
+                    <div className="space-y-4">
+                        <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-800">
+                            Search RedX delivery areas by district or post code, then select the exact area for this parcel.
+                        </div>
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Find RedX delivery area</p>
+                            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                                <input type="text" value={redxAreaSearch.districtName} onChange={(e) => setRedxAreaSearch({ ...redxAreaSearch, districtName: e.target.value })} className={inputClass} placeholder="District, e.g. Dhaka" />
+                                <input type="text" value={redxAreaSearch.postCode} onChange={(e) => setRedxAreaSearch({ ...redxAreaSearch, postCode: e.target.value })} className={inputClass} placeholder="Post code, e.g. 1207" />
+                                <button type="button" onClick={handleSearchRedxAreas} disabled={redxAreaLoading} className="mt-1 rounded-lg border border-indigo-200 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50">
+                                    {redxAreaLoading ? 'Searching...' : 'Search'}
+                                </button>
+                            </div>
+                            {redxAreaResults.length > 0 && (
+                                <select
+                                    value={redxData.deliveryAreaId}
+                                    onChange={(e) => {
+                                        const area = redxAreaResults.find(item => String(item.id) === e.target.value);
+                                        setRedxData({
+                                            ...redxData,
+                                            deliveryAreaId: e.target.value,
+                                            deliveryArea: area?.name || ''
+                                        });
+                                    }}
+                                    className={inputClass}
+                                >
+                                    <option value="">Select RedX area</option>
+                                    {redxAreaResults.map(area => (
+                                        <option key={area.id} value={area.id}>
+                                            {area.name} · {area.post_code} · {area.division_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700">Delivery Area</label>
+                                <input type="text" value={redxData.deliveryArea} onChange={(e) => setRedxData({ ...redxData, deliveryArea: e.target.value })} className={inputClass} placeholder="e.g. Mirpur" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700">Delivery Area ID</label>
+                                <input type="text" value={redxData.deliveryAreaId} onChange={(e) => setRedxData({ ...redxData, deliveryAreaId: e.target.value })} className={inputClass} placeholder="RedX area ID" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700">Parcel Weight (grams)</label>
+                                <input type="number" min="1" value={redxData.parcelWeight} onChange={(e) => setRedxData({ ...redxData, parcelWeight: e.target.value })} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700">Declared Value (৳)</label>
+                                <input type="number" min="0" value={redxData.declaredValue} onChange={(e) => setRedxData({ ...redxData, declaredValue: e.target.value })} className={inputClass} />
+                            </div>
+                        </div>
+                        <label className="flex items-center gap-2 rounded-lg bg-gray-50 p-3 text-sm font-bold text-gray-700">
+                            <input type="checkbox" checked={redxData.isClosedBox} onChange={(e) => setRedxData({ ...redxData, isClosedBox: e.target.checked })} />
+                            Closed box parcel
+                        </label>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700">Instruction (Optional)</label>
+                            <input type="text" value={redxData.instruction} onChange={(e) => setRedxData({ ...redxData, instruction: e.target.value })} className={inputClass} placeholder="e.g. Call before delivery" />
+                        </div>
+                    </div>
+                    )}
                 </div>
 
                 {/* Footer Actions */}
@@ -141,7 +279,7 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
                         style={{ backgroundColor: '#dc2626' }} /* Fallback inline style for guaranteed Red BG */
                         className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center shadow-md shadow-red-200"
                     >
-                        {loading ? 'Creating...' : 'Confirm & Send to Pathao'}
+                        {loading ? 'Creating...' : `Confirm & Send to ${provider === 'redx' ? 'RedX' : 'Pathao'}`}
                     </button>
                 </div>
             </div>

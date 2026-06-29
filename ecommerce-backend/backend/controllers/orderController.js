@@ -61,6 +61,9 @@ exports.syncOrderToPathao = async (req, res) => {
         // 2. Fetch the specific Order
         const order = await Order.findOne({ _id: id, shop_id: shopId, isDeleted: false });
         if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+        if (order.courierShipment?.trackingId && order.courierShipment?.provider !== 'pathao') {
+            return res.status(400).json({ success: false, error: 'Order already has an active courier shipment' });
+        }
         if (order.isPathaoSynced) return res.status(400).json({ success: false, error: 'Order already synced to Pathao' });
         if (['queued', 'syncing'].includes(order.pathaoSyncStatus)) {
             return res.status(202).json({
@@ -90,6 +93,14 @@ exports.syncOrderToPathao = async (req, res) => {
 
         order.pathaoSyncStatus = 'queued';
         order.pathaoLastError = '';
+        order.shippingProvider = 'pathao';
+        order.courierShipment = {
+            provider: 'pathao',
+            trackingId: order.pathaoConsignmentId || '',
+            status: 'queued',
+            lastError: '',
+            lastSyncedAt: new Date()
+        };
         await order.save();
 
         return res.status(202).json({

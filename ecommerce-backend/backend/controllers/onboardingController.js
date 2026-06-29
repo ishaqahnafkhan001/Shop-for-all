@@ -31,7 +31,7 @@ exports.getVendorOnboarding = async (req, res) => {
         const shopId = req.tenantId;
         const [shop, productCount, productWithImagesCount, couponCount, analyticsEvent] = await Promise.all([
             Shop.findById(shopId)
-                .select('shopName subdomain theme pathaoStoreId verification createdAt updatedAt')
+                .select('shopName subdomain theme pathaoStoreId couriers verification createdAt updatedAt')
                 .lean(),
             Product.countDocuments({ shop_id: shopId, isDeleted: false }),
             Product.countDocuments({ shop_id: shopId, isDeleted: false, 'images.0': { $exists: true } }),
@@ -55,7 +55,11 @@ exports.getVendorOnboarding = async (req, res) => {
                     nidSubmitted: ['pending', 'approved'].includes(verificationStatus),
                     firstProductAdded: productCount > 0,
                     productImagesAdded: productWithImagesCount > 0,
-                    shippingConfigured: Boolean(shop.pathaoStoreId),
+                    shippingConfigured: Boolean(
+                        shop.pathaoStoreId ||
+                        shop.couriers?.pathao?.storeId ||
+                        (shop.couriers?.redx?.enabled && shop.couriers?.redx?.pickupStoreId)
+                    ),
                     refundPolicyAdded: hasText(shop.theme?.policies?.refund),
                     storefrontCustomized,
                     storefrontPublished: storefrontCustomized,

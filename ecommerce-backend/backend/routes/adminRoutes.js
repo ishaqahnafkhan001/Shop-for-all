@@ -62,6 +62,18 @@ const {
     getAreas,
     linkExistingPathaoAccount
 } = require('../controllers/storeController');
+const {
+    configureRedxCourier,
+    createCourierShipment,
+    createRedxPickupStoreAndConfigure,
+    disconnectRedxCourier,
+    getCourierSettings,
+    getCourierShipmentInfo,
+    getRedxPickupStoreList,
+    searchRedxAreas,
+    setDefaultCourier,
+    trackCourierShipment
+} = require('../controllers/courierController');
 
 // Email Controllers
 const {
@@ -379,6 +391,79 @@ router.post(
     setupVendorPathaoStore
 );
 
+router.get(
+    '/shipping/couriers',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    getCourierSettings
+);
+
+router.post(
+    '/shipping/couriers/redx/configure',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    configureRedxCourier
+);
+
+router.patch(
+    '/shipping/couriers/redx',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    configureRedxCourier
+);
+
+router.post(
+    '/shipping/couriers/redx/areas/search',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    searchRedxAreas
+);
+
+router.get(
+    '/shipping/couriers/redx/pickup-stores',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    getRedxPickupStoreList
+);
+
+router.post(
+    '/shipping/couriers/redx/pickup-store',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    createRedxPickupStoreAndConfigure
+);
+
+router.delete(
+    '/shipping/couriers/redx',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    disconnectRedxCourier
+);
+
+router.post(
+    '/shipping/couriers/default',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    setDefaultCourier
+);
+
 // Location APIs
 router.get(
     '/pathao/cities',
@@ -530,6 +615,32 @@ router.post(
     blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     syncOrderToPathao
+);
+
+router.post(
+    '/orders/:id/courier',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    createCourierShipment
+);
+
+router.get(
+    '/orders/:id/courier/track',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    trackCourierShipment
+);
+
+router.get(
+    '/orders/:id/courier/info',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('orders'),
+    getCourierShipmentInfo
 );
 
 // ======================================================

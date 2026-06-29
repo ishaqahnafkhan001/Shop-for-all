@@ -456,7 +456,43 @@ const shopSchema = new mongoose.Schema({
         min: [0, 'Discount cannot be negative'],
         max: [100, 'Discount cannot exceed 100%']
     },
-    // 🚚 NEW: Pathao Courier Integration
+    couriers: {
+        pathao: {
+            enabled: { type: Boolean, default: false },
+            storeId: { type: Number, default: null },
+            storeName: { type: String, trim: true, default: '' },
+            status: {
+                type: String,
+                enum: ['NotConfigured', 'Configured', 'Active', 'Disabled'],
+                default: 'NotConfigured'
+            },
+            lastSyncedAt: Date,
+            configuredAt: Date
+        },
+        redx: {
+            enabled: { type: Boolean, default: false },
+            tokenEncrypted: { type: String, default: '' },
+            tokenLast4: { type: String, trim: true, default: '' },
+            pickupStoreId: { type: String, trim: true, default: '' },
+            pickupStoreName: { type: String, trim: true, default: '' },
+            pickupAddress: { type: String, trim: true, default: '' },
+            pickupAreaName: { type: String, trim: true, default: '' },
+            pickupAreaId: { type: String, trim: true, default: '' },
+            status: {
+                type: String,
+                enum: ['NotConfigured', 'Configured', 'Active', 'Disabled'],
+                default: 'NotConfigured'
+            },
+            lastVerifiedAt: Date,
+            configuredAt: Date
+        },
+        defaultCourier: {
+            type: String,
+            enum: ['pathao', 'redx', null],
+            default: null
+        }
+    },
+    // 🚚 Existing Pathao Courier Integration (kept for backward compatibility)
     pathaoStoreId: {
         type: Number,
         default: null // Null means the vendor hasn't set up their Pathao shipping location yet

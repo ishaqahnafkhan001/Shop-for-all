@@ -49,6 +49,15 @@ const processPathaoSyncJob = async (job) => {
 
     order.pathaoSyncStatus = 'syncing';
     order.pathaoLastError = '';
+    order.shippingProvider = 'pathao';
+    order.courierShipment = {
+        ...(order.courierShipment || {}),
+        provider: 'pathao',
+        status: 'syncing',
+        trackingId: order.pathaoConsignmentId || '',
+        lastError: '',
+        lastSyncedAt: new Date()
+    };
     await order.save();
 
     try {
@@ -66,11 +75,32 @@ const processPathaoSyncJob = async (job) => {
         order.isPathaoSynced = true;
         order.pathaoSyncStatus = 'synced';
         order.pathaoLastError = '';
+        order.shippingProvider = 'pathao';
+        order.shipping.courier = 'Pathao';
+        order.shipping.trackingId = pathaoRes.data.consignment_id || '';
+        order.courierShipment = {
+            provider: 'pathao',
+            trackingId: pathaoRes.data.consignment_id || '',
+            status: 'synced',
+            charge: Number(pathaoRes.data.charge || 0),
+            createdAt: new Date(),
+            lastSyncedAt: new Date(),
+            lastError: '',
+            rawResponse: pathaoRes.data || pathaoRes
+        };
         if (order.status === 'Pending') order.status = 'Confirmed';
         await order.save();
     } catch (error) {
         order.pathaoSyncStatus = 'failed';
         order.pathaoLastError = String(error.message || error).slice(0, 1000);
+        order.shippingProvider = 'pathao';
+        order.courierShipment = {
+            ...(order.courierShipment || {}),
+            provider: 'pathao',
+            status: 'failed',
+            lastError: order.pathaoLastError,
+            lastSyncedAt: new Date()
+        };
         await order.save();
         throw error;
     }

@@ -14,6 +14,7 @@ const OrderList = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+    const [courierSettings, setCourierSettings] = useState(null);
 
     const [pathaoModalOpen, setPathaoModalOpen] = useState(false);
     const [orderToSync, setOrderToSync] = useState(null);
@@ -42,9 +43,15 @@ const OrderList = () => {
         return () => clearTimeout(timer);
     }, [fetchOrders]);
 
+    useEffect(() => {
+        API.get('/admin/shipping/couriers')
+            .then(({ data }) => setCourierSettings(data.data || null))
+            .catch(() => setCourierSettings(null));
+    }, []);
+
     // Intercept the status change to show the modal
     const handleStatusChangeClick = (order, newStatus) => {
-        if (newStatus === 'Confirmed' && !order.isPathaoSynced) {
+        if (newStatus === 'Confirmed' && !getCourierStatus(order).hasShipment) {
             setOrderToSync(order);
             setPathaoModalOpen(true);
             return;
@@ -128,12 +135,33 @@ const OrderList = () => {
         }
     };
 
-    const getPathaoStatus = (order) => {
-        if (order?.isPathaoSynced) return 'synced';
-        return order?.pathaoSyncStatus || '';
+    const getCourierStatus = (order) => {
+        const shipment = order?.courierShipment || {};
+        if (shipment.trackingId || shipment.status) {
+            return {
+                provider: shipment.provider || order.shippingProvider || 'courier',
+                status: shipment.trackingId ? 'synced' : shipment.status,
+                hasShipment: Boolean(shipment.trackingId),
+                error: shipment.lastError || order.pathaoLastError || ''
+            };
+        }
+        if (order?.isPathaoSynced) {
+            return {
+                provider: 'pathao',
+                status: 'synced',
+                hasShipment: true,
+                error: ''
+            };
+        }
+        return {
+            provider: order?.shippingProvider || 'pathao',
+            status: order?.pathaoSyncStatus || '',
+            hasShipment: Boolean(order?.isPathaoSynced),
+            error: order?.pathaoLastError || ''
+        };
     };
 
-    const getPathaoStatusStyle = (status) => {
+    const getCourierStatusStyle = (status) => {
         switch (status) {
             case 'queued':  return 'bg-amber-50 text-amber-700 border-amber-200';
             case 'syncing': return 'bg-blue-50 text-blue-700 border-blue-200';
@@ -143,7 +171,7 @@ const OrderList = () => {
         }
     };
 
-    const getPathaoStatusLabel = (status) => {
+    const getCourierStatusLabel = (status) => {
         switch (status) {
             case 'queued':  return 'Queued';
             case 'syncing': return 'Syncing';
@@ -153,18 +181,19 @@ const OrderList = () => {
         }
     };
 
-    const renderPathaoBadge = (order) => {
-        const pathaoStatus = getPathaoStatus(order);
-        const label = getPathaoStatusLabel(pathaoStatus);
+    const renderCourierBadge = (order) => {
+        const courierStatus = getCourierStatus(order);
+        const label = getCourierStatusLabel(courierStatus.status);
         if (!label) return null;
+        const providerLabel = courierStatus.provider === 'redx' ? 'RedX' : courierStatus.provider === 'pathao' ? 'Pathao' : 'Courier';
 
         return (
             <span
-                title={order.pathaoLastError || `Pathao ${label.toLowerCase()}`}
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${getPathaoStatusStyle(pathaoStatus)}`}
+                title={courierStatus.error || `${providerLabel} ${label.toLowerCase()}`}
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${getCourierStatusStyle(courierStatus.status)}`}
             >
-                {pathaoStatus === 'synced' ? <CheckCircle size={12} /> : null}
-                Pathao {label}
+                {courierStatus.status === 'synced' ? <CheckCircle size={12} /> : null}
+                {providerLabel} {label}
             </span>
         );
     };
@@ -178,7 +207,7 @@ const OrderList = () => {
                     <span className="font-mono text-sm font-semibold text-indigo-600">
                         #{row._id.slice(-6).toUpperCase()}
                     </span>
-                    {renderPathaoBadge(row)}
+                    {renderCourierBadge(row)}
                 </div>
             )
         },
@@ -221,29 +250,29 @@ const OrderList = () => {
     ];
 
     const renderActions = (row) => {
-        const pathaoStatus = getPathaoStatus(row);
-        const pathaoPending = ['queued', 'syncing'].includes(pathaoStatus);
-        const pathaoFailed = pathaoStatus === 'failed';
+        const courierStatus = getCourierStatus(row);
+        const courierPending = ['queued', 'syncing'].includes(courierStatus.status);
+        const courierFailed = courierStatus.status === 'failed';
 
         return (
             <div className="flex items-center justify-end space-x-3">
 
-                {row.status === 'Confirmed' && !row.isPathaoSynced && (
-                    pathaoPending ? (
+                {row.status === 'Confirmed' && !courierStatus.hasShipment && (
+                    courierPending ? (
                         <button
                             disabled
                             className="flex items-center text-xs font-bold text-amber-700 bg-amber-50 transition px-2 py-1.5 rounded-md opacity-80"
-                            title="Pathao sync is already queued and waiting for courier processing."
+                            title="Courier sync is already queued and waiting for processing."
                         >
-                            <Clock size={14} className="mr-1.5" /> Pathao {getPathaoStatusLabel(pathaoStatus)}
+                            <Clock size={14} className="mr-1.5" /> Courier {getCourierStatusLabel(courierStatus.status)}
                         </button>
                     ) : (
                         <button
                             onClick={() => { setOrderToSync(row); setPathaoModalOpen(true); }}
                             className="flex items-center text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition px-2 py-1.5 rounded-md"
-                            title={pathaoFailed ? row.pathaoLastError || 'Retry Pathao courier sync' : 'Create a courier delivery for this confirmed order'}
+                            title={courierFailed ? courierStatus.error || 'Retry courier sync' : 'Create a courier delivery for this confirmed order'}
                         >
-                            <Send size={14} className="mr-1.5" /> {pathaoFailed ? 'Retry Pathao' : 'Send to Pathao'}
+                            <Send size={14} className="mr-1.5" /> {courierFailed ? 'Retry Courier' : 'Create Parcel'}
                         </button>
                     )
                 )}
@@ -329,7 +358,7 @@ const OrderList = () => {
                                                 <span className="font-mono text-sm font-bold text-indigo-600">
                                                     #{order._id.slice(-6).toUpperCase()}
                                                 </span>
-                                                {renderPathaoBadge(order)}
+                                                {renderCourierBadge(order)}
                                             </div>
                                             <p className="text-sm font-bold text-gray-900 mt-1">{order.customer?.fullName}</p>
                                             <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString('en-GB')}</p>
@@ -390,6 +419,7 @@ const OrderList = () => {
                 order={orderToSync}
                 onSyncSuccess={handlePathaoSuccess}
                 onConfirmBeforeSync={() => updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true })}
+                courierSettings={courierSettings}
                 onJustConfirm={() => {
                     updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true });
                     setPathaoModalOpen(false);

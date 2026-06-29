@@ -1,17 +1,77 @@
-import { useState, useEffect } from 'react';
-import { Truck, MapPin, CheckCircle, Info, Link as LinkIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle, Info, Link as LinkIcon, MapPin, ShieldCheck, Trash2, Truck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api.js';
+import { AdminLoadingState } from '../../../components/ui/AdminState.jsx';
+
+const emptyCouriers = {
+    pathao: { configured: false, enabled: false },
+    redx: { configured: false, enabled: false },
+    defaultCourier: null
+};
+
+const StatusBadge = ({ children, tone = 'gray' }) => {
+    const tones = {
+        gray: 'bg-gray-100 text-gray-700 border-gray-200',
+        green: 'bg-green-50 text-green-700 border-green-200',
+        amber: 'bg-amber-50 text-amber-700 border-amber-200',
+        blue: 'bg-blue-50 text-blue-700 border-blue-200'
+    };
+    return (
+        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-black uppercase tracking-wide ${tones[tone]}`}>
+            {children}
+        </span>
+    );
+};
+
+const ProviderCard = ({ icon: Icon, name, description, configured, enabled, isDefault, details, actions, children }) => (
+    <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                    <Icon size={22} />
+                </div>
+                <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg font-black text-gray-900">{name}</h2>
+                        <StatusBadge tone={configured && enabled ? 'green' : configured ? 'amber' : 'gray'}>
+                            {configured ? (enabled ? 'Active' : 'Configured') : 'Not configured'}
+                        </StatusBadge>
+                        {isDefault && <StatusBadge tone="blue">Default</StatusBadge>}
+                    </div>
+                    <p className="mt-1 max-w-2xl text-sm text-gray-500">{description}</p>
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-2">{actions}</div>
+        </div>
+
+        {details?.length > 0 && (
+            <div className="mt-5 grid gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm md:grid-cols-2">
+                {details.map(item => (
+                    <div key={item.label}>
+                        <p className="text-xs font-black uppercase tracking-wide text-gray-400">{item.label}</p>
+                        <p className="mt-0.5 break-words font-bold text-gray-900">{item.value || 'Not set'}</p>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {children}
+    </section>
+);
 
 const ShippingSettings = () => {
-    const [loading, setLoading] = useState(false);
-    const [isLinked, setIsLinked] = useState(false);
-    const [activeTab, setActiveTab] = useState('create'); // 'create' | 'link'
-
-    // Form State: Create Platform Sub-store
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [couriers, setCouriers] = useState(emptyCouriers);
+    const [pathaoTab, setPathaoTab] = useState('create');
+    const [redxMode, setRedxMode] = useState('existing');
+    const [showPathaoSetup, setShowPathaoSetup] = useState(false);
+    const [showRedxForm, setShowRedxForm] = useState(false);
     const [cities, setCities] = useState([]);
     const [zones, setZones] = useState([]);
     const [areas, setAreas] = useState([]);
+
     const [createData, setCreateData] = useState({
         contact_name: '',
         contact_number: '',
@@ -20,8 +80,6 @@ const ShippingSettings = () => {
         zone_id: '',
         area_id: ''
     });
-
-    // Form State: Bring Your Own Credentials (BYOC)
     const [linkData, setLinkData] = useState({
         client_id: '',
         client_secret: '',
@@ -30,34 +88,65 @@ const ShippingSettings = () => {
         store_id: '',
         isLive: true
     });
+    const [redxData, setRedxData] = useState({
+        token: '',
+        pickupStoreId: '',
+        pickupStoreName: '',
+        pickupAddress: '',
+        pickupAreaName: '',
+        pickupAreaId: '',
+        enabled: true
+    });
+    const [redxPickupData, setRedxPickupData] = useState({
+        name: '',
+        phone: '',
+        address: '',
+        areaId: '',
+        areaName: ''
+    });
+    const [redxAreaSearch, setRedxAreaSearch] = useState({
+        districtName: '',
+        postCode: ''
+    });
+    const [redxAreaResults, setRedxAreaResults] = useState([]);
+    const [redxAreaLoading, setRedxAreaLoading] = useState(false);
 
-    // --- INITIAL DATA FETCH ---
+    const inputClass = "w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500";
+
+    const loadCouriers = async () => {
+        setLoading(true);
+        try {
+            const { data } = await API.get('/admin/shipping/couriers');
+            const next = data.data || emptyCouriers;
+            setCouriers(next);
+            setShowPathaoSetup(!next.pathao?.configured);
+            setShowRedxForm(!next.redx?.configured);
+            setRedxData(prev => ({
+                ...prev,
+                token: '',
+                pickupStoreId: next.redx?.pickupStoreId || '',
+                pickupStoreName: next.redx?.pickupStoreName || '',
+                pickupAddress: next.redx?.pickupAddress || '',
+                pickupAreaName: next.redx?.pickupAreaName || '',
+                pickupAreaId: next.redx?.pickupAreaId || '',
+                enabled: next.redx?.enabled !== false
+            }));
+        } catch {
+            toast.error('Failed to load courier settings');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchShopStatus = async () => {
-            try {
-                const { data } = await API.get('/admin/settings');
-                if (data.data.pathaoStoreId) {
-                    setIsLinked(true);
-                }
-            } catch (err) {
-                console.error("Failed to fetch shop settings", err);
-            }
-        };
-
-        const fetchCities = async () => {
-            try {
-                const { data } = await API.get('/admin/pathao/cities');
-                setCities(data.data);
-            } catch {
-                toast.error('Failed to load Pathao cities');
-            }
-        };
-
-        fetchShopStatus();
-        fetchCities();
+        queueMicrotask(() => {
+            loadCouriers();
+            API.get('/admin/pathao/cities')
+                .then(({ data }) => setCities(data.data || []))
+                .catch(() => {});
+        });
     }, []);
 
-    // --- CASCADING DROPDOWNS ---
     useEffect(() => {
         if (!createData.city_id) {
             queueMicrotask(() => {
@@ -66,13 +155,9 @@ const ShippingSettings = () => {
             });
             return;
         }
-        const fetchZones = async () => {
-            try {
-                const { data } = await API.get(`/admin/pathao/cities/${createData.city_id}/zones`);
-                setZones(data.data);
-            } catch (err) { console.error(err); }
-        };
-        fetchZones();
+        API.get(`/admin/pathao/cities/${createData.city_id}/zones`)
+            .then(({ data }) => setZones(data.data || []))
+            .catch(() => setZones([]));
     }, [createData.city_id]);
 
     useEffect(() => {
@@ -80,209 +165,363 @@ const ShippingSettings = () => {
             queueMicrotask(() => setAreas([]));
             return;
         }
-        const fetchAreas = async () => {
-            try {
-                const { data } = await API.get(`/admin/pathao/zones/${createData.zone_id}/areas`);
-                setAreas(data.data);
-            } catch (err) { console.error(err); }
-        };
-        fetchAreas();
+        API.get(`/admin/pathao/zones/${createData.zone_id}/areas`)
+            .then(({ data }) => setAreas(data.data || []))
+            .catch(() => setAreas([]));
     }, [createData.zone_id]);
 
-    // --- INPUT HANDLERS ---
-    const handleCreateChange = (e) => setCreateData({ ...createData, [e.target.name]: e.target.value });
-    const handleLinkChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setLinkData({ ...linkData, [name]: type === 'checkbox' ? checked : value });
+    const configuredCount = useMemo(() => Number(Boolean(couriers.pathao?.configured)) + Number(Boolean(couriers.redx?.configured)), [couriers]);
+
+    const setDefaultCourier = async (provider) => {
+        setSaving(true);
+        try {
+            const { data } = await API.post('/admin/shipping/couriers/default', { provider });
+            setCouriers(data.data || couriers);
+            toast.success(data.message || 'Default courier updated');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to update default courier');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    // --- SUBMIT HANDLERS ---
-    const handleCreateShop = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    const handleCreatePathao = async (event) => {
+        event.preventDefault();
+        setSaving(true);
         try {
             const { data } = await API.post('/admin/settings/pathao-store', createData);
-            toast.success(data.message || 'Pathao shop connected. You can now send confirmed orders to courier.');
-            setIsLinked(true);
+            toast.success(data.message || 'Pathao shop connected');
+            await loadCouriers();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to connect to Pathao');
+            toast.error(error.response?.data?.error || 'Failed to connect Pathao');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
-    const handleLinkAccount = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    const handleLinkPathao = async (event) => {
+        event.preventDefault();
+        setSaving(true);
         try {
             const { data } = await API.post('/admin/settings/pathao-link', linkData);
-            toast.success(data.message || 'Pathao account linked. You can now send confirmed orders to courier.');
-            setIsLinked(true);
+            toast.success(data.message || 'Pathao account linked');
+            await loadCouriers();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to verify Pathao credentials');
+            toast.error(error.response?.data?.error || 'Failed to link Pathao account');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
-    const inputClass = "w-full p-2.5 mt-1 text-sm bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all";
+    const handleSaveRedx = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            const endpoint = couriers.redx?.configured ? '/admin/shipping/couriers/redx' : '/admin/shipping/couriers/redx/configure';
+            const method = couriers.redx?.configured ? API.patch : API.post;
+            const { data } = await method(endpoint, redxData);
+            setCouriers(data.data || couriers);
+            setShowRedxForm(false);
+            setRedxData(prev => ({ ...prev, token: '' }));
+            toast.success(data.message || 'RedX courier saved');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to save RedX courier');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSearchRedxAreas = async () => {
+        if (!redxData.token && !couriers.redx?.configured) {
+            toast.error('Enter your RedX token before searching areas');
+            return;
+        }
+        setRedxAreaLoading(true);
+        try {
+            const { data } = await API.post('/admin/shipping/couriers/redx/areas/search', {
+                token: redxData.token,
+                districtName: redxAreaSearch.districtName,
+                postCode: redxAreaSearch.postCode
+            });
+            setRedxAreaResults(data.data?.areas || []);
+            if ((data.data?.areas || []).length === 0) toast('No RedX areas found for this search');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to search RedX areas');
+        } finally {
+            setRedxAreaLoading(false);
+        }
+    };
+
+    const handleCreateRedxPickupStore = async (event) => {
+        event.preventDefault();
+        if (!redxData.token && !couriers.redx?.configured) {
+            toast.error('Enter your RedX token before creating a pickup store');
+            return;
+        }
+        setSaving(true);
+        try {
+            const { data } = await API.post('/admin/shipping/couriers/redx/pickup-store', {
+                token: redxData.token,
+                name: redxPickupData.name,
+                phone: redxPickupData.phone,
+                address: redxPickupData.address,
+                areaId: redxPickupData.areaId,
+                enabled: redxData.enabled
+            });
+            setCouriers(data.data || couriers);
+            setShowRedxForm(false);
+            setRedxData(prev => ({ ...prev, token: '' }));
+            toast.success(data.message || 'RedX pickup store created');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to create RedX pickup store');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDisconnectRedx = async () => {
+        if (!window.confirm('Disconnect RedX for this store? Existing orders will keep their tracking information.')) return;
+        setSaving(true);
+        try {
+            const { data } = await API.delete('/admin/shipping/couriers/redx');
+            setCouriers(data.data || emptyCouriers);
+            setShowRedxForm(true);
+            toast.success(data.message || 'RedX disconnected');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to disconnect RedX');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return <AdminLoadingState title="Loading courier settings" description="Checking connected Pathao and RedX courier accounts." />;
+    }
 
     return (
-        <div className="max-w-3xl mx-auto space-y-6">
+        <div className="mx-auto max-w-5xl space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900">Shipping Settings</h1>
-                <p className="mt-1 text-sm text-gray-500">Connect your courier account once, then send confirmed orders to delivery from the Orders page.</p>
+                <p className="mt-1 text-sm text-gray-500">Connect Pathao, RedX, or both. Choose a default courier for faster order processing.</p>
             </div>
 
-            {isLinked ? (
-                /* SUCCESS STATE */
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-green-200 flex flex-col items-center text-center">
-                    <div className="h-16 w-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
-                        <CheckCircle size={32} />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900">Pathao Courier Connected</h2>
-                    <p className="text-gray-500 mt-2 max-w-md">
-                        Your store is successfully linked to Pathao. Confirmed orders can now be sent to courier from the Orders page.
-                    </p>
+            {configuredCount === 0 && (
+                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900">
+                    <p className="font-bold">Connect a courier service to create parcels directly from orders.</p>
+                    <p className="mt-1 text-indigo-700">You can start with one provider and add another later.</p>
                 </div>
-            ) : (
-                /* SETUP STATE */
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            )}
 
-                    {/* TABS HEADER */}
-                    <div className="flex border-b border-gray-100 bg-gray-50/50">
-                        <button
-                            onClick={() => setActiveTab('create')}
-                            className={`flex-1 py-4 font-bold text-sm flex items-center justify-center transition ${activeTab === 'create' ? 'text-red-600 border-b-2 border-red-600 bg-white' : 'text-gray-500 hover:text-gray-900'}`}
-                        >
-                            <Truck size={18} className="mr-2" /> Create Pathao Shop
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('link')}
-                            className={`flex-1 py-4 font-bold text-sm flex items-center justify-center transition ${activeTab === 'link' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white' : 'text-gray-500 hover:text-gray-900'}`}
-                        >
-                            <LinkIcon size={18} className="mr-2" /> Link Existing Account
-                        </button>
-                    </div>
+            <ProviderCard
+                icon={Truck}
+                name="Pathao Courier"
+                description="Use Pathao city, zone, and area setup or link your existing Pathao merchant credentials."
+                configured={couriers.pathao?.configured}
+                enabled={couriers.pathao?.enabled}
+                isDefault={couriers.defaultCourier === 'pathao'}
+                details={[
+                    { label: 'Store ID', value: couriers.pathao?.storeId },
+                    { label: 'Mode', value: couriers.pathao?.isLive ? 'Live' : 'Sandbox / Platform default' }
+                ]}
+                actions={[
+                    couriers.pathao?.configured && couriers.defaultCourier !== 'pathao' ? (
+                        <button key="default" onClick={() => setDefaultCourier('pathao')} disabled={saving} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">Set default</button>
+                    ) : null,
+                    <button key="toggle" onClick={() => setShowPathaoSetup(prev => !prev)} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50">
+                        {couriers.pathao?.configured ? 'Show setup' : 'Configure'}
+                    </button>
+                ]}
+            >
+                {showPathaoSetup && (
+                    <div className="mt-5 overflow-hidden rounded-2xl border border-gray-100">
+                        <div className="flex border-b border-gray-100 bg-gray-50">
+                            <button onClick={() => setPathaoTab('create')} className={`flex-1 px-3 py-3 text-sm font-black ${pathaoTab === 'create' ? 'bg-white text-red-600' : 'text-gray-500'}`}>
+                                <Truck size={16} className="mr-2 inline" /> Create Pathao Shop
+                            </button>
+                            <button onClick={() => setPathaoTab('link')} className={`flex-1 px-3 py-3 text-sm font-black ${pathaoTab === 'link' ? 'bg-white text-indigo-600' : 'text-gray-500'}`}>
+                                <LinkIcon size={16} className="mr-2 inline" /> Link Existing Account
+                            </button>
+                        </div>
 
-                    {/* TAB 1: CREATE STORE */}
-                    {activeTab === 'create' && (
-                        <form onSubmit={handleCreateShop} className="p-6 space-y-5 animate-in fade-in duration-200">
-                            <div className="bg-red-50 p-4 rounded-xl flex items-start text-sm text-red-800 border border-red-100">
-                                <Info className="shrink-0 mr-3 mt-0.5" size={18} />
-                                <p>Use this if you do not have your own Pathao merchant credentials. Enter the pickup address where delivery agents should collect parcels.</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700">Contact Person Name</label>
-                                    <input required type="text" name="contact_name" value={createData.contact_name} onChange={handleCreateChange} className={inputClass} placeholder="e.g. Adi Rahman" title="Person courier agents should contact for pickup" />
+                        {pathaoTab === 'create' ? (
+                            <form onSubmit={handleCreatePathao} className="space-y-4 p-5">
+                                <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-800">
+                                    <Info size={16} className="mr-2 inline" /> Use this if you want Scaleup to create a Pathao pickup shop for this store.
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700">Contact Number</label>
-                                    <input required type="text" name="contact_number" value={createData.contact_number} onChange={handleCreateChange} className={inputClass} placeholder="017XXXXXXXX (11 digits)" minLength="11" maxLength="11" title="Use an active phone number for pickup calls" />
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <input required name="contact_name" value={createData.contact_name} onChange={e => setCreateData({ ...createData, contact_name: e.target.value })} className={inputClass} placeholder="Contact person name" />
+                                    <input required name="contact_number" value={createData.contact_number} onChange={e => setCreateData({ ...createData, contact_number: e.target.value })} className={inputClass} placeholder="017XXXXXXXX" minLength="11" maxLength="11" />
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700">Full Address</label>
-                                <textarea required name="address" rows="2" value={createData.address} onChange={handleCreateChange} className={`${inputClass} resize-none`} placeholder="House, Road, Block, pickup instructions..." title="Add enough detail so riders can find your pickup location" />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-gray-100 pt-5 mt-5">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 flex items-center mb-1">
-                                        <MapPin size={14} className="mr-1 text-gray-400"/> City
-                                    </label>
-                                    <select required name="city_id" value={createData.city_id} onChange={handleCreateChange} className={inputClass}>
-                                        <option value="">Select City...</option>
+                                <textarea required name="address" value={createData.address} onChange={e => setCreateData({ ...createData, address: e.target.value })} className={inputClass} placeholder="Full pickup address" rows={2} />
+                                <div className="grid gap-4 md:grid-cols-3">
+                                    <select required name="city_id" value={createData.city_id} onChange={e => setCreateData({ ...createData, city_id: e.target.value, zone_id: '', area_id: '' })} className={inputClass}>
+                                        <option value="">Select city</option>
                                         {cities.map(city => <option key={city.city_id} value={city.city_id}>{city.city_name}</option>)}
                                     </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Zone</label>
-                                    <select required name="zone_id" value={createData.zone_id} onChange={handleCreateChange} disabled={!createData.city_id} className={inputClass}>
-                                        <option value="">Select Zone...</option>
+                                    <select required name="zone_id" value={createData.zone_id} onChange={e => setCreateData({ ...createData, zone_id: e.target.value, area_id: '' })} disabled={!createData.city_id} className={inputClass}>
+                                        <option value="">Select zone</option>
                                         {zones.map(zone => <option key={zone.zone_id} value={zone.zone_id}>{zone.zone_name}</option>)}
                                     </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">
-                                        Area <span className="text-gray-400 font-normal">(Optional)</span>
-                                    </label>
-                                    <select name="area_id" value={createData.area_id} onChange={handleCreateChange} disabled={!createData.zone_id} className={inputClass}>
-                                        <option value="">Select Area...</option>
+                                    <select required name="area_id" value={createData.area_id} onChange={e => setCreateData({ ...createData, area_id: e.target.value })} disabled={!createData.zone_id} className={inputClass}>
+                                        <option value="">Select area</option>
                                         {areas.map(area => <option key={area.area_id} value={area.area_id}>{area.area_name}</option>)}
                                     </select>
                                 </div>
-                            </div>
-
-                            <div className="pt-4 flex justify-end">
-                                <button type="submit" disabled={loading || !createData.zone_id} className="px-6 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition disabled:opacity-50 shadow-md">
-                                    {loading ? 'Registering Shop...' : 'Create Pathao Shop'}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* TAB 2: LINK EXISTING ACCOUNT (BYOC) */}
-                    {activeTab === 'link' && (
-                        <form onSubmit={handleLinkAccount} className="p-6 space-y-5 animate-in fade-in duration-200">
-                            <div className="bg-indigo-50 p-4 rounded-xl flex items-start text-sm text-indigo-800 border border-indigo-100">
-                                <Info className="shrink-0 mr-3 mt-0.5" size={18} />
-                                <p>Already have a Pathao Merchant account? Enter API credentials from your merchant dashboard. Keep these credentials private.</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700">Client ID</label>
-                                    <input required type="text" name="client_id" value={linkData.client_id} onChange={handleLinkChange} className={inputClass} />
+                                <button type="submit" disabled={saving} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">Create Pathao Shop</button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleLinkPathao} className="space-y-4 p-5">
+                                <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-800">
+                                    <ShieldCheck size={16} className="mr-2 inline" /> Credentials are stored server-side and are never shown back in the admin panel.
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700">Client Secret</label>
-                                    <input required type="password" name="client_secret" value={linkData.client_secret} onChange={handleLinkChange} className={inputClass} title="Private API secret from Pathao" />
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <input required name="client_id" value={linkData.client_id} onChange={e => setLinkData({ ...linkData, client_id: e.target.value })} className={inputClass} placeholder="Client ID" />
+                                    <input required type="password" name="client_secret" value={linkData.client_secret} onChange={e => setLinkData({ ...linkData, client_secret: e.target.value })} className={inputClass} placeholder="Client Secret" />
+                                    <input required type="email" name="username" value={linkData.username} onChange={e => setLinkData({ ...linkData, username: e.target.value })} className={inputClass} placeholder="Pathao login email" />
+                                    <input required type="password" name="password" value={linkData.password} onChange={e => setLinkData({ ...linkData, password: e.target.value })} className={inputClass} placeholder="Pathao password" />
+                                    <input required name="store_id" value={linkData.store_id} onChange={e => setLinkData({ ...linkData, store_id: e.target.value })} className={inputClass} placeholder="Pathao store ID" />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700">Pathao Login Email</label>
-                                    <input required type="email" name="username" value={linkData.username} onChange={handleLinkChange} className={inputClass} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700">Pathao Password</label>
-                                    <input required type="password" name="password" value={linkData.password} onChange={handleLinkChange} className={inputClass} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700">Pathao Store ID</label>
-                                    <input required type="number" name="store_id" value={linkData.store_id} onChange={handleLinkChange} className={inputClass} placeholder="e.g. 12345" title="Pathao store ID that should receive orders" />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-100 transition" onClick={() => setLinkData(prev => ({ ...prev, isLive: !prev.isLive }))}>
-                                <input
-                                    type="checkbox"
-                                    id="isLive"
-                                    name="isLive"
-                                    checked={linkData.isLive}
-                                    onChange={handleLinkChange}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
-                                />
-                                <label htmlFor="isLive" className="ml-3 block text-sm text-gray-900 font-bold cursor-pointer">
-                                    These are Live Production Credentials
-                                    <span className="block text-xs font-normal text-gray-500 mt-0.5">Uncheck this if you are using a Sandbox/Test account.</span>
+                                <label className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm font-bold text-gray-700">
+                                    <input type="checkbox" checked={linkData.isLive} onChange={e => setLinkData({ ...linkData, isLive: e.target.checked })} />
+                                    Live production credentials
                                 </label>
-                            </div>
+                                <button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">Link Pathao Account</button>
+                            </form>
+                        )}
+                    </div>
+                )}
+            </ProviderCard>
 
-                            <div className="pt-4 flex justify-end border-t border-gray-100">
-                                <button type="submit" disabled={loading} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition disabled:opacity-50 shadow-md">
-                                    {loading ? 'Verifying...' : 'Link Account'}
+            <ProviderCard
+                icon={MapPin}
+                name="RedX Courier"
+                description="Connect your RedX merchant token and pickup store. RedX delivery area and area ID are entered when creating each parcel."
+                configured={couriers.redx?.configured}
+                enabled={couriers.redx?.enabled}
+                isDefault={couriers.defaultCourier === 'redx'}
+                details={[
+                    { label: 'Pickup store ID', value: couriers.redx?.pickupStoreId },
+                    { label: 'Pickup store name', value: couriers.redx?.pickupStoreName },
+                    { label: 'Pickup address', value: couriers.redx?.pickupAddress },
+                    { label: 'Area', value: [couriers.redx?.pickupAreaName, couriers.redx?.pickupAreaId].filter(Boolean).join(' · ') },
+                    { label: 'Token', value: couriers.redx?.maskedToken }
+                ]}
+                actions={[
+                    couriers.redx?.configured && couriers.defaultCourier !== 'redx' ? (
+                        <button key="default" onClick={() => setDefaultCourier('redx')} disabled={saving} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">Set default</button>
+                    ) : null,
+                    <button key="edit" onClick={() => setShowRedxForm(prev => !prev)} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50">
+                        {couriers.redx?.configured ? 'Edit' : 'Configure'}
+                    </button>,
+                    couriers.redx?.configured ? (
+                        <button key="delete" onClick={handleDisconnectRedx} disabled={saving} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50">
+                            <Trash2 size={13} className="mr-1 inline" /> Disconnect
+                        </button>
+                    ) : null
+                ]}
+            >
+                {showRedxForm && (
+                    <div className="mt-5 space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+                            <Info size={16} className="mr-2 inline" />
+                            RedX area lookup is available through their OpenAPI. Search by district or post code to find area IDs.
+                        </div>
+
+                        {!couriers.redx?.configured && (
+                            <div className="flex rounded-xl border border-gray-200 bg-white p-1">
+                                <button type="button" onClick={() => setRedxMode('existing')} className={`flex-1 rounded-lg px-3 py-2 text-sm font-black ${redxMode === 'existing' ? 'bg-indigo-600 text-white' : 'text-gray-600'}`}>
+                                    Use existing pickup store
+                                </button>
+                                <button type="button" onClick={() => setRedxMode('create')} className={`flex-1 rounded-lg px-3 py-2 text-sm font-black ${redxMode === 'create' ? 'bg-indigo-600 text-white' : 'text-gray-600'}`}>
+                                    Create pickup store
                                 </button>
                             </div>
-                        </form>
-                    )}
-                </div>
-            )}
+                        )}
+
+                        <div>
+                            <label className="text-xs font-black uppercase tracking-wide text-gray-500">
+                                RedX API token {couriers.redx?.configured ? '(leave blank to keep current token)' : ''}
+                            </label>
+                            <input type="password" required={!couriers.redx?.configured} value={redxData.token} onChange={e => setRedxData({ ...redxData, token: e.target.value })} className={inputClass} placeholder="Paste RedX token" />
+                        </div>
+
+                        {redxMode === 'existing' || couriers.redx?.configured ? (
+                            <form onSubmit={handleSaveRedx} className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <input required value={redxData.pickupStoreId} onChange={e => setRedxData({ ...redxData, pickupStoreId: e.target.value })} className={inputClass} placeholder="Pickup store ID" />
+                                    <input value={redxData.pickupStoreName} onChange={e => setRedxData({ ...redxData, pickupStoreName: e.target.value })} className={inputClass} placeholder="Pickup store name" />
+                                    <input value={redxData.pickupAreaName} onChange={e => setRedxData({ ...redxData, pickupAreaName: e.target.value })} className={inputClass} placeholder="Pickup area name" />
+                                    <input value={redxData.pickupAreaId} onChange={e => setRedxData({ ...redxData, pickupAreaId: e.target.value })} className={inputClass} placeholder="Pickup area ID" />
+                                    <textarea value={redxData.pickupAddress} onChange={e => setRedxData({ ...redxData, pickupAddress: e.target.value })} className={`${inputClass} md:col-span-2`} placeholder="Pickup address" rows={2} />
+                                </div>
+                                <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                    <input type="checkbox" checked={redxData.enabled} onChange={e => setRedxData({ ...redxData, enabled: e.target.checked })} />
+                                    Enable RedX for order parcel creation
+                                </label>
+                                <button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">
+                                    {saving ? 'Saving...' : 'Save RedX Courier'}
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleCreateRedxPickupStore} className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <input required value={redxPickupData.name} onChange={e => setRedxPickupData({ ...redxPickupData, name: e.target.value })} className={inputClass} placeholder="Pickup store name" />
+                                    <input required value={redxPickupData.phone} onChange={e => setRedxPickupData({ ...redxPickupData, phone: e.target.value })} className={inputClass} placeholder="Pickup phone, e.g. 017..." />
+                                    <textarea required value={redxPickupData.address} onChange={e => setRedxPickupData({ ...redxPickupData, address: e.target.value })} className={`${inputClass} md:col-span-2`} placeholder="Pickup address" rows={2} />
+                                </div>
+
+                                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                                    <p className="text-xs font-black uppercase tracking-wide text-gray-500">Find RedX pickup area</p>
+                                    <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                                        <input value={redxAreaSearch.districtName} onChange={e => setRedxAreaSearch({ ...redxAreaSearch, districtName: e.target.value })} className={inputClass} placeholder="District name, e.g. Dhaka" />
+                                        <input value={redxAreaSearch.postCode} onChange={e => setRedxAreaSearch({ ...redxAreaSearch, postCode: e.target.value })} className={inputClass} placeholder="Post code, e.g. 1207" />
+                                        <button type="button" onClick={handleSearchRedxAreas} disabled={redxAreaLoading} className="rounded-lg border border-indigo-200 px-4 py-2 text-sm font-black text-indigo-700 hover:bg-indigo-50 disabled:opacity-50">
+                                            {redxAreaLoading ? 'Searching...' : 'Search'}
+                                        </button>
+                                    </div>
+                                    {redxAreaResults.length > 0 && (
+                                        <select
+                                            value={redxPickupData.areaId}
+                                            onChange={e => {
+                                                const area = redxAreaResults.find(item => String(item.id) === e.target.value);
+                                                setRedxPickupData({
+                                                    ...redxPickupData,
+                                                    areaId: e.target.value,
+                                                    areaName: area?.name || ''
+                                                });
+                                            }}
+                                            className={`${inputClass} mt-3`}
+                                        >
+                                            <option value="">Select RedX area</option>
+                                            {redxAreaResults.map(area => (
+                                                <option key={area.id} value={area.id}>
+                                                    {area.name} · {area.post_code} · {area.division_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {redxPickupData.areaName && (
+                                        <p className="mt-2 text-xs font-bold text-green-700">Selected: {redxPickupData.areaName}</p>
+                                    )}
+                                </div>
+
+                                <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                    <input type="checkbox" checked={redxData.enabled} onChange={e => setRedxData({ ...redxData, enabled: e.target.checked })} />
+                                    Enable RedX for order parcel creation
+                                </label>
+                                <button type="submit" disabled={saving || !redxPickupData.areaId} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">
+                                    {saving ? 'Creating...' : 'Create RedX Pickup Store'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                )}
+            </ProviderCard>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 text-sm text-gray-500">
+                <CheckCircle size={16} className="mr-2 inline text-green-600" />
+                Orders can use Pathao or RedX when configured. If both are active, the order screen defaults to your selected courier.
+            </div>
         </div>
     );
 };

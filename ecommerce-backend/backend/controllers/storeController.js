@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
+const { mirrorPathaoConfigOnShop } = require('../services/courierConfigService');
 const {
     PUBLIC_PRODUCT_CARD_PROJECT,
     sanitizePublicProduct,
@@ -428,6 +429,10 @@ exports.setupVendorPathaoStore = async (req, res) => {
         }
 
         shop.pathaoStoreId = newStore.store_id;
+        mirrorPathaoConfigOnShop(shop, {
+            storeId: newStore.store_id,
+            storeName: newStore.store_name || newStore.name || ''
+        });
         await shop.save();
 
         res.status(200).json({
@@ -461,6 +466,11 @@ exports.linkExistingPathaoAccount = async (req, res) => {
         const shop = await Shop.findById(shopId);
         shop.pathaoStoreId = parseInt(store_id, 10);
         shop.pathaoCredentials = customCreds;
+        mirrorPathaoConfigOnShop(shop, {
+            storeId: shop.pathaoStoreId,
+            enabled: true,
+            status: 'Active'
+        });
         await shop.save();
 
         res.status(200).json({

@@ -252,6 +252,48 @@ const shippingSchema = new Schema({
 
 }, { _id: false });
 
+const courierShipmentSchema = new Schema({
+    provider: {
+        type: String,
+        enum: ['pathao', 'redx', ''],
+        default: ''
+    },
+    trackingId: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    status: {
+        type: String,
+        enum: ['not_queued', 'queued', 'syncing', 'synced', 'failed'],
+        default: 'not_queued',
+        index: true
+    },
+    charge: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    createdAt: {
+        type: Date,
+        default: null
+    },
+    lastSyncedAt: {
+        type: Date,
+        default: null
+    },
+    lastError: {
+        type: String,
+        trim: true,
+        maxlength: 1000,
+        default: ''
+    },
+    rawResponse: {
+        type: Schema.Types.Mixed,
+        default: null
+    }
+}, { _id: false });
+
 /**
  * 🔹 Main Order Schema
  */
@@ -330,6 +372,18 @@ const orderSchema = new Schema({
     shipping: {
         type: shippingSchema,
         required: true
+    },
+
+    shippingProvider: {
+        type: String,
+        enum: ['pathao', 'redx', null],
+        default: null,
+        index: true
+    },
+
+    courierShipment: {
+        type: courierShipmentSchema,
+        default: () => ({})
     },
 
     status: {

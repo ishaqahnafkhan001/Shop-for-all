@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import {
     X, MapPin, User, Package, Calendar,
     CreditCard, FileText, Truck, Tag, Receipt, CheckCircle,
     Mail, Phone, Hash, ClipboardList, RotateCcw, AlertCircle
 } from 'lucide-react';
+import API from '../../api/api.js';
 
 const formatMoney = (value) => `৳ ${Number(value || 0).toLocaleString('en-BD')}`;
 const formatDateTime = (value) => (
@@ -58,6 +60,17 @@ const SectionCard = ({ icon: Icon, title, children, className = '' }) => (
 );
 
 const OrderDetailsModal = ({ order, onClose }) => {
+    const [courierDetails, setCourierDetails] = useState(null);
+    const [courierLoading, setCourierLoading] = useState(false);
+    const [courierError, setCourierError] = useState('');
+
+    useEffect(() => {
+        queueMicrotask(() => {
+            setCourierDetails(null);
+            setCourierError('');
+        });
+    }, [order?._id]);
+
     if (!order) return null;
 
     const handleBackdropClick = (e) => {
@@ -71,10 +84,31 @@ const OrderDetailsModal = ({ order, onClose }) => {
         order.shipping?.deliveredAt ||
         order.isPathaoSynced ||
         order.pathaoSyncStatus ||
-        order.pathaoLastError
+        order.pathaoLastError ||
+        order.courierShipment?.status ||
+        order.courierShipment?.trackingId ||
+        order.courierShipment?.lastError
     );
     const hasPromotion = Boolean(order.promotion?.code || Number(order.pricing?.discount || 0) > 0);
     const timeline = Array.isArray(order.timeline) ? order.timeline : [];
+    const courierProvider = order.courierShipment?.provider || order.shippingProvider || (order.isPathaoSynced ? 'pathao' : '');
+    const courierTrackingId = order.courierShipment?.trackingId || order.shipping?.trackingId || order.pathaoConsignmentId;
+    const courierStatus = order.courierShipment?.status || order.pathaoSyncStatus || (order.isPathaoSynced ? 'synced' : 'not_queued');
+    const courierErrorMessage = order.courierShipment?.lastError || order.pathaoLastError || '';
+    const courierLabel = courierProvider === 'redx' ? 'RedX' : courierProvider === 'pathao' ? 'Pathao' : order.shipping?.courier;
+
+    const loadCourierDetails = async (type) => {
+        setCourierLoading(true);
+        setCourierError('');
+        try {
+            const { data } = await API.get(`/admin/orders/${order._id}/courier/${type}`);
+            setCourierDetails({ type, data: data.data });
+        } catch (error) {
+            setCourierError(error.response?.data?.error || 'Failed to load courier details');
+        } finally {
+            setCourierLoading(false);
+        }
+    };
 
     return (
         <div
@@ -177,15 +211,57 @@ const OrderDetailsModal = ({ order, onClose }) => {
                     {hasCourierDetails && (
                         <SectionCard icon={Truck} title="Courier and Fulfillment">
                             <div className="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
-                                <DetailRow label="Courier" value={order.shipping?.courier || (order.isPathaoSynced ? 'Pathao' : '')} />
-                                <DetailRow label="Tracking ID" value={order.shipping?.trackingId} mono />
-                                <DetailRow label="Pathao status" value={order.pathaoSyncStatus || (order.isPathaoSynced ? 'synced' : 'not_queued')} />
+                                <DetailRow label="Courier" value={courierLabel} />
+                                <DetailRow label="Provider status" value={courierStatus} />
+                                <DetailRow label="Tracking ID" value={courierTrackingId} mono />
                                 <DetailRow label="Consignment" value={order.pathaoConsignmentId} mono />
                                 <DetailRow label="Shipped at" value={formatDateTime(order.shipping?.shippedAt)} />
                                 <DetailRow label="Delivered at" value={formatDateTime(order.shipping?.deliveredAt)} />
-                                {order.pathaoLastError && (
+                                {courierProvider === 'redx' && courierTrackingId && (
+                                    <div className="flex gap-2 md:col-span-2 xl:col-span-4">
+                                        <button onClick={() => loadCourierDetails('track')} disabled={courierLoading} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50">
+                                            Track RedX parcel
+                                        </button>
+                                        <button onClick={() => loadCourierDetails('info')} disabled={courierLoading} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                                            Parcel info
+                                        </button>
+                                    </div>
+                                )}
+                                {courierError && (
                                     <div className="md:col-span-2 xl:col-span-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
-                                        Pathao error: {order.pathaoLastError}
+                                        {courierError}
+                                    </div>
+                                )}
+                                {courierDetails?.type === 'track' && (
+                                    <div className="md:col-span-2 xl:col-span-4 rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-sm">
+                                        <p className="mb-2 font-black text-indigo-900">RedX tracking timeline</p>
+                                        {(courierDetails.data?.updates || []).length === 0 ? (
+                                            <p className="text-indigo-700">No tracking updates returned yet.</p>
+                                        ) : courierDetails.data.updates.map((update, index) => (
+                                            <div key={`${update.time}-${index}`} className="border-t border-indigo-100 py-2 first:border-t-0">
+                                                <p className="font-bold text-indigo-950">{update.messageEn || update.messageBn || 'Tracking update'}</p>
+                                                {update.messageBn && <p className="text-indigo-700">{update.messageBn}</p>}
+                                                <p className="text-xs font-semibold text-indigo-500">{formatDateTime(update.time)}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {courierDetails?.type === 'info' && courierDetails.data?.parcel && (
+                                    <div className="md:col-span-2 xl:col-span-4 rounded-xl border border-gray-100 bg-gray-50 p-3 text-sm">
+                                        <p className="mb-2 font-black text-gray-900">RedX parcel info</p>
+                                        <div className="grid gap-2 md:grid-cols-2">
+                                            <DetailRow label="Status" value={courierDetails.data.parcel.status} />
+                                            <DetailRow label="Charge" value={formatMoney(courierDetails.data.parcel.charge)} />
+                                            <DetailRow label="Delivery area" value={courierDetails.data.parcel.delivery_area} />
+                                            <DetailRow label="Weight" value={courierDetails.data.parcel.parcel_weight} />
+                                            <DetailRow label="Cash collection" value={formatMoney(courierDetails.data.parcel.cash_collection_amount)} />
+                                            <DetailRow label="Pickup" value={courierDetails.data.parcel.pickup_location?.name} />
+                                        </div>
+                                    </div>
+                                )}
+                                {courierErrorMessage && (
+                                    <div className="md:col-span-2 xl:col-span-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                                        Courier error: {courierErrorMessage}
                                     </div>
                                 )}
                             </div>
