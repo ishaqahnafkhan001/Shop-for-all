@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCcw, Search, Eye, Trash2, Image as ImageIcon, Video, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API from '../../api/api';
 import Table from '../../components/ui/Table';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import { AdminLoadingState } from '../../components/ui/AdminState.jsx';
+import { isAbortError, useAbortableRequest } from '../../hooks/useAbortableRequest.js';
+import useDebouncedValue from '../../hooks/useDebouncedValue.js';
 
 const statusOptions = ['All', 'Requested', 'Approved', 'Rejected', 'Received', 'Refunded', 'Cancelled', 'Closed'];
 const nextStatuses = {
@@ -33,26 +37,36 @@ const Returns = () => {
     const [proofImages, setProofImages] = useState([]);
     const [proofVideo, setProofVideo] = useState(null);
     const [refundForm, setRefundForm] = useState({ status: 'Pending', amount: '', method: '', reference: '', note: '' });
+    const debouncedOrderId = useDebouncedValue(orderId, 300);
+    const runAbortable = useAbortableRequest();
+    const fetchIdRef = useRef(0);
 
     const fetchReturns = useCallback(async (page = 1) => {
+        const fetchId = fetchIdRef.current + 1;
+        fetchIdRef.current = fetchId;
         setLoading(true);
         try {
+            await runAbortable(async ({ signal, isLatest }) => {
             const { data } = await API.get('/admin/returns', {
                 params: {
                     page,
                     limit: 25,
                     status,
-                    ...(orderId.trim() ? { orderId: orderId.trim() } : {})
-                }
+                    ...(debouncedOrderId.trim() ? { orderId: debouncedOrderId.trim() } : {})
+                },
+                signal
             });
+            if (!isLatest() || fetchId !== fetchIdRef.current) return;
             setReturns(data.data || []);
             setPagination(data.pagination || { page, pages: 1, total: 0 });
+            });
         } catch (err) {
+            if (isAbortError(err)) return;
             toast.error(err.response?.data?.error || 'Failed to load returns');
         } finally {
-            setLoading(false);
+            if (fetchId === fetchIdRef.current) setLoading(false);
         }
-    }, [orderId, status]);
+    }, [debouncedOrderId, runAbortable, status]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => fetchReturns(1), 0);
@@ -260,7 +274,10 @@ const Returns = () => {
             </div>
 
             {loading ? (
-                <div className="rounded-xl border border-slate-200 bg-white py-12 text-center text-sm text-slate-500">Loading returns...</div>
+                <AdminLoadingState
+                    title="Loading returns"
+                    description="We are checking return requests, refund status, and proof files for this store."
+                />
             ) : (
                 <Table
                     columns={columns}
@@ -272,27 +289,12 @@ const Returns = () => {
             )}
 
             {(pagination.totalPages || pagination.pages || 1) > 1 && (
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                    <span>Page {pagination.page} of {pagination.totalPages || pagination.pages} · {pagination.total} returns</span>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={pagination.hasPrevPage === false || pagination.page <= 1}
-                            onClick={() => fetchReturns(pagination.page - 1)}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={pagination.hasNextPage === false || pagination.page >= (pagination.totalPages || pagination.pages)}
-                            onClick={() => fetchReturns(pagination.page + 1)}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
+                <PaginationBar
+                    pagination={pagination}
+                    label="returns"
+                    onPrevious={() => fetchReturns(pagination.page - 1)}
+                    onNext={() => fetchReturns(pagination.page + 1)}
+                />
             )}
 
             <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Create return request">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Plus, Edit, Trash2, Package, Layers,
@@ -7,12 +7,14 @@ import {
 
 // UI Components
 import Table from '../../../components/ui/Table';
-import ProductDetailModal from '../../../components/products/ProductDetailModal.jsx';
 import API from '../../../api/api';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
+import PaginationBar from '../../../components/ui/PaginationBar.jsx';
 
 // Hooks
 import { useProducts } from '../../../hooks/useProducts';
+
+const ProductDetailModal = lazy(() => import('../../../components/products/ProductDetailModal.jsx'));
 
 const ProductList = () => {
     const navigate = useNavigate();
@@ -81,7 +83,7 @@ const ProductList = () => {
                 <div className="flex items-center gap-4 group cursor-pointer" onClick={() => handleOpenDetails(row)}>
                     <div className="relative h-14 w-14 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 shadow-sm transition-transform duration-300 group-hover:scale-105 flex-shrink-0">
                         {row.images?.[0] ? (
-                            <img src={row.images[0]} alt={row.title} className="object-cover h-full w-full" />
+                            <img src={row.images[0]} alt={row.title} loading="lazy" decoding="async" className="object-cover h-full w-full" />
                         ) : (
                             <div className="flex items-center justify-center h-full text-slate-300">
                                 <Package size={24} strokeWidth={1.5} />
@@ -171,6 +173,7 @@ const ProductList = () => {
                 onClick={(e) => { e.stopPropagation(); handleOpenDetails(row); }}
                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all duration-200"
                 title="Preview product details without leaving this page"
+                aria-label={`Preview ${row.title}`}
             >
                 <Eye size={18} strokeWidth={1.5} />
             </button>
@@ -178,6 +181,7 @@ const ProductList = () => {
                 onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
                 className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-all duration-200"
                 title="Change pricing, stock, images, variants, and SEO"
+                aria-label={`Edit ${row.title}`}
             >
                 <Edit size={18} strokeWidth={1.5} />
             </button>
@@ -185,6 +189,7 @@ const ProductList = () => {
                 onClick={(e) => { e.stopPropagation(); deleteProduct(row._id); }}
                 className="p-2 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-all duration-200"
                 title="Remove this product from your store"
+                aria-label={`Delete ${row.title}`}
             >
                 <Trash2 size={18} strokeWidth={1.5} />
             </button>
@@ -294,7 +299,7 @@ const ProductList = () => {
                                 <div className="flex gap-4">
                                     <div className="w-20 h-20 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex-shrink-0 relative">
                                         {p.images?.[0] ? (
-                                            <img src={p.images[0]} className="w-full h-full object-cover" alt="" />
+                                            <img src={p.images[0]} loading="lazy" decoding="async" className="w-full h-full object-cover" alt={p.title} />
                                         ) : (
                                             <div className="flex items-center justify-center h-full text-slate-300">
                                                 <Package size={24} />
@@ -325,13 +330,13 @@ const ProductList = () => {
                                         <Layers size={14} /> {p.variantCount ?? p.variants?.length ?? 0} variants
                                     </span>
                                     <div className="flex gap-1.5">
-                                        <button onClick={() => handleOpenDetails(p)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors">
+                                        <button onClick={() => handleOpenDetails(p)} aria-label={`Preview ${p.title}`} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors">
                                             <Eye size={16} strokeWidth={2}/>
                                         </button>
-                                        <button onClick={() => handleEdit(p)} className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors">
+                                        <button onClick={() => handleEdit(p)} aria-label={`Edit ${p.title}`} className="p-2 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors">
                                             <Edit size={16} strokeWidth={2}/>
                                         </button>
-                                        <button onClick={() => deleteProduct(p._id)} className="p-2 bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-600 transition-colors">
+                                        <button onClick={() => deleteProduct(p._id)} aria-label={`Delete ${p.title}`} className="p-2 bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-600 transition-colors">
                                             <Trash2 size={16} strokeWidth={2}/>
                                         </button>
                                     </div>
@@ -343,35 +348,25 @@ const ProductList = () => {
             )}
 
             {!loading && pagination.total > (pagination.limit || queryParams.limit) && (
-                <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm sm:flex-row">
-                    <span>
-                        Page {pagination.page} of {pagination.totalPages || pagination.pages} / {pagination.total} products
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => goToPage(pagination.page - 1)}
-                            disabled={!pagination.hasPrevPage && pagination.page <= 1}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            Previous
-                        </button>
-                        <button
-                            onClick={() => goToPage(pagination.page + 1)}
-                            disabled={!pagination.hasNextPage && pagination.page >= (pagination.totalPages || pagination.pages)}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
+                <PaginationBar
+                    pagination={pagination}
+                    label="products"
+                    onPrevious={() => goToPage(pagination.page - 1)}
+                    onNext={() => goToPage(pagination.page + 1)}
+                    className="rounded-2xl border-slate-100"
+                />
             )}
 
             {/* --- POPUP MODAL --- */}
-            <ProductDetailModal
-                isOpen={isModalOpen}
-                product={selectedProduct}
-                onClose={handleCloseDetails}
-            />
+            {isModalOpen && (
+                <Suspense fallback={null}>
+                    <ProductDetailModal
+                        isOpen={isModalOpen}
+                        product={selectedProduct}
+                        onClose={handleCloseDetails}
+                    />
+                </Suspense>
+            )}
         </div>
     );
 };

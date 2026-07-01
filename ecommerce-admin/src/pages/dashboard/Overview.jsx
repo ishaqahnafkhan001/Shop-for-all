@@ -1,36 +1,19 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, Package, ShoppingCart, TrendingUp, AlertTriangle,
   BarChart2, ArrowUpDown, SlidersHorizontal, ChevronRight, Megaphone
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
 import API from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import VendorOnboardingChecklist from '../../components/dashboard/VendorOnboardingChecklist.jsx';
-import { AdminLoadingState } from '../../components/ui/AdminState.jsx';
+import { AdminErrorState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import BillingAlert from '../../components/dashboard/BillingAlert.jsx';
 import TrustedBadgeStatusCard from '../../components/dashboard/TrustedBadgeStatusCard.jsx';
 import { hasFeature } from '../../utils/featureAccess.js';
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-        <div className="bg-white/90 backdrop-blur-md p-4 rounded-xl shadow-xl border border-gray-100">
-          <p className="text-sm font-semibold text-gray-800 mb-2">{label}</p>
-          {payload.map((entry, index) => (
-              <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
-                {entry.name}: <span className="font-bold">৳{entry.value.toLocaleString()}</span>
-              </p>
-          ))}
-        </div>
-    );
-  }
-  return null;
-};
+const DashboardRevenueChart = lazy(() => import('./components/DashboardRevenueChart.jsx'));
 
 const Overview = () => {
   const { user } = useAuth();
@@ -44,6 +27,7 @@ const Overview = () => {
   const [topProducts, setTopProducts] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [overviewError, setOverviewError] = useState('');
   const canViewPlatformAnnouncements = user?.role === 'VendorAdmin' || user?.role === 'VendorStaff';
 
   useEffect(() => {
@@ -67,33 +51,43 @@ const Overview = () => {
     };
   }, [canViewPlatformAnnouncements]);
 
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setOverviewError('');
+    try {
+      const overviewRes = await API.get('/admin/dashboard-overview');
+      const overviewData = overviewRes.data.data || {};
+
+      setStats(overviewData.stats || {});
+      setRevenue(overviewData.revenue || {});
+      setMovement(overviewData.movement || []);
+      setRecentMovements(overviewData.recentMovements || []);
+      setAdjustments(overviewData.adjustments || []);
+      setTopProducts(overviewData.topProducts || []);
+      setLowStock(overviewData.lowStock || []);
+
+    } catch {
+      setOverviewError('Dashboard load failed. Please retry in a moment.');
+      toast.error("Dashboard load failed");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
 	useEffect(() => {
-	    const fetchData = async () => {
-	      try {
-	        const overviewRes = await API.get('/admin/dashboard-overview');
-	        const overviewData = overviewRes.data.data || {};
+	    const timer = window.setTimeout(fetchData, 0);
+      return () => window.clearTimeout(timer);
+  }, [fetchData, user?.role]);
 
-	        setStats(overviewData.stats || {});
-	        setRevenue(overviewData.revenue || {});
-	        setMovement(overviewData.movement || []);
-	        setRecentMovements(overviewData.recentMovements || []);
-	        setAdjustments(overviewData.adjustments || []);
-	        setTopProducts(overviewData.topProducts || []);
-	        setLowStock(overviewData.lowStock || []);
-
-	      } catch {
-        toast.error("Dashboard load failed");
-      } finally {
-        setLoading(false);
-      }
+  const chartData = useMemo(() => (revenue?.monthlyData || []).map(item => {
+    const d = new Date(item.year, item.month - 1);
+    return {
+      name: d.toLocaleString('default', { month: 'short' }),
+      Revenue: item.revenue,
+      Profit: item.profit
     };
+  }), [revenue?.monthlyData]);
 
-    fetchData();
-  }, [user?.role]);
-
-  // ---------------------------------------------------------
-  // SKELETON LOADING STATE (Modern UI UX)
-  // ---------------------------------------------------------
   if (loading) {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -109,15 +103,6 @@ const Overview = () => {
   const goToTopProducts = () => {
     navigate(hasFeature(user, 'growthCenter') ? '/dashboard/growth?focus=top-products' : '/dashboard/products');
   };
-
-  const chartData = (revenue?.monthlyData || []).map(item => {
-    const d = new Date(item.year, item.month - 1);
-    return {
-      name: d.toLocaleString('default', { month: 'short' }),
-      Revenue: item.revenue,
-      Profit: item.profit
-    };
-  });
 
   const statCards = [
     { title: 'Total Revenue', value: `৳ ${overview.totalRevenue?.toLocaleString() || 0}`, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -173,6 +158,21 @@ const Overview = () => {
         {user?.role === 'VendorAdmin' && <VendorOnboardingChecklist />}
         {user?.role === 'VendorAdmin' && <BillingAlert />}
         {user?.role === 'VendorAdmin' && <TrustedBadgeStatusCard />}
+        {overviewError && (
+          <AdminErrorState
+            title="Dashboard data could not load"
+            description={overviewError}
+            action={(
+              <button
+                type="button"
+                onClick={fetchData}
+                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700"
+              >
+                Retry
+              </button>
+            )}
+          />
+        )}
 
         {/* STAT CARDS - Custom Inline Styling for Modern Look */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -205,27 +205,9 @@ const Overview = () => {
 
             {chartData.length > 0 ? (
                 <div className="h-[350px] w-full flex-grow">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                      <XAxis
-                          dataKey="name"
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: '#6B7280', fontSize: 12 }}
-                          dy={10}
-                      />
-                      <YAxis
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: '#6B7280', fontSize: 12 }}
-                          tickFormatter={(value) => `৳${value}`}
-                      />
-                      <Tooltip cursor={{ fill: '#F3F4F6' }} content={<CustomTooltip />} />
-                      <Bar dataKey="Revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={40} />
-                      <Bar dataKey="Profit"  fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={40} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<div className="h-full w-full animate-pulse rounded-xl bg-slate-100" />}>
+                    <DashboardRevenueChart data={chartData} />
+                  </Suspense>
                 </div>
             ) : (
                 <div className="flex-grow flex flex-col items-center justify-center text-gray-400 py-20">

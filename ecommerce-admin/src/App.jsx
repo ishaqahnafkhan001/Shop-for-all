@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute'; // 🛡️ NEW: Import the wrapper
 import RequireFeature from './components/RequireFeature.jsx';
 import RequireStaffPermission from './components/RequireStaffPermission.jsx';
+import AdminRouteFallback from './components/ui/AdminRouteFallback.jsx';
 
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
@@ -48,9 +49,7 @@ const getRedirectPath = (role) => {
 };
 
 const PageFallback = () => (
-    <div className="flex h-[50vh] items-center justify-center text-sm text-slate-500">
-        Loading...
-    </div>
+    <AdminRouteFallback />
 );
 
 const withSuspense = (element) => (

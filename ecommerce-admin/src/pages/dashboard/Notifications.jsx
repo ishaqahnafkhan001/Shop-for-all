@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API from '../../api/api';
 import Button from '../../components/ui/Button';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
+import { isAbortError, useAbortableRequest } from '../../hooks/useAbortableRequest.js';
 
 const typeStyles = {
     order: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -16,19 +19,27 @@ const Notifications = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+    const runAbortable = useAbortableRequest();
+    const fetchIdRef = useRef(0);
 
     const fetchNotifications = useCallback(async (page = 1) => {
+        const fetchId = fetchIdRef.current + 1;
+        fetchIdRef.current = fetchId;
         setLoading(true);
         try {
-            const { data } = await API.get('/admin/notifications', { params: { page, limit: 25 } });
+            await runAbortable(async ({ signal, isLatest }) => {
+            const { data } = await API.get('/admin/notifications', { params: { page, limit: 25 }, signal });
+            if (!isLatest() || fetchId !== fetchIdRef.current) return;
             setItems(data.data || []);
             setPagination(data.pagination || { page, pages: 1, total: 0 });
+            });
         } catch (err) {
+            if (isAbortError(err)) return;
             toast.error(err.response?.data?.error || 'Failed to load notifications');
         } finally {
-            setLoading(false);
+            if (fetchId === fetchIdRef.current) setLoading(false);
         }
-    }, []);
+    }, [runAbortable]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => fetchNotifications(1), 0);
@@ -80,12 +91,18 @@ const Notifications = () => {
 
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 {loading ? (
-                    <div className="py-12 text-center text-sm text-slate-500">Loading notifications...</div>
+                    <AdminLoadingState
+                        title="Loading notifications"
+                        description="We are checking recent order, customer, return, and system updates."
+                        className="rounded-none border-0 shadow-none"
+                    />
                 ) : items.length === 0 ? (
-                    <div className="py-14 text-center">
-                        <p className="font-semibold text-slate-900">No notifications yet</p>
-                        <p className="mt-1 text-sm text-slate-500">New orders, customers, returns, and refund updates will appear here.</p>
-                    </div>
+                    <AdminEmptyState
+                        icon={Bell}
+                        title="No notifications yet"
+                        description="New orders, customers, returns, and refund updates will appear here."
+                        className="rounded-none border-0 shadow-none"
+                    />
                 ) : (
                     <div className="divide-y divide-slate-100">
                         {items.map(item => (
@@ -120,27 +137,12 @@ const Notifications = () => {
             </div>
 
             {(pagination.totalPages || pagination.pages || 1) > 1 && (
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                    <span>Page {pagination.page} of {pagination.totalPages || pagination.pages} · {pagination.total} notifications</span>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={pagination.hasPrevPage === false || pagination.page <= 1}
-                            onClick={() => fetchNotifications(pagination.page - 1)}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={pagination.hasNextPage === false || pagination.page >= (pagination.totalPages || pagination.pages)}
-                            onClick={() => fetchNotifications(pagination.page + 1)}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
+                <PaginationBar
+                    pagination={pagination}
+                    label="notifications"
+                    onPrevious={() => fetchNotifications(pagination.page - 1)}
+                    onNext={() => fetchNotifications(pagination.page + 1)}
+                />
             )}
         </div>
     );

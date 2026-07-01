@@ -496,6 +496,7 @@ test('mongo-backed queue, worker, and analytics rollups are available', () => {
     assert.match(jobModel, /status:[\s\S]*enum:\s*JOB_STATUSES/);
     assert.match(queue, /findOneAndUpdate/);
     assert.match(queue, /failJob/);
+    assert.match(queue, /requeueJobs/);
     assert.match(worker, /claimNextJob/);
     assert.match(worker, /processCourierJob/);
     assert.match(worker, /courier:\s*processCourierJob/);
@@ -534,10 +535,10 @@ test('vendor admin pagination responses keep compatibility metadata', () => {
     assert.match(customerController, /pagination:\s*buildPagination/);
     assert.match(returnController, /pagination:\s*buildPagination/);
     assert.match(notificationController, /pagination:\s*buildPagination/);
-    assert.match(adminProductList, /pagination\.totalPages \|\| pagination\.pages/);
-    assert.match(adminCustomerList, /pagination\.totalPages \|\| pagination\.pages/);
-    assert.match(adminReturns, /pagination\.totalPages \|\| pagination\.pages/);
-    assert.match(adminNotifications, /pagination\.totalPages \|\| pagination\.pages/);
+    assert.match(adminProductList, /PaginationBar/);
+    assert.match(adminCustomerList, /PaginationBar/);
+    assert.match(adminReturns, /PaginationBar/);
+    assert.match(adminNotifications, /PaginationBar/);
 });
 
 test('return proof upload is required for new admin and tracked returns', () => {
@@ -651,13 +652,16 @@ test('confirmed order status email is sent through status update endpoint once',
     assert.match(controller, /notifyCustomerOrderStatus/);
     assert.match(controller, /customerNotified/);
     assert.match(controller, /Pathao sync is already queued[\s\S]*data:\s*order/);
+    assert.match(controller, /wantsRetry/);
+    assert.match(controller, /requeueJobs\(\{[\s\S]*name:\s*'pathao\.sync_order'/);
     assert.match(emailService, /Your order has been confirmed/);
     assert.match(emailService, /sendMail/);
     assert.match(orderList, /notifyCustomer:\s*true/);
     assert.match(orderList, /!updatedOrder\?\._id/);
     assert.match(orderList, /getCourierStatus/);
     assert.match(orderList, /Retry Courier/);
-    assert.match(orderList, /Courier sync is already queued/);
+    assert.match(orderList, /handleRetryCourierQueue/);
+    assert.match(orderList, /Retry Queue/);
     assert.match(orderList, /emailSubject:\s*emailData\?\.subject/);
     assert.doesNotMatch(orderList, /\/admin\/orders\/send-email/);
     assert.match(pathaoSyncJobService, /toLocalBDPhone/);
@@ -692,6 +696,8 @@ test('redx courier integration is provider-based, masked, queued, and phone safe
     assert.match(adminRoutes, /requirePermission\('orders'\)/);
     assert.match(courierController, /Order\.findOne\(\{\s*_id:\s*id,\s*shop_id:\s*req\.tenantId/);
     assert.match(courierController, /enqueueJob\(\{[\s\S]*name:\s*'courier\.create_parcel'/);
+    assert.match(courierController, /retry:\s*Joi\.boolean/);
+    assert.match(courierController, /requeueJobs\(\{[\s\S]*name:\s*'courier\.create_parcel'/);
     assert.match(courierConfig, /encryptSecret/);
     assert.match(courierConfig, /maskedToken/);
     assert.match(courierJob, /processRedxCreateParcelJob/);

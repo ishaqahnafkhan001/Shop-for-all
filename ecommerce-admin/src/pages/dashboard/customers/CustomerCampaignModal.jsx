@@ -64,8 +64,8 @@ const CustomerCampaignModal = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-            <form onSubmit={submit} className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-slate-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+            <form onSubmit={submit} className="flex h-full w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[92vh] sm:rounded-2xl">
                 <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
                     <div>
                         <h3 className="text-lg font-black text-slate-950">
@@ -73,12 +73,12 @@ const CustomerCampaignModal = ({
                         </h3>
                         <p className="text-sm text-slate-500">{recipientCount} recipients from this shop.</p>
                     </div>
-                    <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <button type="button" onClick={onClose} aria-label="Close campaign modal" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="grid max-h-[75vh] gap-5 overflow-y-auto p-6 lg:grid-cols-[1fr_260px]">
+                <div className="grid flex-1 gap-5 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[1fr_260px]">
                     <div className="space-y-4">
                         {mode === 'product' && (
                             <label className="block">
@@ -141,7 +141,7 @@ const CustomerCampaignModal = ({
                     </aside>
                 </div>
 
-                <div className="flex flex-col-reverse gap-2 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
+                <div className="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
                     <button type="button" onClick={onClose} disabled={sending} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
                         Cancel
                     </button>

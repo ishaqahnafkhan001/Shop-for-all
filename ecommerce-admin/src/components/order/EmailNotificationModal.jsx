@@ -70,8 +70,8 @@ const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+            <div className="flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200 sm:h-auto sm:max-h-[92vh] sm:rounded-xl">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
@@ -79,13 +79,13 @@ const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }
                         <Mail className="text-indigo-600" size={20} />
                         <h3 className="font-semibold text-gray-900">Notify Customer?</h3>
                     </div>
-                    <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition" disabled={isProcessing}>
+                    <button onClick={onClose} aria-label="Close notification email modal" className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition" disabled={isProcessing}>
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="p-5 space-y-4">
+                <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
                     <p className="text-sm text-gray-600">
                         You are changing order <strong>#{order._id.slice(-6).toUpperCase()}</strong> to <span className="font-bold text-indigo-600">{newStatus}</span>.
                         Would you like to send an email notification to <strong>{order.customer?.email}</strong>?
@@ -116,7 +116,7 @@ const EmailNotificationModal = ({ isOpen, onClose, onConfirm, order, newStatus }
                 </div>
 
                 {/* Footer Actions */}
-                <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-100 bg-white">
+                <div className="sticky bottom-0 flex flex-col-reverse gap-2 border-t border-gray-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition"

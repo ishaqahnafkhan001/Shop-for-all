@@ -112,13 +112,13 @@ const OrderDetailsModal = ({ order, onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/60 p-0 backdrop-blur-sm transition-opacity sm:items-center sm:p-4"
             onClick={handleBackdropClick}
         >
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex h-full w-full max-w-6xl flex-col bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 sm:h-auto sm:max-h-[92vh] sm:rounded-2xl">
 
                 {/* --- HEADER --- */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white z-10 rounded-t-2xl">
+                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white p-4 sm:rounded-t-2xl sm:p-6">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
@@ -142,13 +142,14 @@ const OrderDetailsModal = ({ order, onClose }) => {
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+                        aria-label="Close order details"
                     >
                         <X size={24} />
                     </button>
                 </div>
 
                 {/* --- BODY --- */}
-                <div className="p-6 overflow-y-auto space-y-6 bg-gray-50/50">
+                <div className="space-y-6 overflow-y-auto bg-gray-50/50 p-4 sm:p-6">
 
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
 
@@ -411,7 +412,7 @@ const OrderDetailsModal = ({ order, onClose }) => {
 
                 </div>
 
-                <div className="p-4 border-t border-gray-100 bg-white rounded-b-2xl flex justify-end">
+                <div className="sticky bottom-0 flex justify-end border-t border-gray-100 bg-white p-4 sm:rounded-b-2xl">
                     <button
                         onClick={onClose}
                         className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition shadow-md shadow-gray-200"

@@ -49,16 +49,16 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-gray-900 bg-opacity-50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+            <div className="flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-xl sm:h-auto sm:max-h-[92vh] sm:rounded-xl">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h3 className="text-lg font-bold text-gray-900">Send Email to Customer</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors" disabled={isSending}>
+                    <button onClick={onClose} aria-label="Close email modal" className="text-gray-400 hover:text-gray-600 transition-colors" disabled={isSending}>
                         <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSendEmail} className="p-6 space-y-4">
+                <form onSubmit={handleSendEmail} className="flex flex-1 flex-col space-y-4 overflow-y-auto p-4 sm:p-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">To:</label>
                         <input
@@ -95,7 +95,7 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
                         ></textarea>
                     </div>
 
-                    <div className="flex justify-end space-x-3 pt-4">
+                    <div className="mt-auto flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
                         <button type="button" onClick={onClose} disabled={isSending} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50">
                             Cancel
                         </button>

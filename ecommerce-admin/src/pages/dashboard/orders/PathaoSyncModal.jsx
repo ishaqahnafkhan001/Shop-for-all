@@ -124,21 +124,21 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
     const inputClass = "w-full p-2.5 mt-1 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all";
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+            <div className="flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 sm:h-auto sm:max-h-[92vh] sm:rounded-2xl">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-red-50">
                     <h2 className="text-lg font-bold text-red-700 flex items-center">
                         <Truck className="mr-2" size={20} /> Create Courier Shipment
                     </h2>
-                    <button onClick={onClose} className="text-red-400 hover:text-red-700 transition p-1 rounded-full hover:bg-red-100">
+                    <button onClick={onClose} aria-label="Close courier shipment modal" className="text-red-400 hover:text-red-700 transition p-1 rounded-full hover:bg-red-100">
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Form Body */}
-                <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+                <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
                     <div className="bg-blue-50 p-3 rounded-lg flex items-start text-sm text-blue-800 border border-blue-100">
                         <AlertCircle className="shrink-0 mr-2 mt-0.5" size={16} />
                         <p>Choose a courier and review parcel details before creating the shipment.</p>
@@ -264,7 +264,7 @@ const PathaoSyncModal = ({ isOpen, onClose, order, onSyncSuccess, onJustConfirm,
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-5 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="sticky bottom-0 flex flex-col items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 p-4 sm:flex-row sm:p-5">
                     <button
                         onClick={onJustConfirm}
                         disabled={loading}

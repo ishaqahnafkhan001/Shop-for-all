@@ -39,10 +39,12 @@ const Topbar = ({ onOpenMenu }) => {
     };
 
     useEffect(() => {
-        const initialTimer = window.setTimeout(loadUnreadCount, 0);
+        const runAfterPaint = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 800));
+        const cancelAfterPaint = window.cancelIdleCallback || window.clearTimeout;
+        const initialTimer = runAfterPaint(loadUnreadCount);
         const timer = window.setInterval(loadUnreadCount, 60000);
         return () => {
-            window.clearTimeout(initialTimer);
+            cancelAfterPaint(initialTimer);
             window.clearInterval(timer);
         };
     }, [loadUnreadCount]);

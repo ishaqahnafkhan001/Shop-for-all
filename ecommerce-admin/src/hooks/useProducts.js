@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import API from '../api/api'; // Ensure this path is correct
+import { isAbortError, useAbortableRequest } from './useAbortableRequest';
+import useDebouncedValue from './useDebouncedValue';
 
 export const useProducts = (initialLimit = 10) => {
   const [products, setProducts] = useState([]);
@@ -19,21 +21,28 @@ export const useProducts = (initialLimit = 10) => {
 
   // 2. Align with your backend's pagination structure (page, pages, total)
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+  const runAbortable = useAbortableRequest();
+  const debouncedSearch = useDebouncedValue(queryParams.search, 300);
+  const fetchIdRef = useRef(0);
 
   const fetchProducts = useCallback(async () => {
+    const fetchId = fetchIdRef.current + 1;
+    fetchIdRef.current = fetchId;
     setLoading(true);
     try {
+      await runAbortable(async ({ signal, isLatest }) => {
       // 3. Build the query string dynamically
       const params = new URLSearchParams({
         page: queryParams.page,
         limit: queryParams.limit,
       });
-      if (queryParams.search) params.append('search', queryParams.search);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       if (queryParams.category) params.append('category', queryParams.category);
       if (queryParams.status) params.append('status', queryParams.status);
       if (queryParams.sort) params.append('sort', queryParams.sort);
 
-      const res = await API.get(`/admin/products?${params.toString()}`);
+      const res = await API.get(`/admin/products?${params.toString()}`, { signal });
+      if (!isLatest() || fetchId !== fetchIdRef.current) return;
 
       setProducts(res.data.data || []);
       setCategories(res.data.categories || []); // Store distinct categories
@@ -49,13 +58,15 @@ export const useProducts = (initialLimit = 10) => {
           hasPrevPage: Boolean(res.data.pagination.hasPrevPage)
         });
       }
+      });
     } catch (err) {
+      if (isAbortError(err)) return;
       toast.error(err.response?.data?.error || "Failed to load products");
       setProducts([]);
     } finally {
-      setLoading(false);
+      if (fetchId === fetchIdRef.current) setLoading(false);
     }
-  }, [queryParams]); // Re-run this callback if queryParams change
+  }, [debouncedSearch, queryParams.category, queryParams.limit, queryParams.page, queryParams.sort, queryParams.status, runAbortable]); // Re-run this callback if query params change
 
   // 4. Automatically fetch when queryParams change
   useEffect(() => {

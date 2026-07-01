@@ -1,12 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { Package, Truck, CheckCircle, XCircle, Clock, Eye, Send, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
-import OrderDetailsModal from '../../../components/dashboard/OrderDetailsModal';
-import PathaoSyncModal from './PathaoSyncModal';
-import EmailNotificationModal from '../../../components/order/EmailNotificationModal.jsx';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
+import PaginationBar from '../../../components/ui/PaginationBar.jsx';
+import { isAbortError, useAbortableRequest } from '../../../hooks/useAbortableRequest.js';
+
+const OrderDetailsModal = lazy(() => import('../../../components/dashboard/OrderDetailsModal'));
+const PathaoSyncModal = lazy(() => import('./PathaoSyncModal'));
+const EmailNotificationModal = lazy(() => import('../../../components/order/EmailNotificationModal.jsx'));
 
 const OrderList = () => {
     const [orders, setOrders] = useState([]);
@@ -15,6 +18,10 @@ const OrderList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
     const [courierSettings, setCourierSettings] = useState(null);
+    const [retryingOrderId, setRetryingOrderId] = useState(null);
+    const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);
+    const runAbortable = useAbortableRequest();
+    const fetchIdRef = useRef(0);
 
     const [pathaoModalOpen, setPathaoModalOpen] = useState(false);
     const [orderToSync, setOrderToSync] = useState(null);
@@ -24,19 +31,26 @@ const OrderList = () => {
     const [pendingStatusUpdate, setPendingStatusUpdate] = useState({ order: null, newStatus: '' });
 
     const fetchOrders = useCallback(async (page = 1) => {
+        const fetchId = fetchIdRef.current + 1;
+        fetchIdRef.current = fetchId;
         setLoading(true);
         try {
+            await runAbortable(async ({ signal, isLatest }) => {
             const { data } = await API.get('/admin/orders', {
-                params: { page, limit: 25 }
+                params: { page, limit: 25 },
+                signal
             });
+            if (!isLatest() || fetchId !== fetchIdRef.current) return;
             setOrders(data.data || []);
             setPagination(data.pagination || { page, pages: 1, total: data.data?.length || 0 });
-        } catch {
+            });
+        } catch (error) {
+            if (isAbortError(error)) return;
             toast.error("Failed to load orders");
         } finally {
-            setLoading(false);
+            if (fetchId === fetchIdRef.current) setLoading(false);
         }
-    }, []);
+    }, [runAbortable]);
 
     useEffect(() => {
         const timer = setTimeout(fetchOrders, 0);
@@ -82,6 +96,7 @@ const OrderList = () => {
 
     const updateStatusInDB = async (orderId, newStatus, options = {}) => {
         try {
+            setStatusUpdatingOrderId(orderId);
             setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
             const { data } = await API.patch(`/admin/orders/${orderId}/status`, {
                 status: newStatus,
@@ -99,6 +114,8 @@ const OrderList = () => {
             toast.error(err.response?.data?.error || "Failed to update status");
             fetchOrders();
             return null;
+        } finally {
+            setStatusUpdatingOrderId(null);
         }
     };
 
@@ -108,6 +125,33 @@ const OrderList = () => {
             return;
         }
         setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+    };
+
+    const handleRetryCourierQueue = async (order) => {
+        const courierStatus = getCourierStatus(order);
+        setRetryingOrderId(order._id);
+
+        try {
+            const { data } = courierStatus.provider === 'redx'
+                ? await API.post(`/admin/orders/${order._id}/courier`, {
+                    provider: 'redx',
+                    retry: true
+                })
+                : await API.post(`/admin/orders/${order._id}/pathao`, {
+                    retry: true
+                });
+
+            toast.success(data.message || 'Courier retry queued');
+            if (data.data?._id) {
+                setOrders(prev => prev.map(o => o._id === data.data._id ? data.data : o));
+            } else {
+                fetchOrders(pagination.page);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to retry courier queue');
+        } finally {
+            setRetryingOrderId(null);
+        }
     };
 
     const getStatusStyle = (status) => {
@@ -251,18 +295,28 @@ const OrderList = () => {
 
     const renderActions = (row) => {
         const courierStatus = getCourierStatus(row);
-        const courierPending = ['queued', 'syncing'].includes(courierStatus.status);
+        const courierQueued = courierStatus.status === 'queued';
+        const courierSyncing = courierStatus.status === 'syncing';
         const courierFailed = courierStatus.status === 'failed';
 
         return (
             <div className="flex items-center justify-end space-x-3">
 
                 {row.status === 'Confirmed' && !courierStatus.hasShipment && (
-                    courierPending ? (
+                    courierQueued ? (
+                        <button
+                            onClick={() => handleRetryCourierQueue(row)}
+                            disabled={retryingOrderId === row._id || statusUpdatingOrderId === row._id}
+                            className="flex items-center text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 transition px-2 py-1.5 rounded-md disabled:opacity-60"
+                            title="Retry this queued courier job if it has been stuck."
+                        >
+                            <Clock size={14} className="mr-1.5" /> {retryingOrderId === row._id ? 'Retrying...' : 'Retry Queue'}
+                        </button>
+                    ) : courierSyncing ? (
                         <button
                             disabled
                             className="flex items-center text-xs font-bold text-amber-700 bg-amber-50 transition px-2 py-1.5 rounded-md opacity-80"
-                            title="Courier sync is already queued and waiting for processing."
+                            title="Courier sync is currently being processed."
                         >
                             <Clock size={14} className="mr-1.5" /> Courier {getCourierStatusLabel(courierStatus.status)}
                         </button>
@@ -281,6 +335,7 @@ const OrderList = () => {
                     onClick={() => setSelectedOrder(row)}
                     className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 transition px-2 py-1.5 rounded-md hover:bg-indigo-50"
                     title="View customer, items, payment, and delivery details"
+                    aria-label={`View order ${row._id.slice(-6).toUpperCase()}`}
                 >
                     <Eye size={18} className="mr-1.5" /> View
                 </button>
@@ -289,7 +344,7 @@ const OrderList = () => {
                 <select
                     value={['Cancelled', 'Returned'].includes(row.status) ? row.status : row.status}
                     onChange={(e) => handleStatusChangeClick(row, e.target.value)}
-                    disabled={['Cancelled', 'Returned', 'Delivered'].includes(row.status)}
+                    disabled={['Cancelled', 'Returned', 'Delivered'].includes(row.status) || statusUpdatingOrderId === row._id}
                     title="Changing status can notify the customer and affect dashboard revenue"
                     className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white hover:bg-gray-50 cursor-pointer py-1.5 pl-3 pr-8 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -385,58 +440,51 @@ const OrderList = () => {
             )}
 
             {pagination.pages > 1 && (
-                <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-600">
-                    <span>
-                        Page {pagination.page} of {pagination.pages} · {pagination.total} orders
-                    </span>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => fetchOrders(pagination.page - 1)}
-                            disabled={pagination.page <= 1}
-                            className="rounded-lg border border-gray-200 px-3 py-1.5 font-medium disabled:opacity-40"
-                        >
-                            Previous
-                        </button>
-                        <button
-                            onClick={() => fetchOrders(pagination.page + 1)}
-                            disabled={pagination.page >= pagination.pages}
-                            className="rounded-lg border border-gray-200 px-3 py-1.5 font-medium disabled:opacity-40"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
+                <PaginationBar
+                    pagination={pagination}
+                    label="orders"
+                    onPrevious={() => fetchOrders(pagination.page - 1)}
+                    onNext={() => fetchOrders(pagination.page + 1)}
+                    className="border-gray-100"
+                />
             )}
 
-            <OrderDetailsModal
-                order={selectedOrder}
-                onClose={() => setSelectedOrder(null)}
-            />
-
-            <PathaoSyncModal
-                isOpen={pathaoModalOpen}
-                onClose={() => setPathaoModalOpen(false)}
-                order={orderToSync}
-                onSyncSuccess={handlePathaoSuccess}
-                onConfirmBeforeSync={() => updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true })}
-                courierSettings={courierSettings}
-                onJustConfirm={() => {
-                    updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true });
-                    setPathaoModalOpen(false);
-                }}
-            />
-
-            {/* --- NEW EMAIL NOTIFICATION MODAL --- */}
-            <EmailNotificationModal
-                isOpen={emailModalOpen}
-                onClose={() => {
-                    setEmailModalOpen(false);
-                    setPendingStatusUpdate({ order: null, newStatus: '' });
-                }}
-                onConfirm={handleEmailModalDecision}
-                order={pendingStatusUpdate.order}
-                newStatus={pendingStatusUpdate.newStatus}
-            />
+            {(selectedOrder || pathaoModalOpen || emailModalOpen) && (
+                <Suspense fallback={null}>
+                    {selectedOrder && (
+                        <OrderDetailsModal
+                            order={selectedOrder}
+                            onClose={() => setSelectedOrder(null)}
+                        />
+                    )}
+                    {pathaoModalOpen && (
+                        <PathaoSyncModal
+                            isOpen={pathaoModalOpen}
+                            onClose={() => setPathaoModalOpen(false)}
+                            order={orderToSync}
+                            onSyncSuccess={handlePathaoSuccess}
+                            onConfirmBeforeSync={() => updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true })}
+                            courierSettings={courierSettings}
+                            onJustConfirm={() => {
+                                updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true });
+                                setPathaoModalOpen(false);
+                            }}
+                        />
+                    )}
+                    {emailModalOpen && (
+                        <EmailNotificationModal
+                            isOpen={emailModalOpen}
+                            onClose={() => {
+                                setEmailModalOpen(false);
+                                setPendingStatusUpdate({ order: null, newStatus: '' });
+                            }}
+                            onConfirm={handleEmailModalDecision}
+                            order={pendingStatusUpdate.order}
+                            newStatus={pendingStatusUpdate.newStatus}
+                        />
+                    )}
+                </Suspense>
+            )}
         </div>
     );
 };

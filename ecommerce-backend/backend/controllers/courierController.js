@@ -1,7 +1,7 @@
 const Joi = require('joi');
 const Order = require('../models/Order');
 const Shop = require('../models/Shop');
-const { enqueueJob } = require('../services/jobQueueService');
+const { enqueueJob, requeueJobs } = require('../services/jobQueueService');
 const {
     applyRedxConfigToShop,
     clearRedxConfigFromShop,
@@ -32,6 +32,7 @@ const defaultCourierSchema = Joi.object({
 
 const shipmentSchema = Joi.object({
     provider: Joi.string().valid('pathao', 'redx').required(),
+    retry: Joi.boolean().optional(),
     shipmentInput: Joi.object({
         deliveryArea: Joi.string().trim().max(160).allow('').optional(),
         deliveryAreaId: Joi.string().trim().max(120).allow('').optional(),
@@ -232,11 +233,91 @@ exports.createCourierShipment = async (req, res) => {
             if (!redx.configured || !redx.enabled) {
                 return res.status(400).json({ success: false, error: 'RedX is not configured for this shop.' });
             }
-            if (!value.shipmentInput.deliveryArea || !value.shipmentInput.deliveryAreaId) {
-                return res.status(400).json({ success: false, error: 'RedX delivery area and delivery area ID are required.' });
-            }
             if (!toLocalBDPhone(order.shipping?.address?.phone)) {
                 return res.status(400).json({ success: false, error: 'Customer phone number is invalid for RedX. Please update the order phone number.' });
+            }
+
+            const redxIdempotencyKey = `redx:create:${order._id}`;
+            const existingRedxStatus = (order.courierShipment?.provider === 'redx' || order.shippingProvider === 'redx')
+                ? order.courierShipment?.status
+                : '';
+
+            if (['queued', 'syncing'].includes(existingRedxStatus) && !value.retry) {
+                return res.status(202).json({
+                    success: true,
+                    status: existingRedxStatus,
+                    data: order,
+                    message: 'RedX parcel creation is already queued'
+                });
+            }
+
+            if (existingRedxStatus === 'syncing' && value.retry) {
+                return res.status(409).json({
+                    success: false,
+                    status: 'syncing',
+                    data: order,
+                    error: 'RedX parcel creation is currently running. Please wait a moment before retrying.'
+                });
+            }
+
+            if (value.retry) {
+                const requeueResult = await requeueJobs({
+                    queue: 'courier',
+                    name: 'courier.create_parcel',
+                    shop_id: req.tenantId,
+                    $or: [
+                        { idempotencyKey: redxIdempotencyKey },
+                        { 'payload.orderId': { $in: [order._id, String(order._id)] } }
+                    ],
+                    status: { $in: ['queued', 'failed', 'dead'] }
+                });
+                const matchedJobs = requeueResult?.matchedCount ?? requeueResult?.n ?? 0;
+                let job = null;
+
+                if (!matchedJobs) {
+                    if (!value.shipmentInput.deliveryArea || !value.shipmentInput.deliveryAreaId) {
+                        return res.status(400).json({
+                            success: false,
+                            error: 'The original RedX courier job was not found. Open Create Parcel and select the delivery area again.'
+                        });
+                    }
+                    job = await enqueueJob({
+                        queue: 'courier',
+                        name: 'courier.create_parcel',
+                        shop_id: req.tenantId,
+                        payload: {
+                            provider: 'redx',
+                            shopId: req.tenantId,
+                            orderId: order._id,
+                            shipmentInput: value.shipmentInput
+                        },
+                        maxAttempts: 3,
+                        idempotencyKey: redxIdempotencyKey
+                    });
+                }
+
+                order.shippingProvider = 'redx';
+                order.courierShipment = {
+                    ...(order.courierShipment || {}),
+                    provider: 'redx',
+                    status: 'queued',
+                    trackingId: '',
+                    lastError: '',
+                    lastSyncedAt: new Date()
+                };
+                await order.save();
+
+                return res.status(202).json({
+                    success: true,
+                    status: 'queued',
+                    jobId: job?._id,
+                    data: order,
+                    message: 'RedX parcel retry queued'
+                });
+            }
+
+            if (!value.shipmentInput.deliveryArea || !value.shipmentInput.deliveryAreaId) {
+                return res.status(400).json({ success: false, error: 'RedX delivery area and delivery area ID are required.' });
             }
 
             const job = await enqueueJob({
@@ -250,7 +331,7 @@ exports.createCourierShipment = async (req, res) => {
                     shipmentInput: value.shipmentInput
                 },
                 maxAttempts: 3,
-                idempotencyKey: `redx:create:${order._id}`
+                idempotencyKey: redxIdempotencyKey
             });
 
             order.shippingProvider = 'redx';

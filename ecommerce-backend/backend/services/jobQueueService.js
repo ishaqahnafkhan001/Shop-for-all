@@ -119,9 +119,26 @@ const failJob = async (job, error) => {
     });
 };
 
+const requeueJobs = async (query = {}) => (
+    Job.updateMany(
+        query,
+        {
+            $set: {
+                status: 'queued',
+                attempts: 0,
+                runAt: new Date(),
+                lockedAt: null,
+                lockId: '',
+                lastError: ''
+            }
+        }
+    )
+);
+
 module.exports = {
     enqueueJob,
     claimNextJob,
     completeJob,
-    failJob
+    failJob,
+    requeueJobs
 };

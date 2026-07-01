@@ -1,14 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { Mail, Send, ShoppingBag, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
-import SendMailModal from './SendMailModal';
-import CustomerCampaignModal from './CustomerCampaignModal';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
+import PaginationBar from '../../../components/ui/PaginationBar.jsx';
+import { isAbortError, useAbortableRequest } from '../../../hooks/useAbortableRequest.js';
+import useDebouncedValue from '../../../hooks/useDebouncedValue.js';
 
 // 👇 1. Import your auth hook (adjust the path if necessary)
 import { useAuth } from '../../../context/AuthContext';
+
+const SendMailModal = lazy(() => import('./SendMailModal'));
+const CustomerCampaignModal = lazy(() => import('./CustomerCampaignModal'));
 
 const CustomerList = () => {
     // 👇 2. Extract the current user from context
@@ -21,6 +25,9 @@ const CustomerList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1, pages: 1, total: 0, limit: 25 });
+    const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+    const runAbortable = useAbortableRequest();
+    const fetchIdRef = useRef(0);
 
     // Modal State
     const [isMailModalOpen, setIsMailModalOpen] = useState(false);
@@ -29,25 +36,32 @@ const CustomerList = () => {
 
     // --- Fetch Data ---
     const fetchCustomers = useCallback(async (page = 1) => {
+        const fetchId = fetchIdRef.current + 1;
+        fetchIdRef.current = fetchId;
         setLoading(true);
         try {
+            await runAbortable(async ({ signal, isLatest }) => {
             const { data } = await API.get('/admin/customers', {
                 params: {
                     page,
                     limit: 25,
-                    search: searchQuery || undefined,
+                    search: debouncedSearchQuery || undefined,
                     status: statusFilter || undefined
-                }
+                },
+                signal
             });
+            if (!isLatest() || fetchId !== fetchIdRef.current) return;
             setCustomers(data.data || []);
             setPagination(data.pagination || { page, totalPages: 1, pages: 1, total: data.data?.length || 0, limit: 25 });
-        } catch {
+            });
+        } catch (error) {
+            if (isAbortError(error)) return;
             toast.error("Failed to load customers");
             setCustomers([]);
         } finally {
-            setLoading(false);
+            if (fetchId === fetchIdRef.current) setLoading(false);
         }
-    }, [searchQuery, statusFilter]);
+    }, [debouncedSearchQuery, runAbortable, statusFilter]);
 
     useEffect(() => {
         const timer = setTimeout(() => fetchCustomers(1), 250);
@@ -115,6 +129,7 @@ const CustomerList = () => {
                 onClick={() => openMailModal(row)}
                 className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
                 title="Email this customer about orders, offers, or support"
+                aria-label={`Email ${row.fullName || 'customer'}`}
             >
                 <Mail size={18} />
             </button>
@@ -219,44 +234,39 @@ const CustomerList = () => {
                             ))}
                     </div>
                     {pagination.total > pagination.limit && (
-                        <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 text-sm text-gray-600 sm:flex-row">
-                            <span>Page {pagination.page} of {pagination.totalPages || pagination.pages} / {pagination.total} customers</span>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => fetchCustomers(pagination.page - 1)}
-                                    disabled={!pagination.hasPrevPage && pagination.page <= 1}
-                                    className="rounded-lg border border-gray-200 px-3 py-1.5 font-semibold disabled:opacity-40"
-                                >
-                                    Previous
-                                </button>
-                                <button
-                                    onClick={() => fetchCustomers(pagination.page + 1)}
-                                    disabled={!pagination.hasNextPage && pagination.page >= (pagination.totalPages || pagination.pages)}
-                                    className="rounded-lg border border-gray-200 px-3 py-1.5 font-semibold disabled:opacity-40"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
+                        <PaginationBar
+                            pagination={pagination}
+                            label="customers"
+                            onPrevious={() => fetchCustomers(pagination.page - 1)}
+                            onNext={() => fetchCustomers(pagination.page + 1)}
+                            className="mt-4"
+                        />
                     )}
                 </>
             )}
 
             {/* Email Modal Component */}
-            <SendMailModal
-                isOpen={isMailModalOpen}
-                onClose={() => setIsMailModalOpen(false)}
-                customer={selectedCustomer}
-                // 👇 3. Pass the dynamic shop name straight to the modal!
-                shopName={user?.shopName}
-            />
-            <CustomerCampaignModal
-                isOpen={Boolean(campaignMode)}
-                onClose={() => setCampaignMode(null)}
-                mode={campaignMode || 'plain'}
-                recipientCount={pagination.total}
-                shopName={user?.shopName}
-            />
+            {(isMailModalOpen || campaignMode) && (
+                <Suspense fallback={null}>
+                    {isMailModalOpen && (
+                        <SendMailModal
+                            isOpen={isMailModalOpen}
+                            onClose={() => setIsMailModalOpen(false)}
+                            customer={selectedCustomer}
+                            shopName={user?.shopName}
+                        />
+                    )}
+                    {campaignMode && (
+                        <CustomerCampaignModal
+                            isOpen={Boolean(campaignMode)}
+                            onClose={() => setCampaignMode(null)}
+                            mode={campaignMode || 'plain'}
+                            recipientCount={pagination.total}
+                            shopName={user?.shopName}
+                        />
+                    )}
+                </Suspense>
+            )}
         </div>
     );
 };

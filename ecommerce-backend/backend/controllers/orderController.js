@@ -8,7 +8,7 @@ const Shop = require('../models/Shop'); // Make sure to import your Shop model
 const { logAudit } = require('../services/auditLogService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
 const ConsentLog = require('../models/ConsentLog');
-const { enqueueJob } = require('../services/jobQueueService');
+const { enqueueJob, requeueJobs } = require('../services/jobQueueService');
 const {
     sanitizeOrderForCustomer,
     sanitizeOrdersForCustomer
@@ -44,6 +44,7 @@ const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpS
 exports.syncOrderToPathao = async (req, res) => {
     try {
         const { id } = req.params;
+        const wantsRetry = req.body?.retry === true || req.body?.force === true;
 
         // 1. Identify the Vendor Shop
         const shopId = req.tenantId;
@@ -65,12 +66,77 @@ exports.syncOrderToPathao = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Order already has an active courier shipment' });
         }
         if (order.isPathaoSynced) return res.status(400).json({ success: false, error: 'Order already synced to Pathao' });
-        if (['queued', 'syncing'].includes(order.pathaoSyncStatus)) {
+        const existingPathaoStatus = order.pathaoSyncStatus || (
+            order.courierShipment?.provider === 'pathao' ? order.courierShipment?.status : ''
+        );
+
+        const jobPayload = {
+            orderId: order._id,
+            request: {
+                recipient_name: req.body.recipient_name,
+                recipient_phone: req.body.recipient_phone,
+                recipient_address: req.body.recipient_address,
+                item_weight: req.body.item_weight,
+                amount_to_collect: req.body.amount_to_collect,
+                special_instruction: req.body.special_instruction
+            }
+        };
+
+        if (['queued', 'syncing'].includes(existingPathaoStatus)) {
+            if (!wantsRetry) {
+                return res.status(202).json({
+                    success: true,
+                    status: existingPathaoStatus,
+                    data: order,
+                    message: 'Pathao sync is already queued'
+                });
+            }
+
+            if (existingPathaoStatus === 'syncing') {
+                return res.status(409).json({
+                    success: false,
+                    status: 'syncing',
+                    data: order,
+                    error: 'Pathao sync is currently running. Please wait a moment before retrying.'
+                });
+            }
+
+            const requeueResult = await requeueJobs({
+                queue: 'courier',
+                name: 'pathao.sync_order',
+                shop_id: shopId,
+                'payload.orderId': { $in: [order._id, String(order._id)] },
+                status: { $in: ['queued', 'failed', 'dead'] }
+            });
+            const matchedJobs = requeueResult?.matchedCount ?? requeueResult?.n ?? 0;
+            let job = null;
+            if (!matchedJobs) {
+                job = await enqueueJob({
+                    queue: 'courier',
+                    name: 'pathao.sync_order',
+                    shop_id: shopId,
+                    payload: jobPayload
+                });
+            }
+
+            order.pathaoSyncStatus = 'queued';
+            order.pathaoLastError = '';
+            order.shippingProvider = 'pathao';
+            order.courierShipment = {
+                provider: 'pathao',
+                trackingId: order.pathaoConsignmentId || '',
+                status: 'queued',
+                lastError: '',
+                lastSyncedAt: new Date()
+            };
+            await order.save();
+
             return res.status(202).json({
                 success: true,
-                status: order.pathaoSyncStatus,
+                status: 'queued',
+                jobId: job?._id,
                 data: order,
-                message: 'Pathao sync is already queued'
+                message: 'Pathao sync retry queued'
             });
         }
 
@@ -78,17 +144,7 @@ exports.syncOrderToPathao = async (req, res) => {
             queue: 'courier',
             name: 'pathao.sync_order',
             shop_id: shopId,
-            payload: {
-                orderId: order._id,
-                request: {
-                    recipient_name: req.body.recipient_name,
-                    recipient_phone: req.body.recipient_phone,
-                    recipient_address: req.body.recipient_address,
-                    item_weight: req.body.item_weight,
-                    amount_to_collect: req.body.amount_to_collect,
-                    special_instruction: req.body.special_instruction
-                }
-            }
+            payload: jobPayload
         });
 
         order.pathaoSyncStatus = 'queued';
