@@ -11,7 +11,10 @@ const parseProductPayload = (body) => {
         'collections',
         'seo',
         'addAttributeOption',
-        'removeVariants'
+        'removeVariants',
+        'existingImages',
+        'removedImages',
+        'coverImageIndex'
     ];
 
     for (const field of jsonFields) {

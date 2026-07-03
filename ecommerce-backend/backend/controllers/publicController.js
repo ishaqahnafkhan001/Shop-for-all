@@ -286,7 +286,7 @@ exports.createPublicOrder = async (req, res) => {
         // =========================
         // SHOP CHECK
         // =========================
-        const shop = await Shop.findOne({ subdomain }).session(session);
+        const shop = await getPublicShopBySubdomain(subdomain, session);
 
         if (!shop) {
             throw new Error('Shop not found');

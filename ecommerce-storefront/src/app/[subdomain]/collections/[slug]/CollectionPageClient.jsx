@@ -99,7 +99,7 @@ export default function CollectionPageClient({ shop, collection, products = [] }
                         </Link>
                     </div>
                 ) : (
-                    <div className={`grid ${gridClass} ${gridGapClass}`}>
+                    <div className={`grid ${gridClass} ${gridGapClass} ${normalizedProducts.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                         {normalizedProducts.map((product, index) => (
                             <ProductCard
                                 key={product._id}

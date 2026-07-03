@@ -219,17 +219,23 @@ export const getImageAltFromValue = (image) => {
     return cleanTextForMeta(image.alt || image.altText || image.title || "");
 };
 
-export const getProductImageAlt = ({ product = {}, image, shop = {} } = {}) => (
-    getImageAltFromValue(image) ||
-    cleanTextForMeta(product.imageAltText) ||
-    cleanTextForMeta(product.title) ||
-    cleanTextForMeta(shop?.shopName || shop?.name) ||
-    "Product image"
-);
+export const getProductImageAlt = ({ product, image, shop } = {}) => {
+    const safeProduct = product || {};
+    const safeShop = shop || {};
+
+    return (
+        getImageAltFromValue(image) ||
+        cleanTextForMeta(safeProduct.imageAltText) ||
+        cleanTextForMeta(safeProduct.title) ||
+        cleanTextForMeta(safeShop.shopName || safeShop.name) ||
+        "Product image"
+    );
+};
 
 export const getProductImageUrls = (product = {}) => {
-    const images = Array.isArray(product.images) ? product.images.map(getImageUrlFromValue).filter(Boolean) : [];
-    if (product.imageUrl) images.unshift(product.imageUrl);
+    const safeProduct = product || {};
+    const images = Array.isArray(safeProduct.images) ? safeProduct.images.map(getImageUrlFromValue).filter(Boolean) : [];
+    if (safeProduct.imageUrl) images.unshift(safeProduct.imageUrl);
     return [...new Set(images)];
 };
 

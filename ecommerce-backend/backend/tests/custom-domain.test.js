@@ -57,6 +57,7 @@ test('backend custom-domain routing and persistence guards are wired', () => {
     const superAdminRoutes = readBackend('routes/superAdminRoutes.js');
     const auth = readBackend('controllers/authController.js');
     const analytics = readBackend('controllers/analyticsEventController.js');
+    const publicController = readBackend('controllers/publicController.js');
     const shop = readBackend('models/Shop.js');
     const domainUtils = readBackend('utils/domainUtils.js');
     const storefrontServer = readProject('ecommerce-storefront/src/lib/storefrontServer.js');
@@ -97,6 +98,9 @@ test('backend custom-domain routing and persistence guards are wired', () => {
     assert.match(auth, /findShopByTenantIdentifier/);
     assert.match(auth, /buildVerifiedCustomDomainQuery\(cleanIdentifier\)/);
     assert.match(analytics, /buildVerifiedCustomDomainQuery\(subdomain\)/);
+    assert.match(publicController, /const getPublicShopBySubdomain = async/);
+    assert.match(publicController, /buildVerifiedCustomDomainQuery\(identifier\)/);
+    assert.match(publicController, /const shop = await getPublicShopBySubdomain\(subdomain, session\)/);
     assert.match(shop, /shopSchema\.index\(\{ 'customDomain\.domain': 1 \}, \{[\s\S]*unique: true/);
     assert.match(shop, /OwnershipVerified/);
     assert.match(shop, /RoutingPending/);

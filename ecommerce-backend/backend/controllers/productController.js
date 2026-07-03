@@ -10,6 +10,9 @@ const {
     resolveVariantImageReferences
 } = require('../services/products/productMediaService');
 const {
+    generateProductContentSuggestion
+} = require('../services/products/productContentAiService');
+const {
     slugify,
     getUniqueSlug,
     getCachedCategories,
@@ -67,6 +70,74 @@ exports.generateDescription = async (req, res) => {
     } catch (err) {
         console.error("AI Generation Error:", err);
         res.status(500).json({ success: false, error: "Failed to generate description. Please try again." });
+    }
+};
+
+/**
+ * @desc    Generate image-aware product content suggestions via AI
+ * @route   POST /api/admin/products/ai/content-suggest
+ * @access  Private (VendorAdmin/VendorStaff with products permission)
+ */
+exports.generateProductContent = async (req, res) => {
+    try {
+        if (!req.body?.title?.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product title is required before generating AI suggestions.'
+            });
+        }
+
+        const suggestion = await generateProductContentSuggestion({
+            body: req.body,
+            file: req.file || null
+        });
+
+        res.status(200).json({
+            success: true,
+            usedImage: suggestion.usedImage,
+            fallback: Boolean(suggestion.fallback),
+            ...(suggestion.errorCode && { errorCode: suggestion.errorCode }),
+            data: suggestion.data
+        });
+    } catch (err) {
+        if (err?.code === 'AI_NOT_CONFIGURED') {
+            return res.status(503).json({
+                success: false,
+                configured: false,
+                message: 'AI product suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+            });
+        }
+
+        if (err?.code === 'AI_RESPONSE_PARSE_FAILED') {
+            return res.status(200).json({
+                success: false,
+                configured: true,
+                message: 'AI product suggestions could not be generated right now. Please try again.',
+                errorCode: 'AI_RESPONSE_PARSE_FAILED'
+            });
+        }
+
+        if (err?.code === 'AI_PROVIDER_FAILED') {
+            console.warn('Product content AI provider failure:', {
+                requestId: req.id,
+                causeCode: err.causeCode
+            });
+
+            return res.status(200).json({
+                success: false,
+                configured: true,
+                message: 'AI product suggestions could not be generated right now. Please try again later.',
+                errorCode: 'AI_PROVIDER_FAILED'
+            });
+        }
+
+        console.error('Product content AI suggestion error:', err.message);
+        res.status(200).json({
+            success: false,
+            configured: true,
+            message: 'AI product suggestions could not be generated right now. Please try again later.',
+            errorCode: 'AI_PROVIDER_FAILED'
+        });
     }
 };
 
@@ -299,6 +370,8 @@ exports.updateProduct = async (req, res) => {
 
     try {
         const shopId = req.tenantId;
+        const uploadedImageUrls = req.files?.images?.map(f => f.path).filter(Boolean) || [];
+        const uploadedVideoUrls = req.files?.videos?.map(f => f.path).filter(Boolean) || [];
         let parsedBody;
         try {
             parsedBody = parseProductPayload(req.body);
@@ -307,8 +380,15 @@ exports.updateProduct = async (req, res) => {
             return res.status(400).json({ success: false, error: parseError.message });
         }
 
-        if (req.files?.images?.length) parsedBody.images = req.files.images.map(f => f.path);
-        if (req.files?.videos?.length) parsedBody.videos = req.files.videos.map(f => f.path);
+        const existingImagesInput = parsedBody.existingImages;
+        const removedImagesInput = parsedBody.removedImages;
+        const coverImageIndexInput = parsedBody.coverImageIndex;
+        const hasImageUpdateIntent = existingImagesInput !== undefined || removedImagesInput !== undefined || uploadedImageUrls.length > 0;
+        delete parsedBody.existingImages;
+        delete parsedBody.removedImages;
+        delete parsedBody.coverImageIndex;
+
+        if (uploadedVideoUrls.length) parsedBody.videos = uploadedVideoUrls;
 
         // ── 1. Sanitize attributes in incoming flat variants ──────────────────
         if (parsedBody.variants) {
@@ -318,14 +398,7 @@ exports.updateProduct = async (req, res) => {
             }));
         }
 
-        // ── 2. Validate ───────────────────────────────────────────────────────
-        const { error, value } = updateProductSchema.validate(parsedBody, { abortEarly: true });
-        if (error) {
-            await session.abortTransaction();
-            return res.status(400).json({ success: false, error: error.details[0].message });
-        }
-
-        // ── 3. Fetch product ──────────────────────────────────────────────────
+        // ── 2. Fetch product ──────────────────────────────────────────────────
         const product = await Product.findOne({
             _id:       req.params.id,
             shop_id:   shopId,
@@ -333,6 +406,36 @@ exports.updateProduct = async (req, res) => {
         }).session(session);
 
         if (!product) throw new Error('Product not found');
+
+        if (hasImageUpdateIntent) {
+            const currentImages = Array.isArray(product.images) ? product.images.map(String).filter(Boolean) : [];
+            const requestedExistingImages = Array.isArray(existingImagesInput)
+                ? existingImagesInput.map(String).filter(Boolean)
+                : currentImages;
+            const removedImages = new Set(Array.isArray(removedImagesInput) ? removedImagesInput.map(String).filter(Boolean) : []);
+            const keptExistingImages = requestedExistingImages
+                .filter(imageUrl => currentImages.includes(imageUrl))
+                .filter(imageUrl => !removedImages.has(imageUrl));
+            const finalImages = [...new Set([...keptExistingImages, ...uploadedImageUrls])].slice(0, 5);
+            const coverImageIndex = Number(coverImageIndexInput);
+            if (Number.isInteger(coverImageIndex) && coverImageIndex > 0 && coverImageIndex < finalImages.length) {
+                const [coverImage] = finalImages.splice(coverImageIndex, 1);
+                finalImages.unshift(coverImage);
+            }
+
+            parsedBody.images = finalImages;
+            resolveVariantImageReferences(parsedBody, finalImages);
+        } else if (parsedBody.variants) {
+            resolveVariantImageReferences(parsedBody, product.images || []);
+        }
+
+        // ── 3. Validate ───────────────────────────────────────────────────────
+        const { error, value } = updateProductSchema.validate(parsedBody, { abortEarly: true });
+        if (error) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: error.details[0].message });
+        }
+
         const beforeAudit = {
             title: product.title,
             status: product.status,

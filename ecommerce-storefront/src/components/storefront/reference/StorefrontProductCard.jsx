@@ -56,7 +56,7 @@ export const ProductCard = memo(function ProductCard({
         border: productCardColors.border || "var(--sf-product-card-border)",
         title: productCardColors.title || "var(--sf-product-card-title)",
         category: productCardColors.category || "var(--sf-product-card-category)",
-        price: productCardColors.price || productCard?.priceColor || "var(--sf-product-card-price)",
+        price: productCardColors.price || "var(--sf-product-card-price)",
         compareAtPrice: productCardColors.compareAtPrice || "var(--sf-product-card-compare-at-price)",
         saleBadgeBackground: productCardColors.saleBadgeBackground || "var(--sf-product-card-sale-badge-bg)",
         saleBadgeText: productCardColors.saleBadgeText || "var(--sf-product-card-sale-badge-text)",
@@ -64,7 +64,7 @@ export const ProductCard = memo(function ProductCard({
         ratingText: productCardColors.ratingText || "var(--sf-product-card-rating-text)",
         wishlistIcon: productCardColors.wishlistIcon || "var(--sf-product-card-wishlist-icon)",
         wishlistActive: productCardColors.wishlistActive || "var(--sf-product-card-wishlist-active)",
-        addToCartBackground: productCardColors.addToCartBackground || productCard?.buttonColor || "var(--sf-product-card-add-to-cart-bg)",
+        addToCartBackground: productCardColors.addToCartBackground || "var(--sf-product-card-add-to-cart-bg)",
         addToCartText: productCardColors.addToCartText || "var(--sf-product-card-add-to-cart-text)",
         buyNowBackground: productCardColors.buyNowBackground || "var(--sf-product-card-buy-now-bg)",
         buyNowText: productCardColors.buyNowText || "var(--sf-product-card-buy-now-text)",
@@ -81,6 +81,8 @@ export const ProductCard = memo(function ProductCard({
         : { color: cardColors.addToCartBackground, borderColor: buttonStyle === "Ghost" ? "transparent" : cardColors.addToCartBackground, backgroundColor: buttonStyle === "Ghost" ? "transparent" : "#ffffff" };
     const stockText = stock > 0 ? `${stock} in stock` : "Out of stock";
     const sku = product.sku || product.variants?.[0]?.sku || (product._id ? `ID ${String(product._id).slice(-6)}` : "");
+    const isOutOfStock = stock <= 0;
+    const imageFrameSpacing = imageRadiusClass === "rounded-none" ? "" : "m-2.5 mb-0 sm:m-3 sm:mb-0";
 
     useEffect(() => {
         setImageFailed(false);
@@ -106,7 +108,7 @@ export const ProductCard = memo(function ProductCard({
 
     return (
         <article
-            className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border transition duration-300 hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
+            className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border transition duration-300 ease-out hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
             style={{
                 animationDelay: `${(index % 8) * 35}ms`,
                 backgroundColor: cardColors.background,
@@ -114,7 +116,7 @@ export const ProductCard = memo(function ProductCard({
             }}
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product.slug || product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
-            <div className={`relative overflow-hidden bg-slate-100 ${aspectClass} ${imageRadiusClass === "rounded-none" ? "" : "m-1.5 mb-0 sm:m-3 sm:mb-0"} ${imageRadiusClass}`}>
+            <div className={`relative overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 ring-1 ring-slate-900/5 ${aspectClass} ${imageFrameSpacing} ${imageRadiusClass}`}>
                 {imageUrl && !imageFailed ? (
                     <img
                         src={optimizeCloudinaryImage(imageUrl, { width: 560 })}
@@ -137,21 +139,21 @@ export const ProductCard = memo(function ProductCard({
                         onClick={handleWishlist}
                         aria-pressed={wishlisted}
                         aria-label={`${wishlisted ? "Remove" : "Save"} ${product.title} ${wishlisted ? "from" : "to"} wishlist`}
-                        className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm backdrop-blur transition hover:scale-105 sm:right-3 sm:top-3 sm:h-10 sm:w-10"
+                        className="absolute right-2 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5 backdrop-blur transition hover:scale-105 sm:right-3 sm:top-3 sm:h-11 sm:w-11"
                         style={{ color: wishlisted ? cardColors.wishlistActive : cardColors.wishlistIcon }}
                     >
-                        <Heart size={15} fill={wishlisted ? "currentColor" : "none"} className="sm:h-4 sm:w-4" />
+                        <Heart size={16} fill={wishlisted ? "currentColor" : "none"} className="sm:h-[18px] sm:w-[18px]" />
                     </button>
                 )}
                 {hasDiscount && productCard?.showDiscountBadge !== false && (
-                    <span className="absolute left-2 top-2 z-20 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[10px]" style={{ backgroundColor: cardColors.saleBadgeBackground, color: cardColors.saleBadgeText }}>
+                    <span className="absolute left-2 top-2 z-20 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide shadow-sm sm:left-3 sm:top-3 sm:px-2.5 sm:text-[10px]" style={{ backgroundColor: cardColors.saleBadgeBackground, color: cardColors.saleBadgeText }}>
                         {activeDiscount}% off
                     </span>
                 )}
             </div>
-            <div className="flex flex-1 flex-col p-2.5 pt-2 sm:p-4">
+            <div className="flex flex-1 flex-col p-3 pt-2.5 sm:p-4 sm:pt-3">
                 {showRatingRow && (
-                    <div className="mb-1.5 flex min-w-0 items-center justify-between gap-1 text-[10px] font-bold sm:mb-2 sm:text-xs">
+                    <div className="mb-2 flex min-w-0 items-center justify-between gap-1 text-[10px] font-bold leading-none sm:text-xs">
                         {showRating ? (
                             <>
                                 <span className="flex shrink-0 items-center gap-0.5" style={{ color: cardColors.ratingStar }}>
@@ -167,22 +169,22 @@ export const ProductCard = memo(function ProductCard({
                                 <span className="min-w-0 truncate" style={{ color: cardColors.ratingText }}>{rating.toFixed(1)}{showReviews ? ` (${product.numReviews})` : ""}</span>
                             </>
                         ) : (
-                            <span className="inline-flex min-w-0 items-center gap-1" style={{ color: cardColors.ratingText }}>
+                            <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-slate-50 px-1.5 py-1 ring-1 ring-slate-900/5" style={{ color: cardColors.ratingText }}>
                                 <Star size={11} />
                                 <span className="truncate">No reviews yet</span>
                             </span>
                         )}
                     </div>
                 )}
-                <h3 className={`line-clamp-2 leading-snug ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800, color: cardColors.title }}>{product.title}</h3>
+                <h3 className={`line-clamp-2 min-h-[2.25em] leading-snug ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800, color: cardColors.title }}>{product.title}</h3>
                 {productCard?.showCategory !== false && product.category && (
-                    <p className="mt-1 line-clamp-1 text-[11px] font-semibold sm:text-xs" style={{ color: cardColors.category }}>{product.category}</p>
+                    <p className="mt-1 line-clamp-1 text-[11px] font-semibold capitalize sm:text-xs" style={{ color: cardColors.category }}>{product.category}</p>
                 )}
                 {(productCard?.showStock !== false || productCard?.showSku) && (
-                    <div className="mt-2 flex flex-wrap gap-1 text-[10px] font-bold text-slate-500 sm:text-[11px]">
+                    <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-bold text-slate-500 sm:text-[11px]">
                         {productCard?.showStock !== false && (
                             <p
-                                className="max-w-full truncate rounded-full px-2 py-1"
+                                className="max-w-full truncate rounded-full px-2.5 py-1.5 leading-none"
                                 style={{
                                     backgroundColor: stock > 0 ? cardColors.stockBackground : cardColors.outOfStockBackground,
                                     color: stock > 0 ? cardColors.stockText : cardColors.outOfStockText,
@@ -194,7 +196,7 @@ export const ProductCard = memo(function ProductCard({
                         {productCard?.showSku && sku && <p className="hidden max-w-full truncate rounded-full bg-slate-50 px-2 py-1 text-slate-400 sm:block">SKU: {sku}</p>}
                     </div>
                 )}
-                <div className="mt-auto flex flex-col gap-2.5 pt-3 sm:flex-row sm:items-end sm:justify-between sm:gap-3 sm:pt-4">
+                <div className="mt-auto flex flex-col gap-3 pt-4">
                     <div className="min-w-0">
                         <p className={`${priceSizeClass} font-black`} style={{ color: cardColors.price }}>{formatPrice(price)}</p>
                         {hasDiscount && originalPrice > price && (
@@ -202,33 +204,34 @@ export const ProductCard = memo(function ProductCard({
                         )}
                     </div>
                     {productCard?.showQuickBuy !== false && (
-                        <div className="relative z-20 grid w-full grid-cols-2 gap-1.5 sm:flex sm:w-auto sm:flex-col sm:gap-2">
+                        <div className="relative z-20 grid w-full grid-cols-2 gap-2">
                             <button
                                 type="button"
-                                disabled={stock <= 0}
+                                disabled={isOutOfStock}
                                 onClick={handleAdd}
                                 aria-label={`${stock > 0 ? "Add" : "Unavailable"} ${product.title} to cart`}
-                                className={`inline-flex h-10 w-full items-center justify-center whitespace-nowrap border px-2 text-[10px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white sm:h-9 sm:min-w-[102px] sm:px-4 sm:text-xs ${buttonShapeClass}`}
-                                style={stock <= 0
+                                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
+                                style={isOutOfStock
                                     ? { backgroundColor: cardColors.outOfStockBackground, borderColor: cardColors.outOfStockBackground, color: cardColors.outOfStockText }
                                     : buttonInlineStyle}
                             >
-                                <span className="sm:hidden">Add</span>
-                                <span className="hidden sm:inline">Add to Cart</span>
+                                <ShoppingBag size={14} className="hidden shrink-0 sm:block" />
+                                <span className="truncate">{isOutOfStock ? "Unavailable" : "Add"}</span>
                             </button>
                             {onProductBuyNow && (
                                 <button
                                     type="button"
-                                    disabled={stock <= 0}
+                                    disabled={isOutOfStock}
                                     onClick={handleBuyNow}
                                     aria-label={`${stock > 0 ? "Buy" : "Unavailable"} ${product.title} now`}
-                                    className={`inline-flex h-10 w-full items-center justify-center gap-1 whitespace-nowrap border px-2 text-[10px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:border-slate-300 disabled:bg-slate-300 sm:h-9 sm:min-w-[102px] sm:px-4 sm:text-xs ${buttonShapeClass}`}
-                                    style={stock <= 0
+                                    className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:border-slate-300 disabled:bg-slate-300 min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
+                                    style={isOutOfStock
                                         ? { backgroundColor: cardColors.outOfStockBackground, borderColor: cardColors.outOfStockBackground, color: cardColors.outOfStockText }
                                         : { backgroundColor: cardColors.buyNowBackground, borderColor: cardColors.buyNowBackground, color: cardColors.buyNowText }}
                                 >
-                                    <Zap size={12} />
-                                    Buy Now
+                                    <Zap size={14} className="hidden shrink-0 sm:block" />
+                                    <span className="truncate max-[379px]:hidden">Buy Now</span>
+                                    <span className="hidden truncate max-[379px]:inline">Buy</span>
                                 </button>
                             )}
                         </div>

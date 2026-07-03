@@ -74,14 +74,14 @@ export function ReferenceStorefrontHome({
     const forcedMobilePreview = isPreviewMobile(previewDevice);
     const forcedNarrowPreview = isPreviewNarrow(previewDevice);
     const heroHeightClass = hero.height === "Compact"
-        ? "min-h-[350px] sm:min-h-[460px] lg:min-h-[500px]"
+        ? "min-h-[318px] min-[390px]:min-h-[332px] sm:min-h-[460px] lg:min-h-[500px]"
         : hero.height === "Tall"
-            ? "min-h-[430px] sm:min-h-[600px] lg:min-h-[680px]"
-            : "min-h-[390px] sm:min-h-[520px] lg:min-h-[580px]";
+            ? "min-h-[370px] min-[390px]:min-h-[390px] sm:min-h-[600px] lg:min-h-[680px]"
+            : "min-h-[338px] min-[390px]:min-h-[360px] sm:min-h-[520px] lg:min-h-[580px]";
     const heroClass = `relative isolate overflow-hidden rounded-[1.25rem] text-white shadow-xl shadow-slate-300/50 sm:rounded-[2rem] sm:shadow-2xl sm:shadow-slate-300/60 ${heroHeightClass}`;
     const heroTitleClass = previewDevice
-        ? `max-w-4xl font-black leading-[0.95] tracking-tight text-white drop-shadow-sm ${forcedMobilePreview ? "text-[2rem] max-[360px]:text-[1.75rem]" : previewDevice === "tablet" ? "text-5xl" : "text-7xl"}`
-        : "max-w-4xl text-[2rem] font-black leading-[0.95] tracking-tight text-white drop-shadow-sm max-[360px]:text-[1.75rem] sm:text-5xl md:text-6xl lg:text-7xl";
+        ? `max-w-4xl font-black leading-[1.02] tracking-tight text-white drop-shadow-sm ${forcedMobilePreview ? "text-[1.85rem] max-[360px]:text-[1.65rem]" : previewDevice === "tablet" ? "text-5xl" : "text-7xl"}`
+        : "max-w-4xl text-[1.85rem] font-black leading-[1.02] tracking-tight text-white drop-shadow-sm max-[360px]:text-[1.65rem] sm:text-5xl sm:leading-[0.98] md:text-6xl lg:text-7xl";
 
     useEffect(() => {
         if (!hasMultipleHeroSlides || heroPaused) return undefined;
@@ -148,35 +148,35 @@ export function ReferenceStorefrontHome({
                                 </button>
                             </>
                         )}
-                        <div className={`relative z-10 flex ${heroHeightClass} flex-col justify-between p-4 max-[360px]:p-3.5 sm:p-8 lg:p-12`}>
-                            <div className="max-w-4xl sm:pt-4 lg:pt-6">
+                        <div className={`relative z-10 flex ${heroHeightClass} flex-col justify-end p-4 max-[360px]:p-3.5 sm:justify-between sm:p-8 lg:p-12`}>
+                            <div className="max-w-4xl pb-1 sm:pb-0 sm:pt-4 lg:pt-6">
                                 {(activeHeroSlide.badgeText || "Limited time offer") && (
-                                    <p className="inline-flex rounded-full border border-teal-200/25 bg-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-teal-100 shadow-lg shadow-teal-950/20 backdrop-blur sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.22em]">
+                                    <p className="inline-flex max-w-full rounded-full border border-teal-200/25 bg-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-teal-100 shadow-lg shadow-teal-950/20 backdrop-blur sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.22em]">
                                         {activeHeroSlide.badgeText || "Limited time offer"}
                                     </p>
                                 )}
-                                <h1 className={`${heroTitleClass} mt-3.5 sm:mt-5`} style={{ color: "var(--sf-hero-title)" }}>
+                                <h1 className={`${heroTitleClass} mt-3 sm:mt-5`} style={{ color: "var(--sf-hero-title)" }}>
                                     {activeHeroSlide.title || hero.title || "Discover Your Favorite Products"}
                                 </h1>
                                 {heroOfferText && (
-                                    <p className="mt-3 inline-flex w-fit rounded-2xl border border-white/15 bg-slate-950/45 px-3 py-2 text-xs font-black uppercase tracking-wide text-teal-100 shadow-xl backdrop-blur sm:mt-5 sm:px-4 sm:py-3 sm:text-base">
+                                    <p className="mt-2.5 inline-flex w-fit rounded-2xl border border-white/15 bg-slate-950/45 px-3 py-2 text-[11px] font-black uppercase tracking-wide text-teal-100 shadow-xl backdrop-blur sm:mt-5 sm:px-4 sm:py-3 sm:text-base">
                                         {heroOfferText}
                                     </p>
                                 )}
                                 {(activeHeroSlide.subtitle || hero.subtitle) && (
-                                    <p className="mt-3 line-clamp-2 max-w-2xl text-sm font-semibold leading-6 sm:mt-5 sm:line-clamp-none sm:text-base sm:leading-7 md:text-lg" style={{ color: "var(--sf-hero-subtitle)" }}>
+                                    <p className="mt-2.5 line-clamp-2 max-w-2xl text-sm font-semibold leading-5 sm:mt-5 sm:line-clamp-none sm:text-base sm:leading-7 md:text-lg" style={{ color: "var(--sf-hero-subtitle)" }}>
                                         {activeHeroSlide.subtitle || hero.subtitle}
                                     </p>
                                 )}
                             </div>
-                            <div className="mt-6 space-y-4 sm:mt-8">
-                                <div className="flex max-w-3xl flex-col items-stretch gap-2.5 min-[380px]:flex-row min-[380px]:flex-wrap min-[380px]:items-center sm:gap-3">
-                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || "#products"} className="inline-flex min-h-10 items-center justify-center rounded-full px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-primary-button-bg)", color: "var(--sf-hero-primary-button-text)" }}>
+                            <div className="mt-4 space-y-3 sm:mt-8 sm:space-y-4">
+                                <div className="flex max-w-3xl flex-col items-stretch gap-2.5 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center sm:gap-3">
+                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || "#products"} className="inline-flex min-h-11 items-center justify-center rounded-full px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-primary-button-bg)", color: "var(--sf-hero-primary-button-text)" }}>
                                         {activeHeroSlide.primaryCtaText || "Shop Now"}
                                         <ChevronRight size={16} className="ml-1" />
                                     </LinkSlot>
                                     {activeHeroSlide.secondaryCtaText && (
-                                        <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || "#products"} className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/20 px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-secondary-button-bg)", color: "var(--sf-hero-secondary-button-text)" }}>
+                                        <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || "#products"} className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-secondary-button-bg)", color: "var(--sf-hero-secondary-button-text)" }}>
                                             {activeHeroSlide.secondaryCtaText}
                                             <ChevronRight size={16} className="ml-1" />
                                         </LinkSlot>

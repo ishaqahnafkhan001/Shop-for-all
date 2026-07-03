@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 
 // =========================
 // Middlewares
@@ -28,6 +30,7 @@ const {
     deleteProduct,
     getSingleProduct,
     generateDescription,
+    generateProductContent,
     exportProductsCsv,
     bulkUpdateProducts,
     bulkImportProducts
@@ -127,6 +130,44 @@ const productMediaUpload = upload.fields([
     { name: 'images', maxCount: 5 },
     { name: 'videos', maxCount: 2 }
 ]);
+const productAiImageUploadMiddleware = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+            return cb(new Error('Unsupported image type'));
+        }
+
+        cb(null, true);
+    }
+}).single('image');
+const productAiImageUpload = (req, res, next) => {
+    productAiImageUploadMiddleware(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({
+                success: false,
+                configured: true,
+                errorCode: err.code === 'LIMIT_FILE_SIZE' ? 'IMAGE_TOO_LARGE' : 'INVALID_IMAGE_TYPE',
+                message: err.message || 'Invalid product image.'
+            });
+        }
+
+        next();
+    });
+};
+const productAiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: process.env.NODE_ENV === 'production' ? 30 : 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many AI suggestion requests. Please try again later.'
+    }
+});
 const returnProofUpload = upload.fields([
     { name: 'proofImages', maxCount: 3 },
     { name: 'proofVideo', maxCount: 1 }
@@ -499,6 +540,18 @@ router.post(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
     generateDescription
+);
+
+router.post(
+    '/products/ai/content-suggest',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('products'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    productAiLimiter,
+    productAiImageUpload,
+    generateProductContent
 );
 
 // ======================================================

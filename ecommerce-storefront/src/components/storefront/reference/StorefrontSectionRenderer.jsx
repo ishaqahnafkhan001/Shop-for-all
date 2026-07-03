@@ -63,7 +63,7 @@ export const HomepageSection = memo(function HomepageSection({
                             View all
                         </LinkSlot>
                     </div>
-                    <div className={`grid ${featuredGridClass} ${productGridGapClasses[layout?.productGap || "Comfortable"]}`}>
+                    <div className={`grid ${featuredGridClass} ${productGridGapClasses[layout?.productGap || "Comfortable"]} ${products.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                         {products.slice(0, 4).map((product, index) => (
                             <ProductCard
                                 key={product._id}

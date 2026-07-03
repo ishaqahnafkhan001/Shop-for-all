@@ -343,7 +343,7 @@ export default function CartPage() {
             </div>
 
             {(recommendationsLoading || recommendations.length > 0) && (
-                <section className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                <section className="mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:mt-10 sm:rounded-[2rem] sm:p-7">
                     <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <p className="sf-kicker">Recommended</p>
@@ -364,7 +364,7 @@ export default function CartPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                        <div className={`grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 ${recommendations.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                             {recommendations.map((product, index) => (
                                 <ProductCard
                                     key={product._id}

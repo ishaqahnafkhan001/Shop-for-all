@@ -26,9 +26,12 @@ test('admin product edit normalizes variants, SEO, and product detail arrays for
     assert.match(editProduct, /specifications:\s*normalizeKeyValueItems\(product\.specifications\)/);
     assert.match(editProduct, /comments:\s*normalizeKeyValueItems\(product\.comments\)/);
     assert.match(editProduct, /seo:\s*\{[\s\S]*title:\s*product\.seo\?\.title[\s\S]*description:\s*product\.seo\?\.description/);
-    assert.match(editProduct, /features:\s*formData\.features/);
-    assert.match(editProduct, /specifications:\s*formData\.specifications/);
-    assert.match(editProduct, /comments:\s*formData\.comments/);
+    assert.match(editProduct, /const body = new FormData\(\)/);
+    assert.match(editProduct, /body\.append\('features', JSON\.stringify\(formData\.features\)\)/);
+    assert.match(editProduct, /body\.append\('specifications', JSON\.stringify\(formData\.specifications\)\)/);
+    assert.match(editProduct, /body\.append\('comments', JSON\.stringify\(formData\.comments\)\)/);
+    assert.match(editProduct, /body\.append\('seo', JSON\.stringify\(formData\.seo\)\)/);
+    assert.match(editProduct, /body\.append\('existingImages', JSON\.stringify\(formData\.images \|\| \[\]\)\)/);
 });
 
 test('admin product detail endpoint remains full product response for edit hydration', () => {

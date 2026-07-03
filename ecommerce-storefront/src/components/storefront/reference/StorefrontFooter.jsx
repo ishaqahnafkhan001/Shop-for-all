@@ -54,12 +54,12 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
 );
 
 const FooterAccordion = ({ title, links, LinkComponent }) => (
-    <details className="group border-b border-slate-200 py-4">
+    <details className="group border-b border-slate-200 py-3.5">
         <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-[var(--sf-footer-heading)]">
             {title}
             <ChevronDown size={17} className="transition group-open:rotate-180" />
         </summary>
-        <div className="mt-3 grid gap-3 pb-2 text-sm font-semibold text-[var(--sf-footer-text)]">
+        <div className="mt-3 grid gap-2.5 pb-1 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
                 <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
@@ -114,7 +114,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
         .map((item) => ({ ...item, href: theme.footer?.[item.key] || "" }))
         .filter((item) => item.href);
     const forceNarrowFooter = isPreviewNarrow(previewDevice);
-    const footerGridClass = `grid min-w-0 gap-9 ${forceNarrowFooter ? "" : "lg:grid-cols-[1.25fr_0.7fr_1fr] xl:gap-20"}`;
+    const footerGridClass = `grid min-w-0 gap-6 sm:gap-9 ${forceNarrowFooter ? "" : "lg:grid-cols-[1.25fr_0.7fr_1fr] xl:gap-20"}`;
     const desktopColumnsClass = forceNarrowFooter ? "hidden" : "hidden lg:contents";
     const mobileColumnsClass = forceNarrowFooter ? "block" : "lg:hidden";
     const bottomNavClass = `${preview ? "sticky bottom-0" : "fixed inset-x-0 bottom-0"} z-50 ${previewDevice ? (previewDevice === "desktop" ? "hidden" : "grid") : "grid md:hidden"} grid-cols-5 border-t border-slate-200 bg-white/95 px-1 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur`;
@@ -130,26 +130,26 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
     return (
         <>
             <EditorSelectionFrame editor={editor} id="footer" label="Footer" locked>
-                <footer className="min-w-0 overflow-x-hidden border-t pb-20 pt-10 text-[var(--sf-footer-text)] md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
+                <footer className="min-w-0 overflow-x-hidden border-t pb-20 pt-7 text-[var(--sf-footer-text)] sm:pt-10 md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
                     <div className={containerClass}>
                         <div className={footerGridClass}>
                             <div className="min-w-0">
                                 <div className="flex min-w-0 items-center gap-3">
-                                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--sf-accent)] text-base font-black text-white">
+                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--sf-accent)] text-base font-black text-white sm:h-12 sm:w-12">
                                         {getInitials(brandName)}
                                     </span>
                                     <div className="min-w-0">
-                                        <h2 className="truncate text-xl font-black text-[var(--sf-footer-heading)]">{brandName}</h2>
-                                        <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--sf-footer-text)]">Storefront</p>
+                                        <h2 className="truncate text-lg font-black text-[var(--sf-footer-heading)] sm:text-xl">{brandName}</h2>
+                                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--sf-footer-text)] sm:text-sm">Storefront</p>
                                     </div>
                                 </div>
                                 {theme.footer?.text && (
-                                    <p className="mt-6 max-w-sm text-base leading-8 text-[var(--sf-footer-text)]">
+                                    <p className="mt-4 max-w-sm text-sm leading-7 text-[var(--sf-footer-text)] sm:mt-6 sm:text-base sm:leading-8">
                                         {theme.footer.text}
                                     </p>
                                 )}
                                 {isVerifiedSeller && (
-                                    <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">
+                                    <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-black text-emerald-700 sm:mt-6 sm:px-4">
                                         <CircleCheck size={17} />
                                         {shopVerification?.label || "Verified seller"}
                                     </span>
@@ -170,13 +170,13 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                 <FooterAccordion title="Store" links={storeLinks} LinkComponent={LinkComponent} />
                                 <FooterAccordion title="Support" links={supportLinks} LinkComponent={LinkComponent} />
                                 {contactHref && (
-                                    <LinkSlot LinkComponent={LinkComponent} href={contactHref} className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[var(--sf-footer-link)]">
+                                    <LinkSlot LinkComponent={LinkComponent} href={contactHref} className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-black text-[var(--sf-footer-link)]">
                                         <Mail size={17} />
                                         {theme.footer?.contactLabel || "Contact store"}
                                     </LinkSlot>
                                 )}
                                 {socialLinks.length > 0 && (
-                                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                                    <div className="mt-4 flex flex-wrap items-center gap-2.5 sm:gap-3">
                                         {socialLinks.map((item) => (
                                             <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-accent)] hover:text-white">
                                                 {item.short}
@@ -186,9 +186,9 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                 )}
                             </div>
                         </div>
-                        <div className="mt-10 flex min-w-0 flex-col gap-4 border-t pt-5 text-sm font-semibold text-[var(--sf-footer-text)] sm:flex-row sm:items-center sm:justify-between sm:gap-5" style={{ borderColor: "var(--sf-footer-border)" }}>
+                        <div className="mt-7 flex min-w-0 flex-col gap-3 border-t pt-4 text-xs font-semibold text-[var(--sf-footer-text)] sm:mt-10 sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:text-sm" style={{ borderColor: "var(--sf-footer-border)" }}>
                             <p className="min-w-0 break-words" style={{ color: "var(--sf-footer-powered-by)" }}>© {new Date().getFullYear()} {brandName}. Powered by Scaleup.</p>
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                                 <span className="inline-flex items-center gap-2">
                                     <Lock size={16} className="text-[var(--sf-footer-link)]" />
                                     Secure checkout

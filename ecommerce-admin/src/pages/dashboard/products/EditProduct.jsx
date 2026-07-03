@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Boxes, DollarSign, FileText, ListChecks, PackagePlus, Plus, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Boxes, DollarSign, FileText, Image as ImageIcon, ListChecks, PackagePlus, Plus, Search, Trash2, ChevronDown, ChevronUp, X } from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 import {
+    ImageEmptyState,
     ProductFormSection,
     ReadinessChecklist,
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
+import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
 
@@ -114,6 +116,10 @@ const EditProduct = () => {
         specifications: [],
         comments:       []
     });
+    const [newImageFiles, setNewImageFiles] = useState([]);
+    const [newImagePreviews, setNewImagePreviews] = useState([]);
+    const [removedImages, setRemovedImages] = useState([]);
+    const [coverImageIndex, setCoverImageIndex] = useState(0);
 
     // Track which variant stocks were changed (or newly added) by the user
     // variantId (or _tempId) → new stock value
@@ -147,6 +153,9 @@ const EditProduct = () => {
                 const res = await API.get(`/admin/products/${id}`);
                 const product = res.data.data || res.data;
                 setFormData(buildProductFormState(product));
+                setNewImageFiles([]);
+                setRemovedImages([]);
+                setCoverImageIndex(0);
             } catch {
                 toast.error('Failed to load product');
                 navigate('/dashboard/products');
@@ -157,12 +166,52 @@ const EditProduct = () => {
         load();
     }, [id, navigate]);
 
+    useEffect(() => {
+        const previews = newImageFiles.map(file => ({
+            file,
+            url: URL.createObjectURL(file)
+        }));
+        queueMicrotask(() => setNewImagePreviews(previews));
+
+        return () => {
+            previews.forEach(preview => URL.revokeObjectURL(preview.url));
+        };
+    }, [newImageFiles]);
+
     // ── Scalar handlers ───────────────────────────────────────────────────────
     const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
     const handlePricing = (e) => setFormData({
         ...formData,
         pricing: { ...formData.pricing, [e.target.id]: Number(e.target.value) }
     });
+
+    const handleImageFiles = (files) => {
+        const selected = Array.from(files || []).filter(file => file.type?.startsWith('image/'));
+        if (selected.length === 0) return;
+
+        setNewImageFiles(prev => {
+            const total = formData.images.length + prev.length + selected.length;
+            if (total > 5) {
+                toast.error('You can keep up to 5 product images.');
+                return prev;
+            }
+            return [...prev, ...selected];
+        });
+    };
+
+    const removeExistingImage = (imageUrl) => {
+        setFormData(prev => ({
+            ...prev,
+            images: prev.images.filter(image => image !== imageUrl)
+        }));
+        setRemovedImages(prev => [...new Set([...prev, imageUrl])]);
+        setCoverImageIndex(0);
+    };
+
+    const removeNewImage = (index) => {
+        setNewImageFiles(prev => prev.filter((_, fileIndex) => fileIndex !== index));
+        setCoverImageIndex(0);
+    };
 
     // ── Stock handler ─────────────────────────────────────────────────────────
     const handleStockChange = (variantId, value) => {
@@ -382,17 +431,31 @@ const EditProduct = () => {
     const productSeoPreview = buildProductSeoPreview({ product: formData, shopName: 'Your Store' });
     const productSeoHealth = scoreProductSeo({
         product: { ...formData, stock: totalStock },
-        hasImage: Boolean(formData.images?.length || formData.variants.some(variant => variant.image))
+        hasImage: Boolean(formData.images?.length || newImageFiles.length || formData.variants.some(variant => variant.image))
     });
     const readinessItems = [
         { label: 'Product title is clear', done: Boolean(formData.title.trim()), helper: 'Use the name customers search for.' },
         { label: 'Category is selected', done: Boolean(formData.category.trim()), helper: 'Categories help filters and sections work correctly.' },
         { label: 'Selling price is set', done: selling > 0, helper: 'A product needs a customer-facing price.' },
+        { label: 'Product image is set', done: Boolean(formData.images?.length || newImageFiles.length), helper: 'The first image becomes the product card cover.' },
         { label: 'Image alt text added', done: Boolean(formData.imageAltText.trim()), helper: 'Describe the main product image for search and accessibility.' },
         { label: 'Stock is available', done: totalStock > 0, helper: 'Keep stock updated to avoid cancelled orders.' },
         { label: 'Description helps shoppers', done: formData.description.trim().length >= 20, helper: 'Explain material, use case, or key benefit.' },
         { label: 'Product is published', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
     ];
+
+    const getAiVariants = () => formData.variants.map(variant => ({
+        attributes: variant.attributes || [],
+        stock: Number(getDisplayStock(variant) || 0),
+        priceOverride: Number(variant.pricing?.price || variant.priceOverride || formData.pricing.sellingPrice || 0)
+    }));
+
+    const getFirstAiImage = () => (
+        newImageFiles[0]
+        || formData.images?.find(Boolean)
+        || formData.variants?.find(variant => variant.image)?.image
+        || null
+    );
 
     const handleGenerateSeo = () => {
         if (!formData.title.trim()) {
@@ -416,25 +479,28 @@ const EditProduct = () => {
         setIsSubmitting(true);
 
         try {
-            const body = {
-                title:          formData.title,
-                ...(formData.slug && { slug: formData.slug }),
-                description:    formData.description,
-                category:       formData.category,
-                tags:           formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-                status:         formData.status,
-                lowStockThreshold: Number(formData.lowStockThreshold || 5),
-                imageAltText:   formData.imageAltText,
-                seo:            formData.seo,
-                pricing:        formData.pricing,
-                features:       formData.features,
-                specifications: formData.specifications,
-                comments:       formData.comments
-            };
+            const body = new FormData();
+            body.append('title', formData.title);
+            if (formData.slug) body.append('slug', formData.slug);
+            body.append('description', formData.description);
+            body.append('category', formData.category);
+            body.append('tags', JSON.stringify(formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)));
+            body.append('status', formData.status);
+            body.append('lowStockThreshold', String(formData.lowStockThreshold || 5));
+            body.append('imageAltText', formData.imageAltText);
+            body.append('seo', JSON.stringify(formData.seo));
+            body.append('pricing', JSON.stringify(formData.pricing));
+            body.append('features', JSON.stringify(formData.features));
+            body.append('specifications', JSON.stringify(formData.specifications));
+            body.append('comments', JSON.stringify(formData.comments));
+            body.append('existingImages', JSON.stringify(formData.images || []));
+            body.append('removedImages', JSON.stringify(removedImages));
+            body.append('coverImageIndex', JSON.stringify(coverImageIndex));
+            newImageFiles.forEach(file => body.append('images', file));
 
             // Process modified stocks AND newly created local variants
             if (Object.keys(changedStocks).length > 0) {
-                body.variants = formData.variants
+                const variantsPayload = formData.variants
                     .filter(v => {
                         const vid = v._id?.toString() || v._tempId;
                         return changedStocks[vid] !== undefined;
@@ -463,6 +529,7 @@ const EditProduct = () => {
                         }
                         return payload;
                     });
+                body.append('variants', JSON.stringify(variantsPayload));
             }
 
             await API.patch(`/admin/products/${id}`, body);
@@ -533,6 +600,12 @@ const EditProduct = () => {
                     icon={PackagePlus}
                 >
                     <SellerHint>Published products are visible to shoppers. Draft products stay hidden until you are ready.</SellerHint>
+                    <ProductAiAssistant
+                        formData={formData}
+                        setFormData={setFormData}
+                        getFirstImage={getFirstAiImage}
+                        getVariants={getAiVariants}
+                    />
                     <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Input id="slug" label="Product URL slug" value={formData.slug} onChange={handleChange} helperText="Changing the product URL may affect shared links. Old ID links redirect when supported." />
@@ -609,9 +682,82 @@ const EditProduct = () => {
                     />
                 </ProductFormSection>
 
+                <ProductFormSection
+                    title="3. Product images"
+                    description="Add, remove, or choose the cover image shown on product cards."
+                    icon={ImageIcon}
+                >
+                    <ImageEmptyState selectedCount={(formData.images?.length || 0) + newImageFiles.length} max={5} />
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-600">Add images</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(event) => handleImageFiles(event.target.files)}
+                            className="w-full rounded-lg border bg-gray-50 p-2 text-sm"
+                        />
+                        <p className="text-xs text-gray-500">
+                            Existing images stay unless you remove them. You can keep up to 5 images total.
+                        </p>
+                    </div>
+
+                    {(formData.images?.length > 0 || newImagePreviews.length > 0) && (
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                            {formData.images.map((imageUrl, index) => (
+                                <div key={`${imageUrl}-${index}`} className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
+                                    <img src={imageUrl} alt={formData.imageAltText || formData.title || `Product image ${index + 1}`} className="aspect-square w-full rounded-lg object-cover" />
+                                    <div className="mt-2 flex items-center justify-between gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCoverImageIndex(index)}
+                                            className={`rounded-full px-2 py-1 text-[11px] font-bold ${coverImageIndex === index ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                                        >
+                                            {coverImageIndex === index ? 'Cover' : 'Make cover'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeExistingImage(imageUrl)}
+                                            className="rounded-full bg-red-50 p-1.5 text-red-500 hover:bg-red-100"
+                                            aria-label={`Remove product image ${index + 1}`}
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {newImagePreviews.map((preview, index) => {
+                                const absoluteIndex = formData.images.length + index;
+                                return (
+                                    <div key={`${preview.file.name}-${index}`} className="relative overflow-hidden rounded-xl border border-indigo-200 bg-indigo-50 p-2">
+                                        <img src={preview.url} alt={`New product image ${index + 1}`} className="aspect-square w-full rounded-lg object-cover" />
+                                        <div className="mt-2 flex items-center justify-between gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCoverImageIndex(absoluteIndex)}
+                                                className={`rounded-full px-2 py-1 text-[11px] font-bold ${coverImageIndex === absoluteIndex ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-700'}`}
+                                            >
+                                                {coverImageIndex === absoluteIndex ? 'Cover' : 'Make cover'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeNewImage(index)}
+                                                className="rounded-full bg-white p-1.5 text-red-500 hover:bg-red-50"
+                                                aria-label={`Remove new product image ${index + 1}`}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </ProductFormSection>
+
                 {/* ── PRICING ───────────────────────────────────────────── */}
                 <ProductFormSection
-                    title="3. Pricing"
+                    title="4. Pricing"
                     description="Selling price and discount update the live storefront after saving."
                     icon={DollarSign}
                 >
@@ -636,7 +782,7 @@ const EditProduct = () => {
 
                 {/* ── VARIANTS ──────────────────────────────────────────── */}
                 <ProductFormSection
-                    title="4. Stock and product variants"
+                    title="5. Stock and product variants"
                     description="Variants are sellable options like size, color, storage, or style."
                     icon={Boxes}
                 >
@@ -970,7 +1116,7 @@ const EditProduct = () => {
                 {['features', 'specifications', 'comments'].map((type, index) => (
                     <ProductFormSection
                         key={type}
-                        title={`${5 + index}. ${type === 'features' ? 'Selling points' : type === 'specifications' ? 'Specifications' : 'Extra notes'}`}
+                        title={`${6 + index}. ${type === 'features' ? 'Selling points' : type === 'specifications' ? 'Specifications' : 'Extra notes'}`}
                         description={type === 'features' ? 'Short benefits shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Customer-facing care, storage, sizing, or styling notes shown on the product page.'}
                         icon={type === 'features' ? ListChecks : type === 'specifications' ? FileText : Search}
                         actions={(

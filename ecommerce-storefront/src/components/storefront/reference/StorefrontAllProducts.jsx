@@ -102,7 +102,8 @@ export function StorefrontAllProducts({
     const desktopColumns = Math.min(Math.max(allProducts.desktopColumns || layout.productColumnsDesktop || 3, 2), 5);
     const tabletColumns = Math.min(Math.max(allProducts.tabletColumns || 2, 1), 4);
     const mobileColumns = Math.min(Math.max(allProducts.mobileColumns || layout.productColumnsMobile || 2, 1), 2);
-    const liveGridClass = `${mobileColumns === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2"} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
+    const mobileGridClass = mobileColumns === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2";
+    const liveGridClass = `${mobileGridClass} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
     const gridClass = previewDevice
         ? (isPreviewMobile(previewDevice)
             ? plainGridClasses[mobileColumns]
@@ -115,21 +116,21 @@ export function StorefrontAllProducts({
         ? "mb-4 flex flex-col gap-3"
         : "mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-4 lg:flex-row lg:items-end lg:justify-between";
     const catalogControlsClass = forcedMobilePreview
-        ? "grid w-full grid-cols-2 gap-2"
-        : "grid w-full grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3 lg:w-auto";
+        ? "grid w-full grid-cols-2 gap-2.5"
+        : "grid w-full grid-cols-2 gap-2.5 sm:flex sm:flex-row sm:gap-3 lg:w-auto";
     const catalogSearchClass = forcedMobilePreview
         ? "relative col-span-2 w-full min-w-0"
         : "relative col-span-2 w-full min-w-0 sm:col-auto sm:flex-1 lg:w-[min(36vw,420px)] lg:flex-none";
     const catalogSelectClass = forcedMobilePreview
-        ? "min-h-11 w-full rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100"
-        : "min-h-11 w-full rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36 sm:px-4";
+        ? "min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100"
+        : "min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36 sm:rounded-full sm:px-4";
     const productLayoutClass = forcedNarrowPreview
-        ? "grid gap-6"
-        : "grid min-w-0 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]";
+        ? "grid gap-5"
+        : "grid min-w-0 gap-5 sm:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]";
     const filterAsideClass = forcedNarrowPreview ? "hidden" : "hidden lg:block";
     const filterButtonClass = forcedNarrowPreview
-        ? "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-        : "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 lg:hidden";
+        ? "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
+        : "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 sm:rounded-full lg:hidden";
     const mobileFilterOverlayClass = forcedNarrowPreview
         ? "fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm"
         : "fixed inset-0 z-[80] flex items-end bg-slate-950/50 backdrop-blur-sm lg:hidden";
@@ -146,7 +147,7 @@ export function StorefrontAllProducts({
     return (
         <>
             <EditorSelectionFrame editor={editor} id="allProducts" label="All Products" locked>
-                <section id="products" className="py-7 sm:py-12" style={{ backgroundColor: "var(--sf-all-products-background)" }}>
+                <section id="products" className="py-6 sm:py-12" style={{ backgroundColor: "var(--sf-all-products-background)" }}>
                     <div className={containerClass}>
                         <div className={allProductsHeaderClass}>
                             <div>
@@ -156,7 +157,7 @@ export function StorefrontAllProducts({
                             <div className={catalogControlsClass}>
                                 <label className={catalogSearchClass}>
                                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="min-h-11 w-full rounded-full border border-slate-200 py-2.5 pl-11 pr-4 text-sm font-semibold outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }} />
+                                    <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="min-h-12 w-full rounded-2xl border border-slate-200 py-2.5 pl-11 pr-4 text-sm font-semibold outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:rounded-full" style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }} />
                                 </label>
                                 <select value={filters.sort} onChange={onSortChange} aria-label="Sort products" className={catalogSelectClass}>
                                     <option value="newest">Newest</option>
@@ -219,7 +220,7 @@ export function StorefrontAllProducts({
                             </aside>
                             <main className="min-w-0">
                                 {loading ? (
-                                    <div className={`grid ${gridClass} ${gridGapClass}`}>
+                                    <div className={`grid ${gridClass} ${gridGapClass} ${filteredProducts.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                                         {Array.from({ length: 6 }, (_, index) => <div key={index} className="h-72 animate-pulse rounded-[1.35rem] bg-white" />)}
                                     </div>
                                 ) : filteredProducts.length === 0 ? (
@@ -230,7 +231,7 @@ export function StorefrontAllProducts({
                                         <button type="button" onClick={onClearFilters} className="mt-6 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700">Clear filters</button>
                                     </div>
                                 ) : (
-                                    <div className={`grid ${gridClass} ${gridGapClass}`}>
+                                    <div className={`grid ${gridClass} ${gridGapClass} ${filteredProducts.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                                         {filteredProducts.map((product, index) => (
                                             <ProductCard
                                                 key={product._id}
@@ -280,7 +281,7 @@ export function StorefrontAllProducts({
 
             {mobileFiltersOpen && (
                 <div className={mobileFilterOverlayClass} onClick={onFilterClose}>
-                    <div className="max-h-[86vh] w-full overflow-y-auto rounded-t-[2rem] bg-white p-5" onClick={(event) => event.stopPropagation()}>
+                    <div className="max-h-[86vh] w-full overflow-y-auto rounded-t-[1.5rem] bg-white p-4 sm:rounded-t-[2rem] sm:p-5" onClick={(event) => event.stopPropagation()}>
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-black text-slate-950">Filter products</h2>
                             <button type="button" onClick={onFilterClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100" aria-label="Close filters">

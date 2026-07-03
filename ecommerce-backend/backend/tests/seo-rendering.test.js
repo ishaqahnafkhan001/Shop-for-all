@@ -68,6 +68,14 @@ test('storefront SEO helpers build canonical metadata and safe product JSON-LD',
     assert.match(seo, /imageAltText/);
 });
 
+test('storefront product image SEO helpers tolerate null product values', async () => {
+    const { getProductImageAlt, getProductImageUrls } = await importStorefrontSeo();
+
+    assert.equal(getProductImageAlt({ product: null, image: null, shop: { shopName: 'ADI' } }), 'ADI');
+    assert.equal(getProductImageAlt({ product: null, image: null, shop: null }), 'Product image');
+    assert.deepEqual(getProductImageUrls(null), []);
+});
+
 test('storefront canonical helpers preserve verified custom-domain host exactly', async () => {
     const {
         buildHomepageJsonLd,

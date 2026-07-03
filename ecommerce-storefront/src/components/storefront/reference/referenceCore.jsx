@@ -9,8 +9,8 @@ export const REFERENCE_SAMPLE_PRODUCTS = [];
 export const REFERENCE_SAMPLE_CATEGORIES = [];
 
 export const productGridGapClasses = {
-    Compact: "gap-3 sm:gap-4",
-    Comfortable: "gap-3 sm:gap-4 lg:gap-5",
+    Compact: "gap-2.5 min-[430px]:gap-3.5 sm:gap-4",
+    Comfortable: "gap-3 min-[430px]:gap-4 lg:gap-5",
     Spacious: "gap-4 sm:gap-5 lg:gap-6",
     Editorial: "gap-4 sm:gap-5 lg:gap-6",
 };

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Boxes, DollarSign, FileText, ListChecks, PackagePlus, Plus, Search, Trash2, X, Image as ImageIcon, Video, Sparkles, Loader2, Eye } from 'lucide-react';
+import { Boxes, DollarSign, FileText, ListChecks, PackagePlus, Plus, Search, Trash2, X, Image as ImageIcon, Video, Sparkles, Eye } from 'lucide-react';
 import API from '../../../api/api';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
@@ -11,6 +11,7 @@ import {
     ReadinessChecklist,
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
+import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
 
@@ -34,9 +35,6 @@ function makePipeKey(combo) {
 const AddProduct = () => {
     const navigate   = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-
-    // ✨ AI Generation Loading State
-    const [isGenerating, setIsGenerating] = useState(false);
 
     // Multi-media states
     const [imageFiles, setImageFiles] = useState([]);
@@ -142,32 +140,6 @@ const AddProduct = () => {
             queueMicrotask(() => setPreviewImageUrl(null));
         }
     }, [imageFiles]);
-
-    // ── AI Generator Handler ──────────────────────────────────────────────────
-    const handleGenerateDescription = async () => {
-        if (!formData.title) {
-            toast.error("Please enter a product title first!");
-            return;
-        }
-
-        setIsGenerating(true);
-        try {
-            const response = await API.post('/admin/generate-description', {
-                title: formData.title,
-                category: formData.category
-            });
-
-            if (response.data.success) {
-                setFormData(prev => ({ ...prev, description: response.data.description }));
-                toast.success("Description generated. Review it before publishing.");
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.error || "Failed to generate description.");
-            console.error(error);
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
     // ── Attribute dimension handlers ──────────────────────────────────────────
 
@@ -318,6 +290,26 @@ const AddProduct = () => {
     const addKV    = (type) => setFormData({ ...formData, [type]: [...formData[type], { title: '', value: '' }] });
     const removeKV = (type, index) => setFormData({ ...formData, [type]: formData[type].filter((_, i) => i !== index) });
 
+    const getAiVariants = () => {
+        if (validAttrs.length === 0) {
+            return [{
+                attributes: [{ name: 'default', value: 'default' }],
+                stock: Number(defaultStock || 0),
+                priceOverride: Number(formData.pricing.sellingPrice || 0)
+            }];
+        }
+
+        return combinations.map(combo => {
+            const key = makePipeKey(combo);
+            const details = variantDetails[key] || {};
+            return {
+                attributes: combo,
+                stock: Number(stockOverrides[key] ?? defaultStock ?? 0),
+                priceOverride: Number(details.price || formData.pricing.sellingPrice || 0)
+            };
+        });
+    };
+
     // ── Submit ────────────────────────────────────────────────────────────────
 
     const handleSubmit = async (e) => {
@@ -443,6 +435,13 @@ const AddProduct = () => {
                     >
                         <SellerHint>Keep the title specific. Example: “Premium Cotton Panjabi - White” works better than “New Product”.</SellerHint>
 
+                        <ProductAiAssistant
+                            formData={formData}
+                            setFormData={setFormData}
+                            getFirstImage={() => imageFiles[0] || null}
+                            getVariants={getAiVariants}
+                        />
+
                         <Input id="title" label="Title" value={formData.title} onChange={handleChange} required />
 
                         <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
@@ -532,24 +531,9 @@ const AddProduct = () => {
                             </div>
                         </div>
 
-                        {/* ✨ AI Description Section */}
                         <div className="space-y-1">
                             <div className="flex justify-between items-end mb-1">
                                 <label className="block text-sm font-medium text-gray-700">Description</label>
-
-                                <button
-                                    type="button"
-                                    onClick={handleGenerateDescription}
-                                    disabled={isGenerating || !formData.title}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isGenerating ? (
-                                        <Loader2 size={14} className="animate-spin" />
-                                    ) : (
-                                        <Sparkles size={14} />
-                                    )}
-                                    {isGenerating ? 'Generating...' : 'Auto-Write with AI'}
-                                </button>
                             </div>
                             <textarea
                                 id="description"

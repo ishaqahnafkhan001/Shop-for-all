@@ -356,6 +356,25 @@ const normalizeColors = (incoming = {}) => {
     };
 };
 
+const normalizeThemeColors = (theme = {}) => {
+    const colors = normalizeColors(theme.colors || theme);
+    const productCardColors = { ...(colors.productCard || {}) };
+    const savedProductCardColors = theme.colors?.productCard || {};
+
+    if (!savedProductCardColors.price && isHexColor(theme.productCard?.priceColor)) {
+        productCardColors.price = theme.productCard.priceColor;
+    }
+
+    if (!savedProductCardColors.addToCartBackground && isHexColor(theme.productCard?.buttonColor)) {
+        productCardColors.addToCartBackground = theme.productCard.buttonColor;
+    }
+
+    return {
+        ...colors,
+        productCard: productCardColors
+    };
+};
+
 const mergePolicies = (base = {}, incoming = {}) => Object.keys(base).reduce((acc, key) => {
     const value = incoming?.[key];
     acc[key] = typeof value === 'string' && value.trim() ? value : base[key];
@@ -431,7 +450,7 @@ export const normalizeTheme = (theme = {}) => ({
     ...FALLBACK_THEME,
     ...theme,
     version: Number(theme.version) || THEME_SCHEMA_VERSION,
-    colors: normalizeColors(theme.colors || theme),
+    colors: normalizeThemeColors(theme),
     header: mergeObject(FALLBACK_THEME.header, theme.header),
     typography: mergeObject(FALLBACK_THEME.typography, theme.typography),
     hero: mergeObject(FALLBACK_THEME.hero, theme.hero),

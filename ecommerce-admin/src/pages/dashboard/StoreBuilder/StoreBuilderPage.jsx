@@ -2419,25 +2419,9 @@ const StoreBuilderPage = () => {
                             <BuilderSelect label="Price size" value={theme.productCard?.priceSize || 'Medium'} onChange={e => setThemeGroup('productCard', 'priceSize', e.target.value)}>
                                 <option>Small</option><option>Medium</option><option>Large</option>
                             </BuilderSelect>
-                            <FieldShell
-                                label="Price color"
-                                help="Overrides the global price color for product cards."
-                                error={!isHexColor(theme.productCard?.priceColor || theme.colors?.priceColor) ? 'Enter a valid hex color.' : ''}
-                            >
-                                <div className="flex gap-2">
-                                    <input
-                                        type="color"
-                                        value={isHexColor(theme.productCard?.priceColor || theme.colors?.priceColor) ? (theme.productCard?.priceColor || theme.colors?.priceColor) : '#0f172a'}
-                                        onChange={e => setThemeGroup('productCard', 'priceColor', e.target.value)}
-                                        className="h-10 w-12 rounded-lg border border-slate-200 bg-white"
-                                    />
-                                    <input
-                                        value={theme.productCard?.priceColor || theme.colors?.priceColor || ''}
-                                        onChange={e => setThemeGroup('productCard', 'priceColor', e.target.value)}
-                                        className={inputClass}
-                                    />
-                                </div>
-                            </FieldShell>
+                        </div>
+                        <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
+                            To change product card price, badge, wishlist, stock, or button colors, open Store Layout → Colors → Product Cards.
                         </div>
                         <BuilderToggle label="Show category" help="Shows the product category above the product name." checked={theme.productCard?.showCategory !== false} onChange={() => toggleThemeGroup('productCard', 'showCategory')} />
                         <BuilderToggle label="Show rating" help="Shows star rating when a product has reviews." checked={theme.productCard?.showRating !== false} onChange={() => toggleThemeGroup('productCard', 'showRating')} />
@@ -2455,21 +2439,6 @@ const StoreBuilderPage = () => {
                             <BuilderSelect label="Add-to-cart button shape" value={theme.productCard?.buttonShape || 'Rounded'} onChange={e => setThemeGroup('productCard', 'buttonShape', e.target.value)}>
                                 <option>Soft</option><option>Rounded</option><option>Pill</option><option>Square</option>
                             </BuilderSelect>
-                            <FieldShell label="Button color" help="Used by quick-buy buttons on product cards." error={!isHexColor(theme.productCard?.buttonColor || theme.colors?.primaryButtonBg) ? 'Enter a valid hex color.' : ''}>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="color"
-                                        value={isHexColor(theme.productCard?.buttonColor || theme.colors?.primaryButtonBg) ? (theme.productCard?.buttonColor || theme.colors?.primaryButtonBg) : '#0f766e'}
-                                        onChange={e => setThemeGroup('productCard', 'buttonColor', e.target.value)}
-                                        className="h-10 w-12 rounded-lg border border-slate-200 bg-white"
-                                    />
-                                    <input
-                                        value={theme.productCard?.buttonColor || theme.colors?.primaryButtonBg || ''}
-                                        onChange={e => setThemeGroup('productCard', 'buttonColor', e.target.value)}
-                                        className={inputClass}
-                                    />
-                                </div>
-                            </FieldShell>
                         </div>
                     </BuilderCard>
                     </div>
