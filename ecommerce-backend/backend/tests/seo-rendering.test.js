@@ -9,6 +9,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const readRepo = (file) => fs.readFileSync(path.join(repoRoot, file), 'utf8');
 const importStorefrontSeo = () => import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/seo.js')).href);
+const importStorefrontTheme = () => import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/theme.js')).href);
 
 test('public product detail lookup supports tenant-safe slug and ObjectId fallback', () => {
     const storeController = read('controllers/storeController.js');
@@ -69,8 +70,12 @@ test('storefront SEO helpers build canonical metadata and safe product JSON-LD',
 
 test('storefront canonical helpers preserve verified custom-domain host exactly', async () => {
     const {
+        buildHomepageJsonLd,
+        buildMetadata,
         getCollectionCanonicalUrl,
         getHomepageCanonicalUrl,
+        getHomepageSeoTitle,
+        getPreferredSiteName,
         getProductCanonicalUrl,
         getShopBaseUrl
     } = await importStorefrontSeo();
@@ -87,10 +92,37 @@ test('storefront canonical helpers preserve verified custom-domain host exactly'
     });
 
     const wwwShop = verifiedShop('www.adijewellery.store');
+    wwwShop.theme = {
+        seo: {
+            siteName: 'Adi Jewellery',
+            title: '',
+            description: 'Shop elegant jewellery and accessories from Adi Jewellery.'
+        },
+        logoUrl: 'https://cdn.example.com/logo.png'
+    };
     assert.equal(getShopBaseUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop }), 'https://www.adijewellery.store');
     assert.equal(getHomepageCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop }), 'https://www.adijewellery.store/');
     assert.equal(getProductCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop, product: { slug: 'hand-harness' } }), 'https://www.adijewellery.store/products/hand-harness');
     assert.equal(getCollectionCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop, collection: { slug: 'jewellery' } }), 'https://www.adijewellery.store/collections/jewellery');
+    assert.equal(getPreferredSiteName(wwwShop, { host: 'adijewellery.store', subdomain: 'adi' }), 'Adi Jewellery');
+    assert.equal(getHomepageSeoTitle(wwwShop, { host: 'adijewellery.store', subdomain: 'adi' }), 'Adi Jewellery - Online Store');
+    assert.equal(buildMetadata({
+        title: getHomepageSeoTitle(wwwShop, { host: 'adijewellery.store', subdomain: 'adi' }),
+        description: wwwShop.theme.seo.description,
+        url: getHomepageCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop }),
+        siteName: getPreferredSiteName(wwwShop, { host: 'adijewellery.store', subdomain: 'adi' })
+    }).openGraph.siteName, 'Adi Jewellery');
+    const [websiteJsonLd, onlineStoreJsonLd] = buildHomepageJsonLd({
+        shop: wwwShop,
+        url: getHomepageCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop })
+    });
+    assert.equal(websiteJsonLd['@type'], 'WebSite');
+    assert.equal(websiteJsonLd.name, 'Adi Jewellery');
+    assert.deepEqual(websiteJsonLd.alternateName, ['ADI']);
+    assert.equal(websiteJsonLd.url, 'https://www.adijewellery.store/');
+    assert.equal(onlineStoreJsonLd['@type'], 'OnlineStore');
+    assert.equal(onlineStoreJsonLd.name, 'Adi Jewellery');
+    assert.equal(onlineStoreJsonLd.url, 'https://www.adijewellery.store/');
 
     const apexShop = verifiedShop('adijewellery.store');
     assert.equal(getShopBaseUrl({ host: 'www.adijewellery.store', subdomain: 'adi', shop: apexShop }), 'https://adijewellery.store');
@@ -101,6 +133,15 @@ test('storefront canonical helpers preserve verified custom-domain host exactly'
     assert.equal(getShopBaseUrl({ subdomain: 'phonebd', shop: { subdomain: 'phonebd', customDomain: { status: 'NotConfigured', domain: '' } } }), 'https://phonebd.scaleup.codes');
     assert.equal(getHomepageCanonicalUrl({ subdomain: 'phonebd', shop: { subdomain: 'phonebd' } }), 'https://phonebd.scaleup.codes/');
     assert.equal(getProductCanonicalUrl({ subdomain: 'phonebd', shop: { subdomain: 'phonebd' }, product: { slug: 'case' } }), 'https://phonebd.scaleup.codes/products/case');
+    assert.equal(getPreferredSiteName({ shopName: 'Phone BD' }, { subdomain: 'phonebd' }), 'Phone BD');
+    assert.equal(getPreferredSiteName({}, { host: 'www.adijewellery.store' }), 'www.adijewellery.store');
+});
+
+test('storefront theme keeps Google site name compatible for old and new themes', async () => {
+    const { normalizeTheme } = await importStorefrontTheme();
+
+    assert.equal(normalizeTheme({}).seo.siteName, '');
+    assert.equal(normalizeTheme({ seo: { siteName: 'Adi Jewellery' } }).seo.siteName, 'Adi Jewellery');
 });
 
 test('root Scaleup landing page has production SEO and conversion sections', () => {
@@ -144,8 +185,12 @@ test('homepage, product, and policy routes render server metadata', () => {
     const policyPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/[type]/page.jsx');
 
     assert.match(homepage, /export async function generateMetadata/);
+    assert.match(homepage, /buildHomepageJsonLd/);
     assert.match(homepage, /getHomepageSeoTitle/);
     assert.match(homepage, /getHomepageCanonicalUrl/);
+    assert.match(homepage, /getPreferredSiteName/);
+    assert.match(homepage, /application\/ld\+json/);
+    assert.match(homepage, /dangerouslySetInnerHTML/);
     assert.match(homepage, /isShopSearchVisible\(shop\)/);
     assert.match(homepage, /googleSiteVerification/);
 
@@ -157,6 +202,7 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(productPage, /type:\s*'website'/);
     assert.doesNotMatch(productPage, /type:\s*'product'/);
     assert.match(productPage, /isShopSearchVisible\(shop\)/);
+    assert.match(productPage, /getPreferredSiteName/);
     assert.match(productPage, /googleSiteVerification/);
 
     assert.match(policyIndexPage, /export async function generateMetadata/);
@@ -164,10 +210,12 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(policyIndexPage, /\/policies/);
     assert.match(policyIndexPage, /getPolicyContent/);
     assert.match(policyIndexPage, /isShopSearchVisible\(shop\)/);
+    assert.match(policyIndexPage, /getPreferredSiteName/);
     assert.match(policyIndexPage, /googleSiteVerification/);
 
     assert.match(policyPage, /export async function generateMetadata/);
     assert.match(policyPage, /getPolicyCanonicalUrl/);
+    assert.match(policyPage, /getPreferredSiteName/);
     assert.match(policyPage, /isShopSearchVisible\(shop\)/);
     assert.match(policyPage, /isIndexable:\s*Boolean\(POLICY_LABELS\[type\] && content && isShopSearchVisible\(shop\)\)/);
     assert.match(policyPage, /googleSiteVerification/);
@@ -236,6 +284,9 @@ test('admin SEO Phase 2 controls expose store and product SEO guidance without s
     assert.match(storeBuilderConstants, /homepageSeo/);
 
     assert.match(storeBuilderPage, /Homepage SEO title/);
+    assert.match(storeBuilderPage, /Google site name/);
+    assert.match(storeBuilderPage, /theme\.seo\?\.siteName/);
+    assert.match(storeBuilderPage, /setThemeGroup\('seo', 'siteName'/);
     assert.match(storeBuilderPage, /Default social share image/);
     assert.match(storeBuilderPage, /Facebook page URL/);
     assert.match(storeBuilderPage, /Google Search Console verification code/);
@@ -292,6 +343,8 @@ test('public collection SEO route is tenant-safe and does not add duplicate cate
     assert.match(productModel, /imageAltText/);
     assert.match(productValidation, /imageAltText/);
     assert.match(storeBuilderController, /'seo'/);
+    assert.match(storeBuilderController, /sanitizeSeoSiteName/);
+    assert.match(storeBuilderController, /cleanTheme\.seo\.siteName = sanitizeSeoSiteName/);
     assert.match(storeBuilderController, /sanitizeGoogleSiteVerification/);
 });
 

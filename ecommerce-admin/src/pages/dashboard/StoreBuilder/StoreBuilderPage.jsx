@@ -2233,6 +2233,13 @@ const StoreBuilderPage = () => {
                             )}
                         >
                             <BuilderInput
+                                label="Google site name"
+                                value={theme.seo?.siteName || ''}
+                                onChange={e => setThemeGroup('seo', 'siteName', e.target.value)}
+                                placeholder="Adi Jewellery"
+                                help="This is the store name Google may show above your page title, for example Adi Jewellery."
+                            />
+                            <BuilderInput
                                 label="Homepage SEO title"
                                 value={theme.seo?.title || ''}
                                 onChange={e => setThemeGroup('seo', 'title', e.target.value)}

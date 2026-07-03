@@ -7,6 +7,7 @@ import {
     buildMetadata,
     cleanTextForMeta,
     getPolicyCanonicalUrl,
+    getPreferredSiteName,
     isShopSearchVisible,
     noindexMetadata,
     truncateMetaDescription,
@@ -62,6 +63,7 @@ export async function generateMetadata({ params }) {
         description: truncateMetaDescription(content || `Read the ${label.toLowerCase()} for ${storeName}.`),
         url: getPolicyCanonicalUrl({ host, subdomain, shop, type }),
         image: shop?.theme?.logoUrl || "",
+        siteName: getPreferredSiteName(shop, { host, subdomain }),
         type: "article",
         isIndexable: Boolean(POLICY_LABELS[type] && content && isShopSearchVisible(shop)),
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""

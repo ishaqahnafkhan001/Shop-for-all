@@ -223,6 +223,7 @@ export const FALLBACK_THEME = {
         },
     },
     seo: {
+        siteName: '',
         title: '',
         description: '',
         keywords: [],

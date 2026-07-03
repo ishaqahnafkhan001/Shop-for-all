@@ -8,6 +8,7 @@ import {
     buildProductJsonLd,
     getHomepageCanonicalUrl,
     getOgImage,
+    getPreferredSiteName,
     getProductCanonicalUrl,
     getProductSeoDescription,
     getProductSeoTitle,
@@ -61,6 +62,7 @@ export async function generateMetadata({ params }) {
         description: getProductSeoDescription(product, shop),
         url,
         image: getOgImage(product, shop),
+        siteName: getPreferredSiteName(shop, { host, subdomain }),
         type: 'website',
         isIndexable: isShopSearchVisible(shop),
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''

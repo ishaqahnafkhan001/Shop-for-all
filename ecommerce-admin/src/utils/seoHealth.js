@@ -49,7 +49,8 @@ export const buildProductSeoPreview = ({ product = {}, shopName = 'Your Store' }
 export const buildStoreSeoPreview = ({ theme = {}, shopName = 'Your Store', subdomain = 'your-store', domain = '' } = {}) => {
     const seo = theme.seo || {};
     const hero = theme.hero || {};
-    const title = truncateSeoText(seo.title || hero.title || `${shopName || 'Your Store'} - Online Store`, SEO_TITLE_MAX);
+    const preferredSiteName = cleanSeoText(seo.siteName || theme.brand?.storeName || theme.header?.storeName || shopName || 'Your Store');
+    const title = truncateSeoText(seo.title || hero.title || `${preferredSiteName} - Online Store`, SEO_TITLE_MAX);
     const description = truncateSeoText(
         seo.description ||
         hero.subtitle ||

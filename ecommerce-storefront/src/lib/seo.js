@@ -37,6 +37,8 @@ const normalizeHost = (host = "") => String(host || "")
     .replace(/\/$/, "")
     .toLowerCase();
 
+const getHostLabel = (host = "") => normalizeHost(host).split(":")[0];
+
 const isPlatformRootHost = (host = "") => {
     const cleanHost = normalizeHost(host).split(":")[0];
     return [
@@ -72,6 +74,23 @@ export const getVerifiedCustomDomainHost = (shop = {}, explicitCustomDomain = ""
         : shop?.customDomain;
 
     return isCustomDomainFullyVerified(customDomain) ? domain : "";
+};
+
+export const getPreferredSiteName = (shop = {}, { host = "", subdomain = "" } = {}) => {
+    const candidates = [
+        shop?.theme?.seo?.siteName,
+        shop?.theme?.brand?.storeName,
+        shop?.theme?.header?.storeName,
+        shop?.displayName,
+        shop?.shopName,
+        shop?.name
+    ];
+    const found = candidates.map(cleanTextForMeta).find(Boolean);
+    if (found) return truncateAtWord(found, 80);
+
+    const verifiedHost = getVerifiedCustomDomainHost(shop);
+    const fallbackHost = getHostLabel(verifiedHost || host) || (subdomain ? `${subdomain}.scaleup.codes` : "");
+    return fallbackHost || "Store";
 };
 
 export const getShopBaseUrl = ({ host, subdomain, shop, customDomain } = {}) => {
@@ -136,13 +155,13 @@ export const getProductSeoDescription = (product = {}, shop = {}) => {
     );
 };
 
-export const getHomepageSeoTitle = (shop = {}) => {
+export const getHomepageSeoTitle = (shop = {}, options = {}) => {
     const theme = shop?.theme || {};
     return truncateMetaTitle(
         theme?.seo?.title ||
         theme?.homepageSeo?.title ||
         theme?.hero?.title ||
-        `${shop?.shopName || "Store"} - Online Store`
+        `${getPreferredSiteName(shop, options)} - Online Store`
     );
 };
 
@@ -231,6 +250,7 @@ export const buildMetadata = ({
     description,
     url,
     image,
+    siteName = "",
     type = "website",
     isIndexable = true,
     isFollowable = true,
@@ -238,6 +258,7 @@ export const buildMetadata = ({
 } = {}) => {
     const safeTitle = truncateMetaTitle(title);
     const safeDescription = truncateMetaDescription(description);
+    const safeSiteName = cleanTextForMeta(siteName).slice(0, 80);
     const images = image ? [{ url: image }] : [];
 
     const metadata = {
@@ -250,7 +271,8 @@ export const buildMetadata = ({
             title: safeTitle,
             description: safeDescription,
             url,
-            images
+            images,
+            ...(safeSiteName ? { siteName: safeSiteName } : {})
         },
         twitter: {
             card: image ? "summary_large_image" : "summary",
@@ -265,6 +287,30 @@ export const buildMetadata = ({
     }
 
     return metadata;
+};
+
+export const buildHomepageJsonLd = ({ shop = {}, url = "" } = {}) => {
+    const siteName = getPreferredSiteName(shop, { host: url });
+    const shopName = cleanTextForMeta(shop?.shopName || shop?.name || "");
+    const logo = shop?.theme?.logoUrl || shop?.logoUrl || "";
+    const alternateName = shopName && shopName !== siteName ? [shopName] : undefined;
+
+    return [
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: siteName,
+            alternateName,
+            url
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "OnlineStore",
+            name: siteName,
+            url,
+            logo: logo || undefined
+        }
+    ].map(item => JSON.parse(JSON.stringify(item)));
 };
 
 const productPrice = (product = {}) => {

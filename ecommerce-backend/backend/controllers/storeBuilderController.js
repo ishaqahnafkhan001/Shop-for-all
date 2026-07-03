@@ -77,6 +77,12 @@ const sanitizeGoogleSiteVerification = (value = '') => {
         .slice(0, 200);
 };
 
+const sanitizeSeoSiteName = (value = '') => cleanTextValue(value)
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
+
 const sanitizeColorObject = (value = {}) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
 
@@ -119,6 +125,7 @@ const sanitizeThemePayload = (theme = {}) => {
         cleanTheme.colors = sanitizeColorObject(cleanTheme.colors);
     }
     if (cleanTheme?.seo && typeof cleanTheme.seo === 'object') {
+        cleanTheme.seo.siteName = sanitizeSeoSiteName(cleanTheme.seo.siteName);
         cleanTheme.seo.googleSiteVerification = sanitizeGoogleSiteVerification(cleanTheme.seo.googleSiteVerification);
     }
     return cleanTheme;

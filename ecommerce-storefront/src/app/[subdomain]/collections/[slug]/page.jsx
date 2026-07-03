@@ -11,6 +11,7 @@ import {
     getCollectionSeoDescription,
     getCollectionSeoTitle,
     getHomepageCanonicalUrl,
+    getPreferredSiteName,
     isShopSearchVisible,
     noindexMetadata
 } from "@/lib/seo";
@@ -54,6 +55,7 @@ export async function generateMetadata({ params }) {
         description: getCollectionSeoDescription(collection, shop),
         url: getCollectionCanonicalUrl({ host, subdomain, shop, collection }),
         image: getCollectionOgImage(collection, products, shop),
+        siteName: getPreferredSiteName(shop, { host, subdomain }),
         type: "website",
         isIndexable: isShopSearchVisible(shop),
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""

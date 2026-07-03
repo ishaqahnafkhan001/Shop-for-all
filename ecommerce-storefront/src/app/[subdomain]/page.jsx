@@ -2,14 +2,18 @@ import StorefrontHomeClient from './StorefrontHomeClient';
 import { fetchStorefrontBootstrap } from '@/lib/storefrontServer';
 import { headers } from 'next/headers';
 import {
+    buildHomepageJsonLd,
     buildMetadata,
     getHomepageCanonicalUrl,
     getHomepageSeoDescription,
     getHomepageSeoTitle,
     getOgImage,
+    getPreferredSiteName,
     isShopSearchVisible,
     noindexMetadata
 } from '@/lib/seo';
+
+const stringifyJsonLd = (jsonLd) => JSON.stringify(jsonLd).replace(/</g, '\\u003c');
 
 const getInitialStorefrontData = async (subdomain, host = '') => {
     try {
@@ -51,10 +55,11 @@ export async function generateMetadata({ params }) {
 
         const url = getHomepageCanonicalUrl({ host, subdomain, shop });
         return buildMetadata({
-            title: getHomepageSeoTitle(shop),
+            title: getHomepageSeoTitle(shop, { host, subdomain }),
             description: getHomepageSeoDescription(shop),
             url,
             image: getOgImage(null, shop),
+            siteName: getPreferredSiteName(shop, { host, subdomain }),
             type: 'website',
             isIndexable: isShopSearchVisible(shop),
             googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''
@@ -69,6 +74,20 @@ export default async function VendorHomePage({ params }) {
     const headerStore = await headers();
     const host = headerStore.get('host') || '';
     const initialData = await getInitialStorefrontData(subdomain, host);
+    const shop = initialData?.shop;
+    const homepageUrl = shop ? getHomepageCanonicalUrl({ host, subdomain, shop }) : '';
+    const homepageJsonLd = shop ? buildHomepageJsonLd({ shop, url: homepageUrl }) : [];
 
-    return <StorefrontHomeClient subdomain={subdomain} initialData={initialData} />;
+    return (
+        <>
+            {homepageJsonLd.map((jsonLd, index) => (
+                <script
+                    key={`${jsonLd['@type']}-${index}`}
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: stringifyJsonLd(jsonLd) }}
+                />
+            ))}
+            <StorefrontHomeClient subdomain={subdomain} initialData={initialData} />
+        </>
+    );
 }

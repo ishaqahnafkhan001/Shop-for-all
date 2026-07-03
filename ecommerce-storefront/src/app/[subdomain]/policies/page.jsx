@@ -7,6 +7,7 @@ import { fetchStorefrontInfo } from "@/lib/storefrontServer";
 import {
     buildMetadata,
     cleanTextForMeta,
+    getPreferredSiteName,
     getShopBaseUrl,
     isShopSearchVisible,
     noindexMetadata,
@@ -45,6 +46,7 @@ export async function generateMetadata({ params }) {
         description: truncateMetaDescription(summary || `Read refund, shipping, privacy, and terms policies for ${storeName}.`),
         url: `${getShopBaseUrl({ host, subdomain, shop }).replace(/\/$/, "")}/policies`,
         image: shop?.theme?.logoUrl || "",
+        siteName: getPreferredSiteName(shop, { host, subdomain }),
         type: "article",
         isIndexable: isShopSearchVisible(shop),
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""
