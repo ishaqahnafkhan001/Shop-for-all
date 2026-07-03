@@ -131,6 +131,374 @@ const getDomainConnectionLabels = (customDomain = {}, dnsTarget = '') => {
     };
 };
 
+const colorPalettePresets = [
+    {
+        name: 'Emerald Fresh',
+        swatches: ['#0f766e', '#ecfdf5', '#0f172a'],
+        colors: {
+            accent: '#0f766e',
+            accentHover: '#115e59',
+            accentSoft: '#99f6e4',
+            accentBg: '#ecfdf5',
+            accentStrong: '#042f2e',
+            accentMuted: '#14b8a6',
+            accentLight: '#5eead4',
+            accentRing: '#ccfbf1',
+            primaryButtonBg: '#0f766e',
+            primaryButtonHoverBg: '#115e59',
+            navbarHover: '#0f766e',
+            cardHoverBorder: '#99f6e4'
+        }
+    },
+    {
+        name: 'Royal Blue',
+        swatches: ['#2563eb', '#eff6ff', '#111827'],
+        colors: { accent: '#2563eb', accentHover: '#1d4ed8', accentSoft: '#bfdbfe', accentBg: '#eff6ff', accentStrong: '#1e3a8a', accentMuted: '#60a5fa', accentLight: '#93c5fd', accentRing: '#dbeafe', primaryButtonBg: '#2563eb', primaryButtonHoverBg: '#1d4ed8', navbarHover: '#2563eb', cardHoverBorder: '#bfdbfe' }
+    },
+    {
+        name: 'Purple Premium',
+        swatches: ['#7c3aed', '#f5f3ff', '#111827'],
+        colors: { accent: '#7c3aed', accentHover: '#6d28d9', accentSoft: '#ddd6fe', accentBg: '#f5f3ff', accentStrong: '#4c1d95', accentMuted: '#a78bfa', accentLight: '#c4b5fd', accentRing: '#ede9fe', primaryButtonBg: '#7c3aed', primaryButtonHoverBg: '#6d28d9', navbarHover: '#7c3aed', cardHoverBorder: '#ddd6fe' }
+    },
+    {
+        name: 'Rose Boutique',
+        swatches: ['#e11d48', '#fff1f2', '#111827'],
+        colors: { accent: '#e11d48', accentHover: '#be123c', accentSoft: '#fecdd3', accentBg: '#fff1f2', accentStrong: '#881337', accentMuted: '#fb7185', accentLight: '#fda4af', accentRing: '#ffe4e6', primaryButtonBg: '#e11d48', primaryButtonHoverBg: '#be123c', navbarHover: '#e11d48', cardHoverBorder: '#fecdd3' }
+    },
+    {
+        name: 'Amber Warm',
+        swatches: ['#d97706', '#fffbeb', '#111827'],
+        colors: { accent: '#d97706', accentHover: '#b45309', accentSoft: '#fde68a', accentBg: '#fffbeb', accentStrong: '#78350f', accentMuted: '#f59e0b', accentLight: '#fcd34d', accentRing: '#fef3c7', primaryButtonBg: '#d97706', primaryButtonHoverBg: '#b45309', navbarHover: '#d97706', cardHoverBorder: '#fde68a' }
+    },
+    {
+        name: 'Slate Minimal',
+        swatches: ['#334155', '#f8fafc', '#0f172a'],
+        colors: { accent: '#334155', accentHover: '#1e293b', accentSoft: '#cbd5e1', accentBg: '#f8fafc', accentStrong: '#0f172a', accentMuted: '#64748b', accentLight: '#94a3b8', accentRing: '#e2e8f0', primaryButtonBg: '#0f172a', primaryButtonHoverBg: '#1e293b', navbarHover: '#334155', cardHoverBorder: '#cbd5e1' }
+    },
+    {
+        name: 'Luxury Black',
+        swatches: ['#020617', '#f8fafc', '#d4af37'],
+        colors: { accent: '#020617', accentHover: '#111827', accentSoft: '#d4af37', accentBg: '#f8fafc', accentStrong: '#000000', accentMuted: '#475569', accentLight: '#94a3b8', accentRing: '#e2e8f0', primaryButtonBg: '#020617', primaryButtonHoverBg: '#111827', navbarHover: '#d4af37', cardHoverBorder: '#d4af37', priceColor: '#020617' }
+    },
+    {
+        name: 'Clean White',
+        swatches: ['#111827', '#ffffff', '#e5e7eb'],
+        colors: { accent: '#111827', accentHover: '#030712', accentSoft: '#e5e7eb', accentBg: '#ffffff', accentStrong: '#030712', accentMuted: '#6b7280', accentLight: '#d1d5db', accentRing: '#f3f4f6', primaryButtonBg: '#111827', primaryButtonHoverBg: '#030712', navbarHover: '#111827', cardHoverBorder: '#e5e7eb', background: '#ffffff', foreground: '#111827' }
+    },
+    {
+        name: 'Ocean Teal',
+        swatches: ['#0e7490', '#ecfeff', '#083344'],
+        colors: { accent: '#0e7490', accentHover: '#155e75', accentSoft: '#a5f3fc', accentBg: '#ecfeff', accentStrong: '#083344', accentMuted: '#06b6d4', accentLight: '#67e8f9', accentRing: '#cffafe', primaryButtonBg: '#0e7490', primaryButtonHoverBg: '#155e75', navbarHover: '#0e7490', cardHoverBorder: '#a5f3fc' }
+    },
+    {
+        name: 'Chocolate Brown',
+        swatches: ['#7c2d12', '#fff7ed', '#431407'],
+        colors: { accent: '#7c2d12', accentHover: '#9a3412', accentSoft: '#fed7aa', accentBg: '#fff7ed', accentStrong: '#431407', accentMuted: '#c2410c', accentLight: '#fdba74', accentRing: '#ffedd5', primaryButtonBg: '#7c2d12', primaryButtonHoverBg: '#9a3412', navbarHover: '#7c2d12', cardHoverBorder: '#fed7aa' }
+    },
+    {
+        name: 'Gold Luxury',
+        swatches: ['#b45309', '#fffbeb', '#111827'],
+        colors: { accent: '#b45309', accentHover: '#92400e', accentSoft: '#fde68a', accentBg: '#fffbeb', accentStrong: '#78350f', accentMuted: '#f59e0b', accentLight: '#fcd34d', accentRing: '#fef3c7', primaryButtonBg: '#111827', primaryButtonHoverBg: '#030712', navbarHover: '#b45309', cardHoverBorder: '#f59e0b', priceColor: '#b45309' }
+    },
+    {
+        name: 'Soft Pink',
+        swatches: ['#db2777', '#fdf2f8', '#831843'],
+        colors: { accent: '#db2777', accentHover: '#be185d', accentSoft: '#fbcfe8', accentBg: '#fdf2f8', accentStrong: '#831843', accentMuted: '#f472b6', accentLight: '#f9a8d4', accentRing: '#fce7f3', primaryButtonBg: '#db2777', primaryButtonHoverBg: '#be185d', navbarHover: '#db2777', cardHoverBorder: '#fbcfe8' }
+    },
+    {
+        name: 'Deep Navy',
+        swatches: ['#1e3a8a', '#eff6ff', '#020617'],
+        colors: { accent: '#1e3a8a', accentHover: '#1e40af', accentSoft: '#bfdbfe', accentBg: '#eff6ff', accentStrong: '#172554', accentMuted: '#3b82f6', accentLight: '#93c5fd', accentRing: '#dbeafe', primaryButtonBg: '#1e3a8a', primaryButtonHoverBg: '#1e40af', navbarHover: '#1e3a8a', cardHoverBorder: '#bfdbfe' }
+    },
+    {
+        name: 'Red Sale',
+        swatches: ['#dc2626', '#fef2f2', '#7f1d1d'],
+        colors: { accent: '#dc2626', accentHover: '#b91c1c', accentSoft: '#fecaca', accentBg: '#fef2f2', accentStrong: '#7f1d1d', accentMuted: '#f87171', accentLight: '#fca5a5', accentRing: '#fee2e2', primaryButtonBg: '#dc2626', primaryButtonHoverBg: '#b91c1c', navbarHover: '#dc2626', cardHoverBorder: '#fecaca', saleBadgeBg: '#dc2626' }
+    },
+    {
+        name: 'Green Organic',
+        swatches: ['#15803d', '#f0fdf4', '#14532d'],
+        colors: { accent: '#15803d', accentHover: '#166534', accentSoft: '#bbf7d0', accentBg: '#f0fdf4', accentStrong: '#14532d', accentMuted: '#22c55e', accentLight: '#86efac', accentRing: '#dcfce7', primaryButtonBg: '#15803d', primaryButtonHoverBg: '#166534', navbarHover: '#15803d', cardHoverBorder: '#bbf7d0' }
+    },
+    {
+        name: 'Mono Gray',
+        swatches: ['#404040', '#fafafa', '#171717'],
+        colors: { accent: '#404040', accentHover: '#262626', accentSoft: '#d4d4d4', accentBg: '#fafafa', accentStrong: '#171717', accentMuted: '#737373', accentLight: '#a3a3a3', accentRing: '#e5e5e5', primaryButtonBg: '#171717', primaryButtonHoverBg: '#000000', navbarHover: '#404040', cardHoverBorder: '#d4d4d4', background: '#ffffff', foreground: '#171717' }
+    }
+];
+
+const hexToRgb = (hex = '') => {
+    if (!isHexColor(hex)) return null;
+    let clean = hex.replace('#', '');
+    if (clean.length === 3) clean = clean.split('').map(char => `${char}${char}`).join('');
+    return {
+        r: parseInt(clean.slice(0, 2), 16),
+        g: parseInt(clean.slice(2, 4), 16),
+        b: parseInt(clean.slice(4, 6), 16)
+    };
+};
+
+const rgbToHex = ({ r, g, b }) => `#${[r, g, b].map(value => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0')).join('')}`;
+
+const mixHex = (from, to, amount) => {
+    const fromRgb = hexToRgb(from);
+    const toRgb = hexToRgb(to);
+    if (!fromRgb || !toRgb) return from;
+    return rgbToHex({
+        r: fromRgb.r + (toRgb.r - fromRgb.r) * amount,
+        g: fromRgb.g + (toRgb.g - fromRgb.g) * amount,
+        b: fromRgb.b + (toRgb.b - fromRgb.b) * amount
+    });
+};
+
+const buildBrandColorSet = (brandColor) => ({
+    accent: brandColor,
+    accentHover: mixHex(brandColor, '#000000', 0.18),
+    accentSoft: mixHex(brandColor, '#ffffff', 0.68),
+    accentBg: mixHex(brandColor, '#ffffff', 0.92),
+    accentStrong: mixHex(brandColor, '#000000', 0.62),
+    accentMuted: mixHex(brandColor, '#ffffff', 0.28),
+    accentLight: mixHex(brandColor, '#ffffff', 0.45),
+    accentRing: mixHex(brandColor, '#ffffff', 0.82),
+    primaryButtonBg: brandColor,
+    primaryButtonHoverBg: mixHex(brandColor, '#000000', 0.18),
+    navbarHover: brandColor,
+    cardHoverBorder: mixHex(brandColor, '#ffffff', 0.68),
+    brand: {
+        primary: brandColor,
+        accent: brandColor,
+        hover: mixHex(brandColor, '#000000', 0.18),
+        soft: mixHex(brandColor, '#ffffff', 0.92),
+        ring: mixHex(brandColor, '#ffffff', 0.82)
+    },
+    header: {
+        hover: brandColor,
+        cartBadgeBackground: brandColor
+    },
+    hero: {
+        primaryButtonBackground: '#ffffff',
+        primaryButtonText: mixHex(brandColor, '#000000', 0.74),
+        secondaryButtonBackground: brandColor,
+        secondaryButtonText: '#ffffff'
+    },
+    productCard: {
+        price: mixHex(brandColor, '#000000', 0.58),
+        saleBadgeBackground: mixHex(brandColor, '#000000', 0.08),
+        ratingStar: '#f59e0b',
+        wishlistActive: '#e11d48',
+        addToCartBackground: brandColor,
+        addToCartText: '#ffffff',
+        buyNowBackground: mixHex(brandColor, '#000000', 0.65),
+        buyNowText: '#ffffff',
+        variantChipSelectedBackground: brandColor,
+        variantChipSelectedText: '#ffffff'
+    },
+    allProducts: {
+        paginationActiveBackground: brandColor,
+        paginationActiveText: '#ffffff'
+    },
+    sections: {
+        trustIcon: brandColor
+    },
+    footer: {
+        linkHover: brandColor
+    },
+    checkout: {
+        buttonBackground: mixHex(brandColor, '#000000', 0.65),
+        buttonText: '#ffffff',
+        accent: brandColor,
+        inputFocus: brandColor,
+        success: '#047857'
+    }
+});
+
+const mergeColorUpdates = (current = {}, updates = {}) => Object.entries(updates || {}).reduce((acc, [key, value]) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+        acc[key] = mergeColorUpdates(acc[key] || {}, value);
+    } else {
+        acc[key] = value;
+    }
+    return acc;
+}, { ...(current || {}) });
+
+const getColorPathValue = (colors = {}, path = '') => path.split('.').reduce((acc, key) => acc?.[key], colors);
+
+const setColorPathValue = (colors = {}, path = '', value) => {
+    const [group, key] = path.split('.');
+    if (!group || !key) return { ...(colors || {}), [path]: value };
+    return {
+        ...(colors || {}),
+        [group]: {
+            ...(colors?.[group] || {}),
+            [key]: value
+        }
+    };
+};
+
+const flattenNestedColorFields = (groups = []) => groups.flatMap(group => group.fields.map(field => ({ ...field, groupId: group.id, groupTitle: group.title })));
+
+const contrastRatio = (foreground, background) => {
+    const toLinear = (value) => {
+        const channel = value / 255;
+        return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = (hex) => {
+        const rgb = hexToRgb(hex);
+        if (!rgb) return null;
+        return (0.2126 * toLinear(rgb.r)) + (0.7152 * toLinear(rgb.g)) + (0.0722 * toLinear(rgb.b));
+    };
+    const fg = luminance(foreground);
+    const bg = luminance(background);
+    if (fg === null || bg === null) return null;
+    const lighter = Math.max(fg, bg);
+    const darker = Math.min(fg, bg);
+    return (lighter + 0.05) / (darker + 0.05);
+};
+
+const colorSectionGroups = [
+    {
+        id: 'brand',
+        title: 'Brand Colors',
+        description: 'Core colors used for links, highlights, focus rings, and trusted accents.',
+        fields: [
+            { path: 'brand.primary', label: 'Main brand color', help: 'Used for primary accents and key actions.' },
+            { path: 'brand.secondary', label: 'Secondary brand color', help: 'A strong supporting color for contrast.' },
+            { path: 'brand.accent', label: 'Accent color', help: 'Highlights links, chips, and small UI details.' },
+            { path: 'brand.hover', label: 'Hover color', help: 'Used when customers hover over buttons or links.' },
+            { path: 'brand.soft', label: 'Soft brand background', help: 'Light brand tint for cards and badges.' },
+            { path: 'brand.ring', label: 'Focus ring color', help: 'Accessibility highlight for focused inputs.' }
+        ]
+    },
+    {
+        id: 'header',
+        title: 'Header / Navbar',
+        description: 'Controls the top navigation, search, icons, and cart badge.',
+        fields: [
+            { path: 'header.background', label: 'Header background' },
+            { path: 'header.text', label: 'Header text', contrastWith: 'header.background' },
+            { path: 'header.mutedText', label: 'Subtitle text', contrastWith: 'header.background' },
+            { path: 'header.icon', label: 'Header icons', contrastWith: 'header.background' },
+            { path: 'header.border', label: 'Header border' },
+            { path: 'header.hover', label: 'Nav hover color' },
+            { path: 'header.cartBadgeBackground', label: 'Cart badge background' },
+            { path: 'header.cartBadgeText', label: 'Cart badge text', contrastWith: 'header.cartBadgeBackground' }
+        ]
+    },
+    {
+        id: 'hero',
+        title: 'Hero / Banner',
+        description: 'Controls hero text, fallback background, and call-to-action buttons.',
+        fields: [
+            { path: 'hero.background', label: 'Hero fallback background' },
+            { path: 'hero.title', label: 'Hero title', contrastWith: 'hero.background' },
+            { path: 'hero.subtitle', label: 'Hero subtitle', contrastWith: 'hero.background' },
+            { path: 'hero.overlay', label: 'Hero overlay' },
+            { path: 'hero.primaryButtonBackground', label: 'Primary button background' },
+            { path: 'hero.primaryButtonText', label: 'Primary button text', contrastWith: 'hero.primaryButtonBackground' },
+            { path: 'hero.secondaryButtonBackground', label: 'Secondary button background' },
+            { path: 'hero.secondaryButtonText', label: 'Secondary button text', contrastWith: 'hero.secondaryButtonBackground' }
+        ]
+    },
+    {
+        id: 'productCard',
+        title: 'Product Cards',
+        description: 'Controls catalog card backgrounds, prices, badges, stock, and action buttons.',
+        fields: [
+            { path: 'productCard.background', label: 'Card background' },
+            { path: 'productCard.border', label: 'Card border' },
+            { path: 'productCard.title', label: 'Product title', contrastWith: 'productCard.background' },
+            { path: 'productCard.category', label: 'Category text', contrastWith: 'productCard.background' },
+            { path: 'productCard.price', label: 'Price color', contrastWith: 'productCard.background' },
+            { path: 'productCard.compareAtPrice', label: 'Compare-at price' },
+            { path: 'productCard.saleBadgeBackground', label: 'Sale badge background' },
+            { path: 'productCard.saleBadgeText', label: 'Sale badge text', contrastWith: 'productCard.saleBadgeBackground' },
+            { path: 'productCard.ratingStar', label: 'Rating stars' },
+            { path: 'productCard.ratingText', label: 'Rating text' },
+            { path: 'productCard.wishlistIcon', label: 'Wishlist icon' },
+            { path: 'productCard.wishlistActive', label: 'Wishlist active' },
+            { path: 'productCard.addToCartBackground', label: 'Add to Cart background' },
+            { path: 'productCard.addToCartText', label: 'Add to Cart text', contrastWith: 'productCard.addToCartBackground' },
+            { path: 'productCard.buyNowBackground', label: 'Buy Now background' },
+            { path: 'productCard.buyNowText', label: 'Buy Now text', contrastWith: 'productCard.buyNowBackground' },
+            { path: 'productCard.outOfStockBackground', label: 'Out-of-stock background' },
+            { path: 'productCard.outOfStockText', label: 'Out-of-stock text', contrastWith: 'productCard.outOfStockBackground' },
+            { path: 'productCard.variantChipBackground', label: 'Variant chip background' },
+            { path: 'productCard.variantChipText', label: 'Variant chip text', contrastWith: 'productCard.variantChipBackground' },
+            { path: 'productCard.variantChipSelectedBackground', label: 'Selected variant background' },
+            { path: 'productCard.variantChipSelectedText', label: 'Selected variant text', contrastWith: 'productCard.variantChipSelectedBackground' }
+        ]
+    },
+    {
+        id: 'allProducts',
+        title: 'All Products Section',
+        description: 'Controls catalog section title, filters, dropdowns, and pagination.',
+        fields: [
+            { path: 'allProducts.background', label: 'Section background' },
+            { path: 'allProducts.title', label: 'Section title', contrastWith: 'allProducts.background' },
+            { path: 'allProducts.subtitle', label: 'Section subtitle', contrastWith: 'allProducts.background' },
+            { path: 'allProducts.filterBackground', label: 'Filter background' },
+            { path: 'allProducts.filterText', label: 'Filter text', contrastWith: 'allProducts.filterBackground' },
+            { path: 'allProducts.dropdownBackground', label: 'Dropdown background' },
+            { path: 'allProducts.paginationBackground', label: 'Pagination background' },
+            { path: 'allProducts.paginationText', label: 'Pagination text', contrastWith: 'allProducts.paginationBackground' },
+            { path: 'allProducts.paginationActiveBackground', label: 'Active page background' },
+            { path: 'allProducts.paginationActiveText', label: 'Active page text', contrastWith: 'allProducts.paginationActiveBackground' }
+        ]
+    },
+    {
+        id: 'sections',
+        title: 'Dynamic Sections',
+        description: 'Controls banners, reviews, categories, FAQs, testimonials, and trust content.',
+        fields: [
+            { path: 'sections.background', label: 'Section background' },
+            { path: 'sections.title', label: 'Section title', contrastWith: 'sections.background' },
+            { path: 'sections.subtitle', label: 'Section subtitle', contrastWith: 'sections.background' },
+            { path: 'sections.bannerOverlay', label: 'Banner overlay' },
+            { path: 'sections.bannerText', label: 'Banner text', contrastWith: 'sections.bannerOverlay' },
+            { path: 'sections.faqBackground', label: 'FAQ background' },
+            { path: 'sections.faqText', label: 'FAQ text', contrastWith: 'sections.faqBackground' },
+            { path: 'sections.testimonialBackground', label: 'Review background' },
+            { path: 'sections.testimonialText', label: 'Review text', contrastWith: 'sections.testimonialBackground' },
+            { path: 'sections.trustIcon', label: 'Trust icon' },
+            { path: 'sections.trustText', label: 'Trust text' }
+        ]
+    },
+    {
+        id: 'footer',
+        title: 'Footer',
+        description: 'Controls footer brand text, policy links, borders, and powered-by text.',
+        fields: [
+            { path: 'footer.background', label: 'Footer background' },
+            { path: 'footer.heading', label: 'Footer headings', contrastWith: 'footer.background' },
+            { path: 'footer.text', label: 'Footer text', contrastWith: 'footer.background' },
+            { path: 'footer.link', label: 'Footer links', contrastWith: 'footer.background' },
+            { path: 'footer.linkHover', label: 'Footer link hover' },
+            { path: 'footer.border', label: 'Footer border' },
+            { path: 'footer.poweredBy', label: 'Powered-by text', contrastWith: 'footer.background' }
+        ]
+    },
+    {
+        id: 'checkout',
+        title: 'Checkout / Cart',
+        description: 'Controls cart, checkout cards, inputs, buttons, success, and error colors.',
+        fields: [
+            { path: 'checkout.background', label: 'Checkout background' },
+            { path: 'checkout.cardBackground', label: 'Checkout card background' },
+            { path: 'checkout.text', label: 'Checkout text', contrastWith: 'checkout.cardBackground' },
+            { path: 'checkout.buttonBackground', label: 'Checkout button background' },
+            { path: 'checkout.buttonText', label: 'Checkout button text', contrastWith: 'checkout.buttonBackground' },
+            { path: 'checkout.accent', label: 'Checkout accent' },
+            { path: 'checkout.inputBackground', label: 'Input background' },
+            { path: 'checkout.inputBorder', label: 'Input border' },
+            { path: 'checkout.inputFocus', label: 'Input focus' },
+            { path: 'checkout.error', label: 'Error color' },
+            { path: 'checkout.success', label: 'Success color' }
+        ]
+    }
+];
+
+const nestedColorFields = flattenNestedColorFields(colorSectionGroups);
+
 const StoreBuilderPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -156,6 +524,11 @@ const StoreBuilderPage = () => {
     const [editorHistory, setEditorHistory] = useState({ past: [], future: [] });
     const [lastSavedAt, setLastSavedAt] = useState('');
     const [lastPublishedAt, setLastPublishedAt] = useState('');
+    const [seoAi, setSeoAi] = useState({ loading: false, suggestions: null, error: '' });
+    const [advancedColorsOpen, setAdvancedColorsOpen] = useState(false);
+    const [colorMode, setColorMode] = useState('quick');
+    const [colorSearch, setColorSearch] = useState('');
+    const [openColorSection, setOpenColorSection] = useState('productCard');
     const historyModeRef = useRef('record');
     const lastHistorySnapshotRef = useRef('');
 
@@ -238,6 +611,12 @@ const StoreBuilderPage = () => {
         const colorErrors = colorFields
             .filter(field => !isHexColor(theme.colors?.[field.key]))
             .map(field => `${field.label} must be a valid hex color.`);
+        const nestedColorErrors = nestedColorFields
+            .filter(field => {
+                const value = getColorPathValue(theme.colors, field.path);
+                return value && !isHexColor(value);
+            })
+            .map(field => `${field.label} must be a valid hex color.`);
         const discountNumber = Number(storewideDiscount);
         const discountErrors = Number.isNaN(discountNumber) || discountNumber < 0 || discountNumber > 100
             ? ['Storewide discount must be between 0 and 100.']
@@ -256,7 +635,7 @@ const StoreBuilderPage = () => {
             .filter(([, value]) => value && !isHexColor(value))
             .map(([label]) => `${label} must be a valid hex color.`);
 
-        return [...colorErrors, ...discountErrors, ...navErrors, ...navChildErrors, ...productColorErrors];
+        return [...colorErrors, ...nestedColorErrors, ...discountErrors, ...navErrors, ...navChildErrors, ...productColorErrors];
     }, [theme.colors, theme.navigation, theme.productCard, storewideDiscount]);
 
     const mergeProductCache = (products = []) => {
@@ -448,6 +827,90 @@ const StoreBuilderPage = () => {
         }));
     };
 
+    const setColorPath = (path, value) => {
+        setTheme(prev => ({
+            ...prev,
+            colors: setColorPathValue(prev.colors || {}, path, value)
+        }));
+    };
+
+    const applyColorSet = (colors = {}, label = 'Palette') => {
+        setTheme(prev => ({
+            ...prev,
+            colors: mergeColorUpdates(
+                prev.colors || {},
+                colors?.accent ? mergeColorUpdates(buildBrandColorSet(colors.accent), colors) : colors
+            )
+        }));
+        toast.success(`${label} applied`);
+    };
+
+    const applyBrandColor = () => {
+        const brandColor = theme.colors?.accent || defaultTheme.colors.accent;
+        if (!isHexColor(brandColor)) {
+            toast.error('Choose a valid main brand color first.');
+            return;
+        }
+        applyColorSet(buildBrandColorSet(brandColor), 'Brand color');
+    };
+
+    const resetColorPalette = () => {
+        setTheme(prev => ({
+            ...prev,
+            colors: { ...defaultTheme.colors },
+            productCard: {
+                ...(prev.productCard || {}),
+                priceColor: defaultTheme.productCard?.priceColor,
+                buttonColor: defaultTheme.productCard?.buttonColor
+            }
+        }));
+        toast.success('Default color palette restored');
+    };
+
+    const resetColorGroup = (groupId) => {
+        const defaultGroup = defaultTheme.colors?.[groupId];
+        if (!defaultGroup || typeof defaultGroup !== 'object') return;
+        setTheme(prev => ({
+            ...prev,
+            colors: {
+                ...(prev.colors || {}),
+                [groupId]: { ...defaultGroup }
+            }
+        }));
+        toast.success(`${colorSectionGroups.find(group => group.id === groupId)?.title || 'Section'} colors reset`);
+    };
+
+    const getThemeColor = (path, fallback = '#000000') => (
+        getColorPathValue(theme.colors, path) ||
+        getColorPathValue(defaultTheme.colors, path) ||
+        theme.colors?.[path] ||
+        defaultTheme.colors?.[path] ||
+        fallback
+    );
+
+    const getContrastWarning = (field) => {
+        if (!field.contrastWith) return '';
+        const foreground = getThemeColor(field.path);
+        const background = getThemeColor(field.contrastWith);
+        const ratio = contrastRatio(foreground, background);
+        if (ratio === null || ratio >= 4.5) return '';
+        return `Low contrast with ${field.contrastWith.replace('.', ' ')}. Try a darker or lighter color.`;
+    };
+
+    const setMainBrandColor = (value) => {
+        setTheme(prev => ({
+            ...prev,
+            colors: mergeColorUpdates(prev.colors || {}, {
+                accent: value,
+                brand: {
+                    ...(prev.colors?.brand || {}),
+                    primary: value,
+                    accent: value
+                }
+            })
+        }));
+    };
+
     const setThemeGroup = (group, key, value) => {
         setTheme(prev => ({
             ...prev,
@@ -468,6 +931,52 @@ const StoreBuilderPage = () => {
                 hero: syncHeroLegacyFields(prev.hero, safeSlides)
             };
         });
+    };
+
+    const requestSeoAiSuggestions = async () => {
+        setSeoAi({ loading: true, suggestions: null, error: '' });
+        try {
+            const { data } = await API.post('/store-builder/admin/seo/ai-suggest', {
+                currentTheme: {
+                    seo: theme.seo || {},
+                    hero: theme.hero || {},
+                    navigation: theme.navigation || []
+                },
+                shopSummary: {
+                    shopName,
+                    subdomain: shopSubdomain,
+                    customDomain: isCustomDomainConnected(customDomain) ? customDomain.domain : ''
+                },
+                productsSummary: availableProducts.slice(0, 20).map(product => ({
+                    title: product.title || product.name || '',
+                    category: product.category || product.categoryName || '',
+                    tags: Array.isArray(product.tags) ? product.tags.slice(0, 5) : []
+                }))
+            });
+            setSeoAi({ loading: false, suggestions: data.data || data, error: '' });
+            toast.success('SEO suggestions are ready');
+        } catch (err) {
+            const message = err.response?.data?.error || err.response?.data?.message || 'AI SEO suggestions are not configured yet. Ask support to enable the backend AI service.';
+            setSeoAi({ loading: false, suggestions: null, error: message });
+            toast.error(message);
+        }
+    };
+
+    const applySeoSuggestion = (fields = {}) => {
+        const updates = {};
+        if (fields.title) updates.title = fields.title;
+        if (fields.description) updates.description = fields.description;
+        if (Array.isArray(fields.keywords)) updates.keywords = fields.keywords;
+        if (Object.keys(updates).length === 0) return;
+
+        setTheme(prev => ({
+            ...prev,
+            seo: {
+                ...(prev.seo || {}),
+                ...updates
+            }
+        }));
+        toast.success('SEO suggestion applied');
     };
 
     const updateHeroSlide = (index, key, value) => {
@@ -1061,7 +1570,8 @@ const StoreBuilderPage = () => {
             };
             const { data } = await API.patch('/store-builder/admin', payload);
             const savedShop = data.data || {};
-            const nextTheme = savedShop.theme ? mergeTheme(defaultTheme, savedShop.theme) : theme;
+            const hasSavedTheme = savedShop.theme && Object.keys(savedShop.theme).length > 0;
+            const nextTheme = hasSavedTheme ? mergeTheme(defaultTheme, savedShop.theme) : theme;
             const nextDomain = savedShop.customDomain || customDomain;
             const nextDiscount = Number(savedShop.storewideDiscount ?? payload.storewideDiscount) || 0;
             setTheme(nextTheme);
@@ -1074,7 +1584,11 @@ const StoreBuilderPage = () => {
             setLastPublishedAt(publishedAt);
             lastHistorySnapshotRef.current = publishedSnapshot;
             setEditorHistory({ past: [], future: [] });
-            toast.success('Store design published. Refresh your storefront to see the latest changes.');
+            if (!hasSavedTheme) {
+                toast('Store design published, but the server did not return the full theme. Keeping your current preview visible.');
+            } else {
+                toast.success('Store design published. Your preview is up to date.');
+            }
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to save store builder');
         } finally {
@@ -1167,50 +1681,282 @@ const StoreBuilderPage = () => {
                                 onChange={event => handleLogoUpload(event, 'storefront')}
                             />
                         </label>
-                        <BuilderSelect
-                            label="Logo position"
-                            value={theme.header?.logoPosition || 'Left'}
-                            onChange={e => setThemeGroup('header', 'logoPosition', e.target.value)}
-                            help="Choose where your brand appears in the storefront header. Mobile keeps a compact readable layout."
-                        >
-                            <option>Left</option><option>Center</option><option>Right</option>
-                        </BuilderSelect>
                     </BuilderCard>
                 );
-            case 'colors':
+            case 'colors': {
+                const mainBrandColor = getThemeColor('brand.primary', theme.colors?.accent || defaultTheme.colors.accent);
+                const searchTerm = colorSearch.trim().toLowerCase();
+                const visibleGroups = colorSectionGroups
+                    .map(group => ({
+                        ...group,
+                        fields: group.fields.filter(field => (
+                            !searchTerm ||
+                            group.title.toLowerCase().includes(searchTerm) ||
+                            field.label.toLowerCase().includes(searchTerm) ||
+                            field.path.toLowerCase().includes(searchTerm)
+                        ))
+                    }))
+                    .filter(group => group.fields.length > 0);
+                const renderNestedColorField = (field) => {
+                    const value = getColorPathValue(theme.colors, field.path) || getColorPathValue(defaultTheme.colors, field.path) || '';
+                    const invalid = value && !isHexColor(value);
+                    const contrastWarning = !invalid ? getContrastWarning(field) : '';
+
+                    return (
+                        <FieldShell
+                            key={field.path}
+                            label={field.label}
+                            help={field.help || field.path}
+                            error={invalid ? 'Enter a valid hex color, for example #0f766e.' : contrastWarning}
+                        >
+                            <div className="flex gap-2">
+                                <input
+                                    type="color"
+                                    value={isHexColor(value) ? value : '#000000'}
+                                    onChange={e => setColorPath(field.path, e.target.value)}
+                                    className="h-10 w-12 rounded-lg border border-slate-200 bg-white"
+                                    aria-label={`${field.label} color picker`}
+                                />
+                                <input
+                                    value={value}
+                                    onChange={e => setColorPath(field.path, e.target.value)}
+                                    className={inputClass}
+                                    placeholder="#0f766e"
+                                />
+                            </div>
+                        </FieldShell>
+                    );
+                };
+
                 return (
-                    <BuilderCard title="Colors" description="Use a small set of consistent colors so the store feels intentional." icon={Palette}>
-                        {colorGroups.map(group => (
-                            <div key={group.title} className="rounded-lg border border-slate-200 p-3">
-                                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">{group.title}</h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {group.fields.map(field => (
-                                        <FieldShell
-                                            key={field.key}
-                                            label={field.label}
-                                            help={field.help}
-                                            error={!isHexColor(theme.colors?.[field.key]) ? 'Enter a valid hex color, for example #0f766e.' : ''}
-                                        >
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="color"
-                                                    value={isHexColor(theme.colors?.[field.key]) ? theme.colors[field.key] : '#000000'}
-                                                    onChange={e => setColor(field.key, e.target.value)}
-                                                    className="h-10 w-12 rounded-lg border border-slate-200 bg-white"
+                    <BuilderCard title="Colors" description="Choose a quick palette, customize each storefront section, or fine-tune advanced legacy colors." icon={Palette}>
+                        <div className="grid grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-black sm:text-sm">
+                            {[
+                                ['quick', 'Quick Setup'],
+                                ['sections', 'Section Colors'],
+                                ['advanced', 'Advanced Colors']
+                            ].map(([mode, label]) => (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => setColorMode(mode)}
+                                    className={`rounded-lg px-2 py-2 transition ${colorMode === mode ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {colorMode === 'quick' && (
+                            <div className="space-y-5">
+                                <div className="grid gap-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                            <FieldShell
+                                                label="Main brand color"
+                                                help="Used for buttons, links, highlights, product actions, checkout accents, and hover states."
+                                                error={!isHexColor(mainBrandColor) ? 'Enter a valid hex color, for example #0f766e.' : ''}
+                                            >
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="color"
+                                                        value={isHexColor(mainBrandColor) ? mainBrandColor : defaultTheme.colors.accent}
+                                                        onChange={e => setMainBrandColor(e.target.value)}
+                                                        className="h-11 w-14 rounded-lg border border-slate-200 bg-white"
+                                                        aria-label="Main brand color picker"
+                                                    />
+                                                    <input
+                                                        value={mainBrandColor}
+                                                        onChange={e => setMainBrandColor(e.target.value)}
+                                                        className={inputClass}
+                                                        placeholder="#0f766e"
+                                                    />
+                                                </div>
+                                            </FieldShell>
+                                            <BuilderButton type="button" onClick={applyBrandColor} className="sm:mb-6">
+                                                Apply brand color
+                                            </BuilderButton>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                                            {['brand.primary', 'brand.hover', 'brand.soft', 'brand.ring', 'productCard.addToCartBackground', 'productCard.buyNowBackground', 'allProducts.paginationActiveBackground', 'footer.linkHover'].map(path => (
+                                                <span
+                                                    key={path}
+                                                    title={path}
+                                                    className="h-9 rounded-lg border border-white shadow-sm ring-1 ring-slate-200"
+                                                    style={{ backgroundColor: getThemeColor(path, '#ffffff') }}
                                                 />
-                                                <input
-                                                    value={theme.colors?.[field.key] || ''}
-                                                    onChange={e => setColor(field.key, e.target.value)}
-                                                    className={inputClass}
-                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                        <div className="px-4 py-3" style={{ backgroundColor: getThemeColor('header.background'), color: getThemeColor('header.text') }}>
+                                            <p className="text-sm font-black">Store preview</p>
+                                            <p className="text-xs" style={{ color: getThemeColor('header.mutedText') }}>Header and navigation</p>
+                                        </div>
+                                        <div className="p-4" style={{ backgroundColor: getThemeColor('allProducts.background') }}>
+                                            <div className="rounded-xl border p-3" style={{ backgroundColor: getThemeColor('productCard.background'), borderColor: getThemeColor('productCard.border') }}>
+                                                <div className="mb-3 h-20 rounded-lg" style={{ backgroundColor: getThemeColor('brand.soft') }} />
+                                                <p className="text-sm font-black" style={{ color: getThemeColor('productCard.title') }}>Product card title</p>
+                                                <p className="mt-1 text-xs" style={{ color: getThemeColor('productCard.category') }}>Category label</p>
+                                                <div className="mt-3 flex items-center justify-between">
+                                                    <span className="font-black" style={{ color: getThemeColor('productCard.price') }}>৳ 680</span>
+                                                    <span className="rounded-full px-3 py-1 text-xs font-black" style={{ backgroundColor: getThemeColor('productCard.addToCartBackground'), color: getThemeColor('productCard.addToCartText') }}>Add</span>
+                                                </div>
                                             </div>
-                                        </FieldShell>
-                                    ))}
+                                        </div>
+                                        <div className="px-4 py-3 text-xs font-bold" style={{ backgroundColor: getThemeColor('footer.background'), color: getThemeColor('footer.text') }}>
+                                            Footer links and policy text
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-black text-slate-950">Palette presets</p>
+                                            <p className="mt-1 text-xs text-slate-500">Pick a polished starting point. You can still edit every section after.</p>
+                                        </div>
+                                        <BuilderButton type="button" variant="secondary" onClick={resetColorPalette}>
+                                            Reset palette
+                                        </BuilderButton>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        {colorPalettePresets.map(preset => (
+                                            <button
+                                                key={preset.name}
+                                                type="button"
+                                                onClick={() => applyColorSet(preset.colors, preset.name)}
+                                                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                                <span>
+                                                    <span className="block text-sm font-black text-slate-900">{preset.name}</span>
+                                                    <span className="mt-1 block text-xs text-slate-500">Apply this storefront palette</span>
+                                                </span>
+                                                <span className="flex shrink-0 overflow-hidden rounded-full border border-slate-200">
+                                                    {preset.swatches.map(color => (
+                                                        <span key={color} className="h-8 w-8" style={{ backgroundColor: color }} />
+                                                    ))}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        ))}
+                        )}
+
+                        {colorMode === 'sections' && (
+                            <div className="space-y-4">
+                                <label className="relative block">
+                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        value={colorSearch}
+                                        onChange={e => setColorSearch(e.target.value)}
+                                        className={`${inputClass} pl-9`}
+                                        placeholder="Search colors, e.g. product, footer, button"
+                                    />
+                                </label>
+                                {visibleGroups.length === 0 ? (
+                                    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm font-semibold text-slate-500">
+                                        No color fields match your search.
+                                    </div>
+                                ) : visibleGroups.map(group => {
+                                    const open = openColorSection === group.id;
+                                    return (
+                                        <div key={group.id} className="rounded-xl border border-slate-200 bg-white">
+                                            <button
+                                                type="button"
+                                                onClick={() => setOpenColorSection(open ? '' : group.id)}
+                                                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                                            >
+                                                <span className="min-w-0">
+                                                    <span className="block text-sm font-black text-slate-950">{group.title}</span>
+                                                    <span className="mt-1 block text-xs text-slate-500">{group.description}</span>
+                                                </span>
+                                                <span className="flex shrink-0 items-center gap-3">
+                                                    <span className="hidden overflow-hidden rounded-full border border-slate-200 sm:flex">
+                                                        {group.fields.slice(0, 4).map(field => (
+                                                            <span key={field.path} className="h-7 w-7" style={{ backgroundColor: getThemeColor(field.path, '#ffffff') }} />
+                                                        ))}
+                                                    </span>
+                                                    <ChevronDown size={18} className={`text-slate-400 transition ${open ? 'rotate-180' : ''}`} />
+                                                </span>
+                                            </button>
+                                            {open && (
+                                                <div className="space-y-4 border-t border-slate-200 p-4">
+                                                    <div className="flex justify-end">
+                                                        <BuilderButton type="button" variant="subtle" onClick={() => resetColorGroup(group.id)}>
+                                                            Reset this section
+                                                        </BuilderButton>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                        {group.fields.map(renderNestedColorField)}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {colorMode === 'advanced' && (
+                            <div className="rounded-xl border border-slate-200 bg-white">
+                                <button
+                                    type="button"
+                                    onClick={() => setAdvancedColorsOpen(open => !open)}
+                                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                                >
+                                    <span>
+                                        <span className="block text-sm font-black text-slate-950">Advanced legacy colors</span>
+                                        <span className="mt-1 block text-xs text-slate-500">Fine-tune the original theme keys used by older saved storefronts.</span>
+                                    </span>
+                                    <ChevronDown size={18} className={`shrink-0 text-slate-400 transition ${advancedColorsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                {advancedColorsOpen && (
+                                    <div className="space-y-4 border-t border-slate-200 p-4">
+                                        <div className="flex justify-end">
+                                            <BuilderButton type="button" variant="secondary" onClick={resetColorPalette}>
+                                                Reset all colors
+                                            </BuilderButton>
+                                        </div>
+                                        {colorGroups.map(group => (
+                                            <div key={group.title} className="rounded-lg border border-slate-200 p-3">
+                                                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">{group.title}</h3>
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                    {group.fields.map(field => (
+                                                        <FieldShell
+                                                            key={field.key}
+                                                            label={field.label}
+                                                            help={field.help}
+                                                            error={!isHexColor(theme.colors?.[field.key]) ? 'Enter a valid hex color, for example #0f766e.' : ''}
+                                                        >
+                                                            <div className="flex gap-2">
+                                                                <input
+                                                                    type="color"
+                                                                    value={isHexColor(theme.colors?.[field.key]) ? theme.colors[field.key] : '#000000'}
+                                                                    onChange={e => setColor(field.key, e.target.value)}
+                                                                    className="h-10 w-12 rounded-lg border border-slate-200 bg-white"
+                                                                    aria-label={`${field.label} color picker`}
+                                                                />
+                                                                <input
+                                                                    value={theme.colors?.[field.key] || ''}
+                                                                    onChange={e => setColor(field.key, e.target.value)}
+                                                                    className={inputClass}
+                                                                />
+                                                            </div>
+                                                        </FieldShell>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </BuilderCard>
                 );
+            }
             case 'typography':
                 return (
                     <BuilderCard title="Typography" description="Choose readable fonts and heading weight for a polished storefront." icon={LayoutTemplate}>
@@ -1279,6 +2025,27 @@ const StoreBuilderPage = () => {
                             </div>
                         )}
                     >
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p className="mb-3 text-xs font-black uppercase tracking-wide text-slate-400">Store logo</p>
+                            <BuilderInput
+                                label="Logo URL"
+                                value={theme.logoUrl || ''}
+                                onChange={e => setTheme(prev => ({ ...prev, logoUrl: e.target.value }))}
+                                placeholder="https://..."
+                                help="Paste a public image URL or upload a logo file."
+                            />
+                            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                                <Upload size={16} />
+                                {uploadingLogo ? 'Uploading...' : 'Upload storefront logo'}
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    className="hidden"
+                                    disabled={uploadingLogo}
+                                    onChange={event => handleLogoUpload(event, 'storefront')}
+                                />
+                            </label>
+                        </div>
                         {(theme.navigation || []).map((item, index) => (
                             <div key={index} className="rounded-lg border border-slate-200 p-3">
                                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -1454,7 +2221,17 @@ const StoreBuilderPage = () => {
             case 'seo':
                 return (
                     <div className="space-y-4">
-                        <BuilderCard title="Homepage SEO" description="Control how your store homepage appears in Google and social shares." icon={Search}>
+                        <BuilderCard
+                            title="Homepage SEO"
+                            description="Control how your store homepage appears in Google and social shares."
+                            icon={Search}
+                            actions={(
+                                <BuilderButton type="button" variant="secondary" onClick={requestSeoAiSuggestions} disabled={seoAi.loading}>
+                                    {seoAi.loading ? <RefreshCw size={16} className="animate-spin" /> : <Search size={16} />}
+                                    {seoAi.loading ? 'Improving...' : 'Improve SEO with AI'}
+                                </BuilderButton>
+                            )}
+                        >
                             <BuilderInput
                                 label="Homepage SEO title"
                                 value={theme.seo?.title || ''}
@@ -1514,6 +2291,60 @@ const StoreBuilderPage = () => {
                                 checked={theme.seo?.searchEngineVisibility !== false}
                                 onChange={e => setThemeGroup('seo', 'searchEngineVisibility', e.target.checked)}
                             />
+                            {seoAi.error && (
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800">
+                                    {seoAi.error}
+                                </div>
+                            )}
+                            {seoAi.suggestions && (
+                                <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
+                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <p className="text-sm font-black text-slate-950">AI SEO suggestions</p>
+                                            <p className="mt-1 text-xs leading-5 text-slate-600">Review these before applying. Nothing publishes until you click Publish changes.</p>
+                                        </div>
+                                        <BuilderButton type="button" onClick={() => applySeoSuggestion(seoAi.suggestions)}>
+                                            Apply all
+                                        </BuilderButton>
+                                    </div>
+                                    {seoAi.suggestions.title && (
+                                        <div className="rounded-lg border border-white bg-white p-3 shadow-sm">
+                                            <p className="text-xs font-black uppercase tracking-wide text-slate-400">SEO title</p>
+                                            <p className="mt-1 text-sm font-bold text-slate-900">{seoAi.suggestions.title}</p>
+                                            <BuilderButton type="button" variant="subtle" className="mt-3" onClick={() => applySeoSuggestion({ title: seoAi.suggestions.title })}>
+                                                Apply title
+                                            </BuilderButton>
+                                        </div>
+                                    )}
+                                    {seoAi.suggestions.description && (
+                                        <div className="mt-3 rounded-lg border border-white bg-white p-3 shadow-sm">
+                                            <p className="text-xs font-black uppercase tracking-wide text-slate-400">Meta description</p>
+                                            <p className="mt-1 text-sm leading-6 text-slate-700">{seoAi.suggestions.description}</p>
+                                            <BuilderButton type="button" variant="subtle" className="mt-3" onClick={() => applySeoSuggestion({ description: seoAi.suggestions.description })}>
+                                                Apply description
+                                            </BuilderButton>
+                                        </div>
+                                    )}
+                                    {Array.isArray(seoAi.suggestions.keywords) && seoAi.suggestions.keywords.length > 0 && (
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {seoAi.suggestions.keywords.map(keyword => (
+                                                <span key={keyword} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-indigo-700 shadow-sm">
+                                                    {keyword}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {Array.isArray(seoAi.suggestions.recommendations) && seoAi.suggestions.recommendations.length > 0 && (
+                                        <div className="mt-3 space-y-2">
+                                            {seoAi.suggestions.recommendations.map((item, index) => (
+                                                <div key={`${item.type || 'tip'}-${index}`} className="rounded-lg bg-white px-3 py-2 text-xs leading-5 text-slate-600 shadow-sm">
+                                                    <span className="font-black text-slate-900">{item.priority || 'tip'}:</span> {item.message}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </BuilderCard>
                         <SeoSnippetPreview {...storeSeoPreview} />
                         <SeoHealthCard

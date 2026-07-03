@@ -73,7 +73,7 @@ const BrandMark = ({ theme, brandName, trustedBadge, shopVerification }) => (
         )}
         <span className="min-w-0">
             <span className="block truncate text-sm font-black leading-tight text-[var(--sf-navbar-text)] sm:text-base">{brandName}</span>
-            <span className="hidden truncate text-xs font-semibold text-[var(--sf-navbar-text)] opacity-60 sm:block">Storefront</span>
+            <span className="hidden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span>
             <VerifiedSellerBadge verification={shopVerification} />
             <TrustedBadge badge={trustedBadge} />
         </span>
@@ -143,24 +143,15 @@ export function ReferenceStorefrontHeader({
     const navLinks = getSortedNavigation(theme);
     const headerNavLinks = navLinks.filter((item) => !["track order", "account", "cart"].includes(String(item.label || "").toLowerCase()));
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const logoPosition = theme.header?.logoPosition || "Left";
-    const forcedDesktopLayoutClass = logoPosition === "Center"
-        ? "grid-cols-[minmax(0,1fr)_minmax(190px,auto)_minmax(0,1fr)]"
-        : logoPosition === "Right"
-            ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(190px,auto)]"
-            : "grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
-    const desktopLayoutClass = logoPosition === "Center"
-        ? "lg:grid-cols-[minmax(0,1fr)_minmax(190px,auto)_minmax(0,1fr)]"
-        : logoPosition === "Right"
-            ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(190px,auto)]"
-            : "lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
+    const forcedDesktopLayoutClass = "grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
+    const desktopLayoutClass = "lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
     const brandSlot = (
         <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0">
             <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
         </LinkSlot>
     );
     const searchSlot = (
-        <div className={`flex min-w-0 ${logoPosition === "Left" ? "justify-center" : "justify-start"}`}>
+        <div className="flex min-w-0 justify-center">
             <button
                 type="button"
                 onClick={onSearch}
@@ -173,7 +164,7 @@ export function ReferenceStorefrontHeader({
         </div>
     );
     const actionSlot = (
-        <div className={`flex min-w-0 items-center gap-1 xl:gap-2 ${logoPosition === "Right" ? "justify-start" : "justify-end"}`}>
+        <div className="flex min-w-0 items-center justify-end gap-1 xl:gap-2">
             <nav className="mr-2 hidden max-w-full items-center gap-1 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] xl:flex">
                 {headerNavLinks.slice(0, 5).map((item, index) => (
                     <HeaderNavItem
@@ -199,18 +190,14 @@ export function ReferenceStorefrontHeader({
                 <ShoppingBag size={17} className="shrink-0" />
                 <span className="hidden xl:inline">Cart</span>
                 {cartCount > 0 && (
-                    <span className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sf-accent)] px-1 text-[10px] font-black text-white">
+                    <span className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
                         {cartCount}
                     </span>
                 )}
             </LinkSlot>
         </div>
     );
-    const desktopSlots = logoPosition === "Center"
-        ? [searchSlot, brandSlot, actionSlot]
-        : logoPosition === "Right"
-            ? [searchSlot, actionSlot, brandSlot]
-            : [brandSlot, searchSlot, actionSlot];
+    const desktopSlots = [brandSlot, searchSlot, actionSlot];
     const forceNarrowHeader = isPreviewNarrow(previewDevice);
     const desktopHeaderClass = previewDevice
         ? (forceNarrowHeader ? "hidden" : `grid h-[76px] items-center gap-6 ${forcedDesktopLayoutClass}`)
@@ -225,7 +212,7 @@ export function ReferenceStorefrontHeader({
     return (
         <>
             <EditorSelectionFrame editor={editor} id="header" label="Navbar" locked>
-                <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl">
+                <header className="sticky top-0 z-50 border-b bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl" style={{ borderColor: "var(--sf-header-border)" }}>
                     <div className={containerClass}>
                         <div className={desktopHeaderClass}>
                             {desktopSlots.map((slot, index) => <div key={index} className="min-w-0">{slot}</div>)}
@@ -251,7 +238,7 @@ export function ReferenceStorefrontHeader({
                             >
                                 <ShoppingBag size={18} />
                                 {cartCount > 0 && (
-                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--sf-accent)] px-1 text-[10px] font-black">
+                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
                                         {cartCount}
                                     </span>
                                 )}

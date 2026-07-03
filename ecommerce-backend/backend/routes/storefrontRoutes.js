@@ -20,7 +20,8 @@ const {
     getStoreInfo,
     getStorefrontBootstrap,
     getSingleProduct,
-    getBatchProducts
+    getBatchProducts,
+    getCartRecommendations
 } = require('../controllers/storeController');
 
 // Product Controllers
@@ -110,6 +111,12 @@ router.get(
     '/:subdomain/products/batch',
     resolveTenant,
     getBatchProducts
+);
+
+router.get(
+    '/:subdomain/recommendations/cart',
+    resolveTenant,
+    getCartRecommendations
 );
 
 router.get(

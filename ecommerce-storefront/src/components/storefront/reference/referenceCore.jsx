@@ -1,18 +1,12 @@
 "use client";
 
-import { ChevronDown, Headphones, ShieldCheck, Truck } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { getImageUrlFromValue, getProductImageAlt } from "../../../lib/seo";
 import { getThemeCssVars } from "../../../lib/theme";
 
 export const REFERENCE_SAMPLE_PRODUCTS = [];
 export const REFERENCE_SAMPLE_CATEGORIES = [];
-
-export const serviceCards = [
-    { icon: Truck, title: "Quick Shipping", text: "Fast fulfillment with live delivery updates" },
-    { icon: Headphones, title: "24/7 Support", text: "Friendly help whenever customers need it" },
-    { icon: ShieldCheck, title: "Secure Payment", text: "Encrypted checkout and trusted payments" },
-];
 
 export const productGridGapClasses = {
     Compact: "gap-3 sm:gap-4",
@@ -146,38 +140,134 @@ export const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
     secondaryCtaLink: slide.secondaryCtaLink || "#products",
 });
 
+const hasRenderableHeroSlide = (slide = {}) => Boolean(
+    slide.desktopImage ||
+    slide.mobileImage ||
+    slide.title ||
+    slide.subtitle ||
+    slide.badgeText ||
+    slide.discountText
+);
+
 export const getHeroSlides = (hero = {}) => {
     const sourceSlides = Array.isArray(hero.bannerSlides) ? hero.bannerSlides : [];
     const slides = sourceSlides.length
         ? sourceSlides.map((slide, index) => normalizeHeroSlide(slide, index, hero))
         : [normalizeHeroSlide({}, 0, hero)];
-    const enabledSlides = slides.filter((slide) => slide.enabled !== false);
+    const seen = new Set();
+    const enabledSlides = slides.filter((slide) => {
+        if (slide.enabled === false || !hasRenderableHeroSlide(slide)) return false;
+        const key = [slide.desktopImage, slide.mobileImage, slide.title, slide.subtitle, slide.badgeText, slide.discountText].join("|");
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
     return enabledSlides.length ? enabledSlides : [slides[0] || normalizeHeroSlide({}, 0, hero)];
 };
 
 export const getReferenceThemeStyle = (themeCandidate = {}) => {
     const cssTheme = getThemeCssVars(themeCandidate);
+    const groups = cssTheme.colorGroups || {};
+    const brand = groups.brand || {};
+    const header = groups.header || {};
+    const hero = groups.hero || {};
+    const productCard = groups.productCard || {};
+    const allProducts = groups.allProducts || {};
+    const sections = groups.sections || {};
+    const footer = groups.footer || {};
+    const checkout = groups.checkout || {};
+
     return {
-        "--sf-accent": cssTheme.accent,
-        "--sf-accent-hover": cssTheme.accentHover,
-        "--sf-accent-soft": cssTheme.accentSoft,
-        "--sf-accent-bg": cssTheme.accentBg,
+        "--sf-accent": brand.accent || cssTheme.accent,
+        "--sf-accent-hover": brand.hover || cssTheme.accentHover,
+        "--sf-accent-soft": brand.soft || cssTheme.accentSoft,
+        "--sf-accent-bg": brand.soft || cssTheme.accentBg,
         "--sf-primary-button-bg": cssTheme.primaryButtonBg,
         "--sf-primary-button-text": cssTheme.primaryButtonText,
         "--sf-primary-button-hover-bg": cssTheme.primaryButtonHoverBg,
-        "--sf-navbar-background": cssTheme.navbarBackground,
-        "--sf-navbar-text": cssTheme.navbarText,
-        "--sf-navbar-hover": cssTheme.navbarHover,
-        "--sf-card-background": cssTheme.cardBackground,
-        "--sf-card-border": cssTheme.cardBorder,
+        "--sf-navbar-background": header.background || cssTheme.navbarBackground,
+        "--sf-navbar-text": header.text || cssTheme.navbarText,
+        "--sf-navbar-muted-text": header.mutedText || cssTheme.navbarText,
+        "--sf-navbar-hover": header.hover || cssTheme.navbarHover,
+        "--sf-header-icon": header.icon || cssTheme.navbarText,
+        "--sf-header-border": header.border || cssTheme.cardBorder,
+        "--sf-header-cart-badge-bg": header.cartBadgeBackground || brand.primary || cssTheme.accent,
+        "--sf-header-cart-badge-text": header.cartBadgeText || "#ffffff",
+        "--sf-hero-background": hero.background || "#020617",
+        "--sf-hero-title": hero.title || "#ffffff",
+        "--sf-hero-subtitle": hero.subtitle || "#e2e8f0",
+        "--sf-hero-overlay": hero.overlay || "#020617",
+        "--sf-hero-primary-button-bg": hero.primaryButtonBackground || "#ffffff",
+        "--sf-hero-primary-button-text": hero.primaryButtonText || "#0f172a",
+        "--sf-hero-secondary-button-bg": hero.secondaryButtonBackground || "#ffffff",
+        "--sf-hero-secondary-button-text": hero.secondaryButtonText || "#0f172a",
+        "--sf-card-background": productCard.background || cssTheme.cardBackground,
+        "--sf-card-border": productCard.border || cssTheme.cardBorder,
         "--sf-card-hover-border": cssTheme.cardHoverBorder,
-        "--sf-sale-badge-bg": cssTheme.saleBadgeBg,
-        "--sf-sale-badge-text": cssTheme.saleBadgeText,
-        "--sf-price-color": cssTheme.priceColor,
-        "--sf-rating-color": cssTheme.ratingColor,
-        "--sf-footer-background": cssTheme.footerBackground,
-        "--sf-footer-text": cssTheme.footerText,
-        "--sf-footer-link": cssTheme.footerLink,
+        "--sf-product-card-background": productCard.background || cssTheme.cardBackground,
+        "--sf-product-card-border": productCard.border || cssTheme.cardBorder,
+        "--sf-product-card-shadow": productCard.shadow || cssTheme.cardBorder,
+        "--sf-product-card-title": productCard.title || cssTheme.foreground,
+        "--sf-product-card-category": productCard.category || cssTheme.footerText,
+        "--sf-product-card-price": productCard.price || cssTheme.priceColor,
+        "--sf-product-card-compare-at-price": productCard.compareAtPrice || "#94a3b8",
+        "--sf-product-card-sale-badge-bg": productCard.saleBadgeBackground || cssTheme.saleBadgeBg,
+        "--sf-product-card-sale-badge-text": productCard.saleBadgeText || cssTheme.saleBadgeText,
+        "--sf-product-card-rating-star": productCard.ratingStar || cssTheme.ratingColor,
+        "--sf-product-card-rating-text": productCard.ratingText || "#94a3b8",
+        "--sf-product-card-wishlist-icon": productCard.wishlistIcon || "#64748b",
+        "--sf-product-card-wishlist-active": productCard.wishlistActive || "#e11d48",
+        "--sf-product-card-add-to-cart-bg": productCard.addToCartBackground || brand.primary || cssTheme.accent,
+        "--sf-product-card-add-to-cart-text": productCard.addToCartText || "#ffffff",
+        "--sf-product-card-buy-now-bg": productCard.buyNowBackground || "#0f172a",
+        "--sf-product-card-buy-now-text": productCard.buyNowText || "#ffffff",
+        "--sf-product-card-out-of-stock-bg": productCard.outOfStockBackground || "#fff1f2",
+        "--sf-product-card-out-of-stock-text": productCard.outOfStockText || "#e11d48",
+        "--sf-product-card-stock-bg": productCard.stockBackground || "#ecfdf5",
+        "--sf-product-card-stock-text": productCard.stockText || "#047857",
+        "--sf-sale-badge-bg": productCard.saleBadgeBackground || cssTheme.saleBadgeBg,
+        "--sf-sale-badge-text": productCard.saleBadgeText || cssTheme.saleBadgeText,
+        "--sf-price-color": productCard.price || cssTheme.priceColor,
+        "--sf-rating-color": productCard.ratingStar || cssTheme.ratingColor,
+        "--sf-all-products-background": allProducts.background || cssTheme.background,
+        "--sf-all-products-title": allProducts.title || cssTheme.foreground,
+        "--sf-all-products-subtitle": allProducts.subtitle || cssTheme.footerText,
+        "--sf-all-products-filter-bg": allProducts.filterBackground || "#ffffff",
+        "--sf-all-products-filter-text": allProducts.filterText || "#475569",
+        "--sf-all-products-dropdown-bg": allProducts.dropdownBackground || "#ffffff",
+        "--sf-all-products-pagination-bg": allProducts.paginationBackground || "#ffffff",
+        "--sf-all-products-pagination-text": allProducts.paginationText || "#475569",
+        "--sf-all-products-pagination-active-bg": allProducts.paginationActiveBackground || brand.primary || cssTheme.accent,
+        "--sf-all-products-pagination-active-text": allProducts.paginationActiveText || "#ffffff",
+        "--sf-section-background": sections.background || "#ffffff",
+        "--sf-section-title": sections.title || cssTheme.foreground,
+        "--sf-section-subtitle": sections.subtitle || cssTheme.footerText,
+        "--sf-section-banner-overlay": sections.bannerOverlay || "#020617",
+        "--sf-section-banner-text": sections.bannerText || "#ffffff",
+        "--sf-section-faq-bg": sections.faqBackground || "#f8fafc",
+        "--sf-section-faq-text": sections.faqText || "#475569",
+        "--sf-section-testimonial-bg": sections.testimonialBackground || "#f8fafc",
+        "--sf-section-testimonial-text": sections.testimonialText || "#475569",
+        "--sf-section-trust-icon": sections.trustIcon || brand.primary || cssTheme.accent,
+        "--sf-section-trust-text": sections.trustText || "#475569",
+        "--sf-footer-background": footer.background || cssTheme.footerBackground,
+        "--sf-footer-heading": footer.heading || cssTheme.footerLink,
+        "--sf-footer-text": footer.text || cssTheme.footerText,
+        "--sf-footer-link": footer.link || cssTheme.footerLink,
+        "--sf-footer-link-hover": footer.linkHover || brand.primary || cssTheme.accent,
+        "--sf-footer-border": footer.border || cssTheme.cardBorder,
+        "--sf-footer-powered-by": footer.poweredBy || "#94a3b8",
+        "--sf-checkout-background": checkout.background || "#f8fafc",
+        "--sf-checkout-card-background": checkout.cardBackground || "#ffffff",
+        "--sf-checkout-text": checkout.text || "#0f172a",
+        "--sf-checkout-button-background": checkout.buttonBackground || "#0f172a",
+        "--sf-checkout-button-text": checkout.buttonText || "#ffffff",
+        "--sf-checkout-accent": checkout.accent || brand.primary || cssTheme.accent,
+        "--sf-checkout-input-background": checkout.inputBackground || "#ffffff",
+        "--sf-checkout-input-border": checkout.inputBorder || "#cbd5e1",
+        "--sf-checkout-input-focus": checkout.inputFocus || brand.primary || cssTheme.accent,
+        "--sf-checkout-error": checkout.error || "#dc2626",
+        "--sf-checkout-success": checkout.success || "#047857",
         fontFamily: cssTheme.fontFamily,
         color: cssTheme.foreground,
         backgroundColor: cssTheme.background,

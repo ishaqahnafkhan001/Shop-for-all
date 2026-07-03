@@ -42,8 +42,10 @@ export function useCheckoutPhoneOtp({ subdomain, resetKey }) {
             setMaskedPhone(data.maskedPhone || "");
             setMaskedPhoneKey(resetKey);
             toast.success(data.message || "Verification code sent");
+            return data;
         } catch (error) {
             toast.error(error.response?.data?.error || "Could not send phone verification code");
+            return null;
         } finally {
             setSending(false);
         }
@@ -52,7 +54,7 @@ export function useCheckoutPhoneOtp({ subdomain, resetKey }) {
     const verifyOtp = async ({ phone, items }) => {
         if (visibleOtp.trim().length !== 6) {
             toast.error("Enter the 6-digit verification code");
-            return;
+            return null;
         }
 
         setVerifying(true);
@@ -68,10 +70,12 @@ export function useCheckoutPhoneOtp({ subdomain, resetKey }) {
             setMaskedPhone(data.maskedPhone || "");
             setMaskedPhoneKey(resetKey);
             toast.success(data.message || "Phone verified");
+            return data;
         } catch (error) {
             setPhoneVerificationToken("");
             setVerifiedKey("");
             toast.error(error.response?.data?.error || "Invalid or expired verification code");
+            return null;
         } finally {
             setVerifying(false);
         }

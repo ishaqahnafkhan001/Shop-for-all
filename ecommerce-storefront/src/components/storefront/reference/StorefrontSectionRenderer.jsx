@@ -26,8 +26,12 @@ export const HomepageSection = memo(function HomepageSection({
     catalogProducts,
     storewideDiscount,
     productCard,
+    sectionColors = {},
     layout,
     onProductAdd,
+    onProductBuyNow,
+    onWishlistToggle,
+    isProductWishlisted,
     LinkComponent,
     previewDevice,
     editor,
@@ -52,8 +56,8 @@ export const HomepageSection = memo(function HomepageSection({
                 <section className={`${mobileVisibilityClass} mt-8 md:mt-12`}>
                     <div className="mb-4 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
                         <div className="min-w-0">
-                            <h2 className="text-xl font-black tracking-tight text-slate-950 sm:text-3xl">{section.title || "Featured Products"}</h2>
-                            <p className="mt-1 text-xs font-semibold text-slate-500 sm:text-sm">Handpicked products from this store</p>
+                            <h2 className="text-xl font-black tracking-tight sm:text-3xl" style={{ color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Featured Products"}</h2>
+                            <p className="mt-1 text-xs font-semibold sm:text-sm" style={{ color: sectionColors.subtitle || "var(--sf-section-subtitle)" }}>Handpicked products from this store</p>
                         </div>
                         <LinkSlot LinkComponent={LinkComponent} href="#products" className="hidden rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-[var(--sf-accent-soft)] hover:text-[var(--sf-accent)] sm:inline-flex">
                             View all
@@ -68,6 +72,9 @@ export const HomepageSection = memo(function HomepageSection({
                                 storewideDiscount={storewideDiscount}
                                 productCard={productCard}
                                 onProductAdd={onProductAdd}
+                                onProductBuyNow={onProductBuyNow}
+                                onWishlistToggle={onWishlistToggle}
+                                isWishlisted={isProductWishlisted}
                                 LinkComponent={LinkComponent}
                             />
                         ))}
@@ -89,7 +96,7 @@ export const HomepageSection = memo(function HomepageSection({
         return (
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
                 <section className={`${mobileVisibilityClass} mt-8 md:mt-12`}>
-                    <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || "#products"} className="group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] bg-slate-950 shadow-sm sm:min-h-[280px] sm:rounded-[1.75rem] lg:min-h-[320px]">
+                    <LinkSlot LinkComponent={LinkComponent} href={section.settings?.buttonLink || "#products"} className="group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] shadow-sm sm:min-h-[280px] sm:rounded-[1.75rem] lg:min-h-[320px]" style={{ backgroundColor: sectionColors.bannerOverlay || "var(--sf-section-banner-overlay)" }}>
                         {mobileImageUrl && mobileImageUrl !== imageUrl && (
                             <img
                                 src={optimizeCloudinaryImage(mobileImageUrl, { width: 760, crop: "fill" })}
@@ -113,9 +120,9 @@ export const HomepageSection = memo(function HomepageSection({
                             />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/78 via-slate-950/36 to-transparent" />
-                        <div className="relative z-10 flex min-h-[220px] max-w-2xl flex-col justify-end p-5 text-white sm:min-h-[280px] sm:p-8 lg:min-h-[320px] lg:p-10">
+                        <div className="relative z-10 flex min-h-[220px] max-w-2xl flex-col justify-end p-5 sm:min-h-[280px] sm:p-8 lg:min-h-[320px] lg:p-10" style={{ color: sectionColors.bannerText || "var(--sf-section-banner-text)" }}>
                             <h2 className="text-2xl font-black leading-tight sm:text-4xl lg:text-5xl">{section.settings?.title || section.title || "Promotional banner"}</h2>
-                            {section.settings?.subtitle && <p className="mt-3 max-w-xl text-sm leading-6 text-white/75 sm:text-base">{section.settings.subtitle}</p>}
+                            {section.settings?.subtitle && <p className="mt-3 max-w-xl text-sm leading-6 opacity-80 sm:text-base">{section.settings.subtitle}</p>}
                             {section.settings?.buttonText && <span className="mt-5 inline-flex w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950">{section.settings.buttonText}</span>}
                         </div>
                         {images.length > 1 && (
@@ -151,13 +158,13 @@ export const HomepageSection = memo(function HomepageSection({
         if (!reviewText && reviews.length === 0) return null;
         return (
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-                <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem] md:p-7`}>
-                    <h2 className="text-xl font-black text-slate-950 sm:text-3xl">{section.title || "Customer Reviews"}</h2>
+                <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem] md:p-7`} style={{ backgroundColor: sectionColors.background || "var(--sf-section-background)" }}>
+                    <h2 className="text-xl font-black sm:text-3xl" style={{ color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Customer Reviews"}</h2>
                     <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {reviews.length > 0 ? reviews.map((review) => (
-                            <div key={review._id} className="rounded-2xl bg-slate-50 p-4">
+                            <div key={review._id} className="rounded-2xl p-4" style={{ backgroundColor: sectionColors.testimonialBackground || "var(--sf-section-testimonial-bg)" }}>
                                 <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map((star) => <Star key={star} size={13} fill="currentColor" />)}</div>
-                                <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">“{review.comment}”</p>
+                                <p className="mt-3 text-sm font-semibold leading-6" style={{ color: sectionColors.testimonialText || "var(--sf-section-testimonial-text)" }}>“{review.comment}”</p>
                                 <div className="mt-4 border-t border-slate-200 pt-3">
                                     <p className="text-sm font-black text-slate-950">{review.name}</p>
                                     {review.product?.title && <p className="text-xs font-semibold text-slate-500">{review.product.title}</p>}
@@ -165,9 +172,9 @@ export const HomepageSection = memo(function HomepageSection({
                                 </div>
                             </div>
                         )) : (
-                            <div className="rounded-2xl bg-slate-50 p-4 md:col-span-3">
+                            <div className="rounded-2xl p-4 md:col-span-3" style={{ backgroundColor: sectionColors.testimonialBackground || "var(--sf-section-testimonial-bg)" }}>
                                 <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map((star) => <Star key={star} size={13} fill="currentColor" />)}</div>
-                                <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{reviewText}</p>
+                                <p className="mt-3 text-sm font-semibold leading-6" style={{ color: sectionColors.testimonialText || "var(--sf-section-testimonial-text)" }}>{reviewText}</p>
                             </div>
                         )}
                     </div>
@@ -187,8 +194,8 @@ export const HomepageSection = memo(function HomepageSection({
         if (visibleCategories.length === 0) return null;
         return (
             <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-                <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem]`}>
-                    <h2 className="text-xl font-black text-slate-950 sm:text-2xl">{section.title || "Shop by category"}</h2>
+                <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-6 md:mt-12 md:rounded-[1.75rem]`} style={{ backgroundColor: sectionColors.background || "var(--sf-section-background)" }}>
+                    <h2 className="text-xl font-black sm:text-2xl" style={{ color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Shop by category"}</h2>
                     <div className={`mt-4 grid gap-2 ${categoryGridClass}`}>
                         {visibleCategories.map((category) => (
                             <LinkSlot key={category} LinkComponent={LinkComponent} href={`/?category=${encodeURIComponent(category)}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
@@ -203,9 +210,9 @@ export const HomepageSection = memo(function HomepageSection({
 
     return (
         <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>
-            <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-5 text-center shadow-sm md:mt-12 md:rounded-[1.75rem] sm:p-10`}>
-                <h2 className="text-xl font-black text-slate-950 sm:text-3xl">{section.title || "Store update"}</h2>
-                {section.settings?.text && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">{section.settings.text}</p>}
+            <section className={`${mobileVisibilityClass} mt-8 rounded-[1.5rem] border border-slate-200 p-5 text-center shadow-sm md:mt-12 md:rounded-[1.75rem] sm:p-10`} style={{ backgroundColor: sectionColors.background || "var(--sf-section-background)" }}>
+                <h2 className="text-xl font-black sm:text-3xl" style={{ color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Store update"}</h2>
+                {section.settings?.text && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 sm:text-base" style={{ color: sectionColors.subtitle || "var(--sf-section-subtitle)" }}>{section.settings.text}</p>}
             </section>
         </EditorSelectionFrame>
     );

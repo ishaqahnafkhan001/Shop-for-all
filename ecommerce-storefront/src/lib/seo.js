@@ -30,7 +30,12 @@ export const truncateMetaDescription = (description, max = 170) => truncateAtWor
 
 const getProtocol = (host = "") => (/localhost|127\.0\.0\.1|\[::1\]/i.test(host) ? "http" : "https");
 
-const normalizeHost = (host = "") => String(host || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+const normalizeHost = (host = "") => String(host || "")
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .split(/[/?#]/)[0]
+    .replace(/\/$/, "")
+    .toLowerCase();
 
 const isPlatformRootHost = (host = "") => {
     const cleanHost = normalizeHost(host).split(":")[0];
@@ -53,12 +58,25 @@ export const isCustomDomainFullyVerified = (customDomain = {}) => (
     )
 );
 
+export const getVerifiedCustomDomainHost = (shop = {}, explicitCustomDomain = "") => {
+    const domain = normalizeHost(explicitCustomDomain || shop?.customDomain?.domain || "");
+    if (!domain) return "";
+
+    const customDomain = explicitCustomDomain
+        ? {
+            status: "Verified",
+            domain,
+            ownershipVerified: true,
+            routingVerified: true
+        }
+        : shop?.customDomain;
+
+    return isCustomDomainFullyVerified(customDomain) ? domain : "";
+};
+
 export const getShopBaseUrl = ({ host, subdomain, shop, customDomain } = {}) => {
     const currentHost = normalizeHost(host || "");
-    const verifiedCustomDomain = normalizeHost(
-        customDomain ||
-        (isCustomDomainFullyVerified(shop?.customDomain) ? shop?.customDomain?.domain : "")
-    );
+    const verifiedCustomDomain = getVerifiedCustomDomainHost(shop, customDomain);
 
     if (verifiedCustomDomain) {
         return `${getProtocol(verifiedCustomDomain)}://${verifiedCustomDomain}`;
@@ -95,7 +113,9 @@ export const getCollectionCanonicalUrl = ({ host, subdomain, shop, collection } 
     return absoluteUrl(getShopBaseUrl({ host, subdomain, shop }), `/collections/${getCollectionPathSegment(collection)}`);
 };
 
-export const getHomepageCanonicalUrl = ({ host, subdomain, shop } = {}) => getShopBaseUrl({ host, subdomain, shop });
+export const getHomepageCanonicalUrl = ({ host, subdomain, shop } = {}) => (
+    `${getShopBaseUrl({ host, subdomain, shop }).replace(/\/$/, "")}/`
+);
 
 export const getPolicyCanonicalUrl = ({ host, subdomain, shop, type } = {}) => (
     absoluteUrl(getShopBaseUrl({ host, subdomain, shop }), `/policies/${encodeURIComponent(type || "privacy")}`)

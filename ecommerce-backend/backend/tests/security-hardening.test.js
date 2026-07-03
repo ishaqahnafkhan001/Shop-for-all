@@ -79,6 +79,8 @@ test('store builder theme save sanitizes scriptable URLs', () => {
 
     assert.match(controller, /sanitizeThemePayload/);
     assert.match(controller, /UNSAFE_URL_PATTERN/);
+    assert.match(controller, /HEX_COLOR_PATTERN/);
+    assert.match(controller, /sanitizeColorObject/);
     assert.match(controller, /javascript\|data\|vbscript/);
     assert.match(controller, /cleanTheme = sanitizeThemePayload\(pickThemePayload\(theme\)\)/);
 });
@@ -277,6 +279,22 @@ test('verification suspension blocks high-impact vendor mutations only after aut
     assert.match(adminRoutes, /'\/orders\/:id\/status'[\s\S]*requirePermission\('orders'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*updateOrderStatus/);
     assert.match(storeBuilderRoutes, /'\/admin'[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('storeBuilder'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*updateStoreBuilderSettings/);
     assert.match(storeBuilderRoutes, /'\/admin\/logo'[\s\S]*blockVerificationSuspendedShop[\s\S]*upload\.single\('logo'\)/);
+});
+
+test('store builder SEO AI route is protected and backend-only', () => {
+    const storeBuilderRoutes = read('routes/storeBuilderRoutes.js');
+    const storeBuilderController = read('controllers/storeBuilderController.js');
+    const seoAiService = read('services/storeSeoAiService.js');
+    const storeBuilderPage = readProject('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
+
+    assert.match(storeBuilderRoutes, /'\/admin\/seo\/ai-suggest'[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('storeBuilder'\)[\s\S]*requireShopFeature\('storeBuilder'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*suggestStoreSeo/);
+    assert.match(storeBuilderController, /Product\.find\(\{[\s\S]*shop_id:\s*req\.tenantId/);
+    assert.match(storeBuilderController, /generateStoreSeoSuggestion/);
+    assert.match(seoAiService, /process\.env\.GEMINI_API_KEY/);
+    assert.match(seoAiService, /AI_NOT_CONFIGURED/);
+    assert.match(seoAiService, /Please add GEMINI_API_KEY on the backend server/);
+    assert.match(seoAiService, /responseMimeType:\s*'application\/json'/);
+    assert.doesNotMatch(storeBuilderPage, /GEMINI_API_KEY/);
 });
 
 test('public tenant resolution checks verification before exposing storefront', () => {
@@ -722,4 +740,47 @@ test('redx courier integration is provider-based, masked, queued, and phone safe
     assert.match(pathaoModal, /deliveryAreaId/);
     assert.match(pathaoModal, /handleSearchRedxAreas/);
     assert.match(orderDetails, /Track RedX parcel/);
+});
+
+test('storefront conversion UX keeps recommendations tenant-scoped and checkout OTP backend-backed', () => {
+    const storefrontRoutes = read('routes/storefrontRoutes.js');
+    const storeController = read('controllers/storeController.js');
+    const productCard = readProject('ecommerce-storefront/src/components/storefront/reference/StorefrontProductCard.jsx');
+    const productActions = readProject('ecommerce-storefront/src/hooks/useStorefrontProductActions.js');
+    const cartPage = readProject('ecommerce-storefront/src/app/[subdomain]/cart/page.jsx');
+    const checkoutPage = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx');
+    const checkoutSections = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/components/CheckoutSections.jsx');
+    const checkoutTotals = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutTotals.js');
+
+    assert.match(storefrontRoutes, /'\/:subdomain\/recommendations\/cart'[\s\S]*resolveTenant[\s\S]*getCartRecommendations/);
+    assert.match(storeController, /exports\.getCartRecommendations/);
+    assert.match(storeController, /shop_id:\s*shopObjectId/);
+    assert.match(storeController, /status:\s*'Published'/);
+    assert.match(storeController, /\$nin:\s*cartObjectIds/);
+    assert.match(storeController, /sanitizePublicProducts\(recommendations\)/);
+
+    assert.match(productCard, /onProductBuyNow/);
+    assert.match(productCard, /onWishlistToggle/);
+    assert.match(productCard, /aria-pressed=\{wishlisted\}/);
+    assert.match(productCard, /No reviews yet/);
+    assert.match(productActions, /`wishlist:\$\{subdomain \|\| "store"\}`/);
+    assert.match(productActions, /router\.push\("\/checkout"\)/);
+    assert.match(productActions, /\/storefront\/\$\{subdomain\}\/products\/\$\{productKey\}/);
+    assert.match(productActions, /StorefrontVariantPickerModal/);
+
+    assert.match(cartPage, /\/storefront\/\$\{subdomain\}\/recommendations\/cart/);
+    assert.match(cartPage, /You may also like/);
+    assert.match(cartPage, /productActions\.buyNow/);
+
+    assert.match(checkoutPage, /CheckoutOtpModal/);
+    assert.match(checkoutPage, /setOtpModalOpen\(true\)/);
+    assert.match(checkoutPage, /executePlaceOrder\(\{\s*verificationToken:\s*token\s*\}\)/);
+    assert.match(checkoutPage, /phoneVerificationToken,\n\s*\};/);
+    assert.doesNotMatch(checkoutPage, /Please verify your phone number before placing the order/);
+    assert.match(checkoutSections, /<select[\s\S]*name="city"/);
+    assert.match(checkoutSections, /<option value="Inside Dhaka">Inside Dhaka<\/option>/);
+    assert.match(checkoutSections, /<option value="Outside Dhaka">Outside Dhaka<\/option>/);
+    assert.doesNotMatch(checkoutSections, /disabled=\{loading \|\| !policyAccepted \|\| !phoneVerified\}/);
+    assert.match(checkoutTotals, /selectedZone === "Inside Dhaka"/);
+    assert.match(checkoutTotals, /selectedZone === "Outside Dhaka"/);
 });

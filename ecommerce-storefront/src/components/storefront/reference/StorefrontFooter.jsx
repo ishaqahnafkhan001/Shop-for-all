@@ -14,10 +14,10 @@ import {
 
 const FooterColumn = ({ title, links, LinkComponent }) => (
     <div>
-        <h3 className="text-sm font-black text-[var(--sf-footer-link)]">{title}</h3>
+        <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">{title}</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
                 </LinkSlot>
             ))}
@@ -27,16 +27,16 @@ const FooterColumn = ({ title, links, LinkComponent }) => (
 
 const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, LinkComponent }) => (
     <div>
-        <h3 className="text-sm font-black text-[var(--sf-footer-link)]">Support</h3>
+        <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">Support</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
                 </LinkSlot>
             ))}
         </div>
         {contactHref && (
-            <LinkSlot LinkComponent={LinkComponent} href={contactHref} className="mt-6 inline-flex items-center gap-2 text-base font-black text-[var(--sf-footer-link)] transition hover:opacity-75">
+            <LinkSlot LinkComponent={LinkComponent} href={contactHref} className="mt-6 inline-flex items-center gap-2 text-base font-black text-[var(--sf-footer-link)] transition hover:text-[var(--sf-footer-link-hover)]">
                 <Mail size={18} />
                 {contactLabel}
             </LinkSlot>
@@ -44,7 +44,7 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
         {socialLinks.length > 0 && (
             <div className="mt-7 flex flex-wrap items-center gap-3">
                 {socialLinks.map((item) => (
-                    <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-accent)] hover:text-white">
+                    <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-footer-link-hover)] hover:text-white">
                         {item.short}
                     </LinkSlot>
                 ))}
@@ -55,13 +55,13 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
 
 const FooterAccordion = ({ title, links, LinkComponent }) => (
     <details className="group border-b border-slate-200 py-4">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-[var(--sf-footer-link)]">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-[var(--sf-footer-heading)]">
             {title}
             <ChevronDown size={17} className="transition group-open:rotate-180" />
         </summary>
         <div className="mt-3 grid gap-3 pb-2 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
                 </LinkSlot>
             ))}
@@ -130,7 +130,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
     return (
         <>
             <EditorSelectionFrame editor={editor} id="footer" label="Footer" locked>
-                <footer className="min-w-0 overflow-x-hidden border-t border-slate-200 bg-[var(--sf-footer-background)] pb-20 pt-10 text-[var(--sf-footer-text)] md:pb-8 md:pt-12 lg:pt-14" style={getReferenceThemeStyle(theme)}>
+                <footer className="min-w-0 overflow-x-hidden border-t pb-20 pt-10 text-[var(--sf-footer-text)] md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
                     <div className={containerClass}>
                         <div className={footerGridClass}>
                             <div className="min-w-0">
@@ -139,7 +139,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                         {getInitials(brandName)}
                                     </span>
                                     <div className="min-w-0">
-                                        <h2 className="truncate text-xl font-black text-[var(--sf-footer-link)]">{brandName}</h2>
+                                        <h2 className="truncate text-xl font-black text-[var(--sf-footer-heading)]">{brandName}</h2>
                                         <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--sf-footer-text)]">Storefront</p>
                                     </div>
                                 </div>
@@ -186,8 +186,8 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                 )}
                             </div>
                         </div>
-                        <div className="mt-10 flex min-w-0 flex-col gap-4 border-t border-slate-200 pt-5 text-sm font-semibold text-[var(--sf-footer-text)] sm:flex-row sm:items-center sm:justify-between sm:gap-5">
-                            <p className="min-w-0 break-words">© {new Date().getFullYear()} {brandName}. Powered by Scaleup.</p>
+                        <div className="mt-10 flex min-w-0 flex-col gap-4 border-t pt-5 text-sm font-semibold text-[var(--sf-footer-text)] sm:flex-row sm:items-center sm:justify-between sm:gap-5" style={{ borderColor: "var(--sf-footer-border)" }}>
+                            <p className="min-w-0 break-words" style={{ color: "var(--sf-footer-powered-by)" }}>© {new Date().getFullYear()} {brandName}. Powered by Scaleup.</p>
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="inline-flex items-center gap-2">
                                     <Lock size={16} className="text-[var(--sf-footer-link)]" />

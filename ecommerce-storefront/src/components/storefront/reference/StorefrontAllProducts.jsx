@@ -15,31 +15,31 @@ import {
 import { ProductCard } from "./StorefrontProductCard";
 
 const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange }) => (
-    <div className="min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <div className="min-w-0 rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-5" style={{ backgroundColor: "var(--sf-all-products-filter-bg)", color: "var(--sf-all-products-filter-text)" }}>
         <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-base font-black text-slate-950">Filter Products</h3>
+            <h3 className="text-base font-black" style={{ color: "var(--sf-all-products-title)" }}>Filter Products</h3>
             <SlidersHorizontal size={17} className="text-slate-400" />
         </div>
         <div className="space-y-2">
-            <button type="button" onClick={() => onCategoryChange("All")} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.category === "All" ? "bg-[var(--sf-accent)] text-white" : "text-slate-600 hover:bg-slate-50"}`}>All Products</button>
+            <button type="button" onClick={() => onCategoryChange("All")} className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-50" style={filters.category === "All" ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" } : { color: "var(--sf-all-products-filter-text)" }}>All Products</button>
             {categories?.map((category) => (
-                <button key={category} type="button" onClick={() => onCategoryChange(category)} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.category === category ? "bg-[var(--sf-accent)] text-white" : "text-slate-600 hover:bg-slate-50"}`}>
+                <button key={category} type="button" onClick={() => onCategoryChange(category)} className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-50" style={filters.category === category ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" } : { color: "var(--sf-all-products-filter-text)" }}>
                     {category}
                 </button>
             ))}
         </div>
         <div className="my-5 h-px bg-slate-200" />
-        <h4 className="mb-3 text-sm font-black text-slate-950">Price Range</h4>
+        <h4 className="mb-3 text-sm font-black" style={{ color: "var(--sf-all-products-title)" }}>Price Range</h4>
         <div className="grid grid-cols-2 gap-2 max-[360px]:grid-cols-1">
             <input type="number" aria-label="Minimum price" placeholder="Min" value={priceInput.min} onChange={onMinPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
             <input type="number" aria-label="Maximum price" placeholder="Max" value={priceInput.max} onChange={onMaxPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
         </div>
-        <button type="button" onClick={onPriceApply} className="mt-3 w-full rounded-full bg-[var(--sf-accent)] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--sf-accent-hover)]">Apply Price</button>
+        <button type="button" onClick={onPriceApply} className="mt-3 w-full rounded-full px-4 py-3 text-sm font-black transition hover:-translate-y-0.5" style={{ backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" }}>Apply Price</button>
         <div className="my-5 h-px bg-slate-200" />
         <div className="space-y-3 text-sm font-bold text-slate-600">
             <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 rounded border-slate-300" /> In stock only</label>
             <div>
-                <p className="mb-2 text-slate-950">Rating</p>
+                <p className="mb-2" style={{ color: "var(--sf-all-products-title)" }}>Rating</p>
                 {[5, 4, 3].map((rating) => (
                     <button
                         key={rating}
@@ -55,7 +55,7 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
                 ))}
             </div>
         </div>
-        <button type="button" onClick={onClearFilters} className="mt-5 w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50">Clear Filter</button>
+        <button type="button" onClick={onClearFilters} className="mt-5 w-full rounded-full border border-slate-200 px-4 py-3 text-sm font-black transition hover:bg-slate-50" style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }}>Clear Filter</button>
     </div>
 );
 
@@ -80,6 +80,9 @@ export function StorefrontAllProducts({
     onPageChange,
     onPriceApply,
     onProductAdd,
+    onProductBuyNow,
+    onWishlistToggle,
+    isProductWishlisted,
     onRatingChange,
     onSortChange,
     pagination,
@@ -143,17 +146,17 @@ export function StorefrontAllProducts({
     return (
         <>
             <EditorSelectionFrame editor={editor} id="allProducts" label="All Products" locked>
-                <section id="products" className="bg-slate-50 py-7 sm:py-12">
+                <section id="products" className="py-7 sm:py-12" style={{ backgroundColor: "var(--sf-all-products-background)" }}>
                     <div className={containerClass}>
                         <div className={allProductsHeaderClass}>
                             <div>
-                                <h2 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{allProducts.title || "All Products"}</h2>
-                                <p className="mt-1 text-xs font-semibold text-slate-500 sm:text-sm">{allProducts.subtitle || "Browse this shop's latest catalog"}</p>
+                                <h2 className="text-2xl font-black tracking-tight sm:text-3xl" style={{ color: "var(--sf-all-products-title)" }}>{allProducts.title || "All Products"}</h2>
+                                <p className="mt-1 text-xs font-semibold sm:text-sm" style={{ color: "var(--sf-all-products-subtitle)" }}>{allProducts.subtitle || "Browse this shop's latest catalog"}</p>
                             </div>
                             <div className={catalogControlsClass}>
                                 <label className={catalogSearchClass}>
                                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="min-h-11 w-full rounded-full border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm font-semibold text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
+                                    <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="min-h-11 w-full rounded-full border border-slate-200 py-2.5 pl-11 pr-4 text-sm font-semibold outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }} />
                                 </label>
                                 <select value={filters.sort} onChange={onSortChange} aria-label="Sort products" className={catalogSelectClass}>
                                     <option value="newest">Newest</option>
@@ -171,8 +174,8 @@ export function StorefrontAllProducts({
                             </div>
                         </div>
 
-                        <div className="mb-4 flex flex-col gap-2 px-1 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[1.25rem] sm:border sm:border-slate-200 sm:bg-white sm:p-3 sm:shadow-sm">
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                        <div className="mb-4 flex flex-col gap-2 px-1 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[1.25rem] sm:border sm:border-slate-200 sm:p-3 sm:shadow-sm" style={{ backgroundColor: "var(--sf-all-products-filter-bg)" }}>
+                            <p className="text-xs font-black uppercase tracking-[0.14em]" style={{ color: "var(--sf-all-products-filter-text)" }}>
                                 Showing {filteredProducts.length} product{filteredProducts.length === 1 ? "" : "s"}
                             </p>
                             {activeFilterChips.length > 0 ? (
@@ -189,7 +192,7 @@ export function StorefrontAllProducts({
                                             <X size={13} />
                                         </button>
                                     ))}
-                                    <button type="button" onClick={onClearFilters} className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-500">
+                                    <button type="button" onClick={onClearFilters} className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-black" style={{ color: "var(--sf-all-products-filter-text)" }}>
                                         Clear all
                                     </button>
                                 </div>
@@ -236,6 +239,9 @@ export function StorefrontAllProducts({
                                                 storewideDiscount={storewideDiscount}
                                                 productCard={productCard}
                                                 onProductAdd={onProductAdd}
+                                                onProductBuyNow={onProductBuyNow}
+                                                onWishlistToggle={onWishlistToggle}
+                                                isWishlisted={isProductWishlisted}
                                                 LinkComponent={LinkComponent}
                                             />
                                         ))}
@@ -244,16 +250,26 @@ export function StorefrontAllProducts({
 
                                 {pagination?.pages > 1 && (
                                     <div className="mt-8 hidden items-center justify-center gap-2 md:flex">
-                                        <button type="button" onClick={() => onPageChange(filters.page - 1)} disabled={filters.page === 1} aria-label="Previous product page" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 disabled:opacity-40">Previous</button>
+                                        <button type="button" onClick={() => onPageChange(filters.page - 1)} disabled={filters.page === 1} aria-label="Previous product page" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black disabled:opacity-40" style={{ backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}>Previous</button>
                                         {Array.from({ length: Math.min(pagination.pages, 5) }, (_, index) => {
                                             const pageNumber = index + 1;
                                             return (
-                                                <button key={pageNumber} type="button" onClick={() => onPageChange(pageNumber)} aria-label={`Go to product page ${pageNumber}`} aria-current={filters.page === pageNumber ? "page" : undefined} className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black ${filters.page === pageNumber ? "bg-[var(--sf-accent)] text-white" : "bg-white text-slate-600"}`}>
+                                                <button
+                                                    key={pageNumber}
+                                                    type="button"
+                                                    onClick={() => onPageChange(pageNumber)}
+                                                    aria-label={`Go to product page ${pageNumber}`}
+                                                    aria-current={filters.page === pageNumber ? "page" : undefined}
+                                                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-black"
+                                                    style={filters.page === pageNumber
+                                                        ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" }
+                                                        : { backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}
+                                                >
                                                     {pageNumber}
                                                 </button>
                                             );
                                         })}
-                                        <button type="button" onClick={() => onPageChange(filters.page + 1)} disabled={filters.page === pagination.pages} aria-label="Next product page" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 disabled:opacity-40">Next</button>
+                                        <button type="button" onClick={() => onPageChange(filters.page + 1)} disabled={filters.page === pagination.pages} aria-label="Next product page" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black disabled:opacity-40" style={{ backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}>Next</button>
                                     </div>
                                 )}
                             </main>

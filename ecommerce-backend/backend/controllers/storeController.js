@@ -341,6 +341,97 @@ exports.getBatchProducts = async (req, res) => {
     }
 };
 
+exports.getCartRecommendations = async (req, res) => {
+    try {
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 6, 1), 12);
+        const shopObjectId = new mongoose.Types.ObjectId(req.tenantId);
+        const cartIds = String(req.query.ids || '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(id => mongoose.Types.ObjectId.isValid(id))
+            .slice(0, 40);
+        const cartObjectIds = [...new Set(cartIds)].map(id => new mongoose.Types.ObjectId(id));
+
+        const baseMatch = {
+            shop_id: shopObjectId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published',
+            ...(cartObjectIds.length > 0 ? { _id: { $nin: cartObjectIds } } : {}),
+            $expr: { $gt: [{ $sum: '$variants.stock' }, 0] }
+        };
+
+        const cartProducts = cartObjectIds.length
+            ? await Product.find({
+                _id: { $in: cartObjectIds },
+                shop_id: shopObjectId,
+                isDeleted: false
+            }).select('category tags collections').lean()
+            : [];
+
+        const categories = [...new Set(cartProducts.map(product => product.category).filter(Boolean))];
+        const tags = [...new Set(cartProducts.flatMap(product => product.tags || []).filter(Boolean))];
+        const collections = [...new Set(cartProducts.flatMap(product => product.collections || []).map(String).filter(Boolean))];
+
+        const priorityMatches = [];
+        if (categories.length > 0) priorityMatches.push({ category: { $in: categories } });
+        if (tags.length > 0) priorityMatches.push({ tags: { $in: tags } });
+        if (collections.length > 0) {
+            priorityMatches.push({
+                collections: {
+                    $in: collections.map(id => new mongoose.Types.ObjectId(id))
+                }
+            });
+        }
+
+        const projectStage = { $project: PUBLIC_PRODUCT_CARD_PROJECT };
+        const sortStage = { $sort: { averageRating: -1, numReviews: -1, createdAt: -1, _id: 1 } };
+        let recommendations = [];
+
+        if (priorityMatches.length > 0) {
+            recommendations = await Product.aggregate([
+                { $match: { ...baseMatch, $or: priorityMatches } },
+                sortStage,
+                { $limit: limit },
+                projectStage
+            ]);
+        }
+
+        if (recommendations.length < limit) {
+            const alreadyPickedIds = recommendations.map(product => product._id);
+            const fallbackProducts = await Product.aggregate([
+                {
+                    $match: {
+                        ...baseMatch,
+                        ...(alreadyPickedIds.length > 0
+                            ? {
+                                _id: {
+                                    $nin: [
+                                        ...cartObjectIds,
+                                        ...alreadyPickedIds
+                                    ]
+                                }
+                            }
+                            : {})
+                    }
+                },
+                sortStage,
+                { $limit: limit - recommendations.length },
+                projectStage
+            ]);
+            recommendations = [...recommendations, ...fallbackProducts];
+        }
+
+        res.status(200).json({
+            success: true,
+            data: sanitizePublicProducts(recommendations)
+        });
+    } catch (err) {
+        console.error("Cart recommendations error:", err);
+        res.status(500).json({ success: false, error: "Error loading recommendations." });
+    }
+};
+
 
 exports.getCities = async (req, res) => {
     try {

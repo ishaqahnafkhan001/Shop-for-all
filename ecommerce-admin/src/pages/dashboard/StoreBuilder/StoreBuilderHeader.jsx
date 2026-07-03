@@ -67,7 +67,7 @@ export const StoreBuilderHeader = ({
         </div>
         <div className="mx-auto flex max-w-[1600px] gap-2 px-4 pb-3 xl:hidden">
             {[
-                ['structure', 'Structure'],
+                ['structure', 'Layout'],
                 ['edit', 'Edit'],
                 ['preview', 'Preview']
             ].map(([id, label]) => (

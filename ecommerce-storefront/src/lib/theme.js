@@ -38,6 +38,108 @@ export const FALLBACK_THEME = {
         footerBackground: '#ffffff',
         footerText: '#64748b',
         footerLink: '#0f172a',
+        brand: {
+            primary: '#0f766e',
+            secondary: '#0f172a',
+            accent: '#0f766e',
+            hover: '#115e59',
+            soft: '#ecfdf5',
+            ring: '#ccfbf1',
+        },
+        header: {
+            background: '#ffffff',
+            text: '#0f172a',
+            mutedText: '#64748b',
+            icon: '#0f172a',
+            border: '#e2e8f0',
+            hover: '#0f766e',
+            cartBadgeBackground: '#0f766e',
+            cartBadgeText: '#ffffff',
+        },
+        hero: {
+            background: '#020617',
+            title: '#ffffff',
+            subtitle: '#e2e8f0',
+            overlay: '#020617',
+            primaryButtonBackground: '#ffffff',
+            primaryButtonText: '#0f172a',
+            secondaryButtonBackground: '#ffffff',
+            secondaryButtonText: '#0f172a',
+        },
+        productCard: {
+            background: '#ffffff',
+            border: '#e2e8f0',
+            shadow: '#e2e8f0',
+            title: '#0f172a',
+            category: '#64748b',
+            price: '#0f172a',
+            compareAtPrice: '#94a3b8',
+            saleBadgeBackground: '#dc2626',
+            saleBadgeText: '#ffffff',
+            ratingStar: '#f59e0b',
+            ratingText: '#94a3b8',
+            wishlistIcon: '#64748b',
+            wishlistActive: '#e11d48',
+            addToCartBackground: '#0f766e',
+            addToCartText: '#ffffff',
+            buyNowBackground: '#0f172a',
+            buyNowText: '#ffffff',
+            outOfStockBackground: '#fff1f2',
+            outOfStockText: '#e11d48',
+            stockBackground: '#ecfdf5',
+            stockText: '#047857',
+            variantChipBackground: '#f8fafc',
+            variantChipText: '#475569',
+            variantChipSelectedBackground: '#0f766e',
+            variantChipSelectedText: '#ffffff',
+        },
+        allProducts: {
+            background: '#f8fafc',
+            title: '#0f172a',
+            subtitle: '#64748b',
+            filterBackground: '#ffffff',
+            filterText: '#475569',
+            dropdownBackground: '#ffffff',
+            paginationBackground: '#ffffff',
+            paginationText: '#475569',
+            paginationActiveBackground: '#0f766e',
+            paginationActiveText: '#ffffff',
+        },
+        sections: {
+            background: '#ffffff',
+            title: '#0f172a',
+            subtitle: '#64748b',
+            bannerOverlay: '#020617',
+            bannerText: '#ffffff',
+            faqBackground: '#f8fafc',
+            faqText: '#475569',
+            testimonialBackground: '#f8fafc',
+            testimonialText: '#475569',
+            trustIcon: '#0f766e',
+            trustText: '#475569',
+        },
+        footer: {
+            background: '#ffffff',
+            heading: '#0f172a',
+            text: '#64748b',
+            link: '#0f172a',
+            linkHover: '#0f766e',
+            border: '#e2e8f0',
+            poweredBy: '#94a3b8',
+        },
+        checkout: {
+            background: '#f8fafc',
+            cardBackground: '#ffffff',
+            text: '#0f172a',
+            buttonBackground: '#0f172a',
+            buttonText: '#ffffff',
+            accent: '#0f766e',
+            inputBackground: '#ffffff',
+            inputBorder: '#cbd5e1',
+            inputFocus: '#0f766e',
+            error: '#dc2626',
+            success: '#047857',
+        },
     },
     header: {
         logoPosition: 'Left',
@@ -123,6 +225,7 @@ export const FALLBACK_THEME = {
     seo: {
         title: '',
         description: '',
+        keywords: [],
         socialImage: '',
         facebookUrl: '',
         searchEngineVisibility: true,
@@ -186,6 +289,71 @@ const mergeObject = (base, incoming) => ({
     ...base,
     ...(incoming || {}),
 });
+
+const isHexColor = (value) => HEX_COLOR_REGEX.test(String(value || ''));
+
+const sanitizeFlatColors = (base = {}, incoming = {}) => Object.keys(base).reduce((acc, key) => {
+    const value = incoming?.[key];
+    acc[key] = isHexColor(value) ? value : base[key];
+    return acc;
+}, {});
+
+const mergeColorGroup = (base = {}, incoming = {}) => Object.keys(base).reduce((acc, key) => {
+    const value = incoming?.[key];
+    acc[key] = isHexColor(value) ? value : base[key];
+    return acc;
+}, {});
+
+const normalizeColors = (incoming = {}) => {
+    const raw = incoming || {};
+    const flat = sanitizeFlatColors(FALLBACK_THEME.colors, raw);
+
+    return {
+        ...flat,
+        brand: mergeColorGroup(FALLBACK_THEME.colors.brand, {
+            primary: raw.brand?.primary || raw.accent,
+            secondary: raw.brand?.secondary || raw.foreground,
+            accent: raw.brand?.accent || raw.accent,
+            hover: raw.brand?.hover || raw.accentHover,
+            soft: raw.brand?.soft || raw.accentBg,
+            ring: raw.brand?.ring || raw.accentRing,
+        }),
+        header: mergeColorGroup(FALLBACK_THEME.colors.header, {
+            ...(raw.header || {}),
+            background: raw.header?.background || raw.navbarBackground || raw.headerBackground,
+            text: raw.header?.text || raw.navbarText,
+            icon: raw.header?.icon || raw.navbarText,
+            hover: raw.header?.hover || raw.navbarHover || raw.accent,
+            border: raw.header?.border || raw.cardBorder,
+            cartBadgeBackground: raw.header?.cartBadgeBackground || raw.accent,
+            cartBadgeText: raw.header?.cartBadgeText || raw.primaryButtonText,
+        }),
+        hero: mergeColorGroup(FALLBACK_THEME.colors.hero, raw.hero || {}),
+        productCard: mergeColorGroup(FALLBACK_THEME.colors.productCard, {
+            ...(raw.productCard || {}),
+            background: raw.productCard?.background || raw.cardBackground,
+            border: raw.productCard?.border || raw.cardBorder,
+            price: raw.productCard?.price || raw.priceColor,
+            saleBadgeBackground: raw.productCard?.saleBadgeBackground || raw.saleBadgeBg,
+            saleBadgeText: raw.productCard?.saleBadgeText || raw.saleBadgeText,
+            ratingStar: raw.productCard?.ratingStar || raw.ratingColor,
+            addToCartBackground: raw.productCard?.addToCartBackground || raw.primaryButtonBg,
+            addToCartText: raw.productCard?.addToCartText || raw.primaryButtonText,
+        }),
+        allProducts: mergeColorGroup(FALLBACK_THEME.colors.allProducts, raw.allProducts || {}),
+        sections: mergeColorGroup(FALLBACK_THEME.colors.sections, raw.sections || {}),
+        footer: mergeColorGroup(FALLBACK_THEME.colors.footer, {
+            ...(raw.footer || {}),
+            background: raw.footer?.background || raw.footerBackground,
+            heading: raw.footer?.heading || raw.footerLink,
+            text: raw.footer?.text || raw.footerText,
+            link: raw.footer?.link || raw.footerLink,
+            linkHover: raw.footer?.linkHover || raw.accent,
+            border: raw.footer?.border || raw.cardBorder,
+        }),
+        checkout: mergeColorGroup(FALLBACK_THEME.colors.checkout, raw.checkout || {}),
+    };
+};
 
 const mergePolicies = (base = {}, incoming = {}) => Object.keys(base).reduce((acc, key) => {
     const value = incoming?.[key];
@@ -262,7 +430,7 @@ export const normalizeTheme = (theme = {}) => ({
     ...FALLBACK_THEME,
     ...theme,
     version: Number(theme.version) || THEME_SCHEMA_VERSION,
-    colors: mergeObject(FALLBACK_THEME.colors, theme.colors || theme),
+    colors: normalizeColors(theme.colors || theme),
     header: mergeObject(FALLBACK_THEME.header, theme.header),
     typography: mergeObject(FALLBACK_THEME.typography, theme.typography),
     hero: mergeObject(FALLBACK_THEME.hero, theme.hero),
@@ -303,6 +471,7 @@ export const getThemeCssVars = (themeCandidate = {}) => {
     const theme = normalizeTheme(themeCandidate);
     const colors = theme.colors;
     const safeColors = Object.keys(FALLBACK_THEME.colors).reduce((acc, key) => {
+        if (FALLBACK_THEME.colors[key] && typeof FALLBACK_THEME.colors[key] === 'object') return acc;
         const color = HEX_COLOR_REGEX.test(colors[key]) ? colors[key] : FALLBACK_THEME.colors[key];
         acc[key] = color.toLowerCase() === LEGACY_DEFAULT_COLORS[key] ? FALLBACK_THEME.colors[key] : color;
         return acc;
@@ -312,6 +481,16 @@ export const getThemeCssVars = (themeCandidate = {}) => {
 
     return {
         ...safeColors,
+        colorGroups: {
+            brand: mergeColorGroup(FALLBACK_THEME.colors.brand, colors.brand),
+            header: mergeColorGroup(FALLBACK_THEME.colors.header, colors.header),
+            hero: mergeColorGroup(FALLBACK_THEME.colors.hero, colors.hero),
+            productCard: mergeColorGroup(FALLBACK_THEME.colors.productCard, colors.productCard),
+            allProducts: mergeColorGroup(FALLBACK_THEME.colors.allProducts, colors.allProducts),
+            sections: mergeColorGroup(FALLBACK_THEME.colors.sections, colors.sections),
+            footer: mergeColorGroup(FALLBACK_THEME.colors.footer, colors.footer),
+            checkout: mergeColorGroup(FALLBACK_THEME.colors.checkout, colors.checkout),
+        },
         fontFamily: theme.typography.bodyFont || theme.fontFamily || FALLBACK_THEME.fontFamily,
         headingFont: theme.typography.headingFont || theme.fontFamily || FALLBACK_THEME.fontFamily,
         baseSize,

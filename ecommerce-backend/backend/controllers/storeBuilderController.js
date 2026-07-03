@@ -1,10 +1,12 @@
 const Shop = require('../models/Shop');
 const Review = require('../models/Review');
+const Product = require('../models/Product');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { invalidateTenantCache } = require('../middlewares/tenant');
 const { ensureThemeSectionArchitecture, normalizeDynamicSections } = require('../services/themeSectionService');
 const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
+const { generateStoreSeoSuggestion } = require('../services/storeSeoAiService');
 const {
     normalizeCustomDomain,
     isValidCustomDomain,
@@ -40,6 +42,7 @@ const allowedThemeKeys = [
 
 const URL_FIELD_PATTERN = /(url|href|link|image|images|logo|favicon)$/i;
 const UNSAFE_URL_PATTERN = /^(javascript|data|vbscript):/i;
+const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
 
 const cleanTextValue = (value = '') => String(value)
     .replace(/\0/g, '')
@@ -74,6 +77,23 @@ const sanitizeGoogleSiteVerification = (value = '') => {
         .slice(0, 200);
 };
 
+const sanitizeColorObject = (value = {}) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+
+    return Object.entries(value).reduce((acc, [key, colorValue]) => {
+        if (colorValue && typeof colorValue === 'object' && !Array.isArray(colorValue)) {
+            const nested = sanitizeColorObject(colorValue);
+            if (Object.keys(nested).length > 0) acc[key] = nested;
+            return acc;
+        }
+
+        if (typeof colorValue !== 'string') return acc;
+        const cleanColor = cleanTextValue(colorValue).trim();
+        if (HEX_COLOR_PATTERN.test(cleanColor)) acc[key] = cleanColor;
+        return acc;
+    }, {});
+};
+
 const sanitizeThemeValue = (value, key = '') => {
     if (Array.isArray(value)) {
         return value.map(item => sanitizeThemeValue(item, key));
@@ -95,6 +115,9 @@ const sanitizeThemeValue = (value, key = '') => {
 
 const sanitizeThemePayload = (theme = {}) => {
     const cleanTheme = sanitizeThemeValue(theme);
+    if (cleanTheme?.colors && typeof cleanTheme.colors === 'object') {
+        cleanTheme.colors = sanitizeColorObject(cleanTheme.colors);
+    }
     if (cleanTheme?.seo && typeof cleanTheme.seo === 'object') {
         cleanTheme.seo.googleSiteVerification = sanitizeGoogleSiteVerification(cleanTheme.seo.googleSiteVerification);
     }
@@ -262,6 +285,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
         await ensureThemeSectionArchitecture(shop);
+        const responseShop = typeof shop.toObject === 'function' ? shop.toObject() : shop;
 
         await Promise.all([
             cache.del(`storefront:settings:${req.tenantId}`),
@@ -272,7 +296,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Store settings updated',
-            data: shop
+            data: responseShop
         });
     } catch (err) {
         console.error('Update store builder settings error:', err);
@@ -280,6 +304,56 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         res.status(err.statusCode || 400).json({
             success: false,
             error: duplicateDomain ? 'This domain is already connected to another shop.' : err.message || 'Failed to update store builder settings'
+        });
+    }
+};
+
+exports.suggestStoreSeo = async (req, res) => {
+    try {
+        const shop = await Shop.findById(req.tenantId)
+            .select('shopName subdomain theme')
+            .lean();
+
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+
+        const currentTheme = req.body?.currentTheme || {};
+        const theme = {
+            ...(shop.theme || {}),
+            ...currentTheme,
+            seo: {
+                ...(shop.theme?.seo || {}),
+                ...(currentTheme.seo || {})
+            },
+            hero: {
+                ...(shop.theme?.hero || {}),
+                ...(currentTheme.hero || {})
+            },
+            navigation: Array.isArray(currentTheme.navigation)
+                ? currentTheme.navigation
+                : (shop.theme?.navigation || [])
+        };
+
+        const products = await Product.find({
+            shop_id: req.tenantId,
+            isDeleted: false
+        })
+            .select('title category tags')
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .lean();
+
+        const suggestion = await generateStoreSeoSuggestion({ shop, theme, products });
+        res.status(200).json({ success: true, data: suggestion });
+    } catch (err) {
+        const isMissingConfig = err?.code === 'AI_NOT_CONFIGURED';
+        if (!isMissingConfig) {
+            console.error('Store SEO AI suggestion error:', err.message);
+        }
+        res.status(isMissingConfig ? 503 : 500).json({
+            success: false,
+            error: isMissingConfig
+                ? 'AI SEO suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+                : 'Failed to generate SEO suggestions.'
         });
     }
 };

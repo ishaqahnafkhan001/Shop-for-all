@@ -3,16 +3,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PackageX } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { useShopData } from '@/hooks/useShopData';
+import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
 import { normalizeTheme } from '@/lib/theme';
 import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
 import { ReferenceStorefrontHome } from '@/components/storefront/ReferenceStorefront';
 import { trackStorefrontEvent } from '@/utils/analyticsTracker';
 
 export default function StorefrontHomeClient({ subdomain, initialData = null }) {
-    const { addToCart } = useCart();
     const { user } = useAuth();
     const { hydrateThemeSettings } = useStorefrontTheme();
     const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', minRating: '', sort: 'newest', page: 1 });
@@ -24,6 +23,25 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
     const theme = normalizeTheme(shop?.theme || initialData?.shop?.theme || {});
     const storewideDiscount = shop?.storewideDiscount || initialData?.shop?.storewideDiscount || 0;
     const customerId = user?.role === 'Customer' ? (user._id || user.id) : null;
+    const productActions = useStorefrontProductActions({
+        subdomain,
+        onProductAdded: (product, meta = {}) => {
+            trackStorefrontEvent({
+                subdomain,
+                eventType: 'add_to_cart',
+                customer_id: customerId,
+                product_id: product._id,
+                variant_id: product.variantId || product.selectedVariant?._id,
+                value: product.finalPrice || product.sellingPrice || product.pricing?.sellingPrice || 0,
+                metadata: {
+                    productTitle: product.title,
+                    category: product.category,
+                    location: meta.location || 'home',
+                    intent: meta.intent || 'add_to_cart'
+                }
+            });
+        }
+    });
 
     useEffect(() => {
         if (shop) hydrateThemeSettings(shop);
@@ -59,21 +77,8 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
     }, []);
 
     const handleProductAdd = useCallback((product) => {
-        addToCart(product);
-        trackStorefrontEvent({
-            subdomain,
-            eventType: 'add_to_cart',
-            customer_id: customerId,
-            product_id: product._id,
-            variant_id: product.variantId || product.selectedVariant?._id,
-            value: product.finalPrice || product.sellingPrice || product.pricing?.sellingPrice || 0,
-            metadata: {
-                productTitle: product.title,
-                category: product.category,
-                location: 'home'
-            }
-        });
-    }, [addToCart, customerId, subdomain]);
+        productActions.addProductToCart(product, { location: 'home' });
+    }, [productActions]);
 
     useEffect(() => {
         const query = catalogSearch.trim();
@@ -111,32 +116,38 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
     }
 
     return (
-        <ReferenceStorefrontHome
-            theme={theme}
-            products={products}
-            categories={categories}
-            sectionProducts={sectionProducts}
-            sectionReviews={sectionReviews}
-            storewideDiscount={storewideDiscount}
-            loading={loading}
-            pagination={pagination}
-            filters={filters}
-            priceInput={priceInput}
-            catalogSearch={catalogSearch}
-            mobileFiltersOpen={mobileFiltersOpen}
-            onCatalogSearchChange={event => setCatalogSearch(event.target.value)}
-            onSortChange={handleSortChange}
-            onFilterOpen={() => setMobileFiltersOpen(true)}
-            onFilterClose={() => setMobileFiltersOpen(false)}
-            onCategoryChange={handleCategoryChange}
-            onMinPriceChange={event => setPriceInput(prev => ({ ...prev, min: event.target.value }))}
-            onMaxPriceChange={event => setPriceInput(prev => ({ ...prev, max: event.target.value }))}
-            onPriceApply={handlePriceApply}
-            onRatingChange={handleRatingChange}
-            onClearFilters={handleClearFilters}
-            onPageChange={handlePageChange}
-            onProductAdd={handleProductAdd}
-            LinkComponent={Link}
-        />
+        <>
+            <ReferenceStorefrontHome
+                theme={theme}
+                products={products}
+                categories={categories}
+                sectionProducts={sectionProducts}
+                sectionReviews={sectionReviews}
+                storewideDiscount={storewideDiscount}
+                loading={loading}
+                pagination={pagination}
+                filters={filters}
+                priceInput={priceInput}
+                catalogSearch={catalogSearch}
+                mobileFiltersOpen={mobileFiltersOpen}
+                onCatalogSearchChange={event => setCatalogSearch(event.target.value)}
+                onSortChange={handleSortChange}
+                onFilterOpen={() => setMobileFiltersOpen(true)}
+                onFilterClose={() => setMobileFiltersOpen(false)}
+                onCategoryChange={handleCategoryChange}
+                onMinPriceChange={event => setPriceInput(prev => ({ ...prev, min: event.target.value }))}
+                onMaxPriceChange={event => setPriceInput(prev => ({ ...prev, max: event.target.value }))}
+                onPriceApply={handlePriceApply}
+                onRatingChange={handleRatingChange}
+                onClearFilters={handleClearFilters}
+                onPageChange={handlePageChange}
+                onProductAdd={handleProductAdd}
+                onProductBuyNow={(product) => productActions.buyNow(product, { location: 'home' })}
+                onWishlistToggle={productActions.toggleWishlist}
+                isProductWishlisted={productActions.isWishlisted}
+                LinkComponent={Link}
+            />
+            {productActions.variantPicker}
+        </>
     );
 }

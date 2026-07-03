@@ -2,11 +2,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { pathToFileURL } = require('node:url');
 
 const root = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(__dirname, '../../..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const readRepo = (file) => fs.readFileSync(path.join(repoRoot, file), 'utf8');
+const importStorefrontSeo = () => import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/seo.js')).href);
 
 test('public product detail lookup supports tenant-safe slug and ObjectId fallback', () => {
     const storeController = read('controllers/storeController.js');
@@ -63,6 +65,42 @@ test('storefront SEO helpers build canonical metadata and safe product JSON-LD',
     assert.match(seo, /verification = \{ google: googleSiteVerification \}/);
     assert.match(seo, /getProductImageAlt/);
     assert.match(seo, /imageAltText/);
+});
+
+test('storefront canonical helpers preserve verified custom-domain host exactly', async () => {
+    const {
+        getCollectionCanonicalUrl,
+        getHomepageCanonicalUrl,
+        getProductCanonicalUrl,
+        getShopBaseUrl
+    } = await importStorefrontSeo();
+    const verifiedShop = (domain) => ({
+        shopName: 'ADI',
+        subdomain: 'adi',
+        customDomain: {
+            status: 'Verified',
+            domain,
+            ownershipVerified: true,
+            routingVerified: true,
+            manuallyVerifiedRouting: false
+        }
+    });
+
+    const wwwShop = verifiedShop('www.adijewellery.store');
+    assert.equal(getShopBaseUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop }), 'https://www.adijewellery.store');
+    assert.equal(getHomepageCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop }), 'https://www.adijewellery.store/');
+    assert.equal(getProductCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop, product: { slug: 'hand-harness' } }), 'https://www.adijewellery.store/products/hand-harness');
+    assert.equal(getCollectionCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop, collection: { slug: 'jewellery' } }), 'https://www.adijewellery.store/collections/jewellery');
+
+    const apexShop = verifiedShop('adijewellery.store');
+    assert.equal(getShopBaseUrl({ host: 'www.adijewellery.store', subdomain: 'adi', shop: apexShop }), 'https://adijewellery.store');
+    assert.equal(getHomepageCanonicalUrl({ host: 'www.adijewellery.store', subdomain: 'adi', shop: apexShop }), 'https://adijewellery.store/');
+    assert.equal(getProductCanonicalUrl({ host: 'www.adijewellery.store', subdomain: 'adi', shop: apexShop, product: { slug: 'ring' } }), 'https://adijewellery.store/products/ring');
+    assert.equal(getCollectionCanonicalUrl({ host: 'www.adijewellery.store', subdomain: 'adi', shop: apexShop, collection: { slug: 'new-arrivals' } }), 'https://adijewellery.store/collections/new-arrivals');
+
+    assert.equal(getShopBaseUrl({ subdomain: 'phonebd', shop: { subdomain: 'phonebd', customDomain: { status: 'NotConfigured', domain: '' } } }), 'https://phonebd.scaleup.codes');
+    assert.equal(getHomepageCanonicalUrl({ subdomain: 'phonebd', shop: { subdomain: 'phonebd' } }), 'https://phonebd.scaleup.codes/');
+    assert.equal(getProductCanonicalUrl({ subdomain: 'phonebd', shop: { subdomain: 'phonebd' }, product: { slug: 'case' } }), 'https://phonebd.scaleup.codes/products/case');
 });
 
 test('root Scaleup landing page has production SEO and conversion sections', () => {
@@ -145,6 +183,7 @@ test('sitemap and robots expose only public SEO URLs and noindex private pages',
     assert.match(sitemap, /\.filter\(product => product\?\.slug\)/);
     assert.match(sitemap, /getProductCanonicalUrl/);
     assert.match(sitemap, /getCollectionCanonicalUrl/);
+    assert.match(sitemap, /getHomepageCanonicalUrl/);
     assert.match(sitemap, /collection\?\.slug/);
     assert.match(sitemap, /collection\.productCount/);
     assert.match(sitemap, /getPolicyCanonicalUrl/);
@@ -161,6 +200,8 @@ test('sitemap and robots expose only public SEO URLs and noindex private pages',
     assert.doesNotMatch(robots, /"\/collections"/);
     assert.doesNotMatch(robots, /isShopSearchVisible/);
     assert.doesNotMatch(robots, /if \(!isShopSearchVisible/);
+    assert.match(robots, /getShopBaseUrl/);
+    assert.match(robots, /Sitemap: \$\{baseUrl\.replace\(\/\\\/\$\/,\s*""\)\}\/sitemap\.xml/);
     assert.match(robots, /Sitemap:/);
     assert.match(robots, /catch \{\s*return new Response\("User-agent: \*\\nDisallow: \/\\n"/);
 
@@ -202,6 +243,8 @@ test('admin SEO Phase 2 controls expose store and product SEO guidance without s
     assert.match(storeBuilderPage, /searchEngineVisibility/);
     assert.match(storeBuilderPage, /Store SEO score/);
     assert.match(storeBuilderPage, /SeoSnippetPreview/);
+    assert.match(storeBuilderPage, /Improve SEO with AI/);
+    assert.match(storeBuilderPage, /applySeoSuggestion/);
     assert.match(seoUtils, /Image alt text added/);
     assert.match(seoUtils, /Collection pages ready/);
     assert.match(seoUtils, /Google verification added/);
@@ -250,6 +293,51 @@ test('public collection SEO route is tenant-safe and does not add duplicate cate
     assert.match(productValidation, /imageAltText/);
     assert.match(storeBuilderController, /'seo'/);
     assert.match(storeBuilderController, /sanitizeGoogleSiteVerification/);
+});
+
+test('store builder UX pass keeps preview and live renderer aligned', () => {
+    const storeBuilderPage = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
+    const storeBuilderSidebar = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderSidebar.jsx');
+    const storeBuilderConstants = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/storeBuilderConstants.jsx');
+    const storeBuilderHeader = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderHeader.jsx');
+    const storefrontHeader = readRepo('ecommerce-storefront/src/components/storefront/reference/StorefrontHeader.jsx');
+    const storefrontHome = readRepo('ecommerce-storefront/src/components/storefront/reference/StorefrontHome.jsx');
+    const referenceCore = readRepo('ecommerce-storefront/src/components/storefront/reference/referenceCore.jsx');
+    const storefrontTheme = readRepo('ecommerce-storefront/src/lib/theme.js');
+
+    assert.doesNotMatch(storeBuilderPage, /Logo position/);
+    assert.doesNotMatch(storeBuilderPage, /setThemeGroup\('header',\s*'logoPosition'/);
+    assert.doesNotMatch(storefrontHeader, /theme\.header\?\.logoPosition/);
+
+    assert.doesNotMatch(referenceCore, /Quick Shipping/);
+    assert.doesNotMatch(referenceCore, /24\/7 Support/);
+    assert.doesNotMatch(referenceCore, /Secure Payment/);
+    assert.doesNotMatch(storefrontHome, /serviceCards/);
+    assert.match(storefrontHome, /setInterval\(\(\)\s*=>[\s\S]*5000/);
+    assert.match(storefrontHome, /heroPaused/);
+
+    assert.match(storeBuilderSidebar, /Store Layout/);
+    assert.doesNotMatch(storeBuilderSidebar, /Customize your store/);
+    assert.doesNotMatch(storeBuilderConstants, /label:\s*'Hero button'/);
+    assert.match(storeBuilderConstants, /storeLayoutItems/);
+    assert.match(storeBuilderHeader, /\['structure', 'Layout'\]/);
+
+    assert.match(storeBuilderPage, /colorPalettePresets/);
+    assert.match(storeBuilderPage, /Quick Setup/);
+    assert.match(storeBuilderPage, /Section Colors/);
+    assert.match(storeBuilderPage, /Apply brand color/);
+    assert.match(storeBuilderPage, /Advanced Colors/);
+    assert.match(storeBuilderPage, /Ocean Teal/);
+    assert.match(storeBuilderPage, /Gold Luxury/);
+    assert.match(storeBuilderPage, /Reset this section/);
+    assert.match(storeBuilderPage, /Low contrast/);
+    assert.match(referenceCore, /--sf-product-card-background/);
+    assert.match(referenceCore, /--sf-checkout-button-background/);
+    assert.match(storefrontTheme, /productCard:\s*\{/);
+    assert.match(storefrontTheme, /checkout:\s*\{/);
+    assert.match(storeBuilderPage, /hasSavedTheme/);
+    assert.match(storeBuilderPage, /Keeping your current preview visible/);
+    assert.match(storefrontTheme, /keywords:\s*\[\]/);
 });
 
 test('storefront product links prefer slugs and product slug backfill is dry-run safe', () => {

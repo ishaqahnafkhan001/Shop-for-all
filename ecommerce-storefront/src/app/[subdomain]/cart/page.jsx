@@ -3,15 +3,35 @@ import React from 'react';
 import { useCart } from '@/context/CartContext';
 import { CheckCircle, Headphones, Minus, Plus, ShieldCheck, ShoppingBag, Tag, Trash2, Truck } from 'lucide-react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import API from '@/api/api';
 import SafeProductImage from '@/components/storefront/SafeProductImage';
+import { ProductCard } from '@/components/storefront/reference/StorefrontProductCard';
+import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
+import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
+import { normalizeProduct } from '@/utils/normalizeProduct';
 
 export default function CartPage() {
     const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart();
+    const params = useParams();
+    const subdomain = params?.subdomain;
+    const { theme } = useStorefrontTheme();
+    const productCardColors = theme?.colors?.productCard;
+    const productActions = useStorefrontProductActions({ subdomain });
     const [promoCode, setPromoCode] = React.useState('');
     const [promoFeedback, setPromoFeedback] = React.useState(null);
+    const [recommendations, setRecommendations] = React.useState([]);
+    const [recommendationsLoading, setRecommendationsLoading] = React.useState(false);
 
     const subtotal = cartTotal;
     const shipping = cartItems.length > 0 ? 60 : 0;
+    const recommendationIds = React.useMemo(() => (
+        [...new Set(cartItems.map((item) => item._id).filter(Boolean))]
+    ), [cartItems]);
+    const themedProductCard = React.useMemo(() => ({
+        ...(theme?.productCard || {}),
+        colors: productCardColors || {},
+    }), [theme?.productCard, productCardColors]);
 
     // Calculate total savings based on your Product Schema pricing logic
     const totalSavings = cartItems.reduce((acc, item) => {
@@ -23,6 +43,40 @@ export default function CartPage() {
 
     const total = subtotal + shipping;
     const getCartImageUrl = (item) => item.imageUrl || item.images?.[0] || '';
+
+    React.useEffect(() => {
+        if (!subdomain || recommendationIds.length === 0) {
+            queueMicrotask(() => {
+                setRecommendations([]);
+            });
+            return undefined;
+        }
+
+        let ignore = false;
+        queueMicrotask(() => {
+            if (!ignore) setRecommendationsLoading(true);
+        });
+        API.get(`/storefront/${subdomain}/recommendations/cart`, {
+            params: {
+                ids: recommendationIds.join(','),
+                limit: 6,
+            },
+        })
+            .then(({ data }) => {
+                if (ignore) return;
+                setRecommendations((data?.data || []).map(normalizeProduct).filter(Boolean));
+            })
+            .catch(() => {
+                if (!ignore) setRecommendations([]);
+            })
+            .finally(() => {
+                if (!ignore) setRecommendationsLoading(false);
+            });
+
+        return () => {
+            ignore = true;
+        };
+    }, [recommendationIds, subdomain]);
 
     const handleApplyPromo = () => {
         const code = promoCode.trim().toUpperCase();
@@ -287,7 +341,50 @@ export default function CartPage() {
                     </div>
                 </div>
             </div>
+
+            {(recommendationsLoading || recommendations.length > 0) && (
+                <section className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                    <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p className="sf-kicker">Recommended</p>
+                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">You may also like</h2>
+                            <p className="mt-1 text-sm font-semibold text-slate-500">
+                                Similar products from this store, excluding what is already in your cart.
+                            </p>
+                        </div>
+                        <Link href="/#products" className="text-sm font-black text-[var(--sf-accent)]">
+                            Browse all
+                        </Link>
+                    </div>
+
+                    {recommendationsLoading ? (
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                            {Array.from({ length: 4 }).map((_, index) => (
+                                <div key={index} className="h-72 animate-pulse rounded-[1.5rem] bg-slate-100" />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                            {recommendations.map((product, index) => (
+                                <ProductCard
+                                    key={product._id}
+                                    product={product}
+                                    index={index}
+                                    storewideDiscount={0}
+                                    productCard={themedProductCard}
+                                    onProductAdd={(item) => productActions.addProductToCart(item, { location: 'cart_recommendations' })}
+                                    onProductBuyNow={(item) => productActions.buyNow(item, { location: 'cart_recommendations' })}
+                                    onWishlistToggle={productActions.toggleWishlist}
+                                    isWishlisted={productActions.isWishlisted}
+                                    LinkComponent={Link}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
         </div>
+        {productActions.variantPicker}
 
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-xl items-center gap-3">

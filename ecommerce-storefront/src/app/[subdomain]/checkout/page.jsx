@@ -15,6 +15,7 @@ import {
     CheckoutEmptyCartState,
     CheckoutMobileStickyBar,
     CheckoutOrderSummary,
+    CheckoutOtpModal,
     CheckoutPageShell,
     CheckoutSuccessState,
 } from "./components/CheckoutSections";
@@ -23,6 +24,13 @@ import { useCheckoutCoupon } from "./hooks/useCheckoutCoupon";
 import { useCheckoutFormState } from "./hooks/useCheckoutFormState";
 import { useCheckoutPhoneOtp } from "./hooks/useCheckoutPhoneOtp";
 import { useCheckoutTotals } from "./hooks/useCheckoutTotals";
+
+const maskCheckoutPhone = (value = "") => {
+    const digits = String(value).replace(/\D/g, "");
+    const local = digits.startsWith("880") ? `0${digits.slice(3)}` : digits;
+    if (local.length < 7) return value;
+    return `${local.slice(0, 3)}****${local.slice(-4)}`;
+};
 
 export default function CheckoutPage({ params }) {
     const { subdomain } = React.use(params);
@@ -53,6 +61,9 @@ export default function CheckoutPage({ params }) {
     const [isSuccess, setIsSuccess] = useState(false);
     const [orderId, setOrderId] = useState(null);
     const [policyAccepted, setPolicyAccepted] = useState(false);
+    const [otpModalOpen, setOtpModalOpen] = useState(false);
+    const [otpModalState, setOtpModalState] = useState("idle_confirm_send");
+    const [otpModalError, setOtpModalError] = useState("");
 
     const { formData, handleInputChange } = useCheckoutFormState();
     const productsDetails = useCheckoutCartProducts({ cartItems, subdomain });
@@ -145,43 +156,66 @@ export default function CheckoutPage({ params }) {
 
     const sendPhoneOtp = () => {
         try {
-            phoneOtp.sendOtp({
+            return phoneOtp.sendOtp({
                 phone: formData.phone,
                 items: buildCheckoutItems(),
             });
         } catch (error) {
             toast.error(error.message || "Complete your cart before phone verification");
+            return null;
         }
     };
 
     const verifyPhoneOtp = () => {
         try {
-            phoneOtp.verifyOtp({
+            return phoneOtp.verifyOtp({
                 phone: formData.phone,
                 items: buildCheckoutItems(),
             });
         } catch (error) {
             toast.error(error.message || "Complete your cart before phone verification");
+            return null;
         }
     };
 
-    const handlePlaceOrder = async (event) => {
-        event.preventDefault();
-
+    const validateCheckoutIntent = () => {
         if (cartItems.length === 0) {
             toast.error("Your cart is empty");
-            return;
+            return false;
         }
 
         if (!policyAccepted) {
             toast.error("Please accept the store policies before placing your order");
-            return;
+            return false;
         }
 
-        if (!phoneOtp.verified) {
-            toast.error("Please verify your phone number before placing the order");
-            return;
+        if (!["Inside Dhaka", "Outside Dhaka"].includes(formData.city)) {
+            toast.error("Please select Inside Dhaka or Outside Dhaka");
+            return false;
         }
+
+        return true;
+    };
+
+    useEffect(() => {
+        queueMicrotask(() => {
+            setOtpModalState("idle_confirm_send");
+            setOtpModalError("");
+            setOtpModalOpen(false);
+        });
+    }, [checkoutResetKey]);
+
+    const executePlaceOrder = async ({ verificationToken } = {}) => {
+        const phoneVerificationToken = verificationToken || phoneOtp.phoneVerificationToken;
+
+        if (!phoneVerificationToken) {
+            setOtpModalOpen(true);
+            setOtpModalState("idle_confirm_send");
+            return false;
+        }
+
+        setOtpModalError("");
+        if (otpModalOpen) setOtpModalState("placing_order");
 
         setLoading(true);
 
@@ -213,7 +247,7 @@ export default function CheckoutPage({ params }) {
                         version: "checkout_policy_v1",
                     },
                     checkoutSessionId: phoneOtp.checkoutSessionId,
-                    phoneVerificationToken: phoneOtp.phoneVerificationToken,
+                    phoneVerificationToken,
                 };
 
                 const response = await API.post(
@@ -255,7 +289,7 @@ export default function CheckoutPage({ params }) {
                         version: "checkout_policy_v1",
                     },
                     checkoutSessionId: phoneOtp.checkoutSessionId,
-                    phoneVerificationToken: phoneOtp.phoneVerificationToken,
+                    phoneVerificationToken,
                 };
 
                 const response = await API.post(
@@ -297,18 +331,66 @@ export default function CheckoutPage({ params }) {
             sessionStorage.removeItem("shopforall_pending_promo");
             clearCart();
             toast.success("Order placed successfully");
+            return true;
         } catch (error) {
             console.error("Checkout order placement failed:", error);
 
-            toast.error(
+            const message =
                 error.response?.data?.error ||
                 error.response?.data?.message ||
                 error.message ||
-                "Failed to place order"
-            );
+                "Failed to place order";
+
+            setOtpModalError(message);
+            if (otpModalOpen) setOtpModalState("error");
+            toast.error(message);
+            return false;
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePlaceOrder = async (event) => {
+        event.preventDefault();
+
+        if (!validateCheckoutIntent()) return;
+
+        if (!phoneOtp.verified) {
+            setOtpModalOpen(true);
+            setOtpModalState("idle_confirm_send");
+            setOtpModalError("");
+            return;
+        }
+
+        await executePlaceOrder();
+    };
+
+    const handleOtpModalSendCode = async () => {
+        if (!validateCheckoutIntent()) return;
+        setOtpModalState("sending");
+        setOtpModalError("");
+        const result = await sendPhoneOtp();
+        if (result) {
+            setOtpModalState("otp_input");
+        } else {
+            setOtpModalState("idle_confirm_send");
+            setOtpModalError("Could not send the verification code. Please check the phone number and try again.");
+        }
+    };
+
+    const handleOtpModalVerify = async () => {
+        if (!validateCheckoutIntent()) return;
+        setOtpModalState("verifying");
+        setOtpModalError("");
+        const result = await verifyPhoneOtp();
+        const token = result?.phoneVerificationToken;
+        if (!token) {
+            setOtpModalState("otp_input");
+            setOtpModalError("Invalid or expired verification code.");
+            return;
+        }
+
+        await executePlaceOrder({ verificationToken: token });
     };
 
     if (isSuccess) {
@@ -336,16 +418,6 @@ export default function CheckoutPage({ params }) {
                 formData={formData}
                 isDhaka={isDhaka}
                 onInputChange={handleInputChange}
-                phoneOtp={{
-                    maskedPhone: phoneOtp.maskedPhone,
-                    onSendOtp: sendPhoneOtp,
-                    onVerifyOtp: verifyPhoneOtp,
-                    otp: phoneOtp.otp,
-                    sending: phoneOtp.sending,
-                    setOtp: phoneOtp.setOtp,
-                    verified: phoneOtp.verified,
-                    verifying: phoneOtp.verifying,
-                }}
             />
 
             <CheckoutOrderSummary
@@ -368,6 +440,21 @@ export default function CheckoutPage({ params }) {
                 totalAmount={totalAmount}
                 updateQuantity={updateQuantity}
                 visiblePolicies={visiblePolicies}
+            />
+            <CheckoutOtpModal
+                error={otpModalError}
+                maskedPhone={phoneOtp.maskedPhone || maskCheckoutPhone(formData.phone)}
+                onCancel={() => {
+                    if (!loading && !phoneOtp.sending && !phoneOtp.verifying) setOtpModalOpen(false);
+                }}
+                onSendCode={handleOtpModalSendCode}
+                onVerifyCode={handleOtpModalVerify}
+                open={otpModalOpen}
+                otp={phoneOtp.otp}
+                sending={phoneOtp.sending}
+                setOtp={phoneOtp.setOtp}
+                state={otpModalState}
+                verifying={phoneOtp.verifying}
             />
         </CheckoutPageShell>
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { getEnabledHomepageSections, normalizeTheme } from "../../../lib/theme";
@@ -16,7 +16,6 @@ import {
     noop,
     normalizeHeroSlide,
     optimizeCloudinaryImage,
-    serviceCards,
 } from "./referenceCore";
 import { StorefrontAllProducts } from "./StorefrontAllProducts";
 import { HomepageSection } from "./StorefrontSectionRenderer";
@@ -46,6 +45,9 @@ export function ReferenceStorefrontHome({
     onRatingChange = noop,
     onPageChange = noop,
     onProductAdd = noop,
+    onProductBuyNow,
+    onWishlistToggle,
+    isProductWishlisted,
     LinkComponent = DefaultLink,
     previewDevice,
     editor,
@@ -54,13 +56,18 @@ export function ReferenceStorefrontHome({
     const hero = theme.hero || {};
     const heroSlides = getHeroSlides(hero);
     const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+    const [heroPaused, setHeroPaused] = useState(false);
     const activeHeroSlide = heroSlides[activeHeroIndex % heroSlides.length] || normalizeHeroSlide({}, 0, hero);
     const activeHeroImage = activeHeroSlide.desktopImage || activeHeroSlide.mobileImage;
     const activeMobileHeroImage = activeHeroSlide.mobileImage || activeHeroImage;
     const hasMultipleHeroSlides = heroSlides.length > 1;
     const heroOfferText = activeHeroSlide.discountText || (storewideDiscount > 0 ? `${storewideDiscount}% OFF SITEWIDE` : "");
     const layout = theme.layout || {};
-    const productCard = theme.productCard || {};
+    const productCard = {
+        ...(theme.productCard || {}),
+        colors: theme.colors?.productCard || {},
+    };
+    const sectionColors = theme.colors?.sections || {};
     const allProducts = theme.allProducts || {};
     const enabledSections = getEnabledHomepageSections(theme);
     const catalogProducts = products || [];
@@ -71,24 +78,33 @@ export function ReferenceStorefrontHome({
         : hero.height === "Tall"
             ? "min-h-[430px] sm:min-h-[600px] lg:min-h-[680px]"
             : "min-h-[390px] sm:min-h-[520px] lg:min-h-[580px]";
-    const heroClass = `relative isolate overflow-hidden rounded-[1.25rem] bg-slate-950 text-white shadow-xl shadow-slate-300/50 sm:rounded-[2rem] sm:shadow-2xl sm:shadow-slate-300/60 ${heroHeightClass}`;
+    const heroClass = `relative isolate overflow-hidden rounded-[1.25rem] text-white shadow-xl shadow-slate-300/50 sm:rounded-[2rem] sm:shadow-2xl sm:shadow-slate-300/60 ${heroHeightClass}`;
     const heroTitleClass = previewDevice
         ? `max-w-4xl font-black leading-[0.95] tracking-tight text-white drop-shadow-sm ${forcedMobilePreview ? "text-[2rem] max-[360px]:text-[1.75rem]" : previewDevice === "tablet" ? "text-5xl" : "text-7xl"}`
         : "max-w-4xl text-[2rem] font-black leading-[0.95] tracking-tight text-white drop-shadow-sm max-[360px]:text-[1.75rem] sm:text-5xl md:text-6xl lg:text-7xl";
-    const heroBenefitsClass = previewDevice
-        ? (forcedMobilePreview
-            ? "flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            : "grid grid-cols-3 gap-3")
-        : "flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:snap-none sm:grid-cols-3 sm:gap-3 lg:max-w-5xl";
-    const heroBenefitCardClass = forcedMobilePreview
-        ? "min-w-[132px]"
-        : "min-w-[132px] sm:min-w-0";
+
+    useEffect(() => {
+        if (!hasMultipleHeroSlides || heroPaused) return undefined;
+
+        const timer = window.setInterval(() => {
+            setActiveHeroIndex((prev) => (prev + 1) % heroSlides.length);
+        }, 5000);
+
+        return () => window.clearInterval(timer);
+    }, [hasMultipleHeroSlides, heroPaused, heroSlides.length]);
 
     return (
         <div className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
             <div className={`${containerClass} py-3.5 sm:py-8`}>
                 <EditorSelectionFrame editor={editor} id="hero" label="Hero Banner" locked>
-                    <section className={heroClass}>
+                    <section
+                        className={heroClass}
+                        onMouseEnter={() => setHeroPaused(true)}
+                        onMouseLeave={() => setHeroPaused(false)}
+                        onFocus={() => setHeroPaused(true)}
+                        onBlur={() => setHeroPaused(false)}
+                        style={{ backgroundColor: "var(--sf-hero-background)" }}
+                    >
                         {activeHeroImage ? (
                             <picture>
                                 {activeMobileHeroImage && activeMobileHeroImage !== activeHeroImage && (
@@ -106,7 +122,7 @@ export function ReferenceStorefrontHome({
                                 />
                             </picture>
                         ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900" />
+                            <div className="absolute inset-0" style={{ backgroundColor: "var(--sf-hero-background)" }} />
                         )}
                         <div className="absolute inset-0 hidden bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-slate-950/20 sm:block" />
                         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/92 via-slate-950/76 to-slate-950/54 sm:hidden" />
@@ -139,7 +155,7 @@ export function ReferenceStorefrontHome({
                                         {activeHeroSlide.badgeText || "Limited time offer"}
                                     </p>
                                 )}
-                                <h1 className={`${heroTitleClass} mt-3.5 sm:mt-5`}>
+                                <h1 className={`${heroTitleClass} mt-3.5 sm:mt-5`} style={{ color: "var(--sf-hero-title)" }}>
                                     {activeHeroSlide.title || hero.title || "Discover Your Favorite Products"}
                                 </h1>
                                 {heroOfferText && (
@@ -148,41 +164,26 @@ export function ReferenceStorefrontHome({
                                     </p>
                                 )}
                                 {(activeHeroSlide.subtitle || hero.subtitle) && (
-                                    <p className="mt-3 line-clamp-2 max-w-2xl text-sm font-semibold leading-6 text-white/78 sm:mt-5 sm:line-clamp-none sm:text-base sm:leading-7 md:text-lg">
+                                    <p className="mt-3 line-clamp-2 max-w-2xl text-sm font-semibold leading-6 sm:mt-5 sm:line-clamp-none sm:text-base sm:leading-7 md:text-lg" style={{ color: "var(--sf-hero-subtitle)" }}>
                                         {activeHeroSlide.subtitle || hero.subtitle}
                                     </p>
                                 )}
-                                <div className="mt-5 flex flex-col gap-2.5 min-[380px]:flex-row min-[380px]:flex-wrap sm:mt-7 sm:gap-3">
-                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || "#products"} className="inline-flex min-h-10 items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 hover:bg-teal-50 sm:min-h-12 sm:px-6 sm:py-3">
+                            </div>
+                            <div className="mt-6 space-y-4 sm:mt-8">
+                                <div className="flex max-w-3xl flex-col items-stretch gap-2.5 min-[380px]:flex-row min-[380px]:flex-wrap min-[380px]:items-center sm:gap-3">
+                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || "#products"} className="inline-flex min-h-10 items-center justify-center rounded-full px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-primary-button-bg)", color: "var(--sf-hero-primary-button-text)" }}>
                                         {activeHeroSlide.primaryCtaText || "Shop Now"}
                                         <ChevronRight size={16} className="ml-1" />
                                     </LinkSlot>
                                     {activeHeroSlide.secondaryCtaText && (
-                                        <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || "#products"} className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15 sm:min-h-12 sm:px-6 sm:py-3">
+                                        <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || "#products"} className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/20 px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-secondary-button-bg)", color: "var(--sf-hero-secondary-button-text)" }}>
                                             {activeHeroSlide.secondaryCtaText}
                                             <ChevronRight size={16} className="ml-1" />
                                         </LinkSlot>
                                     )}
                                 </div>
-                            </div>
-                            <div className="mt-5 space-y-3 sm:mt-8 sm:space-y-5">
-                                <div className={heroBenefitsClass}>
-                                    {serviceCards.map(({ icon: Icon, title, text }) => (
-                                        <div key={title} className={`${heroBenefitCardClass} snap-start rounded-2xl border border-white/12 bg-white/10 p-2.5 shadow-lg shadow-slate-950/10 backdrop-blur-md sm:p-4`}>
-                                            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-300/16 text-teal-100 sm:h-10 sm:w-10 sm:rounded-2xl">
-                                                    <Icon size={16} className="sm:h-[18px] sm:w-[18px]" />
-                                                </span>
-                                                <div className="min-w-0">
-                                                    <h3 className="truncate text-xs font-black text-white sm:text-sm">{title}</h3>
-                                                    <p className="mt-0.5 line-clamp-1 text-[10px] font-semibold leading-4 text-white/66 sm:line-clamp-2 sm:text-xs">{text}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
                                 {hasMultipleHeroSlides && (
-                                    <div className="flex justify-center gap-2">
+                                    <div className="flex gap-2 min-[380px]:justify-start">
                                         {heroSlides.map((slide, index) => (
                                             <button
                                                 key={slide.id || index}
@@ -210,8 +211,12 @@ export function ReferenceStorefrontHome({
                         catalogProducts={catalogProducts}
                         storewideDiscount={storewideDiscount}
                         productCard={productCard}
+                        sectionColors={sectionColors}
                         layout={layout}
                         onProductAdd={onProductAdd}
+                        onProductBuyNow={onProductBuyNow}
+                        onWishlistToggle={onWishlistToggle}
+                        isProductWishlisted={isProductWishlisted}
                         LinkComponent={LinkComponent}
                         previewDevice={previewDevice}
                         editor={editor}
@@ -240,6 +245,9 @@ export function ReferenceStorefrontHome({
                 onPageChange={onPageChange}
                 onPriceApply={onPriceApply}
                 onProductAdd={onProductAdd}
+                onProductBuyNow={onProductBuyNow}
+                onWishlistToggle={onWishlistToggle}
+                isProductWishlisted={isProductWishlisted}
                 onRatingChange={onRatingChange}
                 onSortChange={onSortChange}
                 pagination={pagination}

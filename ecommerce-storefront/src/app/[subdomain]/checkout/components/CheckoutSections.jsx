@@ -21,6 +21,7 @@ import {
     Trash2,
     Truck,
     User,
+    X,
 } from "lucide-react";
 
 import { shouldUseUnoptimizedImage } from "@/lib/imageDomains";
@@ -264,19 +265,21 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
 
                 <div className="md:col-span-2">
                     <label htmlFor="checkout-city" className="mb-2 block text-sm font-bold text-slate-700">
-                        City / District
+                        Delivery area
                     </label>
 
-                    <input
+                    <select
                         id="checkout-city"
                         required
-                        type="text"
                         name="city"
                         value={formData.city}
                         onChange={onInputChange}
-                        placeholder="Dhaka"
                         className="sf-field"
-                    />
+                    >
+                        <option value="">Select delivery area</option>
+                        <option value="Inside Dhaka">Inside Dhaka</option>
+                        <option value="Outside Dhaka">Outside Dhaka</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -309,20 +312,22 @@ export function CheckoutDeliveryChargeNotice() {
 }
 
 export function CheckoutDeliveryMethod({ isDhaka }) {
+    const hasSelection = typeof isDhaka === "boolean";
+
     return (
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 className="mb-5 text-2xl font-black text-slate-950">
                 Delivery Method
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
-                <div className={`rounded-2xl border p-4 ${isDhaka ? "border-[var(--sf-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
+                <div className={`rounded-2xl border p-4 ${hasSelection && isDhaka ? "border-[var(--sf-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-black text-slate-950">Inside Dhaka</span>
                         <span className="text-sm font-black text-[var(--sf-accent)]">৳ 80</span>
                     </div>
                     <p className="mt-2 text-xs font-semibold text-slate-500">Same-city delivery estimate.</p>
                 </div>
-                <div className={`rounded-2xl border p-4 ${!isDhaka ? "border-[var(--sf-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
+                <div className={`rounded-2xl border p-4 ${hasSelection && !isDhaka ? "border-[var(--sf-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-black text-slate-950">Outside Dhaka</span>
                         <span className="text-sm font-black text-[var(--sf-accent)]">৳ 120</span>
@@ -426,14 +431,13 @@ export function CheckoutPhoneOtpBox({
     );
 }
 
-export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange, phoneOtp }) {
+export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange }) {
     return (
         <div className="space-y-7">
             <CheckoutCustomerInfo
                 formData={formData}
                 onInputChange={onInputChange}
             />
-            <CheckoutPhoneOtpBox {...phoneOtp} />
             <CheckoutDeliveryChargeNotice />
             <CheckoutDeliveryMethod isDhaka={isDhaka} />
             <CheckoutPaymentMethod />
@@ -748,7 +752,7 @@ export function CheckoutOrderSummary({
 
                     <button
                         type="submit"
-                        disabled={loading || !policyAccepted || !phoneVerified}
+                        disabled={loading || !policyAccepted}
                         className="sf-btn sf-btn-primary mt-7 w-full py-5 text-lg disabled:opacity-50"
                         style={{ borderRadius: "var(--sf-checkout-radius)" }}
                     >
@@ -760,7 +764,7 @@ export function CheckoutOrderSummary({
                         ) : (
                             <>
                                 <Lock size={18} />
-                                {phoneVerified ? "Place Order" : "Verify phone first"}
+                                {phoneVerified ? "Place Order" : "Place Order"}
                             </>
                         )}
                     </button>
@@ -798,12 +802,131 @@ export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted
                 </div>
                 <button
                     type="submit"
-                    disabled={loading || !policyAccepted || !phoneVerified}
+                    disabled={loading || !policyAccepted}
                     className="sf-btn sf-btn-primary min-h-0 rounded-full px-5 py-3 text-sm disabled:opacity-50"
                 >
                     {loading ? <Loader2 size={17} className="animate-spin" /> : <Lock size={16} />}
-                    {phoneVerified ? "Place order" : "Verify phone"}
+                    {phoneVerified ? "Place order" : "Place order"}
                 </button>
+            </div>
+        </div>
+    );
+}
+
+export function CheckoutOtpModal({
+    error,
+    maskedPhone,
+    onCancel,
+    onSendCode,
+    onVerifyCode,
+    open,
+    otp,
+    sending,
+    setOtp,
+    state,
+    verifying,
+}) {
+    if (!open) return null;
+
+    const isBusy = sending || verifying || state === "placing_order";
+    const isOtpInput = state === "otp_input" || state === "verifying" || state === "error";
+
+    return (
+        <div className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-otp-title">
+            <div className="w-full overflow-hidden rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-w-md sm:rounded-[2rem]">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
+                    <div className="flex items-start gap-3">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                            <ShieldCheck size={20} />
+                        </span>
+                        <div>
+                            <h2 id="checkout-otp-title" className="text-xl font-black text-slate-950">
+                                Verify your phone number
+                            </h2>
+                            <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
+                                We need to verify your delivery phone before placing this order.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        disabled={isBusy}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-950 disabled:opacity-50"
+                        aria-label="Close phone verification"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="space-y-5 p-5 sm:p-6">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-600">
+                        {isOtpInput ? (
+                            <>Enter the 6-digit code sent to <span className="font-black text-slate-950">{maskedPhone || "your phone"}</span>.</>
+                        ) : state === "placing_order" ? (
+                            <>Phone verified. Placing your order securely now.</>
+                        ) : (
+                            <>Send a verification code to <span className="font-black text-slate-950">{maskedPhone || "your phone number"}</span> to place your order.</>
+                        )}
+                    </div>
+
+                    {isOtpInput && (
+                        <div>
+                            <label htmlFor="checkout-modal-otp" className="mb-2 block text-sm font-bold text-slate-700">
+                                Verification code
+                            </label>
+                            <input
+                                id="checkout-modal-otp"
+                                value={otp}
+                                onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                                placeholder="000000"
+                                inputMode="numeric"
+                                maxLength={6}
+                                disabled={isBusy}
+                                className="sf-field text-center text-lg font-black tracking-[0.35em]"
+                            />
+                        </div>
+                    )}
+
+                    {error && (
+                        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
+                            {error}
+                        </p>
+                    )}
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            disabled={isBusy}
+                            className="sf-btn sf-btn-secondary justify-center py-3 disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+
+                        {!isOtpInput ? (
+                            <button
+                                type="button"
+                                onClick={onSendCode}
+                                disabled={isBusy}
+                                className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
+                            >
+                                {sending ? <Loader2 size={17} className="animate-spin" /> : <Phone size={17} />}
+                                Send Code
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={onVerifyCode}
+                                disabled={isBusy || otp.length !== 6}
+                                className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
+                            >
+                                {verifying || state === "placing_order" ? <Loader2 size={17} className="animate-spin" /> : <ShieldCheck size={17} />}
+                                {state === "placing_order" ? "Placing order" : "Verify & place order"}
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

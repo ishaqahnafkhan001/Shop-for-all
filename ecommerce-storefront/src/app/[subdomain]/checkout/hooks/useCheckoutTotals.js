@@ -4,12 +4,14 @@ import { useMemo } from "react";
 
 export function useCheckoutTotals({ cartTotal, city, promotionPreview }) {
     return useMemo(() => {
-        const isDhaka = city
-            ?.trim()
-            ?.toLowerCase()
-            ?.includes("dhaka");
+        const selectedZone = city?.trim();
+        const isDhaka = selectedZone === "Inside Dhaka"
+            ? true
+            : selectedZone === "Outside Dhaka"
+                ? false
+                : null;
 
-        const shippingCost = isDhaka ? 80 : 120;
+        const shippingCost = isDhaka === null ? 0 : isDhaka ? 80 : 120;
         const subtotal = cartTotal;
         const promotionDiscount = promotionPreview?.discountAmount || 0;
         const finalShippingCost = promotionPreview?.freeShipping ? 0 : shippingCost;

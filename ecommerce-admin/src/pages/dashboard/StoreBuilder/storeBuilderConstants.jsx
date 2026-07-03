@@ -172,8 +172,7 @@ export const structureTree = [
         label: 'Homepage',
         group: 'sections',
         children: [
-            { id: 'hero', label: 'Hero', group: 'hero' },
-            { id: 'heroButton', label: 'Hero button', group: 'hero' },
+            { id: 'hero', label: 'Hero / Banner', group: 'hero' },
             { id: 'homepageSeo', label: 'Homepage SEO', group: 'seo' },
             { id: 'sections', label: 'Dynamic sections', group: 'sections' },
             { id: 'allProducts', label: 'All products', group: 'products' }
@@ -217,6 +216,112 @@ export const groupElementMap = {
     domain: 'domain'
 };
 
+export const storeLayoutItems = [
+    {
+        id: 'navbar',
+        label: 'Navbar',
+        description: 'Logo and top menu',
+        target: 'header',
+        group: 'navigation',
+        icon: LinkIcon,
+        locked: true,
+        relatedTargets: ['header', 'logo', 'navigation']
+    },
+    {
+        id: 'hero',
+        label: 'Hero / Banner',
+        description: 'Homepage opening banner',
+        target: 'hero',
+        group: 'hero',
+        icon: LayoutTemplate,
+        locked: true,
+        relatedTargets: ['hero']
+    },
+    {
+        id: 'sections',
+        label: 'Dynamic Sections',
+        description: 'Add, reorder, duplicate, or remove sections',
+        target: 'sections',
+        group: 'sections',
+        icon: LayoutTemplate,
+        relatedTargets: ['sections']
+    },
+    {
+        id: 'allProducts',
+        label: 'All Products',
+        description: 'Catalog grid and product card settings',
+        target: 'allProducts',
+        group: 'products',
+        icon: ShoppingBag,
+        locked: true,
+        relatedTargets: ['allProducts', 'productCard']
+    },
+    {
+        id: 'footer',
+        label: 'Footer',
+        description: 'Footer text, links, and social profiles',
+        target: 'footer',
+        group: 'footer',
+        icon: FileText,
+        locked: true,
+        relatedTargets: ['footer', 'footerText', 'footerSocial', 'footerLinks']
+    },
+    {
+        id: 'colors',
+        label: 'Colors',
+        description: 'Brand color, palettes, and advanced colors',
+        target: 'themeColors',
+        group: 'colors',
+        icon: Palette,
+        relatedTargets: ['themeColors']
+    },
+    {
+        id: 'seo',
+        label: 'Home Page SEO',
+        description: 'Google and social preview',
+        target: 'homepageSeo',
+        group: 'seo',
+        icon: Search,
+        relatedTargets: ['homepageSeo']
+    },
+    {
+        id: 'checkout',
+        label: 'Checkout',
+        description: 'Checkout branding and trust',
+        target: 'checkout',
+        group: 'checkout',
+        icon: CreditCard,
+        relatedTargets: ['checkout', 'checkoutBranding']
+    },
+    {
+        id: 'mobile',
+        label: 'Mobile',
+        description: 'Small-screen controls',
+        target: 'mobile',
+        group: 'mobile',
+        icon: Smartphone,
+        relatedTargets: ['mobile']
+    },
+    {
+        id: 'policies',
+        label: 'Policies',
+        description: 'Refund, shipping, privacy, and terms',
+        target: 'policies',
+        group: 'policies',
+        icon: FileText,
+        relatedTargets: ['policies']
+    },
+    {
+        id: 'domain',
+        label: 'Domain',
+        description: 'Custom domain status',
+        target: 'domain',
+        group: 'domain',
+        icon: Globe,
+        relatedTargets: ['domain']
+    }
+];
+
 export const fixedPreviewElements = new Set(['header', 'hero', 'allProducts', 'footer']);
 export const isHomepageSectionLocked = (section) => Boolean(section?.settings?.isLocked);
 
@@ -238,7 +343,7 @@ export const editorComponentRegistry = {
     homepageSeo: { label: 'Homepage SEO', group: 'seo' },
     heroTitle: { label: 'Hero title', group: 'hero' },
     heroSubtitle: { label: 'Hero subtitle', group: 'hero' },
-    heroButton: { label: 'Hero button', group: 'hero' }
+    heroButton: { label: 'Hero / Banner', group: 'hero' }
 };
 
 export const resolveEditorComponent = (target, theme = {}) => {

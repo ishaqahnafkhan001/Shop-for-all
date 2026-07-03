@@ -11,6 +11,7 @@ const { upload } = require('../config/cloudinary');
 const {
     getStoreBuilderSettings,
     updateStoreBuilderSettings,
+    suggestStoreSeo,
     getStoreBuilderReviews,
     uploadStoreBuilderLogo,
     uploadStoreBuilderImage,
@@ -25,6 +26,16 @@ router.get(
     requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     getStoreBuilderSettings
+);
+
+router.post(
+    '/admin/seo/ai-suggest',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'),
+    requireShopFeature('storeBuilder'),
+    blockVerificationSuspendedShop,
+    suggestStoreSeo
 );
 
 router.patch(

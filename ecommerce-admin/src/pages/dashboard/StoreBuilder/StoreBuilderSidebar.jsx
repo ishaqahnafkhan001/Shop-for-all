@@ -1,13 +1,12 @@
 import { History } from 'lucide-react';
 import { BuilderButton } from './builderUi.jsx';
-import { settingsGroups, structureTree } from './storeBuilderConstants.jsx';
+import { storeLayoutItems } from './storeBuilderConstants.jsx';
 
 export function StoreBuilderSidebar({
     mobileWorkspace,
     activeElement,
     activeGroup,
     selectEditorTarget,
-    selectSettingsGroup,
     hasUnsavedChanges,
     publishedVersionLabel,
     restorePublishedVersion,
@@ -18,73 +17,39 @@ export function StoreBuilderSidebar({
     return (
         <aside className={`${mobileWorkspace === 'structure' ? 'block' : 'hidden'} space-y-4 xl:sticky xl:top-28 xl:block xl:self-start`}>
             <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
-                <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-400">Structure</p>
+                <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-400">Store Layout</p>
                 <div className="space-y-1">
-                    {structureTree.map(item => {
-                        const active = activeElement === item.id || item.children?.some(child => child.id === activeElement);
-                        return (
-                            <div key={item.id} className="rounded-lg">
-                                <button
-                                    type="button"
-                                    onClick={() => selectEditorTarget(item.id)}
-                                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-bold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                        active ? 'bg-slate-950 text-white' : 'text-slate-700 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    <span>{item.label}</span>
-                                    <span className="text-xs opacity-60">{item.children?.length || 0}</span>
-                                </button>
-                                {item.children?.length > 0 && (
-                                    <div className="ml-3 mt-1 space-y-1 border-l border-slate-200 pl-2">
-                                        {item.children.map(child => {
-                                            const childActive = activeElement === child.id;
-                                            return (
-                                                <button
-                                                    key={child.id}
-                                                    type="button"
-                                                    onClick={() => selectEditorTarget(child.id)}
-                                                    className={`flex w-full items-center rounded-md px-3 py-2 text-left text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                                        childActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                                                    }`}
-                                                >
-                                                    {child.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-                <div className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-                    Click a row here, or click an outlined section directly in the preview, to open the matching settings.
-                </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
-                <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-400">Customize your store</p>
-                <div className="space-y-1">
-                    {settingsGroups.map(group => {
-                        const Icon = group.icon;
-                        const active = activeGroup === group.id;
+                    {storeLayoutItems.map(item => {
+                        const Icon = item.icon;
+                        const relatedTargets = item.relatedTargets || [item.target];
+                        const active = activeElement === item.target || relatedTargets.includes(activeElement) || activeGroup === item.group;
                         return (
                             <button
-                                key={group.id}
+                                key={item.id}
                                 type="button"
-                                onClick={() => selectSettingsGroup(group.id)}
+                                onClick={() => selectEditorTarget(item.target)}
                                 className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                                     active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
                                 }`}
                             >
                                 <Icon size={18} className={active ? 'mt-0.5 text-indigo-600' : 'mt-0.5 text-slate-400'} />
-                                <span>
-                                    <span className="block text-sm font-semibold">{group.label}</span>
-                                    <span className="mt-0.5 block text-xs leading-4 opacity-75">{group.description}</span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="flex items-center gap-2 text-sm font-semibold">
+                                        {item.label}
+                                        {item.locked && (
+                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                                                Locked
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="mt-0.5 block text-xs leading-4 opacity-75">{item.description}</span>
                                 </span>
                             </button>
                         );
                     })}
+                </div>
+                <div className="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+                    Click a row here, or click an outlined section directly in the preview, to open the matching settings. Locked layout sections still allow content and style edits.
                 </div>
             </div>
 

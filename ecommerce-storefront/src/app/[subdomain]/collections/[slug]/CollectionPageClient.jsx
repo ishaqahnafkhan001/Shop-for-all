@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import { useParams } from "next/navigation";
 import { ArrowLeft, Layers3, PackageX } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { useStorefrontProductActions } from "@/hooks/useStorefrontProductActions";
 import { normalizeTheme } from "@/lib/theme";
 import SafeProductImage from "@/components/storefront/SafeProductImage";
 import { ProductCard } from "@/components/storefront/reference/StorefrontProductCard";
@@ -15,8 +16,10 @@ import {
 } from "@/components/storefront/reference/referenceCore";
 
 export default function CollectionPageClient({ shop, collection, products = [] }) {
-    const { addToCart } = useCart();
+    const params = useParams();
+    const productActions = useStorefrontProductActions({ subdomain: params?.subdomain || shop?.subdomain });
     const theme = normalizeTheme(shop?.theme || {});
+    const productCardColors = theme.colors?.productCard;
     const normalizedProducts = useMemo(() => products.map(product => {
         const sellingPrice = product?.pricing?.sellingPrice ?? product?.sellingPrice ?? 0;
         const discount = product?.pricing?.discount ?? product?.discount ?? 0;
@@ -35,6 +38,10 @@ export default function CollectionPageClient({ shop, collection, products = [] }
     const mobileColumns = Math.min(Math.max(theme.allProducts?.mobileColumns || theme.layout?.productColumnsMobile || 2, 1), 2);
     const gridClass = `${mobileColumns === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2"} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
     const gridGapClass = productGridGapClasses[theme.layout?.productGap || theme.productGridStyle] || productGridGapClasses.Comfortable;
+    const themedProductCard = useMemo(() => ({
+        ...(theme.productCard || {}),
+        colors: productCardColors || {},
+    }), [theme.productCard, productCardColors]);
 
     return (
         <div className="sf-page">
@@ -99,14 +106,18 @@ export default function CollectionPageClient({ shop, collection, products = [] }
                                 product={product}
                                 index={index}
                                 storewideDiscount={shop?.storewideDiscount || 0}
-                                productCard={theme.productCard}
-                                onProductAdd={addToCart}
+                                productCard={themedProductCard}
+                                onProductAdd={(item) => productActions.addProductToCart(item, { location: 'collection' })}
+                                onProductBuyNow={(item) => productActions.buyNow(item, { location: 'collection' })}
+                                onWishlistToggle={productActions.toggleWishlist}
+                                isWishlisted={productActions.isWishlisted}
                                 LinkComponent={Link}
                             />
                         ))}
                     </div>
                 )}
             </section>
+            {productActions.variantPicker}
         </div>
     );
 }
