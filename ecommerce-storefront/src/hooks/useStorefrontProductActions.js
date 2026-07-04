@@ -27,7 +27,7 @@ const summarizeWishlistProduct = (product = {}) => ({
     id: getProductId(product),
     title: product.title || "",
     slug: product.slug || "",
-    imageUrl: product.imageUrl || product.images?.[0] || "",
+    imageUrl: product.coverMediaId || product.imageUrl || product.images?.[0] || "",
     addedAt: new Date().toISOString(),
 });
 
@@ -55,6 +55,7 @@ const buildCartProduct = (product, selectedVariant = null) => {
         sellingPrice: basePrice || normalized.sellingPrice,
         finalPrice: Number.isFinite(finalPrice) ? finalPrice : normalized.finalPrice,
         cartPrice: Number.isFinite(finalPrice) ? finalPrice : normalized.finalPrice,
+        imageUrl: variant?.image || normalized.coverMediaId || normalized.imageUrl || normalized.images?.[0] || "",
     };
 };
 
@@ -125,7 +126,14 @@ export function useStorefrontProductActions({
         const activeVariants = getAvailableVariants(normalizedProduct);
         const hasVariantChoices = Number(normalizedProduct.variantCount || activeVariants.length || 0) > 1 && !normalizedProduct.selectedVariant;
 
-        if (hasVariantChoices && activeVariants.length <= 1) {
+        const expectedVariantCount = Number(normalizedProduct.variantCount || activeVariants.length || 0);
+        const shouldLoadFullVariantSet = hasVariantChoices && (
+            activeVariants.length <= 1 ||
+            expectedVariantCount > activeVariants.length ||
+            !normalizedProduct.variantsLoaded
+        );
+
+        if (shouldLoadFullVariantSet) {
             setVariantPickerLoading(true);
             try {
                 const productKey = normalizedProduct.slug || normalizedProduct._id;

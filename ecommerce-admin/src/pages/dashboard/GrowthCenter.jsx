@@ -208,7 +208,7 @@ const GrowthCenter = () => {
         { key: 'views', label: 'Views', render: row => formatNumber(row.views) },
         { key: 'addToCarts', label: 'Add to Cart', render: row => formatNumber(row.addToCarts) },
         { key: 'orders', label: 'Orders', render: row => formatNumber(row.orders) },
-        { key: 'revenue', label: 'Revenue', render: row => formatCurrency(row.revenue) },
+        { key: 'revenue', label: 'Delivered revenue', render: row => formatCurrency(row.revenue) },
         { key: 'addToCartRate', label: 'Cart Rate', render: row => formatRate(row.addToCartRate) },
         { key: 'conversionRate', label: 'Conversion', render: row => formatRate(row.conversionRate) },
         { key: 'label', label: 'Label', render: row => <LabelBadge label={row.label} /> },
@@ -304,7 +304,7 @@ const GrowthCenter = () => {
                         <StatCard title="Product Views" value={formatNumber(summary.views)} icon={Eye} helper="Tracked storefront product views." />
                         <StatCard title="Add to Cart Rate" value={formatRate(summary.addToCartRate)} icon={MousePointerClick} tone="cyan" helper={`${formatNumber(summary.addToCarts)} add-to-cart events.`} />
                         <StatCard title="Order Conversion" value={formatRate(summary.conversionRate)} icon={TrendingUp} tone="emerald" helper={`${formatNumber(summary.orders)} product order events.`} />
-                        <StatCard title="Revenue Tracked" value={formatCurrency(summary.revenue)} icon={ShoppingCart} tone="amber" helper="From tracked order events." />
+                        <StatCard title="Delivered Revenue" value={formatCurrency(summary.revenue)} icon={ShoppingCart} tone="amber" helper="Only delivered product revenue is counted." />
                         <StatCard title="Checkout Rate" value={formatRate(rateSafe(summary.checkouts, summary.addToCarts))} icon={BarChart3} tone="indigo" helper={`${formatNumber(summary.checkouts)} checkout starts.`} />
                         <StatCard title="Best Product" value={bestProduct} icon={Sparkles} tone="emerald" helper="Highest current performance signal." />
                         <StatCard title="Needs Attention" value={needsAttention} icon={Megaphone} tone="rose" helper="Fix before spending on ads." />

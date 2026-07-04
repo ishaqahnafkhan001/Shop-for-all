@@ -1,0 +1,1 @@
+export const DEFAULT_CART_DELIVERY_ESTIMATE = 80;

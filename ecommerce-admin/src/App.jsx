@@ -22,6 +22,7 @@ const EditProduct = lazy(() => import('./pages/dashboard/products/EditProduct'))
 const CustomerList = lazy(() => import("./pages/dashboard/customers/CustomerList.jsx"));
 const StoreBuilder = lazy(() => import('./pages/dashboard/StoreBuilder.jsx'));
 const Promotions = lazy(() => import('./pages/dashboard/Promotions.jsx'));
+const PromotionalBanner = lazy(() => import('./pages/dashboard/Promotional Banner/promotionalBanner.jsx'));
 const CatalogTools = lazy(() => import('./pages/dashboard/CatalogTools.jsx'));
 const AdvancedAnalytics = lazy(() => import('./pages/dashboard/AdvancedAnalytics.jsx'));
 const GrowthCenter = lazy(() => import('./pages/dashboard/GrowthCenter.jsx'));
@@ -114,7 +115,7 @@ function App() {
                         <Route path="returns" element={withSuspense(withPermission('returns', <Returns />))} />
                         <Route path="notifications" element={withSuspense(withPermission('notifications', <Notifications />))} />
                         <Route path="promotions" element={withSuspense(withPermission('promotions', withFeature('coupons', <Promotions />)))} />
-                        <Route path="banners" element={<Navigate to="/dashboard/store-builder" replace />} />
+                        <Route path="banners" element={withSuspense(withPermission('bannersManage', withFeature('storeBuilder', <PromotionalBanner />)))} />
                         <Route path="customers" element={withSuspense(withPermission('customers', <CustomerList />))} />
                         <Route path="privacy-requests" element={withSuspense(withPermission('privacyRequests', <PrivacyRequests />))} />
                         <Route path="growth" element={withSuspense(withPermission('growthCenter', withFeature('growthCenter', <GrowthCenter />)))} />

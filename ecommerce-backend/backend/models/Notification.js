@@ -6,7 +6,7 @@ const notificationSchema = new Schema({
     recipient_user_id: { type: Schema.Types.ObjectId, ref: 'User', default: null, index: true },
     type: {
         type: String,
-        enum: ['order', 'customer', 'return', 'refund', 'system'],
+        enum: ['order', 'customer', 'return', 'refund', 'inventory', 'system'],
         required: true,
         index: true
     },

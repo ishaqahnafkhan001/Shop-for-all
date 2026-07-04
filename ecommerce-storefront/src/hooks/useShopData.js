@@ -10,9 +10,12 @@ const normalizeProduct = (p) => {
         ...p,
         sellingPrice,
         discount,
+        salePrice: p?.salePrice ?? p?.pricing?.salePrice,
+        compareAtPrice: p?.compareAtPrice ?? p?.pricing?.compareAtPrice,
+        scheduledSale: p?.scheduledSale || null,
         finalPrice,
         stock: p?.totalStock ?? p?.stock ?? 0,
-        imageUrl: getImageUrlFromValue(p?.imageUrl) || getImageUrlFromValue(p?.images?.[0]) || '',
+        imageUrl: getImageUrlFromValue(p?.coverMediaId) || getImageUrlFromValue(p?.imageUrl) || getImageUrlFromValue(p?.images?.[0]) || '',
     };
 };
 
@@ -29,6 +32,7 @@ const normalizeBootstrapData = (bootstrapData = {}) => {
         products: rawProducts.map(normalizeProduct),
         categories: bootstrapData.categories?.filter(Boolean) || [],
         banners: bootstrapData.banners || [],
+        activeSalePopups: bootstrapData.activeSalePopups || [],
         sectionProducts,
         sectionReviews: bootstrapData.sectionReviews || {},
         pagination: bootstrapData.pagination || { page: 1, pages: 1, total: 0 },
@@ -42,6 +46,7 @@ const emptyShopData = {
     products: [],
     categories: [],
     banners: [],
+    activeSalePopups: [],
     sectionProducts: {},
     sectionReviews: {},
     pagination: { page: 1, pages: 1, total: 0 },

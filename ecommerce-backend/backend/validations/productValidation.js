@@ -182,6 +182,11 @@ const seoSchema = Joi.object({
     title: Joi.string().trim().max(70).allow('').optional(),
     description: Joi.string().trim().max(170).allow('').optional()
 });
+const publicationFields = {
+    publicationStatus: Joi.string().valid('draft', 'scheduled', 'published').optional(),
+    publishAt: Joi.date().iso().allow(null).optional(),
+    publishedAt: Joi.date().iso().allow(null).optional()
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CREATE PRODUCT SCHEMA
@@ -194,9 +199,11 @@ const createProductSchema = Joi.object({
     tags:        Joi.array().items(Joi.string().trim().lowercase().max(50)).max(30).optional(),
     collections: Joi.array().items(Joi.string().hex().length(24)).max(20).optional(),
     status:      Joi.string().valid('Draft', 'Published', 'Archived').default('Published'),
+    ...publicationFields,
     seo:         seoSchema.optional(),
     lowStockThreshold: Joi.number().integer().min(0).default(5),
     images:      Joi.array().items(Joi.string().uri()).min(1).max(5).required(),
+    coverMediaId: Joi.string().trim().max(1000).allow('').optional(),
     imageAltText: Joi.string().trim().max(160).allow('').optional(),
     videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
     options:     Joi.array().items(productOptionSchema).max(10).optional(),
@@ -224,9 +231,11 @@ const updateProductSchema = Joi.object({
     tags:        Joi.array().items(Joi.string().trim().lowercase().max(50)).max(30).optional(),
     collections: Joi.array().items(Joi.string().hex().length(24)).max(20).optional(),
     status:      Joi.string().valid('Draft', 'Published', 'Archived').optional(),
+    ...publicationFields,
     seo:         seoSchema.optional(),
     lowStockThreshold: Joi.number().integer().min(0).optional(),
     images:      Joi.array().items(Joi.string().uri()).max(5).optional(),
+    coverMediaId: Joi.string().trim().max(1000).allow('').optional(),
     imageAltText: Joi.string().trim().max(160).allow('').optional(),
     videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
     options:     Joi.array().items(productOptionSchema).max(10).optional(),

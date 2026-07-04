@@ -14,6 +14,39 @@ const bannerSchema = new Schema({
         required: [true, 'Banner title is required'],
         trim: true
     },
+    subtitle: {
+        type: String,
+        trim: true,
+        maxlength: 240,
+        default: ''
+    },
+    type: {
+        type: String,
+        enum: ['standard', 'scheduled_product'],
+        default: 'standard',
+        index: true
+    },
+    scheduledProduct: {
+        type: Schema.Types.ObjectId,
+        ref: 'Product',
+        default: null,
+        index: true
+    },
+    countdownEnabled: {
+        type: Boolean,
+        default: false
+    },
+    postLaunchBehavior: {
+        type: String,
+        enum: ['convert_to_product', 'hide_on_publish', 'keep_until_end'],
+        default: 'convert_to_product'
+    },
+    postLaunchCtaText: {
+        type: String,
+        trim: true,
+        maxlength: 60,
+        default: 'View product'
+    },
     // Changed from 'image' to 'images' as an Array of Strings
     images: {
         type: [String],
@@ -31,12 +64,23 @@ const bannerSchema = new Schema({
         type: String,
         default: '' // Optional: Redirect users to a specific product/category
     },
+    startsAt: {
+        type: Date,
+        default: null,
+        index: true
+    },
+    endsAt: {
+        type: Date,
+        default: null,
+        index: true
+    },
     isActive: {
         type: Boolean,
         default: true
     }
 }, { timestamps: true });
 
-bannerSchema.index({ shop_id: 1, isActive: 1, createdAt: -1 });
+bannerSchema.index({ shop_id: 1, isActive: 1, startsAt: 1, endsAt: 1, createdAt: -1 });
+bannerSchema.index({ shop_id: 1, type: 1, scheduledProduct: 1 });
 
 module.exports = mongoose.model('Banner', bannerSchema);

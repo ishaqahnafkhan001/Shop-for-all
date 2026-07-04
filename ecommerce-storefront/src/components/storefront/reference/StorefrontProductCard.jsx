@@ -31,11 +31,16 @@ export const ProductCard = memo(function ProductCard({
     isWishlisted,
     LinkComponent,
 }) {
-    const activeDiscount = product.discount > 0 ? product.discount : (product.pricing?.discount > 0 ? product.pricing.discount : (storewideDiscount || 0));
+    const price = getPrice(product);
+    const originalPrice = product.compareAtPrice || product.pricing?.compareAtPrice || product.sellingPrice || product.pricing?.sellingPrice || price;
+    const scheduledSaleDiscount = product.scheduledSale?.discountType === "percentage"
+        ? Number(product.scheduledSale.discountValue || 0)
+        : (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0);
+    const activeDiscount = scheduledSaleDiscount > 0
+        ? scheduledSaleDiscount
+        : (product.discount > 0 ? product.discount : (product.pricing?.discount > 0 ? product.pricing.discount : (storewideDiscount || 0)));
     const hasDiscount = activeDiscount > 0;
     const stock = product.stock ?? product.totalStock ?? 0;
-    const price = getPrice(product);
-    const originalPrice = product.sellingPrice || product.pricing?.sellingPrice || price;
     const rating = Number(product.averageRating || 0);
     const showRatingRow = productCard?.showRating !== false;
     const showRating = showRatingRow && rating > 0;

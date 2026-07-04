@@ -84,7 +84,7 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
             sku: currentVariant?.sku,
             finalPrice: displayFinalPrice,
             cartPrice: displayFinalPrice,
-            imageUrl: currentVariant?.image || getImageUrlFromValue(product.images?.[0])
+            imageUrl: currentVariant?.image || getImageUrlFromValue(product.coverMediaId || product.imageUrl || product.images?.[0])
         }, quantity);
 
         trackStorefrontEvent({

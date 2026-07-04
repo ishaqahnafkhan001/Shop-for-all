@@ -38,6 +38,8 @@ const variantSchema = new Schema({
         stock: { type: Number, min: 0, default: 0 },
         reservedStock: { type: Number, min: 0, default: 0 },
         lowStockThreshold: { type: Number, min: 0, default: 5 },
+        lowStockAlertActive: { type: Boolean, default: false },
+        lowStockAlertSentAt: { type: Date, default: null },
         trackQuantity: { type: Boolean, default: true },
         allowOversell: { type: Boolean, default: false }
     },
@@ -74,6 +76,7 @@ const productSchema = new Schema({
     tags: [{ type: String, trim: true, lowercase: true, index: true }],
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection', index: true }],
     images: [String],
+    coverMediaId: { type: String, trim: true, default: '' },
     imageAltText: { type: String, trim: true, maxlength: 160, default: '' },
     videos: [String],
     options: [productOptionSchema],
@@ -82,6 +85,21 @@ const productSchema = new Schema({
         enum: ['Draft', 'Published', 'Archived'],
         default: 'Published',
         index: true
+    },
+    publicationStatus: {
+        type: String,
+        enum: ['draft', 'scheduled', 'published'],
+        default: 'published',
+        index: true
+    },
+    publishAt: {
+        type: Date,
+        default: null,
+        index: true
+    },
+    publishedAt: {
+        type: Date,
+        default: null
     },
     seo: {
         title: { type: String, trim: true, maxlength: 70, default: '' },
@@ -140,6 +158,7 @@ productSchema.index({ shop_id: 1, isDeleted: 1, isActive: 1, status: 1, averageR
 productSchema.index({ shop_id: 1, isDeleted: 1, isActive: 1, status: 1, title: 1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, 'variants.sku': 1 });
 productSchema.index({ shop_id: 1, isDeleted: 1, 'variants.optionKey': 1 });
+productSchema.index({ shop_id: 1, publicationStatus: 1, publishAt: 1 });
 productSchema.index({ shop_id: 1, slug: 1 }, {
     unique: true,
     partialFilterExpression: { slug: { $type: 'string' }, isDeleted: false }
@@ -156,7 +175,19 @@ productSchema.pre('save', async function () {
             .slice(0, 80);
     }
 
-    this.isActive = this.status === 'Published';
+    const now = new Date();
+    if (this.publicationStatus === 'scheduled') {
+        this.status = 'Draft';
+        this.isActive = false;
+    } else if (this.status === 'Published') {
+        this.publicationStatus = 'published';
+        this.publishAt = null;
+        if (!this.publishedAt) this.publishedAt = now;
+        this.isActive = true;
+    } else {
+        this.publicationStatus = 'draft';
+        this.isActive = false;
+    }
 
     if (this.variants) {
         for (const variant of this.variants) {

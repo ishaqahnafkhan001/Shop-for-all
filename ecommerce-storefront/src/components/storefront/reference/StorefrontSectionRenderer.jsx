@@ -198,7 +198,7 @@ export const HomepageSection = memo(function HomepageSection({
                     <h2 className="text-xl font-black sm:text-2xl" style={{ color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Shop by category"}</h2>
                     <div className={`mt-4 grid gap-2 ${categoryGridClass}`}>
                         {visibleCategories.map((category) => (
-                            <LinkSlot key={category} LinkComponent={LinkComponent} href={`/?category=${encodeURIComponent(category)}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
+                            <LinkSlot key={category} LinkComponent={LinkComponent} href={`/categories/${encodeURIComponent(category)}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
                                 {category}
                             </LinkSlot>
                         ))}

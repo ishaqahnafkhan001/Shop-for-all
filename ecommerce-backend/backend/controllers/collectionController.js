@@ -1,5 +1,6 @@
 const Collection = require('../models/Collection');
 const Product = require('../models/Product');
+const Shop = require('../models/Shop');
 const mongoose = require('mongoose');
 const {
     PUBLIC_PRODUCT_CARD_PROJECT,
@@ -8,6 +9,12 @@ const {
 const {
     getProductSort
 } = require('../services/products/productQueryService');
+const {
+    generateCollectionSuggestion
+} = require('../services/collections/collectionAiService');
+const {
+    applyScheduledSalesToProducts
+} = require('../services/sales/scheduledSaleService');
 
 const slugify = (value = '') =>
     value
@@ -20,6 +27,24 @@ const slugify = (value = '') =>
 
 const PUBLIC_COLLECTION_FIELDS = '_id title slug description image seo productIds isActive createdAt updatedAt';
 const MAX_PUBLIC_COLLECTION_PRODUCTS = 48;
+
+const cleanText = (value = '', max = 300) => String(value || '')
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+
+const parseProductIds = (value = []) => {
+    const source = Array.isArray(value)
+        ? value
+        : String(value || '').split(',');
+
+    return [...new Set(source
+        .map(id => String(id || '').trim())
+        .filter(id => mongoose.Types.ObjectId.isValid(id)))]
+        .slice(0, 30);
+};
 
 const sanitizePublicCollection = (collection = {}, productCount = 0) => ({
     _id: collection._id,
@@ -68,6 +93,84 @@ exports.getCollections = async (req, res) => {
     } catch (err) {
         console.error('Get collections error:', err);
         res.status(500).json({ success: false, error: 'Failed to fetch collections' });
+    }
+};
+
+exports.suggestCollectionAi = async (req, res) => {
+    try {
+        const productIds = parseProductIds(req.body?.productIds);
+        const [shop, products] = await Promise.all([
+            Shop.findById(req.tenantId).select('shopName businessType theme.header.storeName theme.seo.siteName').lean(),
+            productIds.length
+                ? Product.find({
+                    _id: { $in: productIds.map(id => new mongoose.Types.ObjectId(id)) },
+                    shop_id: req.tenantId,
+                    isDeleted: false
+                })
+                    .select('title category tags seo description')
+                    .limit(30)
+                    .lean()
+                : []
+        ]);
+
+        const context = {
+            title: cleanText(req.body?.title, 100),
+            description: cleanText(req.body?.description, 1000),
+            seoTitle: cleanText(req.body?.seo?.title || req.body?.seoTitle, 90),
+            seoDescription: cleanText(req.body?.seo?.description || req.body?.seoDescription, 190),
+            shopName: cleanText(shop?.theme?.seo?.siteName || shop?.theme?.header?.storeName || shop?.shopName, 100),
+            shopType: cleanText(req.body?.shopType || shop?.businessType, 80),
+            language: cleanText(req.body?.language || 'auto', 20),
+            targetCustomer: cleanText(req.body?.targetCustomer, 120),
+            products: products.map(product => ({
+                title: cleanText(product.title, 120),
+                category: cleanText(product.category, 80),
+                tags: Array.isArray(product.tags) ? product.tags.map(tag => cleanText(tag, 40)).filter(Boolean).slice(0, 8) : []
+            }))
+        };
+
+        const suggestion = await generateCollectionSuggestion(context);
+
+        return res.status(200).json({
+            success: true,
+            fallback: Boolean(suggestion.fallback),
+            ...(suggestion.errorCode ? { errorCode: suggestion.errorCode } : {}),
+            data: suggestion.data
+        });
+    } catch (err) {
+        if (err?.code === 'AI_NOT_CONFIGURED') {
+            return res.status(503).json({
+                success: false,
+                configured: false,
+                message: 'AI collection suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+            });
+        }
+
+        if (err?.code === 'AI_PROVIDER_FAILED') {
+            console.warn('Collection AI provider failure:', {
+                requestId: req.id,
+                causeCode: err.causeCode || 'AI_PROVIDER_ERROR'
+            });
+
+            return res.status(200).json({
+                success: false,
+                configured: true,
+                message: 'AI collection suggestions could not be generated right now. Please try again later.',
+                errorCode: 'AI_PROVIDER_FAILED'
+            });
+        }
+
+        console.warn('Collection AI suggestion failure:', {
+            requestId: req.id,
+            message: err.message
+        });
+
+        return res.status(200).json({
+            success: false,
+            configured: true,
+            message: 'AI collection suggestions could not be generated right now. Please try again.',
+            errorCode: 'AI_RESPONSE_PARSE_FAILED'
+        });
     }
 };
 
@@ -130,11 +233,16 @@ exports.getPublicCollectionBySlug = async (req, res) => {
             Product.countDocuments(productMatch)
         ]);
 
+        const pricedProducts = await applyScheduledSalesToProducts({
+            shopId: req.tenantId,
+            products
+        });
+
         res.status(200).json({
             success: true,
             data: {
                 collection: sanitizePublicCollection(collection, total),
-                products: sanitizePublicProducts(products),
+                products: sanitizePublicProducts(pricedProducts),
                 pagination: {
                     total,
                     page,

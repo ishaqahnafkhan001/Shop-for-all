@@ -13,7 +13,13 @@ export const STAFF_OPERATIONAL_PERMISSIONS = [
     'growthCenter',
     'storeBuilder',
     'settings',
-    'activityLogs'
+    'activityLogs',
+    'collectionsAi',
+    'productsSchedule',
+    'salesManage',
+    'bannersManage',
+    'inventoryAlertsManage',
+    'growthRead'
 ];
 
 export const STAFF_PERMISSION_LABELS = {
@@ -31,7 +37,13 @@ export const STAFF_PERMISSION_LABELS = {
     growthCenter: 'Growth Center',
     storeBuilder: 'Store Builder',
     settings: 'Settings',
-    activityLogs: 'Activity logs'
+    activityLogs: 'Activity logs',
+    collectionsAi: 'Collection AI',
+    productsSchedule: 'Schedule products',
+    salesManage: 'Scheduled sales',
+    bannersManage: 'Launch banners',
+    inventoryAlertsManage: 'Inventory alerts',
+    growthRead: 'Growth insights'
 };
 
 export const DEFAULT_STAFF_PERMISSIONS = STAFF_OPERATIONAL_PERMISSIONS.reduce((acc, key) => {

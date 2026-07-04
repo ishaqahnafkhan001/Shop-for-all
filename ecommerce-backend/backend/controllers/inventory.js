@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const InventoryLog = require('../models/InventoryLog');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const { enqueueLowStockAlertFromStockChange } = require('../services/inventoryLowStockAlertService');
 
 
 /**
@@ -60,6 +61,16 @@ exports.updateStock = async (req, res) => {
             afterStock: variant.stock,
             user: req.user._id,
             note: quantity > 0 ? 'Manual stock addition' : 'Manual stock reduction'
+        });
+
+        await enqueueLowStockAlertFromStockChange({
+            shopId,
+            productId,
+            variantId,
+            beforeStock,
+            afterStock: variant.stock,
+            source: 'MANUAL',
+            referenceId: product._id
         });
 
         res.status(200).json({

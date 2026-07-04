@@ -22,7 +22,8 @@ import {
     BadgeCheck,
     FileText,
     LockKeyhole,
-    CreditCard
+    CreditCard,
+    Images
 } from 'lucide-react';
 import { FEATURE_LABELS, hasFeature } from '../../utils/featureAccess';
 import { hasStaffPermission } from '../../utils/staffPermissions';
@@ -48,6 +49,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp, feature: 'growthCenter', permission: 'growthCenter' },
         { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, feature: 'analytics', permission: 'analytics' },
         { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, feature: 'storeBuilder', permission: 'storeBuilder' },
+        { name: 'Launch Banners', path: '/dashboard/banners', icon: Images, feature: 'storeBuilder', permission: 'bannersManage' },
         { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true, feature: 'staffAccounts' },
         { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, permission: 'activityLogs' },
 

@@ -19,7 +19,13 @@ const STAFF_PERMISSION_KEYS = [
     'growthCenter',
     'storeBuilder',
     'settings',
-    'activityLogs'
+    'activityLogs',
+    'collectionsAi',
+    'productsSchedule',
+    'salesManage',
+    'bannersManage',
+    'inventoryAlertsManage',
+    'growthRead'
 ];
 
 const DEFAULT_STAFF_PERMISSIONS = {
@@ -37,7 +43,13 @@ const DEFAULT_STAFF_PERMISSIONS = {
     growthCenter: false,
     storeBuilder: false,
     settings: false,
-    activityLogs: false
+    activityLogs: false,
+    collectionsAi: false,
+    productsSchedule: false,
+    salesManage: false,
+    bannersManage: false,
+    inventoryAlertsManage: false,
+    growthRead: false
 };
 
 const normalizeStaffLimit = (value) => {

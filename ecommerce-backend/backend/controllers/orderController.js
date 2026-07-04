@@ -33,6 +33,10 @@ const {
     notifyCustomerOrderStatus
 } = require('../services/orders/orderEmailService');
 const {
+    enqueueLowStockAlertsForLogs
+} = require('../services/inventoryLowStockAlertService');
+const { getScheduledSaleLinePrice } = require('../services/sales/scheduledSaleService');
+const {
     getDashboardStatsData,
     getDashboardOverviewResponse,
     getRevenueAnalyticsData
@@ -290,10 +294,19 @@ exports.createOrder = async (req, res) => {
             const beforeStock = stockUpdate.beforeStock;
             const afterStock = stockUpdate.afterStock;
 
+            const scheduledSalePrice = await getScheduledSaleLinePrice({
+                shopId,
+                product,
+                variant,
+                session
+            });
+
             const lineItem = buildOrderLineItem({
                 product,
                 variant,
-                item
+                item,
+                unitPriceOverride: scheduledSalePrice?.unitPrice,
+                scheduledSale: scheduledSalePrice?.scheduledSale || null
             });
             subtotal += lineItem.subtotal;
             promotionItems.push(lineItem.promotionItem);
@@ -372,6 +385,8 @@ exports.createOrder = async (req, res) => {
         await InventoryLog.insertMany(logsWithRef, { session });
 
         await session.commitTransaction();
+
+        await enqueueLowStockAlertsForLogs(logsWithRef);
 
         notifyOrderCreated({
             shop_id: shopId,
@@ -479,6 +494,8 @@ exports.cancelOrder = async (req, res) => {
         await order.save({ session });
 
         await session.commitTransaction();
+
+        await enqueueLowStockAlertsForLogs(logs);
 
         res.status(200).json({
             success: true,

@@ -1,6 +1,7 @@
 import StorefrontHomeClient from './StorefrontHomeClient';
 import { fetchStorefrontBootstrap } from '@/lib/storefrontServer';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import {
     buildHomepageJsonLd,
     buildMetadata,
@@ -69,8 +70,14 @@ export async function generateMetadata({ params }) {
     }
 }
 
-export default async function VendorHomePage({ params }) {
+export default async function VendorHomePage({ params, searchParams }) {
     const { subdomain } = await params;
+    const query = searchParams ? await searchParams : {};
+    const legacyCategory = Array.isArray(query?.category) ? query.category[0] : query?.category;
+    if (legacyCategory) {
+        redirect(`/categories/${encodeURIComponent(String(legacyCategory).trim())}`);
+    }
+
     const headerStore = await headers();
     const host = headerStore.get('host') || '';
     const initialData = await getInitialStorefrontData(subdomain, host);

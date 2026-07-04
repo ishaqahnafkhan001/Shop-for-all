@@ -50,6 +50,13 @@ const getCachedCategories = async (shopId, categoryQuery) => {
 };
 
 const addComputedProductFields = (product) => {
+    if (product.finalPrice !== undefined || product.salePrice !== undefined || product.pricing?.salePrice !== undefined) {
+        return {
+            ...product,
+            finalPrice: Number(product.finalPrice ?? product.salePrice ?? product.pricing?.salePrice)
+        };
+    }
+
     const sellingPrice = Number(product.pricing?.sellingPrice) || 0;
     const discount = Number(product.pricing?.discount) || 0;
 
@@ -79,12 +86,25 @@ const buildProductListQuery = ({ shopId, filters, isStorefrontRequest }) => {
     if (filters.collection) query.collections = filters.collection;
     if (filters.tag) query.tags = filters.tag.toLowerCase();
     if (filters.search) query.$text = { $search: filters.search };
-    if (filters.minPrice || filters.maxPrice) {
+    const needsEffectivePriceFiltering = isStorefrontRequest && (
+        filters.sale === 'true' ||
+        filters.sale === true ||
+        filters.effectivePrice === 'true' ||
+        Boolean(filters.minPrice || filters.maxPrice)
+    );
+    if ((filters.minPrice || filters.maxPrice) && !needsEffectivePriceFiltering) {
         query['pricing.sellingPrice'] = {};
         if (filters.minPrice) query['pricing.sellingPrice'].$gte = Number(filters.minPrice);
         if (filters.maxPrice) query['pricing.sellingPrice'].$lte = Number(filters.maxPrice);
     }
     if (filters.minRating) query.averageRating = { $gte: Math.min(Math.max(Number(filters.minRating) || 0, 0), 5) };
+    if (filters.rating) query.averageRating = { $gte: Math.min(Math.max(Number(filters.rating) || 0, 0), 5) };
+    if (isStorefrontRequest && filters.stock === 'in') {
+        query.$expr = { $gt: [{ $sum: '$variants.stock' }, 0] };
+    }
+    if (isStorefrontRequest && filters.stock === 'out') {
+        query.$expr = { $lte: [{ $sum: '$variants.stock' }, 0] };
+    }
     if (filters.lowStock === 'true') {
         query.$expr = {
             $lt: [
@@ -98,12 +118,12 @@ const buildProductListQuery = ({ shopId, filters, isStorefrontRequest }) => {
 };
 
 const getProductSort = (sort) => {
-    if (sort === 'priceAsc') return { 'pricing.sellingPrice': 1, _id: 1 };
-    if (sort === 'priceDesc') return { 'pricing.sellingPrice': -1, _id: 1 };
+    if (sort === 'priceAsc' || sort === 'price_asc') return { 'pricing.sellingPrice': 1, _id: 1 };
+    if (sort === 'priceDesc' || sort === 'price_desc') return { 'pricing.sellingPrice': -1, _id: 1 };
     if (sort === 'nameAsc') return { title: 1, _id: 1 };
     if (sort === 'nameDesc') return { title: -1, _id: 1 };
-    if (sort === 'ratingDesc') return { averageRating: -1, numReviews: -1, _id: 1 };
-    if (sort === 'ratingAsc') return { averageRating: 1, numReviews: 1, _id: 1 };
+    if (sort === 'ratingDesc' || sort === 'rating_desc') return { averageRating: -1, numReviews: -1, _id: 1 };
+    if (sort === 'ratingAsc' || sort === 'rating_asc') return { averageRating: 1, numReviews: 1, _id: 1 };
     if (sort === 'oldest') return { createdAt: 1, _id: 1 };
     return { createdAt: -1, _id: 1 };
 };
@@ -116,8 +136,11 @@ const getSummaryProjection = (isStorefrontRequest) => {
         tags: 1,
         collections: 1,
         imageAltText: 1,
+        coverMediaId: 1,
         images: { $slice: ['$images', 1] },
         status: 1,
+        publicationStatus: 1,
+        publishAt: 1,
         isActive: 1,
         pricing: 1,
         averageRating: 1,

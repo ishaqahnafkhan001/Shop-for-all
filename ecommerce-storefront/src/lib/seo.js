@@ -123,6 +123,7 @@ const absoluteUrl = (baseUrl, path = "") => {
 
 export const getProductPathSegment = (product = {}) => encodeURIComponent(product.slug || product._id || product.id || "");
 export const getCollectionPathSegment = (collection = {}) => encodeURIComponent(collection.slug || collection._id || collection.id || "");
+export const getCategoryPathSegment = (category = "") => encodeURIComponent(cleanTextForMeta(category) || "category");
 
 export const getProductCanonicalUrl = ({ host, subdomain, shop, product } = {}) => {
     return absoluteUrl(getShopBaseUrl({ host, subdomain, shop }), `/products/${getProductPathSegment(product)}`);
@@ -130,6 +131,10 @@ export const getProductCanonicalUrl = ({ host, subdomain, shop, product } = {}) 
 
 export const getCollectionCanonicalUrl = ({ host, subdomain, shop, collection } = {}) => {
     return absoluteUrl(getShopBaseUrl({ host, subdomain, shop }), `/collections/${getCollectionPathSegment(collection)}`);
+};
+
+export const getCategoryCanonicalUrl = ({ host, subdomain, shop, category } = {}) => {
+    return absoluteUrl(getShopBaseUrl({ host, subdomain, shop }), `/categories/${getCategoryPathSegment(category)}`);
 };
 
 export const getHomepageCanonicalUrl = ({ host, subdomain, shop } = {}) => (
@@ -189,6 +194,16 @@ export const getCollectionSeoDescription = (collection = {}, shop = {}) => {
     );
 };
 
+export const getCategorySeoTitle = (category = "", shop = {}) => {
+    const storeName = shop?.shopName || shop?.name || "Store";
+    return truncateMetaTitle(`${cleanTextForMeta(category) || "Products"} | ${storeName}`);
+};
+
+export const getCategorySeoDescription = (category = "", shop = {}) => {
+    const storeName = shop?.shopName || shop?.name || "this store";
+    return truncateMetaDescription(`Shop ${cleanTextForMeta(category) || "selected products"} from ${storeName}.`);
+};
+
 const firstHeroImage = (shop = {}) => {
     const hero = shop?.theme?.hero || {};
     const firstSlide = Array.isArray(hero.slides) ? hero.slides.find(slide => slide?.desktopImage || slide?.mobileImage) : null;
@@ -196,6 +211,7 @@ const firstHeroImage = (shop = {}) => {
 };
 
 export const getOgImage = (product = null, shop = {}) => {
+    if (product?.coverMediaId) return getImageUrlFromValue(product.coverMediaId);
     if (product?.images?.[0]) return getImageUrlFromValue(product.images[0]);
     if (product?.imageUrl) return product.imageUrl;
     const seo = shop?.theme?.seo || {};
@@ -235,6 +251,7 @@ export const getProductImageAlt = ({ product, image, shop } = {}) => {
 export const getProductImageUrls = (product = {}) => {
     const safeProduct = product || {};
     const images = Array.isArray(safeProduct.images) ? safeProduct.images.map(getImageUrlFromValue).filter(Boolean) : [];
+    if (safeProduct.coverMediaId) images.unshift(getImageUrlFromValue(safeProduct.coverMediaId));
     if (safeProduct.imageUrl) images.unshift(safeProduct.imageUrl);
     return [...new Set(images)];
 };

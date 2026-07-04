@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, Trash2, Image as ImageIcon, Loader2, RefreshCcw, Layers } from 'lucide-react';
+import { Upload, Trash2, Image as ImageIcon, Loader2, RefreshCcw, Layers, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 // Make sure this path correctly points to your custom Axios instance file
@@ -13,7 +13,18 @@ const PromotionalBanner = () => {
 
     // Form State
     const [title, setTitle] = useState('');
+    const [subtitle, setSubtitle] = useState('');
     const [link, setLink] = useState('');
+    const [type, setType] = useState('standard');
+    const [scheduledProduct, setScheduledProduct] = useState(null);
+    const [productSearch, setProductSearch] = useState('');
+    const [productOptions, setProductOptions] = useState([]);
+    const [productLoading, setProductLoading] = useState(false);
+    const [countdownEnabled, setCountdownEnabled] = useState(true);
+    const [postLaunchBehavior, setPostLaunchBehavior] = useState('convert_to_product');
+    const [postLaunchCtaText, setPostLaunchCtaText] = useState('View product');
+    const [startsAt, setStartsAt] = useState('');
+    const [endsAt, setEndsAt] = useState('');
     const [desktopImages, setDesktopImages] = useState([]);
     const [mobileImages, setMobileImages] = useState([]);
 
@@ -36,6 +47,38 @@ const PromotionalBanner = () => {
         const timer = setTimeout(fetchBanners, 0);
         return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => {
+        if (type !== 'scheduled_product') return undefined;
+
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            setProductLoading(true);
+            try {
+                const { data } = await API.get('/admin/products', {
+                    params: {
+                        search: productSearch || undefined,
+                        status: 'Draft',
+                        page: 1,
+                        limit: 8,
+                        sort: 'nameAsc'
+                    }
+                });
+                if (!cancelled) {
+                    setProductOptions((data.data || []).filter(product => product.publicationStatus === 'scheduled'));
+                }
+            } catch {
+                if (!cancelled) setProductOptions([]);
+            } finally {
+                if (!cancelled) setProductLoading(false);
+            }
+        }, 300);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [productSearch, type]);
 
     // 2. Handle File Selection (Multiple Files)
     const handleFileChange = (e, target) => {
@@ -60,11 +103,35 @@ const PromotionalBanner = () => {
             toast.error("Select at least one desktop banner image before uploading.");
             return;
         }
+        if (type === 'scheduled_product') {
+            if (!scheduledProduct?._id) {
+                toast.error("Select a scheduled product for this launch banner.");
+                return;
+            }
+            if (mobileImages.length === 0) {
+                toast.error("Select a mobile banner image for launch countdown banners.");
+                return;
+            }
+            if (!startsAt) {
+                toast.error("Set when the launch banner should start showing.");
+                return;
+            }
+        }
 
         setUploading(true);
         const formData = new FormData();
         formData.append('title', title);
+        formData.append('subtitle', subtitle);
         formData.append('link', link);
+        formData.append('type', type);
+        if (type === 'scheduled_product') {
+            formData.append('scheduledProduct', scheduledProduct._id);
+            formData.append('countdownEnabled', countdownEnabled ? 'true' : 'false');
+            formData.append('postLaunchBehavior', postLaunchBehavior);
+            formData.append('postLaunchCtaText', postLaunchCtaText);
+        }
+        if (startsAt) formData.append('startsAt', startsAt);
+        if (endsAt) formData.append('endsAt', endsAt);
 
         desktopImages.forEach((file) => {
             formData.append('desktopImages', file);
@@ -81,7 +148,17 @@ const PromotionalBanner = () => {
 
             // Reset Form Fields after successful upload
             setTitle('');
+            setSubtitle('');
             setLink('');
+            setType('standard');
+            setScheduledProduct(null);
+            setProductSearch('');
+            setProductOptions([]);
+            setCountdownEnabled(true);
+            setPostLaunchBehavior('convert_to_product');
+            setPostLaunchCtaText('View product');
+            setStartsAt('');
+            setEndsAt('');
             setDesktopImages([]);
             setMobileImages([]);
 
@@ -135,6 +212,117 @@ const PromotionalBanner = () => {
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Banner Type
+                            <select
+                                value={type}
+                                onChange={(e) => {
+                                    setType(e.target.value);
+                                    setScheduledProduct(null);
+                                }}
+                                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
+                            >
+                                <option value="standard">Normal promotional banner</option>
+                                <option value="scheduled_product">Scheduled product launch banner</option>
+                            </select>
+                        </label>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle (Optional)</label>
+                            <input
+                                type="text"
+                                value={subtitle}
+                                onChange={(e) => setSubtitle(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
+                                placeholder="Short campaign line"
+                            />
+                        </div>
+                    </div>
+
+                    {type === 'scheduled_product' && (
+                        <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3">
+                            <div>
+                                <p className="text-sm font-bold text-gray-900">Promote an upcoming product</p>
+                                <p className="text-xs text-gray-500">Only products scheduled for future publication are shown. The storefront will show a countdown before launch and unlock the product link after it is public.</p>
+                            </div>
+                            <label className="relative block">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={productSearch}
+                                    onChange={(e) => setProductSearch(e.target.value)}
+                                    className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                    placeholder="Search scheduled products"
+                                />
+                            </label>
+                            {scheduledProduct && (
+                                <div className="rounded-lg border border-indigo-200 bg-white p-3 text-sm">
+                                    <span className="font-bold text-gray-900">{scheduledProduct.title}</span>
+                                    <span className="ml-2 text-xs font-semibold text-gray-500">
+                                        launches {scheduledProduct.publishAt ? new Date(scheduledProduct.publishAt).toLocaleString() : 'at scheduled time'}
+                                    </span>
+                                </div>
+                            )}
+                            <div className="max-h-52 space-y-2 overflow-y-auto">
+                                {productLoading ? (
+                                    <p className="rounded-lg bg-white p-3 text-sm text-gray-500">Loading scheduled products...</p>
+                                ) : productOptions.length === 0 ? (
+                                    <p className="rounded-lg bg-white p-3 text-sm text-gray-500">No scheduled products found.</p>
+                                ) : productOptions.map(product => (
+                                    <button
+                                        key={product._id}
+                                        type="button"
+                                        onClick={() => setScheduledProduct(product)}
+                                        className={`flex w-full items-center gap-3 rounded-lg border bg-white p-2 text-left transition ${
+                                            scheduledProduct?._id === product._id ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-indigo-200'
+                                        }`}
+                                    >
+                                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                            {(product.coverMediaId || product.images?.[0]) && (
+                                                <img src={product.coverMediaId || product.images[0]} alt="" className="h-full w-full object-cover" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-gray-900">{product.title}</p>
+                                            <p className="text-xs text-gray-500">
+                                                {product.publishAt ? `Publishes ${new Date(product.publishAt).toLocaleString()}` : 'Scheduled'}
+                                            </p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={countdownEnabled}
+                                        onChange={(e) => setCountdownEnabled(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    Show countdown
+                                </label>
+                                <input
+                                    value={postLaunchCtaText}
+                                    onChange={(e) => setPostLaunchCtaText(e.target.value)}
+                                    className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                                    placeholder="Post-launch button text"
+                                />
+                            </div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                After product launches
+                                <select
+                                    value={postLaunchBehavior}
+                                    onChange={(e) => setPostLaunchBehavior(e.target.value)}
+                                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                                >
+                                    <option value="convert_to_product">Convert to normal product banner</option>
+                                    <option value="hide_on_publish">Hide immediately after publication</option>
+                                    <option value="keep_until_end">Remain visible until end time</option>
+                                </select>
+                            </label>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Title Input */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Banner Title</label>
@@ -159,8 +347,30 @@ const PromotionalBanner = () => {
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
                                 placeholder="e.g., /products or /collections/eid-sale"
                                 title="Where shoppers go after clicking the banner"
+                                disabled={type === 'scheduled_product'}
                             />
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label className="block text-sm font-medium text-gray-700">
+                                Show from
+                            <input
+                                type="datetime-local"
+                                value={startsAt}
+                                onChange={(e) => setStartsAt(e.target.value)}
+                                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
+                            />
+                        </label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Show until
+                            <input
+                                type="datetime-local"
+                                value={endsAt}
+                                onChange={(e) => setEndsAt(e.target.value)}
+                                className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
+                            />
+                        </label>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -189,7 +399,7 @@ const PromotionalBanner = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Banner Images</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Banner Images{type === 'scheduled_product' ? ' (Required)' : ''}</label>
                             <p className="text-xs text-gray-500 mb-2">Use portrait images. Recommended size: 900 x 1200 px. These show on mobile only.</p>
                             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -289,7 +499,17 @@ const PromotionalBanner = () => {
                                             }`}>
                                                 {banner.isActive ? 'Active' : 'Inactive'}
                                             </span>
+                                            {banner.type === 'scheduled_product' && (
+                                                <span className="ml-2 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700">
+                                                    Launch
+                                                </span>
+                                            )}
                                         </div>
+                                        {banner.type === 'scheduled_product' && banner.scheduledProduct && (
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                {banner.scheduledProduct.title} · {banner.scheduledProduct.publishAt ? new Date(banner.scheduledProduct.publishAt).toLocaleString() : 'scheduled'}
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Action Buttons */}

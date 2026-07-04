@@ -25,6 +25,12 @@ const buildRequestHeaders = ({ storefrontHost = '' } = {}) => {
     return headers;
 };
 
+const getServerFetchTimeoutMs = () => {
+    const configured = Number(process.env.STOREFRONT_SERVER_FETCH_TIMEOUT_MS || 0);
+    if (Number.isFinite(configured) && configured > 0) return configured;
+    return process.env.NODE_ENV === 'production' ? 8000 : 4000;
+};
+
 const isCustomDomainHost = (host = '') => {
     const cleanHost = String(host || '').trim().toLowerCase().split(':')[0];
     if (!cleanHost) return false;
@@ -35,8 +41,11 @@ const isCustomDomainHost = (host = '') => {
 };
 
 const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontHost = '' } = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), getServerFetchTimeoutMs());
     const fetchOptions = {
         headers: buildRequestHeaders({ storefrontHost }),
+        signal: controller.signal,
     };
 
     if (isCustomDomainHost(storefrontHost)) {
@@ -45,7 +54,20 @@ const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontH
         fetchOptions.next = { revalidate };
     }
 
-    const response = await fetch(buildUrl(path, params), fetchOptions);
+    let response;
+    try {
+        response = await fetch(buildUrl(path, params), fetchOptions);
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            const timeoutError = new Error('Storefront backend request timed out');
+            timeoutError.status = 504;
+            timeoutError.body = { error: timeoutError.message };
+            throw timeoutError;
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
         const body = await response.json().catch(() => ({}));

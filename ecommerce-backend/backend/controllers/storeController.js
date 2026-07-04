@@ -15,9 +15,66 @@ const {
 } = require('../services/publicProductSerializer');
 const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
 const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
+const {
+    applyScheduledSalesToProducts,
+    getActiveSalePopups
+} = require('../services/sales/scheduledSaleService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
+
+const getActiveBannerQuery = (shopId, now = new Date()) => ({
+    shop_id: shopId,
+    isActive: true,
+    $and: [
+        { $or: [{ startsAt: null }, { startsAt: { $lte: now } }] },
+        { $or: [{ endsAt: null }, { endsAt: { $gt: now } }] }
+    ]
+});
+
+const buildProductUrl = (product) => product ? `/products/${product.slug || product._id}` : '';
+
+const normalizeBannerForPublic = (banner, now = new Date()) => {
+    const product = banner.scheduledProduct || null;
+    const productPublished = product
+        ? product.isDeleted !== true && product.isActive === true && product.status === 'Published'
+        : false;
+
+    if (banner.type === 'scheduled_product') {
+        if (!product) return null;
+        if (productPublished && banner.postLaunchBehavior === 'hide_on_publish') return null;
+        if (productPublished && banner.postLaunchBehavior === 'keep_until_end' && banner.endsAt && new Date(banner.endsAt) <= now) return null;
+    }
+
+    const isUpcoming = banner.type === 'scheduled_product' && !productPublished;
+    const launchAt = product?.publishAt || null;
+
+    return {
+        _id: banner._id,
+        type: banner.type || 'standard',
+        title: banner.title,
+        subtitle: banner.subtitle || '',
+        images: banner.images || [],
+        desktopImages: banner.desktopImages || banner.images || [],
+        mobileImages: banner.mobileImages || [],
+        link: isUpcoming ? '' : (banner.link || buildProductUrl(product)),
+        startsAt: banner.startsAt,
+        endsAt: banner.endsAt,
+        countdownEnabled: Boolean(banner.countdownEnabled && isUpcoming && launchAt),
+        launchAt,
+        postLaunchBehavior: banner.postLaunchBehavior,
+        postLaunchCtaText: banner.postLaunchCtaText || 'View product',
+        scheduledProduct: product ? {
+            _id: product._id,
+            title: product.title,
+            slug: product.slug,
+            status: product.status,
+            publicationStatus: product.publicationStatus,
+            publishAt: product.publishAt,
+            isPublic: productPublished
+        } : null
+    };
+};
 
 const applyDefaultPoliciesToShopPayload = (shop) => {
     if (!shop) return shop;
@@ -153,7 +210,10 @@ exports.getStorefrontBootstrap = async (req, res) => {
 
         const [shop, banners, products, totalProducts, categories] = await Promise.all([
             Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
-            Banner.find({ shop_id: shopId, isActive: true }).sort({ createdAt: -1 }).lean(),
+            Banner.find(getActiveBannerQuery(shopId))
+                .populate('scheduledProduct', 'title slug status publicationStatus publishAt isActive isDeleted')
+                .sort({ createdAt: -1 })
+                .lean(),
             Product.aggregate([
                 { $match: query },
                 { $sort: sortQuery },
@@ -187,6 +247,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         delete shop.isActive;
         delete shop.approvalStatus;
 
+        const pricedProducts = await applyScheduledSalesToProducts({ shopId, products });
         const manualIdsBySection = getManualSectionProductIds(shop.theme?.homepageSections || []);
         const allManualProductIds = [...new Set(Object.values(manualIdsBySection).flat())];
         const reviewIdsBySection = getSelectedSectionReviewIds(shop.theme?.homepageSections || []);
@@ -207,7 +268,8 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 },
                 { $project: PUBLIC_PRODUCT_CARD_PROJECT }
             ]);
-            const productMap = new Map(manualProducts.map(product => [String(product._id), product]));
+            const pricedManualProducts = await applyScheduledSalesToProducts({ shopId, products: manualProducts });
+            const productMap = new Map(pricedManualProducts.map(product => [String(product._id), product]));
             sectionProducts = Object.entries(manualIdsBySection).reduce((acc, [sectionId, productIds]) => {
                 acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);
                 return acc;
@@ -242,14 +304,17 @@ exports.getStorefrontBootstrap = async (req, res) => {
             }, {});
         }
 
+        const activeSalePopups = await getActiveSalePopups({ shopId });
+
         const response = {
             success: true,
             data: {
                 shop,
-                banners,
+                banners: banners.map(banner => normalizeBannerForPublic(banner)).filter(Boolean),
+                activeSalePopups,
                 sectionProducts,
                 sectionReviews,
-                products,
+                products: pricedProducts,
                 categories: categories.filter(Boolean),
                 pagination: {
                     page: currentPage,
@@ -272,10 +337,14 @@ exports.getStoreProducts = async (req, res) => {
     try {
         const products = await Product.find({ shop_id: req.tenantId })
             .sort({ createdAt: -1 });
+        const pricedProducts = await applyScheduledSalesToProducts({
+            shopId: req.tenantId,
+            products: products.map(product => product.toObject({ virtuals: true }))
+        });
 
         res.status(200).json({
-            count: products.length,
-            products: sanitizePublicProducts(products)
+            count: pricedProducts.length,
+            products: sanitizePublicProducts(pricedProducts)
         });
     } catch (err) {
         res.status(500).json({ error: "Error fetching products." });
@@ -308,7 +377,11 @@ exports.getSingleProduct = async (req, res) => {
             return res.status(404).json({ error: "Product not found." });
         }
 
-        res.status(200).json(sanitizePublicProduct(product));
+        const [pricedProduct] = await applyScheduledSalesToProducts({
+            shopId: req.tenantId,
+            products: [product.toObject({ virtuals: true })]
+        });
+        res.status(200).json(sanitizePublicProduct(pricedProduct));
     } catch (err) {
         res.status(500).json({ error: "Error fetching product details." });
     }
@@ -332,10 +405,11 @@ exports.getBatchProducts = async (req, res) => {
             isActive: true,
             status: 'Published'
         })
-            .select('title slug category collections imageAltText images pricing variants averageRating numReviews')
+            .select('title slug category collections imageAltText coverMediaId images pricing variants averageRating numReviews')
             .lean({ virtuals: true });
 
-        res.status(200).json({ success: true, data: sanitizePublicProducts(products) });
+        const pricedProducts = await applyScheduledSalesToProducts({ shopId: req.tenantId, products });
+        res.status(200).json({ success: true, data: sanitizePublicProducts(pricedProducts) });
     } catch (err) {
         res.status(500).json({ success: false, error: "Error fetching products." });
     }
@@ -422,9 +496,14 @@ exports.getCartRecommendations = async (req, res) => {
             recommendations = [...recommendations, ...fallbackProducts];
         }
 
+        const pricedRecommendations = await applyScheduledSalesToProducts({
+            shopId: req.tenantId,
+            products: recommendations
+        });
+
         res.status(200).json({
             success: true,
-            data: sanitizePublicProducts(recommendations)
+            data: sanitizePublicProducts(pricedRecommendations)
         });
     } catch (err) {
         console.error("Cart recommendations error:", err);

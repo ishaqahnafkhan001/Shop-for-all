@@ -6,6 +6,7 @@ const InventoryLog = require('../models/InventoryLog');
 const { logAudit } = require('../services/auditLogService');
 const { createNotification } = require('../services/notificationService');
 const { buildPagination } = require('../utils/pagination');
+const { enqueueLowStockAlertsForLogs } = require('../services/inventoryLowStockAlertService');
 const {
     parseMaybeJson,
     buildProofFromFiles
@@ -284,6 +285,7 @@ exports.updateReturnStatus = async (req, res) => {
         request.updatedBy = req.user?._id;
 
         let restored = false;
+        let restoredLogs = [];
         if (status === 'Refunded') {
             request.refund = {
                 ...(request.refund?.toObject ? request.refund.toObject() : request.refund || {}),
@@ -298,12 +300,14 @@ exports.updateReturnStatus = async (req, res) => {
                 session
             });
             restored = restoreResult.restored;
+            restoredLogs = restoreResult.logs || [];
         }
 
         await request.save({ session });
         await session.commitTransaction();
 
         await Promise.all([
+            enqueueLowStockAlertsForLogs(restoredLogs),
             logAudit({
                 req,
                 shop_id: req.tenantId,
@@ -369,6 +373,7 @@ exports.updateReturnRefund = async (req, res) => {
         };
 
         let restored = false;
+        let restoredLogs = [];
         if (request.refund.status === 'Refunded') {
             request.status = 'Refunded';
             const restoreResult = await restoreReturnedInventory({
@@ -378,6 +383,7 @@ exports.updateReturnRefund = async (req, res) => {
                 session
             });
             restored = restoreResult.restored;
+            restoredLogs = restoreResult.logs || [];
         }
 
         request.updatedBy = req.user?._id;
@@ -385,6 +391,7 @@ exports.updateReturnRefund = async (req, res) => {
         await session.commitTransaction();
 
         await Promise.all([
+            enqueueLowStockAlertsForLogs(restoredLogs),
             logAudit({
                 req,
                 shop_id: req.tenantId,

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const InventoryLog = require('../models/InventoryLog');
 const Supplier = require('../models/Supplier');
+const { enqueueLowStockAlertsForLogs } = require('../services/inventoryLowStockAlertService');
 
 const getShopId = (req) => req.tenantId || req.user?.shopId || req.user?.shop_id;
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
@@ -118,6 +119,8 @@ exports.receivePO = async (req, res) => {
             throw new Error("Already received");
         }
 
+        const stockLogs = [];
+
         for (const item of po.items) {
 
             const product = await Product.findOne({
@@ -140,7 +143,7 @@ exports.receivePO = async (req, res) => {
             await product.save({ session });
 
             // 🔥 INVENTORY LOG
-            await InventoryLog.create([{
+            const stockLog = {
                 shop_id: po.shop_id,
                 productId: product._id,
                 variantId: variant._id,
@@ -153,7 +156,10 @@ exports.receivePO = async (req, res) => {
                 afterStock: variant.stock,
 
                 note: 'Purchase Order received'
-            }], { session });
+            };
+
+            await InventoryLog.create([stockLog], { session });
+            stockLogs.push(stockLog);
         }
 
         po.status = 'Received';
@@ -162,6 +168,8 @@ exports.receivePO = async (req, res) => {
         await po.save({ session });
 
         await session.commitTransaction();
+
+        await enqueueLowStockAlertsForLogs(stockLogs);
 
         res.json({ success: true, message: "Stock updated" });
 

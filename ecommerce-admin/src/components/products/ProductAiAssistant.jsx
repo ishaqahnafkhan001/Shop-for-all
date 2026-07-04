@@ -7,7 +7,7 @@ const SECTION_LABELS = {
     all: 'All content',
     seo: 'SEO',
     description: 'Description',
-    sellingPoints: 'Selling points',
+    sellingPoints: 'Why customers should buy this',
     specifications: 'Specifications',
     extraNotes: 'Extra notes',
     imageAlt: 'Image alt'
@@ -171,7 +171,7 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, onClose, onApply, for
 
                     <section className="rounded-xl border border-slate-200 p-4">
                         <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-black text-slate-900">Selling points</h3>
+                            <h3 className="font-black text-slate-900">Why customers should buy this</h3>
                             {applyButton('sellingPoints')}
                         </div>
                         {formatPreviewList(suggestion.sellingPoints)}
@@ -372,7 +372,9 @@ const ProductAiAssistant = ({
                                 ? 'Auto-write description'
                                 : section === 'imageAlt'
                                     ? 'Generate alt text'
-                                    : `Auto-fill ${SECTION_LABELS[section].toLowerCase()}`}
+                                    : section === 'sellingPoints'
+                                        ? 'Suggest buyer benefits'
+                                        : `Auto-fill ${SECTION_LABELS[section].toLowerCase()}`}
                     </button>
                 ))}
             </div>

@@ -19,19 +19,28 @@ export const normalizeProduct = (raw) => {
             : 0
     );
 
+    const images = raw?.images?.length > 0 ? raw.images : (raw?.imageUrl ? [raw.imageUrl] : []);
+    const coverMediaId = raw?.coverMediaId || raw?.imageUrl || images[0] || "";
+
     return {
         ...raw,
         sellingPrice,
         discount,
+        salePrice     : raw?.salePrice ?? raw?.pricing?.salePrice,
+        compareAtPrice: raw?.compareAtPrice ?? raw?.pricing?.compareAtPrice,
+        scheduledSale : raw?.scheduledSale || null,
         finalPrice,
         stock,
         averageRating : raw?.averageRating ?? 0,
         numReviews    : raw?.numReviews    ?? 0,
-        images        : raw?.images?.length > 0 ? raw.images : (raw?.imageUrl ? [raw.imageUrl] : []),
+        coverMediaId,
+        imageUrl      : coverMediaId,
+        images,
         options       : raw?.options       || [],
         variants      : normalizedVariants,
         features      : raw?.features      || [],
         specifications: raw?.specifications || [],
         comments      : raw?.comments      || [],
+        variantsLoaded: Array.isArray(raw?.variants) && raw.variants.length > 0,
     };
 };

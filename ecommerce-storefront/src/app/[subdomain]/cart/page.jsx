@@ -9,6 +9,7 @@ import SafeProductImage from '@/components/storefront/SafeProductImage';
 import { ProductCard } from '@/components/storefront/reference/StorefrontProductCard';
 import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
 import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
+import { DEFAULT_CART_DELIVERY_ESTIMATE } from '@/lib/cartConstants';
 import { normalizeProduct } from '@/utils/normalizeProduct';
 
 export default function CartPage() {
@@ -24,7 +25,7 @@ export default function CartPage() {
     const [recommendationsLoading, setRecommendationsLoading] = React.useState(false);
 
     const subtotal = cartTotal;
-    const shipping = cartItems.length > 0 ? 60 : 0;
+    const shipping = cartItems.length > 0 ? DEFAULT_CART_DELIVERY_ESTIMATE : 0;
     const recommendationIds = React.useMemo(() => (
         [...new Set(cartItems.map((item) => item._id).filter(Boolean))]
     ), [cartItems]);
@@ -273,7 +274,7 @@ export default function CartPage() {
                                 <span className="font-bold text-slate-950">৳ {subtotal}</span>
                             </div>
                             <div className="flex justify-between text-slate-600">
-                                <span>Shipping estimate</span>
+                                <span>Estimated delivery</span>
                                 <span className="font-bold text-slate-950">৳ {shipping}</span>
                             </div>
 

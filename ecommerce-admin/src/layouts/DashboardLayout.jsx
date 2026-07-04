@@ -68,8 +68,8 @@ const helpTextByPath = [
     },
     {
         match: '/dashboard/banners',
-        title: 'Store Builder',
-        body: 'Banners are now managed inside Store Builder as flexible homepage sections.'
+        title: 'Launch Banners',
+        body: 'Create timed storefront banners and scheduled product launch countdowns. Scheduled-product banners unlock the product link only after publication.'
     },
     {
         match: '/dashboard/store-builder',

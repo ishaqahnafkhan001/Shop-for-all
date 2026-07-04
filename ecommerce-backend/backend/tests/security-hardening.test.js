@@ -66,8 +66,8 @@ test('customer-facing product and order responses hide vendor cost fields', () =
     assert.match(productSerializer, /delete clean\.tax/);
     assert.doesNotMatch(productSerializer, /buyingPrice/);
     assert.match(orderSerializer, /delete clean\.buyingPrice/);
-    assert.match(storeController, /sanitizePublicProduct\(product\)/);
-    assert.match(storeController, /sanitizePublicProducts\(products\)/);
+    assert.match(storeController, /sanitizePublicProduct\(pricedProduct\)/);
+    assert.match(storeController, /sanitizePublicProducts\(pricedProducts\)/);
     assert.match(publicController, /sanitizeOrderForCustomer\(newOrder\)/);
     assert.match(publicController, /delete clean\.buyingPrice/);
     assert.match(orderController, /sanitizeOrdersForCustomer\(orders\)/);
@@ -194,6 +194,24 @@ test('growth center routes are tenant protected with growth permission', () => {
     assert.match(controller, /Product\.findOne\(\{[\s\S]*shop_id:\s*req\.tenantId/);
 });
 
+test('growth center revenue metrics use delivered order revenue only', () => {
+    const controller = read('controllers/growthController.js');
+    const growthCenter = readProject('ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx');
+
+    assert.match(controller, /const deliveredRevenueDateExpression/);
+    assert.match(controller, /status:\s*'Delivered'/);
+    assert.match(controller, /deliveredRevenueMetrics/);
+    assert.match(controller, /returnedRevenueMetrics/);
+    assert.match(controller, /const netDeliveredRevenue = Math\.max\(0,\s*Number\(revenue\.deliveredRevenue \|\| 0\) - Number\(returned\.returnedRevenue \|\| 0\)\)/);
+    assert.match(controller, /revenue:\s*netDeliveredRevenue/);
+    assert.match(controller, /grossDeliveredRevenue:\s*revenue\.deliveredRevenue \|\| 0/);
+    assert.match(controller, /returnedRevenue:\s*returned\.returnedRevenue \|\| 0/);
+    assert.match(controller, /eventType:\s*'delivered_revenue'/);
+    assert.doesNotMatch(controller, /revenue:\s*\{\s*\$sum:\s*\{\s*\$cond:\s*\[\{\s*\$eq:\s*\['\$eventType', eventTypes\.orders\]/);
+    assert.match(growthCenter, /Delivered Revenue/);
+    assert.match(growthCenter, /Only delivered product revenue is counted/);
+});
+
 test('shop feature flags are enforced on backend routes and vendor frontend routes', () => {
     const featureGate = read('middlewares/featureGate.js');
     const featureService = read('services/shops/featureAccessService.js');
@@ -238,6 +256,103 @@ test('shop feature flags are enforced on backend routes and vendor frontend rout
     assert.match(growthCenter, /disabled=\{!canUseAdGenerator\}/);
     assert.match(authController, /getShopFeatureFlags/);
     assert.match(authController, /effectiveFeatures/);
+});
+
+test('catalog collection AI is tenant-protected and preview-applied in admin UI', () => {
+    const collectionRoutes = read('routes/collectionRoutes.js');
+    const collectionController = read('controllers/collectionController.js');
+    const collectionAiService = read('services/collections/collectionAiService.js');
+    const catalogTools = readProject('ecommerce-admin/src/pages/dashboard/CatalogTools.jsx');
+
+    assert.match(collectionRoutes, /router\.use\(protect\)/);
+    assert.match(collectionRoutes, /router\.use\(authorize\('VendorAdmin', 'VendorStaff'\)\)/);
+    assert.match(collectionRoutes, /router\.use\(requirePermission\('catalogTools'\)\)/);
+    assert.match(collectionRoutes, /router\.post\('\/ai\/suggest'[\s\S]*collectionAiLimiter[\s\S]*suggestCollectionAi\)/);
+    assert.match(collectionController, /Product\.find\(\{[\s\S]*shop_id:\s*req\.tenantId/);
+    assert.doesNotMatch(collectionController, /shop_id:\s*req\.body/);
+    assert.match(collectionAiService, /GEMINI_API_KEY/);
+    assert.match(collectionAiService, /responseMimeType:\s*'application\/json'/);
+    assert.match(collectionAiService, /Never include private customer data/);
+    assert.match(catalogTools, /\/admin\/collections\/ai\/suggest/);
+    assert.match(catalogTools, /Generate with AI/);
+    assert.match(catalogTools, /Apply all/);
+    assert.match(catalogTools, /Suggestion applied\. Review before saving/);
+});
+
+test('scheduled product launch uses persisted jobs and hides products until publication', () => {
+    const productModel = read('models/Product.js');
+    const productValidation = read('validations/productValidation.js');
+    const productController = read('controllers/productController.js');
+    const scheduledService = read('services/products/scheduledProductService.js');
+    const worker = read('workers/index.js');
+    const addProduct = readProject('ecommerce-admin/src/pages/dashboard/products/AddProduct.jsx');
+    const editProduct = readProject('ecommerce-admin/src/pages/dashboard/products/EditProduct.jsx');
+
+    assert.match(productModel, /publicationStatus/);
+    assert.match(productModel, /publishAt/);
+    assert.match(productModel, /publishedAt/);
+    assert.match(productModel, /productSchema\.index\(\{ shop_id:\s*1,\s*publicationStatus:\s*1,\s*publishAt:\s*1 \}\)/);
+    assert.match(productModel, /this\.publicationStatus === 'scheduled'[\s\S]*this\.status = 'Draft'[\s\S]*this\.isActive = false/);
+    assert.match(productValidation, /publicationStatus:\s*Joi\.string\(\)\.valid\('draft', 'scheduled', 'published'\)/);
+    assert.match(productValidation, /publishAt:\s*Joi\.date\(\)\.iso\(\)/);
+    assert.match(productController, /normalizeProductPublicationFields\(value\)/);
+    assert.match(productController, /enqueueScheduledProductPublication/);
+    assert.match(scheduledService, /queue:\s*SCHEDULED_PRODUCT_QUEUE/);
+    assert.match(scheduledService, /publicationStatus:\s*'scheduled'/);
+    assert.match(scheduledService, /publishAt:\s*\{\s*\$lte:\s*now\s*\}/);
+    assert.match(worker, /\[SCHEDULED_PRODUCT_QUEUE\]: processScheduledProductJob/);
+    assert.match(addProduct, /Scheduled/);
+    assert.match(addProduct, /publicationStatus/);
+    assert.match(addProduct, /Publish date and time/);
+    assert.match(editProduct, /Scheduled/);
+    assert.match(editProduct, /publicationStatus/);
+});
+
+test('low stock warnings are queued, tenant-scoped, and sent only on threshold crossing', () => {
+    const service = read('services/inventoryLowStockAlertService.js');
+    const productModel = read('models/Product.js');
+    const notificationModel = read('models/Notification.js');
+    const worker = read('workers/index.js');
+    const productController = read('controllers/productController.js');
+    const inventoryController = read('controllers/inventory.js');
+    const orderController = read('controllers/orderController.js');
+    const publicController = read('controllers/publicController.js');
+
+    assert.match(productModel, /lowStockThreshold/);
+    assert.match(service, /LOW_STOCK_ALERT_QUEUE/);
+    assert.match(service, /LOW_STOCK_ALERT_JOB/);
+    assert.match(service, /variant\?\.inventory\?\.lowStockThreshold/);
+    assert.match(service, /toNumber\(beforeStock\) > threshold && toNumber\(afterStock\) <= threshold/);
+    assert.match(service, /Product\.findOne\(\{[\s\S]*shop_id:\s*shopId/);
+    assert.match(service, /createNotification\(\{[\s\S]*type:\s*'inventory'/);
+    assert.match(service, /getVendorAdminEmails/);
+    assert.match(service, /sendVendorNotificationEmail/);
+    assert.match(service, /low_stock_alert_sent/);
+    assert.match(notificationModel, /'inventory'/);
+    assert.match(worker, /\[LOW_STOCK_ALERT_QUEUE\]: processLowStockAlertJob/);
+    assert.match(productController, /enqueueLowStockAlertsForLogs\(logsToInsert\)/);
+    assert.match(productController, /enqueueLowStockAlertsForLogs\(lowStockLogs\)/);
+    assert.match(inventoryController, /enqueueLowStockAlertFromStockChange/);
+    assert.match(orderController, /enqueueLowStockAlertsForLogs\(logsWithRef\)/);
+    assert.match(publicController, /enqueueLowStockAlertsForLogs\(logsWithRef\)/);
+});
+
+test('promotion scheduling is enforced by backend checkout evaluation and exposed in admin UI', () => {
+    const promotionModel = read('models/Promotion.js');
+    const promotionService = read('services/promotionService.js');
+    const promotionController = read('controllers/promotionController.js');
+    const promotionsPage = readProject('ecommerce-admin/src/pages/dashboard/Promotions.jsx');
+
+    assert.match(promotionModel, /startsAt/);
+    assert.match(promotionModel, /expiresAt/);
+    assert.match(promotionModel, /Promotion expiry date must be after start date/);
+    assert.match(promotionService, /promotion\.startsAt && new Date\(promotion\.startsAt\) > now/);
+    assert.match(promotionService, /Coupon has not started yet/);
+    assert.match(promotionService, /promotion\.expiresAt && new Date\(promotion\.expiresAt\) < now/);
+    assert.match(promotionController, /shop_id:\s*req\.tenantId/);
+    assert.match(promotionsPage, /startsAt/);
+    assert.match(promotionsPage, /Scheduled/);
+    assert.match(promotionsPage, /checkout will not apply them before the start time/i);
 });
 
 test('vendor verification routes are protected and use NID upload middleware', () => {
@@ -757,7 +872,7 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     assert.match(storeController, /shop_id:\s*shopObjectId/);
     assert.match(storeController, /status:\s*'Published'/);
     assert.match(storeController, /\$nin:\s*cartObjectIds/);
-    assert.match(storeController, /sanitizePublicProducts\(recommendations\)/);
+    assert.match(storeController, /sanitizePublicProducts\(pricedRecommendations\)/);
 
     assert.match(productCard, /onProductBuyNow/);
     assert.match(productCard, /onWishlistToggle/);

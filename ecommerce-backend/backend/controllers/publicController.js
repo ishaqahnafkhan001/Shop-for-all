@@ -11,6 +11,13 @@ const ReturnRequest = require('../models/ReturnRequest');
 const { evaluatePromotion } = require('../services/promotionService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
+const {
+    enqueueLowStockAlertsForLogs
+} = require('../services/inventoryLowStockAlertService');
+const {
+    applyScheduledSalesToProducts,
+    getScheduledSaleLinePrice
+} = require('../services/sales/scheduledSaleService');
 const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpService');
 const ConsentLog = require('../models/ConsentLog');
 const { createNotification } = require('../services/notificationService');
@@ -458,9 +465,16 @@ exports.createPublicOrder = async (req, res) => {
 
             const discount = Number(product.pricing?.discount) || 0;
 
-            const unitPrice = Math.round(
+            const productDiscountPrice = Math.round(
                 basePrice - ((basePrice * discount) / 100)
             );
+            const scheduledSalePrice = await getScheduledSaleLinePrice({
+                shopId: shop._id,
+                product,
+                variant,
+                session
+            });
+            const unitPrice = scheduledSalePrice?.unitPrice ?? productDiscountPrice;
 
             const buyingPrice = Number(variant.pricing?.costPrice ?? product.pricing?.buyingPrice);
             const itemTotal = unitPrice * quantity;
@@ -482,7 +496,8 @@ exports.createPublicOrder = async (req, res) => {
                 quantity,
                 price: unitPrice,
                 buyingPrice,
-                total: itemTotal
+                total: itemTotal,
+                ...(scheduledSalePrice?.scheduledSale ? { scheduledSale: scheduledSalePrice.scheduledSale } : {})
             });
 
             promotionItems.push({
@@ -614,16 +629,17 @@ exports.createPublicOrder = async (req, res) => {
         // =========================
         // INVENTORY LOGS
         // =========================
-        if (logsToInsert.length > 0) {
-            const logsWithRef = logsToInsert.map(log => ({
-                ...log,
-                referenceId: newOrder._id
-            }));
-
+        const logsWithRef = logsToInsert.map(log => ({
+            ...log,
+            referenceId: newOrder._id
+        }));
+        if (logsWithRef.length > 0) {
             await InventoryLog.insertMany(logsWithRef, { session });
         }
 
         await session.commitTransaction();
+
+        await enqueueLowStockAlertsForLogs(logsWithRef);
 
         notifyNewOrder({
             shop_id: shop._id,
@@ -715,6 +731,7 @@ exports.getPublicShopDetails = async (req, res) => {
                         slug: 1,
                         category: 1,
                         collections: 1,
+                        coverMediaId: 1,
                         images: { $slice: ['$images', 1] },
                         pricing: PUBLIC_PRODUCT_CARD_PROJECT.pricing,
                         averageRating: 1,
@@ -732,9 +749,18 @@ exports.getPublicShopDetails = async (req, res) => {
                 status: 'Published'
             })
         ]);
+        const pricedProducts = await applyScheduledSalesToProducts({
+            shopId: shop._id,
+            products
+        });
         const hasMore = totalProducts > (page * limit);
 
-        res.status(200).json({ shop, products, hasMore, categories });
+        res.status(200).json({
+            shop,
+            products: pricedProducts.map(sanitizePublicProduct),
+            hasMore,
+            categories
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Server error" });
@@ -965,7 +991,7 @@ exports.cancelTrackedOrder = async (req, res) => {
             });
         }
 
-        await restoreCancelledOrderInventory({
+        const restoredLogs = await restoreCancelledOrderInventory({
             order,
             shopId,
             userId: order.customer,
@@ -975,6 +1001,7 @@ exports.cancelTrackedOrder = async (req, res) => {
         await session.commitTransaction();
 
         await Promise.all([
+            enqueueLowStockAlertsForLogs(restoredLogs),
             createNotification({
                 shop_id: shopId,
                 type: 'order',

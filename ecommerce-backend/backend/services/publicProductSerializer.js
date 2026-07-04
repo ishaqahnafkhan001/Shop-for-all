@@ -4,11 +4,18 @@ const PUBLIC_PRODUCT_CARD_PROJECT = {
     category: 1,
     collections: 1,
     imageAltText: 1,
+    coverMediaId: 1,
     images: { $slice: ['$images', 1] },
     pricing: {
         sellingPrice: '$pricing.sellingPrice',
-        discount: '$pricing.discount'
+        discount: '$pricing.discount',
+        salePrice: '$pricing.salePrice',
+        compareAtPrice: '$pricing.compareAtPrice'
     },
+    finalPrice: 1,
+    salePrice: 1,
+    compareAtPrice: 1,
+    scheduledSale: 1,
     averageRating: 1,
     numReviews: 1,
     totalStock: { $sum: '$variants.stock' },
@@ -23,7 +30,9 @@ const toPlainObject = (value) => {
 
 const sanitizePublicPricing = (pricing = {}) => ({
     sellingPrice: pricing.sellingPrice,
-    discount: pricing.discount
+    discount: pricing.discount,
+    salePrice: pricing.salePrice,
+    compareAtPrice: pricing.compareAtPrice
 });
 
 const sanitizePublicVariantPricing = (pricing = {}) => {

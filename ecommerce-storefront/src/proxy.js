@@ -20,7 +20,7 @@ export const config = {
 
 const getHostname = (host = '') => String(host || '').toLowerCase().split(':')[0].replace(/^\.+|\.+$/g, '');
 
-export default function middleware(req) {
+export default function proxy(req) {
     const url = req.nextUrl;
     const hostname = getHostname(req.headers.get('host') || '');
 

@@ -25,6 +25,7 @@ router.get('/storefront/:subdomain/active', resolveTenant, getActiveBanners);
 router.use(protect);
 router.use(authorize('VendorAdmin', 'VendorStaff'));
 router.use(requirePermission('storeBuilder'));
+router.use(requirePermission('bannersManage'));
 router.use(requireShopFeature('storeBuilder'));
 
 router.get('/', getAllBanners);

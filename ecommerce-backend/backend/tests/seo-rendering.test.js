@@ -22,7 +22,8 @@ test('public product detail lookup supports tenant-safe slug and ObjectId fallba
     assert.match(getSingleProductBlock, /status:\s*'Published'/);
     assert.match(getSingleProductBlock, /slug:\s*slugOrId\.toLowerCase\(\)/);
     assert.match(getSingleProductBlock, /mongoose\.Types\.ObjectId\.isValid\(slugOrId\)/);
-    assert.match(getSingleProductBlock, /sanitizePublicProduct\(product\)/);
+    assert.match(getSingleProductBlock, /applyScheduledSalesToProducts/);
+    assert.match(getSingleProductBlock, /sanitizePublicProduct\(pricedProduct\)/);
 });
 
 test('public review routes resolve product slugs without exposing cross-tenant reviews', () => {
@@ -321,11 +322,15 @@ test('admin SEO Phase 2 controls expose store and product SEO guidance without s
     assert.match(editProduct, /Changing the product URL may affect shared links/);
 });
 
-test('public collection SEO route is tenant-safe and does not add duplicate category routes', () => {
+test('public collection and category SEO routes are tenant-safe', () => {
     const appDir = path.join(repoRoot, 'ecommerce-storefront/src/app/[subdomain]');
     const routeFiles = fs.readdirSync(appDir, { withFileTypes: true }).map(entry => entry.name);
     const collectionPage = readRepo('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/page.jsx');
     const collectionClient = readRepo('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx');
+    const homePage = readRepo('ecommerce-storefront/src/app/[subdomain]/page.jsx');
+    const categoryPage = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/page.jsx');
+    const categoryClient = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx');
+    const sectionRenderer = readRepo('ecommerce-storefront/src/components/storefront/reference/StorefrontSectionRenderer.jsx');
     const collectionController = read('controllers/collectionController.js');
     const storefrontRoutes = read('routes/storefrontRoutes.js');
     const productModel = read('models/Product.js');
@@ -333,7 +338,7 @@ test('public collection SEO route is tenant-safe and does not add duplicate cate
     const storeBuilderController = read('controllers/storeBuilderController.js');
 
     assert.equal(routeFiles.includes('collections'), true);
-    assert.equal(routeFiles.includes('categories'), false);
+    assert.equal(routeFiles.includes('categories'), true);
     assert.match(collectionPage, /export async function generateMetadata/);
     assert.match(collectionPage, /getCollectionCanonicalUrl/);
     assert.match(collectionPage, /buildCollectionItemListJsonLd/);
@@ -341,6 +346,16 @@ test('public collection SEO route is tenant-safe and does not add duplicate cate
     assert.match(collectionPage, /googleSiteVerification/);
     assert.match(collectionClient, /ProductCard/);
     assert.match(collectionClient, /LinkComponent=\{Link\}/);
+    assert.match(categoryPage, /export async function generateMetadata/);
+    assert.match(categoryPage, /getCategoryCanonicalUrl/);
+    assert.match(categoryPage, /fetchStorefrontProducts/);
+    assert.match(categoryPage, /getCategoryFilters/);
+    assert.match(categoryPage, /searchParams/);
+    assert.match(categoryPage, /minPrice/);
+    assert.match(categoryClient, /ProductCard/);
+    assert.match(sectionRenderer, /href=\{`\/categories\/\$\{encodeURIComponent\(category\)\}`\}/);
+    assert.match(homePage, /legacyCategory/);
+    assert.match(homePage, /redirect\(`\/categories\/\$\{encodeURIComponent/);
 
     assert.match(storefrontRoutes, /\/:subdomain\/collections/);
     assert.match(storefrontRoutes, /\/:subdomain\/collections\/:slug/);

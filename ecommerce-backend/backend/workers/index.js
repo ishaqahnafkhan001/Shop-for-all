@@ -13,6 +13,16 @@ const {
     processBadgeAnalysisJob,
     markBadgeAnalysisFailed
 } = require('../services/badges/badgeAnalysisService');
+const {
+    SCHEDULED_PRODUCT_QUEUE,
+    processScheduledProductJob,
+    processOverdueScheduledProducts
+} = require('../services/products/scheduledProductService');
+const {
+    LOW_STOCK_ALERT_QUEUE,
+    processLowStockAlertJob
+} = require('../services/inventoryLowStockAlertService');
+const { processScheduledSaleStates } = require('../services/sales/scheduledSaleService');
 const logger = require('../services/logger');
 
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 3000);
@@ -22,7 +32,9 @@ const handlers = {
     notifications: processShopEventJob,
     courier: processCourierJob,
     badges: processBadgeAnalysisJob,
-    'customer-email': processCustomerEmailCampaignJob
+    'customer-email': processCustomerEmailCampaignJob,
+    [SCHEDULED_PRODUCT_QUEUE]: processScheduledProductJob,
+    [LOW_STOCK_ALERT_QUEUE]: processLowStockAlertJob
 };
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -57,7 +69,11 @@ const run = async () => {
 
     while (!shuttingDown) {
         const processed = await processNextJob();
-        if (!processed) await sleep(POLL_INTERVAL_MS);
+        if (!processed) {
+            await processOverdueScheduledProducts({ limit: 25 });
+            await processScheduledSaleStates({ limit: 50 });
+            await sleep(POLL_INTERVAL_MS);
+        }
     }
 
     logger.info('worker_stopped');

@@ -64,6 +64,17 @@ const orderItemSchema = new Schema({
         type: Number,
         required: true,
         min: 0
+    },
+
+    scheduledSale: {
+        saleId: { type: Schema.Types.ObjectId, ref: 'ScheduledSale', default: null },
+        name: { type: String, trim: true, default: '' },
+        discountType: { type: String, enum: ['percentage', 'fixed', null], default: null },
+        discountValue: { type: Number, default: 0, min: 0 },
+        discountAmount: { type: Number, default: 0, min: 0 },
+        priority: { type: Number, default: 0, min: 0 },
+        startsAt: { type: Date, default: null },
+        endsAt: { type: Date, default: null }
     }
 
 }, { _id: false });

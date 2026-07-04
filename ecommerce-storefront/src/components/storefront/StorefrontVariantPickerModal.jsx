@@ -26,7 +26,7 @@ export default function StorefrontVariantPickerModal({
 
     return (
         <div className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="variant-picker-title">
-            <div className="max-h-[92vh] w-full overflow-hidden rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-w-lg sm:rounded-[2rem]">
+            <div className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-w-lg sm:rounded-[2rem]">
                 <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
                     <div>
                         <p className="sf-kicker">Choose option</p>
@@ -47,7 +47,7 @@ export default function StorefrontVariantPickerModal({
                     </button>
                 </div>
 
-                <div className="space-y-4 overflow-y-auto p-5 sm:p-6">
+                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
                     <div className="flex gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-3">
                         <SafeProductImage
                             src={getImageUrlFromValue(image)}
@@ -77,7 +77,7 @@ export default function StorefrontVariantPickerModal({
                             <p className="mt-1 text-sm text-slate-500">This product is currently unavailable.</p>
                         </div>
                     ) : (
-                        <div className="grid gap-3">
+                        <div className="grid max-h-[48vh] gap-3 overflow-y-auto pr-1 sm:max-h-[52vh]">
                             {variants.map((variant) => {
                                 const stock = Number(variant.stock ?? variant.inventory?.stock ?? 0);
                                 return (

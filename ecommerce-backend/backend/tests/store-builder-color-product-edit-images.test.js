@@ -85,11 +85,17 @@ test('storefront color groups persist and apply across all storefront page wrapp
 });
 
 test('product edit image updates preserve kept images and submit new files through multipart contract', () => {
+    const addProduct = readRepo('ecommerce-admin/src/pages/dashboard/products/AddProduct.jsx');
     const editProduct = readRepo('ecommerce-admin/src/pages/dashboard/products/EditProduct.jsx');
     const adminRoutes = readBackend('routes/adminRoutes.js');
     const productController = readBackend('controllers/productController.js');
     const productMediaService = readBackend('services/products/productMediaService.js');
 
+    assert.match(addProduct, /imagePreviews/);
+    assert.match(addProduct, /coverImageIndex/);
+    assert.match(addProduct, /Make cover/);
+    assert.match(addProduct, /moveImageFile/);
+    assert.match(addProduct, /data\.append\('coverImageIndex'/);
     assert.match(editProduct, /newImageFiles/);
     assert.match(editProduct, /newImagePreviews/);
     assert.match(editProduct, /removedImages/);
@@ -109,5 +115,9 @@ test('product edit image updates preserve kept images and submit new files throu
     assert.match(productController, /hasImageUpdateIntent/);
     assert.match(productController, /currentImages\.includes\(imageUrl\)/);
     assert.match(productController, /parsedBody\.images = finalImages/);
-    assert.match(productController, /finalImages\.splice\(coverImageIndex, 1\)/);
+    assert.match(productController, /const coverImageIndexInput = parsedBody\.coverImageIndex/);
+    assert.match(productController, /resolveCoverMediaId/);
+    assert.match(productController, /coverMediaBelongsToProduct/);
+    assert.doesNotMatch(productController, /imageUrls\.splice\(coverImageIndex, 1\)/);
+    assert.doesNotMatch(productController, /finalImages\.splice\(coverImageIndex, 1\)/);
 });

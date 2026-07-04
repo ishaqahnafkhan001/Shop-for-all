@@ -39,6 +39,7 @@ const AddProduct = () => {
     // Multi-media states
     const [imageFiles, setImageFiles] = useState([]);
     const [videoFiles, setVideoFiles] = useState([]);
+    const [coverImageIndex, setCoverImageIndex] = useState(0);
     const [previewImageUrl, setPreviewImageUrl] = useState(null);
     const [collections, setCollections] = useState([]);
     const [selectedCollections, setSelectedCollections] = useState([]);
@@ -51,6 +52,8 @@ const AddProduct = () => {
         category:       '',
         tags:           '',
         status:         'Published',
+        publicationStatus: 'published',
+        publishAt:      '',
         lowStockThreshold: 5,
         imageAltText:   '',
         seo:            { title: '', description: '' },
@@ -94,6 +97,13 @@ const AddProduct = () => {
         product: { ...formData, defaultStock, collections: selectedCollections },
         hasImage: imageFiles.length > 0
     }), [defaultStock, formData, imageFiles.length, selectedCollections]);
+    const imagePreviews = useMemo(() => (
+        imageFiles.map((file, index) => ({
+            file,
+            index,
+            url: URL.createObjectURL(file)
+        }))
+    ), [imageFiles]);
 
     const handleGenerateSeo = () => {
         if (!formData.title.trim()) {
@@ -130,16 +140,12 @@ const AddProduct = () => {
         };
     }, []);
 
-    // Live Image Preview Effect
     useEffect(() => {
-        if (imageFiles.length > 0) {
-            const url = URL.createObjectURL(imageFiles[0]);
-            queueMicrotask(() => setPreviewImageUrl(url));
-            return () => URL.revokeObjectURL(url); // cleanup
-        } else {
-            queueMicrotask(() => setPreviewImageUrl(null));
-        }
-    }, [imageFiles]);
+        queueMicrotask(() => setPreviewImageUrl(imagePreviews[coverImageIndex]?.url || imagePreviews[0]?.url || null));
+        return () => {
+            imagePreviews.forEach(preview => URL.revokeObjectURL(preview.url));
+        };
+    }, [coverImageIndex, imagePreviews]);
 
     // ── Attribute dimension handlers ──────────────────────────────────────────
 
@@ -253,6 +259,18 @@ const AddProduct = () => {
     // ── Scalar handlers ───────────────────────────────────────────────────────
 
     const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
+    const handlePublicationStatusChange = (value) => {
+        if (value === 'Scheduled') {
+            setFormData(prev => ({ ...prev, status: 'Draft', publicationStatus: 'scheduled' }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                status: value,
+                publicationStatus: value === 'Published' ? 'published' : 'draft',
+                publishAt: value === 'Published' ? '' : prev.publishAt
+            }));
+        }
+    };
     const handlePricing = (e) => setFormData({
         ...formData,
         pricing: { ...formData.pricing, [e.target.id]: Number(e.target.value) }
@@ -264,6 +282,27 @@ const AddProduct = () => {
             toast.error('You can upload up to 5 product images.');
         }
         setImageFiles(nextFiles.slice(0, 5));
+        setCoverImageIndex(0);
+    };
+
+    const removeImageFile = (index) => {
+        setImageFiles(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+        setCoverImageIndex(prev => Math.max(0, Math.min(prev > index ? prev - 1 : prev, imageFiles.length - 2)));
+    };
+
+    const moveImageFile = (index, direction) => {
+        setImageFiles(prev => {
+            const nextIndex = index + direction;
+            if (nextIndex < 0 || nextIndex >= prev.length) return prev;
+            const next = [...prev];
+            [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+            setCoverImageIndex(current => {
+                if (current === index) return nextIndex;
+                if (current === nextIndex) return index;
+                return current;
+            });
+            return next;
+        });
     };
 
     const handleVideoFiles = (files) => {
@@ -377,6 +416,8 @@ const AddProduct = () => {
             data.append('category',       formData.category);
             data.append('tags',           formData.tags);
             data.append('status',         formData.status);
+            data.append('publicationStatus', formData.publicationStatus);
+            if (formData.publicationStatus === 'scheduled') data.append('publishAt', formData.publishAt);
             data.append('lowStockThreshold', String(formData.lowStockThreshold || 5));
             data.append('imageAltText',    formData.imageAltText);
             data.append('seo',            JSON.stringify(formData.seo));
@@ -394,6 +435,7 @@ const AddProduct = () => {
             data.append('features',       JSON.stringify(formData.features));
             data.append('specifications', JSON.stringify(formData.specifications));
             data.append('comments',       JSON.stringify(formData.comments));
+            data.append('coverImageIndex', JSON.stringify(coverImageIndex));
 
             imageFiles.forEach(file => data.append('images', file));
             videoFiles.forEach(file => data.append('videos', file));
@@ -479,15 +521,39 @@ const AddProduct = () => {
                             Status
                             <select
                                 id="status"
-                                value={formData.status}
-                                onChange={handleChange}
+                                value={formData.publicationStatus === 'scheduled' ? 'Scheduled' : formData.status}
+                                onChange={(event) => handlePublicationStatusChange(event.target.value)}
                                 className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                             >
                                 <option>Published</option>
                                 <option>Draft</option>
+                                <option>Scheduled</option>
                                 <option>Archived</option>
                             </select>
                         </label>
+                        {formData.publicationStatus === 'scheduled' && (
+                            <>
+                                <Input
+                                    id="publishAt"
+                                    label="Publish date and time"
+                                    type="datetime-local"
+                                    value={formData.publishAt}
+                                    onChange={handleChange}
+                                    helperText="Scheduled products stay hidden until this time. Server time publishes them automatically."
+                                    required
+                                />
+                                <SellerHint>
+                                    Want to promote this upcoming product on the storefront? After saving, open Launch Banners and connect this scheduled product to a countdown banner.
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/dashboard/banners')}
+                                        className="ml-2 font-black text-indigo-700 underline underline-offset-2"
+                                    >
+                                        Open Launch Banners
+                                    </button>
+                                </SellerHint>
+                            </>
+                        )}
 
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -587,6 +653,55 @@ const AddProduct = () => {
                                 )}
                             </div>
                         </div>
+                        {imagePreviews.length > 0 && (
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                                {imagePreviews.map((preview, index) => (
+                                    <div key={`${preview.file.name}-${index}`} className={`rounded-xl border bg-white p-2 ${coverImageIndex === index ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200'}`}>
+                                        <img src={preview.url} alt={`Product image ${index + 1}`} className="aspect-square w-full rounded-lg object-cover" />
+                                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCoverImageIndex(index)}
+                                                className={`rounded-full px-2 py-1 text-[11px] font-bold ${coverImageIndex === index ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                                            >
+                                                {coverImageIndex === index ? 'Cover' : 'Make cover'}
+                                            </button>
+                                            <button type="button" onClick={() => moveImageFile(index, -1)} disabled={index === 0} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600 disabled:opacity-40">Left</button>
+                                            <button type="button" onClick={() => moveImageFile(index, 1)} disabled={index === imagePreviews.length - 1} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600 disabled:opacity-40">Right</button>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImageFile(index)}
+                                                className="ml-auto rounded-full bg-red-50 p-1.5 text-red-500 hover:bg-red-100"
+                                                aria-label={`Remove product image ${index + 1}`}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                        <p className="mt-1 truncate text-[11px] text-slate-400">{preview.file.type || 'image'} · {(preview.file.size / 1024).toFixed(0)} KB</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {videoFiles.length > 0 && (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {videoFiles.map((file, index) => (
+                                    <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-slate-800">{file.name}</p>
+                                            <p className="text-xs text-slate-400">{file.type || 'video'} · {(file.size / 1024 / 1024).toFixed(1)} MB</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setVideoFiles(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+                                            className="rounded-full bg-red-50 p-2 text-red-500 hover:bg-red-100"
+                                            aria-label={`Remove product video ${index + 1}`}
+                                        >
+                                            <X size={15} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </ProductFormSection>
 
                     {/* ── PRICING ───────────────────────────────────────────── */}

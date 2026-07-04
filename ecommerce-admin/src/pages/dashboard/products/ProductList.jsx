@@ -82,8 +82,8 @@ const ProductList = () => {
             render: (row) => (
                 <div className="flex items-center gap-4 group cursor-pointer" onClick={() => handleOpenDetails(row)}>
                     <div className="relative h-14 w-14 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 shadow-sm transition-transform duration-300 group-hover:scale-105 flex-shrink-0">
-                        {row.images?.[0] ? (
-                            <img src={row.images[0]} alt={row.title} loading="lazy" decoding="async" className="object-cover h-full w-full" />
+                        {row.coverMediaId || row.images?.[0] ? (
+                            <img src={row.coverMediaId || row.images[0]} alt={row.title} loading="lazy" decoding="async" className="object-cover h-full w-full" />
                         ) : (
                             <div className="flex items-center justify-center h-full text-slate-300">
                                 <Package size={24} strokeWidth={1.5} />
@@ -298,8 +298,8 @@ const ProductList = () => {
 
                                 <div className="flex gap-4">
                                     <div className="w-20 h-20 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex-shrink-0 relative">
-                                        {p.images?.[0] ? (
-                                            <img src={p.images[0]} loading="lazy" decoding="async" className="w-full h-full object-cover" alt={p.title} />
+                                        {p.coverMediaId || p.images?.[0] ? (
+                                            <img src={p.coverMediaId || p.images[0]} loading="lazy" decoding="async" className="w-full h-full object-cover" alt={p.title} />
                                         ) : (
                                             <div className="flex items-center justify-center h-full text-slate-300">
                                                 <Package size={24} />

@@ -16,7 +16,13 @@ const permissionsSchema = new Schema({
     growthCenter: { type: Boolean, default: false },
     storeBuilder: { type: Boolean, default: false },
     settings: { type: Boolean, default: false },
-    activityLogs: { type: Boolean, default: false }
+    activityLogs: { type: Boolean, default: false },
+    collectionsAi: { type: Boolean, default: false },
+    productsSchedule: { type: Boolean, default: false },
+    salesManage: { type: Boolean, default: false },
+    bannersManage: { type: Boolean, default: false },
+    inventoryAlertsManage: { type: Boolean, default: false },
+    growthRead: { type: Boolean, default: false }
 }, { _id: false });
 
 const staffPermissionSchema = new Schema({

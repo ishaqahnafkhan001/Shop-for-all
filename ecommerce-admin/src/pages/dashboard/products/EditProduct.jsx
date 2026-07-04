@@ -73,6 +73,8 @@ const buildProductFormState = (product = {}) => ({
     category:       product.category       || '',
     tags:           (product.tags || []).join(', '),
     status:         product.status         || (product.isActive ? 'Published' : 'Draft'),
+    publicationStatus: product.publicationStatus || (product.status === 'Published' ? 'published' : 'draft'),
+    publishAt:      product.publishAt ? new Date(product.publishAt).toISOString().slice(0, 16) : '',
     lowStockThreshold: product.lowStockThreshold || 5,
     imageAltText:   product.imageAltText   || '',
     seo: {
@@ -106,6 +108,8 @@ const EditProduct = () => {
         category:       '',
         tags:           '',
         status:         'Published',
+        publicationStatus: 'published',
+        publishAt:      '',
         lowStockThreshold: 5,
         imageAltText:   '',
         seo:            { title: '', description: '' },
@@ -180,6 +184,18 @@ const EditProduct = () => {
 
     // ── Scalar handlers ───────────────────────────────────────────────────────
     const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
+    const handlePublicationStatusChange = (value) => {
+        if (value === 'Scheduled') {
+            setFormData(prev => ({ ...prev, status: 'Draft', publicationStatus: 'scheduled' }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                status: value,
+                publicationStatus: value === 'Published' ? 'published' : 'draft',
+                publishAt: value === 'Published' ? '' : prev.publishAt
+            }));
+        }
+    };
     const handlePricing = (e) => setFormData({
         ...formData,
         pricing: { ...formData.pricing, [e.target.id]: Number(e.target.value) }
@@ -486,6 +502,8 @@ const EditProduct = () => {
             body.append('category', formData.category);
             body.append('tags', JSON.stringify(formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)));
             body.append('status', formData.status);
+            body.append('publicationStatus', formData.publicationStatus);
+            if (formData.publicationStatus === 'scheduled') body.append('publishAt', formData.publishAt);
             body.append('lowStockThreshold', String(formData.lowStockThreshold || 5));
             body.append('imageAltText', formData.imageAltText);
             body.append('seo', JSON.stringify(formData.seo));
@@ -624,15 +642,39 @@ const EditProduct = () => {
                         Status
                         <select
                             id="status"
-                            value={formData.status}
-                            onChange={handleChange}
+                            value={formData.publicationStatus === 'scheduled' ? 'Scheduled' : formData.status}
+                            onChange={(event) => handlePublicationStatusChange(event.target.value)}
                             className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                         >
                             <option>Published</option>
                             <option>Draft</option>
+                            <option>Scheduled</option>
                             <option>Archived</option>
                         </select>
                     </label>
+                    {formData.publicationStatus === 'scheduled' && (
+                        <>
+                            <Input
+                                id="publishAt"
+                                label="Publish date and time"
+                                type="datetime-local"
+                                value={formData.publishAt}
+                                onChange={handleChange}
+                                helperText="Scheduled products stay hidden until this time. Server time publishes them automatically."
+                                required
+                            />
+                            <SellerHint>
+                                Want to promote this upcoming product on the storefront? Open Launch Banners and connect this scheduled product to a countdown banner.
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/dashboard/banners')}
+                                    className="ml-2 font-black text-indigo-700 underline underline-offset-2"
+                                >
+                                    Open Launch Banners
+                                </button>
+                            </SellerHint>
+                        </>
+                    )}
                 </ProductFormSection>
 
                 <ProductFormSection

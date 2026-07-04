@@ -3,6 +3,7 @@ const AnalyticsEvent = require('../models/AnalyticsEvent');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Shop = require('../models/Shop');
+const ReturnRequest = require('../models/ReturnRequest');
 const { generateAdInsight } = require('../services/adInsightAIService');
 
 const validRanges = new Set(['7', '30', '90']);
@@ -25,6 +26,12 @@ const getRangeStart = (queryRange) => {
 
 const roundRate = (value) => Math.round((Number(value || 0)) * 100) / 100;
 const rate = (part, total) => total > 0 ? roundRate((part / total) * 100) : 0;
+const deliveredRevenueDateExpression = {
+    $ifNull: [
+        '$shipping.deliveredAt',
+        { $ifNull: ['$deliveredAt', '$updatedAt'] }
+    ]
+};
 
 const uniqueList = (items, limit = 8) => [
     ...new Set((items || []).map(item => String(item || '').trim()).filter(Boolean))
@@ -220,7 +227,25 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
 
     if (productId) match.product_id = asObjectId(productId);
 
-    const [eventMetrics, statusMetrics] = await Promise.all([
+    const deliveredOrderMatch = {
+        shop_id: shopObjectId,
+        isDeleted: false,
+        status: 'Delivered',
+        'payment.status': { $ne: 'Refunded' },
+        ...(productId ? { 'items.productId': asObjectId(productId) } : {})
+    };
+
+    const returnedRevenueMatch = {
+        shop_id: shopObjectId,
+        isDeleted: false,
+        $or: [
+            { status: { $in: ['Received', 'Refunded', 'Closed'] } },
+            { 'refund.status': 'Refunded' }
+        ],
+        ...(productId ? { 'items.productId': asObjectId(productId) } : {})
+    };
+
+    const [eventMetrics, statusMetrics, deliveredRevenueMetrics, returnedRevenueMetrics] = await Promise.all([
         AnalyticsEvent.aggregate([
             { $match: match },
             {
@@ -229,8 +254,7 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
                     views: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.views] }, 1, 0] } },
                     addToCarts: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.carts] }, 1, 0] } },
                     checkouts: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.checkouts] }, 1, 0] } },
-                    orders: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, 1, 0] } },
-                    revenue: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, '$value', 0] } }
+                    orders: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, 1, 0] } }
                 }
             }
         ]),
@@ -251,8 +275,50 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
                     confirmedOrders: { $sum: { $cond: [{ $eq: ['$status', 'Confirmed'] }, 1, 0] } },
                     deliveredOrders: { $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] } },
                     cancelledOrders: { $sum: { $cond: [{ $eq: ['$status', 'Cancelled'] }, 1, 0] } },
-                    returnedOrders: { $sum: { $cond: [{ $eq: ['$status', 'Returned'] }, 1, 0] } },
-                    deliveredRevenue: { $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, '$items.total', 0] } }
+                    returnedOrders: { $sum: { $cond: [{ $eq: ['$status', 'Returned'] }, 1, 0] } }
+                }
+            }
+        ]),
+        Order.aggregate([
+            { $match: deliveredOrderMatch },
+            { $addFields: { revenueDate: deliveredRevenueDateExpression } },
+            { $match: { revenueDate: { $gte: from } } },
+            { $unwind: '$items' },
+            ...(productId ? [{ $match: { 'items.productId': asObjectId(productId) } }] : []),
+            {
+                $group: {
+                    _id: '$items.productId',
+                    deliveredOrderIds: { $addToSet: '$_id' },
+                    deliveredRevenue: { $sum: '$items.total' }
+                }
+            },
+            {
+                $project: {
+                    deliveredOrders: { $size: '$deliveredOrderIds' },
+                    deliveredRevenue: 1
+                }
+            }
+        ]),
+        ReturnRequest.aggregate([
+            { $match: returnedRevenueMatch },
+            {
+                $addFields: {
+                    revenueDate: {
+                        $ifNull: [
+                            '$refund.refundedAt',
+                            '$updatedAt'
+                        ]
+                    }
+                }
+            },
+            { $match: { revenueDate: { $gte: from } } },
+            { $unwind: '$items' },
+            ...(productId ? [{ $match: { 'items.productId': asObjectId(productId) } }] : []),
+            {
+                $group: {
+                    _id: '$items.productId',
+                    returnedQuantity: { $sum: '$items.quantity' },
+                    returnedRevenue: { $sum: '$items.refundAmount' }
                 }
             }
         ])
@@ -261,7 +327,9 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
     const productIds = [
         ...new Set([
             ...eventMetrics.map(item => String(item._id)),
-            ...statusMetrics.map(item => String(item._id))
+            ...statusMetrics.map(item => String(item._id)),
+            ...deliveredRevenueMetrics.map(item => String(item._id)),
+            ...returnedRevenueMetrics.map(item => String(item._id))
         ])
     ].filter(Boolean);
 
@@ -276,6 +344,8 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
     const productMap = new Map(products.map(product => [String(product._id), product]));
     const statusMap = new Map(statusMetrics.map(item => [String(item._id), item]));
     const eventMap = new Map(eventMetrics.map(item => [String(item._id), item]));
+    const revenueMap = new Map(deliveredRevenueMetrics.map(item => [String(item._id), item]));
+    const returnedRevenueMap = new Map(returnedRevenueMetrics.map(item => [String(item._id), item]));
 
     return productIds
         .map(id => {
@@ -284,6 +354,9 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
 
             const event = eventMap.get(id) || {};
             const status = statusMap.get(id) || {};
+            const revenue = revenueMap.get(id) || {};
+            const returned = returnedRevenueMap.get(id) || {};
+            const netDeliveredRevenue = Math.max(0, Number(revenue.deliveredRevenue || 0) - Number(returned.returnedRevenue || 0));
             const metrics = {
                 _id: id,
                 product,
@@ -291,12 +364,16 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
                 addToCarts: event.addToCarts || 0,
                 checkouts: event.checkouts || 0,
                 orders: event.orders || 0,
-                revenue: event.revenue || 0,
+                revenue: netDeliveredRevenue,
                 confirmedOrders: status.confirmedOrders || 0,
-                deliveredOrders: status.deliveredOrders || 0,
+                deliveredOrders: revenue.deliveredOrders || status.deliveredOrders || 0,
                 cancelledOrders: status.cancelledOrders || 0,
                 returnedOrders: status.returnedOrders || 0,
-                deliveredRevenue: status.deliveredRevenue || 0
+                deliveredRevenue: netDeliveredRevenue,
+                grossDeliveredRevenue: revenue.deliveredRevenue || 0,
+                returnedRevenue: returned.returnedRevenue || 0,
+                returnedQuantity: returned.returnedQuantity || 0,
+                revenueDefinition: 'Net delivered product revenue excludes shipping and tax, uses order item snapshots, and deducts refunded return item value.'
             };
 
             metrics.addToCartRate = rate(metrics.addToCarts, metrics.views);
@@ -308,7 +385,7 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
             return metrics;
         })
         .filter(Boolean)
-        .sort((a, b) => (b.orders - a.orders) || (b.views - a.views));
+        .sort((a, b) => (b.revenue - a.revenue) || (b.orders - a.orders) || (b.views - a.views));
 };
 
 exports.getGrowthOverview = async (req, res) => {
@@ -330,8 +407,7 @@ exports.getGrowthOverview = async (req, res) => {
                     views: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.views] }, 1, 0] } },
                     addToCarts: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.carts] }, 1, 0] } },
                     checkouts: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.checkouts] }, 1, 0] } },
-                    orders: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, 1, 0] } },
-                    revenue: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, '$value', 0] } }
+                    orders: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, 1, 0] } }
                 }
             }
         ]);
@@ -339,8 +415,11 @@ exports.getGrowthOverview = async (req, res) => {
         const products = await getProductMetrics({ shopId, from });
         const bestProduct = products[0] || null;
         const needsAttention = products.find(item => ['fix_before_ads', 'checkout_problem'].includes(item.label)) || null;
-
-        const totals = summary || { views: 0, addToCarts: 0, checkouts: 0, orders: 0, revenue: 0 };
+        const totalDeliveredRevenue = products.reduce((sum, item) => sum + (Number(item.revenue) || 0), 0);
+        const totals = {
+            ...(summary || { views: 0, addToCarts: 0, checkouts: 0, orders: 0 }),
+            revenue: totalDeliveredRevenue
+        };
 
         res.status(200).json({
             success: true,
@@ -414,12 +493,58 @@ exports.getGrowthProductDetail = async (req, res) => {
                         day: { $dayOfMonth: '$createdAt' },
                         eventType: '$eventType'
                     },
-                    count: { $sum: 1 },
-                    revenue: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, '$value', 0] } }
+                    count: { $sum: 1 }
                 }
             },
             { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
         ]);
+        const deliveredDaily = await Order.aggregate([
+            {
+                $match: {
+                    shop_id: asObjectId(req.tenantId),
+                    isDeleted: false,
+                    status: 'Delivered',
+                    'items.productId': asObjectId(req.params.productId)
+                }
+            },
+            { $addFields: { revenueDate: deliveredRevenueDateExpression } },
+            { $match: { revenueDate: { $gte: from } } },
+            { $unwind: '$items' },
+            { $match: { 'items.productId': asObjectId(req.params.productId) } },
+            {
+                $group: {
+                    _id: {
+                        year: { $year: '$revenueDate' },
+                        month: { $month: '$revenueDate' },
+                        day: { $dayOfMonth: '$revenueDate' }
+                    },
+                    count: { $addToSet: '$_id' },
+                    revenue: { $sum: '$items.total' }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    count: { $size: '$count' },
+                    revenue: 1
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
+        ]);
+        const dailyRows = [
+            ...daily.map(item => ({
+                date: `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`,
+                eventType: item._id.eventType,
+                count: item.count,
+                revenue: 0
+            })),
+            ...deliveredDaily.map(item => ({
+                date: `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`,
+                eventType: 'delivered_revenue',
+                count: item.count,
+                revenue: item.revenue
+            }))
+        ].sort((a, b) => a.date.localeCompare(b.date) || a.eventType.localeCompare(b.eventType));
 
         res.status(200).json({
             success: true,
@@ -439,12 +564,7 @@ exports.getGrowthProductDetail = async (req, res) => {
                     cartToOrderRate: 0,
                     recommendation: classifyProduct({ views: 0, addToCarts: 0, orders: 0 })
                 },
-                daily: daily.map(item => ({
-                    date: `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`,
-                    eventType: item._id.eventType,
-                    count: item.count,
-                    revenue: item.revenue
-                }))
+                daily: dailyRows
             }
         });
     } catch (err) {

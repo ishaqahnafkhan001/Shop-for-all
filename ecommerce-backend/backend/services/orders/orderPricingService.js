@@ -3,10 +3,12 @@ const { evaluatePromotion } = require('../promotionService');
 
 const getShippingCostForZone = (zone) => (zone === 'Inside Dhaka' ? 80 : 130);
 
-const buildOrderLineItem = ({ product, variant, item }) => {
+const buildOrderLineItem = ({ product, variant, item, unitPriceOverride = null, scheduledSale = null }) => {
     const basePrice = variant.pricing?.price ?? variant.priceOverride ?? product.pricing.sellingPrice;
     const discount = product.pricing.discount || 0;
-    const unitPrice = Math.round(basePrice - (basePrice * discount / 100));
+    const unitPrice = Number.isFinite(Number(unitPriceOverride))
+        ? Math.max(0, Math.round(Number(unitPriceOverride)))
+        : Math.round(basePrice - (basePrice * discount / 100));
     const totalItemPrice = unitPrice * item.quantity;
     const buyingPrice = variant.pricing?.costPrice ?? product.pricing.buyingPrice;
 
@@ -29,7 +31,8 @@ const buildOrderLineItem = ({ product, variant, item }) => {
             quantity: item.quantity,
             price: unitPrice,
             buyingPrice,
-            total: totalItemPrice
+            total: totalItemPrice,
+            ...(scheduledSale ? { scheduledSale } : {})
         }
     };
 };

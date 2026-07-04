@@ -39,7 +39,7 @@ const PRODUCT_CONTENT_RESPONSE_SCHEMA = {
         seoTitle: stringSchema('SEO title around 50 to 70 characters.'),
         seoDescription: stringSchema('SEO description around 120 to 160 characters.'),
         description: stringSchema('Shopper-facing product description.'),
-        sellingPoints: stringListSchema(6, 'Short shopper-facing selling point.'),
+        sellingPoints: stringListSchema(6, 'Specific buyer benefit explaining why a customer should buy this product.'),
         specifications: {
             type: SchemaType.ARRAY,
             maxItems: 8,
@@ -274,15 +274,22 @@ const buildFallbackSuggestion = (context = {}, { usedImage = false } = {}) => {
         tags.length ? { label: 'Tags', value: tags.join(', ') } : null
     ].filter(Boolean);
 
+    const optionBenefit = optionSummary
+        ? `Choose from ${optionSummary} to match the style or need your customer has in mind`
+        : `Easy to choose ${productType.toLowerCase()} for shoppers who want a simple buying decision`;
+    const imageBenefit = usedImage
+        ? 'Product images help shoppers understand the look before ordering'
+        : 'Add clear product photos so shoppers can feel confident before ordering';
+
     return cleanProductContentSuggestion({
         seoTitle,
         seoDescription,
         description,
         sellingPoints: [
-            `${productType} details are easy for shoppers to understand`,
-            optionSummary ? 'Available options help customers choose the right variant' : 'Simple product information helps customers decide faster',
-            'Clear product content improves search and storefront trust',
-            'Suitable for product cards, product pages, and shared links'
+            `Designed for shoppers looking for ${title} in ${category || productType}`,
+            optionBenefit,
+            `${title} is presented with clear details so customers know what they are buying`,
+            imageBenefit
         ],
         specifications: specifications.length ? specifications : [{ label: 'Product type', value: 'General product' }],
         extraNotes: [
@@ -320,7 +327,9 @@ const buildPrompt = (context = {}, imageAvailable = false) => [
     '- SEO title target: 50-70 characters.',
     '- SEO description target: 120-160 characters.',
     '- Description target: 60-110 words, concise and product-specific.',
-    '- Selling points: 4-6 short shopper-facing points.',
+    '- Selling points: write 4-6 benefit-driven reasons explaining why a customer should buy this exact product.',
+    '- Each selling point should be specific to the product type, visible image, option, occasion, comfort, use case, or gift/shopping reason.',
+    '- Avoid generic content-marketing lines such as "improves trust", "good for product pages", or "SEO friendly".',
     '- Specifications: 4-8 safe rows. Do not invent exact material, dimensions, or weight unless provided.',
     '- Extra notes: 2-4 practical shopper notes, not internal admin notes.',
     '- Image alt: concise product image description.',

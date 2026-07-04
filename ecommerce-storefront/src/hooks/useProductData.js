@@ -134,10 +134,20 @@ export function useProductData(subdomain, id, initialProduct = null) {
         ? (currentVariant.inventory?.stock ?? currentVariant.stock ?? 0)
         : (product?.stock ?? 0);
     const baseOriginalPrice = currentVariant?.pricing?.price ?? currentVariant?.priceOverride ?? product?.sellingPrice ?? 0;
-    const displayDiscount   = product?.discount ?? 0;
-    const displayFinalPrice = displayDiscount > 0
-        ? Math.round(baseOriginalPrice - (baseOriginalPrice * displayDiscount) / 100)
+    const productDiscount = product?.discount ?? 0;
+    const productDiscountPrice = productDiscount > 0
+        ? Math.round(baseOriginalPrice - (baseOriginalPrice * productDiscount) / 100)
         : baseOriginalPrice;
+    const scheduledSale = product?.scheduledSale || null;
+    const scheduledSalePrice = scheduledSale
+        ? (scheduledSale.discountType === 'fixed'
+            ? Math.max(0, Math.round(productDiscountPrice - Number(scheduledSale.discountValue || 0)))
+            : Math.max(0, Math.round(productDiscountPrice - ((productDiscountPrice * Number(scheduledSale.discountValue || 0)) / 100))))
+        : null;
+    const displayFinalPrice = scheduledSalePrice !== null ? scheduledSalePrice : productDiscountPrice;
+    const displayDiscount = scheduledSalePrice !== null && productDiscountPrice > 0
+        ? Math.round(((productDiscountPrice - scheduledSalePrice) / productDiscountPrice) * 100)
+        : productDiscount;
 
     /* ---------- actions ---------- */
     const handleAttributeSelect = useCallback((name, value) => {

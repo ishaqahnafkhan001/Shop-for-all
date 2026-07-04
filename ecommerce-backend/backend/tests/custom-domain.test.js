@@ -215,16 +215,17 @@ test('custom-domain DNS verification separates ownership from routing readiness'
     assert.equal(apexHostTarget.code, 'APEX_ROUTING_MANUAL');
 });
 
-test('storefront middleware and API proxy preserve custom-domain host context', () => {
-    const middleware = readProject('ecommerce-storefront/src/middleware.js');
+test('storefront proxy and API proxy preserve custom-domain host context', () => {
+    const storefrontProxy = readProject('ecommerce-storefront/src/proxy.js');
     const proxy = readProject('ecommerce-storefront/src/app/api/[...path]/route.js');
     const authContext = readProject('ecommerce-storefront/src/context/AuthContext.js');
     const seo = readProject('ecommerce-storefront/src/lib/seo.js');
     const homepage = readProject('ecommerce-storefront/src/app/[subdomain]/page.jsx');
 
-    assert.match(middleware, /RESERVED_HOSTS/);
-    assert.match(middleware, /hostname\.endsWith\(`\.\$\{PLATFORM_DOMAIN\}`\)/);
-    assert.match(middleware, /return NextResponse\.rewrite\(new URL\(`\/\$\{hostname\}\$\{url\.pathname\}`/);
+    assert.match(storefrontProxy, /export default function proxy/);
+    assert.match(storefrontProxy, /RESERVED_HOSTS/);
+    assert.match(storefrontProxy, /hostname\.endsWith\(`\.\$\{PLATFORM_DOMAIN\}`\)/);
+    assert.match(storefrontProxy, /return NextResponse\.rewrite\(new URL\(`\/\$\{hostname\}\$\{url\.pathname\}`/);
     assert.match(proxy, /headers\.set\('x-storefront-host', hostname\)/);
     assert.match(homepage, /storefrontHost:\s*host/);
     assert.match(authContext, /return reservedHosts\.includes\(hostname\) \? '' : hostname/);

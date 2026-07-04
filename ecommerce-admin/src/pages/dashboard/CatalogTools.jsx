@@ -60,6 +60,11 @@ const CatalogTools = () => {
     const [selected, setSelected] = useState([]);
     const [bulk, setBulk] = useState({ category: '', status: '', stock: '', discount: '', lowStockThreshold: '' });
     const [collectionForm, setCollectionForm] = useState(emptyCollectionForm);
+    const [collectionAi, setCollectionAi] = useState({
+        loading: false,
+        error: '',
+        suggestion: null
+    });
 
     const selectedCount = selected.length;
 
@@ -160,6 +165,61 @@ const CatalogTools = () => {
         }));
     };
 
+    const generateCollectionAi = async () => {
+        if (!collectionForm.title.trim() && selectedCount === 0) {
+            toast.error('Add a collection title or select products before using AI.');
+            return;
+        }
+
+        setCollectionAi({ loading: true, error: '', suggestion: null });
+
+        try {
+            const { data } = await API.post('/admin/collections/ai/suggest', {
+                title: collectionForm.title,
+                description: collectionForm.description,
+                seo: collectionForm.seo,
+                productIds: selected
+            });
+
+            if (!data.success) {
+                const message = data.message || 'AI suggestions could not be generated right now.';
+                setCollectionAi({ loading: false, error: message, suggestion: null });
+                toast.error(message);
+                return;
+            }
+
+            setCollectionAi({
+                loading: false,
+                error: '',
+                suggestion: data.data || null
+            });
+            toast.success(data.fallback ? 'Basic collection suggestion generated.' : 'AI collection suggestion ready.');
+        } catch (err) {
+            const message = err.response?.data?.message || err.response?.data?.error || 'AI suggestions could not be generated right now.';
+            setCollectionAi({ loading: false, error: message, suggestion: null });
+            toast.error(message);
+        }
+    };
+
+    const applyCollectionAi = (fields = []) => {
+        const suggestion = collectionAi.suggestion;
+        if (!suggestion) return;
+        const shouldApply = (field) => fields.includes(field) || fields.includes('all');
+
+        setCollectionForm(prev => ({
+            ...prev,
+            ...(shouldApply('name') ? { title: suggestion.name || prev.title } : {}),
+            ...(shouldApply('description') ? { description: suggestion.description || prev.description } : {}),
+            ...(shouldApply('slug') ? { slug: suggestion.slug || prev.slug } : {}),
+            seo: {
+                ...(prev.seo || {}),
+                ...(shouldApply('seo') || shouldApply('seoTitle') ? { title: suggestion.seoTitle || prev.seo?.title || '' } : {}),
+                ...(shouldApply('seo') || shouldApply('seoDescription') ? { description: suggestion.seoDescription || prev.seo?.description || '' } : {})
+            }
+        }));
+        toast.success('Suggestion applied. Review before saving.');
+    };
+
     return (
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -203,7 +263,9 @@ const CatalogTools = () => {
                                         className="h-4 w-4 rounded border-slate-300"
                                     />
                                     <div className="h-12 w-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
-                                        {product.images?.[0] && <img src={product.images[0]} alt="" className="h-full w-full object-cover" />}
+                                        {(product.coverMediaId || product.images?.[0]) && (
+                                            <img src={product.coverMediaId || product.images[0]} alt="" className="h-full w-full object-cover" />
+                                        )}
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="font-semibold text-slate-900 truncate">{product.title}</div>
@@ -246,6 +308,41 @@ const CatalogTools = () => {
                             Collection
                         </div>
                         <p className="text-xs text-slate-500">Collections group selected products for storefront sections or navigation links.</p>
+                        <button
+                            type="button"
+                            onClick={generateCollectionAi}
+                            disabled={collectionAi.loading}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <Wand2 size={16} />
+                            {collectionAi.loading ? 'Generating suggestion...' : 'Generate with AI'}
+                        </button>
+                        {collectionAi.error && (
+                            <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                                {collectionAi.error}
+                            </div>
+                        )}
+                        {collectionAi.suggestion && (
+                            <div className="space-y-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
+                                <div>
+                                    <div className="text-sm font-bold text-slate-900">{collectionAi.suggestion.name}</div>
+                                    <p className="mt-1 text-xs leading-5 text-slate-600">{collectionAi.suggestion.description}</p>
+                                </div>
+                                <div className="rounded-md bg-white p-2 text-xs text-slate-600">
+                                    <div><span className="font-bold text-slate-800">SEO:</span> {collectionAi.suggestion.seoTitle}</div>
+                                    <div className="mt-1">{collectionAi.suggestion.seoDescription}</div>
+                                    {collectionAi.suggestion.keywords?.length > 0 && (
+                                        <div className="mt-2 text-slate-500">Keywords: {collectionAi.suggestion.keywords.join(', ')}</div>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button type="button" onClick={() => applyCollectionAi(['all'])} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-700">Apply all</button>
+                                    <button type="button" onClick={() => applyCollectionAi(['description'])} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">Description</button>
+                                    <button type="button" onClick={() => applyCollectionAi(['seo'])} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">SEO only</button>
+                                    <button type="button" onClick={() => applyCollectionAi(['slug'])} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">Slug</button>
+                                </div>
+                            </div>
+                        )}
                         <input required value={collectionForm.title} onChange={e => setCollectionForm(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Collection title" />
                         <input value={collectionForm.slug} onChange={e => setCollectionForm(prev => ({ ...prev, slug: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Slug" />
                         <textarea value={collectionForm.description} onChange={e => setCollectionForm(prev => ({ ...prev, description: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" rows={3} placeholder="Description" />

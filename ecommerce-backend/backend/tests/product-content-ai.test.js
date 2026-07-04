@@ -132,6 +132,8 @@ test('product content AI malformed JSON path falls back instead of returning 500
     assert.ok(fallback.seoTitle);
     assert.ok(fallback.description);
     assert.ok(fallback.sellingPoints.length > 0);
+    assert.ok(fallback.sellingPoints.some(point => /গঙ্গা যমুনা বালা|Bala|Gold/i.test(point)));
+    assert.doesNotMatch(fallback.sellingPoints.join(' '), /SEO friendly|product cards|shared links|improves trust|clear product content/i);
     assert.ok(fallback.specifications.length > 0);
     assert.deepEqual(fallback.confidenceNotes, []);
     assert.doesNotMatch(JSON.stringify(fallback), /unreadable response|safe basic suggestion/i);
@@ -193,6 +195,8 @@ test('admin product AI preview flow maps suggestions without silent overwrite', 
     assert.match(assistant, /Apply all suggestions/);
     assert.match(assistant, /Replace \$\{label\}/);
     assert.match(assistant, /next\.features = pointsToRows\(suggestion\.sellingPoints/);
+    assert.match(assistant, /Why customers should buy this/);
+    assert.match(assistant, /Suggest buyer benefits/);
     assert.match(assistant, /next\.specifications = normalizeSpecs\(suggestion\.specifications\)/);
     assert.match(assistant, /next\.comments = notesToRows\(suggestion\.extraNotes\)/);
     assert.match(assistant, /data\.append\('image', firstImage\)/);

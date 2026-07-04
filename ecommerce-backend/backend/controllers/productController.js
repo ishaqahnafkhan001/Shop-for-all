@@ -1,5 +1,7 @@
 const Product = require('../models/Product');
 const Collection = require('../models/Collection');
+const User = require('../models/User');
+const StaffPermission = require('../models/StaffPermission');
 const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
 const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
@@ -30,11 +32,62 @@ const {
     expandMatrix,
     normalizeProductOptions
 } = require('../services/products/productVariantService');
+const {
+    normalizeProductPublicationFields,
+    enqueueScheduledProductPublication
+} = require('../services/products/scheduledProductService');
+const {
+    enqueueLowStockAlertsForLogs
+} = require('../services/inventoryLowStockAlertService');
+const { applyScheduledSalesToProducts } = require('../services/sales/scheduledSaleService');
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 
 // ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...
+
+const resolveCoverMediaId = ({ images = [], videos = [], requestedCover = '', coverImageIndex }) => {
+    const media = [...(images || []), ...(videos || [])].map(item => String(item || '').trim()).filter(Boolean);
+    const requested = String(requestedCover || '').trim();
+    if (requested && media.includes(requested)) return requested;
+
+    const numericIndex = Number(coverImageIndex);
+    if (Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < (images || []).length) {
+        return images[numericIndex];
+    }
+
+    return images?.[0] || videos?.[0] || '';
+};
+
+const coverMediaBelongsToProduct = ({ images = [], videos = [], coverMediaId = '' }) => {
+    const cover = String(coverMediaId || '').trim();
+    if (!cover) return true;
+    return [...(images || []), ...(videos || [])].map(item => String(item || '').trim()).includes(cover);
+};
+
+const isSchedulingProductPublication = (payload = {}) => (
+    payload.publicationStatus === 'scheduled' || Boolean(payload.publishAt)
+);
+
+const vendorStaffHasPermission = async (req, permissionName) => {
+    if (req.user?.role !== 'VendorStaff') return true;
+
+    if (req.user.membershipId || req.user.membership_id) {
+        const staffPermission = await StaffPermission.findOne({
+            membership_id: req.user.membershipId || req.user.membership_id,
+            shop_id: req.tenantId
+        }).select('permissions').lean();
+        if (staffPermission?.permissions?.[permissionName]) return true;
+    }
+
+    const user = await User.findById(req.user._id).select('permissions').lean();
+    return Boolean(user?.permissions?.[permissionName]);
+};
+
+const ensureProductSchedulePermission = async (req, payload = {}) => {
+    if (!isSchedulingProductPublication(payload)) return true;
+    return vendorStaffHasPermission(req, 'productsSchedule');
+};
 
 
 /**
@@ -170,24 +223,85 @@ exports.getShopProducts = async (req, res) => {
         };
 
         const summaryProjection = getSummaryProjection(isStorefrontRequest);
+        const normalizeSort = (value = '') => {
+            if (value === 'price_asc') return 'priceAsc';
+            if (value === 'price_desc') return 'priceDesc';
+            if (value === 'rating_desc') return 'ratingDesc';
+            if (value === 'rating_asc') return 'ratingAsc';
+            return value;
+        };
+        const normalizedSort = normalizeSort(sort);
+        const isTruthyFilter = (value) => value === true || String(value || '').toLowerCase() === 'true';
+        const normalizedStockFilter = ['in', 'out'].includes(String(req.query.stock || ''))
+            ? String(req.query.stock)
+            : '';
+        const wantsSaleFilter = isTruthyFilter(req.query.sale);
+        const needsEffectivePostFilter = isStorefrontRequest && (
+            wantsSaleFilter ||
+            Boolean(normalizedStockFilter) ||
+            Boolean(req.query.minPrice || req.query.maxPrice) ||
+            normalizedSort === 'priceAsc' ||
+            normalizedSort === 'priceDesc'
+        );
 
-        const [products, total, uniqueCategories] = await Promise.all([
-            Product.aggregate([
-                { $match: query },
-                { $sort: sortQuery },
-                { $skip: skip },
-                { $limit: limit },
-                { $project: summaryProjection }
-            ]),
-            Product.countDocuments(query),
+        const [rawProducts, total, uniqueCategories] = await Promise.all([
+            Product.aggregate(needsEffectivePostFilter
+                ? [
+                    { $match: query },
+                    { $sort: sortQuery },
+                    { $project: summaryProjection }
+                ]
+                : [
+                    { $match: query },
+                    { $sort: sortQuery },
+                    { $skip: skip },
+                    { $limit: limit },
+                    { $project: summaryProjection }
+                ]),
+            needsEffectivePostFilter ? Promise.resolve(0) : Product.countDocuments(query),
             getCachedCategories(shopId, categoryQuery)
         ]);
 
+        let pricedProducts = isStorefrontRequest
+            ? await applyScheduledSalesToProducts({ shopId, products: rawProducts })
+            : rawProducts;
+
+        pricedProducts = pricedProducts.map(addComputedProductFields);
+        let filteredProducts = pricedProducts;
+        if (needsEffectivePostFilter) {
+            const minPrice = Number(req.query.minPrice);
+            const maxPrice = Number(req.query.maxPrice);
+            filteredProducts = pricedProducts.filter(product => {
+                const effectivePrice = Number(product.finalPrice ?? product.salePrice ?? product.pricing?.salePrice ?? product.pricing?.sellingPrice ?? 0);
+                const compareAtPrice = Number(product.compareAtPrice ?? product.pricing?.compareAtPrice ?? 0);
+                const stock = Number(product.totalStock ?? product.stock ?? 0);
+                if (wantsSaleFilter && !product.scheduledSale && !(compareAtPrice > effectivePrice)) return false;
+                if (normalizedStockFilter === 'in' && stock <= 0) return false;
+                if (normalizedStockFilter === 'out' && stock > 0) return false;
+                if (Number.isFinite(minPrice) && minPrice > 0 && effectivePrice < minPrice) return false;
+                if (Number.isFinite(maxPrice) && maxPrice > 0 && effectivePrice > maxPrice) return false;
+                return true;
+            });
+            if (normalizedSort === 'priceAsc' || normalizedSort === 'priceDesc') {
+                filteredProducts.sort((a, b) => {
+                    const priceA = Number(a.finalPrice ?? a.salePrice ?? a.pricing?.salePrice ?? a.pricing?.sellingPrice ?? 0);
+                    const priceB = Number(b.finalPrice ?? b.salePrice ?? b.pricing?.salePrice ?? b.pricing?.sellingPrice ?? 0);
+                    return normalizedSort === 'priceAsc'
+                        ? priceA - priceB || String(a._id).localeCompare(String(b._id))
+                        : priceB - priceA || String(a._id).localeCompare(String(b._id));
+                });
+            }
+        }
+        const effectiveTotal = needsEffectivePostFilter ? filteredProducts.length : total;
+        const pagedProducts = needsEffectivePostFilter
+            ? filteredProducts.slice(skip, skip + limit)
+            : filteredProducts;
+
         res.status(200).json({
             success: true,
-            data: products.map(addComputedProductFields),
+            data: pagedProducts,
             categories: uniqueCategories, // ✨ Send the categories back to the frontend
-            pagination: buildPagination({ total, page, limit })
+            pagination: buildPagination({ total: effectiveTotal, page, limit })
         });
 
     } catch (err) {
@@ -248,12 +362,28 @@ exports.createProduct = async (req, res) => {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: parseError.message });
         }
+        const coverImageIndexInput = parsedBody.coverImageIndex;
+        delete parsedBody.coverImageIndex;
+        if (parsedBody.coverMediaId && !coverMediaBelongsToProduct({
+            images: imageUrls,
+            videos: videoUrls,
+            coverMediaId: parsedBody.coverMediaId
+        })) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: 'Cover media must belong to this product.' });
+        }
 
         // ── 3. Merge media into payload ───────────────────────────────────────
         const payload = {
             ...parsedBody,
             ...(imageUrls.length > 0 && { images: imageUrls }),
-            ...(videoUrls.length > 0 && { videos: videoUrls })
+            ...(videoUrls.length > 0 && { videos: videoUrls }),
+            coverMediaId: resolveCoverMediaId({
+                images: imageUrls,
+                videos: videoUrls,
+                requestedCover: parsedBody.coverMediaId,
+                coverImageIndex: coverImageIndexInput
+            })
         };
         resolveVariantImageReferences(payload, imageUrls);
 
@@ -262,6 +392,11 @@ exports.createProduct = async (req, res) => {
         if (error) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
+        }
+        normalizeProductPublicationFields(value);
+        if (!(await ensureProductSchedulePermission(req, value))) {
+            await session.abortTransaction();
+            return res.status(403).json({ success: false, error: 'Missing staff permission: productsSchedule' });
         }
 
         // ── 5. Expand matrix → flat variants ──────────────────────────────────
@@ -323,6 +458,11 @@ exports.createProduct = async (req, res) => {
 
         await session.commitTransaction();
 
+        await enqueueScheduledProductPublication({
+            product,
+            shopId: req.tenantId
+        });
+
         await logAudit({
             req,
             shop_id: req.tenantId,
@@ -349,9 +489,9 @@ exports.createProduct = async (req, res) => {
         console.error('Create product error:', err);
         const isDuplicateSlug = err.code === 11000 && err.keyPattern?.slug;
 
-        return res.status(isDuplicateSlug ? 409 : 500).json({
+        return res.status(err.statusCode || (isDuplicateSlug ? 409 : 500)).json({
             success: false,
-            error: isDuplicateSlug ? 'A product with this slug already exists. Try a different slug.' : 'Failed to create product',
+            error: isDuplicateSlug ? 'A product with this slug already exists. Try a different slug.' : (err.statusCode ? err.message : 'Failed to create product'),
             details: err.message
         });
     } finally {
@@ -417,16 +557,42 @@ exports.updateProduct = async (req, res) => {
                 .filter(imageUrl => currentImages.includes(imageUrl))
                 .filter(imageUrl => !removedImages.has(imageUrl));
             const finalImages = [...new Set([...keptExistingImages, ...uploadedImageUrls])].slice(0, 5);
-            const coverImageIndex = Number(coverImageIndexInput);
-            if (Number.isInteger(coverImageIndex) && coverImageIndex > 0 && coverImageIndex < finalImages.length) {
-                const [coverImage] = finalImages.splice(coverImageIndex, 1);
-                finalImages.unshift(coverImage);
-            }
 
             parsedBody.images = finalImages;
+            if (parsedBody.coverMediaId && !coverMediaBelongsToProduct({
+                images: finalImages,
+                videos: parsedBody.videos || product.videos || [],
+                coverMediaId: parsedBody.coverMediaId
+            })) {
+                await session.abortTransaction();
+                return res.status(400).json({ success: false, error: 'Cover media must belong to this product.' });
+            }
+            parsedBody.coverMediaId = resolveCoverMediaId({
+                images: finalImages,
+                videos: parsedBody.videos || product.videos || [],
+                requestedCover: parsedBody.coverMediaId || product.coverMediaId,
+                coverImageIndex: coverImageIndexInput
+            });
             resolveVariantImageReferences(parsedBody, finalImages);
         } else if (parsedBody.variants) {
             resolveVariantImageReferences(parsedBody, product.images || []);
+        }
+
+        if (!hasImageUpdateIntent && parsedBody.coverMediaId !== undefined) {
+            if (!coverMediaBelongsToProduct({
+                images: product.images || [],
+                videos: parsedBody.videos || product.videos || [],
+                coverMediaId: parsedBody.coverMediaId
+            })) {
+                await session.abortTransaction();
+                return res.status(400).json({ success: false, error: 'Cover media must belong to this product.' });
+            }
+            parsedBody.coverMediaId = resolveCoverMediaId({
+                images: product.images || [],
+                videos: parsedBody.videos || product.videos || [],
+                requestedCover: parsedBody.coverMediaId,
+                coverImageIndex: coverImageIndexInput
+            });
         }
 
         // ── 3. Validate ───────────────────────────────────────────────────────
@@ -434,6 +600,11 @@ exports.updateProduct = async (req, res) => {
         if (error) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
+        }
+        normalizeProductPublicationFields(value);
+        if (!(await ensureProductSchedulePermission(req, value))) {
+            await session.abortTransaction();
+            return res.status(403).json({ success: false, error: 'Missing staff permission: productsSchedule' });
         }
 
         const beforeAudit = {
@@ -457,9 +628,13 @@ exports.updateProduct = async (req, res) => {
             'collections',
             'imageAltText',
             'status',
+            'publicationStatus',
+            'publishAt',
+            'publishedAt',
             'seo',
             'lowStockThreshold',
             'images',
+            'coverMediaId',
             'videos',
             'options',
             'features',
@@ -492,6 +667,13 @@ exports.updateProduct = async (req, res) => {
         }
 
         await session.commitTransaction();
+
+        await enqueueLowStockAlertsForLogs(logsToInsert);
+
+        await enqueueScheduledProductPublication({
+            product,
+            shopId
+        });
 
         await logAudit({
             req,
@@ -628,6 +810,7 @@ exports.bulkUpdateProducts = async (req, res) => {
 
     try {
         const { productIds, updates = {} } = req.body;
+        const lowStockLogs = [];
 
         if (!Array.isArray(productIds) || productIds.length === 0) {
             return res.status(400).json({ success: false, error: 'productIds are required' });
@@ -660,7 +843,21 @@ exports.bulkUpdateProducts = async (req, res) => {
 
             if (updates.stock !== undefined) {
                 product.variants.forEach(variant => {
+                    const beforeStock = Number(variant.stock || 0);
                     variant.stock = Number(updates.stock);
+                    if (variant.inventory) variant.inventory.stock = variant.stock;
+                    lowStockLogs.push({
+                        shop_id: req.tenantId,
+                        productId: product._id,
+                        variantId: variant._id,
+                        change: variant.stock - beforeStock,
+                        type: 'MANUAL',
+                        referenceId: product._id,
+                        beforeStock,
+                        afterStock: variant.stock,
+                        user: req.user._id,
+                        note: 'Bulk product stock update'
+                    });
                 });
             }
 
@@ -668,6 +865,8 @@ exports.bulkUpdateProducts = async (req, res) => {
         }
 
         await session.commitTransaction();
+
+        await enqueueLowStockAlertsForLogs(lowStockLogs);
 
         res.status(200).json({
             success: true,
