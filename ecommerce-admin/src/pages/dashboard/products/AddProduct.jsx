@@ -14,6 +14,13 @@ import {
 import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
+import {
+    MAX_SELLING_POINTS,
+    hasIncompleteKeyValueRow,
+    hasIncompleteSellingPoint,
+    normalizeKeyValueRows,
+    normalizeSellingPointRows
+} from '../../../utils/productContentRows.js';
 
 // ── Pure helpers (mirrors backend variantMatrix.js) ───────────────────────────
 
@@ -326,7 +333,20 @@ const AddProduct = () => {
         updated[index][field] = value;
         setFormData({ ...formData, [type]: updated });
     };
-    const addKV    = (type) => setFormData({ ...formData, [type]: [...formData[type], { title: '', value: '' }] });
+    const addKV = (type) => setFormData(prev => {
+        if (type === 'features' && prev.features.length >= MAX_SELLING_POINTS) {
+            toast.error(`You can add up to ${MAX_SELLING_POINTS} customer benefits.`);
+            return prev;
+        }
+
+        return {
+            ...prev,
+            [type]: [
+                ...prev[type],
+                type === 'features' ? { point: '', reason: '' } : { title: '', value: '' }
+            ]
+        };
+    });
     const removeKV = (type, index) => setFormData({ ...formData, [type]: formData[type].filter((_, i) => i !== index) });
 
     const getAiVariants = () => {
@@ -360,6 +380,14 @@ const AddProduct = () => {
         }
         if (validAttrs.length > 0 && combinations.length === 0) {
             toast.error('No variant combinations generated. Check your attributes.');
+            return;
+        }
+        if (hasIncompleteSellingPoint(formData.features)) {
+            toast.error('Each selling point needs both a point and why it matters.');
+            return;
+        }
+        if (hasIncompleteKeyValueRow(formData.specifications) || hasIncompleteKeyValueRow(formData.comments)) {
+            toast.error('Each detail row needs both a title and value.');
             return;
         }
 
@@ -432,9 +460,9 @@ const AddProduct = () => {
             } else {
                 data.append('simpleStock', String(defaultStock));
             }
-            data.append('features',       JSON.stringify(formData.features));
-            data.append('specifications', JSON.stringify(formData.specifications));
-            data.append('comments',       JSON.stringify(formData.comments));
+            data.append('features',       JSON.stringify(normalizeSellingPointRows(formData.features)));
+            data.append('specifications', JSON.stringify(normalizeKeyValueRows(formData.specifications)));
+            data.append('comments',       JSON.stringify(normalizeKeyValueRows(formData.comments)));
             data.append('coverImageIndex', JSON.stringify(coverImageIndex));
 
             imageFiles.forEach(file => data.append('images', file));
@@ -480,7 +508,7 @@ const AddProduct = () => {
                         <ProductAiAssistant
                             formData={formData}
                             setFormData={setFormData}
-                            getFirstImage={() => imageFiles[0] || null}
+                            getFirstImage={() => imageFiles[coverImageIndex] || imageFiles[0] || null}
                             getVariants={getAiVariants}
                         />
 
@@ -1022,15 +1050,15 @@ const AddProduct = () => {
                     {['features', 'specifications', 'comments'].map((type) => (
                         <ProductFormSection
                             key={type}
-                            title={type === 'features' ? '5. Selling points' : type === 'specifications' ? '6. Specifications' : '7. Extra notes'}
-                            description={type === 'features' ? 'Short benefits that help shoppers decide faster.' : type === 'specifications' ? 'Structured details such as material, size, model, or warranty.' : 'Optional notes for shoppers or internal product context.'}
+                            title={type === 'features' ? '5. Why customers should buy this' : type === 'specifications' ? '6. Specifications' : '7. Extra notes'}
+                            description={type === 'features' ? 'Add short product benefits and explain why each one matters to the customer.' : type === 'specifications' ? 'Structured details such as material, size, model, or warranty.' : 'Optional notes for shoppers or internal product context.'}
                             icon={type === 'features' ? ListChecks : type === 'specifications' ? FileText : Search}
                         >
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <h2 className="font-semibold capitalize text-gray-700">{type}</h2>
+                                    <h2 className="font-semibold text-gray-700">{type === 'features' ? 'Customer benefits' : type}</h2>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        {type === 'features' ? 'Short selling points shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
+                                        {type === 'features' ? 'Use a short point on the left and a convincing customer-focused reason on the right.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Optional extra notes for shoppers.'}
                                     </p>
                                 </div>
                                 <button
@@ -1041,22 +1069,43 @@ const AddProduct = () => {
                                 </button>
                             </div>
                             {formData[type].map((item, index) => (
-                                <div key={index} className="grid grid-cols-2 gap-2 relative pr-6">
-                                    <input
-                                        className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                        placeholder="Title (e.g. Material)"
-                                        value={item.title}
-                                        onChange={(e) => handleKVChange(type, index, 'title', e.target.value)}
-                                    />
-                                    <input
-                                        className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                        placeholder="Value (e.g. Cotton)"
-                                        value={item.value}
-                                        onChange={(e) => handleKVChange(type, index, 'value', e.target.value)}
-                                    />
+                                <div key={index} className={type === 'features'
+                                    ? 'grid gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)_auto]'
+                                    : 'grid grid-cols-1 gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)_auto]'
+                                }>
+                                    <label className="block text-xs font-bold text-slate-600">
+                                        {type === 'features' ? 'Point' : 'Title'}
+                                        <input
+                                            className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            placeholder={type === 'features' ? 'e.g. Design' : 'Title (e.g. Material)'}
+                                            value={type === 'features' ? (item.point ?? item.title ?? '') : (item.title ?? '')}
+                                            onChange={(e) => handleKVChange(type, index, type === 'features' ? 'point' : 'title', e.target.value)}
+                                            maxLength={type === 'features' ? 50 : 100}
+                                        />
+                                    </label>
+                                    <label className="block text-xs font-bold text-slate-600">
+                                        {type === 'features' ? 'Why it matters' : 'Value'}
+                                        {type === 'features' ? (
+                                            <textarea
+                                                className="mt-1 min-h-20 w-full resize-y border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                placeholder="e.g. Engraved traditional detailing creates an elegant festive look."
+                                                value={item.reason ?? item.value ?? ''}
+                                                onChange={(e) => handleKVChange(type, index, 'reason', e.target.value)}
+                                                maxLength={220}
+                                            />
+                                        ) : (
+                                            <input
+                                                className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                placeholder="Value (e.g. Cotton)"
+                                                value={item.value}
+                                                onChange={(e) => handleKVChange(type, index, 'value', e.target.value)}
+                                            />
+                                        )}
+                                    </label>
                                     <button
                                         type="button" onClick={() => removeKV(type, index)}
-                                        className="absolute right-0 top-2.5 text-gray-300 hover:text-red-500 transition-colors"
+                                        className="self-end rounded-lg p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                                        aria-label={`Remove ${type === 'features' ? 'selling point' : 'row'} ${index + 1}`}
                                     >
                                         <Trash2 size={15} />
                                     </button>

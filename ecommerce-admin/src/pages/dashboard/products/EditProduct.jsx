@@ -15,6 +15,13 @@ import {
 import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
+import {
+    MAX_SELLING_POINTS,
+    hasIncompleteKeyValueRow,
+    hasIncompleteSellingPoint,
+    normalizeKeyValueRows,
+    normalizeSellingPointRows
+} from '../../../utils/productContentRows.js';
 
 /**
  * EditProduct
@@ -25,17 +32,6 @@ import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../
  * 2. Remove button              → immediate PATCH      (Op D: removeVariants)
  * 3. Add Option                 → its own action       (Op C: addAttributeOption)
  */
-const normalizeKeyValueItems = (items = []) => (
-    Array.isArray(items)
-        ? items
-            .map(item => ({
-                title: String(item?.title || item?.name || item?.key || '').trim(),
-                value: String(item?.value || item?.description || item?.text || '').trim()
-            }))
-            .filter(item => item.title || item.value)
-        : []
-);
-
 const normalizeVariantForEdit = (variant = {}) => {
     const stock = Number(variant.inventory?.stock ?? variant.stock ?? 0);
     const status = variant.status || (variant.isActive === false ? 'draft' : 'active');
@@ -88,9 +84,9 @@ const buildProductFormState = (product = {}) => ({
     },
     variants:       (product.variants || []).map(normalizeVariantForEdit),
     images:         product.images         || [],
-    features:       normalizeKeyValueItems(product.features),
-    specifications: normalizeKeyValueItems(product.specifications),
-    comments:       normalizeKeyValueItems(product.comments)
+    features:       normalizeSellingPointRows(product.features),
+    specifications: normalizeKeyValueRows(product.specifications),
+    comments:       normalizeKeyValueRows(product.comments)
 });
 
 const EditProduct = () => {
@@ -434,7 +430,20 @@ const EditProduct = () => {
         updated[index][field] = value;
         setFormData({ ...formData, [type]: updated });
     };
-    const addKV    = (type) => setFormData({ ...formData, [type]: [...formData[type], { title: '', value: '' }] });
+    const addKV = (type) => setFormData(prev => {
+        if (type === 'features' && prev.features.length >= MAX_SELLING_POINTS) {
+            toast.error(`You can add up to ${MAX_SELLING_POINTS} customer benefits.`);
+            return prev;
+        }
+
+        return {
+            ...prev,
+            [type]: [
+                ...prev[type],
+                type === 'features' ? { point: '', reason: '' } : { title: '', value: '' }
+            ]
+        };
+    });
     const removeKV = (type, index) => setFormData({ ...formData, [type]: formData[type].filter((_, i) => i !== index) });
 
     // ── Pricing display ───────────────────────────────────────────────────────
@@ -467,7 +476,11 @@ const EditProduct = () => {
     }));
 
     const getFirstAiImage = () => (
-        newImageFiles[0]
+        (coverImageIndex >= formData.images.length
+            ? newImageFiles[coverImageIndex - formData.images.length]
+            : null)
+        || newImageFiles[0]
+        || formData.images?.[coverImageIndex]
         || formData.images?.find(Boolean)
         || formData.variants?.find(variant => variant.image)?.image
         || null
@@ -495,6 +508,17 @@ const EditProduct = () => {
         setIsSubmitting(true);
 
         try {
+            if (hasIncompleteSellingPoint(formData.features)) {
+                toast.error('Each selling point needs both a point and why it matters.');
+                setIsSubmitting(false);
+                return;
+            }
+            if (hasIncompleteKeyValueRow(formData.specifications) || hasIncompleteKeyValueRow(formData.comments)) {
+                toast.error('Each detail row needs both a title and value.');
+                setIsSubmitting(false);
+                return;
+            }
+
             const body = new FormData();
             body.append('title', formData.title);
             if (formData.slug) body.append('slug', formData.slug);
@@ -508,9 +532,9 @@ const EditProduct = () => {
             body.append('imageAltText', formData.imageAltText);
             body.append('seo', JSON.stringify(formData.seo));
             body.append('pricing', JSON.stringify(formData.pricing));
-            body.append('features', JSON.stringify(formData.features));
-            body.append('specifications', JSON.stringify(formData.specifications));
-            body.append('comments', JSON.stringify(formData.comments));
+            body.append('features', JSON.stringify(normalizeSellingPointRows(formData.features)));
+            body.append('specifications', JSON.stringify(normalizeKeyValueRows(formData.specifications)));
+            body.append('comments', JSON.stringify(normalizeKeyValueRows(formData.comments)));
             body.append('existingImages', JSON.stringify(formData.images || []));
             body.append('removedImages', JSON.stringify(removedImages));
             body.append('coverImageIndex', JSON.stringify(coverImageIndex));
@@ -1158,8 +1182,8 @@ const EditProduct = () => {
                 {['features', 'specifications', 'comments'].map((type, index) => (
                     <ProductFormSection
                         key={type}
-                        title={`${6 + index}. ${type === 'features' ? 'Selling points' : type === 'specifications' ? 'Specifications' : 'Extra notes'}`}
-                        description={type === 'features' ? 'Short benefits shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Customer-facing care, storage, sizing, or styling notes shown on the product page.'}
+                        title={`${6 + index}. ${type === 'features' ? 'Why customers should buy this' : type === 'specifications' ? 'Specifications' : 'Extra notes'}`}
+                        description={type === 'features' ? 'Add short product benefits and explain why each one matters to the customer.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Customer-facing care, storage, sizing, or styling notes shown on the product page.'}
                         icon={type === 'features' ? ListChecks : type === 'specifications' ? FileText : Search}
                         actions={(
                             <button
@@ -1172,29 +1196,50 @@ const EditProduct = () => {
                     >
                         <div className="flex justify-between items-center">
                             <div>
-                                <h2 className="font-semibold capitalize text-gray-700">{type === 'comments' ? 'Extra notes' : type}</h2>
+                                <h2 className="font-semibold text-gray-700">{type === 'features' ? 'Customer benefits' : type === 'comments' ? 'Extra notes' : type}</h2>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    {type === 'features' ? 'Short selling points shown on the product page.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Customer-facing care, storage, sizing, or styling notes shown on the product page.'}
+                                    {type === 'features' ? 'Use a short point on the left and a convincing customer-focused reason on the right.' : type === 'specifications' ? 'Technical details like material, size, model, or warranty.' : 'Customer-facing care, storage, sizing, or styling notes shown on the product page.'}
                                 </p>
                             </div>
                         </div>
                         {formData[type].map((item, i) => (
-                            <div key={i} className="grid grid-cols-2 gap-2 relative pr-6">
-                                <input
-                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                    placeholder="Title"
-                                    value={item.title}
-                                    onChange={(e) => handleKVChange(type, i, 'title', e.target.value)}
-                                />
-                                <input
-                                    className="border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                                    placeholder="Value"
-                                    value={item.value}
-                                    onChange={(e) => handleKVChange(type, i, 'value', e.target.value)}
-                                />
+                            <div key={i} className={type === 'features'
+                                ? 'grid gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)_auto]'
+                                : 'grid grid-cols-1 gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-[minmax(0,0.35fr)_minmax(0,0.65fr)_auto]'
+                            }>
+                                <label className="block text-xs font-bold text-slate-600">
+                                    {type === 'features' ? 'Point' : 'Title'}
+                                    <input
+                                        className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                        placeholder={type === 'features' ? 'e.g. Design' : 'Title'}
+                                        value={type === 'features' ? (item.point ?? item.title ?? '') : (item.title ?? '')}
+                                        onChange={(e) => handleKVChange(type, i, type === 'features' ? 'point' : 'title', e.target.value)}
+                                        maxLength={type === 'features' ? 50 : 100}
+                                    />
+                                </label>
+                                <label className="block text-xs font-bold text-slate-600">
+                                    {type === 'features' ? 'Why it matters' : 'Value'}
+                                    {type === 'features' ? (
+                                        <textarea
+                                            className="mt-1 min-h-20 w-full resize-y border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            placeholder="e.g. Engraved traditional detailing creates an elegant festive look."
+                                            value={item.reason ?? item.value ?? ''}
+                                            onChange={(e) => handleKVChange(type, i, 'reason', e.target.value)}
+                                            maxLength={220}
+                                        />
+                                    ) : (
+                                        <input
+                                            className="mt-1 w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            placeholder="Value"
+                                            value={item.value}
+                                            onChange={(e) => handleKVChange(type, i, 'value', e.target.value)}
+                                        />
+                                    )}
+                                </label>
                                 <button
                                     type="button" onClick={() => removeKV(type, i)}
-                                    className="absolute right-0 top-2 text-gray-300 hover:text-red-500 transition-colors"
+                                    className="self-end rounded-lg p-2 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                                    aria-label={`Remove ${type === 'features' ? 'selling point' : 'row'} ${i + 1}`}
                                 >
                                     <Trash2 size={14} />
                                 </button>

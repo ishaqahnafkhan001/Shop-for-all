@@ -2,9 +2,27 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const keyValueSchema = new Schema({
-    title: { type: String, required: true, trim: true },
-    value: { type: String, required: true, trim: true }
+    title: { type: String, trim: true, default: '' },
+    value: { type: String, trim: true, default: '' },
+    point: { type: String, trim: true, default: '' },
+    reason: { type: String, trim: true, default: '' }
 }, { _id: false });
+
+const normalizeContentRows = (rows = [], { sellingPoints = false } = {}) => (
+    Array.isArray(rows)
+        ? rows
+            .map(row => {
+                const title = String(row?.title || row?.point || row?.label || row?.name || '').trim();
+                const value = String(row?.value || row?.reason || row?.description || row?.text || '').trim();
+                if (!title && !value) return null;
+
+                return sellingPoints
+                    ? { title, value, point: String(row?.point || title).trim(), reason: String(row?.reason || value).trim() }
+                    : { title, value };
+            })
+            .filter(Boolean)
+        : []
+);
 
 const productOptionSchema = new Schema({
     name: { type: String, required: true, trim: true, lowercase: true },
@@ -223,6 +241,10 @@ productSchema.pre('save', async function () {
             throw new Error("Stock cannot be negative");
         }
     }
+
+    this.features = normalizeContentRows(this.features, { sellingPoints: true });
+    this.specifications = normalizeContentRows(this.specifications);
+    this.comments = normalizeContentRows(this.comments);
 });
 
 module.exports = mongoose.model('Product', productSchema);

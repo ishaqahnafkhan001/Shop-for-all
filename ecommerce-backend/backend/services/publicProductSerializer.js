@@ -56,10 +56,37 @@ const sanitizePublicKeyValueItems = (items = []) => (
     Array.isArray(items)
         ? items
             .map(item => ({
-                title: String(item?.title || '').trim(),
-                value: String(item?.value || '').trim()
+                title: String(item?.title || item?.point || item?.label || item?.name || '').trim(),
+                value: String(item?.value || item?.reason || item?.description || item?.text || '').trim()
             }))
             .filter(item => item.title && item.value)
+        : []
+);
+
+const sanitizePublicSellingPoints = (items = []) => (
+    Array.isArray(items)
+        ? items
+            .map(item => {
+                if (typeof item === 'string') {
+                    const reason = String(item || '').trim();
+                    return reason ? {
+                        title: 'Product benefit',
+                        value: reason,
+                        point: 'Product benefit',
+                        reason
+                    } : null;
+                }
+
+                const point = String(item?.point || item?.title || item?.label || item?.name || '').trim();
+                const reason = String(item?.reason || item?.value || item?.description || item?.text || '').trim();
+                return point && reason ? {
+                    title: point,
+                    value: reason,
+                    point,
+                    reason
+                } : null;
+            })
+            .filter(Boolean)
         : []
 );
 
@@ -72,6 +99,8 @@ const sanitizePublicProduct = (product) => {
         clean.variants = clean.variants.map(sanitizePublicVariant);
     }
 
+    clean.features = sanitizePublicSellingPoints(clean.features);
+    clean.specifications = sanitizePublicKeyValueItems(clean.specifications);
     clean.comments = sanitizePublicKeyValueItems(clean.comments);
     delete clean.__v;
 

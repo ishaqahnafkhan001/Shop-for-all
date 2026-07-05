@@ -21,15 +21,16 @@ test('admin product edit normalizes variants, SEO, and product detail arrays for
     const editProduct = readProject('ecommerce-admin/src/pages/dashboard/products/EditProduct.jsx');
 
     assert.match(editProduct, /normalizeVariantForEdit/);
-    assert.match(editProduct, /normalizeKeyValueItems/);
-    assert.match(editProduct, /features:\s*normalizeKeyValueItems\(product\.features\)/);
-    assert.match(editProduct, /specifications:\s*normalizeKeyValueItems\(product\.specifications\)/);
-    assert.match(editProduct, /comments:\s*normalizeKeyValueItems\(product\.comments\)/);
+    assert.match(editProduct, /normalizeSellingPointRows/);
+    assert.match(editProduct, /normalizeKeyValueRows/);
+    assert.match(editProduct, /features:\s*normalizeSellingPointRows\(product\.features\)/);
+    assert.match(editProduct, /specifications:\s*normalizeKeyValueRows\(product\.specifications\)/);
+    assert.match(editProduct, /comments:\s*normalizeKeyValueRows\(product\.comments\)/);
     assert.match(editProduct, /seo:\s*\{[\s\S]*title:\s*product\.seo\?\.title[\s\S]*description:\s*product\.seo\?\.description/);
     assert.match(editProduct, /const body = new FormData\(\)/);
-    assert.match(editProduct, /body\.append\('features', JSON\.stringify\(formData\.features\)\)/);
-    assert.match(editProduct, /body\.append\('specifications', JSON\.stringify\(formData\.specifications\)\)/);
-    assert.match(editProduct, /body\.append\('comments', JSON\.stringify\(formData\.comments\)\)/);
+    assert.match(editProduct, /body\.append\('features', JSON\.stringify\(normalizeSellingPointRows\(formData\.features\)\)\)/);
+    assert.match(editProduct, /body\.append\('specifications', JSON\.stringify\(normalizeKeyValueRows\(formData\.specifications\)\)\)/);
+    assert.match(editProduct, /body\.append\('comments', JSON\.stringify\(normalizeKeyValueRows\(formData\.comments\)\)\)/);
     assert.match(editProduct, /body\.append\('seo', JSON\.stringify\(formData\.seo\)\)/);
     assert.match(editProduct, /body\.append\('existingImages', JSON\.stringify\(formData\.images \|\| \[\]\)\)/);
 });

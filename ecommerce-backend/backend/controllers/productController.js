@@ -144,10 +144,22 @@ exports.generateProductContent = async (req, res) => {
             body: req.body,
             file: req.file || null
         });
+        const diagnostics = suggestion.imageDiagnostics || {};
+
+        console.info('Product AI request', {
+            requestId: req.id,
+            shopId: req.tenantId,
+            usedImage: Boolean(suggestion.usedImage),
+            imageSource: suggestion.imageSource || 'text_only',
+            mimeType: diagnostics.mimeType || undefined,
+            imageSizeBytes: diagnostics.imageSizeBytes || undefined
+        });
 
         res.status(200).json({
             success: true,
             usedImage: suggestion.usedImage,
+            imageSource: suggestion.imageSource || 'text_only',
+            imageAnalysis: suggestion.data?.imageAnalysis || {},
             fallback: Boolean(suggestion.fallback),
             ...(suggestion.errorCode && { errorCode: suggestion.errorCode }),
             data: suggestion.data
@@ -181,6 +193,15 @@ exports.generateProductContent = async (req, res) => {
                 configured: true,
                 message: 'AI product suggestions could not be generated right now. Please try again later.',
                 errorCode: 'AI_PROVIDER_FAILED'
+            });
+        }
+
+        if (err?.code === 'INSUFFICIENT_PRODUCT_CONTEXT') {
+            return res.status(200).json({
+                success: false,
+                configured: true,
+                message: 'Add a clearer product image or more product information to generate useful customer benefits.',
+                errorCode: 'INSUFFICIENT_PRODUCT_CONTEXT'
             });
         }
 

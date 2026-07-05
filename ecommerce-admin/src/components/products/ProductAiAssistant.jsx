@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Loader2, Sparkles, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
+import { normalizeKeyValueRows, normalizeSellingPointRows } from '../../utils/productContentRows.js';
 
 const SECTION_LABELS = {
     all: 'All content',
@@ -33,13 +34,18 @@ const firstWords = (value = '', fallback = 'Detail') => {
     return words || fallback;
 };
 
-const pointsToRows = (points = [], fallback = 'Benefit') => points
-    .filter(Boolean)
-    .slice(0, 10)
-    .map((point, index) => ({
-        title: firstWords(point, `${fallback} ${index + 1}`).slice(0, 100),
-        value: String(point).trim()
-    }));
+const pointsToRows = (points = []) => normalizeSellingPointRows(
+    points.map((point, index) => {
+        if (typeof point === 'string') {
+            return {
+                point: firstWords(point, `Benefit ${index + 1}`).slice(0, 50),
+                reason: String(point).trim()
+            };
+        }
+
+        return point;
+    })
+);
 
 const notesToRows = (notes = []) => notes
     .filter(Boolean)
@@ -83,6 +89,11 @@ const showAiFailureToast = (payload = {}) => {
         return;
     }
 
+    if (payload.errorCode === 'INSUFFICIENT_PRODUCT_CONTEXT') {
+        toast.error(payload.message || 'Add a clearer product image or more product information to generate useful customer benefits.');
+        return;
+    }
+
     toast.error(payload.message || payload.error || 'AI suggestions could not be generated.');
 };
 
@@ -100,6 +111,45 @@ const formatPreviewList = (items = []) => (
     )
 );
 
+const formatPreviewSellingPoints = (items = []) => {
+    const rows = items
+        .map((item) => {
+            const normalized = normalizeSellingPointRows([item])?.[0];
+            if (!normalized) return null;
+            return {
+                ...normalized,
+                visualEvidence: typeof item === 'object' ? String(item.visualEvidence || '').trim() : '',
+                confidence: typeof item === 'object' ? String(item.confidence || '').trim() : ''
+            };
+        })
+        .filter(Boolean);
+
+    return rows.length ? (
+        <div className="mt-2 grid gap-2">
+            {rows.map((item, index) => (
+                <div key={`${item.point}-${index}`} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                    <p className="font-black text-slate-900">{item.point}</p>
+                    <p className="mt-2 text-xs font-black uppercase tracking-wide text-slate-400">Why customers care</p>
+                    <p className="mt-1 leading-6 text-slate-600">{item.reason}</p>
+                    {item.visualEvidence && (
+                        <>
+                            <p className="mt-3 text-xs font-black uppercase tracking-wide text-slate-400">Visual evidence</p>
+                            <p className="mt-1 leading-6 text-slate-600">{item.visualEvidence}</p>
+                        </>
+                    )}
+                    {item.confidence && (
+                        <p className="mt-2 text-xs font-black uppercase tracking-wide text-indigo-600">
+                            Confidence: {item.confidence}
+                        </p>
+                    )}
+                </div>
+            ))}
+        </div>
+    ) : (
+        <p className="mt-2 text-sm text-slate-400">No suggestion for this section.</p>
+    );
+};
+
 const formatPreviewRows = (items = []) => (
     items.length ? (
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -115,18 +165,24 @@ const formatPreviewRows = (items = []) => (
     )
 );
 
-const ProductAiSuggestionModal = ({ suggestion, usedImage, onClose, onApply, formData }) => {
+const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose, onApply, formData }) => {
     if (!suggestion) return null;
+    const imageAnalysis = suggestion.imageAnalysis || {};
+    const imageStatusText = usedImage
+        ? imageSource === 'existing_product_image'
+            ? 'Image analyzed from the current product cover image.'
+            : 'Image analyzed from the selected product image.'
+        : 'Generated from product text only.';
 
-    const applyButton = (section, label = SECTION_LABELS[section]) => {
+    const applyButton = (section, label = SECTION_LABELS[section], mode = 'replace') => {
         const hasContent = getSectionHasContent(formData, section);
         return (
             <button
                 type="button"
-                onClick={() => onApply([section])}
+                onClick={() => onApply([section], mode)}
                 className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-50"
             >
-                {hasContent ? `Replace ${label}` : `Apply ${label}`}
+                {mode === 'append' ? `Append ${label}` : hasContent ? `Replace ${label}` : `Apply ${label}`}
             </button>
         );
     };
@@ -139,7 +195,7 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, onClose, onApply, for
                         <p className="text-xs font-black uppercase tracking-wide text-indigo-600">AI suggestions</p>
                         <h2 className="mt-1 text-lg font-black text-slate-950">Review before applying</h2>
                         <p className="mt-1 text-sm text-slate-500">
-                            {usedImage ? 'Using the first product image for better suggestions.' : 'Generated from product text only. Add an image for more accurate suggestions.'}
+                            {imageStatusText}
                         </p>
                     </div>
                     <button type="button" onClick={onClose} aria-label="Close AI suggestions" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
@@ -148,6 +204,46 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, onClose, onApply, for
                 </div>
 
                 <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+                    <section className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                        <h3 className="font-black text-emerald-950">Image analysis</h3>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs font-black uppercase tracking-wide">
+                            <span className="rounded-full bg-white/80 px-3 py-1 text-emerald-800">
+                                Image used: {usedImage ? 'Yes' : 'No'}
+                            </span>
+                            <span className="rounded-full bg-white/80 px-3 py-1 text-emerald-800">
+                                Source: {imageSource === 'local_file' ? 'Selected cover image' : imageSource === 'existing_product_image' ? 'Current product cover' : 'Text only'}
+                            </span>
+                            {imageAnalysis.confidence && (
+                                <span className="rounded-full bg-white/80 px-3 py-1 text-emerald-800">
+                                    Confidence: {imageAnalysis.confidence}
+                                </span>
+                            )}
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-emerald-900">
+                            {imageAnalysis.summary || (usedImage ? 'AI analyzed the image, but did not return a detailed visual summary.' : 'No image was used for this generation.')}
+                        </p>
+                        {(imageAnalysis.visibleAttributes?.length > 0 || imageAnalysis.uncertainAttributes?.length > 0) && (
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                {imageAnalysis.visibleAttributes?.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Observed</p>
+                                        <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-emerald-900">
+                                            {imageAnalysis.visibleAttributes.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                                {imageAnalysis.uncertainAttributes?.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-wide text-amber-700">Uncertain</p>
+                                        <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-amber-900">
+                                            {imageAnalysis.uncertainAttributes.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </section>
+
                     <section className="rounded-xl border border-slate-200 p-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
@@ -170,11 +266,14 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, onClose, onApply, for
                     </section>
 
                     <section className="rounded-xl border border-slate-200 p-4">
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <h3 className="font-black text-slate-900">Why customers should buy this</h3>
-                            {applyButton('sellingPoints')}
+                            <div className="flex flex-wrap gap-2">
+                                {applyButton('sellingPoints')}
+                                {getSectionHasContent(formData, 'sellingPoints') && applyButton('sellingPoints', SECTION_LABELS.sellingPoints, 'append')}
+                            </div>
                         </div>
-                        {formatPreviewList(suggestion.sellingPoints)}
+                        {formatPreviewSellingPoints(suggestion.sellingPoints)}
                     </section>
 
                     <section className="rounded-xl border border-slate-200 p-4">
@@ -237,8 +336,15 @@ const ProductAiAssistant = ({
     const [activeSection, setActiveSection] = useState(null);
     const [suggestion, setSuggestion] = useState(null);
     const [usedImage, setUsedImage] = useState(false);
+    const [imageSource, setImageSource] = useState('text_only');
 
-    const hasImage = Boolean(getFirstImage?.());
+    const firstImageForStatus = getFirstImage?.();
+    const hasImage = Boolean(firstImageForStatus);
+    const imageStatusLabel = hasImage
+        ? isFileLike(firstImageForStatus)
+            ? 'Image ready for AI analysis'
+            : 'Using the current product cover image'
+        : 'No product image available — AI will use text only';
 
     const buildRequestData = (sections) => {
         const data = new FormData();
@@ -287,6 +393,7 @@ const ProductAiAssistant = ({
 
             setSuggestion(response.data.data);
             setUsedImage(Boolean(response.data.usedImage));
+            setImageSource(response.data.imageSource || 'text_only');
             if (response.data.fallback) {
                 toast.success('Basic suggestions are ready to review.');
             } else {
@@ -300,7 +407,7 @@ const ProductAiAssistant = ({
         }
     };
 
-    const applySections = (sections) => {
+    const applySections = (sections, mode = 'replace') => {
         if (!suggestion) return;
 
         setFormData(prev => {
@@ -316,10 +423,13 @@ const ProductAiAssistant = ({
                 next.description = suggestion.description;
             }
             if (sections.includes('sellingPoints') && suggestion.sellingPoints?.length) {
-                next.features = pointsToRows(suggestion.sellingPoints, 'Benefit');
+                const generatedRows = pointsToRows(suggestion.sellingPoints);
+                next.features = mode === 'append'
+                    ? normalizeSellingPointRows([...(next.features || []), ...generatedRows])
+                    : generatedRows;
             }
             if (sections.includes('specifications') && suggestion.specifications?.length) {
-                next.specifications = normalizeSpecs(suggestion.specifications);
+                next.specifications = normalizeKeyValueRows(normalizeSpecs(suggestion.specifications));
             }
             if (sections.includes('extraNotes') && suggestion.extraNotes?.length) {
                 next.comments = notesToRows(suggestion.extraNotes);
@@ -342,7 +452,7 @@ const ProductAiAssistant = ({
                 <div>
                     <p className="text-sm font-black text-slate-950">AI content helper</p>
                     <p className="mt-1 text-xs leading-5 text-slate-600">
-                        {hasImage ? 'Using the first product image for better suggestions.' : 'Add a product image for more accurate AI suggestions.'}
+                        {imageStatusLabel}
                     </p>
                 </div>
                 <button
@@ -382,6 +492,7 @@ const ProductAiAssistant = ({
             <ProductAiSuggestionModal
                 suggestion={suggestion}
                 usedImage={usedImage}
+                imageSource={imageSource}
                 onClose={() => setSuggestion(null)}
                 onApply={applySections}
                 formData={formData}

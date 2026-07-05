@@ -2,8 +2,28 @@
 const Joi = require('joi');
 
 const keyValueSchema = Joi.object({
-    title: Joi.string().trim().min(1).max(100).required(),
-    value: Joi.string().trim().min(1).max(500).required()
+    title: Joi.string().trim().max(100).allow('').optional(),
+    value: Joi.string().trim().max(500).allow('').optional(),
+    point: Joi.string().trim().max(50).allow('').optional(),
+    reason: Joi.string().trim().max(220).allow('').optional()
+}).custom((row, helpers) => {
+    const title = String(row.title || row.point || '').trim();
+    const value = String(row.value || row.reason || '').trim();
+    if (!title || !value) return helpers.error('any.invalid');
+
+    return {
+        ...row,
+        title,
+        value,
+        ...(row.point !== undefined || row.reason !== undefined
+            ? {
+                point: String(row.point || title).trim(),
+                reason: String(row.reason || value).trim()
+            }
+            : {})
+    };
+}).messages({
+    'any.invalid': 'Content rows need both a label and a value.'
 });
 
 const attributeSchema = Joi.object({

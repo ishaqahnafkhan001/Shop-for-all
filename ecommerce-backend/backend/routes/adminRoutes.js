@@ -150,7 +150,7 @@ const productAiImageUpload = (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 configured: true,
-                errorCode: err.code === 'LIMIT_FILE_SIZE' ? 'IMAGE_TOO_LARGE' : 'INVALID_IMAGE_TYPE',
+                errorCode: err.code === 'LIMIT_FILE_SIZE' ? 'AI_IMAGE_TOO_LARGE' : 'AI_IMAGE_UNSUPPORTED',
                 message: err.message || 'Invalid product image.'
             });
         }

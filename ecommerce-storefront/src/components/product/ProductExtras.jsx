@@ -3,7 +3,22 @@ import React, { memo } from 'react';
 import { ChevronDown, ClipboardList, Sparkles, Zap } from 'lucide-react';
 
 export const ProductFeatures = memo(function ProductFeatures({ features }) {
-    if (!features?.length) return null;
+    const normalizedFeatures = Array.isArray(features)
+        ? features
+            .map(feature => {
+                if (typeof feature === 'string') {
+                    const reason = feature.trim();
+                    return reason ? { point: 'Product benefit', reason } : null;
+                }
+
+                const point = String(feature?.point || feature?.title || feature?.label || feature?.name || '').trim();
+                const reason = String(feature?.reason || feature?.value || feature?.description || feature?.text || '').trim();
+                return point && reason ? { point, reason } : null;
+            })
+            .filter(Boolean)
+        : [];
+
+    if (!normalizedFeatures.length) return null;
 
     return (
         <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
@@ -17,13 +32,13 @@ export const ProductFeatures = memo(function ProductFeatures({ features }) {
                 </div>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {features.map((feature, idx) => (
+                {normalizedFeatures.map((feature, idx) => (
                     <div
                         key={idx}
                         className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                     >
-                        <h4 className="mb-2 text-base font-black text-slate-950">{feature.title}</h4>
-                        <p className="text-sm leading-6 text-slate-600">{feature.value}</p>
+                        <h4 className="mb-2 text-base font-black text-slate-950">{feature.point}</h4>
+                        <p className="text-sm leading-6 text-slate-600">{feature.reason}</p>
                     </div>
                 ))}
             </div>
