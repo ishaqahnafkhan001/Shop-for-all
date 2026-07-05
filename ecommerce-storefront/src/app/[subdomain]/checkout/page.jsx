@@ -45,6 +45,7 @@ export default function CheckoutPage({ params }) {
     const { theme } = useStorefrontTheme();
 
     const checkoutTrackedRef = useRef("");
+    const checkoutIdempotencyRef = useRef({ resetKey: "", key: "" });
     const customerId = user?.role === "Customer" ? (user._id || user.id) : null;
     const policies = useMemo(() => theme.policies || {}, [theme.policies]);
     const visiblePolicies = useMemo(() => (
@@ -154,6 +155,17 @@ export default function CheckoutPage({ params }) {
 
     const phoneOtp = useCheckoutPhoneOtp({ subdomain, resetKey: checkoutResetKey });
 
+    const getCheckoutIdempotencyKey = () => {
+        if (checkoutIdempotencyRef.current.resetKey !== checkoutResetKey || !checkoutIdempotencyRef.current.key) {
+            const randomPart = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            checkoutIdempotencyRef.current = {
+                resetKey: checkoutResetKey,
+                key: `checkout-${randomPart}`
+            };
+        }
+        return checkoutIdempotencyRef.current.key;
+    };
+
     const sendPhoneOtp = () => {
         try {
             return phoneOtp.sendOtp({
@@ -248,6 +260,7 @@ export default function CheckoutPage({ params }) {
                     },
                     checkoutSessionId: phoneOtp.checkoutSessionId,
                     phoneVerificationToken,
+                    idempotencyKey: getCheckoutIdempotencyKey(),
                 };
 
                 const response = await API.post(
@@ -290,6 +303,7 @@ export default function CheckoutPage({ params }) {
                     },
                     checkoutSessionId: phoneOtp.checkoutSessionId,
                     phoneVerificationToken,
+                    idempotencyKey: getCheckoutIdempotencyKey(),
                 };
 
                 const response = await API.post(

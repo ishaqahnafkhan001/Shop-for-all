@@ -19,10 +19,10 @@ const REGISTRATION_OTP_LIMITS = Object.freeze({
 
 const PURPOSE = 'registration';
 const getOtpSecret = () => {
-    const secret = process.env.REGISTRATION_OTP_SECRET || process.env.JWT_SECRET || process.env.RESET_PASSWORD || process.env.PASS;
+    const secret = process.env.REGISTRATION_OTP_SECRET || process.env.JWT_SECRET;
 
     if (!secret && process.env.NODE_ENV === 'production') {
-        throw new Error('Registration OTP secret is not configured');
+        throw new Error('Registration OTP secret is not configured. Set REGISTRATION_OTP_SECRET.');
     }
 
     return secret || 'development-registration-otp-secret';

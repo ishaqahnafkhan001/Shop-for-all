@@ -4,12 +4,10 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
     buildHomepageJsonLd,
-    buildMetadata,
+    buildStorefrontMetadata,
     getHomepageCanonicalUrl,
     getHomepageSeoDescription,
-    getHomepageSeoTitle,
     getOgImage,
-    getPreferredSiteName,
     isShopSearchVisible,
     noindexMetadata
 } from '@/lib/seo';
@@ -55,12 +53,12 @@ export async function generateMetadata({ params }) {
         if (!shop) return noindexMetadata('Store unavailable', 'This storefront is currently unavailable.');
 
         const url = getHomepageCanonicalUrl({ host, subdomain, shop });
-        return buildMetadata({
-            title: getHomepageSeoTitle(shop, { host, subdomain }),
+        return buildStorefrontMetadata({
+            shop,
+            pageTitle: 'Home',
             description: getHomepageSeoDescription(shop),
             url,
             image: getOgImage(null, shop),
-            siteName: getPreferredSiteName(shop, { host, subdomain }),
             type: 'website',
             isIndexable: isShopSearchVisible(shop),
             googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''

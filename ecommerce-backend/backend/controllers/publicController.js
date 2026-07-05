@@ -33,12 +33,19 @@ const {
     normalizeCustomDomain,
     buildVerifiedCustomDomainQuery
 } = require('../utils/domainUtils');
-const { normalizeBDPhone } = require('../utils/phoneUtils');
+const { normalizeBDPhone, maskPhone } = require('../utils/phoneUtils');
 const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
 const {
     parseMaybeJson,
     buildProofFromFiles
 } = require('../services/returns/returnProofService');
+const {
+    ORDER_ACCESS_ACTIONS,
+    sendPublicOrderAccessOtp,
+    verifyPublicOrderAccessOtp,
+    requireOrderAccess
+} = require('../services/orders/orderAccessService');
+const { getShippingCostForZone } = require('../services/orders/orderPricingService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
 const RETURN_WINDOW_HOURS = 24;
@@ -46,16 +53,7 @@ const RETURN_WINDOW_MS = RETURN_WINDOW_HOURS * 60 * 60 * 1000;
 const ACTIVE_RETURN_STATUSES = ['Requested', 'Approved', 'Received'];
 const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
 const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const normalizePhone = (value) => String(value || '').replace(/\D/g, '');
 const cleanText = (value, max = 500) => String(value || '').replace(/<[^>]*>/g, '').trim().slice(0, max);
-
-const phonesMatch = (savedPhone, submittedPhone) => {
-    const saved = normalizePhone(savedPhone);
-    const submitted = normalizePhone(submittedPhone);
-    if (!saved || !submitted) return false;
-
-    return saved === submitted || saved.endsWith(submitted) || submitted.endsWith(saved);
-};
 
 const getPublicShopBySubdomain = async (subdomain, session = null) => {
     const identifier = normalizeCustomDomain(subdomain);
@@ -93,6 +91,22 @@ const buildPublicOrderQuery = (orderLookup, shopId) => ({
             }
         })
 });
+
+const getPublicOrderByLookup = (orderLookup, shopId) => (
+    Order.findOne(buildPublicOrderQuery(orderLookup, shopId))
+);
+
+const getAccessTokenErrorResponse = (res, err) => res.status(err.statusCode || 401).json({
+    success: false,
+    code: err.code || 'ORDER_ACCESS_REQUIRED',
+    error: err.message || 'Please verify your phone number to access this order.'
+});
+
+const getOrderAccessActions = () => [
+    ORDER_ACCESS_ACTIONS.track,
+    ORDER_ACCESS_ACTIONS.cancel,
+    ORDER_ACCESS_ACTIONS.return
+];
 
 const getReturnWindowEndsAt = (order) => {
     const deliveredAt = order?.shipping?.deliveredAt || order?.updatedAt || order?.createdAt;
@@ -263,7 +277,8 @@ exports.createPublicOrder = async (req, res) => {
             source,
             consent,
             checkoutSessionId,
-            phoneVerificationToken
+            phoneVerificationToken,
+            idempotencyKey
         } = req.body;
 
         // =========================
@@ -299,6 +314,8 @@ exports.createPublicOrder = async (req, res) => {
             throw new Error('Shop not found');
         }
 
+        const checkoutIdempotencyKey = String(idempotencyKey || req.get('idempotency-key') || '').trim().slice(0, 120);
+
         // =========================
         // SHIPPING NORMALIZATION
         // =========================
@@ -312,7 +329,7 @@ exports.createPublicOrder = async (req, res) => {
             throw new Error('Invalid shipping zone');
         }
 
-        const normalizedShippingCost = requestedZone === 'Inside Dhaka' ? 80 : 120;
+        const normalizedShippingCost = getShippingCostForZone(requestedZone);
 
         let normalizedAddress = shipping?.address;
 
@@ -359,6 +376,33 @@ exports.createPublicOrder = async (req, res) => {
             );
         }
 
+        let orderCustomer = await User.findOne({
+            email: customer.email,
+            shop_id: shop._id,
+            role: 'Customer'
+        }).session(session);
+
+        if (checkoutIdempotencyKey && orderCustomer) {
+            const existingOrder = await Order.findOne({
+                shop_id: shop._id,
+                customer: orderCustomer._id,
+                checkoutIdempotencyKey,
+                isDeleted: false
+            }).session(session);
+
+            if (existingOrder) {
+                await session.abortTransaction();
+                return res.status(200).json({
+                    success: true,
+                    idempotent: true,
+                    message: 'Order already placed successfully',
+                    orderId: existingOrder._id,
+                    total: existingOrder.pricing?.total || 0,
+                    order: sanitizeOrderForCustomer(existingOrder)
+                });
+            }
+        }
+
         await consumeCheckoutPhoneProof({
             shopId: shop._id,
             phone: normalizedCustomerPhone,
@@ -371,12 +415,6 @@ exports.createPublicOrder = async (req, res) => {
         // =========================
         // CUSTOMER / GUEST USER
         // =========================
-        let orderCustomer = await User.findOne({
-            email: customer.email,
-            shop_id: shop._id,
-            role: 'Customer'
-        }).session(session);
-
         if (!orderCustomer) {
             const rawPassword = 'GuestUser_' + Math.random().toString(36).slice(-8);
             const salt = await bcrypt.genSalt(10);
@@ -597,7 +635,8 @@ exports.createPublicOrder = async (req, res) => {
                 status: 'Pending'
             },
             status: 'Pending',
-            source: source || 'storefront'
+            source: source || 'storefront',
+            checkoutIdempotencyKey
         }], { session });
 
         await ConsentLog.create([{
@@ -816,19 +855,114 @@ exports.getPublicProduct = async (req, res) => {
 //     }
 // };
 
-// Add this to your public controller
+exports.sendTrackedOrderAccessOtp = async (req, res) => {
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const phone = String(req.body.phone || req.query.phone || '').trim();
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!phone) {
+            return res.status(400).json({ success: false, error: 'Delivery phone number is required.' });
+        }
+
+        const order = await getPublicOrderByLookup(orderLookup, shopId)
+            .select('_id shop_id shipping status')
+            .lean();
+
+        if (!order) {
+            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+        }
+
+        const result = await sendPublicOrderAccessOtp({
+            order,
+            shop: { _id: shopId, shopName: req.tenantName },
+            phone,
+            ip: req.ip || req.headers['x-forwarded-for'] || '',
+            userAgent: req.headers['user-agent'] || ''
+        });
+
+        if (result.success === false) {
+            return res.status(429).json({
+                success: false,
+                code: result.code,
+                error: result.error,
+                retryAfterSeconds: result.retryAfterSeconds
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Verification code sent to ${result.maskedPhone}.`,
+            maskedPhone: result.maskedPhone,
+            resendAvailableAt: result.resendAvailableAt,
+            expiresAt: result.expiresAt
+        });
+    } catch (err) {
+        return res.status(err.statusCode || 500).json({
+            success: false,
+            error: err.statusCode ? err.message : 'Could not send order access code.'
+        });
+    }
+};
+
+exports.verifyTrackedOrderAccessOtp = async (req, res) => {
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const phone = String(req.body.phone || req.query.phone || '').trim();
+        const otp = String(req.body.otp || '').trim();
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!phone || !otp) {
+            return res.status(400).json({ success: false, error: 'Phone number and verification code are required.' });
+        }
+
+        const order = await getPublicOrderByLookup(orderLookup, shopId)
+            .select('_id shop_id shipping status')
+            .lean();
+
+        if (!order) {
+            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+        }
+
+        const result = await verifyPublicOrderAccessOtp({
+            order,
+            shopId,
+            phone,
+            otp,
+            allowedActions: getOrderAccessActions()
+        });
+
+        return res.status(200).json({
+            success: true,
+            accessToken: result.accessToken,
+            expiresAt: result.expiresAt,
+            allowedActions: result.allowedActions
+        });
+    } catch (err) {
+        const status = err.statusCode || (err.code === 'INVALID_OTP' ? 400 : 500);
+        return res.status(status).json({
+            success: false,
+            code: err.code || 'ORDER_ACCESS_VERIFY_FAILED',
+            error: err.message || 'Could not verify order access code.'
+        });
+    }
+};
+
 exports.trackPublicOrder = async (req, res) => {
     try {
         const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
-        const phone = String(req.query.phone || '').trim();
         let shopId = req.tenantId;
 
         if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
             return res.status(400).json({ error: "Invalid Order ID format." });
-        }
-
-        if (!phone) {
-            return res.status(400).json({ error: "Phone number is required to track this order." });
         }
 
         if (!shopId) {
@@ -847,8 +981,18 @@ exports.trackPublicOrder = async (req, res) => {
             .select('items pricing promotion payment shipping status cancellation timeline createdAt updatedAt')
             .lean();
 
-        if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
+        if (!order) {
             return res.status(404).json({ error: "Order not found. Please check your ID." });
+        }
+
+        try {
+            requireOrderAccess(req, {
+                shopId,
+                orderId: order._id,
+                action: ORDER_ACCESS_ACTIONS.track
+            });
+        } catch (err) {
+            return getAccessTokenErrorResponse(res, err);
         }
 
         const [returnRequest, activeReturnRequest] = await Promise.all([
@@ -882,7 +1026,14 @@ exports.trackPublicOrder = async (req, res) => {
                 if (clean && typeof clean === 'object') delete clean.buyingPrice;
                 return clean;
             }),
-            shippingAddress: order.shipping?.address || null,
+            shippingAddress: order.shipping?.address
+                ? {
+                    fullName: order.shipping.address.fullName || '',
+                    phone: maskPhone(order.shipping.address.phone || ''),
+                    addressLine: order.shipping.address.addressLine || '',
+                    city: order.shipping.address.city || ''
+                }
+                : null,
             shippingZone: order.shipping?.zone,
             shippingCost: order.pricing?.shipping || order.shipping?.cost || 0,
             shippingCourier: order.shipping?.courier || '',
@@ -915,7 +1066,6 @@ exports.cancelTrackedOrder = async (req, res) => {
 
     try {
         const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
-        const phone = String(req.body.phone || req.query.phone || '').trim();
         const reason = cleanText(req.body.reason || 'Customer requested cancellation', 160);
         const note = cleanText(req.body.note || '', 500);
         const shopId = req.tenantId;
@@ -925,11 +1075,6 @@ exports.cancelTrackedOrder = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
         }
 
-        if (!phone) {
-            await session.abortTransaction();
-            return res.status(400).json({ success: false, error: 'Phone number is required to cancel this order.' });
-        }
-
         if (!reason) {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: 'Cancellation reason is required.' });
@@ -937,9 +1082,20 @@ exports.cancelTrackedOrder = async (req, res) => {
 
         const order = await Order.findOne(buildPublicOrderQuery(orderLookup, shopId)).session(session);
 
-        if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
+        if (!order) {
             await session.abortTransaction();
-            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+            return res.status(404).json({ success: false, error: 'Order not found.' });
+        }
+
+        try {
+            requireOrderAccess(req, {
+                shopId,
+                orderId: order._id,
+                action: ORDER_ACCESS_ACTIONS.cancel
+            });
+        } catch (err) {
+            await session.abortTransaction();
+            return getAccessTokenErrorResponse(res, err);
         }
 
         if (order.status !== 'Pending') {
@@ -1055,7 +1211,6 @@ exports.cancelTrackedOrder = async (req, res) => {
 exports.createTrackedReturnRequest = async (req, res) => {
     try {
         const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
-        const phone = String(req.body.phone || req.query.phone || '').trim();
         const reason = cleanText(req.body.reason, 160);
         const customerNote = cleanText(req.body.description || req.body.customerNote || '', 1000);
         const shopId = req.tenantId;
@@ -1064,18 +1219,24 @@ exports.createTrackedReturnRequest = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
         }
 
-        if (!phone) {
-            return res.status(400).json({ success: false, error: 'Phone number is required to submit a return request.' });
-        }
-
         if (!reason) {
             return res.status(400).json({ success: false, error: 'Return reason is required.' });
         }
 
         const order = await Order.findOne(buildPublicOrderQuery(orderLookup, shopId)).lean();
 
-        if (!order || !phonesMatch(order.shipping?.address?.phone, phone)) {
-            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+        if (!order) {
+            return res.status(404).json({ success: false, error: 'Order not found.' });
+        }
+
+        try {
+            requireOrderAccess(req, {
+                shopId,
+                orderId: order._id,
+                action: ORDER_ACCESS_ACTIONS.return
+            });
+        } catch (err) {
+            return getAccessTokenErrorResponse(res, err);
         }
 
         const activeReturnRequest = await ReturnRequest.findOne({

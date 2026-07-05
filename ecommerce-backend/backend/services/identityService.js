@@ -5,14 +5,32 @@ const CustomerProfile = require('../models/CustomerProfile');
 const StaffPermission = require('../models/StaffPermission');
 
 const DEFAULT_PERMISSIONS = {
+    overview: false,
     products: true,
+    catalogTools: false,
     orders: true,
+    returns: false,
     customers: false,
+    privacyRequests: false,
     promotions: false,
+    notifications: false,
+    shipping: false,
     analytics: false,
+    growthCenter: false,
     storeBuilder: false,
     settings: false,
-    staff: false
+    activityLogs: false,
+    collectionsAi: false,
+    productsSchedule: false,
+    salesManage: false,
+    bannersManage: false,
+    inventoryAlertsManage: false,
+    inventoryRead: false,
+    inventoryManage: false,
+    growthRead: false,
+    purchaseOrdersRead: false,
+    purchaseOrdersManage: false,
+    purchaseOrdersReceive: false
 };
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();

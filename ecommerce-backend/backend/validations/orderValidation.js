@@ -83,7 +83,8 @@ const createOrderSchema = Joi.object({
         'any.required': 'Please verify your phone number before placing the order'
     }),
     promotionCode: Joi.string().trim().max(40).allow('').optional(),
-    source: Joi.string().trim().max(80).allow('').optional()
+    source: Joi.string().trim().max(80).allow('').optional(),
+    idempotencyKey: Joi.string().trim().max(120).allow('').optional()
 });
 
 /**

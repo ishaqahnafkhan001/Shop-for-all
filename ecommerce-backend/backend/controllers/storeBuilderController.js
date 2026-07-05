@@ -466,7 +466,11 @@ exports.uploadStoreBuilderLogo = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Logo image is required' });
         }
 
-        const target = req.body?.target === 'checkout' ? 'theme.checkoutBranding.logoUrl' : 'theme.logoUrl';
+        const target = req.body?.target === 'checkout'
+            ? 'theme.checkoutBranding.logoUrl'
+            : req.body?.target === 'favicon'
+                ? 'theme.faviconUrl'
+                : 'theme.logoUrl';
         const shop = await Shop.findByIdAndUpdate(
             req.tenantId,
             { $set: { [target]: req.file.path } },
@@ -482,7 +486,7 @@ exports.uploadStoreBuilderLogo = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: 'Logo uploaded',
+            message: req.body?.target === 'favicon' ? 'Browser icon uploaded' : 'Logo uploaded',
             data: {
                 url: req.file.path,
                 shop

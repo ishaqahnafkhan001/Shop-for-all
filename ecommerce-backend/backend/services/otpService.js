@@ -15,16 +15,17 @@ const PURPOSES = Object.freeze({
     vendorRegistrationEmail: 'vendor_registration_email',
     vendorRegistrationPhone: 'vendor_registration_phone',
     vendorPhoneVerification: 'vendor_phone_verification',
-    customerOrderPhone: 'customer_order_phone'
+    customerOrderPhone: 'customer_order_phone',
+    publicOrderAccess: 'public_order_access'
 });
 
 const INVALID_OTP_RESPONSE = 'Invalid or expired verification code.';
 
 const getOtpSecret = () => {
-    const secret = process.env.REGISTRATION_OTP_SECRET || process.env.SMS_OTP_SECRET || process.env.JWT_SECRET || process.env.RESET_PASSWORD || process.env.PASS;
+    const secret = process.env.REGISTRATION_OTP_SECRET || process.env.SMS_OTP_SECRET || process.env.JWT_SECRET;
 
     if (!secret && process.env.NODE_ENV === 'production') {
-        throw new Error('OTP secret is not configured');
+        throw new Error('OTP secret is not configured. Set REGISTRATION_OTP_SECRET or SMS_OTP_SECRET.');
     }
 
     return secret || 'development-generic-otp-secret';
@@ -40,7 +41,8 @@ const normalizeIdentifier = (identifier = '') => String(identifier || '').trim()
 const metadataKeyParts = (metadata = {}) => [
     metadata.shopId ? `shop:${metadata.shopId}` : '',
     metadata.userId ? `user:${metadata.userId}` : '',
-    metadata.checkoutSessionId ? `session:${metadata.checkoutSessionId}` : ''
+    metadata.checkoutSessionId ? `session:${metadata.checkoutSessionId}` : '',
+    metadata.orderId ? `order:${metadata.orderId}` : ''
 ].filter(Boolean);
 
 const buildOtpKey = ({ purpose, channel = 'email', identifier, metadata = {} }) => [

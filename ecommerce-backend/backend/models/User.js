@@ -50,7 +50,12 @@ const userSchema = new mongoose.Schema({
         salesManage: { type: Boolean, default: false },
         bannersManage: { type: Boolean, default: false },
         inventoryAlertsManage: { type: Boolean, default: false },
-        growthRead: { type: Boolean, default: false }
+        inventoryRead: { type: Boolean, default: false },
+        inventoryManage: { type: Boolean, default: false },
+        growthRead: { type: Boolean, default: false },
+        purchaseOrdersRead: { type: Boolean, default: false },
+        purchaseOrdersManage: { type: Boolean, default: false },
+        purchaseOrdersReceive: { type: Boolean, default: false }
     },
     shop_id: {
         type: mongoose.Schema.Types.ObjectId,

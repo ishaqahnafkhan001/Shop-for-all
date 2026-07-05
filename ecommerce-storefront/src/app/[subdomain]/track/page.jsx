@@ -103,6 +103,10 @@ export default function TrackOrderPage({ params }) {
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [order, setOrder] = useState(null);
+    const [orderAccessToken, setOrderAccessToken] = useState('');
+    const [accessOtpSent, setAccessOtpSent] = useState(false);
+    const [accessOtpMaskedPhone, setAccessOtpMaskedPhone] = useState('');
+    const [accessOtp, setAccessOtp] = useState('');
     const [cancelOpen, setCancelOpen] = useState(false);
     const [returnOpen, setReturnOpen] = useState(false);
     const [cancelReason, setCancelReason] = useState(cancellationReasons[0]);
@@ -126,22 +130,29 @@ export default function TrackOrderPage({ params }) {
             ? 'green'
             : 'amber';
 
-    const fetchTrackedOrder = async ({ showSuccess = false } = {}) => {
+    const resetOrderAccess = () => {
+        setOrderAccessToken('');
+        setAccessOtpSent(false);
+        setAccessOtpMaskedPhone('');
+        setAccessOtp('');
+        setOrder(null);
+    };
+
+    const fetchTrackedOrder = async ({ showSuccess = false, accessToken = orderAccessToken } = {}) => {
         const cleanTrackingId = trackingId.trim();
-        const cleanPhone = phone.trim();
         if (!cleanTrackingId) {
             toast.error('Please enter an Order ID');
             return null;
         }
-        if (!cleanPhone) {
-            toast.error('Please enter the delivery phone number');
+        if (!accessToken) {
+            toast.error('Verify your delivery phone first.');
             return null;
         }
 
         setLoading(true);
         try {
             const { data } = await API.get(`/storefront/${subdomain}/track-order/${cleanTrackingId}`, {
-                params: { phone: cleanPhone }
+                headers: { 'x-order-access-token': accessToken }
             });
             setOrder(data);
             if (showSuccess) toast.success('Order found!');
@@ -157,7 +168,44 @@ export default function TrackOrderPage({ params }) {
 
     const handleTrackOrder = async (event) => {
         event.preventDefault();
-        await fetchTrackedOrder({ showSuccess: true });
+        const cleanTrackingId = trackingId.trim();
+        const cleanPhone = phone.trim();
+        if (!cleanTrackingId) return toast.error('Please enter an Order ID');
+        if (!cleanPhone) return toast.error('Please enter the delivery phone number');
+
+        if (orderAccessToken) {
+            await fetchTrackedOrder({ showSuccess: true });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (!accessOtpSent) {
+                const { data } = await API.post(`/storefront/${subdomain}/orders/${cleanTrackingId}/access/send-otp`, {
+                    phone: cleanPhone
+                });
+                setAccessOtpSent(true);
+                setAccessOtpMaskedPhone(data.maskedPhone || '');
+                toast.success(data.message || 'Verification code sent.');
+                return;
+            }
+
+            if (accessOtp.trim().length !== 6) {
+                toast.error('Enter the 6-digit verification code.');
+                return;
+            }
+
+            const { data } = await API.post(`/storefront/${subdomain}/orders/${cleanTrackingId}/access/verify-otp`, {
+                phone: cleanPhone,
+                otp: accessOtp.trim()
+            });
+            setOrderAccessToken(data.accessToken || '');
+            await fetchTrackedOrder({ showSuccess: true, accessToken: data.accessToken });
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Could not verify this order.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCancelOrder = async (event) => {
@@ -167,9 +215,11 @@ export default function TrackOrderPage({ params }) {
         setActionLoading(true);
         try {
             const { data } = await API.post(`/storefront/${subdomain}/orders/${order._id}/cancel`, {
-                phone: phone.trim(),
                 reason: cancelReason,
-                note: cancelNote
+                note: cancelNote,
+                accessToken: orderAccessToken
+            }, {
+                headers: { 'x-order-access-token': orderAccessToken }
             });
             toast.success(data.message || 'Order cancelled successfully.');
             setCancelOpen(false);
@@ -221,7 +271,7 @@ export default function TrackOrderPage({ params }) {
             }));
 
         const payload = new FormData();
-        payload.append('phone', phone.trim());
+        payload.append('accessToken', orderAccessToken);
         payload.append('reason', returnReason);
         payload.append('description', returnDescription);
         payload.append('items', JSON.stringify(items));
@@ -231,7 +281,10 @@ export default function TrackOrderPage({ params }) {
         setActionLoading(true);
         try {
             const { data } = await API.post(`/storefront/${subdomain}/orders/${order._id}/returns`, payload, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'x-order-access-token': orderAccessToken
+                }
             });
             toast.success(data.message || 'Return request submitted.');
             setReturnOpen(false);
@@ -274,7 +327,10 @@ export default function TrackOrderPage({ params }) {
                             <input
                                 type="text"
                                 value={trackingId}
-                                onChange={(event) => setTrackingId(event.target.value)}
+                                onChange={(event) => {
+                                    setTrackingId(event.target.value);
+                                    resetOrderAccess();
+                                }}
                                 placeholder="Order ID, for example A1B2C3"
                                 className="sf-field pl-12 font-mono"
                             />
@@ -282,16 +338,40 @@ export default function TrackOrderPage({ params }) {
                         <input
                             type="tel"
                             value={phone}
-                            onChange={(event) => setPhone(event.target.value)}
+                            onChange={(event) => {
+                                setPhone(event.target.value);
+                                resetOrderAccess();
+                            }}
                             placeholder="Delivery phone number"
                             className="sf-field"
                         />
+                        {accessOtpSent && !orderAccessToken && (
+                            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-left">
+                                <p className="mb-2 text-xs font-bold text-emerald-800">
+                                    Enter the 6-digit code sent to {accessOtpMaskedPhone || 'your delivery phone'}.
+                                </p>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={accessOtp}
+                                    onChange={(event) => setAccessOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    placeholder="Verification code"
+                                    className="sf-field bg-white text-center font-mono tracking-[0.4em]"
+                                />
+                            </div>
+                        )}
                         <button
                             type="submit"
                             disabled={loading}
                             className="sf-btn sf-btn-primary w-full disabled:opacity-50"
                         >
-                            {loading ? 'Searching...' : 'Track'}
+                            {loading
+                                ? 'Checking...'
+                                : orderAccessToken
+                                    ? 'Track'
+                                    : accessOtpSent
+                                        ? 'Verify and track'
+                                        : 'Send access code'}
                         </button>
                     </form>
                 </div>

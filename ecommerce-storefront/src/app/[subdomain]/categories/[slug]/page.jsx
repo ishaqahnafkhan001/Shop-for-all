@@ -5,12 +5,11 @@ import CategoryPageClient from "./CategoryPageClient";
 import { fetchStorefrontInfo, fetchStorefrontProducts } from "@/lib/storefrontServer";
 import {
     buildBreadcrumbJsonLd,
-    buildMetadata,
+    buildStorefrontMetadata,
     getCategoryCanonicalUrl,
     getCategorySeoDescription,
     getCategorySeoTitle,
     getHomepageCanonicalUrl,
-    getPreferredSiteName,
     getProductCanonicalUrl,
     isShopSearchVisible,
     noindexMetadata
@@ -97,12 +96,12 @@ export async function generateMetadata({ params }) {
         return noindexMetadata("Category unavailable", "This category is currently unavailable.");
     }
 
-    return buildMetadata({
-        title: getCategorySeoTitle(data.category, data.shop),
+    return buildStorefrontMetadata({
+        shop: data.shop,
+        pageTitle: getCategorySeoTitle(data.category, data.shop),
         description: getCategorySeoDescription(data.category, data.shop),
         url: getCategoryCanonicalUrl({ host, subdomain, shop: data.shop, category: data.category }),
         image: "",
-        siteName: getPreferredSiteName(data.shop, { host, subdomain }),
         type: "website",
         isIndexable: isShopSearchVisible(data.shop),
         googleSiteVerification: data.shop?.theme?.seo?.googleSiteVerification || ""

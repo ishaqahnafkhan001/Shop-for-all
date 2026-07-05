@@ -24,10 +24,17 @@ test('public order tracking requires tenant and phone verification', () => {
     const source = read('controllers/publicController.js');
     const start = source.indexOf('exports.trackPublicOrder');
     const block = source.slice(start);
+    const accessService = read('services/orders/orderAccessService.js');
+    const routes = read('routes/storefrontRoutes.js');
 
     assert.match(block, /shop_id:\s*shopId/);
-    assert.match(block, /phonesMatch\(order\.shipping\?\.address\?\.phone,\s*phone\)/);
-    assert.match(block, /Phone number is required/);
+    assert.match(block, /requireOrderAccess\(req,\s*\{/);
+    assert.match(block, /ORDER_ACCESS_ACTIONS\.track/);
+    assert.match(accessService, /normalizeBDPhone\(savedPhone\)/);
+    assert.match(accessService, /normalizeBDPhone\(submittedPhone\)/);
+    assert.doesNotMatch(accessService, /endsWith/);
+    assert.match(routes, /access\/send-otp/);
+    assert.match(routes, /access\/verify-otp/);
     assert.match(block, /\.select\('items pricing promotion payment shipping status cancellation timeline createdAt updatedAt'\)/);
     assert.match(block, /returnEligibility/);
     assert.match(block, /returnRequest/);
@@ -42,7 +49,9 @@ test('public order tracking actions are tenant scoped and phone verified', () =>
     assert.match(controller, /exports\.cancelTrackedOrder/);
     assert.match(controller, /exports\.createTrackedReturnRequest/);
     assert.match(controller, /buildPublicOrderQuery\(orderLookup,\s*shopId\)/);
-    assert.match(controller, /phonesMatch\(order\.shipping\?\.address\?\.phone,\s*phone\)/);
+    assert.match(controller, /ORDER_ACCESS_ACTIONS\.cancel/);
+    assert.match(controller, /ORDER_ACCESS_ACTIONS\.return/);
+    assert.match(controller, /getAccessTokenErrorResponse/);
     assert.match(controller, /status:\s*'Pending'/);
     assert.match(controller, /code:\s*'ORDER_CANCEL_NOT_ALLOWED'/);
     assert.match(controller, /restoreCancelledOrderInventory/);
@@ -87,11 +96,15 @@ test('store builder theme save sanitizes scriptable URLs', () => {
 
 test('purchase order receiving is tenant scoped', () => {
     const controller = read('controllers/purchaseOrderController.js');
+    const routes = read('routes/purchaseOrderRoutes.js');
 
     assert.match(controller, /Supplier\.exists\(\{[\s\S]*shop_id:\s*shopId/);
     assert.match(controller, /Product\.exists\(\{[\s\S]*shop_id:\s*shopId[\s\S]*'variants\._id'/);
     assert.match(controller, /PurchaseOrder\.findOne\(\{[\s\S]*_id:\s*req\.params\.id[\s\S]*shop_id:\s*shopId/);
     assert.match(controller, /Product\.findOne\(\{[\s\S]*_id:\s*item\.productId[\s\S]*shop_id:\s*shopId/);
+    assert.match(routes, /requirePermission\('purchaseOrdersRead'\)/);
+    assert.match(routes, /requirePermission\('purchaseOrdersManage'\)/);
+    assert.match(routes, /requirePermission\('purchaseOrdersReceive'\)/);
     assert.doesNotMatch(controller, /PurchaseOrder\.findById\(req\.params\.id\)/);
     assert.doesNotMatch(controller, /Product\.findById\(item\.productId\)/);
 });
@@ -156,10 +169,15 @@ test('admin AI and banner routes require RBAC permissions', () => {
 
 test('upload pipeline enforces type and size limits', () => {
     const source = read('config/cloudinary.js');
+    const storeBuilderRoutes = read('routes/storeBuilderRoutes.js');
 
     assert.match(source, /fileSize:\s*10\s*\*\s*1024\s*\*\s*1024/);
     assert.match(source, /allowedMimeTypes/);
+    assert.doesNotMatch(source.match(/const allowedMimeTypes[\s\S]*?\]\);/)?.[0] || '', /image\/svg\+xml/);
+    assert.match(source, /const allowedBrandMimeTypes[\s\S]*image\/svg\+xml/);
+    assert.match(source, /const brandUpload = multer/);
     assert.match(source, /fileFilter/);
+    assert.match(storeBuilderRoutes, /brandUpload\.single\('logo'\)/);
 });
 
 test('analytics event endpoint resolves tenant and validates event types', () => {
@@ -393,7 +411,7 @@ test('verification suspension blocks high-impact vendor mutations only after aut
     assert.match(adminRoutes, /'\/products\/:id'[\s\S]*requirePermission\('products'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*productMediaUpload[\s\S]*updateProduct/);
     assert.match(adminRoutes, /'\/orders\/:id\/status'[\s\S]*requirePermission\('orders'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*updateOrderStatus/);
     assert.match(storeBuilderRoutes, /'\/admin'[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('storeBuilder'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*updateStoreBuilderSettings/);
-    assert.match(storeBuilderRoutes, /'\/admin\/logo'[\s\S]*blockVerificationSuspendedShop[\s\S]*upload\.single\('logo'\)/);
+    assert.match(storeBuilderRoutes, /'\/admin\/logo'[\s\S]*blockVerificationSuspendedShop[\s\S]*brandUpload\.single\('logo'\)/);
 });
 
 test('store builder SEO AI route is protected and backend-only', () => {
@@ -739,6 +757,8 @@ test('staff permissions expose operational sections only and hide owner-only sec
     const collectionRoutes = read('routes/collectionRoutes.js');
     const storeBuilderRoutes = read('routes/storeBuilderRoutes.js');
     const growthRoutes = read('routes/growthRoutes.js');
+    const inventoryRoutes = read('routes/inventory.js');
+    const billingRoutes = read('routes/billingRoutes.js');
     const uiPermissions = readProject('ecommerce-admin/src/utils/staffPermissions.js');
     const staffPage = readProject('ecommerce-admin/src/pages/dashboard/StaffPermissions.jsx');
     const sidebar = readProject('ecommerce-admin/src/components/dashboard/Sidebar.jsx');
@@ -749,6 +769,9 @@ test('staff permissions expose operational sections only and hide owner-only sec
     assert.match(capacity, /privacyRequests/);
     assert.match(capacity, /growthCenter/);
     assert.match(capacity, /activityLogs/);
+    assert.match(capacity, /inventoryRead/);
+    assert.match(capacity, /inventoryManage/);
+    assert.match(capacity, /purchaseOrdersReceive/);
     assert.doesNotMatch(capacity, /'staff'/);
     assert.doesNotMatch(staffModel, /staff:\s*\{/);
     assert.doesNotMatch(userModel, /staff:\s*\{/);
@@ -760,6 +783,11 @@ test('staff permissions expose operational sections only and hide owner-only sec
     assert.match(collectionRoutes, /requirePermission\('catalogTools'\)/);
     assert.match(storeBuilderRoutes, /requirePermission\('storeBuilder'\)/);
     assert.match(growthRoutes, /requirePermission\('growthCenter'\)/);
+    assert.match(inventoryRoutes, /requirePermission\('inventoryRead'\)/);
+    assert.match(inventoryRoutes, /requirePermission\('inventoryManage'\)/);
+    assert.match(inventoryRoutes, /requirePermission\('analytics'\)/);
+    assert.match(billingRoutes, /authorize\('VendorAdmin'\)/);
+    assert.doesNotMatch(billingRoutes, /VendorStaff/);
     assert.match(uiPermissions, /STAFF_OPERATIONAL_PERMISSIONS/);
     assert.doesNotMatch(uiPermissions, /'staff'/);
     assert.match(staffPage, /STAFF_OPERATIONAL_PERMISSIONS/);
@@ -890,7 +918,7 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     assert.match(checkoutPage, /CheckoutOtpModal/);
     assert.match(checkoutPage, /setOtpModalOpen\(true\)/);
     assert.match(checkoutPage, /executePlaceOrder\(\{\s*verificationToken:\s*token\s*\}\)/);
-    assert.match(checkoutPage, /phoneVerificationToken,\n\s*\};/);
+    assert.match(checkoutPage, /phoneVerificationToken,\n\s*idempotencyKey:\s*getCheckoutIdempotencyKey\(\),/);
     assert.doesNotMatch(checkoutPage, /Please verify your phone number before placing the order/);
     assert.match(checkoutSections, /<select[\s\S]*name="city"/);
     assert.match(checkoutSections, /<option value="Inside Dhaka">Inside Dhaka<\/option>/);

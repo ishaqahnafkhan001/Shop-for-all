@@ -12,7 +12,7 @@ const {
 } = require('../controllers/billingController');
 
 router.use(protect);
-router.use(authorize('VendorAdmin', 'VendorStaff'));
+router.use(authorize('VendorAdmin'));
 
 router.get('/current', getVendorBillingCurrent);
 router.get('/invoices', getVendorInvoices);

@@ -2,6 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 
 // =========================
 // Middlewares
@@ -48,6 +49,8 @@ const {
 
 // Public Controllers
 const {
+    sendTrackedOrderAccessOtp,
+    verifyTrackedOrderAccessOtp,
     trackPublicOrder,
     cancelTrackedOrder,
     createTrackedReturnRequest
@@ -64,6 +67,22 @@ const returnProofUpload = upload.fields([
     { name: 'proofImages', maxCount: 3 },
     { name: 'proofVideo', maxCount: 1 }
 ]);
+
+const publicOrderLookupLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: process.env.NODE_ENV === 'production' ? 30 : 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many order access attempts. Please try again later.' }
+});
+
+const publicOrderActionLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: process.env.NODE_ENV === 'production' ? 20 : 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many order actions. Please try again later.' }
+});
 
 // ======================================================
 // STORE INFO
@@ -188,18 +207,35 @@ router.get(
 router.get(
     '/:subdomain/track-order/:orderId',
     resolveTenant,
+    publicOrderLookupLimiter,
     trackPublicOrder
+);
+
+router.post(
+    '/:subdomain/orders/:orderId/access/send-otp',
+    resolveTenant,
+    publicOrderLookupLimiter,
+    sendTrackedOrderAccessOtp
+);
+
+router.post(
+    '/:subdomain/orders/:orderId/access/verify-otp',
+    resolveTenant,
+    publicOrderLookupLimiter,
+    verifyTrackedOrderAccessOtp
 );
 
 router.post(
     '/:subdomain/orders/:orderId/cancel',
     resolveTenant,
+    publicOrderActionLimiter,
     cancelTrackedOrder
 );
 
 router.post(
     '/:subdomain/orders/:orderId/returns',
     resolveTenant,
+    publicOrderActionLimiter,
     returnProofUpload,
     createTrackedReturnRequest
 );

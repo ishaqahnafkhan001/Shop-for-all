@@ -1,5 +1,4 @@
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
 cloudinary.config({
@@ -8,31 +7,73 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
+const buildStorefrontUploadOptions = (file) => {
+    const isVideo = file.mimetype.startsWith('video/');
 
-    params: async (req, file) => {
+    return {
+        folder: 'shop_products',
+        resource_type: 'auto',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov'],
+        ...(!isVideo && { format: 'webp' }),
+        transformation: [
+            { width: 1200, height: 1200, crop: 'limit' },
+            { quality: 'auto' }
+        ]
+    };
+};
 
-        const isVideo = file.mimetype.startsWith('video/');
+const buildBrandUploadOptions = (file) => {
+    const isSvg = file.mimetype === 'image/svg+xml';
 
-        return {
-            folder: 'shop_products',
-            resource_type: 'auto',
-            allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4', 'mov'],
-
-
-            ...( !isVideo && { format: 'webp' } ),
-
+    return {
+        folder: 'shop_branding',
+        resource_type: 'auto',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'svg', 'ico'],
+        ...(!isSvg && { format: 'webp' }),
+        ...(!isSvg && {
             transformation: [
-
                 { width: 1200, height: 1200, crop: 'limit' },
-
-
                 { quality: 'auto' }
             ]
-        };
-    },
-});
+        })
+    };
+};
+
+class CloudinaryMulterStorage {
+    constructor(optionsBuilder = buildStorefrontUploadOptions) {
+        this.optionsBuilder = optionsBuilder;
+    }
+
+    _handleFile(req, file, cb) {
+        const chunks = [];
+        file.stream.on('data', chunk => chunks.push(chunk));
+        file.stream.on('error', cb);
+        file.stream.on('end', async () => {
+            try {
+                const buffer = Buffer.concat(chunks);
+                const result = await streamUpload(buffer, this.optionsBuilder(file, req));
+                cb(null, {
+                    path: result.secure_url || result.url || '',
+                    filename: result.public_id || '',
+                    public_id: result.public_id || '',
+                    secure_url: result.secure_url || result.url || '',
+                    mimetype: file.mimetype,
+                    originalname: file.originalname,
+                    size: result.bytes || buffer.length
+                });
+            } catch (error) {
+                cb(error);
+            }
+        });
+    }
+
+    _removeFile(req, file, cb) {
+        cb(null);
+    }
+}
+
+const storage = new CloudinaryMulterStorage();
+const brandStorage = new CloudinaryMulterStorage(buildBrandUploadOptions);
 
 const allowedMimeTypes = new Set([
     'image/jpeg',
@@ -46,6 +87,15 @@ const allowedNidMimeTypes = new Set([
     'image/jpeg',
     'image/png',
     'image/webp'
+]);
+
+const allowedBrandMimeTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/svg+xml',
+    'image/x-icon',
+    'image/vnd.microsoft.icon'
 ]);
 
 const upload = multer({
@@ -72,6 +122,21 @@ const nidUpload = multer({
     fileFilter: (req, file, cb) => {
         if (!allowedNidMimeTypes.has(file.mimetype)) {
             return cb(new Error('Unsupported NID image type'));
+        }
+
+        cb(null, true);
+    }
+});
+
+const brandUpload = multer({
+    storage: brandStorage,
+    limits: {
+        fileSize: 2 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        if (!allowedBrandMimeTypes.has(file.mimetype)) {
+            return cb(new Error('Unsupported logo or icon file type'));
         }
 
         cb(null, true);
@@ -149,6 +214,7 @@ const createSignedNidUrl = ({ document, expiresInSeconds = 300 }) => {
 module.exports = {
     cloudinary,
     upload,
+    brandUpload,
     nidUpload,
     uploadNidDocument,
     migrateLegacyNidDocument,

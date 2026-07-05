@@ -435,6 +435,14 @@ const orderSchema = new Schema({
         index: true
     },
 
+    checkoutIdempotencyKey: {
+        type: String,
+        trim: true,
+        maxlength: 120,
+        default: '',
+        index: true
+    },
+
     isPathaoSynced: {
         type: Boolean,
         default: false,
@@ -480,6 +488,10 @@ orderSchema.index({ shop_id: 1, isDeleted: 1 });
 orderSchema.index({ 'payment.status': 1, updatedAt: -1 });
 orderSchema.index({ shop_id: 1, isDeleted: 1, createdAt: -1 });
 orderSchema.index({ shop_id: 1, isDeleted: 1, status: 1, createdAt: -1 });
+orderSchema.index(
+    { shop_id: 1, customer: 1, checkoutIdempotencyKey: 1 },
+    { unique: true, partialFilterExpression: { checkoutIdempotencyKey: { $type: 'string', $gt: '' } } }
+);
 
 /**
  * 🔒 Safety check before validation

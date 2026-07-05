@@ -32,10 +32,10 @@ const GENERIC_FORGOT_RESPONSE = 'If an account exists, an OTP has been sent.';
 const INVALID_OTP_RESPONSE = 'Invalid or expired verification code.';
 
 const getResetSecret = () => {
-    const secret = process.env.PASSWORD_RESET_SECRET || process.env.JWT_SECRET || process.env.RESET_PASSWORD || process.env.PASS;
+    const secret = process.env.PASSWORD_RESET_SECRET || process.env.JWT_SECRET;
 
     if (!secret && process.env.NODE_ENV === 'production') {
-        throw new Error('Password reset secret is not configured');
+        throw new Error('Password reset secret is not configured. Set PASSWORD_RESET_SECRET.');
     }
 
     return secret || 'development-reset-secret';

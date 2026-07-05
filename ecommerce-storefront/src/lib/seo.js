@@ -1,6 +1,7 @@
 const DEFAULT_TITLE = "Scaleup | Launch Your Online Store Without Coding";
 const DEFAULT_DESCRIPTION = "Create a professional online store with Scaleup.";
 const DEFAULT_CURRENCY = "BDT";
+const PLATFORM_NAME = "Scaleup";
 
 export const isObjectId = (value = "") => /^[a-f\d]{24}$/i.test(String(value));
 
@@ -16,6 +17,20 @@ export const cleanTextForMeta = (text = "") => {
         .replace(/\s+/g, " ")
         .trim();
 };
+
+const normalizeTitleText = (text = "", max = 80) => truncateAtWord(
+    cleanTextForMeta(text)
+        .replace(/[\u0000-\u001f\u007f]/g, " ")
+        .replace(/\s*\|\s*/g, " | ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    max
+);
+
+const stripKnownSuffixes = (value = "") => normalizeTitleText(value)
+    .replace(/\s*\|\s*Scaleup\s*$/i, "")
+    .replace(/\s*-\s*Scaleup\s*$/i, "")
+    .trim();
 
 const truncateAtWord = (text = "", max = 160) => {
     const clean = cleanTextForMeta(text);
@@ -86,11 +101,193 @@ export const getPreferredSiteName = (shop = {}, { host = "", subdomain = "" } = 
         shop?.name
     ];
     const found = candidates.map(cleanTextForMeta).find(Boolean);
-    if (found) return truncateAtWord(found, 80);
+    if (found) return normalizeTitleText(found, 60);
 
     const verifiedHost = getVerifiedCustomDomainHost(shop);
     const fallbackHost = getHostLabel(verifiedHost || host) || (subdomain ? `${subdomain}.scaleup.codes` : "");
     return fallbackHost || "Store";
+};
+
+export const normalizeStorefrontPlan = (plan = null) => {
+    if (plan === true) return "starter";
+    if (plan === false) return "growth";
+
+    const candidates = [];
+    if (typeof plan === "string") candidates.push(plan);
+    if (plan && typeof plan === "object") {
+        candidates.push(
+            plan.slug,
+            plan.planSlug,
+            plan.activePlanSlug,
+            plan.intendedPlanSlug,
+            plan.name,
+            plan.planName,
+            plan.activePlanName,
+            plan.intendedPlanName,
+            plan.key,
+            plan.id
+        );
+        if (plan.plan && plan.plan !== plan) candidates.push(plan.plan);
+        if (plan.planId && plan.planId !== plan) candidates.push(plan.planId);
+    }
+
+    const normalized = candidates
+        .flat()
+        .filter(Boolean)
+        .map(value => String(value).trim().toLowerCase().replace(/[_\s]+/g, "-"));
+
+    if (normalized.some(value => value === "pro" || value.includes("pro-plan"))) return "pro";
+    if (normalized.some(value => value === "growth" || value.includes("growth-plan"))) return "growth";
+    if (normalized.some(value => value === "starter" || value === "trial" || value === "trialing" || value.includes("starter-plan"))) return "starter";
+    return "unknown";
+};
+
+export const buildStorefrontTitle = ({ shopName = "", pageTitle = "", planKey = "unknown" } = {}) => {
+    const cleanShopName = stripKnownSuffixes(shopName) || "Online Store";
+    let cleanPageTitle = stripKnownSuffixes(pageTitle);
+
+    const shopLower = cleanShopName.toLowerCase();
+    const pageLower = cleanPageTitle.toLowerCase();
+    if (pageLower === shopLower) cleanPageTitle = "";
+    if (pageLower.startsWith(`${shopLower} | `)) {
+        cleanPageTitle = cleanPageTitle.slice(cleanShopName.length + 3).trim();
+    }
+    if (pageLower.endsWith(` | ${shopLower}`)) {
+        cleanPageTitle = cleanPageTitle.slice(0, -(cleanShopName.length + 3)).trim();
+    }
+
+    const parts = [cleanShopName, cleanPageTitle].filter(Boolean);
+    if (planKey === "starter" || planKey === "unknown") parts.push(PLATFORM_NAME);
+    return truncateAtWord(parts.join(" | "), 120);
+};
+
+const isSafeIconUrl = (url = "") => {
+    const value = String(url || "").trim();
+    if (!value) return false;
+    if (/^data:image\/svg\+xml,/i.test(value)) return true;
+    if (/^data:/i.test(value)) return false;
+    if (/^https?:\/\//i.test(value)) return true;
+    if (value.startsWith("/")) return true;
+    return false;
+};
+
+const getIconMimeType = (url = "") => {
+    if (/^data:image\/svg\+xml,/i.test(url)) return "image/svg+xml";
+    const clean = String(url || "").split("?")[0].toLowerCase();
+    if (clean.endsWith(".ico")) return "image/x-icon";
+    if (clean.endsWith(".jpg") || clean.endsWith(".jpeg")) return "image/jpeg";
+    if (clean.endsWith(".webp")) return "image/webp";
+    if (clean.endsWith(".svg")) return "image/svg+xml";
+    return "image/png";
+};
+
+const hashString = (value = "") => {
+    let hash = 0;
+    const text = String(value || "");
+    for (let index = 0; index < text.length; index += 1) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(index);
+        hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+};
+
+const appendIconVersion = (url = "", version = "") => {
+    if (!url || url.startsWith("data:")) return url;
+    const cleanVersion = encodeURIComponent(String(version || hashString(url)).slice(0, 32));
+    if (!cleanVersion) return url;
+    return `${url}${url.includes("?") ? "&" : "?"}v=${cleanVersion}`;
+};
+
+const getThemeBrandColor = (theme = {}) => (
+    theme?.colors?.accent ||
+    theme?.colors?.primary ||
+    theme?.colors?.buttonBackground ||
+    theme?.productCard?.accent ||
+    "#0f766e"
+);
+
+const buildInitialsIcon = ({ shopName = "Store", theme = {} } = {}) => {
+    const initial = cleanTextForMeta(shopName).replace(/[^a-z0-9\u0980-\u09ff]/gi, "").charAt(0).toUpperCase() || "S";
+    const background = /^#[0-9a-f]{3,8}$/i.test(getThemeBrandColor(theme)) ? getThemeBrandColor(theme) : "#0f766e";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="28" fill="${background}"/><text x="64" y="78" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="800" fill="#fff">${initial}</text></svg>`;
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+};
+
+export const resolveStorefrontIcon = ({ shop = {}, shopName = "" } = {}) => {
+    const theme = shop?.theme || {};
+    const candidates = [
+        theme?.faviconUrl,
+        shop?.faviconUrl,
+        theme?.header?.faviconUrl
+    ];
+    const selected = candidates.map(value => String(value || "").trim()).find(isSafeIconUrl);
+    const version = shop?.logoUpdatedAt || shop?.updatedAt || theme?.updatedAt || selected || shopName;
+    const url = selected
+        ? appendIconVersion(selected, version)
+        : buildInitialsIcon({ shopName, theme });
+    const type = getIconMimeType(url);
+
+    return {
+        faviconUrl: url,
+        appleTouchIconUrl: url,
+        icons: {
+            icon: [
+                { url, type, sizes: "32x32" },
+                { url, type, sizes: "48x48" }
+            ],
+            shortcut: [{ url, type }],
+            apple: [{ url, type, sizes: "180x180" }]
+        }
+    };
+};
+
+export const resolveStorefrontBranding = ({
+    shop = {},
+    theme = shop?.theme || {},
+    plan = null,
+    pageTitle = "",
+    product = null,
+    category = "",
+    collection = null,
+    host = "",
+    subdomain = ""
+} = {}) => {
+    const shopName = getPreferredSiteName({ ...shop, theme }, { host, subdomain }) || "Online Store";
+    const entityTitle = pageTitle ||
+        product?.seo?.title ||
+        product?.title ||
+        collection?.seo?.title ||
+        collection?.title ||
+        category ||
+        "Home";
+    const inferredPlanKey = normalizeStorefrontPlan(
+        plan ||
+        shop?.plan ||
+        shop?.subscription ||
+        shop?.subscription?.plan ||
+        shop?.activePlanSlug ||
+        shop?.activePlanName
+    );
+    const hasPublicBrandingDecision = typeof shop?.showPlatformBranding === "boolean";
+    const showScaleupBranding = hasPublicBrandingDecision
+        ? shop.showPlatformBranding
+        : inferredPlanKey === "starter" || inferredPlanKey === "unknown";
+    const planKey = showScaleupBranding && inferredPlanKey === "unknown"
+        ? "unknown"
+        : (!showScaleupBranding && inferredPlanKey === "unknown" ? "growth" : inferredPlanKey);
+    const icon = resolveStorefrontIcon({ shop: { ...shop, theme }, shopName });
+
+    return {
+        shopName,
+        pageTitle: normalizeTitleText(entityTitle, 80) || "Home",
+        fullTitle: buildStorefrontTitle({ shopName, pageTitle: entityTitle, planKey }),
+        faviconUrl: icon.faviconUrl,
+        appleTouchIconUrl: icon.appleTouchIconUrl,
+        icons: icon.icons,
+        openGraphSiteName: shopName,
+        showScaleupBranding,
+        planKey
+    };
 };
 
 export const getShopBaseUrl = ({ host, subdomain, shop, customDomain } = {}) => {
@@ -146,8 +343,7 @@ export const getPolicyCanonicalUrl = ({ host, subdomain, shop, type } = {}) => (
 );
 
 export const getProductSeoTitle = (product = {}, shop = {}) => {
-    const storeName = shop?.shopName || shop?.name || "Store";
-    return truncateMetaTitle(product?.seo?.title || `${product?.title || "Product"} | ${storeName}`);
+    return truncateMetaTitle(product?.seo?.title || product?.title || "Product");
 };
 
 export const getProductSeoDescription = (product = {}, shop = {}) => {
@@ -181,8 +377,7 @@ export const getHomepageSeoDescription = (shop = {}) => {
 };
 
 export const getCollectionSeoTitle = (collection = {}, shop = {}) => {
-    const storeName = shop?.shopName || shop?.name || "Store";
-    return truncateMetaTitle(collection?.seo?.title || `${collection?.title || "Collection"} | ${storeName}`);
+    return truncateMetaTitle(collection?.seo?.title || collection?.title || "Collection");
 };
 
 export const getCollectionSeoDescription = (collection = {}, shop = {}) => {
@@ -195,8 +390,7 @@ export const getCollectionSeoDescription = (collection = {}, shop = {}) => {
 };
 
 export const getCategorySeoTitle = (category = "", shop = {}) => {
-    const storeName = shop?.shopName || shop?.name || "Store";
-    return truncateMetaTitle(`${cleanTextForMeta(category) || "Products"} | ${storeName}`);
+    return truncateMetaTitle(cleanTextForMeta(category) || "Products");
 };
 
 export const getCategorySeoDescription = (category = "", shop = {}) => {
@@ -274,6 +468,7 @@ export const buildMetadata = ({
     url,
     image,
     siteName = "",
+    icons,
     type = "website",
     isIndexable = true,
     isFollowable = true,
@@ -285,7 +480,7 @@ export const buildMetadata = ({
     const images = image ? [{ url: image }] : [];
 
     const metadata = {
-        title: safeTitle,
+        title: { absolute: safeTitle },
         description: safeDescription,
         alternates: { canonical: url },
         robots: getRobotsForPage({ isIndexable, isFollowable }),
@@ -305,6 +500,8 @@ export const buildMetadata = ({
         }
     };
 
+    if (icons) metadata.icons = icons;
+
     if (googleSiteVerification) {
         metadata.verification = { google: googleSiteVerification };
     }
@@ -312,8 +509,41 @@ export const buildMetadata = ({
     return metadata;
 };
 
+export const buildStorefrontMetadata = ({
+    shop = {},
+    pageTitle = "",
+    description,
+    url,
+    image,
+    type = "website",
+    isIndexable = true,
+    isFollowable = true,
+    googleSiteVerification = ""
+} = {}) => {
+    const branding = resolveStorefrontBranding({
+        shop,
+        theme: shop?.theme || {},
+        pageTitle,
+        host: url,
+        subdomain: shop?.subdomain || ""
+    });
+
+    return buildMetadata({
+        title: branding.fullTitle,
+        description,
+        url,
+        image,
+        siteName: branding.openGraphSiteName,
+        icons: branding.icons,
+        type,
+        isIndexable,
+        isFollowable,
+        googleSiteVerification
+    });
+};
+
 export const buildHomepageJsonLd = ({ shop = {}, url = "" } = {}) => {
-    const siteName = getPreferredSiteName(shop, { host: url });
+    const siteName = resolveStorefrontBranding({ shop, host: url, pageTitle: "Home" }).shopName;
     const shopName = cleanTextForMeta(shop?.shopName || shop?.name || "");
     const logo = shop?.theme?.logoUrl || shop?.logoUrl || "";
     const alternateName = shopName && shopName !== siteName ? [shopName] : undefined;
@@ -421,7 +651,7 @@ export const buildBreadcrumbJsonLd = ({ items = [] } = {}) => ({
 });
 
 export const noindexMetadata = (title = DEFAULT_TITLE, description = DEFAULT_DESCRIPTION) => ({
-    title,
+    title: { absolute: title },
     description,
     robots: getRobotsForPage({ isIndexable: false })
 });

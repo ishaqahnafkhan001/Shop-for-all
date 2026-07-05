@@ -19,7 +19,12 @@ export const STAFF_OPERATIONAL_PERMISSIONS = [
     'salesManage',
     'bannersManage',
     'inventoryAlertsManage',
-    'growthRead'
+    'inventoryRead',
+    'inventoryManage',
+    'growthRead',
+    'purchaseOrdersRead',
+    'purchaseOrdersManage',
+    'purchaseOrdersReceive'
 ];
 
 export const STAFF_PERMISSION_LABELS = {
@@ -43,7 +48,12 @@ export const STAFF_PERMISSION_LABELS = {
     salesManage: 'Scheduled sales',
     bannersManage: 'Launch banners',
     inventoryAlertsManage: 'Inventory alerts',
-    growthRead: 'Growth insights'
+    inventoryRead: 'Inventory reports',
+    inventoryManage: 'Stock adjustments',
+    growthRead: 'Growth insights',
+    purchaseOrdersRead: 'Purchase orders',
+    purchaseOrdersManage: 'Manage purchase orders',
+    purchaseOrdersReceive: 'Receive stock'
 };
 
 export const DEFAULT_STAFF_PERMISSIONS = STAFF_OPERATIONAL_PERMISSIONS.reduce((acc, key) => {

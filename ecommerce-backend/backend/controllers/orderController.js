@@ -246,6 +246,7 @@ exports.createOrder = async (req, res) => {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
         const { items, shipping, payment, promotionCode, source, consent, checkoutSessionId, phoneVerificationToken } = value;
+        const checkoutIdempotencyKey = String(value.idempotencyKey || req.get('idempotency-key') || '').trim().slice(0, 120);
         const shopId = req.tenantId;
         const userId = req.user?._id;
 
@@ -255,6 +256,26 @@ exports.createOrder = async (req, res) => {
         const customer = await User.findById(userId).select('status fullName email phone').session(session);
         if (!customer) throw new Error("Customer not found");
         if (customer.status === 'Suspended') throw new Error("Your account is suspended.");
+
+        if (checkoutIdempotencyKey) {
+            const existingOrder = await Order.findOne({
+                shop_id: shopId,
+                customer: userId,
+                checkoutIdempotencyKey,
+                isDeleted: false
+            }).session(session);
+
+            if (existingOrder) {
+                await session.abortTransaction();
+                return res.status(200).json({
+                    success: true,
+                    idempotent: true,
+                    message: 'Order already placed successfully',
+                    orderId: existingOrder._id,
+                    total: existingOrder.pricing?.total || 0
+                });
+            }
+        }
 
         await consumeCheckoutPhoneProof({
             shopId,
@@ -279,9 +300,15 @@ exports.createOrder = async (req, res) => {
             }).session(session);
 
             if (!product) throw new Error(`Product not found: ${item.productId}`);
+            if (!product.isActive || product.status !== 'Published') {
+                throw new Error(`Product "${product.title}" is not available.`);
+            }
 
             const variant = product.variants.id(item.variantId);
             if (!variant) throw new Error(`Variant not found for product: ${product.title}`);
+            if (!variant.isActive || variant.status !== 'active') {
+                throw new Error(`Selected variant for ${product.title} is not available.`);
+            }
 
             const stockUpdate = await decrementVariantStockAtomically({
                 product,
@@ -362,7 +389,8 @@ exports.createOrder = async (req, res) => {
                 address: shipping.address
             },
             status: 'Pending',
-            source: source || 'direct'
+            source: source || 'direct',
+            checkoutIdempotencyKey
         }], { session });
         await ConsentLog.create([{
             shop_id: shopId,

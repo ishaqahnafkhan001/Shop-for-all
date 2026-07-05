@@ -7,7 +7,7 @@ const { resolveTenant } = require('../middlewares/tenant');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const { requireShopFeature, requireShopFeatureWhenCustomDomainChanges } = require('../middlewares/featureGate');
 const { requirePermission } = require('../middlewares/permission');
-const { upload } = require('../config/cloudinary');
+const { upload, brandUpload } = require('../config/cloudinary');
 const {
     getStoreBuilderSettings,
     updateStoreBuilderSettings,
@@ -76,7 +76,7 @@ router.post(
     requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
     blockVerificationSuspendedShop,
-    upload.single('logo'),
+    brandUpload.single('logo'),
     uploadStoreBuilderLogo
 );
 

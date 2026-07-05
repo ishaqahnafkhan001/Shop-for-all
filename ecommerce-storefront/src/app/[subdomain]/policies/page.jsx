@@ -5,14 +5,12 @@ import { FileText, ShieldCheck } from "lucide-react";
 import { POLICY_LABELS, POLICY_TYPES, getPolicyContent } from "@/lib/defaultPolicies";
 import { fetchStorefrontInfo } from "@/lib/storefrontServer";
 import {
-    buildMetadata,
+    buildStorefrontMetadata,
     cleanTextForMeta,
-    getPreferredSiteName,
     getShopBaseUrl,
     isShopSearchVisible,
     noindexMetadata,
-    truncateMetaDescription,
-    truncateMetaTitle
+    truncateMetaDescription
 } from "@/lib/seo";
 
 const getStoreInfo = async (subdomain, host = "") => {
@@ -41,12 +39,12 @@ export async function generateMetadata({ params }) {
         .map(type => cleanTextForMeta(getPolicyContent(shop?.theme?.policies || {}, type, { storeName })))
         .join(" ");
 
-    return buildMetadata({
-        title: truncateMetaTitle(`Store Policies | ${storeName}`),
+    return buildStorefrontMetadata({
+        shop,
+        pageTitle: "Policies",
         description: truncateMetaDescription(summary || `Read refund, shipping, privacy, and terms policies for ${storeName}.`),
         url: `${getShopBaseUrl({ host, subdomain, shop }).replace(/\/$/, "")}/policies`,
         image: shop?.theme?.logoUrl || "",
-        siteName: getPreferredSiteName(shop, { host, subdomain }),
         type: "article",
         isIndexable: isShopSearchVisible(shop),
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""

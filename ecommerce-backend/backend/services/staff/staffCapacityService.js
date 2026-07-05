@@ -25,7 +25,12 @@ const STAFF_PERMISSION_KEYS = [
     'salesManage',
     'bannersManage',
     'inventoryAlertsManage',
-    'growthRead'
+    'inventoryRead',
+    'inventoryManage',
+    'growthRead',
+    'purchaseOrdersRead',
+    'purchaseOrdersManage',
+    'purchaseOrdersReceive'
 ];
 
 const DEFAULT_STAFF_PERMISSIONS = {
@@ -49,7 +54,12 @@ const DEFAULT_STAFF_PERMISSIONS = {
     salesManage: false,
     bannersManage: false,
     inventoryAlertsManage: false,
-    growthRead: false
+    inventoryRead: false,
+    inventoryManage: false,
+    growthRead: false,
+    purchaseOrdersRead: false,
+    purchaseOrdersManage: false,
+    purchaseOrdersReceive: false
 };
 
 const normalizeStaffLimit = (value) => {

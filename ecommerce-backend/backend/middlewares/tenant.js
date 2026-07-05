@@ -1,4 +1,5 @@
 const Shop = require('../models/Shop');
+const crypto = require('crypto');
 const cache = require('../services/cacheService');
 const { ensureShopVerificationStatus } = require('../services/vendorVerificationService');
 const {
@@ -22,14 +23,36 @@ const unavailableResponse = (res) => res.status(423).json({
 
 const normalizeSubdomain = (subdomain = '') => String(subdomain || '').trim().toLowerCase();
 
+const safeEqual = (left, right) => {
+    const a = Buffer.from(String(left || ''));
+    const b = Buffer.from(String(right || ''));
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+
+const getTrustedStorefrontHost = (req) => {
+    const forwardedHost = getHostnameFromHostHeader(req.get('x-storefront-host') || '');
+    if (!forwardedHost) return '';
+
+    const secret = process.env.STOREFRONT_PROXY_SECRET;
+    if (!secret) {
+        return process.env.NODE_ENV === 'production' ? '' : forwardedHost;
+    }
+
+    const timestamp = Number(req.get('x-storefront-timestamp') || 0);
+    const signature = String(req.get('x-storefront-signature') || '');
+    if (!timestamp || Math.abs(Date.now() - timestamp) > 5 * 60 * 1000 || !signature) return '';
+
+    const expected = crypto
+        .createHmac('sha256', secret)
+        .update(`${forwardedHost}.${timestamp}`)
+        .digest('hex');
+
+    return safeEqual(signature, expected) ? forwardedHost : '';
+};
+
 const getRequestedTenant = (req) => {
     const routeValue = normalizeSubdomain(req.params.subdomain);
-    const forwardedHost = getHostnameFromHostHeader(
-        req.get('x-storefront-host') ||
-        req.get('x-forwarded-host') ||
-        req.get('host') ||
-        ''
-    );
+    const forwardedHost = getTrustedStorefrontHost(req) || getHostnameFromHostHeader(req.get('host') || '');
 
     if (!routeValue) return null;
 

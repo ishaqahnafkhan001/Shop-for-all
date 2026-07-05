@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 const getBackendApiUrl = () => {
     const configuredUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;
 
@@ -21,7 +23,18 @@ const buildUrl = (path, params = {}) => {
 const buildRequestHeaders = ({ storefrontHost = '' } = {}) => {
     const headers = { accept: 'application/json' };
     const cleanHost = String(storefrontHost || '').trim().toLowerCase();
-    if (cleanHost) headers['x-storefront-host'] = cleanHost;
+    if (cleanHost) {
+        headers['x-storefront-host'] = cleanHost;
+        const proxySecret = process.env.STOREFRONT_PROXY_SECRET;
+        if (proxySecret) {
+            const timestamp = String(Date.now());
+            headers['x-storefront-timestamp'] = timestamp;
+            headers['x-storefront-signature'] = crypto
+                .createHmac('sha256', proxySecret)
+                .update(`${cleanHost}.${timestamp}`)
+                .digest('hex');
+        }
+    }
     return headers;
 };
 

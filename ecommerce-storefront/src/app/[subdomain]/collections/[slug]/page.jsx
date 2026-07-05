@@ -5,13 +5,12 @@ import { fetchStorefrontCollection, fetchStorefrontInfo } from "@/lib/storefront
 import {
     buildBreadcrumbJsonLd,
     buildCollectionItemListJsonLd,
-    buildMetadata,
+    buildStorefrontMetadata,
     getCollectionCanonicalUrl,
     getCollectionOgImage,
     getCollectionSeoDescription,
     getCollectionSeoTitle,
     getHomepageCanonicalUrl,
-    getPreferredSiteName,
     isShopSearchVisible,
     noindexMetadata
 } from "@/lib/seo";
@@ -50,12 +49,12 @@ export async function generateMetadata({ params }) {
     }
 
     const { shop, collection, products } = data;
-    return buildMetadata({
-        title: getCollectionSeoTitle(collection, shop),
+    return buildStorefrontMetadata({
+        shop,
+        pageTitle: getCollectionSeoTitle(collection, shop),
         description: getCollectionSeoDescription(collection, shop),
         url: getCollectionCanonicalUrl({ host, subdomain, shop, collection }),
         image: getCollectionOgImage(collection, products, shop),
-        siteName: getPreferredSiteName(shop, { host, subdomain }),
         type: "website",
         isIndexable: isShopSearchVisible(shop),
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""

@@ -81,12 +81,16 @@ test('storefront canonical helpers preserve verified custom-domain host exactly'
     const {
         buildHomepageJsonLd,
         buildMetadata,
+        buildStorefrontMetadata,
+        buildStorefrontTitle,
         getCollectionCanonicalUrl,
         getHomepageCanonicalUrl,
         getHomepageSeoTitle,
         getPreferredSiteName,
         getProductCanonicalUrl,
-        getShopBaseUrl
+        getShopBaseUrl,
+        normalizeStorefrontPlan,
+        resolveStorefrontBranding
     } = await importStorefrontSeo();
     const verifiedShop = (domain) => ({
         shopName: 'ADI',
@@ -121,6 +125,11 @@ test('storefront canonical helpers preserve verified custom-domain host exactly'
         url: getHomepageCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop }),
         siteName: getPreferredSiteName(wwwShop, { host: 'adijewellery.store', subdomain: 'adi' })
     }).openGraph.siteName, 'Adi Jewellery');
+    assert.equal(buildMetadata({
+        title: 'Adi Jewellery | Home | Scaleup',
+        description: wwwShop.theme.seo.description,
+        url: getHomepageCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop })
+    }).title.absolute, 'Adi Jewellery | Home | Scaleup');
     const [websiteJsonLd, onlineStoreJsonLd] = buildHomepageJsonLd({
         shop: wwwShop,
         url: getHomepageCanonicalUrl({ host: 'adijewellery.store', subdomain: 'adi', shop: wwwShop })
@@ -144,6 +153,63 @@ test('storefront canonical helpers preserve verified custom-domain host exactly'
     assert.equal(getProductCanonicalUrl({ subdomain: 'phonebd', shop: { subdomain: 'phonebd' }, product: { slug: 'case' } }), 'https://phonebd.scaleup.codes/products/case');
     assert.equal(getPreferredSiteName({ shopName: 'Phone BD' }, { subdomain: 'phonebd' }), 'Phone BD');
     assert.equal(getPreferredSiteName({}, { host: 'www.adijewellery.store' }), 'www.adijewellery.store');
+
+    assert.equal(normalizeStorefrontPlan({ slug: 'starter' }), 'starter');
+    assert.equal(normalizeStorefrontPlan({ name: 'Growth' }), 'growth');
+    assert.equal(normalizeStorefrontPlan('pro'), 'pro');
+    assert.equal(normalizeStorefrontPlan(null), 'unknown');
+    assert.equal(buildStorefrontTitle({ shopName: 'ADI', pageTitle: 'Home', planKey: 'starter' }), 'ADI | Home | Scaleup');
+    assert.equal(buildStorefrontTitle({ shopName: 'ADI', pageTitle: 'Cart', planKey: 'growth' }), 'ADI | Cart');
+    assert.equal(buildStorefrontTitle({ shopName: 'ADI', pageTitle: 'Golap Bala – Half Design | ADI', planKey: 'pro' }), 'ADI | Golap Bala – Half Design');
+    assert.equal(buildStorefrontTitle({ shopName: 'ADI', pageTitle: 'Home | Scaleup', planKey: 'starter' }), 'ADI | Home | Scaleup');
+
+    const starterBranding = resolveStorefrontBranding({
+        shop: {
+            shopName: 'ADI',
+            showPlatformBranding: true,
+            theme: {
+                faviconUrl: 'https://cdn.example.com/adi-icon.svg',
+                logoUrl: 'https://cdn.example.com/adi-logo.png',
+                colors: { accent: '#047857' }
+            },
+            updatedAt: '2026-07-01T00:00:00.000Z'
+        },
+        pageTitle: 'Home'
+    });
+    assert.equal(starterBranding.fullTitle, 'ADI | Home | Scaleup');
+    assert.equal(starterBranding.openGraphSiteName, 'ADI');
+    assert.equal(starterBranding.faviconUrl, 'https://cdn.example.com/adi-icon.svg?v=2026-07-01T00%3A00%3A00.000Z');
+    assert.equal(starterBranding.icons.icon[0].type, 'image/svg+xml');
+
+    const growthBranding = resolveStorefrontBranding({
+        shop: { shopName: 'ADI', showPlatformBranding: false },
+        pageTitle: 'Checkout'
+    });
+    assert.equal(growthBranding.fullTitle, 'ADI | Checkout');
+    assert.equal(growthBranding.showScaleupBranding, false);
+
+    const fallbackBranding = resolveStorefrontBranding({
+        shop: {
+            shopName: 'No Logo Shop',
+            theme: {
+                logoUrl: 'https://cdn.example.com/nav-logo.png',
+                colors: { accent: '#111827' }
+            }
+        },
+        pageTitle: 'Home'
+    });
+    assert.match(fallbackBranding.faviconUrl, /^data:image\/svg\+xml,/);
+    assert.notEqual(fallbackBranding.faviconUrl, 'https://cdn.example.com/nav-logo.png');
+
+    const tenantMetadata = buildStorefrontMetadata({
+        shop: { shopName: 'ADI', showPlatformBranding: true, theme: { faviconUrl: 'https://cdn.example.com/logo.webp' } },
+        pageTitle: 'Track Order',
+        description: 'Track an order.',
+        url: 'https://adi.scaleup.codes/track'
+    });
+    assert.equal(tenantMetadata.title.absolute, 'ADI | Track Order | Scaleup');
+    assert.equal(tenantMetadata.openGraph.siteName, 'ADI');
+    assert.equal(tenantMetadata.icons.icon[0].type, 'image/webp');
 });
 
 test('storefront theme keeps Google site name compatible for old and new themes', async () => {
@@ -192,18 +258,20 @@ test('homepage, product, and policy routes render server metadata', () => {
     const productPage = readRepo('ecommerce-storefront/src/app/[subdomain]/products/[id]/page.jsx');
     const policyIndexPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/page.jsx');
     const policyPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/[type]/page.jsx');
+    const pageMetadataHelper = readRepo('ecommerce-storefront/src/app/[subdomain]/storefrontPageMetadata.js');
 
     assert.match(homepage, /export async function generateMetadata/);
     assert.match(homepage, /buildHomepageJsonLd/);
-    assert.match(homepage, /getHomepageSeoTitle/);
+    assert.match(homepage, /buildStorefrontMetadata/);
+    assert.match(homepage, /pageTitle:\s*'Home'/);
     assert.match(homepage, /getHomepageCanonicalUrl/);
-    assert.match(homepage, /getPreferredSiteName/);
     assert.match(homepage, /application\/ld\+json/);
     assert.match(homepage, /dangerouslySetInnerHTML/);
     assert.match(homepage, /isShopSearchVisible\(shop\)/);
     assert.match(homepage, /googleSiteVerification/);
 
     assert.match(productPage, /export async function generateMetadata/);
+    assert.match(productPage, /buildStorefrontMetadata/);
     assert.match(productPage, /buildProductJsonLd/);
     assert.match(productPage, /buildBreadcrumbJsonLd/);
     assert.match(productPage, /isObjectId\(id\)/);
@@ -211,23 +279,27 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(productPage, /type:\s*'website'/);
     assert.doesNotMatch(productPage, /type:\s*'product'/);
     assert.match(productPage, /isShopSearchVisible\(shop\)/);
-    assert.match(productPage, /getPreferredSiteName/);
     assert.match(productPage, /googleSiteVerification/);
 
     assert.match(policyIndexPage, /export async function generateMetadata/);
+    assert.match(policyIndexPage, /buildStorefrontMetadata/);
     assert.match(policyIndexPage, /Store Policies/);
     assert.match(policyIndexPage, /\/policies/);
     assert.match(policyIndexPage, /getPolicyContent/);
     assert.match(policyIndexPage, /isShopSearchVisible\(shop\)/);
-    assert.match(policyIndexPage, /getPreferredSiteName/);
     assert.match(policyIndexPage, /googleSiteVerification/);
 
     assert.match(policyPage, /export async function generateMetadata/);
+    assert.match(policyPage, /buildStorefrontMetadata/);
     assert.match(policyPage, /getPolicyCanonicalUrl/);
-    assert.match(policyPage, /getPreferredSiteName/);
     assert.match(policyPage, /isShopSearchVisible\(shop\)/);
     assert.match(policyPage, /isIndexable:\s*Boolean\(POLICY_LABELS\[type\] && content && isShopSearchVisible\(shop\)\)/);
     assert.match(policyPage, /googleSiteVerification/);
+
+    assert.match(pageMetadataHelper, /buildTenantPageMetadata/);
+    assert.match(pageMetadataHelper, /fetchStorefrontInfo/);
+    assert.match(pageMetadataHelper, /buildStorefrontMetadata/);
+    assert.match(pageMetadataHelper, /isIndexable:\s*indexable/);
 });
 
 test('sitemap and robots expose only public SEO URLs and noindex private pages', () => {
@@ -264,9 +336,20 @@ test('sitemap and robots expose only public SEO URLs and noindex private pages',
 
     ['cart', 'checkout', 'account', 'signup', 'track'].forEach(route => {
         const layout = readRepo(`ecommerce-storefront/src/app/[subdomain]/${route}/layout.jsx`);
-        assert.match(layout, /index:\s*false/);
-        assert.match(layout, /follow:\s*false/);
+        assert.match(layout, /buildTenantPageMetadata/);
+        assert.match(layout, /pageTitle:/);
     });
+});
+
+test('public storefront branding exposes only safe white-label decision', () => {
+    const storeController = read('controllers/storeController.js');
+
+    assert.match(storeController, /showPlatformBranding/);
+    assert.match(storeController, /delete shop\.plan/);
+    assert.match(storeController, /normalizePublicPlanKey/);
+    assert.match(storeController, /Subscription\.findOne\(\{ shopId: shop\._id \}\)/);
+    assert.match(storeController, /PUBLIC_SHOP_FIELDS[\s\S]*plan updatedAt/);
+    assert.doesNotMatch(storeController, /payment history/i);
 });
 
 test('admin SEO Phase 2 controls expose store and product SEO guidance without schema changes', () => {

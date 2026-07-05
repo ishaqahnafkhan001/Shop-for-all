@@ -19,8 +19,11 @@ const {
     applyScheduledSalesToProducts,
     getActiveSalePopups
 } = require('../services/sales/scheduledSaleService');
+const {
+    normalizePlanSlug
+} = require('../services/billing/billingPlanService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const getActiveBannerQuery = (shopId, now = new Date()) => ({
@@ -86,6 +89,50 @@ const applyDefaultPoliciesToShopPayload = (shop) => {
     return shop;
 };
 
+const normalizePublicPlanKey = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return 'unknown';
+    const slug = normalizePlanSlug(raw);
+    if (slug === 'growth') return 'growth';
+    if (slug === 'pro') return 'pro';
+    if (slug === 'starter' || slug === 'trial' || slug === 'trialing') return 'starter';
+    return 'unknown';
+};
+
+const getPublicBrandingPlanKey = async (shop) => {
+    const subscription = await Subscription.findOne({ shopId: shop._id })
+        .populate('planId', 'name slug')
+        .select('status activePlanName activePlanSlug planId')
+        .lean();
+
+    if (subscription?.status === 'trialing' || subscription?.status === 'pending_approval') {
+        return 'starter';
+    }
+
+    const subscriptionPlanKey = normalizePublicPlanKey(
+        subscription?.activePlanSlug ||
+        subscription?.activePlanName ||
+        subscription?.planId?.slug ||
+        subscription?.planId?.name
+    );
+    if (subscriptionPlanKey !== 'unknown') return subscriptionPlanKey;
+
+    return normalizePublicPlanKey(
+        shop?.plan?.activePlanSlug ||
+        shop?.plan?.intendedPlanSlug ||
+        shop?.plan?.name ||
+        shop?.plan?.status
+    );
+};
+
+const attachPublicBranding = async (shop) => {
+    if (!shop) return shop;
+    const planKey = await getPublicBrandingPlanKey(shop);
+    shop.showPlatformBranding = !['growth', 'pro'].includes(planKey);
+    delete shop.plan;
+    return shop;
+};
+
 const getPublicTrustedBadge = async (shop) => {
     if (!shop || shop.badgeStatus !== 'active') return null;
     if (shop.isActive === false || shop.approvalStatus !== 'Approved') return null;
@@ -143,6 +190,7 @@ exports.getStoreInfo = async (req, res) => {
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop);
+        await attachPublicBranding(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;
         delete shop.badgeApprovedAt;
@@ -238,6 +286,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop);
+        await attachPublicBranding(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;
         delete shop.badgeApprovedAt;

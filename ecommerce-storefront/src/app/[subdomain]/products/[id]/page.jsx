@@ -4,11 +4,10 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
     buildBreadcrumbJsonLd,
-    buildMetadata,
+    buildStorefrontMetadata,
     buildProductJsonLd,
     getHomepageCanonicalUrl,
     getOgImage,
-    getPreferredSiteName,
     getProductCanonicalUrl,
     getProductSeoDescription,
     getProductSeoTitle,
@@ -57,12 +56,12 @@ export async function generateMetadata({ params }) {
 
     const url = getProductCanonicalUrl({ host, subdomain, shop, product });
 
-    return buildMetadata({
-        title: getProductSeoTitle(product, shop),
+    return buildStorefrontMetadata({
+        shop,
+        pageTitle: getProductSeoTitle(product, shop),
         description: getProductSeoDescription(product, shop),
         url,
         image: getOgImage(product, shop),
-        siteName: getPreferredSiteName(shop, { host, subdomain }),
         type: 'website',
         isIndexable: isShopSearchVisible(shop),
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,16 @@ const copyRequestHeaders = (request) => {
     const hostname = host.split(':')[0].toLowerCase();
     let subdomain = '';
     headers.set('x-storefront-host', hostname);
+    const proxySecret = process.env.STOREFRONT_PROXY_SECRET;
+    if (proxySecret && hostname) {
+        const timestamp = String(Date.now());
+        const signature = crypto
+            .createHmac('sha256', proxySecret)
+            .update(`${hostname}.${timestamp}`)
+            .digest('hex');
+        headers.set('x-storefront-timestamp', timestamp);
+        headers.set('x-storefront-signature', signature);
+    }
 
     if (hostname.includes('.localhost')) {
         subdomain = hostname.split('.localhost')[0];

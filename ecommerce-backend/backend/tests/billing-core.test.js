@@ -94,7 +94,8 @@ test('billing routes are protected and mounted under vendor and super admin APIs
     assert.match(app, /app\.use\('\/api\/admin\/billing',\s*billingRoutes\)/);
     assert.match(superRoutes, /router\.use\('\/billing',\s*superAdminBillingRoutes\)/);
     assert.match(vendorRoutes, /router\.use\(protect\)/);
-    assert.match(vendorRoutes, /authorize\('VendorAdmin',\s*'VendorStaff'\)/);
+    assert.match(vendorRoutes, /authorize\('VendorAdmin'\)/);
+    assert.doesNotMatch(vendorRoutes, /VendorStaff/);
     assert.match(vendorRoutes, /router\.post\('\/invoices',\s*createVendorInvoice\)/);
     assert.match(superRoutes, /router\.use\(authorize\('SuperAdmin'\)\)/);
     assert.match(superBillingRoutes, /\/payments\/:id\/verify/);

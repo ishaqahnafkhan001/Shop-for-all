@@ -1479,10 +1479,12 @@ const StoreBuilderPage = () => {
 
             if (target === 'checkout') {
                 setThemeGroup('checkoutBranding', 'logoUrl', url);
+            } else if (target === 'favicon') {
+                setTheme(prev => ({ ...prev, faviconUrl: url }));
             } else {
                 setTheme(prev => ({ ...prev, logoUrl: url }));
             }
-            toast.success('Logo uploaded');
+            toast.success(target === 'favicon' ? 'Browser icon uploaded' : 'Logo uploaded');
         } catch (err) {
             toast.error(err.response?.data?.error || err.message || 'Failed to upload logo');
         } finally {
@@ -1668,19 +1670,45 @@ const StoreBuilderPage = () => {
                             value={theme.logoUrl || ''}
                             onChange={e => setTheme(prev => ({ ...prev, logoUrl: e.target.value }))}
                             placeholder="https://..."
-                            help="Paste a public image URL or upload a logo file."
+                            help="Shown in the storefront header/navigation. This is separate from the browser tab icon."
                         />
                         <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
                             <Upload size={16} />
                             {uploadingLogo ? 'Uploading...' : 'Upload storefront logo'}
                             <input
                                 type="file"
-                                accept="image/png,image/jpeg,image/webp"
+                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
                                 className="hidden"
                                 disabled={uploadingLogo}
                                 onChange={event => handleLogoUpload(event, 'storefront')}
                             />
                         </label>
+                        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <BuilderInput
+                                label="Browser tab icon URL"
+                                value={theme.faviconUrl || ''}
+                                onChange={e => setTheme(prev => ({ ...prev, faviconUrl: e.target.value }))}
+                                placeholder="https://..."
+                                help="Shown as the favicon in the browser tab. Upload a square PNG, WebP, JPG, ICO, or SVG icon. If empty, Scaleup generates a simple store initial icon."
+                            />
+                            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                                <Upload size={16} />
+                                {uploadingLogo ? 'Uploading...' : 'Upload browser icon'}
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon"
+                                    className="hidden"
+                                    disabled={uploadingLogo}
+                                    onChange={event => handleLogoUpload(event, 'favicon')}
+                                />
+                            </label>
+                            {theme.faviconUrl && (
+                                <div className="mt-3 flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 text-xs font-bold text-slate-500">
+                                    <img src={theme.faviconUrl} alt="" className="h-8 w-8 rounded-md border border-slate-200 object-contain" />
+                                    Browser icon is set separately from the navigation logo.
+                                </div>
+                            )}
+                        </div>
                     </BuilderCard>
                 );
             case 'colors': {
