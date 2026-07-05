@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Download, Upload, Layers, Wand2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
+import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 
 const emptyCollectionForm = {
     title: '',
@@ -59,6 +60,7 @@ const CatalogTools = () => {
     const [collections, setCollections] = useState([]);
     const [selected, setSelected] = useState([]);
     const [bulk, setBulk] = useState({ category: '', status: '', stock: '', discount: '', lowStockThreshold: '' });
+    const [loading, setLoading] = useState(true);
     const [collectionForm, setCollectionForm] = useState(emptyCollectionForm);
     const [collectionAi, setCollectionAi] = useState({
         loading: false,
@@ -69,6 +71,7 @@ const CatalogTools = () => {
     const selectedCount = selected.length;
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [productsRes, collectionsRes] = await Promise.all([
                 API.get('/admin/products', { params: { limit: 200 } }),
@@ -78,6 +81,8 @@ const CatalogTools = () => {
             setCollections(collectionsRes.data.data || []);
         } catch {
             toast.error('Failed to load catalog tools');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -126,7 +131,6 @@ const CatalogTools = () => {
         const updates = {};
         if (bulk.category) updates.category = bulk.category;
         if (bulk.status) updates.status = bulk.status;
-        if (bulk.stock !== '') updates.stock = Number(bulk.stock);
         if (bulk.lowStockThreshold !== '') updates.lowStockThreshold = Number(bulk.lowStockThreshold);
         if (bulk.discount !== '') updates.pricing = { discount: Number(bulk.discount) };
 
@@ -228,6 +232,11 @@ const CatalogTools = () => {
                     <p className="text-sm text-slate-500 mt-1">Use bulk tools when you need to update many products at once. Review selections before applying changes.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    <PageRefreshButton
+                        onClick={loadData}
+                        loading={loading && (products.length > 0 || collections.length > 0)}
+                        label="Refresh catalog tools"
+                    />
                     <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Download your current catalog as a CSV backup">
                         <Download size={17} />
                         Export CSV
@@ -250,7 +259,14 @@ const CatalogTools = () => {
                         <div className="text-sm text-slate-500">{selectedCount} selected</div>
                     </div>
                     <div className="divide-y divide-slate-100 max-h-[620px] overflow-auto">
-                        {products.length === 0 ? (
+                        {loading && products.length > 0 && (
+                            <div className="bg-indigo-50 px-5 py-2 text-sm text-indigo-700">
+                                Refreshing catalog...
+                            </div>
+                        )}
+                        {loading && products.length === 0 ? (
+                            <div className="p-8 text-center text-sm text-slate-500">Loading catalog products...</div>
+                        ) : products.length === 0 ? (
                             <div className="p-8 text-center text-sm text-slate-500">No products available for bulk actions yet. Add products before using catalog tools.</div>
                         ) : products.map(product => {
                             const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
@@ -294,7 +310,9 @@ const CatalogTools = () => {
                             <option>Published</option>
                             <option>Archived</option>
                         </select>
-                        <input type="number" value={bulk.stock} onChange={e => setBulk(prev => ({ ...prev, stock: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Set stock" />
+                        <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                            Stock changes are handled from Inventory so every adjustment creates a movement record and low-stock alert state.
+                        </div>
                         <input type="number" value={bulk.discount} onChange={e => setBulk(prev => ({ ...prev, discount: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Discount percent" />
                         <input type="number" value={bulk.lowStockThreshold} onChange={e => setBulk(prev => ({ ...prev, lowStockThreshold: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Low stock threshold" />
                         <button onClick={applyBulkUpdate} className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800" title="Apply the filled bulk fields to selected products">

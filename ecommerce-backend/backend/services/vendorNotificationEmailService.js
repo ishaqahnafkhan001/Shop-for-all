@@ -14,12 +14,12 @@ const getVendorAdminEmails = async (shop_id) => {
     return [...new Set(users.map(user => user.email).filter(Boolean))];
 };
 
-const sendVendorNotificationEmail = async ({ to, subject, html, text, senderName = 'ScaleUp Orders' }) => {
+const sendVendorNotificationEmail = async ({ to, subject, html, text, senderName = 'ScaleUp Orders', type = 'order' }) => {
     const recipients = Array.isArray(to) ? to.filter(Boolean) : [to].filter(Boolean);
     if (recipients.length === 0) return null;
 
     return sendMail({
-        type: 'order',
+        type,
         to: recipients,
         subject,
         senderName,

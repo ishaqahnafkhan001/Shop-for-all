@@ -550,7 +550,16 @@ exports.getShopOrders = async (req, res) => {
         const { orders, pagination } = await getShopOrdersPage({
             shopId,
             page: req.query.page,
-            limit: req.query.limit
+            limit: req.query.limit,
+            filters: {
+                search: req.query.search,
+                status: req.query.status,
+                paymentStatus: req.query.paymentStatus,
+                courierStatus: req.query.courierStatus,
+                dateFrom: req.query.dateFrom,
+                dateTo: req.query.dateTo,
+                sort: req.query.sort
+            }
         });
 
         res.status(200).json({

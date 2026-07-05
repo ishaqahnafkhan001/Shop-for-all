@@ -9,6 +9,7 @@ import API from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 import VendorOnboardingChecklist from '../../components/dashboard/VendorOnboardingChecklist.jsx';
 import { AdminErrorState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
+import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import BillingAlert from '../../components/dashboard/BillingAlert.jsx';
 import TrustedBadgeStatusCard from '../../components/dashboard/TrustedBadgeStatusCard.jsx';
 import { hasFeature } from '../../utils/featureAccess.js';
@@ -88,7 +89,14 @@ const Overview = () => {
     };
   }), [revenue?.monthlyData]);
 
-  if (loading) {
+  const hasDashboardData = Object.keys(stats || {}).length > 0
+      || Object.keys(revenue || {}).length > 0
+      || movement.length > 0
+      || recentMovements.length > 0
+      || topProducts.length > 0
+      || lowStock.length > 0;
+
+  if (loading && !hasDashboardData) {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <AdminLoadingState
@@ -120,7 +128,19 @@ const Overview = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
             <p className="text-sm text-gray-500 mt-1">Start here each day: review sales, active orders, low stock, and recent inventory changes.</p>
           </div>
+          <PageRefreshButton
+            onClick={fetchData}
+            loading={loading && hasDashboardData}
+            label="Refresh overview"
+            className="sm:w-auto"
+          />
         </div>
+
+        {loading && hasDashboardData && (
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700">
+            Refreshing dashboard...
+          </div>
+        )}
 
         {canViewPlatformAnnouncements && announcements.length > 0 && (
           <div className="rounded-2xl border border-indigo-100 bg-white shadow-sm">

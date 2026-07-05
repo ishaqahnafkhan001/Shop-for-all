@@ -62,7 +62,6 @@ export const useProducts = (initialLimit = 10) => {
     } catch (err) {
       if (isAbortError(err)) return;
       toast.error(err.response?.data?.error || "Failed to load products");
-      setProducts([]);
     } finally {
       if (fetchId === fetchIdRef.current) setLoading(false);
     }

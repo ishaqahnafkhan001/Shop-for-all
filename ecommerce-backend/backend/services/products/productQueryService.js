@@ -49,6 +49,14 @@ const getCachedCategories = async (shopId, categoryQuery) => {
     return value;
 };
 
+const normalizeSearchText = (value = '') => (
+    String(value || '')
+        .replace(/[^\p{L}\p{N}\s._-]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 80)
+);
+
 const addComputedProductFields = (product) => {
     if (product.finalPrice !== undefined || product.salePrice !== undefined || product.pricing?.salePrice !== undefined) {
         return {
@@ -85,7 +93,8 @@ const buildProductListQuery = ({ shopId, filters, isStorefrontRequest }) => {
     if (filters.category && filters.category !== 'All') query.category = filters.category;
     if (filters.collection) query.collections = filters.collection;
     if (filters.tag) query.tags = filters.tag.toLowerCase();
-    if (filters.search) query.$text = { $search: filters.search };
+    const search = normalizeSearchText(filters.search);
+    if (search) query.$text = { $search: search };
     const needsEffectivePriceFiltering = isStorefrontRequest && (
         filters.sale === 'true' ||
         filters.sale === true ||
@@ -161,5 +170,6 @@ module.exports = {
     addComputedProductFields,
     buildProductListQuery,
     getProductSort,
-    getSummaryProjection
+    getSummaryProjection,
+    normalizeSearchText
 };

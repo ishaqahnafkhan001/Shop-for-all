@@ -508,6 +508,8 @@ const StoreBuilderPage = () => {
     const [shopName, setShopName] = useState('');
     const [shopSubdomain, setShopSubdomain] = useState('');
     const [theme, setTheme] = useState(defaultTheme);
+    const [savedTheme, setSavedTheme] = useState(defaultTheme);
+    const [hydratedShopKey, setHydratedShopKey] = useState('');
     const [availableProducts, setAvailableProducts] = useState([]);
     const [productOptions, setProductOptions] = useState([]);
     const [productCategories, setProductCategories] = useState([]);
@@ -531,6 +533,7 @@ const StoreBuilderPage = () => {
     const [openColorSection, setOpenColorSection] = useState('productCard');
     const historyModeRef = useRef('record');
     const lastHistorySnapshotRef = useRef('');
+    const dirtyRef = useRef(false);
 
     const {
         currentSnapshot,
@@ -544,6 +547,10 @@ const StoreBuilderPage = () => {
     });
     const canUndo = editorHistory.past.length > 0;
     const canRedo = editorHistory.future.length > 0;
+    useEffect(() => {
+        dirtyRef.current = hasUnsavedChanges;
+    }, [hasUnsavedChanges]);
+
     const selectedLabel = useMemo(() => {
         const selectionTheme = { homepageSections: theme.homepageSections, navigation: theme.navigation };
         return resolveEditorComponent(activeElement, selectionTheme)?.label || settingsGroups.find(item => item.id === activeGroup)?.label || 'Store element';
@@ -734,6 +741,7 @@ const StoreBuilderPage = () => {
                 const nextTheme = mergeTheme(defaultTheme, shop.theme || {});
                 const nextDomain = shop.customDomain || { domain: '' };
                 const nextDiscount = shop.storewideDiscount || 0;
+                const shopKey = String(shop._id || shop.id || shop.subdomain || '');
                 const selectedReviewIds = [
                     ...new Set((nextTheme.homepageSections || [])
                         .flatMap(section => section.type === 'Reviews' ? (section.settings?.reviewIds || []) : [])
@@ -750,6 +758,8 @@ const StoreBuilderPage = () => {
                 const initialReviews = [...(reviewsResponse.data?.data || []), ...(selectedReviewsResponse.data?.data || [])];
                 setShopName(shop.shopName || '');
                 setShopSubdomain(shop.subdomain || '');
+                setHydratedShopKey(shopKey);
+                setSavedTheme(nextTheme);
                 setTheme(nextTheme);
                 setAvailableProducts(initialProducts);
                 setProductOptions(initialProducts);
@@ -1455,8 +1465,13 @@ const StoreBuilderPage = () => {
     };
 
     const restorePublishedVersion = () => {
-        if (!initialSnapshot || !hasUnsavedChanges) return;
-        if (applyBuilderSnapshot(initialSnapshot)) {
+        if (!hasUnsavedChanges) return;
+        const snapshot = initialSnapshot || stableStringify({
+            theme: savedTheme,
+            customDomain,
+            storewideDiscount: Number(storewideDiscount) || 0
+        });
+        if (applyBuilderSnapshot(snapshot)) {
             toast.success('Draft restored to the last published version.');
         }
     };
@@ -1576,6 +1591,9 @@ const StoreBuilderPage = () => {
             const nextTheme = hasSavedTheme ? mergeTheme(defaultTheme, savedShop.theme) : theme;
             const nextDomain = savedShop.customDomain || customDomain;
             const nextDiscount = Number(savedShop.storewideDiscount ?? payload.storewideDiscount) || 0;
+            const nextShopKey = String(savedShop._id || savedShop.id || savedShop.subdomain || hydratedShopKey || '');
+            setSavedTheme(nextTheme);
+            setHydratedShopKey(nextShopKey);
             setTheme(nextTheme);
             setCustomDomain(nextDomain);
             setStorewideDiscount(nextDiscount);

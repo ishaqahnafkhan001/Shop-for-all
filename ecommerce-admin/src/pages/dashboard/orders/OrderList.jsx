@@ -5,7 +5,9 @@ import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 import PaginationBar from '../../../components/ui/PaginationBar.jsx';
+import PageRefreshButton from '../../../components/ui/PageRefreshButton.jsx';
 import { isAbortError, useAbortableRequest } from '../../../hooks/useAbortableRequest.js';
+import useDebouncedValue from '../../../hooks/useDebouncedValue.js';
 
 const OrderDetailsModal = lazy(() => import('../../../components/dashboard/OrderDetailsModal'));
 const PathaoSyncModal = lazy(() => import('./PathaoSyncModal'));
@@ -22,6 +24,7 @@ const OrderList = () => {
     const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);
     const runAbortable = useAbortableRequest();
     const fetchIdRef = useRef(0);
+    const debouncedSearchQuery = useDebouncedValue(searchQuery, 350);
 
     const [pathaoModalOpen, setPathaoModalOpen] = useState(false);
     const [orderToSync, setOrderToSync] = useState(null);
@@ -37,7 +40,11 @@ const OrderList = () => {
         try {
             await runAbortable(async ({ signal, isLatest }) => {
             const { data } = await API.get('/admin/orders', {
-                params: { page, limit: 25 },
+                params: {
+                    page,
+                    limit: 25,
+                    search: debouncedSearchQuery || undefined
+                },
                 signal
             });
             if (!isLatest() || fetchId !== fetchIdRef.current) return;
@@ -50,7 +57,7 @@ const OrderList = () => {
         } finally {
             if (fetchId === fetchIdRef.current) setLoading(false);
         }
-    }, [runAbortable]);
+    }, [debouncedSearchQuery, runAbortable]);
 
     useEffect(() => {
         const timer = setTimeout(fetchOrders, 0);
@@ -112,7 +119,7 @@ const OrderList = () => {
             return data?.data || true;
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to update status");
-            fetchOrders();
+            fetchOrders(pagination.page);
             return null;
         } finally {
             setStatusUpdatingOrderId(null);
@@ -360,10 +367,6 @@ const OrderList = () => {
         );
     };
 
-    const filteredOrders = orders.filter((order) =>
-        order._id.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     return (
         <div className="space-y-6 relative">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -373,26 +376,34 @@ const OrderList = () => {
                 </div>
 
                 {/* Search Bar */}
-                <div className="relative w-full sm:w-64">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search size={18} className="text-gray-400" />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search by last 6 characters of order ID..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm outline-none transition"
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <PageRefreshButton
+                        onClick={() => fetchOrders(pagination.page)}
+                        loading={loading && orders.length > 0}
+                        label="Refresh orders"
+                        className="sm:w-auto"
                     />
+                    <div className="relative w-full sm:w-64">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search size={18} className="text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search by order ID or customer..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm outline-none transition"
+                        />
+                    </div>
                 </div>
             </div>
 
-            {loading ? (
+            {loading && orders.length === 0 ? (
                 <AdminLoadingState
                     title="Loading orders"
                     description="We are checking customer orders, delivery status, courier sync, and payment totals."
                 />
-            ) : filteredOrders.length === 0 ? (
+            ) : orders.length === 0 ? (
                 <AdminEmptyState
                     icon={Package}
                     title={searchQuery ? 'No matching orders' : 'No orders yet'}
@@ -400,12 +411,17 @@ const OrderList = () => {
                 />
             ) : (
                 <>
+                    {loading && orders.length > 0 && (
+                        <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+                            Refreshing orders...
+                        </div>
+                    )}
                     <div className="hidden md:block">
-                        <Table columns={columns} data={filteredOrders} actions={renderActions} />
+                        <Table columns={columns} data={orders} actions={renderActions} />
                     </div>
 
                     <div className="md:hidden space-y-4">
-                        {filteredOrders.map((order) => (
+                        {orders.map((order) => (
                                 <div key={order._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>

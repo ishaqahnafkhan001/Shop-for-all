@@ -20,7 +20,8 @@ const {
 } = require('../services/products/scheduledProductService');
 const {
     LOW_STOCK_ALERT_QUEUE,
-    processLowStockAlertJob
+    processLowStockAlertJob,
+    markLowStockAlertFailed
 } = require('../services/inventoryLowStockAlertService');
 const { processScheduledSaleStates } = require('../services/sales/scheduledSaleService');
 const logger = require('../services/logger');
@@ -56,6 +57,13 @@ const processNextJob = async () => {
     } catch (error) {
         if (job.queue === 'badges') {
             await markBadgeAnalysisFailed(job, error);
+        }
+        if (job.queue === LOW_STOCK_ALERT_QUEUE && Number(job.attempts || 0) >= Number(job.maxAttempts || 5)) {
+            await markLowStockAlertFailed({
+                shopId: job.shop_id,
+                productId: job.payload?.productId,
+                variantId: job.payload?.variantId
+            });
         }
         await failJob(job, error);
     }

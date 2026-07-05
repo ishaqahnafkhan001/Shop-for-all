@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import API from '../api/api';
 import { getImageUrlFromValue } from '../lib/seo';
 
@@ -35,6 +35,7 @@ const normalizeBootstrapData = (bootstrapData = {}) => {
         activeSalePopups: bootstrapData.activeSalePopups || [],
         sectionProducts,
         sectionReviews: bootstrapData.sectionReviews || {},
+        serverNow: bootstrapData.serverNow || new Date().toISOString(),
         pagination: bootstrapData.pagination || { page: 1, pages: 1, total: 0 },
         loading: false,
         error: null
@@ -49,6 +50,7 @@ const emptyShopData = {
     activeSalePopups: [],
     sectionProducts: {},
     sectionReviews: {},
+    serverNow: '',
     pagination: { page: 1, pages: 1, total: 0 },
     loading: true,
     error: null
@@ -75,6 +77,13 @@ export const useShopData = (subdomain, filters, initialData = null) => {
     const hasBootstrappedRef = useRef(hasInitialData);
     const skippedInitialFetchRef = useRef(hasInitialData || hasInitialError);
     const subdomainRef = useRef(subdomain);
+    const forceBootstrapRef = useRef(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const refreshBootstrap = useCallback(() => {
+        forceBootstrapRef.current = true;
+        setRefreshKey(key => key + 1);
+    }, []);
 
     // Use a stringified key to prevent unnecessary fetches if filters haven't actually changed
     useEffect(() => {
@@ -143,12 +152,15 @@ export const useShopData = (subdomain, filters, initialData = null) => {
         if (subdomain) {
             if (skippedInitialFetchRef.current) {
                 skippedInitialFetchRef.current = false;
+            } else if (forceBootstrapRef.current) {
+                forceBootstrapRef.current = false;
+                fetchBootstrap();
             } else if (hasBootstrappedRef.current) fetchProductsOnly();
             else fetchBootstrap();
         }
 
         return () => { isMounted = false; };
-    }, [subdomain, page, sort, category, minPrice, maxPrice, minRating]);
+    }, [subdomain, page, sort, category, minPrice, maxPrice, minRating, refreshKey]);
 
-    return data;
+    return { ...data, refreshBootstrap };
 };

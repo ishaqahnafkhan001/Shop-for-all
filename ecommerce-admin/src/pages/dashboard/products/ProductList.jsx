@@ -10,6 +10,7 @@ import Table from '../../../components/ui/Table';
 import API from '../../../api/api';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 import PaginationBar from '../../../components/ui/PaginationBar.jsx';
+import PageRefreshButton from '../../../components/ui/PageRefreshButton.jsx';
 
 // Hooks
 import { useProducts } from '../../../hooks/useProducts';
@@ -27,7 +28,8 @@ const ProductList = () => {
         queryParams,
         goToPage,
         updateFilters,
-        deleteProduct
+        deleteProduct,
+        refetchProducts
     } = useProducts();
 
     // --- State for Detail Modal ---
@@ -205,13 +207,20 @@ const ProductList = () => {
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Product Catalog</h1>
                     <p className="text-slate-500 text-sm mt-1">Add products customers can buy. Keep prices, stock, images, and publish status up to date.</p>
                 </div>
-                <Link
-                    to="/dashboard/products/add"
-                    className="w-full sm:w-auto flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm shadow-blue-200 transition-all active:scale-95 duration-200"
-                >
-                    <Plus size={20} className="mr-2" strokeWidth={2} />
-                    Add Product
-                </Link>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                    <PageRefreshButton
+                        onRefresh={refetchProducts}
+                        loading={loading && products.length > 0}
+                        label="Refresh products"
+                    />
+                    <Link
+                        to="/dashboard/products/add"
+                        className="w-full sm:w-auto flex min-h-11 items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm shadow-blue-200 transition-all active:scale-95 duration-200"
+                    >
+                        <Plus size={20} className="mr-2" strokeWidth={2} />
+                        Add Product
+                    </Link>
+                </div>
             </div>
 
             <div className="grid gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_180px_150px_170px]">
@@ -259,7 +268,7 @@ const ProductList = () => {
             </div>
 
             {/* --- MAIN CONTENT --- */}
-            {loading ? (
+            {loading && products.length === 0 ? (
                 <AdminLoadingState
                     title="Loading products"
                     description="We are fetching your catalog, stock, variants, pricing, and publish status."

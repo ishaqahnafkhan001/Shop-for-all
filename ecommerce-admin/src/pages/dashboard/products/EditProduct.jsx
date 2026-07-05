@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Boxes, DollarSign, FileText, Image as ImageIcon, ListChecks, PackagePlus, Plus, Search, Trash2, ChevronDown, ChevronUp, X } from 'lucide-react';
@@ -28,7 +28,8 @@ import {
  * ─────────────────────────────────────────────────────────────────────────────
  * Variant operations map to 3 backend ops:
  *
- * 1. Stock edits & New Variants → saved on main submit (Op A: flat variants patch)
+ * 1. Variant metadata & New Variants → saved on main submit (Op A: flat variants patch)
+ *    Existing stock changes use the inventory adjustment route for auditability.
  * 2. Remove button              → immediate PATCH      (Op D: removeVariants)
  * 3. Add Option                 → its own action       (Op C: addAttributeOption)
  */
@@ -95,6 +96,8 @@ const EditProduct = () => {
 
     const [loading,      setLoading]      = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [stockSubmittingId, setStockSubmittingId] = useState('');
+    const stockIdempotencyCounterRef = useRef(0);
 
     // ── Scalar + variant state ────────────────────────────────────────────────
     const [formData, setFormData] = useState({
@@ -227,6 +230,7 @@ const EditProduct = () => {
 
     // ── Stock handler ─────────────────────────────────────────────────────────
     const handleStockChange = (variantId, value) => {
+        if (!String(variantId).startsWith('temp_')) return;
         setChangedStocks(prev => ({ ...prev, [variantId]: Number(value) }));
         setFormData(prev => ({
             ...prev,
@@ -316,6 +320,67 @@ const EditProduct = () => {
     const getDisplayStock = (variant) => {
         const vid = variant._id?.toString() || variant._tempId;
         return changedStocks[vid] !== undefined ? changedStocks[vid] : variant.stock;
+    };
+
+    const handleAdjustExistingStock = async (variant) => {
+        const variantId = variant?._id?.toString();
+        if (!variantId) {
+            toast.error('Save this variant before adjusting stock.');
+            return;
+        }
+        const currentStock = Number(variant.stock || variant.inventory?.stock || 0);
+        const rawQuantity = window.prompt(
+            `Current stock is ${currentStock}. Enter an adjustment amount, for example 10 to restock or -2 to reduce.`
+        );
+        if (rawQuantity === null) return;
+        const quantity = Number(rawQuantity);
+        if (!Number.isFinite(quantity) || quantity === 0) {
+            toast.error('Enter a non-zero stock adjustment.');
+            return;
+        }
+
+        stockIdempotencyCounterRef.current += 1;
+        const idempotencyKey = `stock-adjust:${id}:${variantId}:${stockIdempotencyCounterRef.current}`;
+        setStockSubmittingId(variantId);
+        try {
+            const { data } = await API.patch('/admin/inventory/stock', {
+                productId: id,
+                variantId,
+                mode: 'adjust',
+                quantity,
+                reason: quantity > 0 ? 'restock' : 'manual_reduction',
+                note: 'Adjusted from product edit variant table',
+                idempotencyKey
+            });
+            const afterStock = Number(data.data?.afterStock);
+            if (Number.isFinite(afterStock)) {
+                setFormData(prev => ({
+                    ...prev,
+                    variants: prev.variants.map(item => {
+                        const itemId = item._id?.toString() || item._tempId;
+                        if (itemId !== variantId) return item;
+                        return {
+                            ...item,
+                            stock: afterStock,
+                            inventory: {
+                                ...(item.inventory || {}),
+                                stock: afterStock
+                            }
+                        };
+                    })
+                }));
+                setChangedStocks(prev => {
+                    const next = { ...prev };
+                    delete next[variantId];
+                    return next;
+                });
+            }
+            toast.success(data.message || 'Stock adjusted');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to adjust stock');
+        } finally {
+            setStockSubmittingId('');
+        }
     };
 
     // ── Remove variant ────────────────────────────────────────────────────────
@@ -502,7 +567,7 @@ const EditProduct = () => {
         toast.success('SEO preview filled from product info. Review it before updating.');
     };
 
-    // ── Main submit (scalar + stock changes + new variants) ───────────────────
+    // ── Main submit (scalar + variant metadata + new variants) ────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -540,7 +605,8 @@ const EditProduct = () => {
             body.append('coverImageIndex', JSON.stringify(coverImageIndex));
             newImageFiles.forEach(file => body.append('images', file));
 
-            // Process modified stocks AND newly created local variants
+            // Process modified variant metadata and newly created local variants.
+            // Existing stock changes must go through /admin/inventory/stock so movement history and alerts stay authoritative.
             if (Object.keys(changedStocks).length > 0) {
                 const variantsPayload = formData.variants
                     .filter(v => {
@@ -549,12 +615,19 @@ const EditProduct = () => {
                     })
                     .map(v => {
                         const vid = v._id?.toString() || v._tempId;
+                        const isExistingVariant = Boolean(v._id);
+                        const stockForNewVariant = changedStocks[vid] ?? v.stock;
+                        const inventory = { ...(v.inventory || {}) };
+                        if (isExistingVariant) {
+                            delete inventory.stock;
+                        } else {
+                            inventory.stock = stockForNewVariant;
+                        }
                         const payload = {
                             attributes:    v.attributes,
-                            stock:         changedStocks[vid] ?? v.stock,
                             priceOverride: v.pricing?.price ?? v.priceOverride,
                             pricing:       v.pricing,
-                            inventory:     { ...(v.inventory || {}), stock: changedStocks[vid] ?? v.stock },
+                            inventory,
                             image:         v.image,
                             sku:           v.sku,
                             barcode:       v.barcode,
@@ -564,6 +637,9 @@ const EditProduct = () => {
                             tax:           v.tax,
                             isActive:      v.isActive !== undefined ? v.isActive : true
                         };
+                        if (!isExistingVariant) {
+                            payload.stock = stockForNewVariant;
+                        }
                         // Only attach _id if it's a pre-existing variant.
                         // Backend will create new ones if _id is missing.
                         if (v._id) {
@@ -854,7 +930,7 @@ const EditProduct = () => {
                 >
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-xs text-gray-400 mt-0.5">Edit stock directly. Pending changes are saved only when you update the product.</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Edit variant details here. Existing stock changes use Adjust stock so movement history and alerts stay accurate.</p>
                         </div>
                         <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
                             {formData.variants.length} variants
@@ -937,14 +1013,28 @@ const EditProduct = () => {
                                             />
                                         </td>
                                         <td className="px-3 py-2.5 text-right">
-                                            <input
-                                                type="number" min={0}
-                                                value={getDisplayStock(v)}
-                                                onChange={(e) => handleStockChange(vid, e.target.value)}
-                                                className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-colors ${
-                                                    isModified ? 'border-amber-300 bg-amber-50/60' : ''
-                                                }`}
-                                            />
+                                            {isNew ? (
+                                                <input
+                                                    type="number" min={0}
+                                                    value={getDisplayStock(v)}
+                                                    onChange={(e) => handleStockChange(vid, e.target.value)}
+                                                    className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-colors ${
+                                                        isModified ? 'border-amber-300 bg-amber-50/60' : ''
+                                                    }`}
+                                                />
+                                            ) : (
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <span className="font-semibold text-slate-800">{getDisplayStock(v)}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAdjustExistingStock(v)}
+                                                        disabled={stockSubmittingId === vid}
+                                                        className="rounded-lg border border-indigo-100 px-2 py-1 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        {stockSubmittingId === vid ? 'Saving...' : 'Adjust'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-3 py-2.5 text-right">
                                             <input
@@ -1033,7 +1123,7 @@ const EditProduct = () => {
 
                     {Object.keys(changedStocks).length > 0 && (
                         <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                            {Object.keys(changedStocks).length} pending change(s) — saved when you click "Update Product"
+                            {Object.keys(changedStocks).length} pending variant detail change(s) — saved when you click "Update Product"
                         </p>
                     )}
 
@@ -1267,7 +1357,7 @@ const EditProduct = () => {
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">
                         <p className="font-black text-slate-950">Seller note</p>
                         <p className="mt-2">
-                            Changes to price, stock, variants, and status affect the live storefront after you click Update Product.
+                            Changes to price, variant details, and status affect the live storefront after you click Update Product. Existing stock changes are saved through Adjust stock.
                         </p>
                     </div>
                 </div>

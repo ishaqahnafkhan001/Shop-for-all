@@ -57,6 +57,11 @@ const variantSchema = new Schema({
         reservedStock: { type: Number, min: 0, default: 0 },
         lowStockThreshold: { type: Number, min: 0, default: 5 },
         lowStockAlertActive: { type: Boolean, default: false },
+        lowStockAlertStatus: {
+            type: String,
+            enum: ['not_triggered', 'queued', 'sent', 'failed'],
+            default: 'not_triggered'
+        },
         lowStockAlertSentAt: { type: Date, default: null },
         trackQuantity: { type: Boolean, default: true },
         allowOversell: { type: Boolean, default: false }

@@ -5,6 +5,7 @@ import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 import PaginationBar from '../../../components/ui/PaginationBar.jsx';
+import PageRefreshButton from '../../../components/ui/PageRefreshButton.jsx';
 import { isAbortError, useAbortableRequest } from '../../../hooks/useAbortableRequest.js';
 import useDebouncedValue from '../../../hooks/useDebouncedValue.js';
 
@@ -57,7 +58,6 @@ const CustomerList = () => {
         } catch (error) {
             if (isAbortError(error)) return;
             toast.error("Failed to load customers");
-            setCustomers([]);
         } finally {
             if (fetchId === fetchIdRef.current) setLoading(false);
         }
@@ -162,6 +162,12 @@ const CustomerList = () => {
                     <option value="Active">Active</option>
                     <option value="Suspended">Suspended</option>
                 </select>
+                <PageRefreshButton
+                    onClick={() => fetchCustomers(pagination.page)}
+                    loading={loading && customers.length > 0}
+                    label="Refresh customers"
+                    className="lg:w-auto"
+                />
                 <button
                     type="button"
                     onClick={() => setCampaignMode('plain')}
@@ -179,7 +185,7 @@ const CustomerList = () => {
             </div>
 
             {/* Data Rendering */}
-            {loading ? (
+            {loading && customers.length === 0 ? (
                 <AdminLoadingState
                     title="Loading customers"
                     description="We are checking registered customers and shopper accounts for this store."
@@ -192,6 +198,11 @@ const CustomerList = () => {
                 />
             ) : (
                 <>
+                    {loading && customers.length > 0 && (
+                        <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+                            Refreshing customers...
+                        </div>
+                    )}
                     {/* Desktop View */}
                     <div className="hidden md:block">
                         <Table columns={columns} data={customers} actions={renderActions} />

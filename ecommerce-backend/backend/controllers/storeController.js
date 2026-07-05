@@ -231,7 +231,15 @@ exports.getStorefrontBootstrap = async (req, res) => {
         })}`;
 
         const cached = await cache.get(cacheKey);
-        if (cached) return res.status(200).json(cached);
+        if (cached) {
+            return res.status(200).json({
+                ...cached,
+                data: {
+                    ...(cached.data || {}),
+                    serverNow: new Date().toISOString()
+                }
+            });
+        }
 
         const query = {
             shop_id: shopObjectId,
@@ -374,7 +382,13 @@ exports.getStorefrontBootstrap = async (req, res) => {
         };
 
         await cache.set(cacheKey, response, BOOTSTRAP_CACHE_TTL_SECONDS);
-        res.status(200).json(response);
+        res.status(200).json({
+            ...response,
+            data: {
+                ...response.data,
+                serverNow: new Date().toISOString()
+            }
+        });
     } catch (err) {
         console.error("Storefront bootstrap error:", err);
         res.status(500).json({ error: "Error loading storefront data." });

@@ -60,12 +60,13 @@ const resetLowStockAlertState = async ({ shopId, productId, variantId }) => Prod
     {
         $set: {
             'variants.$.inventory.lowStockAlertActive': false,
+            'variants.$.inventory.lowStockAlertStatus': 'not_triggered',
             'variants.$.inventory.lowStockAlertSentAt': null
         }
     }
 );
 
-const activateLowStockAlertState = async ({ shopId, productId, variantId }) => Product.updateOne(
+const markLowStockAlertQueued = async ({ shopId, productId, variantId }) => Product.updateOne(
     {
         _id: productId,
         shop_id: shopId,
@@ -73,14 +74,46 @@ const activateLowStockAlertState = async ({ shopId, productId, variantId }) => P
         variants: {
             $elemMatch: {
                 _id: variantId,
-                'inventory.lowStockAlertActive': { $ne: true }
+                'inventory.lowStockAlertStatus': { $nin: ['queued', 'sent'] }
             }
         }
     },
     {
         $set: {
             'variants.$.inventory.lowStockAlertActive': true,
+            'variants.$.inventory.lowStockAlertStatus': 'queued',
+            'variants.$.inventory.lowStockAlertSentAt': null
+        }
+    }
+);
+
+const markLowStockAlertSent = async ({ shopId, productId, variantId }) => Product.updateOne(
+    {
+        _id: productId,
+        shop_id: shopId,
+        isDeleted: false,
+        'variants._id': variantId
+    },
+    {
+        $set: {
+            'variants.$.inventory.lowStockAlertActive': true,
+            'variants.$.inventory.lowStockAlertStatus': 'sent',
             'variants.$.inventory.lowStockAlertSentAt': new Date()
+        }
+    }
+);
+
+const markLowStockAlertFailed = async ({ shopId, productId, variantId }) => Product.updateOne(
+    {
+        _id: productId,
+        shop_id: shopId,
+        isDeleted: false,
+        'variants._id': variantId
+    },
+    {
+        $set: {
+            'variants.$.inventory.lowStockAlertActive': true,
+            'variants.$.inventory.lowStockAlertStatus': 'failed'
         }
     }
 );
@@ -121,12 +154,19 @@ const enqueueLowStockAlertFromStockChange = async ({
 
         if (!shouldAlert) return null;
 
-        const stateUpdate = await activateLowStockAlertState({ shopId, productId, variantId });
-        if (Number(stateUpdate.modifiedCount || 0) !== 1) return null;
+        const currentStatus = variant?.inventory?.lowStockAlertStatus || (variant?.inventory?.lowStockAlertActive ? 'sent' : 'not_triggered');
+        if (['queued', 'sent'].includes(currentStatus)) return null;
 
-        const dedupeKey = referenceId || `${toNumber(beforeStock)}:${toNumber(afterStock)}:${source}:${new Date().toISOString()}`;
+        const thresholdCrossingVersion = referenceId || `${toNumber(beforeStock)}:${toNumber(afterStock)}:${threshold}`;
+        const idempotencyKey = [
+            'low-stock',
+            shopId,
+            productId,
+            variantId,
+            thresholdCrossingVersion
+        ].join(':');
 
-        return enqueueJob({
+        const job = await enqueueJob({
             queue: LOW_STOCK_ALERT_QUEUE,
             name: LOW_STOCK_ALERT_JOB,
             shop_id: shopId,
@@ -139,14 +179,13 @@ const enqueueLowStockAlertFromStockChange = async ({
                 source,
                 referenceId
             },
-            idempotencyKey: [
-                LOW_STOCK_ALERT_JOB,
-                shopId,
-                productId,
-                variantId,
-                dedupeKey
-            ].join(':')
+            idempotencyKey
         });
+
+        if (!job?._id) return null;
+
+        await markLowStockAlertQueued({ shopId, productId, variantId });
+        return job;
     } catch (error) {
         logger.warn('low_stock_alert_enqueue_failed', {
             shopId,
@@ -269,11 +308,26 @@ const processLowStockAlertJob = async (job) => {
         }
     });
 
-    const recipients = await getVendorAdminEmails(job.shop_id);
+    let recipients = await getVendorAdminEmails(job.shop_id);
     if (recipients.length === 0) {
+        const fallbackEmail = String(process.env.ADMIN_EMAIL_USER || '').trim();
         logger.warn('low_stock_alert_no_vendor_email', {
             jobId: job._id,
+            shopId: job.shop_id,
+            fallbackRecipientUsed: Boolean(fallbackEmail)
+        });
+        recipients = fallbackEmail ? [fallbackEmail] : [];
+    }
+
+    if (recipients.length === 0) {
+        logger.warn('low_stock_alert_no_recipient', {
+            jobId: job._id,
             shopId: job.shop_id
+        });
+        await markLowStockAlertFailed({
+            shopId: job.shop_id,
+            productId,
+            variantId
         });
         return null;
     }
@@ -297,8 +351,15 @@ const processLowStockAlertJob = async (job) => {
         to: recipients,
         subject: `Low stock warning: ${productTitle}`,
         senderName: 'ScaleUp Inventory',
+        type: 'admin',
         html,
         text: `${message}\nSKU: ${sku}`
+    });
+
+    await markLowStockAlertSent({
+        shopId: job.shop_id,
+        productId,
+        variantId
     });
 
     logger.info('low_stock_alert_sent', {
@@ -321,5 +382,8 @@ module.exports = {
     shouldQueueLowStockAlert,
     enqueueLowStockAlertFromStockChange,
     enqueueLowStockAlertsForLogs,
-    processLowStockAlertJob
+    processLowStockAlertJob,
+    markLowStockAlertQueued,
+    markLowStockAlertSent,
+    markLowStockAlertFailed
 };

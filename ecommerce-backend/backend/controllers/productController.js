@@ -43,6 +43,17 @@ const { applyScheduledSalesToProducts } = require('../services/sales/scheduledSa
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];
+
+const normalizePageLimit = (value, fallback = 25) => {
+    const requested = parseInt(value, 10);
+    if (!Number.isFinite(requested) || requested <= 0) return fallback;
+    if (ALLOWED_PAGE_SIZES.includes(requested)) return requested;
+    return requested > Math.max(...ALLOWED_PAGE_SIZES)
+        ? Math.max(...ALLOWED_PAGE_SIZES)
+        : fallback;
+};
+
 
 // ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...
 
@@ -227,7 +238,7 @@ exports.getShopProducts = async (req, res) => {
         const { sort } = req.query;
 
         const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 200);
+        const limit = normalizePageLimit(req.query.limit, 25);
         const isStorefrontRequest = !req.user || req.user.role === 'Customer';
         const query = buildProductListQuery({
             shopId,

@@ -11,9 +11,15 @@ import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvi
 import { ReferenceStorefrontHome } from '@/components/storefront/ReferenceStorefront';
 import { trackStorefrontEvent } from '@/utils/analyticsTracker';
 
-const formatCountdown = (target) => {
+const getServerOffset = (serverNow) => {
+    const serverTime = new Date(serverNow || 0).getTime();
+    return Number.isFinite(serverTime) ? serverTime - Date.now() : 0;
+};
+
+const formatCountdown = (target, serverOffset = 0) => {
     const targetTime = new Date(target || 0).getTime();
-    const remaining = Math.max(0, targetTime - Date.now());
+    const effectiveNow = Date.now() + serverOffset;
+    const remaining = Math.max(0, targetTime - effectiveNow);
     const days = Math.floor(remaining / 86400000);
     const hours = Math.floor((remaining % 86400000) / 3600000);
     const minutes = Math.floor((remaining % 3600000) / 60000);
@@ -21,18 +27,67 @@ const formatCountdown = (target) => {
     return { days, hours, minutes, seconds, expired: remaining <= 0 };
 };
 
-function LaunchCountdown({ launchAt }) {
-    const [time, setTime] = useState(() => formatCountdown(launchAt));
+const getCountdownState = ({ startsAt, endsAt, serverOffset = 0 }) => {
+    const now = Date.now() + serverOffset;
+    const startTime = new Date(startsAt || 0).getTime();
+    const endTime = new Date(endsAt || 0).getTime();
+    const hasStart = Number.isFinite(startTime) && startTime > 0;
+    const hasEnd = Number.isFinite(endTime) && endTime > 0;
+
+    if (hasStart && now < startTime) {
+        return { label: 'Sale starts in', target: startsAt, state: 'upcoming', ...formatCountdown(startsAt, serverOffset) };
+    }
+    if (hasEnd && now < endTime) {
+        return { label: 'Sale ends in', target: endsAt, state: 'active', ...formatCountdown(endsAt, serverOffset) };
+    }
+    return { label: '', target: '', state: 'ended', days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+};
+
+function SaleCountdown({ startsAt, endsAt, serverNow, onBoundary, className = '' }) {
+    const serverOffsetRef = useRef(0);
+    const boundaryHandledRef = useRef('');
+    const [time, setTime] = useState({ label: '', target: '', state: 'pending', days: 0, hours: 0, minutes: 0, seconds: 0, expired: false });
 
     useEffect(() => {
-        const timer = window.setInterval(() => {
-            setTime(formatCountdown(launchAt));
-        }, 1000);
-        return () => window.clearInterval(timer);
-    }, [launchAt]);
+        serverOffsetRef.current = getServerOffset(serverNow);
+        boundaryHandledRef.current = '';
+    }, [serverNow]);
+
+    useEffect(() => {
+        if (!startsAt && !endsAt) return undefined;
+        const readNextState = () => getCountdownState({
+            startsAt,
+            endsAt,
+            serverOffset: serverOffsetRef.current
+        });
+        const update = () => {
+            setTime(prev => {
+                const next = readNextState();
+                if (
+                    next.state !== prev.state &&
+                    prev.state !== 'pending' &&
+                    !boundaryHandledRef.current
+                ) {
+                    boundaryHandledRef.current = `${prev.state}->${next.state}`;
+                    window.setTimeout(() => onBoundary?.(next.state), 0);
+                }
+                return next;
+            });
+        };
+        const initialTimer = window.setTimeout(update, 0);
+        const timer = window.setInterval(update, 1000);
+        return () => {
+            window.clearTimeout(initialTimer);
+            window.clearInterval(timer);
+        };
+    }, [endsAt, onBoundary, startsAt]);
+
+    if (!time.target || time.state === 'pending' || time.state === 'ended') return null;
 
     return (
-        <div className="mt-4 grid grid-cols-4 gap-2 max-w-sm">
+        <div className={`mt-4 ${className}`}>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-white/75" aria-live="polite">{time.label}</p>
+            <div className="grid max-w-sm grid-cols-4 gap-2">
             {[
                 ['Days', time.days],
                 ['Hours', time.hours],
@@ -44,11 +99,12 @@ function LaunchCountdown({ launchAt }) {
                     <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">{label}</p>
                 </div>
             ))}
+            </div>
         </div>
     );
 }
 
-function StorefrontLaunchBanners({ banners = [] }) {
+function StorefrontLaunchBanners({ banners = [], serverNow, onCountdownBoundary }) {
     const visible = Array.isArray(banners) ? banners : [];
     if (!visible.length) return null;
 
@@ -95,7 +151,11 @@ function StorefrontLaunchBanners({ banners = [] }) {
                                     <p className="mt-2 max-w-xl text-sm font-semibold leading-6 text-white/78 sm:text-base">{banner.subtitle}</p>
                                 )}
                                 {banner.countdownEnabled && banner.launchAt && (
-                                    <LaunchCountdown launchAt={banner.launchAt} />
+                                    <SaleCountdown
+                                        startsAt={banner.launchAt}
+                                        serverNow={serverNow}
+                                        onBoundary={onCountdownBoundary}
+                                    />
                                 )}
                                 {canOpen ? (
                                     <span className="mt-5 inline-flex w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950">
@@ -123,7 +183,20 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
     const [catalogSearch, setCatalogSearch] = useState('');
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-    const { shop, products, categories, banners = [], sectionProducts, sectionReviews, activeSalePopups = [], loading, error, pagination } = useShopData(subdomain, filters, initialData);
+    const {
+        shop,
+        products,
+        categories,
+        banners = [],
+        sectionProducts,
+        sectionReviews,
+        activeSalePopups = [],
+        serverNow,
+        refreshBootstrap,
+        loading,
+        error,
+        pagination
+    } = useShopData(subdomain, filters, initialData);
     const [dismissedSalePopupId, setDismissedSalePopupId] = useState('');
     const theme = normalizeTheme(shop?.theme || initialData?.shop?.theme || {});
     const storewideDiscount = shop?.storewideDiscount || initialData?.shop?.storewideDiscount || 0;
@@ -287,7 +360,11 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
 
     return (
         <>
-            <StorefrontLaunchBanners banners={banners} />
+            <StorefrontLaunchBanners
+                banners={banners}
+                serverNow={serverNow}
+                onCountdownBoundary={refreshBootstrap}
+            />
             <ReferenceStorefrontHome
                 theme={theme}
                 products={products}
@@ -359,6 +436,13 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
                             {activeSalePopup.message && (
                                 <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-600">{activeSalePopup.message}</p>
                             )}
+                            <SaleCountdown
+                                startsAt={activeSalePopup.startsAt}
+                                endsAt={activeSalePopup.endsAt}
+                                serverNow={serverNow}
+                                onBoundary={refreshBootstrap}
+                                className="[&_p:first-child]:text-emerald-700 [&_.rounded-2xl]:bg-emerald-50"
+                            />
                             {activeSalePopup.ctaUrl && (
                                 <Link
                                     href={activeSalePopup.ctaUrl}

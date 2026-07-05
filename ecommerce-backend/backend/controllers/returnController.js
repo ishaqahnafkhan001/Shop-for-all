@@ -6,6 +6,13 @@ const InventoryLog = require('../models/InventoryLog');
 const { logAudit } = require('../services/auditLogService');
 const { createNotification } = require('../services/notificationService');
 const { buildPagination } = require('../utils/pagination');
+const {
+    normalizePage,
+    normalizeLimit,
+    normalizeSearch,
+    escapeRegex,
+    parseDate
+} = require('../utils/listQuery');
 const { enqueueLowStockAlertsForLogs } = require('../services/inventoryLowStockAlertService');
 const {
     parseMaybeJson,
@@ -21,6 +28,13 @@ const VALID_TRANSITIONS = {
     Cancelled: [],
     Closed: []
 };
+
+const RETURN_STATUSES = new Set(Object.keys(VALID_TRANSITIONS));
+const RETURN_SORT_MAP = Object.freeze({
+    newest: { createdAt: -1, _id: -1 },
+    oldest: { createdAt: 1, _id: 1 },
+    status_asc: { status: 1, createdAt: -1 }
+});
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''));
 
@@ -130,19 +144,42 @@ const buildReturnItems = (order, submittedItems = []) => {
 exports.getReturns = async (req, res) => {
     try {
         const shopId = req.tenantId;
-        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
+        const page = normalizePage(req.query.page);
+        const limit = normalizeLimit(req.query.limit, 25);
         const skip = (page - 1) * limit;
         const query = { shop_id: shopId, isDeleted: false };
+        const sort = RETURN_SORT_MAP[req.query.sort] || RETURN_SORT_MAP.newest;
 
-        if (req.query.status && req.query.status !== 'All') query.status = req.query.status;
+        if (RETURN_STATUSES.has(req.query.status)) query.status = req.query.status;
         if (req.query.orderId && isObjectId(req.query.orderId)) query.order_id = req.query.orderId;
+        const search = normalizeSearch(req.query.search || req.query.orderSearch || '');
+        if (search) {
+            const regex = new RegExp(escapeRegex(search), 'i');
+            query.$or = [
+                { reason: regex },
+                { customerNote: regex },
+                { 'items.title': regex },
+                { 'items.sku': regex }
+            ];
+            if (isObjectId(search)) query.$or.push({ order_id: search });
+        }
+        const dateFrom = parseDate(req.query.dateFrom);
+        const dateTo = parseDate(req.query.dateTo);
+        if (dateFrom || dateTo) {
+            query.createdAt = {};
+            if (dateFrom) query.createdAt.$gte = dateFrom;
+            if (dateTo) {
+                const inclusiveEnd = new Date(dateTo);
+                inclusiveEnd.setHours(23, 59, 59, 999);
+                query.createdAt.$lte = inclusiveEnd;
+            }
+        }
 
         const [returns, total] = await Promise.all([
             ReturnRequest.find(query)
                 .populate('order_id', 'status pricing.total createdAt')
                 .populate('customer_id', 'fullName email phone')
-                .sort({ createdAt: -1 })
+                .sort(sort)
                 .skip(skip)
                 .limit(limit)
                 .lean(),

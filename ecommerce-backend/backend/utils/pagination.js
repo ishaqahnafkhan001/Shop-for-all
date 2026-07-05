@@ -5,13 +5,15 @@ const buildPagination = ({ total = 0, page = 1, limit = 25 }) => {
     const totalPages = Math.max(Math.ceil(safeTotal / safeLimit), 1);
 
     return {
-        total: safeTotal,
         page: safePage,
         limit: safeLimit,
-        pages: totalPages,
+        totalItems: safeTotal,
         totalPages,
         hasNextPage: safePage < totalPages,
-        hasPrevPage: safePage > 1
+        hasPrevPage: safePage > 1,
+        // Temporary compatibility aliases for existing frontend/admin code.
+        total: safeTotal,
+        pages: totalPages
     };
 };
 

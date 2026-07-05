@@ -54,7 +54,18 @@ const inventoryLogSchema = new Schema({
         ref: 'User'
     },
 
-    note: String
+    note: String,
+
+    reason: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+
+    idempotencyKey: {
+        type: String,
+        trim: true
+    }
 
 }, {timestamps: true});
 
@@ -62,5 +73,12 @@ const inventoryLogSchema = new Schema({
 // 🔥 Indexes
 inventoryLogSchema.index({productId: 1, createdAt: -1});
 inventoryLogSchema.index({shop_id: 1, createdAt: -1});
+inventoryLogSchema.index(
+    { shop_id: 1, idempotencyKey: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { idempotencyKey: { $exists: true, $type: 'string' } }
+    }
+);
 
 module.exports = mongoose.model('InventoryLog', inventoryLogSchema);

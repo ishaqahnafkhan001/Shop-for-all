@@ -337,17 +337,26 @@ test('low stock warnings are queued, tenant-scoped, and sent only on threshold c
     const publicController = read('controllers/publicController.js');
 
     assert.match(productModel, /lowStockThreshold/);
+    assert.match(productModel, /lowStockAlertStatus/);
     assert.match(service, /LOW_STOCK_ALERT_QUEUE/);
     assert.match(service, /LOW_STOCK_ALERT_JOB/);
+    assert.match(service, /markLowStockAlertQueued/);
+    assert.match(service, /markLowStockAlertSent/);
+    assert.match(service, /markLowStockAlertFailed/);
+    assert.match(service, /await enqueueJob\(\{[\s\S]*idempotencyKey/);
+    assert.match(service, /await markLowStockAlertQueued/);
     assert.match(service, /variant\?\.inventory\?\.lowStockThreshold/);
     assert.match(service, /toNumber\(beforeStock\) > threshold && toNumber\(afterStock\) <= threshold/);
     assert.match(service, /Product\.findOne\(\{[\s\S]*shop_id:\s*shopId/);
     assert.match(service, /createNotification\(\{[\s\S]*type:\s*'inventory'/);
     assert.match(service, /getVendorAdminEmails/);
     assert.match(service, /sendVendorNotificationEmail/);
+    assert.match(service, /ADMIN_EMAIL_USER/);
+    assert.match(service, /fallbackRecipientUsed/);
     assert.match(service, /low_stock_alert_sent/);
     assert.match(notificationModel, /'inventory'/);
     assert.match(worker, /\[LOW_STOCK_ALERT_QUEUE\]: processLowStockAlertJob/);
+    assert.match(worker, /markLowStockAlertFailed/);
     assert.match(productController, /enqueueLowStockAlertsForLogs\(logsToInsert\)/);
     assert.match(productController, /enqueueLowStockAlertsForLogs\(lowStockLogs\)/);
     assert.match(inventoryController, /enqueueLowStockAlertFromStockChange/);
@@ -677,6 +686,7 @@ test('vendor admin pagination responses keep compatibility metadata', () => {
     const adminNotifications = readProject('ecommerce-admin/src/pages/dashboard/Notifications.jsx');
 
     assert.match(pagination, /pages/);
+    assert.match(pagination, /totalItems/);
     assert.match(pagination, /totalPages/);
     assert.match(pagination, /hasNextPage/);
     assert.match(pagination, /hasPrevPage/);
@@ -690,6 +700,34 @@ test('vendor admin pagination responses keep compatibility metadata', () => {
     assert.match(adminCustomerList, /PaginationBar/);
     assert.match(adminReturns, /PaginationBar/);
     assert.match(adminNotifications, /PaginationBar/);
+});
+
+test('stock mutations use explicit semantics, idempotency, and inventory movement logs', () => {
+    const inventoryController = read('controllers/inventory.js');
+    const inventoryLog = read('models/InventoryLog.js');
+    const inventoryMutation = read('models/InventoryMutation.js');
+    const editProduct = readProject('ecommerce-admin/src/pages/dashboard/products/EditProduct.jsx');
+    const catalogTools = readProject('ecommerce-admin/src/pages/dashboard/CatalogTools.jsx');
+
+    assert.match(inventoryController, /mode = 'adjust'/);
+    assert.match(inventoryController, /normalizedMode === 'set'/);
+    assert.match(inventoryController, /expectedCurrentStock is required when setting stock/);
+    assert.match(inventoryController, /\$inc:\s*\{[\s\S]*variants\.\$\.stock/);
+    assert.match(inventoryController, /\$set:\s*\{[\s\S]*variants\.\$\.stock/);
+    assert.match(inventoryController, /InventoryMutation\.findOne\(\{[\s\S]*idempotencyKey/);
+    assert.match(inventoryController, /InventoryMutation\.create/);
+    assert.match(inventoryController, /IDEMPOTENCY_IN_PROGRESS/);
+    assert.match(inventoryController, /IDEMPOTENCY_FAILED/);
+    assert.match(inventoryController, /InventoryLog\.create\(logPayload\)/);
+    assert.match(inventoryLog, /idempotencyKey/);
+    assert.match(inventoryLog, /partialFilterExpression/);
+    assert.match(inventoryMutation, /idempotencyKey/);
+    assert.match(inventoryMutation, /completed/);
+    assert.match(editProduct, /\/admin\/inventory\/stock/);
+    assert.match(editProduct, /mode:\s*'adjust'/);
+    assert.match(editProduct, /delete inventory\.stock/);
+    assert.match(catalogTools, /Stock changes are handled from Inventory/);
+    assert.doesNotMatch(catalogTools, /updates\.stock/);
 });
 
 test('return proof upload is required for new admin and tracked returns', () => {

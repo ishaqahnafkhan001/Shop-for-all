@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const InventoryLog = require('../models/InventoryLog');
+const InventoryMutation = require('../models/InventoryMutation');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const { enqueueLowStockAlertFromStockChange } = require('../services/inventoryLowStockAlertService');
@@ -11,24 +12,94 @@ const { enqueueLowStockAlertFromStockChange } = require('../services/inventoryLo
  * @access  Private (Admin)
  */
 exports.updateStock = async (req, res) => {
+    let mutationReservation = null;
     try {
-        const { productId, variantId, quantity } = req.body;
+        const {
+            productId,
+            variantId,
+            mode = 'adjust',
+            quantity,
+            expectedCurrentStock,
+            reason = '',
+            note = '',
+            idempotencyKey = ''
+        } = req.body;
+        const normalizedMode = ['adjust', 'set'].includes(String(mode)) ? String(mode) : 'adjust';
+        const numericQuantity = Number(quantity);
+        const cleanReason = String(reason || '').trim().slice(0, 80);
+        const cleanNote = String(note || '').trim().slice(0, 500);
+        const cleanIdempotencyKey = String(idempotencyKey || '').trim().slice(0, 160);
 
         // ✅ Basic input validation
         if (!productId || !variantId || quantity === undefined) {
             return res.status(400).json({ success: false, error: "productId, variantId, and quantity are required" });
         }
-        if (typeof quantity !== 'number' || quantity === 0) {
-            return res.status(400).json({ success: false, error: "quantity must be a non-zero number" });
+        if (!Number.isFinite(numericQuantity)) {
+            return res.status(400).json({ success: false, error: "quantity must be a valid number" });
+        }
+        if (normalizedMode === 'adjust' && numericQuantity === 0) {
+            return res.status(400).json({ success: false, error: "quantity must be a non-zero adjustment" });
+        }
+        if (normalizedMode === 'set' && numericQuantity < 0) {
+            return res.status(400).json({ success: false, error: "stock cannot be set below 0" });
         }
 
         const shopId = req.tenantId;
+
+        if (cleanIdempotencyKey) {
+            const existingMutation = await InventoryMutation.findOne({
+                shop_id: shopId,
+                idempotencyKey: cleanIdempotencyKey
+            }).lean();
+            if (existingMutation?.status === 'completed') {
+                return res.status(200).json({
+                    success: true,
+                    idempotent: true,
+                    message: `Stock update already applied. Current stock: ${existingMutation.afterStock}`,
+                    data: {
+                        beforeStock: existingMutation.beforeStock,
+                        afterStock: existingMutation.afterStock
+                    }
+                });
+            }
+            if (existingMutation?.status === 'processing') {
+                return res.status(409).json({
+                    success: false,
+                    code: 'IDEMPOTENCY_IN_PROGRESS',
+                    error: 'This stock update is already being processed.'
+                });
+            }
+            if (existingMutation?.status === 'failed') {
+                return res.status(409).json({
+                    success: false,
+                    code: 'IDEMPOTENCY_FAILED',
+                    error: 'This stock update previously failed. Refresh and submit a new adjustment.'
+                });
+            }
+
+            try {
+                mutationReservation = await InventoryMutation.create({
+                    shop_id: shopId,
+                    idempotencyKey: cleanIdempotencyKey,
+                    status: 'processing'
+                });
+            } catch (reservationError) {
+                if (reservationError?.code === 11000) {
+                    return res.status(409).json({
+                        success: false,
+                        code: 'IDEMPOTENCY_IN_PROGRESS',
+                        error: 'This stock update is already being processed.'
+                    });
+                }
+                throw reservationError;
+            }
+        }
 
         const product = await Product.findOne({
             _id: productId,
             shop_id: shopId,
             isDeleted: false
-        });
+        }).select('title variants');
 
         if (!product) {
             return res.status(404).json({ success: false, error: "Product not found" });
@@ -39,48 +110,150 @@ exports.updateStock = async (req, res) => {
             return res.status(404).json({ success: false, error: "Variant not found" });
         }
 
+        const beforeStock = Number(variant.stock || 0);
+        const afterStock = normalizedMode === 'set'
+            ? numericQuantity
+            : beforeStock + numericQuantity;
+
         // ✅ Prevent stock going negative on manual adjustment
-        if (variant.stock + quantity < 0) {
+        if (afterStock < 0) {
             return res.status(400).json({
                 success: false,
-                error: `Cannot reduce stock below 0. Current stock: ${variant.stock}`
+                error: `Cannot reduce stock below 0. Current stock: ${beforeStock}`
             });
         }
 
-        const beforeStock = variant.stock;
-        variant.stock += quantity;
-        await product.save();
+        if (normalizedMode === 'set') {
+            const expected = Number(expectedCurrentStock);
+            if (!Number.isFinite(expected)) {
+                return res.status(400).json({
+                    success: false,
+                    error: "expectedCurrentStock is required when setting stock"
+                });
+            }
+            if (expected !== beforeStock) {
+                return res.status(409).json({
+                    success: false,
+                    code: 'STALE_STOCK',
+                    error: `Stock changed from ${expected} to ${beforeStock}. Refresh before setting a new value.`,
+                    data: { currentStock: beforeStock }
+                });
+            }
+        }
 
-        await InventoryLog.create({
+        const updateQuery = {
+            _id: productId,
+            shop_id: shopId,
+            isDeleted: false
+        };
+        if (normalizedMode === 'adjust' && numericQuantity < 0) {
+            updateQuery.variants = {
+                $elemMatch: {
+                    _id: variantId,
+                    stock: { $gte: Math.abs(numericQuantity) }
+                }
+            };
+        } else if (normalizedMode === 'set') {
+            updateQuery.variants = {
+                $elemMatch: {
+                    _id: variantId,
+                    stock: beforeStock
+                }
+            };
+        } else {
+            updateQuery['variants._id'] = variantId;
+        }
+
+        const update = normalizedMode === 'set'
+            ? {
+                $set: {
+                    'variants.$.stock': afterStock,
+                    'variants.$.inventory.stock': afterStock
+                }
+            }
+            : {
+                $inc: {
+                    'variants.$.stock': numericQuantity,
+                    'variants.$.inventory.stock': numericQuantity
+                }
+            };
+
+        const updatedProduct = await Product.findOneAndUpdate(
+            updateQuery,
+            update,
+            { new: true, runValidators: true }
+        ).select('variants');
+
+        if (!updatedProduct) {
+            return res.status(409).json({
+                success: false,
+                code: 'STOCK_UPDATE_CONFLICT',
+                error: 'Stock changed before this update could be applied. Refresh and try again.'
+            });
+        }
+
+        const logPayload = {
             shop_id: shopId,
             productId,
             variantId,
-            change: quantity,
-            type: 'MANUAL',
+            change: afterStock - beforeStock,
+            type: normalizedMode === 'adjust' && numericQuantity > 0 ? 'RESTOCK' : 'MANUAL',
             beforeStock,
-            afterStock: variant.stock,
+            afterStock,
             user: req.user._id,
-            note: quantity > 0 ? 'Manual stock addition' : 'Manual stock reduction'
-        });
+            note: cleanNote || (afterStock - beforeStock > 0 ? 'Manual stock addition' : 'Manual stock reduction'),
+            reason: cleanReason || normalizedMode
+        };
+        if (cleanIdempotencyKey) {
+            logPayload.idempotencyKey = cleanIdempotencyKey;
+        }
+
+        const inventoryLog = await InventoryLog.create(logPayload);
+
+        if (mutationReservation?._id) {
+            await InventoryMutation.updateOne(
+                { _id: mutationReservation._id },
+                {
+                    $set: {
+                        status: 'completed',
+                        beforeStock,
+                        afterStock,
+                        inventoryLogId: inventoryLog._id,
+                        lastError: ''
+                    }
+                }
+            );
+        }
 
         await enqueueLowStockAlertFromStockChange({
             shopId,
             productId,
             variantId,
             beforeStock,
-            afterStock: variant.stock,
+            afterStock,
             source: 'MANUAL',
-            referenceId: product._id
+            referenceId: cleanIdempotencyKey || `${productId}:${variantId}:${beforeStock}:${afterStock}`
         });
 
         res.status(200).json({
             success: true,
-            message: `Stock updated. New stock: ${variant.stock}`,
-            data: { beforeStock, afterStock: variant.stock }
+            message: `Stock updated. New stock: ${afterStock}`,
+            data: { beforeStock, afterStock, mode: normalizedMode }
         });
 
     } catch (err) {
         console.error("Update stock error:", err);
+        if (mutationReservation?._id) {
+            await InventoryMutation.updateOne(
+                { _id: mutationReservation._id, status: 'processing' },
+                {
+                    $set: {
+                        status: 'failed',
+                        lastError: String(err?.message || err || 'Failed to update stock').slice(0, 500)
+                    }
+                }
+            ).catch(() => null);
+        }
         res.status(500).json({ success: false, error: "Failed to update stock" });
     }
 };

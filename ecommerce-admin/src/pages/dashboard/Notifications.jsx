@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import API from '../../api/api';
 import Button from '../../components/ui/Button';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import { isAbortError, useAbortableRequest } from '../../hooks/useAbortableRequest.js';
 
@@ -84,13 +85,20 @@ const Notifications = () => {
                     <h1 className="mt-2 text-2xl font-bold text-slate-950">Notifications</h1>
                     <p className="mt-1 text-sm text-slate-500">Important shop events, order alerts, customer registrations, and returns appear here.</p>
                 </div>
-                <Button variant="secondary" onClick={markAllRead}>
-                    <CheckCheck size={16} /> Mark all read
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <PageRefreshButton
+                        onClick={() => fetchNotifications(pagination.page)}
+                        loading={loading && items.length > 0}
+                        label="Refresh notifications"
+                    />
+                    <Button variant="secondary" onClick={markAllRead}>
+                        <CheckCheck size={16} /> Mark all read
+                    </Button>
+                </div>
             </div>
 
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                {loading ? (
+                {loading && items.length === 0 ? (
                     <AdminLoadingState
                         title="Loading notifications"
                         description="We are checking recent order, customer, return, and system updates."
@@ -105,6 +113,11 @@ const Notifications = () => {
                     />
                 ) : (
                     <div className="divide-y divide-slate-100">
+                        {loading && items.length > 0 && (
+                            <div className="bg-indigo-50 px-5 py-2 text-sm text-indigo-700">
+                                Refreshing notifications...
+                            </div>
+                        )}
                         {items.map(item => (
                             <div key={item._id} className={`flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between ${item.readAt ? 'bg-white' : 'bg-indigo-50/40'}`}>
                                 <div className="min-w-0">

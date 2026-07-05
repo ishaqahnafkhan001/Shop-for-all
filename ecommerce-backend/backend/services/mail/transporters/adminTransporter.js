@@ -7,8 +7,8 @@ const adminTransporter = nodemailer.createTransport({
     port: smtpPort,
     secure: smtpPort === 465,
     auth: {
-        user: process.env.ADMIN_EMAIL_USER || process.env.EMAIL_USER,
-        pass: process.env.ADMIN_EMAIL_PASS || process.env.EMAIL_PASS
+        user: process.env.ADMIN_EMAIL_USER,
+        pass: process.env.ADMIN_EMAIL_PASS
     },
     connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 15000),
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 15000),

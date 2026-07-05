@@ -6,6 +6,7 @@ import Table from '../../components/ui/Table';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import { AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import { isAbortError, useAbortableRequest } from '../../hooks/useAbortableRequest.js';
 import useDebouncedValue from '../../hooks/useDebouncedValue.js';
@@ -269,23 +270,34 @@ const Returns = () => {
                     >
                         {statusOptions.map(option => <option key={option} value={option}>{option}</option>)}
                     </select>
-                    <Button variant="secondary" onClick={() => fetchReturns(1)}>Refresh</Button>
+                    <PageRefreshButton
+                        onClick={() => fetchReturns(pagination.page)}
+                        loading={loading && returns.length > 0}
+                        label="Refresh returns"
+                    />
                 </div>
             </div>
 
-            {loading ? (
+            {loading && returns.length === 0 ? (
                 <AdminLoadingState
                     title="Loading returns"
                     description="We are checking return requests, refund status, and proof files for this store."
                 />
             ) : (
-                <Table
-                    columns={columns}
-                    data={returns}
-                    actions={renderActions}
-                    emptyTitle="No return requests"
-                    emptyDescription="Create a return from an existing order when a customer asks for refund or replacement support."
-                />
+                <>
+                    {loading && returns.length > 0 && (
+                        <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+                            Refreshing returns...
+                        </div>
+                    )}
+                    <Table
+                        columns={columns}
+                        data={returns}
+                        actions={renderActions}
+                        emptyTitle="No return requests"
+                        emptyDescription="Create a return from an existing order when a customer asks for refund or replacement support."
+                    />
+                </>
             )}
 
             {(pagination.totalPages || pagination.pages || 1) > 1 && (

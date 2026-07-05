@@ -12,7 +12,7 @@ const getFromEmail = (type) => {
         return process.env.ORDER_MAIL || process.env.RESEND_FROM || process.env.ADMIN_EMAIL_USER || process.env.EMAIL_USER;
     }
 
-    return process.env.ADMIN_EMAIL_USER || process.env.RESEND_FROM || process.env.EMAIL_USER || process.env.ORDER_MAIL;
+    return process.env.ADMIN_EMAIL_USER || process.env.RESEND_FROM;
 };
 
 const formatFrom = (senderName, fromEmail) => {

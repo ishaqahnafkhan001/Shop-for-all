@@ -237,7 +237,8 @@ test('low-stock alert trigger crosses threshold once and service has persisted l
     const service = readBackend('services/inventoryLowStockAlertService.js');
     assert.match(service, /lowStockAlertActive/);
     assert.match(service, /resetLowStockAlertState/);
-    assert.match(service, /activateLowStockAlertState/);
+    assert.match(service, /markLowStockAlertQueued/);
+    assert.match(service, /markLowStockAlertSent/);
     assert.doesNotMatch(service, /filter\(log => Number\(log\.change \|\| 0\) < 0\)/);
 });
 
@@ -278,6 +279,7 @@ test('storefront surfaces sale pricing and sale popups without private pricing f
 
     assert.match(storeController, /applyScheduledSalesToProducts/);
     assert.match(storeController, /getActiveSalePopups/);
+    assert.match(storeController, /serverNow/);
     assert.match(readBackend('controllers/collectionController.js'), /applyScheduledSalesToProducts/);
     assert.match(publicSerializer, /salePrice/);
     assert.match(publicSerializer, /compareAtPrice/);
@@ -285,6 +287,9 @@ test('storefront surfaces sale pricing and sale popups without private pricing f
     assert.doesNotMatch(publicSerializer, /buyingPrice/);
     assert.doesNotMatch(publicSerializer, /collectionIds/);
     assert.match(shopData, /activeSalePopups/);
+    assert.match(shopData, /serverNow/);
+    assert.match(storefrontClient, /serverOffset/);
+    assert.match(storefrontClient, /refreshBootstrap/);
     assert.match(storefrontClient, /sale-popup:\$\{subdomain\}/);
     assert.match(storefrontClient, /once_per_day/);
     assert.match(storefrontClient, /role="dialog"/);
