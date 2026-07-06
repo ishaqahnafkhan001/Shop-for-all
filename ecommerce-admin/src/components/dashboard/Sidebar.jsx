@@ -23,7 +23,8 @@ import {
     FileText,
     LockKeyhole,
     CreditCard,
-    Images
+    Images,
+    LifeBuoy
 } from 'lucide-react';
 import { FEATURE_LABELS, hasFeature } from '../../utils/featureAccess';
 import { hasStaffPermission } from '../../utils/staffPermissions';
@@ -32,6 +33,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user } = useAuth();
     const location = useLocation();
     const isSuperAdmin = user?.role === 'SuperAdmin';
+    const isSupportUser = ['SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(user?.role);
 
     const vendorNavItems = [
         { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, permission: 'overview' },
@@ -57,22 +59,30 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         { name: 'Shipping', path: '/dashboard/shipping', icon: Truck, permission: 'shipping' },
 
         { name: 'Settings', path: '/dashboard/settings', icon: Settings, permission: 'settings' },
+        { name: 'Help & Support', path: '/dashboard/support', icon: LifeBuoy },
     ];
 
     const superAdminNavItems = [
         { name: 'Super Admin', path: '/super-admin', icon: Crown },
+        { name: 'Support Center', path: '/super-admin/support', icon: LifeBuoy },
         { name: 'Billing', path: '/super-admin/billing', icon: CreditCard },
         { name: 'Trusted Badges', path: '/super-admin/badges', icon: ShieldCheck },
         { name: 'Vendor Verification', path: '/super-admin/vendor-verifications', icon: BadgeCheck },
         { name: 'Platform Audit Logs', path: '/super-admin/audit-logs', icon: History }
     ];
 
-    const navItems = isSuperAdmin
-        ? superAdminNavItems
-        : vendorNavItems.filter(item => (
+    const supportNavItems = [
+        { name: 'Support Center', path: '/support', icon: LifeBuoy }
+    ];
+
+    const navItems = isSupportUser
+        ? supportNavItems
+        : (isSuperAdmin
+            ? superAdminNavItems
+            : vendorNavItems.filter(item => (
             (!item.adminOnly || user?.role === 'VendorAdmin') &&
             hasStaffPermission(user, item.permission)
-        ));
+        )));
     const activeItem = navItems
         .filter(item => item.path === '/dashboard' ? location.pathname === item.path : location.pathname.startsWith(item.path))
         .sort((a, b) => b.path.length - a.path.length)[0] || navItems[0];
@@ -98,7 +108,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             `}>
                 <div className="flex h-16 items-center justify-between border-b border-slate-200 px-6">
                     <span className="text-2xl font-black tracking-tight text-slate-950">
-                        {isSuperAdmin ? 'Platform.' : 'ScaleUp.'}
+                        {isSuperAdmin || isSupportUser ? 'Platform.' : 'ScaleUp.'}
                     </span>
 
                     <button

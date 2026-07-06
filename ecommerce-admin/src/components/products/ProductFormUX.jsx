@@ -56,7 +56,7 @@ export const ReadinessChecklist = ({ items = [], title = 'Product readiness' }) 
     const complete = items.filter(item => item.done).length;
 
     return (
-        <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+        <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Seller guide</p>
             <h2 className="mt-1 text-lg font-black text-slate-950">{title}</h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">

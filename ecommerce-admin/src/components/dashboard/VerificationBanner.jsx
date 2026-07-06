@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, BadgeCheck, Clock, ShieldCheck } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -52,6 +53,7 @@ const getStatusConfig = (status) => {
 const VerificationBanner = () => {
     const { user } = useAuth();
     const [status, setStatus] = useState(null);
+    const verifiedToastShownRef = useRef(false);
 
     const loadStatus = useCallback(async () => {
         if (!['VendorAdmin', 'VendorStaff'].includes(user?.role)) return;
@@ -68,7 +70,22 @@ const VerificationBanner = () => {
         return () => window.clearTimeout(timer);
     }, [loadStatus]);
 
+    useEffect(() => {
+        if (!status?.isVendorVerified || verifiedToastShownRef.current) return;
+        const toastKey = `vendor-verification-complete:${user?._id || user?.id || 'vendor'}`;
+        verifiedToastShownRef.current = true;
+        if (window.sessionStorage.getItem(toastKey) === 'shown') {
+            return;
+        }
+        window.sessionStorage.setItem(toastKey, 'shown');
+        toast.success('Vendor verification is complete.');
+    }, [status?.isVendorVerified, user?._id, user?.id]);
+
     if (!status || user?.role === 'SuperAdmin') return null;
+
+    if (status.isVendorVerified) {
+        return null;
+    }
 
     const config = getStatusConfig(status);
     const Icon = config.icon;
@@ -94,7 +111,7 @@ const VerificationBanner = () => {
                 to="/dashboard/verification"
                 className="inline-flex shrink-0 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-bold text-slate-900 shadow-sm ring-1 ring-black/5 transition hover:bg-slate-50"
             >
-                {status.isVendorVerified ? 'View details' : 'Open verification'}
+                Open verification
             </Link>
         </div>
     );

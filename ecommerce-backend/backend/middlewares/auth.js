@@ -6,6 +6,8 @@ const ShopMembership = require('../models/ShopMembership');
 const { isVerificationSuspension } = require('../services/vendorVerificationService');
 const { isBillingSuspension } = require('../services/billing/subscriptionService');
 
+const PLATFORM_ROLES = ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'];
+
 const getTokenFromRequest = (req) => {
     if (req.cookies && req.cookies.token) return req.cookies.token;
 
@@ -35,8 +37,8 @@ const attachUserFromToken = async (req, token) => {
             throw new Error('User inactive');
         }
 
-        if (legacyUser.role === 'SuperAdmin') {
-            if (account.platformRole !== 'SuperAdmin') throw new Error('Invalid platform role');
+        if (PLATFORM_ROLES.includes(legacyUser.role)) {
+            if (account.platformRole !== legacyUser.role) throw new Error('Invalid platform role');
         } else {
             const membership = await ShopMembership.findOne({
                 _id: decoded.membershipId,
@@ -77,7 +79,9 @@ const attachUserFromToken = async (req, token) => {
             permissions: legacyUser.permissions
         };
 
-        req.tenantId = resolvedTenantId || legacyUser.shop_id;
+        req.tenantId = PLATFORM_ROLES.includes(legacyUser.role)
+            ? null
+            : (resolvedTenantId || legacyUser.shop_id);
         return;
     }
 

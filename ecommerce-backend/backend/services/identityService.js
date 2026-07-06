@@ -122,7 +122,9 @@ const createAccountForLegacyUser = async (legacyUser, session) => {
         emailVerified: Boolean(legacyUser.emailVerified),
         emailVerifiedAt: legacyUser.emailVerifiedAt || null,
         status: legacyUser.status || 'Active',
-        platformRole: legacyUser.role === 'SuperAdmin' ? 'SuperAdmin' : 'None'
+        platformRole: ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(legacyUser.role)
+            ? legacyUser.role
+            : 'None'
     }], { session });
 
     legacyUser.account_id = account._id;
@@ -132,7 +134,7 @@ const createAccountForLegacyUser = async (legacyUser, session) => {
 };
 
 const createMembershipForLegacyUser = async (legacyUser, account, session) => {
-    if (legacyUser.role === 'SuperAdmin' || !legacyUser.shop_id) return null;
+    if (['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(legacyUser.role) || !legacyUser.shop_id) return null;
 
     if (legacyUser.account_id && String(legacyUser.account_id) !== String(account._id)) {
         throw new Error('Legacy user is linked to a different account.');

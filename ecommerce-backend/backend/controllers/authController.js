@@ -59,6 +59,8 @@ const {
     buildVerifiedCustomDomainQuery
 } = require('../utils/domainUtils');
 
+const PLATFORM_ROLES = ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'];
+
 const signSessionToken = ({ account, membership, user }) => jwt.sign(
     {
         id: user._id,
@@ -733,35 +735,35 @@ exports.login = async (req, res) => {
             });
         }
 
-        if (account.platformRole === 'SuperAdmin' && !subdomain) {
-            let superUser = await User.findOne({
+        if (PLATFORM_ROLES.includes(account.platformRole) && !subdomain) {
+            let platformUser = await User.findOne({
                 account_id: account._id,
-                role: 'SuperAdmin'
+                role: account.platformRole
             });
 
-            if (!superUser) {
-                superUser = await User.findOne({
+            if (!platformUser) {
+                platformUser = await User.findOne({
                     email: cleanEmail,
-                    role: 'SuperAdmin'
+                    role: account.platformRole
                 });
             }
 
-            if (!superUser) {
-                return res.status(403).json({ error: 'Super admin user record is missing' });
+            if (!platformUser) {
+                return res.status(403).json({ error: 'Platform user record is missing' });
             }
 
-            const token = signSessionToken({ account, membership: null, user: superUser });
+            const token = signSessionToken({ account, membership: null, user: platformUser });
 
             res.cookie('token', token, getCookieOptions());
 
             return res.status(200).json({
                 message: 'Login successful',
                 user: {
-                    id: superUser._id,
-                    fullName: superUser.fullName,
-                    role: superUser.role,
+                    id: platformUser._id,
+                    fullName: platformUser.fullName,
+                    role: platformUser.role,
                     shopId: null,
-                    email: superUser.email
+                    email: platformUser.email
                 }
             });
         }

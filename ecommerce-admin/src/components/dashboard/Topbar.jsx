@@ -11,6 +11,7 @@ const Topbar = ({ onOpenMenu }) => {
     const [notifications, setNotifications] = useState([]);
 
     const subdomain = user?.shop?.subdomain || user?.subdomain || 'demo';
+    const isVendorUser = ['VendorAdmin', 'VendorStaff'].includes(user?.role);
 
     let baseDomain = import.meta.env.VITE_API_DOMAIN || 'localhost:3000';
     baseDomain = baseDomain.replace(/^https?:\/\//, '');
@@ -19,17 +20,17 @@ const Topbar = ({ onOpenMenu }) => {
     const liveStoreUrl = `${protocol}${subdomain}.${baseDomain}`;
 
     const loadUnreadCount = useCallback(async () => {
-        if (!user || user.role === 'SuperAdmin') return;
+        if (!user || !isVendorUser) return;
         try {
             const { data } = await API.get('/admin/notifications/unread-count');
             setUnreadCount(data.data?.count || 0);
         } catch {
             setUnreadCount(0);
         }
-    }, [user]);
+    }, [isVendorUser, user]);
 
     const loadRecentNotifications = async () => {
-        if (!user || user.role === 'SuperAdmin') return;
+        if (!user || !isVendorUser) return;
         try {
             const { data } = await API.get('/admin/notifications', { params: { limit: 5 } });
             setNotifications(data.data || []);
@@ -66,7 +67,7 @@ const Topbar = ({ onOpenMenu }) => {
     };
 
     return (
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 shadow-sm backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-[1000] flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 shadow-sm backdrop-blur sm:px-6">
             <button
                 onClick={onOpenMenu}
                 className="rounded-lg p-2 -ml-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 md:hidden"
@@ -82,7 +83,7 @@ const Topbar = ({ onOpenMenu }) => {
 
             <div className="flex items-center gap-3">
 
-                {user?.role !== 'SuperAdmin' && (
+                {isVendorUser && (
                     <>
                         <a
                             href={liveStoreUrl}
@@ -98,7 +99,7 @@ const Topbar = ({ onOpenMenu }) => {
                     </>
                 )}
 
-                {user?.role !== 'SuperAdmin' && (
+                {isVendorUser && (
                     <div className="relative">
                         <button
                             onClick={toggleNotifications}
@@ -115,7 +116,7 @@ const Topbar = ({ onOpenMenu }) => {
                         </button>
 
                         {notificationOpen && (
-                            <div className="absolute right-0 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                            <div className="absolute right-0 z-[1100] mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
                                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                                     <div>
                                         <p className="text-sm font-bold text-slate-950">Notifications</p>

@@ -39,6 +39,12 @@ const buildBrandUploadOptions = (file) => {
     };
 };
 
+const buildSupportUploadOptions = () => ({
+    folder: 'support_attachments',
+    resource_type: 'auto',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf', 'mp4', 'webm']
+});
+
 class CloudinaryMulterStorage {
     constructor(optionsBuilder = buildStorefrontUploadOptions) {
         this.optionsBuilder = optionsBuilder;
@@ -74,6 +80,7 @@ class CloudinaryMulterStorage {
 
 const storage = new CloudinaryMulterStorage();
 const brandStorage = new CloudinaryMulterStorage(buildBrandUploadOptions);
+const supportStorage = new CloudinaryMulterStorage(buildSupportUploadOptions);
 
 const allowedMimeTypes = new Set([
     'image/jpeg',
@@ -96,6 +103,15 @@ const allowedBrandMimeTypes = new Set([
     'image/svg+xml',
     'image/x-icon',
     'image/vnd.microsoft.icon'
+]);
+
+const allowedSupportMimeTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'application/pdf',
+    'video/mp4',
+    'video/webm'
 ]);
 
 const upload = multer({
@@ -137,6 +153,21 @@ const brandUpload = multer({
     fileFilter: (req, file, cb) => {
         if (!allowedBrandMimeTypes.has(file.mimetype)) {
             return cb(new Error('Unsupported logo or icon file type'));
+        }
+
+        cb(null, true);
+    }
+});
+
+const supportUpload = multer({
+    storage: supportStorage,
+    limits: {
+        fileSize: 30 * 1024 * 1024,
+        files: 6
+    },
+    fileFilter: (req, file, cb) => {
+        if (!allowedSupportMimeTypes.has(file.mimetype)) {
+            return cb(new Error('Unsupported support attachment file type'));
         }
 
         cb(null, true);
@@ -215,6 +246,7 @@ module.exports = {
     cloudinary,
     upload,
     brandUpload,
+    supportUpload,
     nidUpload,
     uploadNidDocument,
     migrateLegacyNidDocument,

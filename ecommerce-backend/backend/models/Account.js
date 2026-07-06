@@ -43,7 +43,7 @@ const accountSchema = new Schema({
     },
     platformRole: {
         type: String,
-        enum: ['None', 'SuperAdmin'],
+        enum: ['None', 'SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'],
         default: 'None'
     }
 }, { timestamps: true });

@@ -24,6 +24,7 @@ const {
     markLowStockAlertFailed
 } = require('../services/inventoryLowStockAlertService');
 const { processScheduledSaleStates } = require('../services/sales/scheduledSaleService');
+const { processSupportJob } = require('../services/support/supportNotificationService');
 const logger = require('../services/logger');
 
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 3000);
@@ -35,7 +36,8 @@ const handlers = {
     badges: processBadgeAnalysisJob,
     'customer-email': processCustomerEmailCampaignJob,
     [SCHEDULED_PRODUCT_QUEUE]: processScheduledProductJob,
-    [LOW_STOCK_ALERT_QUEUE]: processLowStockAlertJob
+    [LOW_STOCK_ALERT_QUEUE]: processLowStockAlertJob,
+    support: processSupportJob
 };
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));

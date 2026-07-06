@@ -34,6 +34,8 @@ const Verification = lazy(() => import('./pages/dashboard/Verification.jsx'));
 const PrivacyRequests = lazy(() => import('./pages/dashboard/PrivacyRequests.jsx'));
 const Billing = lazy(() => import('./pages/dashboard/Billing.jsx'));
 const TrustedBadge = lazy(() => import('./pages/dashboard/TrustedBadge.jsx'));
+const SupportCenter = lazy(() => import('./pages/dashboard/SupportCenter.jsx'));
+const SupportInvite = lazy(() => import('./pages/SupportInvite.jsx'));
 const SuperAdminPanel = lazy(() => import('./pages/superadmin/SuperAdminPanel.jsx'));
 const VendorVerifications = lazy(() => import('./pages/superadmin/VendorVerifications.jsx'));
 const ShopDetail = lazy(() => import('./pages/superadmin/ShopDetail.jsx'));
@@ -45,6 +47,7 @@ const SuperAdminBadges = lazy(() => import('./pages/superadmin/SuperAdminBadges.
 const getRedirectPath = (role) => {
     if (role === 'Customer') return '/store';
     if (role === 'SuperAdmin') return '/super-admin';
+    if (['SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(role)) return '/support';
     if (role === 'VendorStaff') return '/dashboard/products';
     return '/dashboard'; // VendorAdmin default
 };
@@ -79,15 +82,27 @@ function App() {
                     path="/login"
                     element={!user ? withSuspense(<Login />) : <Navigate to={getRedirectPath(user?.role)} />}
                 />
+                <Route
+                    path="/support-invite/:token"
+                    element={withSuspense(<SupportInvite />)}
+                />
 
                 <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
                     <Route path="/super-admin" element={<DashboardLayout />}>
                         <Route index element={withSuspense(<SuperAdminPanel />)} />
+                        <Route path="support" element={withSuspense(<SupportCenter />)} />
                         <Route path="shops/:shopId" element={withSuspense(<ShopDetail />)} />
                         <Route path="vendor-verifications" element={withSuspense(<VendorVerifications />)} />
                         <Route path="badges" element={withSuspense(<SuperAdminBadges />)} />
                         <Route path="billing" element={withSuspense(<SuperAdminBilling />)} />
                         <Route path="audit-logs" element={withSuspense(<PlatformAuditLogs />)} />
+                    </Route>
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={['SupportAgent', 'SupportLead', 'TechnicalSupport']} />}>
+                    <Route path="/support" element={<DashboardLayout />}>
+                        <Route index element={withSuspense(<SupportCenter />)} />
+                        <Route path="tickets/:ticketNumber" element={withSuspense(<SupportCenter />)} />
                     </Route>
                 </Route>
 
@@ -124,6 +139,7 @@ function App() {
                         <Route path="shipping" element={withSuspense(withPermission('shipping', <ShippingSettings />))} />
                         <Route path="settings" element={withSuspense(withPermission('settings', <ShopSettings />))} />
                         <Route path="activity-logs" element={withSuspense(withPermission('activityLogs', <ActivityLogs />))} />
+                        <Route path="support" element={withSuspense(<SupportCenter />)} />
                     </Route>
                 </Route>
 

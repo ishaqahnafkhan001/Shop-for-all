@@ -30,6 +30,8 @@ const growthRoutes = require('./routes/growthRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 const billingRoutes = require('./routes/billingRoutes');
 const badgeRoutes = require('./routes/badgeRoutes');
+const adminSupportRoutes = require('./routes/adminSupportRoutes');
+const supportRoutes = require('./routes/supportRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -154,6 +156,8 @@ app.use('/api/admin/growth', growthRoutes);
 app.use('/api/admin/analytics', analyticsRoutes);
 app.use('/api/admin/billing', billingRoutes);
 app.use('/api/admin/badges', badgeRoutes);
+app.use('/api/admin/support', adminSupportRoutes);
+app.use('/api/support', supportRoutes);
 app.use('/api/super-admin', superAdminRoutes);
 
 app.get('/', (req, res) => {

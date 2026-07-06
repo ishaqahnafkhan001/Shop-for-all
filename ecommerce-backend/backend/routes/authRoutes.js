@@ -26,6 +26,10 @@ const {
     resetPassword,
     updatePassword
 } = require('../controllers/authController');
+const {
+    getSupportInvitation,
+    acceptSupportInvitation
+} = require('../controllers/supportController');
 
 // ======================================================
 // AUTH ROUTES
@@ -64,6 +68,16 @@ router.post(
 router.post(
     '/login',
     login
+);
+
+router.get(
+    '/support-invitations/:token',
+    getSupportInvitation
+);
+
+router.post(
+    '/support-invitations/:token/accept',
+    acceptSupportInvitation
 );
 
 // Request password reset OTP

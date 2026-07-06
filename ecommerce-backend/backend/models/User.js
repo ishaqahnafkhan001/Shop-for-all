@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['SuperAdmin', 'VendorAdmin', 'VendorStaff', 'Customer'],
+        enum: ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport', 'VendorAdmin', 'VendorStaff', 'Customer'],
         default: 'Customer'
     },
     status: {
@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Shop',
         required: function() {
-            return this.role !== 'SuperAdmin';
+            return !['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(this.role);
         },
         index: true
     },

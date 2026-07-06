@@ -32,6 +32,9 @@ const ProtectedRoute = ({ allowedRoles }) => {
         if (user.role === 'SuperAdmin') {
             return <Navigate to="/super-admin" replace />;
         }
+        if (['SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(user.role)) {
+            return <Navigate to="/support" replace />;
+        }
         return <Navigate to="/dashboard/products" replace />;
     }
 

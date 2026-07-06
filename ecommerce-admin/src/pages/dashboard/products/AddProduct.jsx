@@ -1124,7 +1124,7 @@ const AddProduct = () => {
 
                 {/* ── RIGHT COLUMN: LIVE PREVIEW ───────────────────────────────── */}
                 <div className="lg:col-span-1">
-                    <div className="sticky top-6 space-y-4">
+                    <div className="space-y-4 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto xl:pr-1">
                         <ReadinessChecklist items={readinessItems} />
                         <SeoHealthCard
                             title="Product SEO score"
