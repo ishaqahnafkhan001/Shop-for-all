@@ -8,6 +8,7 @@ import {
     CheckCircle2,
     CreditCard,
     FileText,
+    History,
     Loader2,
     RefreshCcw,
     Search,
@@ -24,7 +25,8 @@ const tabs = [
     'Invoices',
     'Payment Verification',
     'Trial Monitor',
-    'Revenue by Plan'
+    'Revenue by Plan',
+    'Subscription Timeline'
 ];
 
 const money = (value) => `৳${Number(value || 0).toLocaleString()}`;
@@ -130,6 +132,7 @@ const SuperAdminBilling = () => {
     const [subscriptions, setSubscriptions] = useState([]);
     const [invoices, setInvoices] = useState([]);
     const [payments, setPayments] = useState([]);
+    const [timeline, setTimeline] = useState([]);
     const [activeTab, setActiveTab] = useState('Subscriptions');
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -146,17 +149,19 @@ const SuperAdminBilling = () => {
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const [overviewRes, subscriptionsRes, invoicesRes, paymentsRes] = await Promise.all([
+            const [overviewRes, subscriptionsRes, invoicesRes, paymentsRes, timelineRes] = await Promise.all([
                 API.get('/super-admin/billing/overview'),
                 API.get('/super-admin/billing/subscriptions', { params: { page: pagination.subscriptions.page, limit: 20, status: filters.status || undefined } }),
                 API.get('/super-admin/billing/invoices', { params: { page: pagination.invoices.page, limit: 20, search: filters.search || undefined } }),
-                API.get('/super-admin/billing/payments', { params: { page: pagination.payments.page, limit: 20, status: activeTab === 'Payment Verification' ? 'pending' : undefined, search: filters.search || undefined } })
+                API.get('/super-admin/billing/payments', { params: { page: pagination.payments.page, limit: 20, status: activeTab === 'Payment Verification' ? 'pending' : undefined, search: filters.search || undefined } }),
+                API.get('/super-admin/subscription-timeline', { params: { limit: 50 } })
             ]);
 
             setOverview(overviewRes.data.data || {});
             setSubscriptions(subscriptionsRes.data.data || []);
             setInvoices(invoicesRes.data.data || []);
             setPayments(paymentsRes.data.data || []);
+            setTimeline(timelineRes.data.data || []);
             setPagination(prev => ({
                 ...prev,
                 subscriptions: subscriptionsRes.data.pagination || prev.subscriptions,
@@ -610,6 +615,32 @@ const SuperAdminBilling = () => {
                                 <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{item._id?.plan || 'Unknown'} · {item._id?.cycle || 'monthly'}</p>
                                 <p className="mt-2 text-2xl font-black text-slate-950">{money(item.amount)}</p>
                                 <p className="mt-1 text-sm text-slate-500">{item.count} paid invoice{item.count === 1 ? '' : 's'}</p>
+                            </div>
+                        ))}
+                    </div>
+                </SectionCard>
+            )}
+
+            {activeTab === 'Subscription Timeline' && (
+                <SectionCard title="Subscription Timeline" icon={History}>
+                    <div className="divide-y divide-slate-100">
+                        {timeline.length === 0 ? (
+                            <EmptyState message="No subscription events have been recorded yet." />
+                        ) : timeline.map(item => (
+                            <div key={item._id} className="grid gap-3 p-5 md:grid-cols-[1fr_0.8fr_0.8fr_auto] md:items-center">
+                                <div>
+                                    <p className="font-black text-slate-950">{String(item.eventType || '').replace(/([a-z])([A-Z])/g, '$1 $2')}</p>
+                                    <p className="mt-1 text-xs text-slate-500">Correlation: {item.correlationId || '-'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-slate-400">Shop</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-700">{String(item.shopId || '-')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold uppercase text-slate-400">Actor</p>
+                                    <p className="mt-1 text-sm font-semibold text-slate-700">{item.actor?.role || 'System'}</p>
+                                </div>
+                                <time className="text-xs font-semibold text-slate-400" dateTime={item.occurredAt}>{formatDate(item.occurredAt)}</time>
                             </div>
                         ))}
                     </div>

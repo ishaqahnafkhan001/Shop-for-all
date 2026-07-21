@@ -25,12 +25,12 @@ test('billing default plans match Starter Growth Pro business rules', () => {
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Starter.features.customDomain, false);
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Starter.features.growthCenter, false);
 
-    assert.equal(DEFAULT_PLAN_DEFINITIONS.Growth.monthlyPrice, 2499);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Growth.monthlyPrice, 1999);
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Growth.productLimit, 500);
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Growth.features.growthCenter, true);
 
-    assert.equal(DEFAULT_PLAN_DEFINITIONS.Pro.monthlyPrice, 5999);
-    assert.equal(DEFAULT_PLAN_DEFINITIONS.Pro.productLimit, 2000);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Pro.monthlyPrice, 3999);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Pro.productLimit, null);
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Pro.prioritySupport, true);
 });
 
@@ -48,7 +48,7 @@ test('billing plan helper preserves stored plan overrides and safe fallbacks', (
     }, 'Growth');
 
     assert.equal(merged.monthlyPrice, 1999);
-    assert.equal(merged.yearlyPrice, 24990);
+    assert.equal(merged.yearlyPrice, 19990);
     assert.equal(merged.features.growthCenter, true);
     assert.equal(merged.features.aiAdGenerator, false);
 });
@@ -190,7 +190,7 @@ test('billing gates enforce product and staff limits before create actions', () 
     assert.match(adminRoutes, /requireProductLimit\(\)/);
     assert.match(adminRoutes, /requireStaffLimit/);
     assert.match(adminRoutes, /requireProductLimit\(\(req\) => Array\.isArray\(req\.body\?\.products\)/);
-    assert.match(billingGate, /PRODUCT_LIMIT_REACHED/);
-    assert.match(billingGate, /STAFF_LIMIT_REACHED/);
-    assert.match(billingGate, /BILLING_REQUIRED/);
+    assert.match(billingGate, /PLAN_LIMIT_REACHED/);
+    assert.match(billingGate, /reserveQuota/);
+    assert.match(billingGate, /SUBSCRIPTION_INACTIVE/);
 });

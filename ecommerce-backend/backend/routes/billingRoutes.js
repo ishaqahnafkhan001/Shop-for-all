@@ -5,6 +5,9 @@ const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const {
     getVendorBillingCurrent,
+    getVendorBillingUsage,
+    getVendorSubscriptionTimeline,
+    trackVendorUpgradeClicked,
     getVendorInvoices,
     getVendorPayments,
     createVendorInvoice,
@@ -15,6 +18,9 @@ router.use(protect);
 router.use(authorize('VendorAdmin'));
 
 router.get('/current', getVendorBillingCurrent);
+router.get('/usage', getVendorBillingUsage);
+router.get('/timeline', getVendorSubscriptionTimeline);
+router.post('/events/upgrade-clicked', trackVendorUpgradeClicked);
 router.get('/invoices', getVendorInvoices);
 router.post('/invoices', createVendorInvoice);
 router.get('/payments', getVendorPayments);

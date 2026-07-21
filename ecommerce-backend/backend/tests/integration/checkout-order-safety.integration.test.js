@@ -5,24 +5,30 @@ const {
     InventoryLog,
     Order,
     Product,
+    addCheckoutProof,
     createLaunchSafetyContext,
     createProduct,
     makeCheckoutPayload
 } = require('../helpers/launchSafetyHarness');
+const { createOrderAccessToken } = require('../../services/orders/orderAccessService');
 
 test('public checkout recalculates price and shipping instead of trusting client totals', async (t) => {
     const ctx = await createLaunchSafetyContext(t);
     const { productA } = ctx.data.products;
     const client = ctx.client();
 
-    const response = await client.unsafePost(
-        '/api/public/orders',
-        makeCheckoutPayload({
+    const payload = await addCheckoutProof({
+        shop: ctx.data.shops.shopA,
+        payload: makeCheckoutPayload({
             product: productA.product,
             variant: productA.variant,
             shippingCost: 0,
-            customerEmail: 'tamper-public@launch.test'
+            customerEmail: 'tamper-public@launch.example.com'
         })
+    });
+    const response = await client.unsafePost(
+        '/api/public/orders',
+        payload
     );
 
     assert.equal(response.status, 201);
@@ -50,7 +56,7 @@ test('authenticated checkout recalculates totals and rejects cross-shop coupons'
     const { productA, productB } = ctx.data.products;
 
     const customerA = ctx.customerAClient();
-    const authOrder = await customerA.unsafePost(`/api/storefront/launchshopa/orders`, {
+    const authPayload = await addCheckoutProof({ shop: ctx.data.shops.shopA, payload: {
         items: [{
             productId: productA.product._id,
             variantId: productA.variant._id,
@@ -70,7 +76,8 @@ test('authenticated checkout recalculates totals and rejects cross-shop coupons'
             checkoutPolicyAccepted: true,
             version: 'launch_safety_v1'
         }
-    });
+    } });
+    const authOrder = await customerA.unsafePost(`/api/storefront/launchshopa/orders`, authPayload);
 
     assert.equal(authOrder.status, 201);
     assert.equal(authOrder.body.total, 1280);
@@ -81,15 +88,16 @@ test('authenticated checkout recalculates totals and rejects cross-shop coupons'
     assert.equal(authOrderDoc.pricing.total, 1280);
 
     const shopBClient = ctx.client();
-    const crossShopCoupon = await shopBClient.unsafePost('/api/public/orders', {
+    const crossShopPayload = await addCheckoutProof({ shop: ctx.data.shops.shopB, payload: {
         ...makeCheckoutPayload({
             product: productB.product,
             variant: productB.variant,
             promotionCode: 'SAVEA',
-            customerEmail: 'coupon-shop-b@launch.test'
+            customerEmail: 'coupon-shop-b@launch.example.com'
         }),
         subdomain: 'launchshopb'
-    });
+    } });
+    const crossShopCoupon = await shopBClient.unsafePost('/api/public/orders', crossShopPayload);
 
     assert.equal(crossShopCoupon.status, 400);
     assert.match(crossShopCoupon.body.error, /Coupon/i);
@@ -108,15 +116,19 @@ test('concurrent checkout against stock one creates only one order and one inven
 
     const first = ctx.client();
     const second = ctx.client();
-    const payload = (email) => makeCheckoutPayload({
-        product: raceProduct.product,
-        variant: raceProduct.variant,
-        customerEmail: email
+    const payload = (email) => addCheckoutProof({
+        shop: ctx.data.shops.shopA,
+        payload: makeCheckoutPayload({ product: raceProduct.product, variant: raceProduct.variant, customerEmail: email })
     });
 
+    const [firstPayload, secondPayload] = await Promise.all([
+        payload('race-one@launch.example.com'),
+        payload('race-two@launch.example.com')
+    ]);
+
     const results = await Promise.all([
-        first.unsafePost('/api/public/orders', payload('race-one@launch.test')),
-        second.unsafePost('/api/public/orders', payload('race-two@launch.test'))
+        first.unsafePost('/api/public/orders', firstPayload),
+        second.unsafePost('/api/public/orders', secondPayload)
     ]);
 
     const successful = results.filter(result => result.status === 201);
@@ -151,7 +163,15 @@ test('order status and tracking APIs preserve role and privacy boundaries', asyn
     });
     assert.equal(vendorAUpdateOther.status, 404);
 
-    const publicTracking = await ctx.client().get(`/api/storefront/launchshopa/track-order/${orderA._id}?phone=01700000000`);
+    const accessToken = createOrderAccessToken({
+        shopId: ctx.data.shops.shopA._id,
+        orderId: orderA._id,
+        allowedActions: ['track']
+    });
+    const publicTracking = await ctx.client().get(
+        `/api/storefront/launchshopa/track-order/${orderA._id}`,
+        { headers: { 'x-order-access-token': accessToken } }
+    );
     assert.equal(publicTracking.status, 200);
     assert.equal(publicTracking.body.items[0].buyingPrice, undefined);
     assert.equal(publicTracking.body.shipping?.address, undefined);

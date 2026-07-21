@@ -17,8 +17,42 @@ import {
 import API from '../../api/api';
 import { EmptyState, PaginationControls, ReasonModal, SectionCard, StatusBadge } from './SuperAdminComponents.jsx';
 
-const featureKeys = ['storeBuilder', 'coupons', 'analytics', 'customDomain', 'staffAccounts', 'bulkProductTools', 'growthCenter', 'aiAdGenerator'];
-const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts', 'growthCenter']);
+const featureKeys = [
+    'storeBuilder', 'coupons', 'analytics', 'customDomain', 'staffAccounts',
+    'bulkProductTools', 'growthCenter', 'aiAdGenerator', 'customerSection',
+    'trustSystem', 'notifications', 'scheduledProductPublishing', 'scheduledSales'
+];
+const criticalFeatureKeys = new Set([
+    'storeBuilder', 'analytics', 'staffAccounts', 'growthCenter', 'customDomain',
+    'customerSection', 'trustSystem', 'notifications', 'scheduledProductPublishing', 'scheduledSales'
+]);
+const editablePlanFeatures = [
+    ['growthCenter', 'Growth Center'],
+    ['customDomain', 'Custom domain'],
+    ['customerSection', 'Customer section'],
+    ['trustSystem', 'Trust system'],
+    ['notifications', 'Notification Center'],
+    ['scheduledProductPublishing', 'Scheduled publishing'],
+    ['scheduledSales', 'Scheduled sales']
+];
+const defaultPlanForm = {
+    name: 'Starter',
+    slug: 'starter',
+    monthlyPrice: 999,
+    yearlyPrice: 9990,
+    currency: 'BDT',
+    productLimit: 100,
+    staffLimit: 1,
+    limits: {
+        productCount: 100,
+        staffAccounts: 1,
+        aiProductCreationsPerWeek: 10,
+        imagesPerProduct: 5,
+        activityLogRetentionDays: 7
+    },
+    features: Object.fromEntries(editablePlanFeatures.map(([key]) => [key, false])),
+    storeBuilderAccess: 'limited'
+};
 
 const defaultPagination = { page: 1, limit: 10, total: 0, pages: 1 };
 const defaultAnnouncement = { title: '', message: '', severity: 'Info', audience: 'All', targetPlan: '', targetShopId: '', expiresAt: '' };
@@ -74,7 +108,7 @@ const SuperAdminPanel = () => {
     const [failedPaymentPagination, setFailedPaymentPagination] = useState(defaultPagination);
     const [announcementForm, setAnnouncementForm] = useState(defaultAnnouncement);
     const [editingAnnouncementId, setEditingAnnouncementId] = useState(null);
-    const [planForm, setPlanForm] = useState({ name: 'Starter', monthlyPrice: 0, productLimit: 100, staffLimit: 2 });
+    const [planForm, setPlanForm] = useState(defaultPlanForm);
     const [domainDrafts, setDomainDrafts] = useState({});
     const [checkingDomainId, setCheckingDomainId] = useState('');
 
@@ -207,9 +241,34 @@ const SuperAdminPanel = () => {
             await API.post('/super-admin/plans', planForm);
             toast.success('Plan saved');
             await load();
-        } catch {
-            toast.error('Failed to save plan');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to save plan');
         }
+    };
+
+    const editPlan = (plan) => {
+        const limits = { ...defaultPlanForm.limits, ...(plan.limits || {}) };
+        setPlanForm({
+            ...defaultPlanForm,
+            ...plan,
+            slug: plan.slug,
+            name: plan.name,
+            productLimit: limits.productCount,
+            staffLimit: limits.staffAccounts,
+            limits,
+            features: { ...defaultPlanForm.features, ...(plan.features || {}) },
+            storeBuilderAccess: plan.storeBuilderAccess || 'limited'
+        });
+    };
+
+    const setPlanLimit = (key, rawValue) => {
+        const value = rawValue === '' ? null : Math.max(0, Number(rawValue));
+        setPlanForm(prev => ({
+            ...prev,
+            ...(key === 'productCount' ? { productLimit: value } : {}),
+            ...(key === 'staffAccounts' ? { staffLimit: value } : {}),
+            limits: { ...prev.limits, [key]: value }
+        }));
     };
 
     const saveAnnouncement = async (event) => {
@@ -504,14 +563,69 @@ const SuperAdminPanel = () => {
                 <form onSubmit={savePlan} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="mb-4 flex items-center gap-2 font-black text-slate-950"><CreditCard className="h-5 w-5 text-indigo-600" />Vendor Plans</div>
                     <div className="grid gap-3 sm:grid-cols-2">
-                        <input value={planForm.name} onChange={event => setPlanForm(prev => ({ ...prev, name: event.target.value }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Name" />
+                        <select
+                            value={planForm.slug}
+                            onChange={event => {
+                                const selected = plans.find(plan => plan.slug === event.target.value);
+                                if (selected) editPlan(selected);
+                            }}
+                            className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                        >
+                            {['starter', 'growth', 'pro'].map(slug => (
+                                <option key={slug} value={slug}>{slug[0].toUpperCase() + slug.slice(1)}</option>
+                            ))}
+                        </select>
                         <input type="number" value={planForm.monthlyPrice} onChange={event => setPlanForm(prev => ({ ...prev, monthlyPrice: Number(event.target.value) }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Monthly price" />
-                        <input type="number" value={planForm.productLimit} onChange={event => setPlanForm(prev => ({ ...prev, productLimit: Number(event.target.value) }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Product limit" />
-                        <input type="number" value={planForm.staffLimit} onChange={event => setPlanForm(prev => ({ ...prev, staffLimit: Number(event.target.value) }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Staff limit" />
+                        <input type="number" value={planForm.yearlyPrice ?? ''} onChange={event => setPlanForm(prev => ({ ...prev, yearlyPrice: Number(event.target.value) }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Yearly price" />
+                        {[
+                            ['productCount', 'Product limit (blank = Unlimited)'],
+                            ['staffAccounts', 'Staff limit'],
+                            ['aiProductCreationsPerWeek', 'Weekly AI limit (blank = Unlimited)'],
+                            ['imagesPerProduct', 'Images per product'],
+                            ['activityLogRetentionDays', 'Activity log days']
+                        ].map(([key, placeholder]) => (
+                            <input
+                                key={key}
+                                type="number"
+                                min="0"
+                                value={planForm.limits?.[key] ?? ''}
+                                onChange={event => setPlanLimit(key, event.target.value)}
+                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                placeholder={placeholder}
+                                title={placeholder}
+                            />
+                        ))}
+                        <select value={planForm.storeBuilderAccess} onChange={event => setPlanForm(prev => ({ ...prev, storeBuilderAccess: event.target.value }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                            <option value="limited">Limited Store Builder</option>
+                            <option value="full">Full Store Builder</option>
+                        </select>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        {editablePlanFeatures.map(([key, label]) => (
+                            <label key={key} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700">
+                                {label}
+                                <input
+                                    type="checkbox"
+                                    checked={Boolean(planForm.features?.[key])}
+                                    onChange={event => setPlanForm(prev => ({
+                                        ...prev,
+                                        features: { ...prev.features, [key]: event.target.checked }
+                                    }))}
+                                    className="h-4 w-4 rounded border-slate-300"
+                                />
+                            </label>
+                        ))}
                     </div>
                     <button className="mt-4 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Save plan</button>
                     <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                        {plans.map(plan => <div key={plan._id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm"><b>{plan.name}</b><br />{formatMoney(plan.monthlyPrice)}</div>)}
+                        {plans.map(plan => (
+                            <button key={plan._id} type="button" onClick={() => editPlan(plan)} className="rounded-xl bg-slate-50 px-3 py-3 text-left text-sm hover:bg-indigo-50">
+                                <b>{plan.name}</b><br />{formatMoney(plan.monthlyPrice)} / month
+                                <span className="mt-1 block text-xs text-slate-500">
+                                    Products: {plan.limits?.productCount ?? 'Unlimited'} · Staff: {plan.limits?.staffAccounts ?? 'Unlimited'}
+                                </span>
+                            </button>
+                        ))}
                     </div>
                 </form>
 

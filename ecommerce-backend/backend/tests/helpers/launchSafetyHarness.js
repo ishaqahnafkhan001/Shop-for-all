@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const { once } = require('node:events');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -14,12 +15,54 @@ const Promotion = require('../../models/Promotion');
 const Shop = require('../../models/Shop');
 const ShopMembership = require('../../models/ShopMembership');
 const StaffPermission = require('../../models/StaffPermission');
+const Subscription = require('../../models/Subscription');
 const User = require('../../models/User');
+const VendorPlan = require('../../models/VendorPlan');
 const VendorVerification = require('../../models/VendorVerification');
+const { PLAN_DEFINITIONS } = require('../../config/subscriptionPlans');
+const { buildCheckoutItemsHash, verifyCheckoutPhoneOtp } = require('../../services/checkout/checkoutOtpService');
+const { createOtp, PURPOSES } = require('../../services/otpService');
+const { normalizeBDPhone } = require('../../utils/phoneUtils');
 
 const DEFAULT_PASSWORD = 'LaunchPass@123';
 const TEST_JWT_SECRET = 'launch-safety-test-secret';
 const TEST_CSRF_SECRET = 'launch-safety-csrf-secret';
+
+const buildStoredPlan = (plan) => ({
+    ...plan,
+    productLimit: plan.limits.productCount,
+    staffLimit: plan.limits.staffAccounts
+});
+
+const seedPlans = async () => {
+    const plans = await VendorPlan.create(
+        Object.values(PLAN_DEFINITIONS).map(buildStoredPlan)
+    );
+    return Object.fromEntries(plans.map(plan => [plan.slug, plan]));
+};
+
+const setShopPlan = async ({ shopId, plan, status = 'active' }) => {
+    await Subscription.findOneAndUpdate(
+        { shopId },
+        {
+            $set: {
+                planId: plan._id,
+                activePlanName: plan.name,
+                activePlanSlug: plan.slug,
+                status,
+                billingCycle: 'monthly',
+                currentPeriodStart: new Date(),
+                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            }
+        },
+        { upsert: true, new: true }
+    );
+
+    await Shop.updateOne(
+        { _id: shopId },
+        { $set: { 'plan.name': plan.name, 'plan.status': status === 'active' ? 'Active' : 'Trialing' } }
+    );
+};
 
 const getDatabaseName = (uri) => {
     const clean = String(uri || '').split('?')[0].replace(/\/+$/, '');
@@ -82,6 +125,8 @@ const clearDatabase = async () => {
 
     const collections = await mongoose.connection.db.collections();
     await Promise.all(collections.map(collection => collection.deleteMany({})));
+    require('../../services/cacheService').resetMemoryCacheForTests();
+    require('../../middlewares/tenant').resetTenantCacheForTests();
 };
 
 const closeTestDatabase = async () => {
@@ -367,11 +412,13 @@ const createOrder = async ({ shop, customer, product, variant, status = 'Pending
 };
 
 const seedLaunchSafetyData = async () => {
+    const plans = await seedPlans();
     const shopA = await Shop.create({
         shopName: 'Launch Shop A',
         subdomain: 'launchshopa',
         isActive: true,
         approvalStatus: 'Approved',
+        featureFlags: { customDomain: true },
         verification: {
             status: 'approved',
             approvedAt: new Date()
@@ -389,6 +436,7 @@ const seedLaunchSafetyData = async () => {
         subdomain: 'launchshopb',
         isActive: true,
         approvalStatus: 'Approved',
+        featureFlags: { customDomain: true },
         verification: {
             status: 'approved',
             approvedAt: new Date()
@@ -403,7 +451,7 @@ const seedLaunchSafetyData = async () => {
 
     const vendorA = await createIdentity({
         shop: shopA,
-        email: 'vendor-a@launch.test',
+        email: 'vendor-a@launch.example.com',
         role: 'VendorAdmin',
         fullName: 'Vendor Admin A',
         permissions: {
@@ -420,7 +468,7 @@ const seedLaunchSafetyData = async () => {
 
     const vendorB = await createIdentity({
         shop: shopB,
-        email: 'vendor-b@launch.test',
+        email: 'vendor-b@launch.example.com',
         role: 'VendorAdmin',
         fullName: 'Vendor Admin B',
         permissions: {
@@ -437,7 +485,7 @@ const seedLaunchSafetyData = async () => {
 
     const staffA = await createIdentity({
         shop: shopA,
-        email: 'staff-a@launch.test',
+        email: 'staff-a@launch.example.com',
         role: 'VendorStaff',
         fullName: 'Staff A',
         permissions: {
@@ -454,25 +502,30 @@ const seedLaunchSafetyData = async () => {
 
     const customerA = await createIdentity({
         shop: shopA,
-        email: 'customer-a@launch.test',
+        email: 'customer-a@launch.example.com',
         role: 'Customer',
         fullName: 'Customer A'
     });
 
     const customerB = await createIdentity({
         shop: shopB,
-        email: 'customer-b@launch.test',
+        email: 'customer-b@launch.example.com',
         role: 'Customer',
         fullName: 'Customer B'
     });
 
     const superAdmin = await createIdentity({
         shop: null,
-        email: 'super-admin@launch.test',
+        email: 'super-admin@launch.example.com',
         role: 'SuperAdmin',
         fullName: 'Super Admin',
         platformRole: 'SuperAdmin'
     });
+
+    await Promise.all([
+        setShopPlan({ shopId: shopA._id, plan: plans.pro }),
+        setShopPlan({ shopId: shopB._id, plan: plans.pro })
+    ]);
 
     const productA = await createProduct({
         shop: shopA,
@@ -552,6 +605,7 @@ const seedLaunchSafetyData = async () => {
 
     return {
         shops: { shopA, shopB },
+        plans,
         identities: { vendorA, vendorB, staffA, customerA, customerB, superAdmin },
         products: { productA, productB },
         orders: { orderA, orderB }
@@ -599,7 +653,7 @@ const createLaunchSafetyContext = async (t) => {
     }
 };
 
-const makeCheckoutPayload = ({ product, variant, promotionCode, shippingCost = 0, customerEmail = 'guest@launch.test' }) => ({
+const makeCheckoutPayload = ({ product, variant, promotionCode, shippingCost = 0, customerEmail = 'guest@launch.example.com' }) => ({
     subdomain: 'launchshopa',
     customer: {
         fullName: 'Guest Buyer',
@@ -631,6 +685,34 @@ const makeCheckoutPayload = ({ product, variant, promotionCode, shippingCost = 0
     }
 });
 
+const addCheckoutProof = async ({ shop, payload, checkoutSessionId = `launch-${crypto.randomUUID()}` }) => {
+    const phone = payload.shippingAddress?.phone || payload.shipping?.address?.phone || payload.customer?.phone;
+    const otpResult = await createOtp({
+        identifier: normalizeBDPhone(phone),
+        channel: 'sms',
+        purpose: PURPOSES.customerOrderPhone,
+        metadata: {
+            shopId: String(shop._id),
+            checkoutSessionId,
+            cartHash: buildCheckoutItemsHash(payload.items)
+        },
+        enforceCooldown: false
+    });
+    const verified = await verifyCheckoutPhoneOtp({
+        shopId: shop._id,
+        phone,
+        checkoutSessionId,
+        items: payload.items,
+        otp: otpResult.otp
+    });
+
+    return {
+        ...payload,
+        checkoutSessionId,
+        phoneVerificationToken: verified.verificationToken
+    };
+};
+
 module.exports = {
     DEFAULT_PASSWORD,
     Account,
@@ -640,7 +722,9 @@ module.exports = {
     Promotion,
     Shop,
     User,
+    addCheckoutProof,
     createProduct,
     createLaunchSafetyContext,
-    makeCheckoutPayload
+    makeCheckoutPayload,
+    setShopPlan
 };

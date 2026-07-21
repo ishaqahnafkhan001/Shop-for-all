@@ -90,7 +90,9 @@ test('background badge analysis scores applications and notifies Super Admin rev
 
     assert.match(service, /scoreSnapshot/);
     assert.match(service, /NID verified/);
-    assert.match(service, /active Growth\/Pro subscription/);
+    assert.match(service, /snapshot\.trustSystemIncluded === true/);
+    assert.match(service, /trust system entitlement/);
+    assert.doesNotMatch(service, /\['Growth', 'Pro'\]/);
     assert.match(service, /delivered sales history/);
     assert.match(service, /status = 'pending_super_admin_review'/);
     assert.match(service, /notifySuperAdmins/);
@@ -144,7 +146,7 @@ test('admin UI exposes vendor and Super Admin badge pages without changing API s
 
     assert.match(app, /dashboard\/TrustedBadge/);
     assert.match(app, /superadmin\/SuperAdminBadges/);
-    assert.match(app, /path="badges" element=\{withSuspense\(<TrustedBadge \/>/);
+    assert.match(app, /path="badges" element=\{withSuspense\(withFeature\('trustSystem',\s*<TrustedBadge \/>/);
     assert.match(app, /path="badges" element=\{withSuspense\(<SuperAdminBadges \/>/);
     assert.match(sidebar, /Trusted Badge/);
     assert.match(sidebar, /Trusted Badges/);

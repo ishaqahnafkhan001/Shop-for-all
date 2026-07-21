@@ -118,11 +118,20 @@ const upload = multer({
     storage,
     limits: {
         fileSize: 10 * 1024 * 1024,
-        files: 10
+        files: 17
     },
     fileFilter: (req, file, cb) => {
         if (!allowedMimeTypes.has(file.mimetype)) {
             return cb(new Error('Unsupported file type'));
+        }
+
+        if (file.fieldname === 'images' && req.planAccess?.limits?.imagesPerProduct !== null) {
+            req.planImageUploadCount = Number(req.planImageUploadCount || 0) + 1;
+            if (req.planImageUploadCount > Number(req.planAccess.limits.imagesPerProduct)) {
+                const error = new Error(`Your plan allows up to ${req.planAccess.limits.imagesPerProduct} product images.`);
+                error.code = 'PLAN_IMAGE_LIMIT';
+                return cb(error);
+            }
         }
 
         cb(null, true);

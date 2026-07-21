@@ -92,9 +92,17 @@ const delPattern = async (pattern) => {
     }
 };
 
+const resetMemoryCacheForTests = () => {
+    if (process.env.NODE_ENV !== 'test') {
+        throw new Error('Memory cache reset is only available in tests.');
+    }
+    memoryCache.clear();
+};
+
 module.exports = {
     get,
     set,
     del,
-    delPattern
+    delPattern,
+    resetMemoryCacheForTests
 };

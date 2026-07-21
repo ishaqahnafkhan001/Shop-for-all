@@ -43,8 +43,10 @@ const { sendSms } = require('../services/sms/smsProviderService');
 const { maskPhone, normalizeBDPhone } = require('../utils/phoneUtils');
 const { notifyCustomerRegistered } = require('../services/shopEventNotificationService');
 const { getDefaultDeadline, isVerificationSuspension } = require('../services/vendorVerificationService');
-const { getShopFeatureFlags } = require('../services/shops/featureAccessService');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const { getSubscriptionUsage, toLegacyUsageShape } = require('../services/billing/subscriptionUsageService');
 const { createTrialForShop, isBillingSuspension } = require('../services/billing/subscriptionService');
+const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const { buildDefaultPolicies } = require('../services/policies/defaultPolicyTemplates');
 const {
     validateSubdomain,
@@ -105,7 +107,7 @@ const getCookieOptions = () => {
 };
 
 const getSessionShopPayload = async (shopOrId) => {
-    if (!shopOrId) return { shop: null, effectiveFeatures: {} };
+    if (!shopOrId) return { shop: null, effectiveFeatures: {}, planAccess: null };
 
     const shop = typeof shopOrId === 'object' && shopOrId._id
         ? shopOrId
@@ -113,9 +115,11 @@ const getSessionShopPayload = async (shopOrId) => {
             .select('shopName subdomain plan featureFlags isActive approvalStatus suspensionReason')
             .lean();
 
-    if (!shop) return { shop: null, effectiveFeatures: {} };
+    if (!shop) return { shop: null, effectiveFeatures: {}, planAccess: null };
 
-    const effectiveFeatures = await getShopFeatureFlags(shop);
+    const access = await getShopPlanAccess(shop);
+    const usagePayload = await getSubscriptionUsage(shop, { access });
+    const effectiveFeatures = access.features;
     return {
         shop: {
             id: shop._id,
@@ -123,7 +127,22 @@ const getSessionShopPayload = async (shopOrId) => {
             shopName: shop.shopName,
             subdomain: shop.subdomain
         },
-        effectiveFeatures
+        effectiveFeatures,
+        planAccess: {
+            planKey: access.planKey,
+            planName: access.planName,
+            monthlyPrice: access.plan.monthlyPrice,
+            currency: access.plan.currency || 'BDT',
+            subscriptionStatus: access.subscriptionStatus,
+            limits: access.limits,
+            features: access.features,
+            storeBuilderAccess: access.storeBuilderAccess,
+            storeBuilderCapabilities: access.storeBuilderCapabilities,
+            featureStatuses: access.featureStatuses,
+            usage: toLegacyUsageShape(usagePayload),
+            usageDetails: usagePayload.usage,
+            warnings: usagePayload.warnings
+        }
     };
 };
 
@@ -465,6 +484,18 @@ exports.registerVendor = async (req, res) => {
         });
 
         await session.commitTransaction();
+
+        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.TRIAL_STARTED, {
+            req,
+            shopId: newShop._id,
+            planKey: 'starter',
+            newValue: {
+                status: 'trialing',
+                intendedPlanSlug: selectedPlanSlug || 'starter',
+                trialEndsAt: newShop.plan?.trialEndsAt || null
+            },
+            affectedResources: ['subscription', 'trial']
+        });
 
         const token = signSessionToken({ account, membership, user: newAdmin });
 
@@ -822,7 +853,7 @@ exports.login = async (req, res) => {
         const user = membership.legacyUser_id;
         const userShop = membership.shop_id;
         const token = signSessionToken({ account, membership, user });
-        const { shop: sessionShop, effectiveFeatures } = await getSessionShopPayload(userShop);
+        const { shop: sessionShop, effectiveFeatures, planAccess } = await getSessionShopPayload(userShop);
 
         res.cookie('token', token, getCookieOptions());
 
@@ -837,7 +868,8 @@ exports.login = async (req, res) => {
                 subdomain: userShop?.subdomain,
                 shopName: userShop?.shopName,
                 shop: sessionShop,
-                effectiveFeatures
+                effectiveFeatures,
+                planAccess
             }
         });
 
@@ -1036,9 +1068,10 @@ exports.getMe = async (req, res) => {
             if (shop) {
                 user.shopName = shop.shopName;
                 user.subdomain = shop.subdomain;
-                const { shop: sessionShop, effectiveFeatures } = await getSessionShopPayload(shop);
+                const { shop: sessionShop, effectiveFeatures, planAccess } = await getSessionShopPayload(shop);
                 user.shop = sessionShop;
                 user.effectiveFeatures = effectiveFeatures;
+                user.planAccess = planAccess;
             }
         }
 

@@ -43,11 +43,17 @@ const {
     markAllSuperAdminNotificationsRead
 } = require('../controllers/platformNotificationController');
 const { checkSuperAdminCustomDomainDns } = require('../controllers/customDomainController');
+const {
+    getSuperAdminSubscriptionTimeline,
+    getSuperAdminSubscriptionAnalytics
+} = require('../controllers/billingController');
 
 router.use(protect);
 router.use(authorize('SuperAdmin'));
 
 router.get('/overview', getPlatformOverview);
+router.get('/subscription-timeline', getSuperAdminSubscriptionTimeline);
+router.get('/subscription-analytics', getSuperAdminSubscriptionAnalytics);
 router.get('/notifications', getSuperAdminNotifications);
 router.patch('/notifications/read-all', markAllSuperAdminNotificationsRead);
 router.patch('/notifications/:id/read', markSuperAdminNotificationRead);

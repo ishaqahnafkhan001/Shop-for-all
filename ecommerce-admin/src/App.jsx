@@ -116,7 +116,7 @@ function App() {
                         <Route element={<ProtectedRoute allowedRoles={['VendorAdmin']} />}>
                             {/* Note: You might want to move 'settings' here too depending on your business logic */}
                             <Route path="staff" element={withSuspense(withFeature('staffAccounts', <StaffPermissions />))} />
-                            <Route path="badges" element={withSuspense(<TrustedBadge />)} />
+                            <Route path="badges" element={withSuspense(withFeature('trustSystem', <TrustedBadge />))} />
                             <Route path="billing" element={withSuspense(<Billing />)} />
                             <Route path="verification" element={withSuspense(<Verification />)} />
                         </Route>
@@ -128,10 +128,10 @@ function App() {
                         <Route path="catalog-tools" element={withSuspense(withPermission('catalogTools', withFeature('bulkProductTools', <CatalogTools />)))} />
                         <Route path="orders" element={withSuspense(withPermission('orders', <OrderList />))} />
                         <Route path="returns" element={withSuspense(withPermission('returns', <Returns />))} />
-                        <Route path="notifications" element={withSuspense(withPermission('notifications', <Notifications />))} />
+                        <Route path="notifications" element={withSuspense(withPermission('notifications', withFeature('notifications', <Notifications />)))} />
                         <Route path="promotions" element={withSuspense(withPermission('promotions', withFeature('coupons', <Promotions />)))} />
-                        <Route path="banners" element={withSuspense(withPermission('bannersManage', withFeature('storeBuilder', <PromotionalBanner />)))} />
-                        <Route path="customers" element={withSuspense(withPermission('customers', <CustomerList />))} />
+                        <Route path="banners" element={withSuspense(withPermission('bannersManage', withFeature('scheduledBanners', <PromotionalBanner />)))} />
+                        <Route path="customers" element={withSuspense(withPermission('customers', withFeature('customerSection', <CustomerList />)))} />
                         <Route path="privacy-requests" element={withSuspense(withPermission('privacyRequests', <PrivacyRequests />))} />
                         <Route path="growth" element={withSuspense(withPermission('growthCenter', withFeature('growthCenter', <GrowthCenter />)))} />
                         <Route path="analytics" element={withSuspense(withPermission('analytics', withFeature('analytics', <AdvancedAnalytics />)))} />

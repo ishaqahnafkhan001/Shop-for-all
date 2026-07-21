@@ -8,6 +8,7 @@ import {
     CreditCard,
     FileText,
     HelpCircle,
+    History,
     Loader2,
     Send,
     ShieldCheck
@@ -15,35 +16,27 @@ import {
 import API from '../../api/api';
 import { AdminErrorState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 
-const plans = [
-    {
-        name: 'Starter',
-        monthly: 999,
-        yearly: 9990,
-        productLimit: 100,
-        staffLimit: 1,
-        recommended: false,
-        features: ['100 products', '1 staff account', 'Coupons', 'Store Builder', 'Basic analytics']
-    },
-    {
-        name: 'Growth',
-        monthly: 2499,
-        yearly: 24990,
-        productLimit: 500,
-        staffLimit: 3,
-        recommended: true,
-        features: ['500 products', '3 staff accounts', 'Growth Center', 'AI ad helper', 'Custom domain', 'Trusted Badge eligibility']
-    },
-    {
-        name: 'Pro',
-        monthly: 5999,
-        yearly: 59990,
-        productLimit: 2000,
-        staffLimit: 10,
-        recommended: false,
-        features: ['2,000 products', '10 staff accounts', 'Priority support', 'Growth Center', 'AI ad helper', 'Trusted Badge eligibility']
-    }
-];
+const formatPlanLimit = (value) => value === null ? 'Unlimited' : Number(value || 0).toLocaleString();
+
+const buildPlanFeatureList = (plan = {}) => {
+    const limits = plan.limits || {};
+    const features = plan.features || {};
+    return [
+        `${formatPlanLimit(limits.productCount)} products`,
+        `${formatPlanLimit(limits.aiProductCreationsPerWeek)} AI products weekly`,
+        `${formatPlanLimit(limits.imagesPerProduct)} images per product`,
+        `${formatPlanLimit(limits.staffAccounts)} staff account${limits.staffAccounts === 1 ? '' : 's'}`,
+        `${plan.storeBuilderAccess === 'full' ? 'Full' : 'Limited'} Store Builder`,
+        `${formatPlanLimit(limits.activityLogRetentionDays)}-day activity logs`,
+        features.growthCenter ? 'Growth Center' : 'No Growth Center',
+        features.customDomain ? 'Custom domain' : 'ScaleUp subdomain',
+        features.customerSection ? 'Customer management' : 'No customer management',
+        features.trustSystem ? 'Trust system' : 'No trust system',
+        features.notifications ? 'Notification Center' : 'No Notification Center',
+        features.scheduledSales ? 'Scheduled sales' : 'No scheduled sales',
+        features.scheduledProductPublishing ? 'Scheduled product publishing' : 'No scheduled product publishing'
+    ];
+};
 
 const providerLabels = {
     manual_bkash: 'bKash',
@@ -156,6 +149,7 @@ const Billing = () => {
     const [current, setCurrent] = useState(null);
     const [invoices, setInvoices] = useState([]);
     const [payments, setPayments] = useState([]);
+    const [timeline, setTimeline] = useState([]);
     const [cycle, setCycle] = useState('monthly');
     const [selectedInvoiceId, setSelectedInvoiceId] = useState('');
     const [creatingPlan, setCreatingPlan] = useState('');
@@ -172,10 +166,11 @@ const Billing = () => {
         setLoading(true);
         setError('');
         try {
-            const [currentRes, invoiceRes, paymentRes] = await Promise.all([
+            const [currentRes, invoiceRes, paymentRes, timelineRes] = await Promise.all([
                 API.get('/admin/billing/current'),
                 API.get('/admin/billing/invoices', { params: { limit: 20 } }),
-                API.get('/admin/billing/payments', { params: { limit: 20 } })
+                API.get('/admin/billing/payments', { params: { limit: 20 } }),
+                API.get('/admin/billing/timeline', { params: { limit: 20 } })
             ]);
 
             const currentData = currentRes.data.data || {};
@@ -183,6 +178,7 @@ const Billing = () => {
             setCurrent(currentData);
             setInvoices(invoiceRows);
             setPayments(paymentRes.data.data || []);
+            setTimeline(timelineRes.data.data || []);
 
             const payable = invoiceRows.find(invoice => ['unpaid', 'rejected', 'submitted'].includes(invoice.status));
             if (payable) {
@@ -204,6 +200,18 @@ const Billing = () => {
     const latestInvoice = current?.latestInvoice;
     const subscription = current?.subscription;
     const billingDisplay = current?.billingDisplay || {};
+    const planAccess = current?.planAccess || {};
+    const limits = planAccess.limits || {};
+    const usage = planAccess.usage || {};
+    const usageWarnings = planAccess.warnings || [];
+    const plans = useMemo(() => (current?.availablePlans || []).map(plan => ({
+        ...plan,
+        monthly: plan.monthlyPrice,
+        yearly: plan.yearlyPrice,
+        recommended: plan.key === 'growth',
+        features: buildPlanFeatureList(plan)
+    })), [current?.availablePlans]);
+    const formatUsage = (used, limit) => `${Number(used || 0).toLocaleString()} / ${limit === null ? 'Unlimited' : Number(limit || 0).toLocaleString()}`;
     const selectedInvoice = useMemo(() => {
         return invoices.find(invoice => String(invoice.id || invoice._id) === String(selectedInvoiceId));
     }, [invoices, selectedInvoiceId]);
@@ -211,6 +219,7 @@ const Billing = () => {
     const createInvoice = async (planName) => {
         setCreatingPlan(planName);
         try {
+            await API.post('/admin/billing/events/upgrade-clicked', { planName }).catch(() => null);
             const res = await API.post('/admin/billing/invoices', { planName, billingCycle: cycle });
             toast.success(`${planName} invoice created`);
             const invoice = res.data.data;
@@ -347,6 +356,81 @@ const Billing = () => {
                             </div>
                         ))}
                     </div>
+                </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h2 className="text-lg font-black text-slate-950">Plan &amp; usage</h2>
+                        <p className="mt-1 text-sm text-slate-500">Current usage is calculated by the backend for this store.</p>
+                    </div>
+                    <p className="text-sm font-bold text-indigo-700">
+                        {planAccess.planName || 'Starter'} · {money(planAccess.monthlyPrice)}/month
+                    </p>
+                </div>
+                {usageWarnings.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                        {usageWarnings.map(warning => (
+                            <div
+                                key={`${warning.resource}-${warning.threshold}`}
+                                className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm ${warning.severity === 'critical' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}
+                            >
+                                <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+                                <span><strong>{warning.percentage}% used.</strong> {warning.message}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <div className="rounded-xl bg-slate-50 p-4">
+                        <p className="text-xs font-bold uppercase text-slate-400">Products</p>
+                        <p className="mt-1 font-black text-slate-950">{formatUsage(usage.products, limits.productCount)}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-4">
+                        <p className="text-xs font-bold uppercase text-slate-400">Staff</p>
+                        <p className="mt-1 font-black text-slate-950">{formatUsage(usage.staff, limits.staffAccounts)}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-4">
+                        <p className="text-xs font-bold uppercase text-slate-400">AI this week</p>
+                        <p className="mt-1 font-black text-slate-950">{formatUsage(usage.ai?.used, usage.ai?.limit)}</p>
+                        {usage.ai?.resetsAt && <p className="mt-1 text-xs text-slate-500">Resets {formatDate(usage.ai.resetsAt)} UTC</p>}
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-4">
+                        <p className="text-xs font-bold uppercase text-slate-400">Images per product</p>
+                        <p className="mt-1 font-black text-slate-950">Up to {limits.imagesPerProduct || 5}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-4">
+                        <p className="text-xs font-bold uppercase text-slate-400">Activity logs</p>
+                        <p className="mt-1 font-black text-slate-950">{limits.activityLogRetentionDays || 7} days</p>
+                    </div>
+                </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center gap-2 border-b border-slate-100 p-5">
+                    <History className="h-5 w-5 text-indigo-600" />
+                    <div>
+                        <h2 className="text-lg font-black text-slate-950">Subscription timeline</h2>
+                        <p className="text-sm text-slate-500">An immutable history of plan, trial, feature, and quota events.</p>
+                    </div>
+                </div>
+                <div className="divide-y divide-slate-100">
+                    {timeline.length === 0 ? (
+                        <p className="p-5 text-sm text-slate-500">No subscription events have been recorded yet.</p>
+                    ) : timeline.map(item => (
+                        <div key={item._id} className="flex flex-col gap-2 p-5 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <p className="font-bold text-slate-950">{String(item.eventType || '').replace(/([a-z])([A-Z])/g, '$1 $2')}</p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    {item.reason || item.metadata?.resource || item.actor?.role || 'System event'}
+                                </p>
+                            </div>
+                            <time className="text-xs font-semibold text-slate-400" dateTime={item.occurredAt}>
+                                {formatDate(item.occurredAt)}
+                            </time>
+                        </div>
+                    ))}
                 </div>
             </section>
 

@@ -4,6 +4,11 @@ const Subscription = require('../models/Subscription');
 const Invoice = require('../models/Invoice');
 const PaymentTransaction = require('../models/PaymentTransaction');
 const VendorPlan = require('../models/VendorPlan');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const { getSubscriptionUsage, toLegacyUsageShape } = require('../services/billing/subscriptionUsageService');
+const { listSubscriptionAuditTimeline } = require('../services/billing/subscriptionAuditService');
+const { listSubscriptionAnalytics } = require('../services/billing/subscriptionAnalyticsService');
+const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
@@ -172,6 +177,11 @@ exports.getVendorBillingCurrent = async (req, res) => {
             ? activePlan
             : await getPlanBySlugOrNameOrDefault(display.effectivePlanSlug || display.effectivePlanName || 'starter');
         const latestInvoice = await Invoice.findOne({ shopId }).sort({ createdAt: -1 });
+        const access = await getShopPlanAccess(shop);
+        const [usagePayload, availablePlans] = await Promise.all([
+            getSubscriptionUsage(shop, { access }),
+            Promise.all(['starter', 'growth', 'pro'].map(getPlanBySlugOrNameOrDefault))
+        ]);
 
         res.status(200).json({
             success: true,
@@ -183,6 +193,30 @@ exports.getVendorBillingCurrent = async (req, res) => {
                 displayPlan: display.displayPlan,
                 billingDisplay: display,
                 latestInvoice: serializeInvoice(latestInvoice),
+                planAccess: {
+                    planKey: access.planKey,
+                    planName: access.planName,
+                    monthlyPrice: access.plan.monthlyPrice,
+                    currency: access.plan.currency || 'BDT',
+                    subscriptionStatus: access.subscriptionStatus,
+                    limits: access.limits,
+                    features: access.features,
+                    storeBuilderAccess: access.storeBuilderAccess,
+                    storeBuilderCapabilities: access.storeBuilderCapabilities,
+                    usage: toLegacyUsageShape(usagePayload),
+                    usageDetails: usagePayload.usage,
+                    warnings: usagePayload.warnings
+                },
+                availablePlans: availablePlans.map(item => ({
+                    key: getPlanSlug(item),
+                    name: item.name,
+                    monthlyPrice: item.monthlyPrice,
+                    yearlyPrice: item.yearlyPrice,
+                    currency: item.currency || 'BDT',
+                    limits: item.limits,
+                    features: item.features,
+                    storeBuilderAccess: item.storeBuilderAccess
+                })),
                 trialDays: TRIAL_DAYS,
                 graceDays: GRACE_DAYS
             }
@@ -190,6 +224,65 @@ exports.getVendorBillingCurrent = async (req, res) => {
     } catch (err) {
         console.error('Get vendor billing current error:', err);
         res.status(500).json({ success: false, error: 'Failed to load billing status' });
+    }
+};
+
+exports.getVendorBillingUsage = async (req, res) => {
+    try {
+        const shopId = getShopIdFromReq(req);
+        const data = await getSubscriptionUsage(shopId, { evaluateWarnings: true, req });
+        res.status(200).json({ success: true, ...data, data });
+    } catch (err) {
+        console.error('Get vendor billing usage error:', err);
+        res.status(err.statusCode || 500).json({ success: false, error: 'Failed to load plan usage' });
+    }
+};
+
+exports.getVendorSubscriptionTimeline = async (req, res) => {
+    try {
+        const result = await listSubscriptionAuditTimeline({
+            shopId: getShopIdFromReq(req),
+            query: req.query,
+            vendorSafe: true
+        });
+        res.status(200).json({ success: true, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load subscription timeline' });
+    }
+};
+
+exports.trackVendorUpgradeClicked = async (req, res) => {
+    try {
+        const shopId = getShopIdFromReq(req);
+        const plan = await getPlanBySlugOrNameOrDefault(req.body?.planKey || req.body?.planName || 'growth');
+        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.UPGRADE_CLICKED, {
+            req,
+            shopId,
+            planKey: getPlanSlug(plan),
+            affectedResources: ['subscription'],
+            metadata: { targetPlanKey: getPlanSlug(plan), source: String(req.body?.source || 'billing').slice(0, 80) }
+        });
+        res.status(202).json({ success: true });
+    } catch (err) {
+        res.status(400).json({ success: false, error: 'Unable to record upgrade selection' });
+    }
+};
+
+exports.getSuperAdminSubscriptionTimeline = async (req, res) => {
+    try {
+        const result = await listSubscriptionAuditTimeline({ query: req.query });
+        res.status(200).json({ success: true, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load subscription timeline' });
+    }
+};
+
+exports.getSuperAdminSubscriptionAnalytics = async (req, res) => {
+    try {
+        const result = await listSubscriptionAnalytics({ query: req.query, shopId: req.query.shopId || null });
+        res.status(200).json({ success: true, ...result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load subscription analytics' });
     }
 };
 
@@ -529,6 +622,7 @@ exports.updateSuperAdminSubscriptionStatus = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Valid subscription status is required' });
         }
 
+        const previousStatus = subscription.status;
         let updated = subscription;
         if (status === 'active') {
             updated = await activateSubscription({
@@ -538,17 +632,27 @@ exports.updateSuperAdminSubscriptionStatus = async (req, res) => {
                 req
             });
         } else if (status === 'past_due') {
-            updated = await markPastDue(subscription);
+            updated = await markPastDue(subscription, { req });
         } else if (status === 'grace') {
-            updated = await enterGracePeriod(subscription);
+            updated = await enterGracePeriod(subscription, { req });
         } else if (status === 'suspended') {
             if (!reason) return res.status(400).json({ success: false, error: 'Reason is required to suspend billing' });
             updated = await suspendForBilling(subscription, { req, reason });
         } else if (status === 'cancelled') {
-            updated = await cancelSubscription(subscription);
+            updated = await cancelSubscription(subscription, { req, reason });
         } else {
             subscription.status = status;
             updated = await subscription.save();
+            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+                req,
+                shopId: updated.shopId,
+                subscriptionId: updated._id,
+                planKey: updated.activePlanSlug || 'starter',
+                oldValue: { status: previousStatus },
+                newValue: { status: updated.status },
+                reason: reason || '',
+                affectedResources: ['subscription']
+            });
         }
 
         await logPlatformAudit({

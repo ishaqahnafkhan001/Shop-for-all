@@ -29,11 +29,14 @@ const analyticsEventRoutes = require('./routes/analyticsEventRoutes');
 const growthRoutes = require('./routes/growthRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
 const billingRoutes = require('./routes/billingRoutes');
+const vendorBillingUsageRoutes = require('./routes/vendorBillingUsageRoutes');
+const { initializeSubscriptionEventHandlers } = require('./services/billing/subscriptionEventHandlers');
 const badgeRoutes = require('./routes/badgeRoutes');
 const adminSupportRoutes = require('./routes/adminSupportRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 
 const app = express();
+initializeSubscriptionEventHandlers();
 app.set('trust proxy', 1);
 
 const buildInfo = {
@@ -155,6 +158,7 @@ app.use('/api/admin/collections', collectionRoutes);
 app.use('/api/admin/growth', growthRoutes);
 app.use('/api/admin/analytics', analyticsRoutes);
 app.use('/api/admin/billing', billingRoutes);
+app.use('/api/vendor/billing', vendorBillingUsageRoutes);
 app.use('/api/admin/badges', badgeRoutes);
 app.use('/api/admin/support', adminSupportRoutes);
 app.use('/api/support', supportRoutes);

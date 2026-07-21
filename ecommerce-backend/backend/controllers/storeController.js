@@ -19,9 +19,9 @@ const {
     applyScheduledSalesToProducts,
     getActiveSalePopups
 } = require('../services/sales/scheduledSaleService');
-const {
-    normalizePlanSlug
-} = require('../services/billing/billingPlanService');
+const { hasFeature } = require('../services/shops/featureAccessService');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
@@ -89,46 +89,9 @@ const applyDefaultPoliciesToShopPayload = (shop) => {
     return shop;
 };
 
-const normalizePublicPlanKey = (value) => {
-    const raw = String(value || '').trim();
-    if (!raw) return 'unknown';
-    const slug = normalizePlanSlug(raw);
-    if (slug === 'growth') return 'growth';
-    if (slug === 'pro') return 'pro';
-    if (slug === 'starter' || slug === 'trial' || slug === 'trialing') return 'starter';
-    return 'unknown';
-};
-
-const getPublicBrandingPlanKey = async (shop) => {
-    const subscription = await Subscription.findOne({ shopId: shop._id })
-        .populate('planId', 'name slug')
-        .select('status activePlanName activePlanSlug planId')
-        .lean();
-
-    if (subscription?.status === 'trialing' || subscription?.status === 'pending_approval') {
-        return 'starter';
-    }
-
-    const subscriptionPlanKey = normalizePublicPlanKey(
-        subscription?.activePlanSlug ||
-        subscription?.activePlanName ||
-        subscription?.planId?.slug ||
-        subscription?.planId?.name
-    );
-    if (subscriptionPlanKey !== 'unknown') return subscriptionPlanKey;
-
-    return normalizePublicPlanKey(
-        shop?.plan?.activePlanSlug ||
-        shop?.plan?.intendedPlanSlug ||
-        shop?.plan?.name ||
-        shop?.plan?.status
-    );
-};
-
 const attachPublicBranding = async (shop) => {
     if (!shop) return shop;
-    const planKey = await getPublicBrandingPlanKey(shop);
-    shop.showPlatformBranding = !['growth', 'pro'].includes(planKey);
+    shop.showPlatformBranding = !(await hasFeature(shop._id, 'platformBrandingRemoval'));
     delete shop.plan;
     return shop;
 };
@@ -139,6 +102,7 @@ const getPublicTrustedBadge = async (shop) => {
     if (shop.verification?.status !== 'approved' || !shop.verification?.phoneVerified) return null;
     if (shop.badgeExpiresAt && new Date(shop.badgeExpiresAt) <= new Date()) return null;
     if (shop.badgeRevokedAt) return null;
+    if (!(await hasFeature(shop._id, 'trustSystem'))) return null;
 
     const subscription = await Subscription.findOne({ shopId: shop._id, status: 'active' })
         .select('_id status')
@@ -187,6 +151,8 @@ exports.getStoreInfo = async (req, res) => {
         if (!shop) {
             return res.status(404).json({ error: "Shop details not found." });
         }
+        const planAccess = await getShopPlanAccess(shop._id);
+        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop);
@@ -291,6 +257,8 @@ exports.getStorefrontBootstrap = async (req, res) => {
         }
 
         await ensureThemeSectionArchitecture(shop);
+        const planAccess = await getShopPlanAccess(shopId);
+        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop);

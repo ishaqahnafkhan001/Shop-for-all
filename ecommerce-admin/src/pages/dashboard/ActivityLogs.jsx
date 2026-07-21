@@ -10,6 +10,7 @@ const ActivityLogs = () => {
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ entityType: '', severity: '' });
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+    const [retention, setRetention] = useState(null);
 
     const fetchLogs = useCallback(async (page = 1) => {
         setLoading(true);
@@ -24,6 +25,7 @@ const ActivityLogs = () => {
             });
             setLogs(data.data || []);
             setPagination(data.pagination || { page, pages: 1, total: 0 });
+            setRetention(data.retention || null);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to load activity logs');
         } finally {
@@ -95,6 +97,11 @@ const ActivityLogs = () => {
                 </div>
                 <h1 className="mt-2 text-2xl font-bold text-slate-950">Activity Logs</h1>
                 <p className="mt-1 text-sm text-slate-500">A tenant-scoped audit trail for important admin actions.</p>
+                {retention?.days && (
+                    <p className="mt-2 text-sm font-medium text-indigo-700">
+                        Your {retention.plan ? `${retention.plan[0].toUpperCase()}${retention.plan.slice(1)}` : 'current'} plan stores activity logs for {retention.days} days.
+                    </p>
+                )}
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

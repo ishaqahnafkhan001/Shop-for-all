@@ -23,5 +23,6 @@ const auditLogSchema = new Schema({
 
 auditLogSchema.index({ shop_id: 1, createdAt: -1 });
 auditLogSchema.index({ shop_id: 1, entityType: 1, entityId: 1, createdAt: -1 });
+auditLogSchema.index({ createdAt: 1, shop_id: 1 });
 
 module.exports = mongoose.model('AuditLog', auditLogSchema);

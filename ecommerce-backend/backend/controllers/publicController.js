@@ -46,6 +46,9 @@ const {
     requireOrderAccess
 } = require('../services/orders/orderAccessService');
 const { getShippingCostForZone } = require('../services/orders/orderPricingService');
+const { hasFeature } = require('../services/shops/featureAccessService');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
 const RETURN_WINDOW_HOURS = 24;
@@ -73,7 +76,11 @@ const getPublicShopBySubdomain = async (subdomain, session = null) => {
 
     if (session) query.session(session);
 
-    return query.lean();
+    const shop = await query.lean();
+    if (shop && identifier.includes('.') && !(await hasFeature(shop._id, 'customDomain'))) {
+        return null;
+    }
+    return shop;
 };
 
 const buildPublicOrderQuery = (orderLookup, shopId) => ({
@@ -726,10 +733,14 @@ exports.getPublicShopDetails = async (req, res) => {
         const limit = parseInt(req.query.limit) || 16;
         const skip = (page - 1) * limit;
 
-        const shop = await Shop.findOne({ subdomain })
+        const resolvedShop = await getPublicShopBySubdomain(subdomain);
+        if (!resolvedShop) return res.status(404).json({ error: "Shop not found" });
+        const shop = await Shop.findById(resolvedShop._id)
             .select(PUBLIC_SHOP_FIELDS)
             .lean();
         if (!shop) return res.status(404).json({ error: "Shop not found" });
+        const planAccess = await getShopPlanAccess(shop._id);
+        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
         shop.shopVerification = buildPublicShopVerification(shop);
         delete shop.verification;
         delete shop.isActive;

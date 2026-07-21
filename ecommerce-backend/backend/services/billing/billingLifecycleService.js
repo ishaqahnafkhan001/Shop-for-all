@@ -39,7 +39,7 @@ const runBillingLifecycleCheck = async ({ req = null, now = new Date() } = {}) =
     const suspended = [];
 
     for (const subscription of expiredTrials) {
-        movedToGrace.push(await enterGracePeriod(subscription, { now }));
+        movedToGrace.push(await enterGracePeriod(subscription, { req, now }));
     }
 
     for (const subscription of pastDue) {

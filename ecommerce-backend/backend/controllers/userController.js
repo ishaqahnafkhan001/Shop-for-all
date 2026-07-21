@@ -14,6 +14,9 @@ const {
     getStaffCapacity
 } = require('../services/staff/staffCapacityService');
 const { buildPagination } = require('../utils/pagination');
+const { reserveQuota, releaseQuotaSafely } = require('../services/billing/planQuotaReservationService');
+const { getShopPlanAccess, buildLimitError } = require('../services/billing/planAccessService');
+const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 
 
 /**
@@ -257,6 +260,7 @@ exports.getStaffSummary = async (req, res) => {
 };
 
 const updateShopUser = async (req, res) => {
+    let quotaReservation = null;
     try {
         const user = await User.findOne({
             _id: req.params.id,
@@ -312,14 +316,47 @@ const updateShopUser = async (req, res) => {
             if (req.body.status === 'Active' && user.status !== 'Active') {
                 const capacity = await getStaffCapacity(req.user.shopId);
                 if (!capacity.canAddStaff) {
-                    return res.status(403).json({
-                        success: false,
-                        code: 'STAFF_LIMIT_REACHED',
-                        error: capacity.message || 'You have reached your staff limit for this plan.',
-                        limit: capacity.staffLimit,
-                        current: capacity.usedStaffCount,
-                        remainingStaffSlots: capacity.remainingStaffSlots
+                    const context = await getShopPlanAccess(req.user.shopId);
+                    const payload = buildLimitError(context, 'staffAccounts', capacity.usedStaffCount, capacity.staffLimit);
+                    payload.legacyCode = 'STAFF_LIMIT_REACHED';
+                    payload.remainingStaffSlots = capacity.remainingStaffSlots;
+                    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
+                        req,
+                        shopId: req.user.shopId,
+                        subscriptionId: context.subscription?._id,
+                        planKey: context.planKey,
+                        affectedResources: ['staff'],
+                        metadata: { resource: 'staff', usage: payload.usage, notifyVendor: false }
                     });
+                    return res.status(403).json(payload);
+                }
+                try {
+                    quotaReservation = await reserveQuota({
+                        shopId: req.user.shopId,
+                        resource: 'staff',
+                        requested: 1,
+                        limit: capacity.staffLimit,
+                        getCommittedUsage: () => User.countDocuments({
+                            shop_id: req.user.shopId,
+                            role: 'VendorStaff',
+                            status: 'Active'
+                        })
+                    });
+                } catch (error) {
+                    if (error.code !== 'PLAN_LIMIT_REACHED') throw error;
+                    const context = await getShopPlanAccess(req.user.shopId);
+                    const payload = buildLimitError(context, 'staffAccounts', error.usage, capacity.staffLimit);
+                    payload.legacyCode = 'STAFF_LIMIT_REACHED';
+                    payload.remainingStaffSlots = 0;
+                    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
+                        req,
+                        shopId: req.user.shopId,
+                        subscriptionId: context.subscription?._id,
+                        planKey: context.planKey,
+                        affectedResources: ['staff'],
+                        metadata: { resource: 'staff', usage: payload.usage, notifyVendor: false }
+                    });
+                    return res.status(403).json(payload);
                 }
             }
             user.status = req.body.status;
@@ -331,6 +368,18 @@ const updateShopUser = async (req, res) => {
         }
 
         await user.save();
+
+        if (beforeAudit.status !== 'Active' && user.status === 'Active') {
+            const context = await getShopPlanAccess(req.user.shopId);
+            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.USAGE_CHANGED, {
+                req,
+                shopId: req.user.shopId,
+                subscriptionId: context.subscription?._id,
+                planKey: context.planKey,
+                affectedResources: ['staff'],
+                metadata: { action: 'staff_added', resource: 'staff' }
+            });
+        }
 
         if (Object.prototype.hasOwnProperty.call(req.body, 'permissions') && user.membership_id) {
             await StaffPermission.findOneAndUpdate(
@@ -385,6 +434,8 @@ const updateShopUser = async (req, res) => {
     } catch (err) {
         console.error('Update staff error:', err);
         res.status(500).json({ error: 'Failed to update staff member' });
+    } finally {
+        releaseQuotaSafely(quotaReservation);
     }
 };
 
@@ -428,6 +479,18 @@ exports.removeShopStaff = async (req, res) => {
             before: { status: previousStatus },
             after: { status: user.status }
         });
+
+        if (previousStatus === 'Active') {
+            const context = await getShopPlanAccess(req.user.shopId);
+            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.USAGE_CHANGED, {
+                req,
+                shopId: req.user.shopId,
+                subscriptionId: context.subscription?._id,
+                planKey: context.planKey,
+                affectedResources: ['staff'],
+                metadata: { action: 'staff_removed', resource: 'staff' }
+            });
+        }
 
         res.status(200).json({
             success: true,

@@ -120,6 +120,8 @@ const productSchema = new Schema({
         default: null,
         index: true
     },
+    schedulePlanBlockedAt: { type: Date, default: null, index: true },
+    schedulePlanBlockedReason: { type: String, trim: true, maxlength: 240, default: '' },
     publishedAt: {
         type: Date,
         default: null
@@ -207,6 +209,8 @@ productSchema.pre('save', async function () {
         this.publishAt = null;
         if (!this.publishedAt) this.publishedAt = now;
         this.isActive = true;
+        this.schedulePlanBlockedAt = null;
+        this.schedulePlanBlockedReason = '';
     } else {
         this.publicationStatus = 'draft';
         this.isActive = false;

@@ -1,12 +1,11 @@
 const Shop = require('../../models/Shop');
-const Subscription = require('../../models/Subscription');
 const Order = require('../../models/Order');
 const Review = require('../../models/Review');
 const AbuseReport = require('../../models/AbuseReport');
 const ReturnRequest = require('../../models/ReturnRequest');
-const VendorPlan = require('../../models/VendorPlan');
 const { isBillingSuspension } = require('../billing/subscriptionService');
 const { isVerificationSuspension } = require('../vendorVerificationService');
+const { getShopPlanAccess } = require('../billing/planAccessService');
 
 const BADGE_THRESHOLDS = {
     minShopAgeDays: 60,
@@ -18,8 +17,6 @@ const BADGE_THRESHOLDS = {
     analysisApproveScore: 85,
     analysisReviewScore: 70
 };
-
-const REQUIRED_PLAN_NAMES = new Set(['Growth', 'Pro']);
 
 const daysBetween = (from, to = new Date()) => {
     if (!from) return 0;
@@ -52,14 +49,6 @@ const hasFacebookLink = (shop) => {
     return collectLinks(shop?.theme || {}).some(url => /(?:facebook\.com|fb\.com)\//i.test(url));
 };
 
-const getPlanName = async (shop, subscription) => {
-    if (subscription?.planId) {
-        const plan = await VendorPlan.findById(subscription.planId).select('name').lean();
-        if (plan?.name) return plan.name;
-    }
-    return shop?.plan?.name || 'Starter';
-};
-
 const getReviewStats = async (shopId) => {
     const [stats] = await Review.aggregate([
         { $match: { shop_id: shopId } },
@@ -82,8 +71,9 @@ const getEligibilitySnapshot = async (shopId) => {
     const shop = await Shop.findById(shopId).select('createdAt plan theme verification approvalStatus isActive suspensionReason badgeStatus');
     if (!shop) throw new Error('Shop not found');
 
-    const subscription = await Subscription.findOne({ shopId: shop._id }).sort({ createdAt: -1 });
-    const plan = await getPlanName(shop, subscription);
+    const access = await getShopPlanAccess(shop);
+    const subscription = access.subscription;
+    const plan = access.planName;
     const [
         completedSales,
         unresolvedAbuseReports,
@@ -103,6 +93,7 @@ const getEligibilitySnapshot = async (shopId) => {
         subscription,
         snapshot: {
             plan,
+            trustSystemIncluded: Boolean(access.features.trustSystem),
             subscriptionStatus: subscription?.status || 'missing',
             verificationStatus: shop.verification?.status || 'not_submitted',
             shopAgeDays: daysBetween(shop.createdAt),
@@ -118,7 +109,7 @@ const getEligibilitySnapshot = async (shopId) => {
 
 const buildRequirementChecklist = (shop, subscription, snapshot) => {
     const activePaidSubscription = subscription?.status === 'active';
-    const planEligible = REQUIRED_PLAN_NAMES.has(snapshot.plan);
+    const planEligible = snapshot.trustSystemIncluded === true;
     const verificationApproved = snapshot.verificationStatus === 'approved';
     const activeShop = shop.isActive !== false &&
         shop.approvalStatus !== 'Suspended' &&

@@ -5,6 +5,7 @@ import API from '../../api/api';
 import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { hasFeature } from '../../utils/featureAccess.js';
 import { hasStaffPermission } from '../../utils/staffPermissions.js';
 
 const emptyForm = {
@@ -61,7 +62,8 @@ const Promotions = () => {
     const [saleCollectionLoading, setSaleCollectionLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [statusNow, setStatusNow] = useState(0);
-    const canManageScheduledSales = hasStaffPermission(user, 'salesManage');
+    const hasScheduledSalesPlan = hasFeature(user, 'scheduledSales');
+    const canManageScheduledSales = hasScheduledSalesPlan && hasStaffPermission(user, 'salesManage');
 
     const loadPromotions = useCallback(async () => {
         setLoading(true);
@@ -843,6 +845,22 @@ const Promotions = () => {
                     </div>
                 </div>
             </section>
+            )}
+            {!hasScheduledSalesPlan && (
+                <section className="rounded-lg border border-blue-200 bg-blue-50 p-5">
+                    <div className="flex items-start gap-3">
+                        <CalendarClock className="mt-0.5 h-5 w-5 text-blue-700" />
+                        <div>
+                            <h2 className="font-black text-slate-950">Scheduled sales are locked</h2>
+                            <p className="mt-1 text-sm leading-6 text-slate-600">
+                                Scheduled sales are available on Growth and Pro. You can continue using normal coupon codes on your current plan.
+                            </p>
+                            <a href="/dashboard/billing" className="mt-3 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-700">
+                                View plans
+                            </a>
+                        </div>
+                    </div>
+                </section>
             )}
         </div>
     );

@@ -5,13 +5,14 @@ const {
     DEFAULT_PASSWORD,
     createLaunchSafetyContext
 } = require('../helpers/launchSafetyHarness');
+const { createOrderAccessToken } = require('../../services/orders/orderAccessService');
 
 test('login sets a session cookie and logout clears it through CSRF-protected flow', async (t) => {
     const ctx = await createLaunchSafetyContext(t);
     const client = ctx.client();
 
     const login = await client.post('/api/auth/login', {
-        email: 'vendor-a@launch.test',
+        email: 'vendor-a@launch.example.com',
         password: DEFAULT_PASSWORD,
         subdomain: 'launchshopa'
     });
@@ -68,7 +69,15 @@ test('public product and order APIs do not leak cost or private fields', async (
     assert.equal(publicProductText.includes('costPrice'), false);
     assert.equal(publicProductText.includes('"tax"'), false);
 
-    const publicTracking = await client.get(`/api/storefront/launchshopa/track-order/${orderA._id}?phone=01700000000`);
+    const accessToken = createOrderAccessToken({
+        shopId: ctx.data.shops.shopA._id,
+        orderId: orderA._id,
+        allowedActions: ['track']
+    });
+    const publicTracking = await client.get(
+        `/api/storefront/launchshopa/track-order/${orderA._id}`,
+        { headers: { 'x-order-access-token': accessToken } }
+    );
     assert.equal(publicTracking.status, 200);
 
     const trackingText = JSON.stringify(publicTracking.body);

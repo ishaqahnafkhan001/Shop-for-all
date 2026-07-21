@@ -13,7 +13,9 @@ import {
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
 import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
+import { useAuth } from '../../../context/AuthContext.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
+import { hasFeature } from '../../../utils/featureAccess.js';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
 import {
     MAX_SELLING_POINTS,
@@ -93,6 +95,9 @@ const buildProductFormState = (product = {}) => ({
 const EditProduct = () => {
     const navigate    = useNavigate();
     const { id }      = useParams();
+    const { user } = useAuth();
+    const imageLimit = Number(user?.planAccess?.limits?.imagesPerProduct) || 5;
+    const canSchedulePublishing = hasFeature(user, 'scheduledProductPublishing');
 
     const [loading,      setLoading]      = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,6 +190,10 @@ const EditProduct = () => {
     const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
     const handlePublicationStatusChange = (value) => {
         if (value === 'Scheduled') {
+            if (!canSchedulePublishing) {
+                toast.error('Scheduled product publishing requires the Pro plan.');
+                return;
+            }
             setFormData(prev => ({ ...prev, status: 'Draft', publicationStatus: 'scheduled' }));
         } else {
             setFormData(prev => ({
@@ -206,8 +215,8 @@ const EditProduct = () => {
 
         setNewImageFiles(prev => {
             const total = formData.images.length + prev.length + selected.length;
-            if (total > 5) {
-                toast.error('You can keep up to 5 product images.');
+            if (total > imageLimit) {
+                toast.error(`Your plan allows up to ${imageLimit} product images. Remove existing images before adding more.`);
                 return prev;
             }
             return [...prev, ...selected];
@@ -748,7 +757,7 @@ const EditProduct = () => {
                         >
                             <option>Published</option>
                             <option>Draft</option>
-                            <option>Scheduled</option>
+                            {(canSchedulePublishing || formData.publicationStatus === 'scheduled') && <option>Scheduled</option>}
                             <option>Archived</option>
                         </select>
                     </label>
@@ -829,7 +838,7 @@ const EditProduct = () => {
                     description="Add, remove, or choose the cover image shown on product cards."
                     icon={ImageIcon}
                 >
-                    <ImageEmptyState selectedCount={(formData.images?.length || 0) + newImageFiles.length} max={5} />
+                    <ImageEmptyState selectedCount={(formData.images?.length || 0) + newImageFiles.length} max={imageLimit} />
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-600">Add images</label>
                         <input
@@ -840,7 +849,7 @@ const EditProduct = () => {
                             className="w-full rounded-lg border bg-gray-50 p-2 text-sm"
                         />
                         <p className="text-xs text-gray-500">
-                            Existing images stay unless you remove them. You can keep up to 5 images total.
+                            Images: {(formData.images?.length || 0) + newImageFiles.length} of {imageLimit} used. Existing over-limit images stay until you remove them, but no new images can be added.
                         </p>
                     </div>
 

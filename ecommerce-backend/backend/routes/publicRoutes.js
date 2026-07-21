@@ -3,6 +3,8 @@ const router = express.Router();
 // ✨ Import the new function
 const { getPublicShopDetails, getPublicProduct,createPublicOrder,getMyOrders,trackPublicOrder } = require('../controllers/publicController');
 const { protect } = require('../middlewares/auth'); // Import your auth middleware
+const { getPublicPlans } = require('../controllers/publicPlanController');
+router.get('/plans', getPublicPlans);
 router.get('/shop/:subdomain', getPublicShopDetails);
 
 // ✨ Add the new route

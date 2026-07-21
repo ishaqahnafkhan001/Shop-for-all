@@ -122,6 +122,15 @@ const attachActiveTenant = async ({ req, res, shop, tenantKey, cacheKey, tenantT
         : await ensureShopVerificationStatus(shop);
     const currentShop = checked.shop || shop;
 
+    if (tenantType === 'customDomain') {
+        const { hasFeature } = require('../services/shops/featureAccessService');
+        if (!(await hasFeature(currentShop?._id, 'customDomain'))) {
+            await cache.del(cacheKey);
+            tenantCache.delete(tenantKey);
+            return unavailableResponse(res);
+        }
+    }
+
     if (!currentShop || currentShop.isActive === false || currentShop.approvalStatus === 'Suspended') {
         await cache.del(cacheKey);
         tenantCache.delete(tenantKey);
@@ -192,4 +201,11 @@ exports.invalidateTenantCache = async (subdomain) => {
     if (!normalized) return;
     tenantCache.delete(normalized);
     await cache.del(`tenant:${normalized}`);
+};
+
+exports.resetTenantCacheForTests = () => {
+    if (process.env.NODE_ENV !== 'test') {
+        throw new Error('Tenant cache reset is only available in tests.');
+    }
+    tenantCache.clear();
 };

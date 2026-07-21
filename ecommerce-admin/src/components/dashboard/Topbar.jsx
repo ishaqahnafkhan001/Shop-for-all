@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, Menu, ExternalLink, Store, Bell } from 'lucide-react';
 import API from '../../api/api';
+import { hasFeature } from '../../utils/featureAccess';
 
 const Topbar = ({ onOpenMenu }) => {
     const { user, logout } = useAuth();
@@ -12,6 +13,7 @@ const Topbar = ({ onOpenMenu }) => {
 
     const subdomain = user?.shop?.subdomain || user?.subdomain || 'demo';
     const isVendorUser = ['VendorAdmin', 'VendorStaff'].includes(user?.role);
+    const notificationsAvailable = isVendorUser && hasFeature(user, 'notifications');
 
     let baseDomain = import.meta.env.VITE_API_DOMAIN || 'localhost:3000';
     baseDomain = baseDomain.replace(/^https?:\/\//, '');
@@ -20,17 +22,17 @@ const Topbar = ({ onOpenMenu }) => {
     const liveStoreUrl = `${protocol}${subdomain}.${baseDomain}`;
 
     const loadUnreadCount = useCallback(async () => {
-        if (!user || !isVendorUser) return;
+        if (!user || !notificationsAvailable) return;
         try {
             const { data } = await API.get('/admin/notifications/unread-count');
             setUnreadCount(data.data?.count || 0);
         } catch {
             setUnreadCount(0);
         }
-    }, [isVendorUser, user]);
+    }, [notificationsAvailable, user]);
 
     const loadRecentNotifications = async () => {
-        if (!user || !isVendorUser) return;
+        if (!user || !notificationsAvailable) return;
         try {
             const { data } = await API.get('/admin/notifications', { params: { limit: 5 } });
             setNotifications(data.data || []);
@@ -99,7 +101,7 @@ const Topbar = ({ onOpenMenu }) => {
                     </>
                 )}
 
-                {isVendorUser && (
+                {notificationsAvailable && (
                     <div className="relative">
                         <button
                             onClick={toggleNotifications}

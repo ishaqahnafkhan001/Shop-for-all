@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 const getIdentifier = (req) => (
     req.body?.phone ||
@@ -13,7 +13,7 @@ const otpRateLimiter = rateLimit({
     max: process.env.NODE_ENV === 'production' ? 12 : 120,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => `${req.ip}:${String(getIdentifier(req)).trim().toLowerCase()}`,
+    keyGenerator: (req) => `${ipKeyGenerator(req.ip)}:${String(getIdentifier(req)).trim().toLowerCase()}`,
     message: {
         success: false,
         code: 'OTP_RATE_LIMITED',

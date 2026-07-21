@@ -47,6 +47,8 @@ export const metadata = {
     },
 };
 
+export const revalidate = 300;
+
 const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -70,7 +72,7 @@ const websiteJsonLd = {
     description: LANDING_DESCRIPTION,
 };
 
-const softwareApplicationJsonLd = {
+const buildSoftwareApplicationJsonLd = (plans) => ({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: LANDING_SITE_NAME,
@@ -82,7 +84,7 @@ const softwareApplicationJsonLd = {
         "@type": "AggregateOffer",
         priceCurrency: "BDT",
         lowPrice: "999",
-        highPrice: "5999",
+        highPrice: "3999",
         offerCount: String(pricingPlans.length),
         offers: pricingPlans.map((plan) => ({
             "@type": "Offer",
@@ -92,7 +94,7 @@ const softwareApplicationJsonLd = {
             url: LANDING_SITE_URL,
         })),
     },
-};
+});
 
 const faqJsonLd = {
     "@context": "https://schema.org",
@@ -107,11 +109,27 @@ const faqJsonLd = {
     })),
 };
 
-export default function PlatformLandingPage() {
+const getPublicPricingPlans = async () => {
+    const baseUrl = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api')
+        .replace(/\/$/, '');
+    try {
+        const response = await fetch(`${baseUrl}/public/plans`, {
+            next: { revalidate: 300 }
+        });
+        if (!response.ok) return pricingPlans;
+        const payload = await response.json();
+        return Array.isArray(payload?.data) && payload.data.length > 0 ? payload.data : pricingPlans;
+    } catch {
+        return pricingPlans;
+    }
+};
+
+export default async function PlatformLandingPage() {
+    const activePricingPlans = await getPublicPricingPlans();
     const jsonLd = [
         organizationJsonLd,
         websiteJsonLd,
-        softwareApplicationJsonLd,
+        buildSoftwareApplicationJsonLd(activePricingPlans),
         faqJsonLd,
     ];
 
@@ -121,7 +139,7 @@ export default function PlatformLandingPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
-            <LandingPageClient />
+            <LandingPageClient plans={activePricingPlans} />
         </>
     );
 }

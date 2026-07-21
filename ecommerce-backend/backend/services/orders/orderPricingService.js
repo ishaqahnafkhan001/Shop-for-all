@@ -6,7 +6,10 @@ const getShippingCostForZone = (zone) => (zone === 'Inside Dhaka' ? 80 : 130);
 const buildOrderLineItem = ({ product, variant, item, unitPriceOverride = null, scheduledSale = null }) => {
     const basePrice = variant.pricing?.price ?? variant.priceOverride ?? product.pricing.sellingPrice;
     const discount = product.pricing.discount || 0;
-    const unitPrice = Number.isFinite(Number(unitPriceOverride))
+    const hasUnitPriceOverride = unitPriceOverride !== null &&
+        unitPriceOverride !== undefined &&
+        Number.isFinite(Number(unitPriceOverride));
+    const unitPrice = hasUnitPriceOverride
         ? Math.max(0, Math.round(Number(unitPriceOverride)))
         : Math.round(basePrice - (basePrice * discount / 100));
     const totalItemPrice = unitPrice * item.quantity;

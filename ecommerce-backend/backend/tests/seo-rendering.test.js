@@ -346,8 +346,8 @@ test('public storefront branding exposes only safe white-label decision', () => 
 
     assert.match(storeController, /showPlatformBranding/);
     assert.match(storeController, /delete shop\.plan/);
-    assert.match(storeController, /normalizePublicPlanKey/);
-    assert.match(storeController, /Subscription\.findOne\(\{ shopId: shop\._id \}\)/);
+    assert.match(storeController, /hasFeature\(shop\._id, 'platformBrandingRemoval'\)/);
+    assert.match(read('config/subscriptionFeatures.js'), /platformBrandingRemoval/);
     assert.match(storeController, /PUBLIC_SHOP_FIELDS[\s\S]*plan updatedAt/);
     assert.doesNotMatch(storeController, /payment history/i);
 });

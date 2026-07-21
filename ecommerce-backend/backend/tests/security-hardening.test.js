@@ -272,7 +272,7 @@ test('shop feature flags are enforced on backend routes and vendor frontend rout
     assert.match(requireFeature, /This feature is not enabled for your store/);
     assert.match(growthCenter, /hasFeature\(user,\s*'aiAdGenerator'\)/);
     assert.match(growthCenter, /disabled=\{!canUseAdGenerator\}/);
-    assert.match(authController, /getShopFeatureFlags/);
+    assert.match(authController, /getShopPlanAccess/);
     assert.match(authController, /effectiveFeatures/);
 });
 

@@ -71,7 +71,8 @@ const submitManualPayment = async ({
         planName: pendingPlanName,
         planSlug: pendingPlanSlug,
         billingCycle: submittedInvoice.billingCycle,
-        invoiceId: submittedInvoice._id
+        invoiceId: submittedInvoice._id,
+        req
     });
 
     await logPlatformAudit({
@@ -197,7 +198,10 @@ const rejectManualPayment = async ({ paymentId, rejectionReason, req = null, adm
     const invoice = await rejectInvoice(payment.invoiceId, { notes: payment.rejectionReason });
     const subscription = await Subscription.findById(invoice.subscriptionId);
     if (subscription) {
-        await returnToTrialOrPastDueAfterRejection(subscription);
+        await returnToTrialOrPastDueAfterRejection(subscription, {
+            req,
+            reason: payment.rejectionReason
+        });
     }
 
     await logPlatformAudit({

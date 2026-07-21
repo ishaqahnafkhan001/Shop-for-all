@@ -26,9 +26,14 @@ const {
 const { processScheduledSaleStates } = require('../services/sales/scheduledSaleService');
 const { processSupportJob } = require('../services/support/supportNotificationService');
 const logger = require('../services/logger');
+const { cleanupExpiredActivityLogs } = require('../services/billing/activityLogRetentionService');
+const { initializeSubscriptionEventHandlers } = require('../services/billing/subscriptionEventHandlers');
+
+initializeSubscriptionEventHandlers();
 
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 3000);
 let shuttingDown = false;
+let nextActivityCleanupAt = 0;
 
 const handlers = {
     notifications: processShopEventJob,
@@ -82,6 +87,11 @@ const run = async () => {
         if (!processed) {
             await processOverdueScheduledProducts({ limit: 25 });
             await processScheduledSaleStates({ limit: 50 });
+            if (Date.now() >= nextActivityCleanupAt) {
+                const cleanup = await cleanupExpiredActivityLogs({ batchSize: 500 });
+                nextActivityCleanupAt = Date.now() + (6 * 60 * 60 * 1000);
+                logger.info('activity_log_retention_processed', cleanup);
+            }
             await sleep(POLL_INTERVAL_MS);
         }
     }

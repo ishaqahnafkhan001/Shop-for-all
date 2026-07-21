@@ -12,7 +12,9 @@ import {
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
 import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
+import { useAuth } from '../../../context/AuthContext.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
+import { hasFeature } from '../../../utils/featureAccess.js';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
 import {
     MAX_SELLING_POINTS,
@@ -41,7 +43,10 @@ function makePipeKey(combo) {
 
 const AddProduct = () => {
     const navigate   = useNavigate();
+    const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
+    const imageLimit = Number(user?.planAccess?.limits?.imagesPerProduct) || 5;
+    const canSchedulePublishing = hasFeature(user, 'scheduledProductPublishing');
 
     // Multi-media states
     const [imageFiles, setImageFiles] = useState([]);
@@ -268,6 +273,10 @@ const AddProduct = () => {
     const handleChange  = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
     const handlePublicationStatusChange = (value) => {
         if (value === 'Scheduled') {
+            if (!canSchedulePublishing) {
+                toast.error('Scheduled product publishing requires the Pro plan.');
+                return;
+            }
             setFormData(prev => ({ ...prev, status: 'Draft', publicationStatus: 'scheduled' }));
         } else {
             setFormData(prev => ({
@@ -285,10 +294,10 @@ const AddProduct = () => {
 
     const handleImageFiles = (files) => {
         const nextFiles = Array.from(files || []);
-        if (nextFiles.length > 5) {
-            toast.error('You can upload up to 5 product images.');
+        if (nextFiles.length > imageLimit) {
+            toast.error(`Your plan allows up to ${imageLimit} product images.`);
         }
-        setImageFiles(nextFiles.slice(0, 5));
+        setImageFiles(nextFiles.slice(0, imageLimit));
         setCoverImageIndex(0);
     };
 
@@ -555,7 +564,7 @@ const AddProduct = () => {
                             >
                                 <option>Published</option>
                                 <option>Draft</option>
-                                <option>Scheduled</option>
+                            {canSchedulePublishing && <option>Scheduled</option>}
                                 <option>Archived</option>
                             </select>
                         </label>
@@ -647,7 +656,7 @@ const AddProduct = () => {
                         description="Use clear product images from multiple angles. The first image becomes the storefront cover."
                         icon={ImageIcon}
                     >
-                        <ImageEmptyState selectedCount={imageFiles.length} max={5} />
+                        <ImageEmptyState selectedCount={imageFiles.length} max={imageLimit} />
                         <Input
                             id="imageAltText"
                             label="Product image alt text"
@@ -657,14 +666,14 @@ const AddProduct = () => {
                         />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1">
-                                <label className="text-sm font-medium text-gray-600">Images (max 5)</label>
+                                <label className="text-sm font-medium text-gray-600">Images (max {imageLimit})</label>
                                 <input
                                     type="file" accept="image/*" multiple
                                     onChange={(e) => handleImageFiles(e.target.files)}
                                     className="w-full border rounded-lg p-2 text-sm bg-gray-50"
                                 />
                                 {imageFiles.length > 0 && (
-                                    <p className="text-xs text-indigo-600 font-medium">{imageFiles.length} image(s) selected</p>
+                                    <p className="text-xs text-indigo-600 font-medium">Images: {imageFiles.length} of {imageLimit} used</p>
                                 )}
                             </div>
                             <div className="space-y-1">

@@ -10,6 +10,7 @@ const {
 const {
     Order,
     Product,
+    addCheckoutProof,
     createLaunchSafetyContext,
     createProduct,
     makeCheckoutPayload
@@ -132,14 +133,18 @@ test('scheduled sale pricing reaches public surfaces and checkout order snapshot
     const recommendedProduct = recommendations.body.data.find(item => String(item._id) === String(productA.product._id));
     assert.equal(recommendedProduct.salePrice, 600);
 
-    const orderResponse = await client.unsafePost(
-        '/api/public/orders',
-        makeCheckoutPayload({
+    const checkoutPayload = await addCheckoutProof({
+        shop: shopA,
+        payload: makeCheckoutPayload({
             product: productA.product,
             variant: productA.variant,
             shippingCost: 999,
-            customerEmail: 'sale-checkout@launch.test'
+            customerEmail: 'sale-checkout@launch.example.com'
         })
+    });
+    const orderResponse = await client.unsafePost(
+        '/api/public/orders',
+        checkoutPayload
     );
     assert.equal(orderResponse.status, 201);
     assert.equal(orderResponse.body.order.items[0].price, 600);

@@ -40,6 +40,18 @@ const {
     enqueueLowStockAlertsForLogs
 } = require('../services/inventoryLowStockAlertService');
 const { applyScheduledSalesToProducts } = require('../services/sales/scheduledSaleService');
+const {
+    getShopPlanAccess,
+    buildFeatureError,
+    buildLimitError
+} = require('../services/billing/planAccessService');
+const {
+    reserveWeeklyAiUsage,
+    completeWeeklyAiUsage,
+    releaseWeeklyAiUsage,
+    getWeeklyAiUsage
+} = require('../services/billing/planUsageService');
+const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -100,6 +112,61 @@ const ensureProductSchedulePermission = async (req, payload = {}) => {
     return vendorStaffHasPermission(req, 'productsSchedule');
 };
 
+const getPlanContext = async (req) => req.planAccess || getShopPlanAccess(req.tenantId);
+
+const assertProductImageLimit = async (req, imageCount) => {
+    const context = await getPlanContext(req);
+    const limit = context.limits.imagesPerProduct;
+    if (limit !== null && Number(imageCount || 0) > Number(limit)) {
+        const error = new Error('Product image limit reached');
+        error.statusCode = 403;
+        error.payload = buildLimitError(context, 'imagesPerProduct', Number(imageCount || 0), limit);
+        throw error;
+    }
+    return context;
+};
+
+const assertScheduledPublishingPlan = async (req, payload) => {
+    if (!isSchedulingProductPublication(payload)) return null;
+    const context = await getPlanContext(req);
+    return context.features.scheduledProductPublishing ? null : buildFeatureError(context, 'scheduledProductPublishing');
+};
+
+const sendAiLimitError = async (req, res, error) => {
+    const context = await getPlanContext(req);
+    const usage = error.usage || await getWeeklyAiUsage({
+        shopId: req.tenantId,
+        limit: context.limits.aiProductCreationsPerWeek
+    });
+    const payload = buildLimitError(
+        context,
+        'aiProductCreationsPerWeek',
+        usage,
+        context.limits.aiProductCreationsPerWeek
+    );
+    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
+        req,
+        shopId: req.tenantId,
+        subscriptionId: context.subscription?._id,
+        planKey: context.planKey,
+        affectedResources: ['aiGeneration'],
+        metadata: { resource: 'aiGeneration', usage: payload.usage, notifyVendor: false }
+    });
+    return res.status(403).json(payload);
+};
+
+const emitAiUsageChanged = (req, context, usage) => emitSubscriptionEvent(
+    SUBSCRIPTION_EVENTS.USAGE_CHANGED,
+    {
+        req,
+        shopId: req.tenantId,
+        subscriptionId: context.subscription?._id,
+        planKey: context.planKey,
+        affectedResources: ['aiGeneration'],
+        metadata: { action: 'ai_generation', resource: 'aiGeneration', usage }
+    }
+);
+
 
 /**
  * @desc    Generate Product Description via AI (Gemini)
@@ -107,12 +174,19 @@ const ensureProductSchedulePermission = async (req, payload = {}) => {
  * @access  Private (Admin)
  */
 exports.generateDescription = async (req, res) => {
+    let usageReservation = null;
     try {
         const { title, category } = req.body;
 
         if (!title) {
             return res.status(400).json({ success: false, error: "Product title is required." });
         }
+
+        const context = await getPlanContext(req);
+        usageReservation = await reserveWeeklyAiUsage({
+            shopId: req.tenantId,
+            limit: context.limits.aiProductCreationsPerWeek
+        });
 
         // Initialize Gemini (Ensure GEMINI_API_KEY is in your .env file)
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -129,9 +203,18 @@ exports.generateDescription = async (req, res) => {
         const result = await model.generateContent(prompt);
         const description = result.response.text();
 
-        res.status(200).json({ success: true, description: description.trim() });
+        await completeWeeklyAiUsage(usageReservation);
+        usageReservation = null;
+        const usage = await getWeeklyAiUsage({
+            shopId: req.tenantId,
+            limit: context.limits.aiProductCreationsPerWeek
+        });
+        await emitAiUsageChanged(req, context, usage);
+        res.status(200).json({ success: true, description: description.trim(), usage });
 
     } catch (err) {
+        await releaseWeeklyAiUsage(usageReservation);
+        if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);
         console.error("AI Generation Error:", err);
         res.status(500).json({ success: false, error: "Failed to generate description. Please try again." });
     }
@@ -143,6 +226,7 @@ exports.generateDescription = async (req, res) => {
  * @access  Private (VendorAdmin/VendorStaff with products permission)
  */
 exports.generateProductContent = async (req, res) => {
+    let usageReservation = null;
     try {
         if (!req.body?.title?.trim()) {
             return res.status(400).json({
@@ -151,6 +235,11 @@ exports.generateProductContent = async (req, res) => {
             });
         }
 
+        const context = await getPlanContext(req);
+        usageReservation = await reserveWeeklyAiUsage({
+            shopId: req.tenantId,
+            limit: context.limits.aiProductCreationsPerWeek
+        });
         const suggestion = await generateProductContentSuggestion({
             body: req.body,
             file: req.file || null
@@ -166,6 +255,14 @@ exports.generateProductContent = async (req, res) => {
             imageSizeBytes: diagnostics.imageSizeBytes || undefined
         });
 
+        await completeWeeklyAiUsage(usageReservation);
+        usageReservation = null;
+        const usage = await getWeeklyAiUsage({
+            shopId: req.tenantId,
+            limit: context.limits.aiProductCreationsPerWeek
+        });
+        await emitAiUsageChanged(req, context, usage);
+
         res.status(200).json({
             success: true,
             usedImage: suggestion.usedImage,
@@ -173,9 +270,12 @@ exports.generateProductContent = async (req, res) => {
             imageAnalysis: suggestion.data?.imageAnalysis || {},
             fallback: Boolean(suggestion.fallback),
             ...(suggestion.errorCode && { errorCode: suggestion.errorCode }),
-            data: suggestion.data
+            data: suggestion.data,
+            usage
         });
     } catch (err) {
+        await releaseWeeklyAiUsage(usageReservation);
+        if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);
         if (err?.code === 'AI_NOT_CONFIGURED') {
             return res.status(503).json({
                 success: false,
@@ -417,6 +517,7 @@ exports.createProduct = async (req, res) => {
                 coverImageIndex: coverImageIndexInput
             })
         };
+        await assertProductImageLimit(req, imageUrls.length);
         resolveVariantImageReferences(payload, imageUrls);
 
         // ── 4. Validate ───────────────────────────────────────────────────────
@@ -426,6 +527,11 @@ exports.createProduct = async (req, res) => {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
         normalizeProductPublicationFields(value);
+        const schedulePlanError = await assertScheduledPublishingPlan(req, value);
+        if (schedulePlanError) {
+            await session.abortTransaction();
+            return res.status(403).json(schedulePlanError);
+        }
         if (!(await ensureProductSchedulePermission(req, value))) {
             await session.abortTransaction();
             return res.status(403).json({ success: false, error: 'Missing staff permission: productsSchedule' });
@@ -518,6 +624,7 @@ exports.createProduct = async (req, res) => {
 
     } catch (err) {
         await session.abortTransaction();
+        if (err?.payload) return res.status(err.statusCode || 403).json(err.payload);
         console.error('Create product error:', err);
         const isDuplicateSlug = err.code === 11000 && err.keyPattern?.slug;
 
@@ -588,7 +695,8 @@ exports.updateProduct = async (req, res) => {
             const keptExistingImages = requestedExistingImages
                 .filter(imageUrl => currentImages.includes(imageUrl))
                 .filter(imageUrl => !removedImages.has(imageUrl));
-            const finalImages = [...new Set([...keptExistingImages, ...uploadedImageUrls])].slice(0, 5);
+            const finalImages = [...new Set([...keptExistingImages, ...uploadedImageUrls])];
+            await assertProductImageLimit(req, finalImages.length);
 
             parsedBody.images = finalImages;
             if (parsedBody.coverMediaId && !coverMediaBelongsToProduct({
@@ -634,6 +742,11 @@ exports.updateProduct = async (req, res) => {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
         normalizeProductPublicationFields(value);
+        const schedulePlanError = await assertScheduledPublishingPlan(req, value);
+        if (schedulePlanError) {
+            await session.abortTransaction();
+            return res.status(403).json(schedulePlanError);
+        }
         if (!(await ensureProductSchedulePermission(req, value))) {
             await session.abortTransaction();
             return res.status(403).json({ success: false, error: 'Missing staff permission: productsSchedule' });
@@ -675,6 +788,10 @@ exports.updateProduct = async (req, res) => {
         ];
         for (const field of SCALAR) {
             if (value[field] !== undefined) product[field] = value[field];
+        }
+        if (value.publicationStatus !== undefined || value.publishAt !== undefined) {
+            product.schedulePlanBlockedAt = null;
+            product.schedulePlanBlockedReason = '';
         }
 
         if (value.pricing) {
@@ -732,6 +849,7 @@ exports.updateProduct = async (req, res) => {
 
     } catch (err) {
         await session.abortTransaction();
+        if (err?.payload) return res.status(err.statusCode || 403).json(err.payload);
         console.error('Update product error:', err);
         return res.status(400).json({ success: false, error: err.message });
     } finally {
@@ -773,6 +891,16 @@ exports.deleteProduct = async (req, res) => {
                 status: product.status,
                 category: product.category
             }
+        });
+
+        const context = await getPlanContext(req);
+        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.USAGE_CHANGED, {
+            req,
+            shopId: req.tenantId,
+            subscriptionId: context.subscription?._id,
+            planKey: context.planKey,
+            affectedResources: ['products'],
+            metadata: { action: 'product_deleted', resource: 'products' }
         });
 
         res.status(200).json({ success: true, message: "Product deleted successfully" });

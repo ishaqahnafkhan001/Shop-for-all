@@ -83,7 +83,7 @@ const scheduledSaleSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['scheduled', 'active', 'ended', 'cancelled'],
+        enum: ['scheduled', 'active', 'ended', 'cancelled', 'plan_blocked'],
         default: 'scheduled',
         index: true
     },

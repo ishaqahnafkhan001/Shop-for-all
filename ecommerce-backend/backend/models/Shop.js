@@ -247,7 +247,9 @@ const shopSchema = new mongoose.Schema({
             txt: { type: [String], default: [] },
             cname: { type: [String], default: [] },
             a: { type: [String], default: [] }
-        }
+        },
+        planInactive: { type: Boolean, default: false },
+        planInactiveAt: Date
     },
     theme: {
         version: { type: Number, default: 2, min: 1 },
@@ -536,7 +538,12 @@ const shopSchema = new mongoose.Schema({
         staffAccounts: { type: Boolean, default: true },
         bulkProductTools: { type: Boolean, default: true },
         growthCenter: { type: Boolean, default: true },
-        aiAdGenerator: { type: Boolean, default: true }
+        aiAdGenerator: { type: Boolean, default: true },
+        customerSection: { type: Boolean, default: true },
+        trustSystem: { type: Boolean, default: true },
+        notifications: { type: Boolean, default: true },
+        scheduledProductPublishing: { type: Boolean, default: true },
+        scheduledSales: { type: Boolean, default: true }
     },
     badgeStatus: {
         type: String,
@@ -557,6 +564,8 @@ const shopSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    badgePlanInactive: { type: Boolean, default: false },
+    badgePlanInactiveAt: Date,
     // ✨ NEW: Storewide Discount Feature
     storewideDiscount: {
         type: Number,

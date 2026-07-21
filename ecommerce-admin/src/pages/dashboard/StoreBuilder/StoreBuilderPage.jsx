@@ -498,6 +498,12 @@ const colorSectionGroups = [
 ];
 
 const nestedColorFields = flattenNestedColorFields(colorSectionGroups);
+const DEFAULT_PLAN_ACCESS = {
+    planKey: 'starter',
+    storeBuilderAccess: 'limited',
+    storeBuilderCapabilities: {},
+    features: {}
+};
 
 const StoreBuilderPage = () => {
     const [loading, setLoading] = useState(true);
@@ -507,6 +513,7 @@ const StoreBuilderPage = () => {
     const [checkingDomain, setCheckingDomain] = useState(false);
     const [shopName, setShopName] = useState('');
     const [shopSubdomain, setShopSubdomain] = useState('');
+    const [planAccess, setPlanAccess] = useState(DEFAULT_PLAN_ACCESS);
     const [theme, setTheme] = useState(defaultTheme);
     const [savedTheme, setSavedTheme] = useState(defaultTheme);
     const [hydratedShopKey, setHydratedShopKey] = useState('');
@@ -561,6 +568,21 @@ const StoreBuilderPage = () => {
         const sectionIndex = Number(activeElement.replace('section-', ''));
         return isHomepageSectionLocked(theme.homepageSections?.[sectionIndex]);
     }, [activeElement, theme.homepageSections]);
+    const selectedPlanRestriction = useMemo(() => {
+        if (planAccess.storeBuilderAccess === 'full') return '';
+        if (activeGroup === 'domain' && planAccess.features?.customDomain === false) {
+            return 'Custom domains are available on Growth and Pro plans.';
+        }
+        if (['layout', 'mobile'].includes(activeGroup)) {
+            return 'Advanced design controls are available on Growth and Pro plans.';
+        }
+        if (activeGroup !== 'sections') return '';
+        if (activeElement?.startsWith('section-')) {
+            const index = Number(activeElement.replace('section-', ''));
+            if (theme.homepageSections?.[index]?.type === 'FeaturedProducts') return '';
+        }
+        return 'Advanced homepage sections and section ordering are available on Growth and Pro plans.';
+    }, [activeElement, activeGroup, planAccess.features?.customDomain, planAccess.storeBuilderAccess, theme.homepageSections]);
     const storeSeoPreview = useMemo(() => buildStoreSeoPreview({
         theme,
         shopName,
@@ -758,6 +780,7 @@ const StoreBuilderPage = () => {
                 const initialReviews = [...(reviewsResponse.data?.data || []), ...(selectedReviewsResponse.data?.data || [])];
                 setShopName(shop.shopName || '');
                 setShopSubdomain(shop.subdomain || '');
+                setPlanAccess(shop.planAccess || DEFAULT_PLAN_ACCESS);
                 setHydratedShopKey(shopKey);
                 setSavedTheme(nextTheme);
                 setTheme(nextTheme);
@@ -1593,6 +1616,7 @@ const StoreBuilderPage = () => {
             const nextDiscount = Number(savedShop.storewideDiscount ?? payload.storewideDiscount) || 0;
             const nextShopKey = String(savedShop._id || savedShop.id || savedShop.subdomain || hydratedShopKey || '');
             setSavedTheme(nextTheme);
+            if (savedShop.planAccess) setPlanAccess(savedShop.planAccess);
             setHydratedShopKey(nextShopKey);
             setTheme(nextTheme);
             setCustomDomain(nextDomain);
@@ -1679,6 +1703,22 @@ const StoreBuilderPage = () => {
     });
 
     const renderPanel = () => {
+        if (selectedPlanRestriction) {
+            return (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-5">
+                    <div className="flex items-start gap-3">
+                        <Lock className="mt-0.5 h-5 w-5 text-blue-700" />
+                        <div>
+                            <h3 className="font-black text-slate-950">Available with Growth</h3>
+                            <p className="mt-1 text-sm leading-6 text-slate-600">{selectedPlanRestriction}</p>
+                            <a href="/dashboard/billing" className="mt-3 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-700">
+                                View plans
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         switch (activeGroup) {
             case 'brand':
                 return (
@@ -1730,6 +1770,8 @@ const StoreBuilderPage = () => {
                     </BuilderCard>
                 );
             case 'colors': {
+                const fullColorControls = planAccess.storeBuilderCapabilities?.advancedDesign === true;
+                const activeColorMode = fullColorControls ? colorMode : 'quick';
                 const mainBrandColor = getThemeColor('brand.primary', theme.colors?.accent || defaultTheme.colors.accent);
                 const searchTerm = colorSearch.trim().toLowerCase();
                 const visibleGroups = colorSectionGroups
@@ -1776,24 +1818,30 @@ const StoreBuilderPage = () => {
 
                 return (
                     <BuilderCard title="Colors" description="Choose a quick palette, customize each storefront section, or fine-tune advanced legacy colors." icon={Palette}>
-                        <div className="grid grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-black sm:text-sm">
-                            {[
+                        <div className={`grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-black sm:text-sm ${fullColorControls ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                            {(fullColorControls ? [
                                 ['quick', 'Quick Setup'],
                                 ['sections', 'Section Colors'],
                                 ['advanced', 'Advanced Colors']
-                            ].map(([mode, label]) => (
+                            ] : [['quick', 'Quick Setup']]).map(([mode, label]) => (
                                 <button
                                     key={mode}
                                     type="button"
                                     onClick={() => setColorMode(mode)}
-                                    className={`rounded-lg px-2 py-2 transition ${colorMode === mode ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                                    className={`rounded-lg px-2 py-2 transition ${activeColorMode === mode ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
                                 >
                                     {label}
                                 </button>
                             ))}
                         </div>
 
-                        {colorMode === 'quick' && (
+                        {!fullColorControls && (
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900">
+                                Starter includes quick brand colors and curated palettes. Section-by-section and advanced color controls are available on Growth and Pro.
+                            </div>
+                        )}
+
+                        {activeColorMode === 'quick' && (
                             <div className="space-y-5">
                                 <div className="grid gap-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 lg:grid-cols-[minmax(0,1fr)_260px]">
                                     <div className="space-y-4">
@@ -1891,7 +1939,7 @@ const StoreBuilderPage = () => {
                             </div>
                         )}
 
-                        {colorMode === 'sections' && (
+                        {activeColorMode === 'sections' && (
                             <div className="space-y-4">
                                 <label className="relative block">
                                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1946,7 +1994,7 @@ const StoreBuilderPage = () => {
                             </div>
                         )}
 
-                        {colorMode === 'advanced' && (
+                        {activeColorMode === 'advanced' && (
                             <div className="rounded-xl border border-slate-200 bg-white">
                                 <button
                                     type="button"
@@ -3307,6 +3355,7 @@ const StoreBuilderPage = () => {
                     handleSave={handleSave}
                     saving={saving}
                     validation={validation}
+                    planAccess={planAccess}
                 />
 
                 <main className={`${mobileWorkspace === 'structure' ? 'hidden' : 'grid'} grid-cols-1 gap-4 xl:grid 2xl:grid-cols-[420px_minmax(0,1fr)]`}>
@@ -3314,6 +3363,7 @@ const StoreBuilderPage = () => {
                         mobileWorkspace={mobileWorkspace}
                         selectedLabel={selectedLabel}
                         selectedIsLockedLayout={selectedIsLockedLayout}
+                        planRestriction={selectedPlanRestriction}
                         setMobileWorkspace={setMobileWorkspace}
                     >
                         {renderPanel()}

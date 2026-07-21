@@ -13,7 +13,16 @@ const PlatformAuditLog = require('../models/PlatformAuditLog');
 const cache = require('../services/cacheService');
 const { invalidateTenantCache } = require('../middlewares/tenant');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
+const {
+    getVendorAdminEmails,
+    sendVendorNotificationEmailSafe,
+    buildVendorEventEmail
+} = require('../services/vendorNotificationEmailService');
 const { VERIFICATION_SUSPENSION_REASON, isVerificationSuspension } = require('../services/vendorVerificationService');
+const { getPlanBySlugOrNameOrDefault, getPlanSlug } = require('../services/billing/billingPlanService');
+const { ensureSubscriptionExists } = require('../services/billing/subscriptionService');
+const { PLAN_DEFINITIONS, PLAN_ORDER, STORE_BUILDER_CAPABILITIES, normalizePlanKey } = require('../config/subscriptionPlans');
+const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const {
     normalizeCustomDomain,
     isValidCustomDomain,
@@ -22,7 +31,27 @@ const {
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
-const CRITICAL_FEATURE_FLAGS = new Set(['storeBuilder', 'analytics', 'staffAccounts', 'growthCenter']);
+const CRITICAL_FEATURE_FLAGS = new Set([
+    'storeBuilder',
+    'analytics',
+    'staffAccounts',
+    'growthCenter',
+    'customDomain',
+    'customerSection',
+    'trustSystem',
+    'notifications',
+    'scheduledProductPublishing',
+    'scheduledSales'
+]);
+const resolveCanonicalPlanKey = (value) => {
+    const key = String(value || '').trim().toLowerCase();
+    if (!PLAN_DEFINITIONS[key]) {
+        const error = new Error('Plan must be starter, growth, or pro.');
+        error.statusCode = 400;
+        throw error;
+    }
+    return key;
+};
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -475,17 +504,81 @@ exports.updateShopPlan = async (req, res) => {
         const shop = await Shop.findById(req.params.shopId);
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        const plan = { ...(shop.plan?.toObject ? shop.plan.toObject() : shop.plan || {}), ...(req.body.plan || req.body) };
+        const incoming = req.body.plan || req.body;
+        const planKey = resolveCanonicalPlanKey(incoming.slug || incoming.name);
+        const planDefinition = await getPlanBySlugOrNameOrDefault(planKey);
+        const beforePlan = shop.plan?.toObject ? shop.plan.toObject() : shop.plan || {};
+        const plan = {
+            ...beforePlan,
+            name: planDefinition.name,
+            productLimit: planDefinition.limits?.productCount ?? planDefinition.productLimit ?? null,
+            activePlanName: planDefinition.name,
+            activePlanSlug: getPlanSlug(planDefinition)
+        };
         const updated = await updateShopAndLog({
             req,
             shop,
             update: { plan },
             action: 'shop.plan_changed',
             message: `Shop plan changed to ${plan.name || shop.plan?.name || 'unknown'}`,
-            metadata: { before: shop.plan, after: plan }
+            metadata: { before: beforePlan, after: plan }
         });
 
-        res.status(200).json({ success: true, data: updated });
+        const storedPlan = await VendorPlan.findOne({ slug: planKey }).select('_id name slug').lean();
+        const subscription = await ensureSubscriptionExists(shop);
+        await Subscription.findByIdAndUpdate(
+            subscription._id,
+            {
+                $set: {
+                    planId: storedPlan?._id || null,
+                    activePlanName: planDefinition.name,
+                    activePlanSlug: planKey
+                }
+            }
+        );
+        const previousPlanKey = normalizePlanKey(
+            beforePlan.activePlanSlug || beforePlan.activePlanName || beforePlan.name || 'starter'
+        );
+        const previousIndex = PLAN_ORDER.indexOf(previousPlanKey);
+        const nextIndex = PLAN_ORDER.indexOf(planKey);
+        const eventType = nextIndex > previousIndex
+            ? SUBSCRIPTION_EVENTS.PLAN_UPGRADED
+            : nextIndex < previousIndex
+                ? SUBSCRIPTION_EVENTS.PLAN_DOWNGRADED
+                : SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED;
+        const eventResult = await emitSubscriptionEvent(eventType, {
+            req,
+            shopId: shop._id,
+            subscriptionId: subscription._id,
+            planKey,
+            oldValue: { planKey: previousPlanKey, planName: beforePlan.name || '' },
+            newValue: { planKey, planName: planDefinition.name },
+            reason: getReason(req.body),
+            affectedResources: ['subscription', 'plan', 'features', 'quotas'],
+            metadata: { oldPlanKey: previousPlanKey, newPlanKey: planKey, newPlanName: planDefinition.name }
+        });
+        const reconciliation = eventResult.results['subscription.reconciliation'] || {};
+        const recipients = await getVendorAdminEmails(shop._id);
+        if (recipients.length) {
+            sendVendorNotificationEmailSafe({
+                to: recipients,
+                type: 'billing',
+                senderName: 'ScaleUp Billing',
+                subject: `Your ScaleUp plan is now ${planDefinition.name}`,
+                html: buildVendorEventEmail({
+                    title: `Plan changed to ${planDefinition.name}`,
+                    intro: 'Your store plan was updated. Your data remains preserved, while access and usage limits now follow the new plan.',
+                    rows: [
+                        { label: 'Plan', value: planDefinition.name },
+                        { label: 'Products blocked', value: reconciliation.scheduledProductsBlocked || 0 },
+                        { label: 'Scheduled sales blocked', value: reconciliation.scheduledSalesBlocked || 0 }
+                    ]
+                }),
+                text: `Your ScaleUp plan is now ${planDefinition.name}. Review Plan & Usage in your vendor admin.`
+            });
+        }
+
+        res.status(200).json({ success: true, data: updated, reconciliation });
     } catch (err) {
         console.error('Update shop plan error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update shop plan' });
@@ -516,6 +609,17 @@ exports.updateShopFeatureFlags = async (req, res) => {
             reason,
             metadata: { before: shop.featureFlags, after: nextFlags },
             severity: changedCriticalFlag ? 'warning' : 'info'
+        });
+
+        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.FEATURE_OVERRIDE_CHANGED, {
+            req,
+            shopId: shop._id,
+            planKey: normalizePlanKey(shop.plan?.activePlanSlug || shop.plan?.name || 'starter'),
+            oldValue: shop.featureFlags?.toObject ? shop.featureFlags.toObject() : shop.featureFlags || {},
+            newValue: nextFlags,
+            reason,
+            affectedResources: Object.keys(featureFlags),
+            metadata: { changedFeatures: Object.keys(featureFlags) }
         });
 
         res.status(200).json({ success: true, data: updated });
@@ -592,9 +696,43 @@ exports.getPlans = async (req, res) => {
 
 exports.upsertPlan = async (req, res) => {
     try {
+        const planKey = resolveCanonicalPlanKey(req.body.slug || req.body.name);
+        const current = await VendorPlan.findOne({ slug: planKey }).lean();
+        const limits = req.body.limits || {};
+        const numericFields = [
+            req.body.monthlyPrice,
+            req.body.yearlyPrice,
+            req.body.productLimit,
+            req.body.staffLimit,
+            ...Object.values(limits)
+        ].filter(value => value !== undefined && value !== null);
+        if (numericFields.some(value => !Number.isFinite(Number(value)) || Number(value) < 0)) {
+            return res.status(400).json({ success: false, error: 'Plan prices and limits must be zero or positive numbers.' });
+        }
+        const storeBuilderAccess = req.body.storeBuilderAccess || current?.storeBuilderAccess || PLAN_DEFINITIONS[planKey].storeBuilderAccess;
+        const accessChanged = storeBuilderAccess !== current?.storeBuilderAccess;
+        const payload = {
+            ...req.body,
+            name: planKey[0].toUpperCase() + planKey.slice(1),
+            slug: planKey,
+            limits: {
+                ...(current?.limits || {}),
+                ...limits
+            },
+            features: {
+                ...(current?.features || {}),
+                ...(req.body.features || {})
+            },
+            storeBuilderAccess,
+            storeBuilderCapabilities: accessChanged
+                ? { ...STORE_BUILDER_CAPABILITIES[storeBuilderAccess], ...(req.body.storeBuilderCapabilities || {}) }
+                : { ...(current?.storeBuilderCapabilities || {}), ...(req.body.storeBuilderCapabilities || {}) }
+        };
+        payload.productLimit = payload.limits.productCount ?? payload.productLimit ?? current?.productLimit ?? null;
+        payload.staffLimit = payload.limits.staffAccounts ?? payload.staffLimit ?? current?.staffLimit ?? null;
         const plan = await VendorPlan.findOneAndUpdate(
-            { name: req.body.name },
-            req.body,
+            { slug: planKey },
+            { $set: payload },
             { upsert: true, new: true, runValidators: true }
         );
 
@@ -605,10 +743,38 @@ exports.upsertPlan = async (req, res) => {
             entityId: plan._id,
             entityLabel: plan.name,
             message: `Vendor plan ${plan.name} saved`,
-            metadata: { plan }
+            metadata: { before: current, after: plan }
         });
 
-        res.status(200).json({ success: true, data: plan });
+        const affectedSubscriptions = await Subscription.find({
+            $or: [
+                { activePlanSlug: planKey },
+                { planId: plan._id },
+                ...(planKey === 'starter' ? [{ status: 'trialing' }] : [])
+            ]
+        }).select('shopId').lean();
+        const reconciliation = { processed: 0, failed: 0 };
+        for (const subscription of affectedSubscriptions) {
+            try {
+                const eventResult = await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_LIMIT_CHANGED, {
+                    req,
+                    shopId: subscription.shopId,
+                    subscriptionId: subscription._id,
+                    planKey,
+                    oldValue: current ? { limits: current.limits, features: current.features } : null,
+                    newValue: { limits: plan.limits, features: plan.features },
+                    affectedResources: ['features', 'quotas'],
+                    metadata: { newPlanKey: planKey, planDefinitionUpdated: true }
+                });
+                const reconciliationError = eventResult.errors.find(item => item.subscriber === 'subscription.reconciliation');
+                if (reconciliationError) throw reconciliationError.error;
+                reconciliation.processed += 1;
+            } catch (_error) {
+                reconciliation.failed += 1;
+            }
+        }
+
+        res.status(200).json({ success: true, data: plan, reconciliation });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message || 'Failed to save plan' });
     }

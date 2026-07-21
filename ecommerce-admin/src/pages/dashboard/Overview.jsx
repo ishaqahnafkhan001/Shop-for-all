@@ -12,6 +12,7 @@ import { AdminErrorState, AdminLoadingState } from '../../components/ui/AdminSta
 import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import BillingAlert from '../../components/dashboard/BillingAlert.jsx';
 import TrustedBadgeStatusCard from '../../components/dashboard/TrustedBadgeStatusCard.jsx';
+import SubscriptionUsageBanner from '../../components/dashboard/SubscriptionUsageBanner.jsx';
 import { hasFeature } from '../../utils/featureAccess.js';
 
 const DashboardRevenueChart = lazy(() => import('./components/DashboardRevenueChart.jsx'));
@@ -177,6 +178,7 @@ const Overview = () => {
 
         {user?.role === 'VendorAdmin' && <VendorOnboardingChecklist />}
         {user?.role === 'VendorAdmin' && <BillingAlert />}
+        {user?.role === 'VendorAdmin' && <SubscriptionUsageBanner />}
         {user?.role === 'VendorAdmin' && <TrustedBadgeStatusCard />}
         {overviewError && (
           <AdminErrorState

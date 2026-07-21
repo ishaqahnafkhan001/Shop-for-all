@@ -15,6 +15,11 @@ const {
 const {
     buildCustomDomainVerificationFields
 } = require('../services/domain/dnsVerificationService');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const {
+    assertStoreBuilderUpdateAllowed,
+    getPublicThemeForPlan
+} = require('../services/billing/storeBuilderPlanService');
 
 const allowedThemeKeys = [
     'version',
@@ -193,7 +198,7 @@ const ensureCustomDomainVerificationFieldsForResponse = async (shop) => {
 exports.getStoreBuilderSettings = async (req, res) => {
     try {
         const shop = await Shop.findById(req.tenantId)
-            .select('shopName subdomain theme customDomain plan featureFlags storewideDiscount')
+            .select('shopName subdomain theme customDomain plan featureFlags storewideDiscount isActive approvalStatus suspensionReason')
             .lean();
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
@@ -217,7 +222,19 @@ exports.getStoreBuilderSettings = async (req, res) => {
             ]);
         }
 
-        res.status(200).json({ success: true, data: shop });
+        const access = await getShopPlanAccess(shop);
+        const safePlanAccess = {
+            planKey: access.planKey,
+            planName: access.planName,
+            storeBuilderAccess: access.storeBuilderAccess,
+            storeBuilderCapabilities: access.storeBuilderCapabilities,
+            features: access.features
+        };
+        res.status(200).json({
+            success: true,
+            data: { ...shop, planAccess: safePlanAccess },
+            planAccess: safePlanAccess
+        });
     } catch (err) {
         console.error('Get store builder settings error:', err);
         res.status(500).json({ success: false, error: 'Failed to load store builder settings' });
@@ -229,6 +246,13 @@ exports.updateStoreBuilderSettings = async (req, res) => {
         const { theme = {}, customDomain, storewideDiscount } = req.body;
         const update = {};
         let domainCacheKeys = [];
+        const currentShopForPlan = await Shop.findById(req.tenantId).select('theme').lean();
+        const planAccess = await getShopPlanAccess(req.tenantId);
+        assertStoreBuilderUpdateAllowed({
+            currentTheme: currentShopForPlan?.theme || {},
+            incomingTheme: theme,
+            planAccess
+        });
         const cleanTheme = sanitizeThemePayload(pickThemePayload(theme));
         if (cleanTheme.homepageSections !== undefined) {
             cleanTheme.homepageSections = normalizeDynamicSections(cleanTheme.homepageSections);
@@ -287,12 +311,14 @@ exports.updateStoreBuilderSettings = async (req, res) => {
             req.tenantId,
             { $set: update },
             { new: true, runValidators: true }
-        ).select('shopName subdomain theme customDomain plan featureFlags storewideDiscount');
+        )
+            .select('shopName subdomain theme customDomain plan featureFlags storewideDiscount')
+            .lean();
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
         await ensureThemeSectionArchitecture(shop);
-        const responseShop = typeof shop.toObject === 'function' ? shop.toObject() : shop;
+        const responseShop = shop;
 
         await Promise.all([
             cache.del(`storefront:settings:${req.tenantId}`),
@@ -300,16 +326,26 @@ exports.updateStoreBuilderSettings = async (req, res) => {
             ...domainCacheKeys.map(domain => invalidateTenantCache(domain))
         ]);
 
+        const safePlanAccess = {
+            planKey: planAccess.planKey,
+            planName: planAccess.planName,
+            storeBuilderAccess: planAccess.storeBuilderAccess,
+            storeBuilderCapabilities: planAccess.storeBuilderCapabilities,
+            features: planAccess.features
+        };
         res.status(200).json({
             success: true,
             message: 'Store settings updated',
-            data: responseShop
+            data: { ...responseShop, planAccess: safePlanAccess },
+            planAccess: safePlanAccess
         });
     } catch (err) {
         console.error('Update store builder settings error:', err);
         const duplicateDomain = err?.code === 11000 && String(err?.message || '').includes('customDomain');
         res.status(err.statusCode || 400).json({
             success: false,
+            ...(err.code && { code: err.code }),
+            ...(err.capability && { capability: err.capability }),
             error: duplicateDomain ? 'This domain is already connected to another shop.' : err.message || 'Failed to update store builder settings'
         });
     }
@@ -530,6 +566,8 @@ exports.getPublicStorefrontSettings = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
         await ensureThemeSectionArchitecture(shop);
+        const planAccess = await getShopPlanAccess(req.tenantId);
+        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
         const policyDefaults = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
         shop.theme = {
             ...(shop.theme || {}),

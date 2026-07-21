@@ -1,68 +1,21 @@
 const VendorPlan = require('../../models/VendorPlan');
 const mongoose = require('mongoose');
+const {
+    PLAN_DEFINITIONS,
+    normalizePlanKey,
+    getCanonicalPlan
+} = require('../../config/subscriptionPlans');
 
-const DEFAULT_PLAN_DEFINITIONS = {
-    Starter: {
-        name: 'Starter',
-        slug: 'starter',
-        monthlyPrice: 999,
-        yearlyPrice: 9990,
-        productLimit: 100,
-        staffLimit: 1,
-        features: {
-            storeBuilder: true,
-            coupons: true,
-            analytics: true,
-            customDomain: false,
-            staffAccounts: true,
-            bulkProductTools: false,
-            growthCenter: false,
-            aiAdGenerator: false
-        },
-        badgeEligible: false,
-        prioritySupport: false
-    },
-    Growth: {
-        name: 'Growth',
-        slug: 'growth',
-        monthlyPrice: 2499,
-        yearlyPrice: 24990,
-        productLimit: 500,
-        staffLimit: 3,
-        features: {
-            storeBuilder: true,
-            coupons: true,
-            analytics: true,
-            customDomain: true,
-            staffAccounts: true,
-            bulkProductTools: true,
-            growthCenter: true,
-            aiAdGenerator: true
-        },
-        badgeEligible: true,
-        prioritySupport: false
-    },
-    Pro: {
-        name: 'Pro',
-        slug: 'pro',
-        monthlyPrice: 5999,
-        yearlyPrice: 59990,
-        productLimit: 2000,
-        staffLimit: 10,
-        features: {
-            storeBuilder: true,
-            coupons: true,
-            analytics: true,
-            customDomain: true,
-            staffAccounts: true,
-            bulkProductTools: true,
-            growthCenter: true,
-            aiAdGenerator: true
-        },
-        badgeEligible: true,
-        prioritySupport: true
-    }
-};
+const toLegacyPlanShape = (plan) => ({
+    ...plan,
+    productLimit: plan.limits.productCount,
+    staffLimit: plan.limits.staffAccounts
+});
+
+const DEFAULT_PLAN_DEFINITIONS = Object.values(PLAN_DEFINITIONS).reduce((acc, plan) => {
+    acc[plan.name] = toLegacyPlanShape(plan);
+    return acc;
+}, {});
 
 const slugifyPlanName = (value = 'Starter') => String(value || 'Starter')
     .trim()
@@ -76,9 +29,7 @@ const PLAN_SLUG_TO_NAME = Object.values(DEFAULT_PLAN_DEFINITIONS).reduce((acc, p
 }, {});
 
 const normalizePlanName = (name) => {
-    const value = String(name || 'Starter').trim();
-    if (DEFAULT_PLAN_DEFINITIONS[value]) return value;
-    return PLAN_SLUG_TO_NAME[slugifyPlanName(value)] || 'Starter';
+    return getCanonicalPlan(name).name;
 };
 
 const normalizePlanSlug = (value) => {
@@ -95,15 +46,35 @@ const getPlanSlug = (planOrName = 'Starter') => {
 };
 
 const mergePlan = (storedPlan, fallbackName = 'Starter') => {
-    const fallback = DEFAULT_PLAN_DEFINITIONS[normalizePlanName(storedPlan?.name || fallbackName)];
+    const fallback = toLegacyPlanShape(getCanonicalPlan(storedPlan?.slug || storedPlan?.name || fallbackName));
+    const storedLimits = storedPlan?.limits || {};
+    const productLimit = storedLimits.productCount !== undefined
+        ? storedLimits.productCount
+        : (storedPlan?.productLimit !== undefined ? storedPlan.productLimit : fallback.productLimit);
+    const staffLimit = storedLimits.staffAccounts !== undefined
+        ? storedLimits.staffAccounts
+        : (storedPlan?.staffLimit !== undefined ? storedPlan.staffLimit : fallback.staffLimit);
     return {
         ...fallback,
         ...(storedPlan || {}),
         slug: storedPlan?.slug || fallback.slug || slugifyPlanName(storedPlan?.name || fallback.name),
         yearlyPrice: storedPlan?.yearlyPrice ?? storedPlan?.annualPrice ?? fallback.yearlyPrice,
+        productLimit,
+        staffLimit,
+        limits: {
+            ...fallback.limits,
+            ...storedLimits,
+            productCount: productLimit,
+            staffAccounts: staffLimit
+        },
         features: {
             ...fallback.features,
             ...(storedPlan?.features || {})
+        },
+        storeBuilderAccess: storedPlan?.storeBuilderAccess || fallback.storeBuilderAccess,
+        storeBuilderCapabilities: {
+            ...fallback.storeBuilderCapabilities,
+            ...(storedPlan?.storeBuilderCapabilities || {})
         }
     };
 };
@@ -144,8 +115,9 @@ const getPlanLimits = async (planOrName = 'Starter') => {
         : mergePlan(planOrName, planOrName?.name);
 
     return {
-        productLimit: Number(plan.productLimit || 0),
-        staffLimit: Number(plan.staffLimit || 0)
+        ...plan.limits,
+        productLimit: plan.limits?.productCount ?? plan.productLimit ?? null,
+        staffLimit: plan.limits?.staffAccounts ?? plan.staffLimit ?? null
     };
 };
 
@@ -173,6 +145,7 @@ module.exports = {
     slugifyPlanName,
     normalizePlanName,
     normalizePlanSlug,
+    normalizePlanKey,
     getPlanSlug,
     mergePlan,
     getPlanByNameOrDefault,

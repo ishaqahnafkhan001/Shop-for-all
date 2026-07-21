@@ -2,6 +2,7 @@ export function StoreBuilderEditorPanel({
     mobileWorkspace,
     selectedLabel,
     selectedIsLockedLayout,
+    planRestriction,
     setMobileWorkspace,
     children
 }) {
@@ -22,7 +23,9 @@ export function StoreBuilderEditorPanel({
                     </button>
                 </div>
                 <p className="mt-1 text-sm leading-5 text-indigo-700">
-                    {selectedIsLockedLayout
+                    {planRestriction
+                        ? planRestriction
+                        : selectedIsLockedLayout
                         ? 'Locked layout, editable content/settings. The section stays in its required position, but you can still tune its allowed settings below.'
                         : 'Edit the selected storefront element below. Existing settings and saved theme fields are preserved.'}
                 </p>

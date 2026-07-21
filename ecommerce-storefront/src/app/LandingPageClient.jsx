@@ -36,7 +36,7 @@ import {
     localSellerCards,
     navLinks,
     platformModules,
-    pricingPlans,
+    pricingPlans as fallbackPricingPlans,
     proofCards,
     trustChips,
 } from "./landingContent";
@@ -128,7 +128,7 @@ function SectionHeading({ eyebrow, title, text, align = "center", tone = "light"
 
     return (
         <div className={`max-w-3xl ${align === "center" ? "mx-auto text-center" : "text-left"}`}>
-            <p className={`text-xs font-black uppercase tracking-[0.24em] ${dark ? "text-cyan-200" : "text-indigo-600"}`}>
+            <p className={`text-xs font-black uppercase tracking-[0.24em] ${dark ? "text-cyan-200" : "text-blue-600"}`}>
                 {eyebrow}
             </p>
             <h2 className={`mt-3 text-3xl font-semibold tracking-tight sm:text-4xl ${dark ? "text-white" : "text-slate-950"}`}>
@@ -146,7 +146,7 @@ function TextField({ label, helper, error, suffix, status = "neutral", ...props 
         ? "border-emerald-300 focus:border-emerald-500 focus:ring-emerald-100"
         : status === "warning" || error
             ? "border-red-300 focus:border-red-500 focus:ring-red-100"
-            : "border-slate-200 focus:border-indigo-500 focus:ring-indigo-100";
+            : "border-slate-200 focus:border-blue-500 focus:ring-blue-100";
 
     return (
         <label className="block">
@@ -155,7 +155,7 @@ function TextField({ label, helper, error, suffix, status = "neutral", ...props 
                 <input
                     {...props}
                     aria-invalid={Boolean(error)}
-                    className={`w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 ${
+                    className={`w-full rounded-2xl border bg-white px-4 py-3.5 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 ${
                         suffix ? "pr-36 sm:pr-48" : ""
                     } ${statusClass}`}
                 />
@@ -223,7 +223,7 @@ function CommerceSystemVisual() {
                             <div className="rounded-[1.4rem] bg-[#f7f9fc] p-4 text-slate-950">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Storefront</p>
+                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Storefront</p>
                                         <h3 className="mt-1 text-2xl font-semibold tracking-tight">Mobile shop preview</h3>
                                     </div>
                                     <div className="rounded-full bg-slate-950 px-4 py-2 text-xs font-black text-white">
@@ -234,13 +234,13 @@ function CommerceSystemVisual() {
                                     {["Panjabi", "Saree", "Sneaker"].map((name, index) => (
                                         <div key={name} className="rounded-2xl border border-white/70 bg-white p-3 shadow-xl shadow-slate-950/10">
                                             <div className={`flex aspect-square items-center justify-center rounded-xl ${
-                                                index === 0 ? "bg-emerald-100 text-emerald-700" : index === 1 ? "bg-rose-100 text-rose-700" : "bg-indigo-100 text-indigo-700"
+                                                index === 0 ? "bg-emerald-100 text-emerald-700" : index === 1 ? "bg-rose-100 text-rose-700" : "bg-blue-100 text-blue-700"
                                             }`}>
                                                 <Package size={24} />
                                             </div>
                                             <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Preview</p>
                                             <p className="mt-1 truncate text-sm font-bold text-slate-950">{name}</p>
-                                            <p className="mt-1 text-sm font-black text-indigo-700">৳</p>
+                                            <p className="mt-1 text-sm font-black text-blue-700">৳</p>
                                         </div>
                                     ))}
                                 </div>
@@ -275,7 +275,7 @@ function CommerceSystemVisual() {
     );
 }
 
-export default function LandingPageClient() {
+export default function LandingPageClient({ plans = [] }) {
     const [formData, setFormData] = useState({
         shopName: "",
         subdomain: "",
@@ -300,11 +300,12 @@ export default function LandingPageClient() {
         suggestions: [],
     });
     const subdomainRequestRef = useRef(0);
+    const pricingPlans = plans.length > 0 ? plans : fallbackPricingPlans;
 
     const baseDomain = getBaseDomain();
     const selectedPlan = useMemo(() => (
         pricingPlans.find((plan) => getPlanSlug(plan) === selectedPlanSlug) || pricingPlans[0]
-    ), [selectedPlanSlug]);
+    ), [pricingPlans, selectedPlanSlug]);
 
     const validation = useMemo(() => {
         const emailValid = /^\S+@\S+\.\S+$/.test(formData.email.trim());
@@ -679,7 +680,7 @@ export default function LandingPageClient() {
                             return (
                                 <article key={module.title} className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
                                     <div className="flex items-start justify-between gap-4">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                                             <Icon size={22} />
                                         </div>
                                         <div className="flex flex-wrap justify-end gap-1.5">
@@ -768,11 +769,11 @@ export default function LandingPageClient() {
                             <article
                                 key={plan.name}
                                 className={`relative rounded-[2rem] border bg-white p-6 shadow-sm ${
-                                    plan.highlighted ? "border-indigo-300 shadow-xl shadow-indigo-100/70 ring-4 ring-indigo-50" : "border-slate-200"
+                                    plan.highlighted ? "border-blue-300 shadow-xl shadow-blue-100/70 ring-4 ring-blue-50" : "border-slate-200"
                                 }`}
                             >
                                 {plan.badge && (
-                                    <span className="absolute right-6 top-6 rounded-full bg-indigo-600 px-3 py-1 text-xs font-black text-white">
+                                    <span className="absolute right-6 top-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-black text-white">
                                         {plan.badge}
                                     </span>
                                 )}
@@ -796,7 +797,7 @@ export default function LandingPageClient() {
                                     onClick={() => scrollToSection("registration")}
                                     className={`mt-7 inline-flex h-12 w-full items-center justify-center rounded-2xl text-sm font-black transition ${
                                         plan.highlighted
-                                            ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                                            ? "bg-blue-600 text-white hover:bg-blue-700"
                                             : "border border-slate-200 text-slate-800 hover:bg-slate-50"
                                     }`}
                                 >
@@ -820,7 +821,7 @@ export default function LandingPageClient() {
                     <div className="grid gap-3 md:grid-cols-4">
                         {howItWorksSteps.map((stepItem) => (
                             <article key={stepItem.number} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                                <p className="text-sm font-black text-indigo-600">{stepItem.number}</p>
+                                <p className="text-sm font-black text-blue-600">{stepItem.number}</p>
                                 <h3 className="mt-5 text-lg font-semibold text-slate-950">{stepItem.title}</h3>
                                 <p className="mt-2 text-sm leading-6 text-slate-600">{stepItem.text}</p>
                             </article>
@@ -868,17 +869,17 @@ export default function LandingPageClient() {
                         <div className="mt-7 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-bold text-slate-950">Setup progress</p>
-                                <p className="text-sm font-black text-indigo-700">{setupProgress}%</p>
+                                <p className="text-sm font-black text-blue-700">{setupProgress}%</p>
                             </div>
                             <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-                                <div className="h-full rounded-full bg-indigo-600 transition-all duration-500" style={{ width: `${setupProgress}%` }} />
+                                <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${setupProgress}%` }} />
                             </div>
                             <p className="mt-4 text-sm leading-6 text-slate-600">
                                 {step === 1
                                     ? `Start with a 14-day free trial. Intended plan: ${selectedPlan?.name || "Starter"}. Payment activates only after Super Admin approval.`
                                     : "Enter your code to create the store and open the storefront."}
                             </p>
-                            <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm">
+                            <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm">
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <p className="font-black text-slate-950">{selectedPlan?.name || "Starter"} selected</p>
@@ -887,7 +888,7 @@ export default function LandingPageClient() {
                                     <button
                                         type="button"
                                         onClick={() => scrollToSection("pricing")}
-                                        className="rounded-xl bg-white px-3 py-2 text-xs font-black text-indigo-700 ring-1 ring-indigo-100 hover:bg-indigo-100"
+                                        className="rounded-xl bg-white px-3 py-2 text-xs font-black text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100"
                                     >
                                         Change plan
                                     </button>
@@ -954,7 +955,7 @@ export default function LandingPageClient() {
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                                     <div className="flex items-start gap-2 text-xs font-semibold">
                                         {subdomainIsChecking ? (
-                                            <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin" />
+                                            <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-slate-300 border-t-blue-600 animate-spin" />
                                         ) : subdomainStatus.state === "available" ? (
                                             <Check size={16} className="mt-0.5 shrink-0 text-emerald-600" />
                                         ) : subdomainStatus.state === "unavailable" || subdomainStatus.state === "invalid" ? (
@@ -984,7 +985,7 @@ export default function LandingPageClient() {
                                                         setError("");
                                                         setSuccess("");
                                                     }}
-                                                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                                                 >
                                                     {suggestion}
                                                 </button>
@@ -1029,7 +1030,7 @@ export default function LandingPageClient() {
                                                 key={option.value}
                                                 className={`cursor-pointer rounded-2xl border p-4 transition ${
                                                     otpChannel === option.value
-                                                        ? "border-indigo-300 bg-white text-slate-950 shadow-sm"
+                                                        ? "border-blue-300 bg-white text-slate-950 shadow-sm"
                                                         : "border-slate-200 bg-white/60 text-slate-600 hover:bg-white"
                                                 }`}
                                             >

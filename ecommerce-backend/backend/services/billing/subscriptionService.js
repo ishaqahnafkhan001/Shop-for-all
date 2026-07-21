@@ -3,7 +3,8 @@ const Subscription = require('../../models/Subscription');
 const VendorPlan = require('../../models/VendorPlan');
 const { isVerificationSuspension } = require('../vendorVerificationService');
 const { logPlatformAudit } = require('../platformAuditLogService');
-const { createNotification } = require('../notificationService');
+const { PLAN_ORDER } = require('../../config/subscriptionPlans');
+const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('./subscriptionEvents');
 const {
     getPlanByNameOrDefault,
     getPlanByIdOrNameOrDefault,
@@ -29,8 +30,19 @@ const isBillingSuspension = (shop) => {
 
 const queryWithSession = (query, session) => (session ? query.session(session) : query);
 
+const isShopRecord = (value) => Boolean(
+    value &&
+    typeof value === 'object' &&
+    value._id &&
+    (
+        typeof value.toObject === 'function' ||
+        Object.prototype.hasOwnProperty.call(value, 'shopName') ||
+        Object.prototype.hasOwnProperty.call(value, 'plan')
+    )
+);
+
 const getShopDocument = async (shopOrId, session) => {
-    if (shopOrId && typeof shopOrId === 'object' && shopOrId._id) return shopOrId;
+    if (isShopRecord(shopOrId)) return shopOrId;
     return queryWithSession(Shop.findById(shopOrId), session);
 };
 
@@ -139,6 +151,22 @@ const createTrialForShop = async (shopOrId, options = {}) => {
         session
     );
 
+    if (!session) {
+        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.TRIAL_STARTED, {
+            req: options.req || null,
+            shopId: shop._id,
+            subscriptionId: subscription._id,
+            planKey: effectiveTrialPlan.slug,
+            newValue: {
+                status: subscription.status,
+                planKey: effectiveTrialPlan.slug,
+                trialStartedAt: now,
+                trialEndsAt
+            },
+            affectedResources: ['subscription', 'trial']
+        });
+    }
+
     return subscription;
 };
 
@@ -149,10 +177,16 @@ const markPendingApproval = async ({
     planName = '',
     planSlug = '',
     billingCycle = 'monthly',
-    invoiceId = null
+    invoiceId = null,
+    req = null
 }) => {
     const current = subscription || await Subscription.findById(subscriptionId);
     if (!current) throw new Error('Subscription not found');
+    const previous = {
+        status: current.status,
+        pendingPlanSlug: current.pendingPlanSlug || '',
+        pendingPlanName: current.pendingPlanName || ''
+    };
 
     current.status = 'pending_approval';
     current.pendingPlanId = planId || null;
@@ -161,6 +195,22 @@ const markPendingApproval = async ({
     current.billingCycle = billingCycle || current.billingCycle || 'monthly';
     current.lastInvoiceId = invoiceId || current.lastInvoiceId || null;
     await current.save();
+
+    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+        req,
+        shopId: current.shopId,
+        subscriptionId: current._id,
+        planKey: current.activePlanSlug || 'starter',
+        oldValue: previous,
+        newValue: {
+            status: current.status,
+            pendingPlanSlug: current.pendingPlanSlug,
+            pendingPlanName: current.pendingPlanName,
+            billingCycle: current.billingCycle
+        },
+        affectedResources: ['subscription', 'payment_approval'],
+        metadata: { notifyVendor: false }
+    });
 
     return current;
 };
@@ -233,6 +283,13 @@ const activateSubscription = async ({
 }) => {
     const current = subscription || await Subscription.findById(subscriptionId);
     if (!current) throw new Error('Subscription not found');
+    const previous = {
+        status: current.status,
+        planKey: current.activePlanSlug || current.pendingPlanSlug || '',
+        planName: current.activePlanName || current.pendingPlanName || '',
+        currentPeriodEnd: current.currentPeriodEnd || null,
+        hadActiveSubscription: Boolean(current.activatedAt || current.currentPeriodStart || current.activePlanSlug)
+    };
 
     const effectivePlanRef = planId || current.pendingPlanId || current.planId || current.pendingPlanSlug || current.pendingPlanName || 'Starter';
     const plan = await getPlanIdentity(effectivePlanRef);
@@ -292,20 +349,34 @@ const activateSubscription = async ({
         }
     });
 
-    await createNotification({
-        shop_id: current.shopId,
-        type: 'system',
-        title: 'Subscription activated',
-        message: `Your ${current.activePlanName || 'selected'} subscription is active. Your store billing is healthy.`,
-        entityType: 'Subscription',
-        entityId: current._id,
-        severity: 'success',
-        metadata: {
-            billingCycle,
-            planId: current.planId,
+    const previousPlanIndex = PLAN_ORDER.indexOf(previous.planKey);
+    const nextPlanIndex = PLAN_ORDER.indexOf(current.activePlanSlug);
+    let eventType = SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED;
+    if (previous.status === 'trialing' || (previous.status === 'pending_approval' && !previous.hadActiveSubscription)) {
+        eventType = SUBSCRIPTION_EVENTS.TRIAL_CONVERTED;
+    } else if (previous.status === 'active' && previous.planKey === current.activePlanSlug) {
+        eventType = SUBSCRIPTION_EVENTS.SUBSCRIPTION_RENEWED;
+    } else if (previousPlanIndex >= 0 && nextPlanIndex > previousPlanIndex) {
+        eventType = SUBSCRIPTION_EVENTS.PLAN_UPGRADED;
+    } else if (previousPlanIndex >= 0 && nextPlanIndex < previousPlanIndex) {
+        eventType = SUBSCRIPTION_EVENTS.PLAN_DOWNGRADED;
+    }
+
+    await emitSubscriptionEvent(eventType, {
+        req,
+        shopId: current.shopId,
+        subscriptionId: current._id,
+        planKey: current.activePlanSlug,
+        oldValue: previous,
+        newValue: {
+            status: current.status,
+            planKey: current.activePlanSlug,
             planName: current.activePlanName,
+            billingCycle,
             currentPeriodEnd: current.currentPeriodEnd
-        }
+        },
+        affectedResources: ['subscription', 'plan', 'features', 'quotas'],
+        metadata: { billingCycle, invoiceId: current.lastInvoiceId || null }
     });
 
     return current;
@@ -313,14 +384,29 @@ const activateSubscription = async ({
 
 const markPastDue = async (subscription, options = {}) => {
     const now = options.now || new Date();
+    const previousStatus = subscription.status;
     subscription.status = 'past_due';
     subscription.graceEndsAt = addDays(now, GRACE_DAYS);
     await subscription.save();
+    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_EXPIRED, {
+        req: options.req || null,
+        shopId: subscription.shopId,
+        subscriptionId: subscription._id,
+        planKey: subscription.activePlanSlug,
+        oldValue: { status: previousStatus },
+        newValue: { status: subscription.status, graceEndsAt: subscription.graceEndsAt },
+        affectedResources: ['subscription']
+    });
     return subscription;
 };
 
 const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) => {
     const now = options.now || new Date();
+    const previous = {
+        status: subscription.status,
+        pendingPlanSlug: subscription.pendingPlanSlug || '',
+        pendingPlanName: subscription.pendingPlanName || ''
+    };
     const trialEndsAt = subscription.trialEndsAt ? new Date(subscription.trialEndsAt) : null;
     subscription.pendingPlanId = null;
     subscription.pendingPlanName = '';
@@ -328,6 +414,17 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
 
     if (subscription.status === 'active') {
         await subscription.save();
+        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+            req: options.req || null,
+            shopId: subscription.shopId,
+            subscriptionId: subscription._id,
+            planKey: subscription.activePlanSlug,
+            oldValue: previous,
+            newValue: { status: subscription.status, pendingPlanSlug: '' },
+            reason: options.reason || 'Payment rejected',
+            affectedResources: ['subscription', 'payment_approval'],
+            metadata: { notifyVendor: false }
+        });
         return subscription;
     }
 
@@ -340,24 +437,39 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
     }
 
     await subscription.save();
+    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+        req: options.req || null,
+        shopId: subscription.shopId,
+        subscriptionId: subscription._id,
+        planKey: subscription.activePlanSlug || 'starter',
+        oldValue: previous,
+        newValue: { status: subscription.status, pendingPlanSlug: '', graceEndsAt: subscription.graceEndsAt || null },
+        reason: options.reason || 'Payment rejected',
+        affectedResources: ['subscription', 'payment_approval'],
+        metadata: { notifyVendor: false }
+    });
     return subscription;
 };
 
 const enterGracePeriod = async (subscription, options = {}) => {
     const now = options.now || new Date();
+    const previousStatus = subscription.status;
     subscription.status = 'grace';
     subscription.graceEndsAt = subscription.graceEndsAt || addDays(now, GRACE_DAYS);
     await subscription.save();
-    await createNotification({
-        shop_id: subscription.shopId,
-        type: 'system',
-        title: 'Billing grace period started',
-        message: `Your trial or invoice is overdue. Please submit payment before ${subscription.graceEndsAt.toDateString()} to avoid store restrictions.`,
-        entityType: 'Subscription',
-        entityId: subscription._id,
-        severity: 'warning',
-        metadata: { graceEndsAt: subscription.graceEndsAt }
-    });
+    await emitSubscriptionEvent(
+        previousStatus === 'trialing' ? SUBSCRIPTION_EVENTS.TRIAL_ENDED : SUBSCRIPTION_EVENTS.SUBSCRIPTION_EXPIRED,
+        {
+            req: options.req || null,
+            shopId: subscription.shopId,
+            subscriptionId: subscription._id,
+            planKey: subscription.activePlanSlug || 'starter',
+            oldValue: { status: previousStatus },
+            newValue: { status: subscription.status, graceEndsAt: subscription.graceEndsAt },
+            affectedResources: ['subscription', 'trial'],
+            metadata: { graceEndsAt: subscription.graceEndsAt }
+        }
+    );
     return subscription;
 };
 
@@ -365,6 +477,7 @@ const suspendForBilling = async (subscription, options = {}) => {
     const reason = options.reason || BILLING_SUSPENSION_REASON;
     const now = options.now || new Date();
 
+    const previousStatus = subscription.status;
     subscription.status = 'suspended';
     subscription.suspendedAt = now;
     subscription.suspensionReason = reason;
@@ -395,24 +508,36 @@ const suspendForBilling = async (subscription, options = {}) => {
         severity: 'warning'
     });
 
-    await createNotification({
-        shop_id: subscription.shopId,
-        type: 'system',
-        title: 'Store restricted for billing',
-        message: 'Your store billing is suspended. Submit payment for Super Admin verification to reactivate billing.',
-        entityType: 'Subscription',
-        entityId: subscription._id,
-        severity: 'critical',
-        metadata: { reason }
+    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+        req: options.req || null,
+        shopId: subscription.shopId,
+        subscriptionId: subscription._id,
+        planKey: subscription.activePlanSlug,
+        oldValue: { status: previousStatus },
+        newValue: { status: subscription.status, suspendedAt: now },
+        reason,
+        affectedResources: ['subscription', 'shop'],
+        metadata: { billingSuspension: true }
     });
 
     return subscription;
 };
 
 const cancelSubscription = async (subscription, options = {}) => {
+    const previousStatus = subscription.status;
     subscription.status = 'cancelled';
     subscription.cancelledAt = options.now || new Date();
     await subscription.save();
+    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CANCELLED, {
+        req: options.req || null,
+        shopId: subscription.shopId,
+        subscriptionId: subscription._id,
+        planKey: subscription.activePlanSlug,
+        oldValue: { status: previousStatus },
+        newValue: { status: subscription.status, cancelledAt: subscription.cancelledAt },
+        reason: options.reason || '',
+        affectedResources: ['subscription']
+    });
     return subscription;
 };
 

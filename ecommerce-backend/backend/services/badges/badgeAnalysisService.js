@@ -36,7 +36,12 @@ const scoreSnapshot = (snapshot, negativeReviewCount = 0) => {
     };
 
     add(snapshot.verificationStatus === 'approved', 20, 'Vendor identity is NID verified.', 'Vendor verification is not approved.');
-    add(snapshot.subscriptionStatus === 'active' && ['Growth', 'Pro'].includes(snapshot.plan), 10, 'Vendor is on an active Growth/Pro subscription.', 'Vendor does not have an active Growth/Pro subscription.');
+    add(
+        snapshot.subscriptionStatus === 'active' && snapshot.trustSystemIncluded === true,
+        10,
+        'Vendor has an active subscription with the trust system entitlement.',
+        'Vendor does not have an active subscription with the trust system entitlement.'
+    );
     add(snapshot.completedSales >= BADGE_THRESHOLDS.minCompletedSales, 20, 'Store has enough delivered sales history.', 'Delivered sales are below badge requirement.');
     add(snapshot.shopAgeDays >= BADGE_THRESHOLDS.minShopAgeDays, 10, 'Store has enough age/history.', 'Store is too new for badge approval.');
     add(snapshot.facebookLinkPresent, 5, 'Facebook page link is present.', 'Facebook page link is missing.');

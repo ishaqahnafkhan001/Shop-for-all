@@ -12,7 +12,8 @@ export function StoreBuilderSidebar({
     restorePublishedVersion,
     handleSave,
     saving,
-    validation
+    validation,
+    planAccess
 }) {
     return (
         <aside className={`${mobileWorkspace === 'structure' ? 'block' : 'hidden'} space-y-4 xl:sticky xl:top-28 xl:block xl:self-start`}>
@@ -23,6 +24,10 @@ export function StoreBuilderSidebar({
                         const Icon = item.icon;
                         const relatedTargets = item.relatedTargets || [item.target];
                         const active = activeElement === item.target || relatedTargets.includes(activeElement) || activeGroup === item.group;
+                        const lockedByPlan = planAccess?.storeBuilderAccess !== 'full' && (
+                            item.id === 'sections' ||
+                            (item.id === 'domain' && planAccess?.features?.customDomain === false)
+                        );
                         return (
                             <button
                                 key={item.id}
@@ -36,9 +41,9 @@ export function StoreBuilderSidebar({
                                 <span className="min-w-0 flex-1">
                                     <span className="flex items-center gap-2 text-sm font-semibold">
                                         {item.label}
-                                        {item.locked && (
+                                        {(item.locked || lockedByPlan) && (
                                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-500">
-                                                Locked
+                                                {lockedByPlan ? 'Growth' : 'Locked'}
                                             </span>
                                         )}
                                     </span>

@@ -5,6 +5,7 @@ const Product = require('../../models/Product');
 const Collection = require('../../models/Collection');
 const cache = require('../cacheService');
 const logger = require('../logger');
+const { hasFeature } = require('../shops/featureAccessService');
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''));
 
@@ -43,6 +44,7 @@ const toIdArray = (value = []) => {
 const getRuntimeStatus = (sale, now = new Date()) => {
     if (!sale || sale.status === 'cancelled') return 'cancelled';
     if (sale.status === 'ended') return 'ended';
+    if (sale.status === 'plan_blocked') return 'plan_blocked';
     const start = new Date(sale.startsAt).getTime();
     const end = new Date(sale.endsAt).getTime();
     const ts = now.getTime();
@@ -222,7 +224,12 @@ const updateScheduledSale = async ({ shopId, saleId, userId, payload }) => {
     if (!sale) return null;
     if (sale.status === 'cancelled') throw new Error('Cancelled sales cannot be edited');
 
-    const clean = normalizePayload({ ...sale.toObject(), ...payload, popup: { ...(sale.popup || {}), ...(payload.popup || {}) } });
+    const clean = normalizePayload({
+        ...sale.toObject(),
+        ...payload,
+        status: sale.status === 'plan_blocked' ? 'scheduled' : (payload.status || sale.status),
+        popup: { ...(sale.popup || {}), ...(payload.popup || {}) }
+    });
     await assertProductsBelongToShop({ shopId, productIds: clean.productIds });
     await assertCollectionsBelongToShop({ shopId, collectionIds: clean.collectionIds });
     Object.assign(sale, clean, { updatedBy: userId });
@@ -242,6 +249,7 @@ const cancelScheduledSale = async ({ shopId, saleId, userId }) => {
 };
 
 const getActiveScheduledSales = async ({ shopId, productIds = [], now = new Date(), session } = {}) => {
+    if (!(await hasFeature(shopId, 'scheduledSales'))) return [];
     const query = {
         shop_id: shopId,
         status: { $in: ['scheduled', 'active'] },
@@ -428,6 +436,7 @@ const applyScheduledSalesToProducts = async ({ shopId, products = [], now = new 
 };
 
 const getActiveSalePopups = async ({ shopId, now = new Date(), limit = 3 } = {}) => {
+    if (!(await hasFeature(shopId, 'scheduledSales'))) return [];
     const sales = await ScheduledSale.find({
         shop_id: shopId,
         status: { $in: ['scheduled', 'active'] },
@@ -550,7 +559,9 @@ const processScheduledSaleStates = async ({ limit = 50 } = {}) => {
         if (!sale) break;
 
         try {
-            const nextStatus = sale.endsAt <= now ? 'ended' : 'active';
+            const ended = sale.endsAt <= now;
+            const planAllowsActivation = ended ? false : await hasFeature(sale.shop_id, 'scheduledSales');
+            const nextStatus = ended ? 'ended' : (planAllowsActivation ? 'active' : 'plan_blocked');
             await ScheduledSale.updateOne(
                 { _id: sale._id, processingBy: workerId },
                 {

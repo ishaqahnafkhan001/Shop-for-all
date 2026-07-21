@@ -19,7 +19,8 @@ router.use(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('salesManage'),
-    requireShopFeature('coupons')
+    requireShopFeature('coupons'),
+    requireShopFeature('scheduledSales')
 );
 
 router.get('/', listScheduledSales);

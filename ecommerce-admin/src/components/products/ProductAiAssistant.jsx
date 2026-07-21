@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Loader2, Sparkles, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { normalizeKeyValueRows, normalizeSellingPointRows } from '../../utils/productContentRows.js';
 
 const SECTION_LABELS = {
@@ -332,11 +333,27 @@ const ProductAiAssistant = ({
     getVariants,
     compact = false
 }) => {
+    const { user, setUser } = useAuth();
     const [isGenerating, setIsGenerating] = useState(false);
     const [activeSection, setActiveSection] = useState(null);
     const [suggestion, setSuggestion] = useState(null);
     const [usedImage, setUsedImage] = useState(false);
     const [imageSource, setImageSource] = useState('text_only');
+    const usage = user?.planAccess?.usage?.ai || null;
+
+    const updateUsage = (nextUsage) => {
+        if (!nextUsage) return;
+        setUser(current => current ? ({
+            ...current,
+            planAccess: {
+                ...(current.planAccess || {}),
+                usage: {
+                    ...(current.planAccess?.usage || {}),
+                    ai: nextUsage
+                }
+            }
+        }) : current);
+    };
 
     const firstImageForStatus = getFirstImage?.();
     const hasImage = Boolean(firstImageForStatus);
@@ -391,6 +408,7 @@ const ProductAiAssistant = ({
                 return;
             }
 
+            updateUsage(response.data.usage);
             setSuggestion(response.data.data);
             setUsedImage(Boolean(response.data.usedImage));
             setImageSource(response.data.imageSource || 'text_only');
@@ -454,6 +472,14 @@ const ProductAiAssistant = ({
                     <p className="mt-1 text-xs leading-5 text-slate-600">
                         {imageStatusLabel}
                     </p>
+                    {usage && (
+                        <p className="mt-1 text-xs font-bold text-indigo-700">
+                            {usage.unlimited
+                                ? `${usage.used} AI generations used this week - Unlimited plan`
+                                : `${usage.used} of ${usage.limit} AI generations used this week (${usage.remaining} remaining)`}
+                            {usage.resetsAt ? ` - resets ${new Date(usage.resetsAt).toLocaleString()}` : ''}
+                        </p>
+                    )}
                 </div>
                 <button
                     type="button"

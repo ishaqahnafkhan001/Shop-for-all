@@ -17,6 +17,8 @@ const {
     requireStaffLimit
 } = require('../middlewares/billingGate');
 const { upload, nidUpload } = require('../config/cloudinary');
+const { getShopPlanAccess, buildLimitError } = require('../services/billing/planAccessService');
+const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 
 // =========================
 // Controllers
@@ -126,10 +128,47 @@ const {
 // =========================
 // Upload Config
 // =========================
-const productMediaUpload = upload.fields([
-    { name: 'images', maxCount: 5 },
+const productMediaUploadMiddleware = upload.fields([
+    { name: 'images', maxCount: 15 },
     { name: 'videos', maxCount: 2 }
 ]);
+const productMediaUpload = (req, res, next) => {
+    productMediaUploadMiddleware(req, res, async (err) => {
+        if (!err) return next();
+        const planLimit = err.code === 'PLAN_IMAGE_LIMIT';
+        if (planLimit && req.planAccess) {
+            const limit = req.planAccess.limits.imagesPerProduct;
+            const payload = buildLimitError(req.planAccess, 'imagesPerProduct', req.planImageUploadCount, limit);
+            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
+                req,
+                shopId: req.tenantId,
+                subscriptionId: req.planAccess.subscription?._id,
+                planKey: req.planAccess.planKey,
+                affectedResources: ['images'],
+                metadata: { resource: 'images', usage: payload.usage, notifyVendor: false }
+            });
+            return res.status(403).json(payload);
+        }
+        return res.status(planLimit ? 403 : 400).json({
+            success: false,
+            code: planLimit ? 'PLAN_LIMIT_REACHED' : 'INVALID_PRODUCT_MEDIA',
+            ...(planLimit && { limitKey: 'imagesPerProduct' }),
+            error: err.message || 'Invalid product media.'
+        });
+    });
+};
+const attachPlanAccess = async (req, res, next) => {
+    try {
+        req.planAccess = req.planAccess || await getShopPlanAccess(req.tenantId);
+        next();
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            success: false,
+            code: error.code || 'PLAN_ACCESS_FAILED',
+            error: error.statusCode ? error.message : 'Unable to verify plan access.'
+        });
+    }
+};
 const productAiImageUploadMiddleware = multer({
     storage: multer.memoryStorage(),
     limits: {
@@ -264,6 +303,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('customers'),
+    requireShopFeature('customerSection'),
     sendEmailToCustomer
 );
 
@@ -272,6 +312,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('customers'),
+    requireShopFeature('customerSection'),
     createCustomerEmailCampaign
 );
 
@@ -280,6 +321,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('customers'),
+    requireShopFeature('customerSection'),
     createProductEmailCampaign
 );
 
@@ -299,6 +341,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('notifications'),
+    requireShopFeature('notifications'),
     getNotifications
 );
 
@@ -307,6 +350,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('notifications'),
+    requireShopFeature('notifications'),
     getUnreadCount
 );
 
@@ -315,6 +359,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('notifications'),
+    requireShopFeature('notifications'),
     markAllNotificationsRead
 );
 
@@ -323,6 +368,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('notifications'),
+    requireShopFeature('notifications'),
     markNotificationRead
 );
 
@@ -331,6 +377,7 @@ router.delete(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('notifications'),
+    requireShopFeature('notifications'),
     deleteNotification
 );
 
@@ -539,6 +586,8 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
     generateDescription
 );
 
@@ -625,6 +674,7 @@ router.patch(
     requirePermission('products'),
     blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
+    attachPlanAccess,
     productMediaUpload,
     updateProduct
 );
@@ -705,6 +755,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('customers'),
+    requireShopFeature('customerSection'),
     getShopCustomers
 );
 
@@ -712,6 +763,7 @@ router.patch(
     '/customers/:id/status',
     protect,
     authorize('VendorAdmin'),
+    requireShopFeature('customerSection'),
     toggleCustomerStatus
 );
 

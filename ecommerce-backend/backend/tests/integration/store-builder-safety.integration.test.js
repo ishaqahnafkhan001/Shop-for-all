@@ -3,7 +3,8 @@ const test = require('node:test');
 
 const {
     Shop,
-    createLaunchSafetyContext
+    createLaunchSafetyContext,
+    setShopPlan
 } = require('../helpers/launchSafetyHarness');
 
 test('vendor can load and save only their own Store Builder theme', async (t) => {
@@ -158,13 +159,14 @@ test('custom domain save rejects platform, duplicate, and plan-disabled domains'
     const { shopA, shopB } = ctx.data.shops;
     const vendorA = ctx.vendorAClient();
 
+    await setShopPlan({ shopId: shopA._id, plan: ctx.data.plans.starter });
     const blockedByFeature = await vendorA.unsafePatch('/api/store-builder/admin', {
         customDomain: { domain: 'starter-domain.example.com' }
     });
     assert.equal(blockedByFeature.status, 403);
     assert.equal(blockedByFeature.body.code, 'FEATURE_NOT_AVAILABLE');
 
-    await Shop.updateOne({ _id: shopA._id }, { $set: { 'plan.name': 'Growth' } });
+    await setShopPlan({ shopId: shopA._id, plan: ctx.data.plans.growth });
     await Shop.updateOne(
         { _id: shopB._id },
         {

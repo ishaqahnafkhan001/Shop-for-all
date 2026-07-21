@@ -3,6 +3,7 @@ const Shop = require('../../models/Shop');
 const { enqueueJob } = require('../jobQueueService');
 const cache = require('../cacheService');
 const logger = require('../logger');
+const { hasFeature } = require('../shops/featureAccessService');
 
 const SCHEDULED_PRODUCT_QUEUE = 'scheduled-products';
 const PUBLISH_PRODUCT_JOB = 'products.publish_scheduled';
@@ -83,6 +84,20 @@ const publishScheduledProduct = async ({ productId, shopId, source = 'worker' })
         throw new Error('Scheduled product publish requires productId and shopId');
     }
 
+    if (!(await hasFeature(shopId, 'scheduledProductPublishing'))) {
+        await Product.updateOne(
+            { _id: productId, shop_id: shopId, publicationStatus: 'scheduled' },
+            {
+                $set: {
+                    schedulePlanBlockedAt: new Date(),
+                    schedulePlanBlockedReason: 'Scheduled publishing is not available on the current plan.'
+                }
+            }
+        );
+        logger.info('scheduled_product_noop_plan_blocked', { productId, shopId, source });
+        return null;
+    }
+
     const shopCanPublish = await canPublishForShop(shopId);
     if (!shopCanPublish) {
         logger.info('scheduled_product_noop_shop_blocked', { productId, shopId, source });
@@ -96,7 +111,8 @@ const publishScheduledProduct = async ({ productId, shopId, source = 'worker' })
             shop_id: shopId,
             isDeleted: false,
             publicationStatus: 'scheduled',
-            publishAt: { $lte: now }
+            publishAt: { $lte: now },
+            schedulePlanBlockedAt: null
         },
         {
             $set: {

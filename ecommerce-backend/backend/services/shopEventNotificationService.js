@@ -8,6 +8,7 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 const { enqueueJob } = require('./jobQueueService');
 const logger = require('./logger');
+const { hasFeature } = require('./shops/featureAccessService');
 
 const formatCurrency = (value) => `৳ ${Number(value || 0).toLocaleString('en-BD')}`;
 const shortId = (value) => `#${String(value || '').slice(-6).toUpperCase()}`;
@@ -24,20 +25,22 @@ const runSafely = (taskName, fn) => {
 
 const sendNewOrderNotificationNow = async ({ shop_id, order, customer }) => {
     const orderCode = shortId(order._id);
-    await createNotification({
-        shop_id,
-        type: 'order',
-        title: 'New order received',
-        message: `${customer?.fullName || 'A customer'} placed order ${orderCode} for ${formatCurrency(order.pricing?.total)}.`,
-        entityType: 'Order',
-        entityId: order._id,
-        severity: 'success',
-        metadata: {
-            total: order.pricing?.total,
-            customerName: customer?.fullName || '',
-            customerEmail: customer?.email || ''
-        }
-    });
+    if (await hasFeature(shop_id, 'notifications')) {
+        await createNotification({
+            shop_id,
+            type: 'order',
+            title: 'New order received',
+            message: `${customer?.fullName || 'A customer'} placed order ${orderCode} for ${formatCurrency(order.pricing?.total)}.`,
+            entityType: 'Order',
+            entityId: order._id,
+            severity: 'success',
+            metadata: {
+                total: order.pricing?.total,
+                customerName: customer?.fullName || '',
+                customerEmail: customer?.email || ''
+            }
+        });
+    }
 
     const emails = await getVendorAdminEmails(shop_id);
     if (emails.length === 0) return;
@@ -63,19 +66,21 @@ const sendNewOrderNotificationNow = async ({ shop_id, order, customer }) => {
 };
 
 const sendCustomerRegisteredNotificationNow = async ({ shop_id, customer }) => {
-    await createNotification({
-        shop_id,
-        type: 'customer',
-        title: 'New customer registered',
-        message: `${customer.fullName || customer.email} joined your store.`,
-        entityType: 'User',
-        entityId: customer._id,
-        severity: 'info',
-        metadata: {
-            customerName: customer.fullName || '',
-            customerEmail: customer.email || ''
-        }
-    });
+    if (await hasFeature(shop_id, 'notifications')) {
+        await createNotification({
+            shop_id,
+            type: 'customer',
+            title: 'New customer registered',
+            message: `${customer.fullName || customer.email} joined your store.`,
+            entityType: 'User',
+            entityId: customer._id,
+            severity: 'info',
+            metadata: {
+                customerName: customer.fullName || '',
+                customerEmail: customer.email || ''
+            }
+        });
+    }
 
     const emails = await getVendorAdminEmails(shop_id);
     if (emails.length === 0) return;
