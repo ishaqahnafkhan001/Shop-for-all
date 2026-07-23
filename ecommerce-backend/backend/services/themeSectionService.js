@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Banner = require('../models/Banner');
+const { normalizeHomepageSections } = require('@scaleup/storefront-theme');
 
 const FIXED_SECTION_TYPES = new Set(['Hero']);
 
@@ -37,19 +38,18 @@ const isLegacyAllProductsSection = (section = {}) => {
     return !source.type && (!Array.isArray(productIds) || productIds.length === 0);
 };
 
-const normalizeDynamicSections = (sections = []) => sections
-    .filter(section => section && !FIXED_SECTION_TYPES.has(section.type) && !isLegacyAllProductsSection(section))
-    .map((section, index) => normalizeProductSource({
-        ...section,
-        id: section.id || makeSectionId(section.type || 'section', section._id || index),
-        type: section.type === 'BannerGrid' ? 'Banner' : section.type,
-        sortOrder: Number.isFinite(Number(section.sortOrder)) ? Number(section.sortOrder) : index,
-        settings: section.settings || {},
-        mobileSettings: section.mobileSettings || {},
-        source: section.source || {}
-    }))
-    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-    .map((section, index) => ({ ...section, sortOrder: index }));
+const normalizeDynamicSections = (sections = []) => normalizeHomepageSections(
+    sections
+        .filter(section => section && !FIXED_SECTION_TYPES.has(section.type) && !isLegacyAllProductsSection(section))
+        .map((section, index) => normalizeProductSource({
+            ...section,
+            id: section.id || makeSectionId(section.type || 'section', section._id || index),
+            settings: section.settings || {},
+            desktopSettings: section.desktopSettings || {},
+            mobileSettings: section.mobileSettings || {},
+            source: section.source || {}
+        }))
+);
 
 const getBannerImage = (banner, type = 'desktop') => {
     if (type === 'mobile') return banner.mobileImages?.[0] || banner.desktopImages?.[0] || banner.images?.[0] || banner.image || '';
@@ -83,7 +83,7 @@ const createBannerSection = (banner, sortOrder) => ({
     }
 });
 
-const ensureThemeSectionArchitecture = async (shopDocOrLean) => {
+const ensureThemeSectionArchitecture = async (shopDocOrLean, { persist = false } = {}) => {
     if (!shopDocOrLean) return shopDocOrLean;
 
     const shopId = shopDocOrLean._id || shopDocOrLean.id;
@@ -144,16 +144,18 @@ const ensureThemeSectionArchitecture = async (shopDocOrLean) => {
         }
     };
 
-    await mongoose.model('Shop').updateOne(
-        { _id: shopId, 'theme.migrations.bannerSectionsV1': { $ne: true } },
-        {
-            $set: {
-                'theme.homepageSections': nextSections,
-                'theme.allProducts': nextTheme.allProducts,
-                'theme.migrations.bannerSectionsV1': true
+    if (persist) {
+        await mongoose.model('Shop').updateOne(
+            { _id: shopId, 'theme.migrations.bannerSectionsV1': { $ne: true } },
+            {
+                $set: {
+                    'theme.homepageSections': nextSections,
+                    'theme.allProducts': nextTheme.allProducts,
+                    'theme.migrations.bannerSectionsV1': true
+                }
             }
-        }
-    );
+        );
+    }
 
     shopDocOrLean.theme = nextTheme;
     return shopDocOrLean;

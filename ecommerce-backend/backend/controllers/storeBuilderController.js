@@ -1,12 +1,14 @@
 const Shop = require('../models/Shop');
 const Review = require('../models/Review');
 const Product = require('../models/Product');
+const Collection = require('../models/Collection');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { invalidateTenantCache } = require('../middlewares/tenant');
-const { ensureThemeSectionArchitecture, normalizeDynamicSections } = require('../services/themeSectionService');
+const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
 const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
 const { generateStoreSeoSuggestion } = require('../services/storeSeoAiService');
+const { buildPublicProductQuery } = require('../services/products/publicProductQueryService');
 const {
     normalizeCustomDomain,
     isValidCustomDomain,
@@ -20,127 +22,63 @@ const {
     assertStoreBuilderUpdateAllowed,
     getPublicThemeForPlan
 } = require('../services/billing/storeBuilderPlanService');
+const StoreBuilderDraft = require('../models/StoreBuilderDraft');
+const StoreBuilderRevision = require('../models/StoreBuilderRevision');
+const { logAudit } = require('../services/auditLogService');
+const {
+    getStoreBuilderBootstrap,
+    publishStoreBuilder,
+    restoreStoreBuilderRevision,
+    saveStoreBuilderDraft
+} = require('../services/storeBuilder/storeBuilderService');
+const {
+    deleteTemporaryAsset,
+    registerTemporaryAsset
+} = require('../services/storeBuilder/storeBuilderAssetService');
+const {
+    deleteStoreBuilderSeoDraft,
+    getStoreBuilderSeoBootstrap,
+    publishStoreBuilderSeo,
+    saveStoreBuilderSeoDraft
+} = require('../services/storeBuilder/storeBuilderSeoService');
 
-const allowedThemeKeys = [
-    'version',
-    'logoUrl',
-    'faviconUrl',
-    'fontFamily',
-    'productGridStyle',
-    'colors',
-    'header',
-    'typography',
-    'hero',
-    'layout',
-    'productCard',
-    'checkoutBranding',
-    'mobile',
-    'paymentSettings',
-    'seo',
-    'homepageSections',
-    'allProducts',
-    'migrations',
-    'navigation',
-    'footer',
-    'policies'
-];
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const URL_FIELD_PATTERN = /(url|href|link|image|images|logo|favicon)$/i;
-const UNSAFE_URL_PATTERN = /^(javascript|data|vbscript):/i;
-const HEX_COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
-
-const cleanTextValue = (value = '') => String(value)
-    .replace(/\0/g, '')
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-    .trim();
-
-const sanitizeUrlValue = (value = '') => {
-    const raw = cleanTextValue(value).slice(0, 1000);
-    if (!raw) return '';
-
-    const compact = raw.replace(/[\u0000-\u001F\u007F\s]+/g, '');
-    if (UNSAFE_URL_PATTERN.test(compact)) return '#';
-    if (raw.startsWith('#')) return raw;
-    if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
-    if (/^https?:\/\//i.test(raw)) return raw;
-    if (/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(raw)) return raw;
-    if (/^tel:\+?[0-9().\-\s]{4,30}$/i.test(raw)) return raw;
-
-    return '#';
+const sendStoreBuilderError = (res, err, fallbackMessage) => {
+    const message = err.message || fallbackMessage;
+    return res.status(err.statusCode || 400).json({
+        success: false,
+        ...(err.code && { code: err.code }),
+        ...(err.validation && { validation: err.validation }),
+        ...(err.latestRevision !== undefined && { latestRevision: err.latestRevision }),
+        ...(err.lastPublishedAt !== undefined && { lastPublishedAt: err.lastPublishedAt }),
+        message,
+        error: message
+    });
 };
 
-const sanitizeGoogleSiteVerification = (value = '') => {
-    const raw = cleanTextValue(value).slice(0, 500);
-    if (!raw) return '';
-
-    const contentMatch = raw.match(/content\s*=\s*["']([^"']+)["']/i);
-    const content = contentMatch ? contentMatch[1] : raw;
-
-    return String(content)
-        .replace(/[<>"'`]/g, '')
-        .replace(/\s+/g, '')
-        .slice(0, 200);
+const invalidateStoreBuilderSeoCache = async (shopId) => {
+    const shop = await Shop.findById(shopId).select('subdomain customDomain.domain').lean();
+    await Promise.all([
+        cache.del(`storefront:settings:${shopId}`),
+        cache.delPattern(`storefront:bootstrap:${shopId}:*`),
+        shop?.subdomain ? invalidateTenantCache(shop.subdomain) : Promise.resolve(),
+        shop?.customDomain?.domain ? invalidateTenantCache(shop.customDomain.domain) : Promise.resolve()
+    ]);
 };
 
-const sanitizeSeoSiteName = (value = '') => cleanTextValue(value)
-    .replace(/<[^>]+>/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 80);
-
-const sanitizeColorObject = (value = {}) => {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
-
-    return Object.entries(value).reduce((acc, [key, colorValue]) => {
-        if (colorValue && typeof colorValue === 'object' && !Array.isArray(colorValue)) {
-            const nested = sanitizeColorObject(colorValue);
-            if (Object.keys(nested).length > 0) acc[key] = nested;
-            return acc;
-        }
-
-        if (typeof colorValue !== 'string') return acc;
-        const cleanColor = cleanTextValue(colorValue).trim();
-        if (HEX_COLOR_PATTERN.test(cleanColor)) acc[key] = cleanColor;
-        return acc;
-    }, {});
-};
-
-const sanitizeThemeValue = (value, key = '') => {
-    if (Array.isArray(value)) {
-        return value.map(item => sanitizeThemeValue(item, key));
+const safelyInvalidateStoreBuilderSeoCache = async (shopId, req) => {
+    try {
+        await invalidateStoreBuilderSeoCache(shopId);
+        return null;
+    } catch (error) {
+        console.error('Store Builder cache invalidation pending:', {
+            shopId: String(shopId),
+            requestId: req?.id,
+            message: error.message
+        });
+        return 'CACHE_INVALIDATION_PENDING';
     }
-
-    if (value && typeof value === 'object') {
-        return Object.entries(value).reduce((acc, [childKey, childValue]) => {
-            acc[childKey] = sanitizeThemeValue(childValue, childKey);
-            return acc;
-        }, {});
-    }
-
-    if (typeof value !== 'string') return value;
-
-    return URL_FIELD_PATTERN.test(key)
-        ? sanitizeUrlValue(value)
-        : cleanTextValue(value);
-};
-
-const sanitizeThemePayload = (theme = {}) => {
-    const cleanTheme = sanitizeThemeValue(theme);
-    if (cleanTheme?.colors && typeof cleanTheme.colors === 'object') {
-        cleanTheme.colors = sanitizeColorObject(cleanTheme.colors);
-    }
-    if (cleanTheme?.seo && typeof cleanTheme.seo === 'object') {
-        cleanTheme.seo.siteName = sanitizeSeoSiteName(cleanTheme.seo.siteName);
-        cleanTheme.seo.googleSiteVerification = sanitizeGoogleSiteVerification(cleanTheme.seo.googleSiteVerification);
-    }
-    return cleanTheme;
-};
-
-const pickThemePayload = (payload = {}) => {
-    return allowedThemeKeys.reduce((acc, key) => {
-        if (payload[key] !== undefined) acc[key] = payload[key];
-        return acc;
-    }, {});
 };
 
 const assertCustomDomainAvailable = async (domain, shopId) => {
@@ -152,88 +90,40 @@ const assertCustomDomainAvailable = async (domain, shopId) => {
     if (existingShop) {
         const error = new Error('This domain is already connected to another shop.');
         error.statusCode = 400;
+        error.code = 'DOMAIN_ALREADY_IN_USE';
         throw error;
     }
 };
 
-const setCustomDomainDnsFields = (update, fields = {}) => {
-    Object.entries(fields).forEach(([key, value]) => {
-        update[`customDomain.${key}`] = value;
-    });
-};
-
-const clearCustomDomainDnsFields = (update) => {
-    setCustomDomainDnsFields(update, {
-        verificationToken: '',
-        verificationMethod: 'TXT',
-        dnsTarget: '',
-        expectedTxtValue: '',
-        ownershipVerified: false,
-        routingVerified: false,
-        manuallyVerifiedRouting: false,
-        lastDnsCheckStatus: '',
-        lastDnsCheckError: '',
-        lastOwnershipCheckStatus: '',
-        lastRoutingCheckStatus: '',
-        lastDnsRecords: { txt: [], cname: [], a: [] }
-    });
-};
-
-const ensureCustomDomainVerificationFieldsForResponse = async (shop) => {
-    const domain = normalizeCustomDomain(shop?.customDomain?.domain);
-    if (!shop?._id || !domain || shop.customDomain?.verificationToken) return shop;
-
-    const fields = buildCustomDomainVerificationFields(shop._id, domain);
-    await Shop.updateOne(
-        { _id: shop._id },
-        { $set: Object.fromEntries(Object.entries(fields).map(([key, value]) => [`customDomain.${key}`, value])) }
-    );
-    shop.customDomain = {
-        ...(shop.customDomain || {}),
-        ...fields
-    };
-    return shop;
-};
-
 exports.getStoreBuilderSettings = async (req, res) => {
     try {
-        const shop = await Shop.findById(req.tenantId)
-            .select('shopName subdomain theme customDomain plan featureFlags storewideDiscount isActive approvalStatus suspensionReason')
-            .lean();
+        const bootstrap = await getStoreBuilderBootstrap({ shopId: req.tenantId });
+        if (!bootstrap) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
-
-        await ensureCustomDomainVerificationFieldsForResponse(shop);
-
-        await ensureThemeSectionArchitecture(shop);
-        const policyDefaults = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
-        if (policyDefaults.added.length > 0) {
-            shop.theme = {
-                ...(shop.theme || {}),
-                policies: policyDefaults.policies
+        const shop = bootstrap.shop;
+        const domain = normalizeCustomDomain(shop.customDomain?.domain);
+        if (domain && !shop.customDomain?.verificationToken) {
+            shop.customDomain = {
+                ...(shop.customDomain || {}),
+                ...buildCustomDomainVerificationFields(shop._id, domain)
             };
-            await Shop.updateOne(
-                { _id: req.tenantId },
-                { $set: { 'theme.policies': policyDefaults.policies } }
-            );
-            await Promise.all([
-                cache.del(`storefront:settings:${req.tenantId}`),
-                cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
-            ]);
         }
 
-        const access = await getShopPlanAccess(shop);
-        const safePlanAccess = {
-            planKey: access.planKey,
-            planName: access.planName,
-            storeBuilderAccess: access.storeBuilderAccess,
-            storeBuilderCapabilities: access.storeBuilderCapabilities,
-            features: access.features
-        };
         res.status(200).json({
             success: true,
-            data: { ...shop, planAccess: safePlanAccess },
-            planAccess: safePlanAccess
+            data: {
+                ...shop,
+                products: bootstrap.products,
+                categories: bootstrap.categories,
+                collections: bootstrap.collections,
+                reviews: bootstrap.reviews,
+                seoStats: bootstrap.seoStats,
+                draft: bootstrap.draft,
+                revisions: bootstrap.revisions,
+                publication: bootstrap.publication
+            },
+            bootstrap,
+            planAccess: bootstrap.planAccess
         });
     } catch (err) {
         console.error('Get store builder settings error:', err);
@@ -243,42 +133,38 @@ exports.getStoreBuilderSettings = async (req, res) => {
 
 exports.updateStoreBuilderSettings = async (req, res) => {
     try {
-        const { theme = {}, customDomain, storewideDiscount } = req.body;
-        const update = {};
+        const { theme: requestedTheme, searchAliases, customDomain, storewideDiscount, expectedRevision } = req.body;
         let domainCacheKeys = [];
-        const currentShopForPlan = await Shop.findById(req.tenantId).select('theme').lean();
+        const currentShopForPlan = await Shop.findById(req.tenantId).select('theme customDomain themeRevision').lean();
+        if (!currentShopForPlan) return res.status(404).json({ success: false, error: 'Shop not found' });
+        const theme = requestedTheme === undefined ? (currentShopForPlan.theme || {}) : requestedTheme;
         const planAccess = await getShopPlanAccess(req.tenantId);
         assertStoreBuilderUpdateAllowed({
             currentTheme: currentShopForPlan?.theme || {},
             incomingTheme: theme,
             planAccess
         });
-        const cleanTheme = sanitizeThemePayload(pickThemePayload(theme));
-        if (cleanTheme.homepageSections !== undefined) {
-            cleanTheme.homepageSections = normalizeDynamicSections(cleanTheme.homepageSections);
-        }
-
-        for (const [key, value] of Object.entries(cleanTheme)) {
-            update[`theme.${key}`] = value;
-        }
+        let nextCustomDomain = { ...(currentShopForPlan.customDomain || {}) };
 
         if (customDomain !== undefined) {
             const normalizedDomain = normalizeCustomDomain(customDomain);
-            const currentShop = await Shop.findById(req.tenantId).select('customDomain').lean();
-            const currentDomain = normalizeCustomDomain(currentShop?.customDomain?.domain);
+            const currentDomain = normalizeCustomDomain(currentShopForPlan?.customDomain?.domain);
             domainCacheKeys = [currentDomain, normalizedDomain].filter(Boolean);
 
             if (!normalizedDomain) {
-                update['customDomain.domain'] = '';
-                update['customDomain.status'] = 'NotConfigured';
-                update['customDomain.verifiedAt'] = null;
-                update['customDomain.lastCheckedAt'] = new Date();
-                update['customDomain.adminNote'] = '';
-                clearCustomDomainDnsFields(update);
+                nextCustomDomain = {
+                    domain: '', status: 'NotConfigured', verifiedAt: null, lastCheckedAt: new Date(), adminNote: '',
+                    verificationToken: '', verificationMethod: 'TXT', dnsTarget: '', expectedTxtValue: '',
+                    ownershipVerified: false, routingVerified: false, manuallyVerifiedRouting: false,
+                    lastDnsCheckStatus: '', lastDnsCheckError: '', lastOwnershipCheckStatus: '',
+                    lastRoutingCheckStatus: '', lastDnsRecords: { txt: [], cname: [], a: [] }
+                };
             } else {
                 if (isPlatformDomain(normalizedDomain)) {
                     return res.status(400).json({
                         success: false,
+                        code: 'PLATFORM_DOMAIN_NOT_ALLOWED',
+                        message: 'Platform domains cannot be used as store custom domains.',
                         error: 'Platform domains cannot be used as store custom domains.'
                     });
                 }
@@ -286,67 +172,70 @@ exports.updateStoreBuilderSettings = async (req, res) => {
                 if (!isValidCustomDomain(normalizedDomain)) {
                     return res.status(400).json({
                         success: false,
+                        code: 'INVALID_CUSTOM_DOMAIN',
+                        message: 'Invalid custom domain.',
                         error: 'Invalid custom domain.'
                     });
                 }
 
                 await assertCustomDomainAvailable(normalizedDomain, req.tenantId);
-                update['customDomain.domain'] = normalizedDomain;
+                nextCustomDomain.domain = normalizedDomain;
 
                 if (normalizedDomain !== currentDomain) {
-                    update['customDomain.status'] = 'PendingVerification';
-                    update['customDomain.verifiedAt'] = null;
-                    update['customDomain.lastCheckedAt'] = new Date();
-                    update['customDomain.adminNote'] = '';
-                    setCustomDomainDnsFields(update, buildCustomDomainVerificationFields(req.tenantId, normalizedDomain));
+                    nextCustomDomain = {
+                        ...nextCustomDomain,
+                        domain: normalizedDomain,
+                        status: 'PendingVerification',
+                        verifiedAt: null,
+                        lastCheckedAt: new Date(),
+                        adminNote: '',
+                        ...buildCustomDomainVerificationFields(req.tenantId, normalizedDomain)
+                    };
                 }
             }
         }
 
-        if (storewideDiscount !== undefined) {
-            update.storewideDiscount = Math.max(0, Math.min(100, Number(storewideDiscount) || 0));
-        }
-
-        const shop = await Shop.findByIdAndUpdate(
-            req.tenantId,
-            { $set: update },
-            { new: true, runValidators: true }
-        )
-            .select('shopName subdomain theme customDomain plan featureFlags storewideDiscount')
-            .lean();
-
-        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
-
-        await ensureThemeSectionArchitecture(shop);
-        const responseShop = shop;
+        const responseShop = await publishStoreBuilder({
+            shopId: req.tenantId,
+            req,
+            theme,
+            searchAliases,
+            customDomain: nextCustomDomain,
+            storewideDiscount,
+            expectedRevision,
+            audit: {
+                action: 'store_builder.published',
+                entityType: 'ShopTheme',
+                before: { revision: Number(currentShopForPlan.themeRevision || 0) }
+            }
+        });
 
         await Promise.all([
             cache.del(`storefront:settings:${req.tenantId}`),
             cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`),
             ...domainCacheKeys.map(domain => invalidateTenantCache(domain))
         ]);
-
-        const safePlanAccess = {
-            planKey: planAccess.planKey,
-            planName: planAccess.planName,
-            storeBuilderAccess: planAccess.storeBuilderAccess,
-            storeBuilderCapabilities: planAccess.storeBuilderCapabilities,
-            features: planAccess.features
-        };
         res.status(200).json({
             success: true,
             message: 'Store settings updated',
-            data: { ...responseShop, planAccess: safePlanAccess },
-            planAccess: safePlanAccess
+            data: responseShop,
+            planAccess: responseShop.planAccess
         });
     } catch (err) {
         console.error('Update store builder settings error:', err);
         const duplicateDomain = err?.code === 11000 && String(err?.message || '').includes('customDomain');
+        const message = duplicateDomain
+            ? 'This domain is already connected to another shop.'
+            : err.message || 'Failed to update store builder settings';
         res.status(err.statusCode || 400).json({
             success: false,
-            ...(err.code && { code: err.code }),
+            ...((err.code || duplicateDomain) && { code: duplicateDomain ? 'DOMAIN_ALREADY_IN_USE' : err.code }),
             ...(err.capability && { capability: err.capability }),
-            error: duplicateDomain ? 'This domain is already connected to another shop.' : err.message || 'Failed to update store builder settings'
+            ...(err.validation && { validation: err.validation }),
+            ...(err.latestRevision !== undefined && { latestRevision: err.latestRevision }),
+            ...(err.lastPublishedAt !== undefined && { lastPublishedAt: err.lastPublishedAt }),
+            message,
+            error: message
         });
     }
 };
@@ -376,28 +265,115 @@ exports.suggestStoreSeo = async (req, res) => {
                 : (shop.theme?.navigation || [])
         };
 
-        const products = await Product.find({
-            shop_id: req.tenantId,
-            isDeleted: false
-        })
-            .select('title category tags')
-            .sort({ createdAt: -1 })
-            .limit(20)
-            .lean();
+        const [products, collections] = await Promise.all([
+            Product.find(buildPublicProductQuery(req.tenantId))
+                .select('title category tags')
+                .sort({ createdAt: -1 })
+                .limit(20)
+                .lean(),
+            Collection.find({ shop_id: req.tenantId, isActive: true })
+                .select('title')
+                .sort({ updatedAt: -1 })
+                .limit(10)
+                .lean()
+        ]);
 
-        const suggestion = await generateStoreSeoSuggestion({ shop, theme, products });
+        const suggestion = await generateStoreSeoSuggestion({
+            shop,
+            theme,
+            products,
+            collections,
+            requestPreferences: {
+                language: req.body?.language,
+                spellingPreference: req.body?.spellingPreference,
+                tone: req.body?.tone
+            }
+        });
+        await logAudit({
+            req,
+            shop_id: req.tenantId,
+            action: 'store_builder.seo_ai_suggested',
+            entityType: 'ShopTheme',
+            entityId: req.tenantId,
+            entityLabel: shop.shopName,
+            metadata: {
+                alternativeCount: suggestion.alternatives?.length || 0,
+                generatedFromHash: suggestion.generatedFromHash || '',
+                fallback: Boolean(suggestion.fallback)
+            }
+        });
         res.status(200).json({ success: true, data: suggestion });
     } catch (err) {
         const isMissingConfig = err?.code === 'AI_NOT_CONFIGURED';
         if (!isMissingConfig) {
             console.error('Store SEO AI suggestion error:', err.message);
         }
-        res.status(isMissingConfig ? 503 : 500).json({
+        res.status(isMissingConfig ? 503 : 502).json({
             success: false,
+            code: isMissingConfig ? 'SEO_AI_CONTEXT_UNAVAILABLE' : (err.code || 'AI_PROVIDER_FAILED'),
             error: isMissingConfig
                 ? 'AI SEO suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
-                : 'Failed to generate SEO suggestions.'
+                : 'AI SEO suggestions could not be generated right now. Please try again later.'
         });
+    }
+};
+
+exports.getStoreBuilderSeoBootstrap = async (req, res) => {
+    try {
+        const data = await getStoreBuilderSeoBootstrap({ shopId: req.tenantId });
+        if (!data) return res.status(404).json({ success: false, error: 'Shop not found' });
+        return res.status(200).json({ success: true, data });
+    } catch (err) {
+        console.error('Get Store Builder SEO bootstrap error:', err.message);
+        return res.status(500).json({ success: false, error: 'Failed to load Homepage SEO settings' });
+    }
+};
+
+exports.saveStoreBuilderSeoDraft = async (req, res) => {
+    try {
+        const data = await saveStoreBuilderSeoDraft({
+            shopId: req.tenantId,
+            req,
+            seo: req.body?.seo,
+            searchAliases: req.body?.searchAliases,
+            basedOnRevision: req.body?.basedOnRevision
+        });
+        if (!data) return res.status(404).json({ success: false, error: 'Shop not found' });
+        return res.status(200).json({ success: true, message: 'SEO draft saved', data });
+    } catch (err) {
+        return sendStoreBuilderError(res, err, 'Failed to save Homepage SEO draft');
+    }
+};
+
+exports.deleteStoreBuilderSeoDraft = async (req, res) => {
+    try {
+        const data = await deleteStoreBuilderSeoDraft({ shopId: req.tenantId, req });
+        if (!data) return res.status(404).json({ success: false, error: 'Shop not found' });
+        return res.status(200).json({
+            success: true,
+            message: data.rebased ? 'SEO draft discarded; other Store Builder draft changes were kept.' : 'SEO draft discarded',
+            data
+        });
+    } catch (err) {
+        return sendStoreBuilderError(res, err, 'Failed to discard Homepage SEO draft');
+    }
+};
+
+exports.publishStoreBuilderSeo = async (req, res) => {
+    try {
+        const data = await publishStoreBuilderSeo({
+            shopId: req.tenantId,
+            req,
+            seo: req.body?.seo,
+            searchAliases: req.body?.searchAliases,
+            expectedRevision: req.body?.expectedRevision
+        });
+        if (!data) return res.status(404).json({ success: false, error: 'Shop not found' });
+        const cacheWarning = await safelyInvalidateStoreBuilderSeoCache(req.tenantId, req);
+        if (cacheWarning) data.warnings = [...new Set([...(data.warnings || []), cacheWarning])];
+        return res.status(200).json({ success: true, message: 'Homepage SEO published', data });
+    } catch (err) {
+        return sendStoreBuilderError(res, err, 'Failed to publish Homepage SEO');
     }
 };
 
@@ -405,7 +381,7 @@ exports.getStoreBuilderReviews = async (req, res) => {
     try {
         const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
         const rating = Math.min(Math.max(Number(req.query.rating) || 5, 1), 5);
-        const search = String(req.query.search || '').trim();
+        const search = escapeRegex(String(req.query.search || '').trim().slice(0, 80));
         const selectedIds = String(req.query.ids || '')
             .split(',')
             .map(id => id.trim())
@@ -502,30 +478,21 @@ exports.uploadStoreBuilderLogo = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Logo image is required' });
         }
 
-        const target = req.body?.target === 'checkout'
-            ? 'theme.checkoutBranding.logoUrl'
-            : req.body?.target === 'favicon'
-                ? 'theme.faviconUrl'
-                : 'theme.logoUrl';
-        const shop = await Shop.findByIdAndUpdate(
-            req.tenantId,
-            { $set: { [target]: req.file.path } },
-            { new: true, runValidators: true }
-        ).select('shopName subdomain theme customDomain plan featureFlags storewideDiscount');
-
-        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
-
-        await Promise.all([
-            cache.del(`storefront:settings:${req.tenantId}`),
-            cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
-        ]);
+        const target = ['checkout', 'favicon'].includes(req.body?.target) ? req.body.target : 'storefront';
+        const asset = await registerTemporaryAsset({ req, file: req.file, target });
 
         res.status(200).json({
             success: true,
             message: req.body?.target === 'favicon' ? 'Browser icon uploaded' : 'Logo uploaded',
             data: {
                 url: req.file.path,
-                shop
+                assetId: asset._id,
+                status: asset.status,
+                expiresAt: asset.expiresAt,
+                width: asset.width || 0,
+                height: asset.height || 0,
+                mimeType: asset.mimeType || '',
+                format: asset.format || ''
             }
         });
     } catch (err) {
@@ -540,16 +507,145 @@ exports.uploadStoreBuilderImage = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Image is required' });
         }
 
+        const asset = await registerTemporaryAsset({
+            req,
+            file: req.file,
+            target: req.body?.target || 'theme'
+        });
+
         res.status(200).json({
             success: true,
             message: 'Image uploaded',
             data: {
-                url: req.file.path
+                url: req.file.path,
+                assetId: asset._id,
+                status: asset.status,
+                expiresAt: asset.expiresAt,
+                width: asset.width || 0,
+                height: asset.height || 0,
+                mimeType: asset.mimeType || '',
+                format: asset.format || ''
             }
         });
     } catch (err) {
         console.error('Upload store builder image error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to upload image' });
+    }
+};
+
+exports.getStoreBuilderDraft = async (req, res) => {
+    try {
+        const [draft, shop] = await Promise.all([
+            StoreBuilderDraft.findOne({ shop_id: req.tenantId }).select('-__v').lean(),
+            Shop.findById(req.tenantId).select('themeRevision').lean()
+        ]);
+        res.status(200).json({
+            success: true,
+            data: draft ? { ...draft, stale: Number(draft.basedOnRevision || 0) !== Number(shop?.themeRevision || 0) } : null
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load Store Builder draft' });
+    }
+};
+
+exports.saveStoreBuilderDraft = async (req, res) => {
+    try {
+        const draft = await saveStoreBuilderDraft({
+            shopId: req.tenantId,
+            req,
+            theme: req.body?.theme || {},
+            searchAliases: req.body?.searchAliases,
+            customDomain: req.body?.customDomain || {},
+            storewideDiscount: req.body?.storewideDiscount,
+            basedOnRevision: req.body?.basedOnRevision
+        });
+        if (!draft) return res.status(404).json({ success: false, error: 'Shop not found' });
+        res.status(200).json({ success: true, message: 'Draft saved', data: draft });
+    } catch (err) {
+        const message = err.message || 'Failed to save Store Builder draft';
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'INVALID_THEME',
+            message,
+            error: message,
+            ...(err.validation && { validation: err.validation })
+        });
+    }
+};
+
+exports.deleteStoreBuilderDraft = async (req, res) => {
+    try {
+        await StoreBuilderDraft.deleteOne({ shop_id: req.tenantId });
+        res.status(200).json({ success: true, message: 'Draft discarded' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to discard Store Builder draft' });
+    }
+};
+
+exports.getStoreBuilderRevisions = async (req, res) => {
+    try {
+        const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 10, 1), 20);
+        const [data, total] = await Promise.all([
+            StoreBuilderRevision.find({ shop_id: req.tenantId })
+                .select('revision publishedByName source changeScope restoredFromRevision changeSummary createdAt')
+                .sort({ revision: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+            StoreBuilderRevision.countDocuments({ shop_id: req.tenantId })
+        ]);
+        res.status(200).json({
+            success: true,
+            data,
+            pagination: { page, limit, totalItems: total, totalPages: Math.ceil(total / limit) || 1, hasNextPage: page * limit < total, hasPrevPage: page > 1 }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load Store Builder revisions' });
+    }
+};
+
+exports.getStoreBuilderRevision = async (req, res) => {
+    try {
+        const revision = await StoreBuilderRevision.findOne({ _id: req.params.id, shop_id: req.tenantId }).select('-__v').lean();
+        if (!revision) return res.status(404).json({ success: false, error: 'Store Builder revision not found' });
+        res.status(200).json({ success: true, data: revision });
+    } catch (err) {
+        res.status(400).json({ success: false, error: 'Invalid Store Builder revision' });
+    }
+};
+
+exports.restoreStoreBuilderRevision = async (req, res) => {
+    try {
+        const restored = await restoreStoreBuilderRevision({
+            shopId: req.tenantId,
+            revisionId: req.params.id,
+            expectedRevision: req.body?.expectedRevision,
+            req
+        });
+        if (!restored) return res.status(404).json({ success: false, error: 'Store Builder revision not found' });
+        await Promise.all([
+            cache.del(`storefront:settings:${req.tenantId}`),
+            cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
+        ]);
+        res.status(200).json({ success: true, message: 'Revision restored as a new published revision', data: restored });
+    } catch (err) {
+        const message = err.message || 'Failed to restore Store Builder revision';
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code,
+            message,
+            error: message,
+            ...(err.latestRevision !== undefined && { latestRevision: err.latestRevision }),
+            ...(err.lastPublishedAt !== undefined && { lastPublishedAt: err.lastPublishedAt })
+        });
+    }
+};
+
+exports.deleteStoreBuilderAsset = async (req, res) => {
+    try {
+        await deleteTemporaryAsset({ shopId: req.tenantId, assetId: req.params.id });
+        res.status(200).json({ success: true, message: 'Temporary asset deleted' });
+    } catch (err) {
+        const message = err.message || 'Failed to delete asset';
+        res.status(err.statusCode || 400).json({ success: false, code: err.code, message, error: message });
     }
 };
 

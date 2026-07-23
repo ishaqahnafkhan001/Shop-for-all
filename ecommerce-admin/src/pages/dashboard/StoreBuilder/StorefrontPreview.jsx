@@ -7,9 +7,9 @@ import {
     ReferenceStorefrontHeader,
     ReferenceStorefrontHome,
     getReferenceThemeStyle
-} from '../../../../../ecommerce-storefront/src/components/storefront/ReferenceStorefront.jsx';
-import { FALLBACK_THEME, normalizeTheme } from '../../../../../ecommerce-storefront/src/lib/theme.js';
-import { getPolicyContent } from '../../../../../ecommerce-storefront/src/lib/defaultPolicies.js';
+} from '@scaleup/storefront-renderer';
+import { FALLBACK_THEME, normalizeTheme } from '@scaleup/storefront-theme';
+import { getDefaultPolicyText } from '../../../utils/storeBuilderPolicies.js';
 
 const deviceClasses = {
     desktop: 'w-[1180px] max-w-none',
@@ -41,7 +41,7 @@ const PreviewSectionToolbar = ({
     onToggleSectionVisibility,
     onRemoveSection
 }) => {
-    const isDynamicSection = id?.startsWith('section-') && Number.isFinite(sectionIndex);
+    const isDynamicSection = (id?.startsWith('section:') || id?.startsWith('section-')) && Number.isInteger(sectionIndex) && sectionIndex >= 0;
     const isVisible = section?.isEnabled !== false;
     const stop = (event) => {
         event.preventDefault();
@@ -323,7 +323,7 @@ const PolicyPreviewPage = ({ theme, shopName }) => {
     ];
     const activePolicy = policyItems.find(([key]) => policies[key]?.trim()) || policyItems[0];
     const [key, label] = activePolicy;
-    const content = getPolicyContent(policies, key, { storeName: shopName || 'this store' });
+    const content = policies[key]?.trim() || getDefaultPolicyText(key, { storeName: shopName || 'this store' });
 
     return (
         <div className="bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -414,8 +414,10 @@ export const StorefrontPreview = ({
             selectedId: activeElement,
             onSelect: onSelectElement,
             renderToolbar: (id, meta = {}) => {
-                const sectionIndex = id?.startsWith('section-') ? Number(id.replace('section-', '')) : null;
-                const section = Number.isFinite(sectionIndex) ? sections[sectionIndex] : null;
+                const sectionIndex = id?.startsWith('section:')
+                    ? sections.findIndex(section => String(section?.id || section?._id) === id.slice('section:'.length))
+                    : (id?.startsWith('section-') ? Number(id.replace('section-', '')) : -1);
+                const section = sectionIndex >= 0 ? sections[sectionIndex] : null;
 
                 return (
                     <PreviewSectionToolbar
@@ -464,7 +466,7 @@ export const StorefrontPreview = ({
                 categories={categories.length ? categories : REFERENCE_SAMPLE_CATEGORIES}
                 sectionProducts={previewSectionProducts}
                 sectionReviews={previewSectionReviews}
-                pagination={{ page: 1, pages: 10 }}
+                pagination={{ page: 1, pages: 1 }}
                 filters={{ category: 'All', sort: 'newest', page: 1 }}
                 priceInput={{ min: '', max: '' }}
                 catalogSearch=""
@@ -478,6 +480,10 @@ export const StorefrontPreview = ({
 
     return (
         <div className="isolate overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
+            <div className="mx-auto mb-3 flex max-w-[1180px] items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">
+                <span>Interactive preview</span>
+                <span>{availableProducts.length ? 'Uses your published catalog data' : 'Sample layout content only'}</span>
+            </div>
             <div className={`mx-auto transition-all duration-300 ${deviceClasses[device]}`}>
                 <div className={`${isMobilePreview ? 'max-h-[760px] overflow-y-auto' : 'overflow-hidden'} ${frameClass}`}>
                     {device === 'desktop' ? (

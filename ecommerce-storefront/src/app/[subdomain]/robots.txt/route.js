@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
     const host = request.headers.get("host") || "";
 
     try {
-        const shop = await fetchStorefrontInfo(subdomain, { storefrontHost: host });
+        const shop = await fetchStorefrontInfo(subdomain, { storefrontHost: host, fresh: true });
         const baseUrl = getShopBaseUrl({ host, subdomain, shop });
         const body = [
             "User-agent: *",
@@ -35,7 +35,7 @@ export async function GET(request, { params }) {
         return new Response(body, {
             headers: {
                 "content-type": "text/plain; charset=utf-8",
-                "cache-control": "public, s-maxage=300, stale-while-revalidate=3600"
+                "cache-control": "no-cache, max-age=0, must-revalidate"
             }
         });
     } catch {

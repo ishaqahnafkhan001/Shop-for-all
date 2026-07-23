@@ -53,6 +53,8 @@ Use a separate MongoDB database for integration tests. Never run tests against p
 
 The launch-safety suite exercises real Express routes against a real MongoDB test database. It covers tenant isolation, checkout/order tampering, Store Builder sanitization, RBAC, CSRF, and public API privacy.
 
+Store Builder coverage includes the shared theme contract, all registered section types, pure bootstrap reads, complete selected-content hydration, optimistic concurrency, persisted draft/live isolation, revision restore, and tenant-owned media promotion/cleanup. See `docs/store-builder-architecture.md` for the data flow and operational model.
+
 Run from `ecommerce-backend/backend`:
 
 ```bash

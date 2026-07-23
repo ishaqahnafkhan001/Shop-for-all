@@ -1,13 +1,19 @@
 export function StoreBuilderEditorPanel({
     mobileWorkspace,
+    inspectorOpen,
     selectedLabel,
     selectedIsLockedLayout,
     planRestriction,
     setMobileWorkspace,
+    onCloseInspector,
     children
 }) {
     return (
-        <div className={`${mobileWorkspace === 'edit' ? 'block' : 'hidden'} order-2 space-y-4 xl:block 2xl:order-1`}>
+        <aside
+            data-store-builder-editor
+            aria-label="Storefront settings inspector"
+            className={`${mobileWorkspace === 'edit' ? 'block' : 'hidden'} min-w-0 space-y-4 xl:fixed xl:inset-y-0 xl:right-0 xl:z-40 xl:w-[380px] xl:overflow-y-auto xl:border-l xl:border-slate-200 xl:bg-slate-50 xl:p-4 xl:shadow-2xl ${inspectorOpen ? 'xl:block' : 'xl:hidden'} 2xl:static 2xl:z-auto 2xl:block 2xl:w-auto 2xl:overflow-visible 2xl:border-0 2xl:bg-transparent 2xl:p-0 2xl:shadow-none`}
+        >
             <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -21,6 +27,13 @@ export function StoreBuilderEditorPanel({
                     >
                         Preview selected
                     </button>
+                    <button
+                        type="button"
+                        onClick={onCloseInspector}
+                        className="hidden rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-100 xl:block 2xl:hidden"
+                    >
+                        Close settings
+                    </button>
                 </div>
                 <p className="mt-1 text-sm leading-5 text-indigo-700">
                     {planRestriction
@@ -31,6 +44,6 @@ export function StoreBuilderEditorPanel({
                 </p>
             </div>
             {children}
-        </div>
+        </aside>
     );
 }

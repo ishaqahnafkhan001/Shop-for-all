@@ -6,13 +6,14 @@ import {
 
 export function useStoreBuilderDirtyState({
     theme,
+    searchAliases,
     customDomain,
     storewideDiscount,
     initialSnapshot
 }) {
     const currentSnapshot = useMemo(
-        () => stableStringify({ theme, customDomain, storewideDiscount: Number(storewideDiscount) || 0 }),
-        [theme, customDomain, storewideDiscount]
+        () => stableStringify({ theme, searchAliases, customDomain, storewideDiscount: Number(storewideDiscount) || 0 }),
+        [theme, searchAliases, customDomain, storewideDiscount]
     );
 
     const hasUnsavedChanges = Boolean(initialSnapshot) && initialSnapshot !== currentSnapshot;

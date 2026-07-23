@@ -28,12 +28,14 @@ const { processSupportJob } = require('../services/support/supportNotificationSe
 const logger = require('../services/logger');
 const { cleanupExpiredActivityLogs } = require('../services/billing/activityLogRetentionService');
 const { initializeSubscriptionEventHandlers } = require('../services/billing/subscriptionEventHandlers');
+const { cleanupExpiredStoreBuilderAssets } = require('../services/storeBuilder/storeBuilderAssetService');
 
 initializeSubscriptionEventHandlers();
 
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 3000);
 let shuttingDown = false;
 let nextActivityCleanupAt = 0;
+let nextStoreBuilderAssetCleanupAt = 0;
 
 const handlers = {
     notifications: processShopEventJob,
@@ -91,6 +93,11 @@ const run = async () => {
                 const cleanup = await cleanupExpiredActivityLogs({ batchSize: 500 });
                 nextActivityCleanupAt = Date.now() + (6 * 60 * 60 * 1000);
                 logger.info('activity_log_retention_processed', cleanup);
+            }
+            if (Date.now() >= nextStoreBuilderAssetCleanupAt) {
+                const cleanup = await cleanupExpiredStoreBuilderAssets({ limit: 100 });
+                nextStoreBuilderAssetCleanupAt = Date.now() + (60 * 60 * 1000);
+                logger.info('store_builder_asset_cleanup_processed', cleanup);
             }
             await sleep(POLL_INTERVAL_MS);
         }

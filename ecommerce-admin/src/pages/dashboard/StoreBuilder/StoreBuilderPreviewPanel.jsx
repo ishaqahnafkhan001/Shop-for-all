@@ -21,7 +21,7 @@ export function StoreBuilderPreviewPanel({
     removeHomepageSection
 }) {
     return (
-        <section className={`${mobileWorkspace === 'preview' ? 'block' : 'hidden'} order-1 rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:block 2xl:order-2`}>
+        <section className={`${mobileWorkspace === 'preview' ? 'block' : 'hidden'} min-w-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:block`}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 className="text-base font-bold text-slate-950">Live preview</h2>

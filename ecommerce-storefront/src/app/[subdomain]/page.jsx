@@ -4,12 +4,10 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
     buildHomepageJsonLd,
-    buildStorefrontMetadata,
+    buildNextHomepageMetadata,
     getHomepageCanonicalUrl,
-    getHomepageSeoDescription,
-    getOgImage,
-    isShopSearchVisible,
-    noindexMetadata
+    noindexMetadata,
+    resolveStorefrontHomepageSeo
 } from '@/lib/seo';
 
 const stringifyJsonLd = (jsonLd) => JSON.stringify(jsonLd).replace(/</g, '\\u003c');
@@ -22,6 +20,7 @@ const getInitialStorefrontData = async (subdomain, host = '') => {
             sort: 'newest',
         }, {
             storefrontHost: host,
+            fresh: true,
         });
     } catch (error) {
         if ([404, 423].includes(error.status)) {
@@ -48,21 +47,21 @@ export async function generateMetadata({ params }) {
             sort: 'newest',
         }, {
             storefrontHost: host,
+            fresh: true,
         });
         const shop = initialData?.shop;
         if (!shop) return noindexMetadata('Store unavailable', 'This storefront is currently unavailable.');
 
-        const url = getHomepageCanonicalUrl({ host, subdomain, shop });
-        return buildStorefrontMetadata({
+        const resolvedSeo = resolveStorefrontHomepageSeo({
             shop,
-            pageTitle: 'Home',
-            description: getHomepageSeoDescription(shop),
-            url,
-            image: getOgImage(null, shop),
-            type: 'website',
-            isIndexable: isShopSearchVisible(shop),
-            googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''
+            host,
+            subdomain,
+            catalogSummary: {
+                categories: initialData?.categories || [],
+                collections: initialData?.collections || []
+            }
         });
+        return buildNextHomepageMetadata(resolvedSeo, shop);
     } catch (error) {
         return noindexMetadata('Store unavailable', error.body?.error || error.message || 'This storefront is currently unavailable.');
     }
@@ -81,7 +80,15 @@ export default async function VendorHomePage({ params, searchParams }) {
     const initialData = await getInitialStorefrontData(subdomain, host);
     const shop = initialData?.shop;
     const homepageUrl = shop ? getHomepageCanonicalUrl({ host, subdomain, shop }) : '';
-    const homepageJsonLd = shop ? buildHomepageJsonLd({ shop, url: homepageUrl }) : [];
+    const homepageJsonLd = shop ? buildHomepageJsonLd({
+        shop,
+        url: homepageUrl,
+        subdomain,
+        catalogSummary: {
+            categories: initialData?.categories || [],
+            collections: initialData?.collections || []
+        }
+    }) : [];
 
     return (
         <>

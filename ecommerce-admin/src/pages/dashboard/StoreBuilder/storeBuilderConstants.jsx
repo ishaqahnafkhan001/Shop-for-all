@@ -9,6 +9,7 @@ import {
     ShoppingBag,
     Smartphone
 } from 'lucide-react';
+import { SECTION_REGISTRY } from '@scaleup/storefront-theme';
 
 export const HISTORY_LIMIT = 30;
 export const HERO_SLIDE_LIMIT = 5;
@@ -51,7 +52,7 @@ export const inlineSectionPresets = [
     {
         templateId: 'image-text',
         label: 'Image + Text',
-        type: 'TextBlock',
+        type: 'BrandStory',
         title: 'Brand highlight',
         description: 'Pair a story, benefit, or offer with rich copy.',
         useCase: 'Best for explaining quality, materials, or brand values.',
@@ -73,7 +74,7 @@ export const inlineSectionPresets = [
     {
         templateId: 'promo-strip',
         label: 'Promo Strip',
-        type: 'TextBlock',
+        type: 'PromoBlock',
         title: 'Today’s offer',
         description: 'Compact announcement for a quick promotion.',
         useCase: 'Best for free shipping, COD, or flash deals.',
@@ -84,7 +85,7 @@ export const inlineSectionPresets = [
     {
         templateId: 'faq',
         label: 'FAQ',
-        type: 'TextBlock',
+        type: 'FAQ',
         title: 'Common questions',
         description: 'Answer buying questions before checkout.',
         useCase: 'Best for delivery, returns, sizing, and payment details.',
@@ -106,7 +107,7 @@ export const inlineSectionPresets = [
     {
         templateId: 'brand-story',
         label: 'Brand Story',
-        type: 'TextBlock',
+        type: 'BrandStory',
         title: 'Our story',
         description: 'Create a short credibility-building brand block.',
         useCase: 'Best for premium, local, or handmade stores.',
@@ -117,7 +118,7 @@ export const inlineSectionPresets = [
     {
         templateId: 'trust-badges',
         label: 'Trust Badges',
-        type: 'TextBlock',
+        type: 'TrustBadges',
         title: 'Why shop with us',
         description: 'Highlight secure payment, fast delivery, and support.',
         useCase: 'Best before All Products or checkout-focused content.',
@@ -138,6 +139,10 @@ export const inlineSectionPresets = [
     }
 ];
 
+export const editorSectionOptions = Object.entries(SECTION_REGISTRY)
+    .filter(([, definition]) => definition.editorEnabled !== false)
+    .map(([value, definition]) => ({ value, label: definition.label }));
+
 export const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';
 
 export const settingsGroups = [
@@ -145,14 +150,9 @@ export const settingsGroups = [
     { id: 'colors', label: 'Colors', icon: Palette, description: 'Brand colors and page surfaces' },
     { id: 'typography', label: 'Typography', icon: LayoutTemplate, description: 'Fonts and heading weight' },
     { id: 'layout', label: 'Layout', icon: LayoutTemplate, description: 'Width, spacing, and product grid' },
-    { id: 'navigation', label: 'Header and navigation', icon: LinkIcon, description: 'Top menu links' },
-    { id: 'hero', label: 'Hero', icon: LayoutTemplate, description: 'Homepage opening banner' },
-    { id: 'seo', label: 'SEO and sharing', icon: Search, description: 'Homepage search preview' },
     { id: 'products', label: 'Product cards', icon: ShoppingBag, description: 'Product grid appearance' },
-    { id: 'sections', label: 'Homepage sections', icon: LayoutTemplate, description: 'Order and visibility' },
     { id: 'checkout', label: 'Checkout', icon: CreditCard, description: 'Checkout trust and branding' },
     { id: 'mobile', label: 'Mobile', icon: Smartphone, description: 'Small-screen controls' },
-    { id: 'footer', label: 'Footer', icon: FileText, description: 'Footer text and links' },
     { id: 'policies', label: 'Policies', icon: FileText, description: 'Refund, shipping, privacy, terms' },
     { id: 'domain', label: 'Domain', icon: Globe, description: 'Custom domain status' }
 ];
@@ -173,7 +173,6 @@ export const structureTree = [
         group: 'sections',
         children: [
             { id: 'hero', label: 'Hero / Banner', group: 'hero' },
-            { id: 'homepageSeo', label: 'Homepage SEO', group: 'seo' },
             { id: 'sections', label: 'Dynamic sections', group: 'sections' },
             { id: 'allProducts', label: 'All products', group: 'products' }
         ]
@@ -322,6 +321,22 @@ export const storeLayoutItems = [
     }
 ];
 
+export const builderSectionItems = storeLayoutItems.filter(item => (
+    ['navbar', 'hero', 'sections', 'allProducts', 'footer'].includes(item.id)
+));
+
+export const themeSettingItems = settingsGroups.map(item => ({
+    id: item.id,
+    label: item.label,
+    description: item.description,
+    target: groupElementMap[item.id] || item.id,
+    group: item.id,
+    icon: item.icon,
+    relatedTargets: [groupElementMap[item.id] || item.id]
+}));
+
+export const seoStatusItem = storeLayoutItems.find(item => item.id === 'seo');
+
 export const fixedPreviewElements = new Set(['header', 'hero', 'allProducts', 'footer']);
 export const isHomepageSectionLocked = (section) => Boolean(section?.settings?.isLocked);
 
@@ -346,11 +361,29 @@ export const editorComponentRegistry = {
     heroButton: { label: 'Hero / Banner', group: 'hero' }
 };
 
+export const getSectionSelectionId = (section, fallbackIndex = null) => {
+    const id = section?.id || section?._id;
+    return id ? `section:${id}` : `section-${fallbackIndex ?? 0}`;
+};
+
+export const getSectionIndexFromSelection = (target, theme = {}) => {
+    if (!target) return -1;
+    if (target.startsWith('section:')) {
+        const id = target.slice('section:'.length);
+        return (theme.homepageSections || []).findIndex(section => String(section?.id || section?._id) === id);
+    }
+    if (target.startsWith('section-')) {
+        const index = Number(target.replace('section-', ''));
+        return Number.isFinite(index) ? index : -1;
+    }
+    return -1;
+};
+
 export const resolveEditorComponent = (target, theme = {}) => {
     if (!target) return null;
 
-    if (target.startsWith('section-')) {
-        const sectionIndex = Number(target.replace('section-', ''));
+    if (target.startsWith('section-') || target.startsWith('section:')) {
+        const sectionIndex = getSectionIndexFromSelection(target, theme);
         const section = theme.homepageSections?.[sectionIndex];
         return {
             id: target,

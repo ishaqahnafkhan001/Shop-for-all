@@ -1,0 +1,14 @@
+{
+  "name": "@scaleup/storefront-theme",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "./index.cjs",
+  "module": "./index.mjs",
+  "exports": {
+    ".": {
+      "require": "./index.cjs",
+      "import": "./index.mjs"
+    }
+  }
+}

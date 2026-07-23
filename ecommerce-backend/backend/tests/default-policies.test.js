@@ -56,11 +56,11 @@ test('new shop registration seeds editable default policies', () => {
 });
 
 test('store builder and public storefront responses apply missing policy defaults without changing shape', () => {
-    const storeBuilderController = read('controllers/storeBuilderController.js');
+    const storeBuilderService = read('services/storeBuilder/storeBuilderService.js');
     const storeController = read('controllers/storeController.js');
 
-    assert.match(storeBuilderController, /fillMissingPolicyDefaults/);
-    assert.match(storeBuilderController, /'theme\.policies':\s*policyDefaults\.policies/);
+    assert.match(storeBuilderService, /fillMissingPolicyDefaults/);
+    assert.match(storeBuilderService, /policies:\s*policyDefaults\.policies/);
     assert.match(storeController, /applyDefaultPoliciesToShopPayload/);
     assert.match(storeController, /fillMissingPolicyDefaults\(shop\.theme\?\.policies/);
 });
@@ -82,13 +82,14 @@ test('storefront policy pages use default fallback content and reject invalid po
     const policyClient = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/[type]/PolicyPageClient.jsx');
     const defaultPolicies = readRepo('ecommerce-storefront/src/lib/defaultPolicies.js');
     const theme = readRepo('ecommerce-storefront/src/lib/theme.js');
+    const themeContract = readRepo('packages/storefront-theme/index.cjs');
 
     assert.match(defaultPolicies, /DEFAULT_POLICY_TEMPLATES/);
     assert.match(defaultPolicies, /getPolicyContent/);
     assert.match(theme, /mergePolicies/);
-    assert.match(theme, /ensurePolicyNavigationLink/);
-    assert.match(theme, /label:\s*'Policies'/);
-    assert.match(theme, /url:\s*'\/policies'/);
+    assert.match(themeContract, /ensurePolicyNavigationLink/);
+    assert.match(themeContract, /label:\s*'Policies'/);
+    assert.match(themeContract, /url:\s*'\/policies'/);
     assert.match(policyIndexPage, /export async function generateMetadata/);
     assert.match(policyIndexPage, /POLICY_TYPES\.map/);
     assert.match(policyIndexPage, /href=\{`\/policies\/\$\{type\}`\}/);

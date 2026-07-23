@@ -51,8 +51,8 @@ export const BuilderSelect = ({ label, help, error, children, ...props }) => (
     </FieldShell>
 );
 
-export const BuilderToggle = ({ label, help, checked, onChange, disabled = false }) => (
-    <label className={`flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3 ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}>
+export const BuilderToggle = ({ id, label, help, checked, onChange, disabled = false }) => (
+    <label id={id} tabIndex={-1} className={`flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3 outline-none focus:ring-2 focus:ring-indigo-500 ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}>
         <span>
             <span className="block text-sm font-semibold text-slate-800">{label}</span>
             {help && <span className="mt-1 block text-xs leading-5 text-slate-500">{help}</span>}

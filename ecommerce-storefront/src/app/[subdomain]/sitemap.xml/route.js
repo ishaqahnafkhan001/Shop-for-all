@@ -39,9 +39,9 @@ export async function GET(request, { params }) {
 
     try {
         const [shop, productsResponse, collections] = await Promise.all([
-            fetchStorefrontInfo(subdomain, { storefrontHost: host }),
-            fetchStorefrontProducts(subdomain, { page: 1, limit: 2500, sort: "newest" }, { storefrontHost: host }),
-            fetchStorefrontCollections(subdomain, { storefrontHost: host })
+            fetchStorefrontInfo(subdomain, { storefrontHost: host, fresh: true }),
+            fetchStorefrontProducts(subdomain, { page: 1, limit: 2500, sort: "newest" }, { storefrontHost: host, fresh: true }),
+            fetchStorefrontCollections(subdomain, { storefrontHost: host, fresh: true })
         ]);
 
         const products = productsResponse.products || productsResponse.data || [];
@@ -49,7 +49,7 @@ export async function GET(request, { params }) {
             return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`, {
                 headers: {
                     "content-type": "application/xml; charset=utf-8",
-                    "cache-control": "public, s-maxage=300, stale-while-revalidate=3600"
+                    "cache-control": "no-cache, max-age=0, must-revalidate"
                 }
             });
         }
@@ -95,7 +95,7 @@ export async function GET(request, { params }) {
         return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`, {
             headers: {
                 "content-type": "application/xml; charset=utf-8",
-                "cache-control": "public, s-maxage=300, stale-while-revalidate=3600"
+                "cache-control": "no-cache, max-age=0, must-revalidate"
             }
         });
     } catch {

@@ -4,7 +4,9 @@ const router = express.Router();
 const { getPublicShopDetails, getPublicProduct,createPublicOrder,getMyOrders,trackPublicOrder } = require('../controllers/publicController');
 const { protect } = require('../middlewares/auth'); // Import your auth middleware
 const { getPublicPlans } = require('../controllers/publicPlanController');
+const { searchStores } = require('../controllers/publicStoreSearchController');
 router.get('/plans', getPublicPlans);
+router.get('/stores/search', searchStores);
 router.get('/shop/:subdomain', getPublicShopDetails);
 
 // ✨ Add the new route

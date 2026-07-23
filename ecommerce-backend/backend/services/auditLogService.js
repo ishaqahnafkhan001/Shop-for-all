@@ -19,12 +19,14 @@ const logAudit = async ({
                             severity = 'info',
                             before = null,
                             after = null,
-                            metadata = {}
+                            metadata = {},
+                            session = null,
+                            strict = false
                         }) => {
     try {
         if (!shop_id || !action || !entityType) return null;
 
-        return await AuditLog.create({
+        const record = new AuditLog({
             shop_id,
             actor: buildActor(req),
             action,
@@ -38,7 +40,9 @@ const logAudit = async ({
             after,
             metadata
         });
+        return await record.save(session ? { session } : undefined);
     } catch (err) {
+        if (strict) throw err;
         console.error('[AuditLog] Failed to write audit log:', err.message);
         return null;
     }

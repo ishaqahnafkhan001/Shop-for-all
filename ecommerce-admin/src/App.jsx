@@ -21,6 +21,7 @@ const ShippingSettings = lazy(() => import('./pages/dashboard/ShippingSettings/S
 const EditProduct = lazy(() => import('./pages/dashboard/products/EditProduct'));
 const CustomerList = lazy(() => import("./pages/dashboard/customers/CustomerList.jsx"));
 const StoreBuilder = lazy(() => import('./pages/dashboard/StoreBuilder.jsx'));
+const HomepageSeo = lazy(() => import('./pages/dashboard/Seo/HomepageSeoPage.jsx'));
 const Promotions = lazy(() => import('./pages/dashboard/Promotions.jsx'));
 const PromotionalBanner = lazy(() => import('./pages/dashboard/Promotional Banner/promotionalBanner.jsx'));
 const CatalogTools = lazy(() => import('./pages/dashboard/CatalogTools.jsx'));
@@ -136,6 +137,7 @@ function App() {
                         <Route path="growth" element={withSuspense(withPermission('growthCenter', withFeature('growthCenter', <GrowthCenter />)))} />
                         <Route path="analytics" element={withSuspense(withPermission('analytics', withFeature('analytics', <AdvancedAnalytics />)))} />
                         <Route path="store-builder" element={withSuspense(withPermission('storeBuilder', withFeature('storeBuilder', <StoreBuilder />)))} />
+                        <Route path="seo" element={withSuspense(withPermission('storeBuilder', withFeature('storeBuilder', <HomepageSeo />)))} />
                         <Route path="shipping" element={withSuspense(withPermission('shipping', <ShippingSettings />))} />
                         <Route path="settings" element={withSuspense(withPermission('settings', <ShopSettings />))} />
                         <Route path="activity-logs" element={withSuspense(withPermission('activityLogs', <ActivityLogs />))} />

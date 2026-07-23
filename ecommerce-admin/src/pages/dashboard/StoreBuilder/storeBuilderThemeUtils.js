@@ -1,7 +1,7 @@
 import {
     FALLBACK_THEME,
     normalizeTheme
-} from '../../../../../ecommerce-storefront/src/lib/theme.js';
+} from '@scaleup/storefront-theme';
 import { HERO_SLIDE_LIMIT } from './storeBuilderConstants.jsx';
 
 export const normalizeBuilderNavigation = (navigation = []) => navigation.map((item, index) => ({
@@ -30,6 +30,11 @@ export const normalizeBuilderTheme = (theme = {}) => {
 
 export const defaultTheme = normalizeBuilderTheme(FALLBACK_THEME);
 
+export const createBuilderSectionId = (type = 'section') => {
+    const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return `${String(type || 'section').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${token}`.slice(0, 80);
+};
+
 export const normalizeHomepageSections = (sections = []) => sections
     .filter(section => {
         if (!section || section.type === 'Hero') return false;
@@ -46,7 +51,7 @@ export const normalizeHomepageSections = (sections = []) => sections
 
         return {
             ...section,
-            id: section.id || section._id || `${type || 'section'}-${index}-${Date.now()}`,
+            id: section.id || section._id || `${type || 'section'}-${index}`,
             type,
             sortOrder: Number.isFinite(Number(section.sortOrder)) ? Number(section.sortOrder) : index,
             settings: type === 'FeaturedProducts'
@@ -93,7 +98,15 @@ export const normalizeHeroSlideForBuilder = (slide = {}, index = 0, hero = {}) =
     primaryCtaText: slide.primaryCtaText || (index === 0 ? hero.ctaLabel : '') || 'Shop Now',
     primaryCtaLink: slide.primaryCtaLink || (index === 0 ? hero.ctaUrl : '') || '#products',
     secondaryCtaText: slide.secondaryCtaText ?? 'Explore Collection',
-    secondaryCtaLink: slide.secondaryCtaLink || '#products'
+    secondaryCtaLink: slide.secondaryCtaLink || '#products',
+    desktopFocalPoint: {
+        x: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.x) || 50)),
+        y: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.y) || 50))
+    },
+    mobileFocalPoint: {
+        x: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.x) || 50)),
+        y: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.y) || 50))
+    }
 });
 
 export const getBuilderHeroSlides = (hero = {}) => {

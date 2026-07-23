@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { normalizeSearchAliases, normalizeSearchText } = require('@scaleup/storefront-theme');
+const { SECTION_TYPES } = require('@scaleup/storefront-theme');
 
 const linkSchema = new mongoose.Schema({
     label: { type: String, trim: true, maxlength: 80 },
@@ -13,13 +15,14 @@ const homepageSectionSchema = new mongoose.Schema({
     id: { type: String, trim: true, maxlength: 80 },
     type: {
         type: String,
-        enum: ['Hero', 'FeaturedProducts', 'Collection', 'TextBlock', 'Newsletter', 'Reviews', 'BannerGrid', 'CategoryList', 'Banner', 'PromoBlock', 'BrandShowcase', 'CollectionShowcase'],
+        enum: ['Hero', 'BannerGrid', ...SECTION_TYPES],
         default: 'FeaturedProducts'
     },
     title: { type: String, trim: true, maxlength: 120 },
     isEnabled: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
     settings: { type: mongoose.Schema.Types.Mixed, default: {} },
+    desktopSettings: { type: mongoose.Schema.Types.Mixed, default: {} },
     mobileSettings: { type: mongoose.Schema.Types.Mixed, default: {} },
     source: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { _id: true });
@@ -36,7 +39,15 @@ const heroSlideSchema = new mongoose.Schema({
     primaryCtaText: { type: String, trim: true, maxlength: 80, default: 'Shop Now' },
     primaryCtaLink: { type: String, trim: true, maxlength: 300, default: '#products' },
     secondaryCtaText: { type: String, trim: true, maxlength: 80, default: 'Explore Collection' },
-    secondaryCtaLink: { type: String, trim: true, maxlength: 300, default: '#products' }
+    secondaryCtaLink: { type: String, trim: true, maxlength: 300, default: '#products' },
+    desktopFocalPoint: {
+        x: { type: Number, min: 0, max: 100, default: 50 },
+        y: { type: Number, min: 0, max: 100, default: 50 }
+    },
+    mobileFocalPoint: {
+        x: { type: Number, min: 0, max: 100, default: 50 },
+        y: { type: Number, min: 0, max: 100, default: 50 }
+    }
 }, { _id: false });
 
 const colorField = (defaultValue) => ({ type: String, trim: true, default: defaultValue });
@@ -164,6 +175,26 @@ const shopSchema = new mongoose.Schema({
         maxlength: 40,
         match: [/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/, 'Subdomain can only contain lowercase letters, numbers, and hyphens and must start and end with a letter or number']
     },
+    searchAliases: {
+        type: [String],
+        default: [],
+        validate: {
+            validator(value) {
+                const update = typeof this?.getUpdate === 'function' ? this.getUpdate() : null;
+                const officialName = this?.shopName || update?.$set?.shopName || update?.shopName;
+
+                // Query validators cannot read an unchanged sibling field. The
+                // findOneAndUpdate middleware below loads the official name and
+                // performs the complete relationship validation before writing.
+                if (!officialName && update) return true;
+
+                return normalizeSearchAliases({ aliases: value, officialName }).errors.length === 0;
+            },
+            message: 'Search aliases must be short, genuine spelling variants of the official store name.'
+        }
+    },
+    searchAliasesNormalized: { type: [String], default: [], select: false },
+    searchNameNormalized: { type: String, default: '', select: false },
     isActive: {
         type: Boolean,
         default: true
@@ -468,12 +499,28 @@ const shopSchema = new mongoose.Schema({
             }
         },
         seo: {
+            mode: { type: String, enum: ['auto', 'manual'], default: 'auto' },
+            siteName: { type: String, trim: true, maxlength: 80, default: '' },
             title: { type: String, trim: true, maxlength: 70, default: '' },
             description: { type: String, trim: true, maxlength: 170, default: '' },
+            keywords: { type: [String], default: [] },
+            topics: { type: [String], default: [] },
+            socialTitle: { type: String, trim: true, maxlength: 70, default: '' },
+            socialDescription: { type: String, trim: true, maxlength: 170, default: '' },
             socialImage: { type: String, trim: true, default: '' },
+            socialImageAssetId: { type: mongoose.Schema.Types.ObjectId, default: null },
+            socialImageAlt: { type: String, trim: true, maxlength: 160, default: '' },
+            socialImageWidth: { type: Number, default: null, min: 1 },
+            socialImageHeight: { type: Number, default: null, min: 1 },
+            socialImageMimeType: { type: String, trim: true, default: '' },
             facebookUrl: { type: String, trim: true, default: '' },
             searchEngineVisibility: { type: Boolean, default: true },
-            googleSiteVerification: { type: String, trim: true, maxlength: 200, default: '' }
+            googleSiteVerification: { type: String, trim: true, maxlength: 200, default: '' },
+            language: { type: String, enum: ['en', 'bn', 'en-BD', 'bn-BD'], default: 'en-BD' },
+            spellingPreference: { type: String, enum: ['british', 'american'], default: 'british' },
+            primaryCategory: { type: String, trim: true, maxlength: 80, default: '' },
+            aiSuggestion: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+            autoUpdate: { type: Boolean, default: false }
         },
         homepageSections: {
             type: [homepageSectionSchema],
@@ -530,6 +577,9 @@ const shopSchema = new mongoose.Schema({
             terms: { type: String, default: '' }
         }
     },
+    themeRevision: { type: Number, default: 0, min: 0 },
+    lastPublishedAt: { type: Date, default: null },
+    lastPublishedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     featureFlags: {
         storeBuilder: { type: Boolean, default: true },
         coupons: { type: Boolean, default: true },
@@ -630,5 +680,47 @@ shopSchema.index({ 'customDomain.domain': 1 }, {
 });
 shopSchema.index({ 'verification.status': 1, 'verification.deadline': 1 });
 shopSchema.index({ approvalStatus: 1, isActive: 1 });
+shopSchema.index({ searchNameNormalized: 1, approvalStatus: 1, isActive: 1 });
+shopSchema.index({ searchAliasesNormalized: 1, approvalStatus: 1, isActive: 1 });
+
+shopSchema.pre('validate', function normalizeStoreSearchIdentity() {
+    const normalized = normalizeSearchAliases({ aliases: this.searchAliases || [], officialName: this.shopName });
+    this.searchAliases = normalized.aliases;
+    this.searchAliasesNormalized = normalized.normalized;
+    this.searchNameNormalized = normalizeSearchText(this.shopName);
+});
+
+shopSchema.pre('findOneAndUpdate', async function normalizeStoreSearchIdentityUpdate() {
+    const update = this.getUpdate() || {};
+    const aliases = update?.$set?.searchAliases ?? update?.searchAliases;
+    if (aliases === undefined) return;
+
+    let officialName = update?.$set?.shopName || update?.shopName;
+    if (!officialName) {
+        let currentQuery = this.model.findOne(this.getQuery()).select('shopName').lean();
+        const session = this.getOptions()?.session;
+        if (session) currentQuery = currentQuery.session(session);
+        officialName = (await currentQuery)?.shopName;
+    }
+
+    // A stale optimistic-concurrency filter will be handled by the update
+    // caller. There is no document identity to validate in that case.
+    if (!officialName) return;
+
+    const normalized = normalizeSearchAliases({ aliases, officialName });
+    if (normalized.errors.length) {
+        const validationError = new mongoose.Error.ValidationError();
+        validationError.addError('searchAliases', new mongoose.Error.ValidatorError({
+            path: 'searchAliases',
+            value: aliases,
+            message: normalized.errors[0].message
+        }));
+        throw validationError;
+    }
+
+    this.set('searchAliases', normalized.aliases);
+    this.set('searchAliasesNormalized', normalized.normalized);
+    this.set('searchNameNormalized', normalizeSearchText(officialName));
+});
 
 module.exports = mongoose.model('Shop', shopSchema);

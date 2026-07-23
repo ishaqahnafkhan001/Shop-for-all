@@ -1,3 +1,9 @@
+import {
+    buildSeoPreviewModel,
+    evaluateHomepageSeo,
+    resolveHomepageSeo
+} from '@scaleup/storefront-theme';
+
 export const SEO_TITLE_MIN = 50;
 export const SEO_TITLE_MAX = 70;
 export const SEO_DESCRIPTION_MIN = 120;
@@ -46,22 +52,31 @@ export const buildProductSeoPreview = ({ product = {}, shopName = 'Your Store' }
     };
 };
 
-export const buildStoreSeoPreview = ({ theme = {}, shopName = 'Your Store', subdomain = 'your-store', domain = '' } = {}) => {
-    const seo = theme.seo || {};
-    const hero = theme.hero || {};
-    const preferredSiteName = cleanSeoText(seo.siteName || theme.brand?.storeName || theme.header?.storeName || shopName || 'Your Store');
-    const title = truncateSeoText(seo.title || hero.title || `${preferredSiteName} - Online Store`, SEO_TITLE_MAX);
-    const description = truncateSeoText(
-        seo.description ||
-        hero.subtitle ||
-        `Shop products from ${shopName || 'this store'}.`,
-        SEO_DESCRIPTION_MAX
-    );
-    const url = domain
-        ? `https://${String(domain).replace(/^https?:\/\//, '').replace(/\/$/, '')}`
-        : `https://${subdomain || 'your-store'}.scaleup.codes`;
-
-    return { title, description, url };
+export const buildStoreSeoPreview = ({ theme = {}, shopName = 'Your Store', searchAliases = [], subdomain = 'your-store', domain = '', catalogSummary = {} } = {}) => {
+    const resolved = resolveHomepageSeo({
+        seo: theme.seo || {},
+        shopIdentity: {
+            shopName,
+            searchAliases,
+            subdomain,
+            primaryCategory: theme.seo?.primaryCategory,
+            language: theme.seo?.language || 'en-BD'
+        },
+        storefrontContent: {
+            heroTitle: theme.hero?.bannerSlides?.[0]?.title || theme.hero?.title,
+            heroDescription: theme.hero?.bannerSlides?.[0]?.subtitle || theme.hero?.subtitle,
+            logoUrl: theme.logoUrl,
+            fallbackSocialImage: theme.logoUrl || theme.hero?.bannerSlides?.[0]?.desktopImage || theme.hero?.imageUrl
+        },
+        catalogSummary,
+        domain: {
+            canonicalUrl: domain
+                ? `https://${String(domain).replace(/^https?:\/\//, '').replace(/\/$/, '')}/`
+                : `https://${subdomain || 'your-store'}.scaleup.codes/`
+        },
+        indexing: { vendorVisible: theme.seo?.searchEngineVisibility !== false }
+    });
+    return buildSeoPreviewModel(resolved);
 };
 
 const scoreFromTasks = (tasks = []) => {
@@ -103,39 +118,49 @@ export const scoreProductSeo = ({ product = {}, hasImage = false } = {}) => {
     };
 };
 
-export const scoreStoreSeo = ({ theme = {}, shopName = '', productCount = 0, customDomain = {}, collectionCount = 0, imageAltCoverage = 0 } = {}) => {
+export const scoreStoreSeo = ({ theme = {}, shopName = '', searchAliases = [], productCount = 0, customDomain = {}, collectionCount = 0, imageAltCoverage = 0 } = {}) => {
     const seo = theme.seo || {};
-    const policies = theme.policies || {};
-    const footer = theme.footer || {};
-    const policyCount = ['privacy', 'terms', 'refund', 'shipping'].filter(key => cleanSeoText(policies[key]).length > 0).length;
-    const hasContact = Boolean(cleanSeoText(footer.email || footer.phone || footer.contactEmail || footer.contactPhone || footer.text));
-    const hasSocial = Boolean(cleanSeoText(seo.facebookUrl || footer.facebookUrl || footer.instagramUrl));
     const customDomainConnected = customDomain?.status === 'Verified' &&
         Boolean(customDomain?.domain) &&
         customDomain?.ownershipVerified === true &&
         (customDomain?.routingVerified === true || customDomain?.manuallyVerifiedRouting === true);
-    const homepageTitle = cleanSeoText(seo.title || theme.hero?.title || shopName);
-    const homepageDescription = cleanSeoText(seo.description || theme.hero?.subtitle);
-    const googleVerification = cleanSeoText(seo.googleSiteVerification);
-
-    const tasks = [
-        { label: 'Store name added', done: Boolean(cleanSeoText(shopName)), weight: 10, action: 'Complete your store profile.' },
-        { label: 'Logo uploaded', done: Boolean(theme.logoUrl), weight: 10, action: 'Upload a store logo.' },
-        { label: 'Homepage SEO title ready', done: Boolean(homepageTitle), weight: 12, action: 'Add a homepage SEO title.' },
-        { label: 'Homepage SEO description ready', done: Boolean(homepageDescription), weight: 12, action: 'Add a homepage SEO description.' },
-        { label: 'Policies added', done: policyCount >= 2, weight: 12, action: 'Add privacy, refund, shipping, or terms policies.' },
-        { label: 'Contact information visible', done: hasContact, weight: 10, action: 'Add contact details in the footer.' },
-        { label: 'Facebook/social link added', done: hasSocial, weight: 8, action: 'Add a Facebook page or social link.' },
-        { label: 'At least 5 published products', done: productCount >= 5, weight: 16, action: 'Publish at least 5 products.' },
-        { label: 'Collection pages ready', done: collectionCount > 0, weight: 8, action: 'Create at least one collection with products.' },
-        { label: 'Product image alt text coverage', done: Number(imageAltCoverage) >= 60, weight: 8, action: 'Add image alt text to most product images.' },
-        { label: 'Google verification added', done: Boolean(googleVerification), weight: 6, action: 'Add your Google Search Console verification code.' },
-        { label: 'Custom domain connected', done: customDomainConnected, weight: 10, action: 'Connect a verified custom domain when your plan supports it.' }
-    ];
-
-    return {
-        score: scoreFromTasks(tasks),
-        tasks,
-        missing: tasks.filter(item => !item.done)
-    };
+    const canonicalUrl = customDomainConnected
+        ? `https://${String(customDomain.domain).replace(/^https?:\/\//, '').replace(/\/$/, '')}/`
+        : 'https://your-store.scaleup.codes/';
+    const resolved = resolveHomepageSeo({
+        seo,
+        shopIdentity: {
+            shopName,
+            searchAliases,
+            subdomain: 'your-store',
+            primaryCategory: seo.primaryCategory,
+            language: seo.language || 'en-BD'
+        },
+        storefrontContent: {
+            heroTitle: theme.hero?.bannerSlides?.[0]?.title || theme.hero?.title,
+            heroDescription: theme.hero?.bannerSlides?.[0]?.subtitle || theme.hero?.subtitle,
+            logoUrl: theme.logoUrl,
+            fallbackSocialImage: theme.logoUrl || theme.hero?.bannerSlides?.[0]?.desktopImage || theme.hero?.imageUrl
+        },
+        domain: { canonicalUrl },
+        indexing: { vendorVisible: seo.searchEngineVisibility !== false },
+        socialProfiles: {
+            facebook: seo.facebookUrl || theme.footer?.facebookUrl,
+            instagram: theme.footer?.instagramUrl
+        },
+        publicContact: {
+            email: theme.footer?.contactEmail,
+            phone: theme.footer?.contactPhone
+        }
+    });
+    const health = evaluateHomepageSeo(resolved, {
+        productCount,
+        collectionCount,
+        imageAltCoverage,
+        googleSiteVerification: seo.googleSiteVerification,
+        customDomainConnected,
+        h1: theme.hero?.bannerSlides?.[0]?.title || theme.hero?.title,
+        internalLinkCount: (theme.navigation || []).filter(item => item?.url && item.url !== '#').length
+    });
+    return health;
 };

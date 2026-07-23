@@ -53,7 +53,7 @@ const isCustomDomainHost = (host = '') => {
     return cleanHost.includes('.');
 };
 
-const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontHost = '' } = {}) => {
+const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontHost = '', fresh = false } = {}) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), getServerFetchTimeoutMs());
     const fetchOptions = {
@@ -61,7 +61,7 @@ const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontH
         signal: controller.signal,
     };
 
-    if (isCustomDomainHost(storefrontHost)) {
+    if (fresh || isCustomDomainHost(storefrontHost)) {
         fetchOptions.cache = 'no-store';
     } else {
         fetchOptions.next = { revalidate };
@@ -98,6 +98,7 @@ export const fetchStorefrontBootstrap = async (subdomain, params = {}, options =
         params,
         revalidate: 30,
         storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
     });
 
     return response.data || null;
@@ -107,6 +108,7 @@ export const fetchStorefrontInfo = async (subdomain, options = {}) => (
     fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/info`, {
         revalidate: 30,
         storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
     })
 );
 
@@ -115,6 +117,7 @@ export const fetchStorefrontProducts = async (subdomain, params = {}, options = 
         params,
         revalidate: 60,
         storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
     });
 
     return response || {};
@@ -131,6 +134,7 @@ export const fetchStorefrontCollections = async (subdomain, options = {}) => {
     const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/collections`, {
         revalidate: 60,
         storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
     });
 
     return response.data || [];

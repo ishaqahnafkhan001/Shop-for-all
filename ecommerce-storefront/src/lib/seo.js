@@ -1,3 +1,9 @@
+import {
+    buildNextHomepageMetadata as buildSharedNextHomepageMetadata,
+    buildSeoPreviewModel as buildSharedSeoPreviewModel,
+    resolveHomepageSeo as resolveSharedHomepageSeo
+} from "@scaleup/storefront-theme";
+
 const DEFAULT_TITLE = "Scaleup | Launch Your Online Store Without Coding";
 const DEFAULT_DESCRIPTION = "Create a professional online store with Scaleup.";
 const DEFAULT_CURRENCY = "BDT";
@@ -53,17 +59,6 @@ const normalizeHost = (host = "") => String(host || "")
     .toLowerCase();
 
 const getHostLabel = (host = "") => normalizeHost(host).split(":")[0];
-
-const isPlatformRootHost = (host = "") => {
-    const cleanHost = normalizeHost(host).split(":")[0];
-    return [
-        "localhost",
-        "127.0.0.1",
-        "scaleup.codes",
-        "www.scaleup.codes",
-        "shop.scaleup.codes"
-    ].includes(cleanHost);
-};
 
 export const isCustomDomainFullyVerified = (customDomain = {}) => (
     customDomain?.status === "Verified" &&
@@ -298,19 +293,17 @@ export const getShopBaseUrl = ({ host, subdomain, shop, customDomain } = {}) => 
         return `${getProtocol(verifiedCustomDomain)}://${verifiedCustomDomain}`;
     }
 
-    if (!currentHost) {
-        const fallbackSubdomain = subdomain || shop?.subdomain || "";
-        return fallbackSubdomain ? `https://${fallbackSubdomain}.scaleup.codes` : "https://scaleup.codes";
-    }
-
-    const origin = `${getProtocol(currentHost)}://${currentHost}`;
     const effectiveSubdomain = subdomain || shop?.subdomain || "";
-
-    if (isPlatformRootHost(currentHost) && effectiveSubdomain) {
-        return `${origin}/${encodeURIComponent(effectiveSubdomain)}`;
+    const platformDomain = normalizeHost(process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || "scaleup.codes") || "scaleup.codes";
+    const currentHostname = currentHost.split(":")[0];
+    const isLocalDevelopmentHost = /(?:^|\.)localhost$|^127\.0\.0\.1$|^\[::1\]$/i.test(currentHostname);
+    if (isLocalDevelopmentHost && currentHost) {
+        if (currentHostname.endsWith('.localhost')) return `${getProtocol(currentHost)}://${currentHost}`;
+        const origin = `${getProtocol(currentHost)}://${currentHost}`;
+        return effectiveSubdomain ? `${origin}/${encodeURIComponent(effectiveSubdomain)}` : origin;
     }
-
-    return origin;
+    if (effectiveSubdomain) return `https://${effectiveSubdomain}.${platformDomain}`;
+    return `https://${platformDomain}`;
 };
 
 const absoluteUrl = (baseUrl, path = "") => {
@@ -375,6 +368,91 @@ export const getHomepageSeoDescription = (shop = {}) => {
         `Shop products from ${shop?.shopName || "this store"}.`
     );
 };
+
+export const resolveStorefrontHomepageSeo = ({
+    shop = {},
+    host = "",
+    subdomain = "",
+    catalogSummary = {},
+    indexing = {}
+} = {}) => {
+    const theme = shop?.theme || {};
+    const seo = theme.seo || {};
+    const canonical = getHomepageCanonicalUrl({ host, subdomain: subdomain || shop?.subdomain, shop });
+    const hero = theme.hero || {};
+    const firstSlide = Array.isArray(hero.bannerSlides)
+        ? hero.bannerSlides.find(slide => slide?.enabled !== false)
+        : null;
+    const footer = theme.footer || {};
+    const fallbackSocialImage = (
+        theme.logoUrl ||
+        firstSlide?.desktopImage ||
+        firstSlide?.mobileImage ||
+        hero.imageUrl ||
+        ""
+    );
+
+    return resolveSharedHomepageSeo({
+        seo,
+        shopIdentity: {
+            displayName: shop?.displayName,
+            shopName: shop?.shopName || shop?.name,
+            subdomain: subdomain || shop?.subdomain,
+            searchAliases: shop?.searchAliases || [],
+            primaryCategory: seo.primaryCategory || shop?.primaryCategory,
+            language: seo.language || shop?.language || "en-BD",
+            currency: shop?.currency || DEFAULT_CURRENCY,
+            serviceArea: shop?.serviceArea
+        },
+        storefrontContent: {
+            heroTitle: firstSlide?.title || hero.title,
+            heroDescription: firstSlide?.subtitle || hero.subtitle,
+            logoUrl: theme.logoUrl || shop?.logoUrl,
+            fallbackSocialImage
+        },
+        catalogSummary,
+        domain: {
+            canonicalUrl: canonical,
+            customDomain: shop?.customDomain
+        },
+        indexing: {
+            vendorVisible: isShopSearchVisible(shop),
+            shopPublished: shop?.isActive !== false && shop?.approvalStatus !== "Suspended",
+            platformAllowed: indexing.platformAllowed !== false,
+            environmentAllowsIndexing: indexing.environmentAllowsIndexing !== undefined
+                ? indexing.environmentAllowsIndexing !== false
+                : process.env.VERCEL_ENV !== "preview"
+        },
+        socialProfiles: {
+            facebook: seo.facebookUrl || footer.facebookUrl,
+            instagram: footer.instagramUrl,
+            twitter: footer.twitterUrl,
+            youtube: footer.youtubeUrl,
+            tiktok: footer.tiktokUrl
+        },
+        commerce: { currency: shop?.currency || DEFAULT_CURRENCY },
+        publicContact: {
+            email: footer.contactEmail || footer.email,
+            phone: footer.contactPhone || footer.phone
+        },
+        platform: { domain: process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || "scaleup.codes" }
+    });
+};
+
+export const buildNextHomepageMetadata = (resolvedSeo = {}, shop = {}) => buildSharedNextHomepageMetadata(
+    resolvedSeo,
+    {
+        icons: resolveStorefrontIcon({
+            shop,
+            shopName: resolvedSeo.siteName || shop?.shopName || shop?.name || "Store"
+        }).icons,
+        googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""
+    }
+);
+
+export const buildHomepageSeoPreview = (context = {}) => buildSharedSeoPreviewModel(
+    resolveStorefrontHomepageSeo(context)
+);
 
 export const getCollectionSeoTitle = (collection = {}, shop = {}) => {
     return truncateMetaTitle(collection?.seo?.title || collection?.title || "Collection");
@@ -542,28 +620,14 @@ export const buildStorefrontMetadata = ({
     });
 };
 
-export const buildHomepageJsonLd = ({ shop = {}, url = "" } = {}) => {
-    const siteName = resolveStorefrontBranding({ shop, host: url, pageTitle: "Home" }).shopName;
-    const shopName = cleanTextForMeta(shop?.shopName || shop?.name || "");
-    const logo = shop?.theme?.logoUrl || shop?.logoUrl || "";
-    const alternateName = shopName && shopName !== siteName ? [shopName] : undefined;
-
-    return [
-        {
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            name: siteName,
-            alternateName,
-            url
-        },
-        {
-            "@context": "https://schema.org",
-            "@type": "OnlineStore",
-            name: siteName,
-            url,
-            logo: logo || undefined
-        }
-    ].map(item => JSON.parse(JSON.stringify(item)));
+export const buildHomepageJsonLd = ({ shop = {}, url = "", subdomain = "", catalogSummary = {} } = {}) => {
+    const resolved = resolveStorefrontHomepageSeo({
+        shop,
+        host: url,
+        subdomain: subdomain || shop?.subdomain,
+        catalogSummary
+    });
+    return [resolved.websiteJsonLd, resolved.storeJsonLd].filter(Boolean);
 };
 
 const productPrice = (product = {}) => {

@@ -12,26 +12,27 @@ const importStorefrontTheme = () => import(pathToFileURL(path.join(repoRoot, 'ec
 
 test('store builder color controls are centralized in the Colors panel', () => {
     const storeBuilderPage = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
-    const productPanelStart = storeBuilderPage.indexOf('case \'products\'');
-    const sectionsPanelStart = storeBuilderPage.indexOf('case \'sections\'', productPanelStart);
-    const productPanel = storeBuilderPage.slice(productPanelStart, sectionsPanelStart);
+    const colorConfig = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/storeBuilderColorConfig.js');
+    const colorEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx');
+    const productPanel = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ProductCardsEditor.jsx');
 
-    assert.match(storeBuilderPage, /Quick Setup/);
-    assert.match(storeBuilderPage, /Section Colors/);
-    assert.match(storeBuilderPage, /Advanced Colors/);
-    assert.match(storeBuilderPage, /Product Cards/);
-    assert.match(storeBuilderPage, /productCard\.addToCartBackground/);
-    assert.match(storeBuilderPage, /productCard\.buyNowBackground/);
-    assert.match(storeBuilderPage, /productCard\.variantChipSelectedText/);
+    assert.match(colorEditor, /Quick Setup/);
+    assert.match(colorEditor, /Section Colors/);
+    assert.match(colorEditor, /Advanced Colors/);
+    assert.match(colorConfig, /Product Cards/);
+    assert.match(colorConfig, /productCard\.addToCartBackground/);
+    assert.match(colorConfig, /productCard\.buyNowBackground/);
+    assert.match(colorConfig, /productCard\.variantChipSelectedText/);
 
     assert.doesNotMatch(productPanel, /type="color"/);
     assert.doesNotMatch(productPanel, /setThemeGroup\('productCard', 'priceColor'/);
     assert.doesNotMatch(productPanel, /setThemeGroup\('productCard', 'buttonColor'/);
     assert.match(productPanel, /Store Layout → Colors → Product Cards/);
+    assert.match(storeBuilderPage, /ProductCardsEditor/);
 });
 
 test('product card renderer lets Color section values override legacy product card colors', async () => {
-    const productCard = readRepo('ecommerce-storefront/src/components/storefront/reference/StorefrontProductCard.jsx');
+    const productCard = readRepo('packages/storefront-renderer/reference/StorefrontProductCard.jsx');
     const { normalizeTheme } = await importStorefrontTheme();
 
     assert.doesNotMatch(productCard, /productCard\?\.priceColor/);

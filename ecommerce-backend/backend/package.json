@@ -27,9 +27,12 @@
     "backfill:policies": "node scripts/backfillDefaultPolicies.js",
     "worker": "node workers/index.js",
     "rollup:analytics": "node scripts/runAnalyticsRollup.js",
-    "sync:plans": "node scripts/sync-subscription-plans.js"
+    "sync:plans": "node scripts/sync-subscription-plans.js",
+    "cleanup:store-builder-assets": "node scripts/cleanup-store-builder-assets.js",
+    "migrate:store-builder-themes": "node scripts/migrate-store-builder-themes.js"
   },
   "dependencies": {
+    "@scaleup/storefront-theme": "file:../../packages/storefront-theme",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.15.1",
     "bcryptjs": "^3.0.3",

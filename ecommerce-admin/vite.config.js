@@ -20,9 +20,15 @@ export default defineConfig({
       { find: /^react\/jsx-dev-runtime$/, replacement: fromAdminNodeModules('react/jsx-dev-runtime.js') },
       { find: /^react-dom$/, replacement: fromAdminNodeModules('react-dom') },
       { find: /^react-dom\/client$/, replacement: fromAdminNodeModules('react-dom/client.js') },
-      { find: /^lucide-react$/, replacement: fromAdminNodeModules('lucide-react/dist/esm/lucide-react.mjs') }
+      { find: /^lucide-react$/, replacement: fromAdminNodeModules('lucide-react/dist/esm/lucide-react.mjs') },
+      { find: /^@scaleup\/storefront-theme$/, replacement: fromAdminNodeModules('@scaleup/storefront-theme/index.mjs') }
     ],
-    dedupe: ['react', 'react-dom']
+    dedupe: ['react', 'react-dom'],
+    preserveSymlinks: true
+  },
+
+  optimizeDeps: {
+    include: ['@scaleup/storefront-theme']
   },
 
   server: {

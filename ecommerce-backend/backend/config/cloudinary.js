@@ -39,6 +39,45 @@ const buildBrandUploadOptions = (file) => {
     };
 };
 
+const buildStoreBuilderUploadOptions = (file, req) => ({
+    folder: `shop_branding/${String(req?.tenantId || 'unknown')}/draft`,
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    format: 'webp',
+    transformation: [
+        { width: 2000, height: 2000, crop: 'limit' },
+        { quality: 'auto' }
+    ],
+    context: {
+        purpose: 'store_builder_draft',
+        shop_id: String(req?.tenantId || '')
+    }
+});
+
+const isRasterSignatureValid = (buffer, mimetype) => {
+    if (!Buffer.isBuffer(buffer) || buffer.length < 12) return false;
+    if (mimetype === 'image/jpeg') return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    if (mimetype === 'image/png') return buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    if (mimetype === 'image/webp') return buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP';
+    if (['image/x-icon', 'image/vnd.microsoft.icon'].includes(mimetype)) return buffer[0] === 0 && buffer[1] === 0 && buffer[2] === 1 && buffer[3] === 0;
+    return false;
+};
+
+const isSafeSvgBuffer = (buffer) => {
+    const source = Buffer.isBuffer(buffer) ? buffer.toString('utf8', 0, Math.min(buffer.length, 1024 * 1024)) : '';
+    if (!/<svg(?:\s|>)/i.test(source)) return false;
+    return !/<(?:script|foreignObject|iframe|object|embed|link|style|use)(?:\s|>)/i.test(source)
+        && !/\son[a-z]+\s*=/i.test(source)
+        && !/(?:javascript|vbscript|data\s*:\s*text\/html)/i.test(source)
+        && !/<!DOCTYPE|<!ENTITY/i.test(source);
+};
+
+const validateImageBuffer = (buffer, file, { allowSvg = false, allowIcon = false } = {}) => {
+    if (file?.mimetype === 'image/svg+xml') return allowSvg && isSafeSvgBuffer(buffer);
+    if (['image/x-icon', 'image/vnd.microsoft.icon'].includes(file?.mimetype)) return allowIcon && isRasterSignatureValid(buffer, file.mimetype);
+    return isRasterSignatureValid(buffer, file?.mimetype);
+};
+
 const buildSupportUploadOptions = () => ({
     folder: 'support_attachments',
     resource_type: 'auto',
@@ -46,8 +85,9 @@ const buildSupportUploadOptions = () => ({
 });
 
 class CloudinaryMulterStorage {
-    constructor(optionsBuilder = buildStorefrontUploadOptions) {
+    constructor(optionsBuilder = buildStorefrontUploadOptions, bufferValidator = null) {
         this.optionsBuilder = optionsBuilder;
+        this.bufferValidator = bufferValidator;
     }
 
     _handleFile(req, file, cb) {
@@ -57,6 +97,9 @@ class CloudinaryMulterStorage {
         file.stream.on('end', async () => {
             try {
                 const buffer = Buffer.concat(chunks);
+                if (this.bufferValidator && !this.bufferValidator(buffer, file, req)) {
+                    return cb(new Error('Uploaded file content does not match an allowed image format'));
+                }
                 const result = await streamUpload(buffer, this.optionsBuilder(file, req));
                 cb(null, {
                     path: result.secure_url || result.url || '',
@@ -65,7 +108,11 @@ class CloudinaryMulterStorage {
                     secure_url: result.secure_url || result.url || '',
                     mimetype: file.mimetype,
                     originalname: file.originalname,
-                    size: result.bytes || buffer.length
+                    size: result.bytes || buffer.length,
+                    width: result.width || 0,
+                    height: result.height || 0,
+                    resource_type: result.resource_type || 'image',
+                    format: result.format || ''
                 });
             } catch (error) {
                 cb(error);
@@ -79,7 +126,18 @@ class CloudinaryMulterStorage {
 }
 
 const storage = new CloudinaryMulterStorage();
-const brandStorage = new CloudinaryMulterStorage(buildBrandUploadOptions);
+const brandStorage = new CloudinaryMulterStorage(
+    (file, req) => ({
+        ...buildBrandUploadOptions(file, req),
+        folder: `shop_branding/${String(req?.tenantId || 'unknown')}/draft`,
+        context: { purpose: 'store_builder_draft', shop_id: String(req?.tenantId || '') }
+    }),
+    (buffer, file) => validateImageBuffer(buffer, file, { allowSvg: true, allowIcon: true })
+);
+const storeBuilderStorage = new CloudinaryMulterStorage(
+    buildStoreBuilderUploadOptions,
+    (buffer, file) => validateImageBuffer(buffer, file)
+);
 const supportStorage = new CloudinaryMulterStorage(buildSupportUploadOptions);
 
 const allowedMimeTypes = new Set([
@@ -164,6 +222,20 @@ const brandUpload = multer({
             return cb(new Error('Unsupported logo or icon file type'));
         }
 
+        cb(null, true);
+    }
+});
+
+const storeBuilderUpload = multer({
+    storage: storeBuilderStorage,
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 5
+    },
+    fileFilter: (req, file, cb) => {
+        if (!allowedNidMimeTypes.has(file.mimetype)) {
+            return cb(new Error('Unsupported Store Builder image type'));
+        }
         cb(null, true);
     }
 });
@@ -255,6 +327,7 @@ module.exports = {
     cloudinary,
     upload,
     brandUpload,
+    storeBuilderUpload,
     supportUpload,
     nidUpload,
     uploadNidDocument,

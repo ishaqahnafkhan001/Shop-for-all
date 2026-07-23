@@ -121,7 +121,7 @@ test('Super Admin badge routes require SuperAdmin and reason-gate negative decis
 
 test('public storefront only exposes active trusted badge after verification and active subscription checks', () => {
     const controller = read('controllers/storeController.js');
-    const header = readRepo('ecommerce-storefront/src/components/storefront/reference/StorefrontHeader.jsx');
+    const header = readRepo('packages/storefront-renderer/reference/StorefrontHeader.jsx');
     const navbar = readRepo('ecommerce-storefront/src/components/storefront/Navbar.jsx');
 
     assert.match(controller, /getPublicTrustedBadge/);

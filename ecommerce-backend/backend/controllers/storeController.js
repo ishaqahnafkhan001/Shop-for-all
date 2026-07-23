@@ -2,6 +2,7 @@ const Shop = require('../models/Shop');
 const Product = require('../models/Product');
 const Banner = require('../models/Banner');
 const Review = require('../models/Review');
+const Collection = require('../models/Collection');
 const Subscription = require('../models/Subscription');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
@@ -23,7 +24,7 @@ const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
 const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const getActiveBannerQuery = (shopId, now = new Date()) => ({
@@ -230,7 +231,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 
-        const [shop, banners, products, totalProducts, categories] = await Promise.all([
+        const [shop, banners, products, totalProducts, categories, collections] = await Promise.all([
             Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
             Banner.find(getActiveBannerQuery(shopId))
                 .populate('scheduledProduct', 'title slug status publicationStatus publishAt isActive isDeleted')
@@ -249,7 +250,12 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 isDeleted: false,
                 isActive: true,
                 status: 'Published'
-            })
+            }),
+            Collection.find({ shop_id: shopId, isActive: true })
+                .select('title slug updatedAt')
+                .sort({ title: 1 })
+                .limit(50)
+                .lean()
         ]);
 
         if (!shop) {
@@ -341,6 +347,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 sectionReviews,
                 products: pricedProducts,
                 categories: categories.filter(Boolean),
+                collections,
                 pagination: {
                     page: currentPage,
                     pages: Math.ceil(totalProducts / limit) || 1,

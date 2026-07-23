@@ -73,7 +73,7 @@ test('backend custom-domain routing and persistence guards are wired', () => {
     assert.match(tenant, /req\.tenantType = tenantType/);
 
     assert.match(storeBuilder, /normalizeCustomDomain\(customDomain\)/);
-    assert.match(storeBuilder, /'customDomain\.status'] = 'PendingVerification'/);
+    assert.match(storeBuilder, /status:\s*'PendingVerification'/);
     assert.match(storeBuilder, /buildCustomDomainVerificationFields\(req\.tenantId, normalizedDomain\)/);
     assert.match(storeBuilder, /This domain is already connected to another shop/);
     assert.match(storeBuilder, /Platform domains cannot be used as store custom domains/);

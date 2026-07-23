@@ -84,14 +84,18 @@ test('customer-facing product and order responses hide vendor cost fields', () =
 });
 
 test('store builder theme save sanitizes scriptable URLs', () => {
-    const controller = read('controllers/storeBuilderController.js');
+    const service = read('services/storeBuilder/storeBuilderService.js');
+    const contract = readProject('packages/storefront-theme/index.cjs');
 
-    assert.match(controller, /sanitizeThemePayload/);
-    assert.match(controller, /UNSAFE_URL_PATTERN/);
-    assert.match(controller, /HEX_COLOR_PATTERN/);
-    assert.match(controller, /sanitizeColorObject/);
-    assert.match(controller, /javascript\|data\|vbscript/);
-    assert.match(controller, /cleanTheme = sanitizeThemePayload\(pickThemePayload\(theme\)\)/);
+    assert.match(service, /sanitizeThemePayload/);
+    assert.match(service, /validateTheme/);
+    assert.match(service, /const sanitizedTheme = sanitizeThemePayload\(theme\)/);
+    assert.match(service, /validateTheme\(sanitizedTheme\)/);
+    assert.match(service, /normalizeTheme\(sanitizedTheme\)/);
+    assert.match(contract, /UNSAFE_URL_PATTERN/);
+    assert.match(contract, /HEX_COLOR_REGEX/);
+    assert.match(contract, /sanitizeColorObject/);
+    assert.match(contract, /javascript\|vbscript\|data/);
 });
 
 test('purchase order receiving is tenant scoped', () => {
@@ -242,6 +246,7 @@ test('shop feature flags are enforced on backend routes and vendor frontend rout
     const bannerRoutes = read('routes/bannerRoutes.js');
     const app = readProject('ecommerce-admin/src/App.jsx');
     const sidebar = readProject('ecommerce-admin/src/components/dashboard/Sidebar.jsx');
+    const navigationRegistry = readProject('ecommerce-admin/src/config/dashboardNavigation.jsx');
     const requireFeature = readProject('ecommerce-admin/src/components/RequireFeature.jsx');
     const growthCenter = readProject('ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx');
     const authController = read('controllers/authController.js');
@@ -267,7 +272,7 @@ test('shop feature flags are enforced on backend routes and vendor frontend rout
     assert.match(app, /withFeature\('coupons',\s*<Promotions/);
     assert.match(app, /withFeature\('bulkProductTools',\s*<CatalogTools/);
     assert.match(app, /withFeature\('growthCenter',\s*<GrowthCenter/);
-    assert.match(sidebar, /feature:\s*'analytics'/);
+    assert.match(navigationRegistry, /feature:\s*'analytics'/);
     assert.match(sidebar, /LockKeyhole/);
     assert.match(requireFeature, /This feature is not enabled for your store/);
     assert.match(growthCenter, /hasFeature\(user,\s*'aiAdGenerator'\)/);
@@ -430,7 +435,8 @@ test('store builder SEO AI route is protected and backend-only', () => {
     const storeBuilderPage = readProject('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
 
     assert.match(storeBuilderRoutes, /'\/admin\/seo\/ai-suggest'[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('storeBuilder'\)[\s\S]*requireShopFeature\('storeBuilder'\)[\s\S]*blockVerificationSuspendedShop[\s\S]*suggestStoreSeo/);
-    assert.match(storeBuilderController, /Product\.find\(\{[\s\S]*shop_id:\s*req\.tenantId/);
+    assert.match(storeBuilderController, /Product\.find\(buildPublicProductQuery\(req\.tenantId\)\)/);
+    assert.match(storeBuilderController, /Collection\.find\(\{ shop_id:\s*req\.tenantId, isActive:\s*true \}\)/);
     assert.match(storeBuilderController, /generateStoreSeoSuggestion/);
     assert.match(seoAiService, /process\.env\.GEMINI_API_KEY/);
     assert.match(seoAiService, /AI_NOT_CONFIGURED/);
@@ -465,6 +471,7 @@ test('super admin hardening routes remain SuperAdmin protected', () => {
 test('super admin frontend routes and navigation are SuperAdmin-only', () => {
     const app = readProject('ecommerce-admin/src/App.jsx');
     const sidebar = readProject('ecommerce-admin/src/components/dashboard/Sidebar.jsx');
+    const navigationRegistry = readProject('ecommerce-admin/src/config/dashboardNavigation.jsx');
     const panel = readProject('ecommerce-admin/src/pages/superadmin/SuperAdminPanel.jsx');
     const detail = readProject('ecommerce-admin/src/pages/superadmin/ShopDetail.jsx');
     const verification = readProject('ecommerce-admin/src/pages/superadmin/VendorVerifications.jsx');
@@ -800,6 +807,7 @@ test('staff permissions expose operational sections only and hide owner-only sec
     const uiPermissions = readProject('ecommerce-admin/src/utils/staffPermissions.js');
     const staffPage = readProject('ecommerce-admin/src/pages/dashboard/StaffPermissions.jsx');
     const sidebar = readProject('ecommerce-admin/src/components/dashboard/Sidebar.jsx');
+    const navigationRegistry = readProject('ecommerce-admin/src/config/dashboardNavigation.jsx');
     const app = readProject('ecommerce-admin/src/App.jsx');
 
     assert.match(capacity, /overview/);
@@ -829,8 +837,9 @@ test('staff permissions expose operational sections only and hide owner-only sec
     assert.match(uiPermissions, /STAFF_OPERATIONAL_PERMISSIONS/);
     assert.doesNotMatch(uiPermissions, /'staff'/);
     assert.match(staffPage, /STAFF_OPERATIONAL_PERMISSIONS/);
-    assert.match(sidebar, /hasStaffPermission/);
-    assert.match(sidebar, /adminOnly:\s*true/);
+    assert.match(navigationRegistry, /hasStaffPermission/);
+    assert.match(navigationRegistry, /ownerOnly:\s*true/);
+    assert.match(sidebar, /filterVendorNavigation/);
     assert.match(app, /RequireStaffPermission/);
     assert.match(app, /withPermission\('storeBuilder'/);
     assert.match(app, /allowedRoles=\{\['VendorAdmin'\]\}/);
@@ -926,7 +935,7 @@ test('redx courier integration is provider-based, masked, queued, and phone safe
 test('storefront conversion UX keeps recommendations tenant-scoped and checkout OTP backend-backed', () => {
     const storefrontRoutes = read('routes/storefrontRoutes.js');
     const storeController = read('controllers/storeController.js');
-    const productCard = readProject('ecommerce-storefront/src/components/storefront/reference/StorefrontProductCard.jsx');
+    const productCard = readProject('packages/storefront-renderer/reference/StorefrontProductCard.jsx');
     const productActions = readProject('ecommerce-storefront/src/hooks/useStorefrontProductActions.js');
     const cartPage = readProject('ecommerce-storefront/src/app/[subdomain]/cart/page.jsx');
     const checkoutPage = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx');

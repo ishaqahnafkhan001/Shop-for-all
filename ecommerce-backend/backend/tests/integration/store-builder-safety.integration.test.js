@@ -2,10 +2,17 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const {
+    Product,
     Shop,
+    createProduct,
     createLaunchSafetyContext,
     setShopPlan
 } = require('../helpers/launchSafetyHarness');
+const StoreBuilderAsset = require('../../models/StoreBuilderAsset');
+const StoreBuilderDraft = require('../../models/StoreBuilderDraft');
+const StoreBuilderRevision = require('../../models/StoreBuilderRevision');
+const { cloudinary } = require('../../config/cloudinary');
+const { cleanupExpiredStoreBuilderAssets } = require('../../services/storeBuilder/storeBuilderAssetService');
 
 test('vendor can load and save only their own Store Builder theme', async (t) => {
     const ctx = await createLaunchSafetyContext(t);
@@ -184,11 +191,281 @@ test('custom domain save rejects platform, duplicate, and plan-disabled domains'
         customDomain: { domain: 'scaleup.codes' }
     });
     assert.equal(platformDomain.status, 400);
+    assert.equal(platformDomain.body.code, 'PLATFORM_DOMAIN_NOT_ALLOWED');
+    assert.equal(platformDomain.body.message, platformDomain.body.error);
     assert.match(platformDomain.body.error, /Platform domains/);
 
     const duplicateDomain = await vendorA.unsafePatch('/api/store-builder/admin', {
         customDomain: { domain: 'taken-domain.example.com' }
     });
     assert.equal(duplicateDomain.status, 400);
+    assert.equal(duplicateDomain.body.code, 'DOMAIN_ALREADY_IN_USE');
+    assert.equal(duplicateDomain.body.message, duplicateDomain.body.error);
     assert.equal(duplicateDomain.body.error, 'This domain is already connected to another shop.');
+});
+
+test('Store Builder publish round trip preserves contract fields and rejects stale revisions', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+    await setShopPlan({ shopId: shopA._id, plan: ctx.data.plans.growth });
+
+    const beforeLoad = await Shop.findById(shopA._id).select('theme updatedAt').lean();
+    const bootstrap = await vendorA.get('/api/store-builder/admin/bootstrap');
+    assert.equal(bootstrap.status, 200);
+    assert.equal(bootstrap.body.data.publication.revision, 0);
+    const afterLoad = await Shop.findById(shopA._id).select('theme updatedAt').lean();
+    assert.deepEqual(afterLoad.theme, beforeLoad.theme, 'GET bootstrap must not migrate or persist theme data');
+    assert.equal(afterLoad.updatedAt.getTime(), beforeLoad.updatedAt.getTime());
+
+    const theme = {
+        seo: {
+            siteName: 'Launch Safety Store',
+            title: 'Launch Safety Store Online',
+            description: 'A complete Store Builder integration round trip.',
+            keywords: ['launch', 'safety'],
+            topics: ['launch', 'store safety'],
+            socialTitle: 'Launch Safety Store',
+            socialDescription: 'Share the public Launch Safety Store catalog.'
+        },
+        hero: {
+            title: 'Published hero',
+            bannerSlides: [{
+                id: 'published-slide',
+                desktopImage: 'https://cdn.example.com/hero.webp',
+                mobileImage: 'https://cdn.example.com/hero-mobile.webp',
+                primaryCtaText: 'Shop now',
+                primaryCtaLink: '/products',
+                secondaryCtaText: 'Learn more',
+                secondaryCtaLink: '/policies',
+                desktopFocalPoint: { x: 25, y: 75 },
+                mobileFocalPoint: { x: 55, y: 35 }
+            }]
+        },
+        homepageSections: [
+            { id: 'faq', type: 'FAQ', title: 'Questions', settings: { text: 'Q: Delivery?\nA: Fast.' }, desktopSettings: { isVisible: true }, mobileSettings: { isVisible: false } },
+            { id: 'trust', type: 'TrustBadges', title: 'Trust', settings: { text: 'Secure checkout · Fast delivery' }, desktopSettings: { isVisible: false }, mobileSettings: { isVisible: true } },
+            { id: 'story', type: 'BrandStory', title: 'Our story', settings: { text: 'Made with care.', imageUrl: 'https://cdn.example.com/story.webp', focalPoint: { x: 35, y: 65 } }, desktopSettings: { isVisible: true }, mobileSettings: { isVisible: true, focalPoint: { x: 45, y: 55 } } }
+        ],
+        footer: { text: 'Published footer' },
+        checkoutBranding: { trustMessage: 'Secure checkout' }
+    };
+
+    const published = await vendorA.unsafePatch('/api/store-builder/admin', {
+        theme,
+        searchAliases: ['Launch Safety Stores'],
+        expectedRevision: 0
+    });
+    assert.equal(published.status, 200);
+    assert.equal(published.body.data.themeRevision, 1);
+    assert.ok(published.body.data.lastPublishedAt);
+    assert.equal(published.body.data.theme.seo.siteName, 'Launch Safety Store');
+    assert.deepEqual(published.body.data.theme.seo.topics, ['launch', 'store safety']);
+    assert.deepEqual(published.body.data.theme.seo.keywords, ['launch', 'store safety']);
+    assert.deepEqual(published.body.data.searchAliases, ['Launch Safety Stores']);
+    assert.deepEqual(published.body.data.theme.homepageSections.map(section => section.type), ['FAQ', 'TrustBadges', 'BrandStory']);
+    assert.equal(published.body.data.theme.homepageSections[1].mobileSettings.isVisible, true);
+    assert.deepEqual(published.body.data.theme.homepageSections[2].settings.focalPoint, { x: 35, y: 65 });
+
+    const stale = await vendorA.unsafePatch('/api/store-builder/admin', {
+        theme: { hero: { title: 'Stale overwrite' } },
+        expectedRevision: 0
+    });
+    assert.equal(stale.status, 409);
+    assert.equal(stale.body.code, 'THEME_CONFLICT');
+    assert.equal(stale.body.message, stale.body.error);
+    assert.equal(stale.body.latestRevision, 1);
+
+    const persisted = await Shop.findById(shopA._id).lean();
+    assert.equal(persisted.theme.hero.title, 'Published hero');
+    assert.equal(persisted.themeRevision, 1);
+    assert.equal(await StoreBuilderRevision.countDocuments({ shop_id: shopA._id }), 1);
+});
+
+test('Store Builder bootstrap hydrates selected products beyond the first page and scopes SEO totals', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+    await setShopPlan({ shopId: shopA._id, plan: ctx.data.plans.growth });
+
+    const created = [];
+    for (let index = 0; index < 12; index += 1) {
+        created.push(await createProduct({
+            shop: shopA,
+            title: `Builder Product ${index + 1}`,
+            slug: `builder-product-${index + 1}`,
+            category: index % 2 ? 'Jewellery' : 'Accessories'
+        }));
+    }
+    const selectedProduct = created[0].product;
+    await Product.updateOne(
+        { _id: selectedProduct._id },
+        { $set: { imageAltText: 'Selected product image', 'seo.title': 'Selected SEO title', 'seo.description': 'Selected SEO description' } }
+    );
+
+    const publish = await vendorA.unsafePatch('/api/store-builder/admin', {
+        expectedRevision: 0,
+        theme: {
+            homepageSections: [{
+                id: 'selected-products',
+                type: 'FeaturedProducts',
+                title: 'Selected products',
+                settings: { productIds: [selectedProduct._id], source: { type: 'manual', productIds: [selectedProduct._id] } }
+            }]
+        }
+    });
+    assert.equal(publish.status, 200);
+
+    const bootstrap = await vendorA.get('/api/store-builder/admin/bootstrap');
+    assert.equal(bootstrap.status, 200);
+    const productIds = bootstrap.body.data.products.map(product => String(product._id));
+    assert.ok(productIds.includes(String(selectedProduct._id)), 'selected product must be hydrated even when outside initial ten');
+    assert.equal(bootstrap.body.data.seoStats.products.total, 13);
+    assert.equal(bootstrap.body.data.seoStats.collections.total, 0);
+    assert.equal(bootstrap.body.data.selectedProductIds, undefined, 'legacy data response should not duplicate bootstrap-only metadata');
+    assert.deepEqual(bootstrap.body.bootstrap.selectedProductIds, [String(selectedProduct._id)]);
+});
+
+test('Store Builder drafts stay private, publish clears the draft, and restore creates a new revision', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+
+    const draftSave = await vendorA.unsafePut('/api/store-builder/admin/draft', {
+        basedOnRevision: 0,
+        theme: { hero: { title: 'Private draft hero' } }
+    });
+    assert.equal(draftSave.status, 200);
+    assert.equal(draftSave.body.data.theme.hero.title, 'Private draft hero');
+    assert.equal((await Shop.findById(shopA._id).lean()).theme.hero.title, 'Shop A Hero');
+
+    const publishOne = await vendorA.unsafePatch('/api/store-builder/admin', {
+        expectedRevision: 0,
+        theme: draftSave.body.data.theme
+    });
+    assert.equal(publishOne.status, 200);
+    assert.equal(await StoreBuilderDraft.countDocuments({ shop_id: shopA._id }), 0);
+
+    const publishTwo = await vendorA.unsafePatch('/api/store-builder/admin', {
+        expectedRevision: 1,
+        theme: { hero: { title: 'Second published hero' } }
+    });
+    assert.equal(publishTwo.status, 200);
+    const firstRevision = await StoreBuilderRevision.findOne({ shop_id: shopA._id, revision: 1 }).lean();
+    assert.ok(firstRevision);
+
+    const restore = await vendorA.unsafePost(`/api/store-builder/admin/revisions/${firstRevision._id}/restore`, {
+        expectedRevision: 2
+    });
+    assert.equal(restore.status, 200, JSON.stringify(restore.body));
+    assert.equal(restore.body.data.themeRevision, 3);
+    assert.equal(restore.body.data.theme.hero.title, 'Private draft hero');
+    const restoredRevision = await StoreBuilderRevision.findOne({ shop_id: shopA._id, revision: 3 }).lean();
+    assert.equal(restoredRevision.source, 'restore');
+    assert.equal(restoredRevision.restoredFromRevision, 1);
+});
+
+test('Store Builder asset ownership and lifecycle protect published media', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA, shopB } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+    const ownerId = ctx.data.identities.vendorA.user._id;
+    const ownUrl = 'https://cdn.example.com/shop-a-draft.webp';
+    const foreignUrl = 'https://cdn.example.com/shop-b-draft.webp';
+
+    const ownAsset = await StoreBuilderAsset.create({
+        shop_id: shopA._id,
+        uploadedBy: ownerId,
+        url: ownUrl,
+        publicId: `store-builder/${shopA._id}/draft-own`,
+        status: 'temporary',
+        expiresAt: new Date(Date.now() + 60_000)
+    });
+    const foreignAsset = await StoreBuilderAsset.create({
+        shop_id: shopB._id,
+        url: foreignUrl,
+        publicId: `store-builder/${shopB._id}/draft-foreign`,
+        status: 'temporary',
+        expiresAt: new Date(Date.now() + 60_000)
+    });
+
+    const draft = await vendorA.unsafePut('/api/store-builder/admin/draft', {
+        basedOnRevision: 0,
+        theme: { hero: { title: 'Draft media', imageUrl: ownUrl } }
+    });
+    assert.equal(draft.status, 200);
+    assert.equal((await Shop.findById(shopA._id).lean()).theme.hero.imageUrl || '', '');
+    assert.equal(String((await StoreBuilderAsset.findById(ownAsset._id).lean()).draftId), String(draft.body.data._id));
+
+    const crossTenant = await vendorA.unsafePatch('/api/store-builder/admin', {
+        expectedRevision: 0,
+        theme: {
+            seo: { socialImage: foreignUrl, socialImageAssetId: foreignAsset._id },
+            hero: { imageUrl: foreignUrl }
+        }
+    });
+    assert.equal(crossTenant.status, 403);
+    assert.equal(crossTenant.body.code, 'SOCIAL_IMAGE_NOT_OWNED');
+    assert.equal((await Shop.findById(shopA._id).lean()).theme.hero.imageUrl || '', '');
+
+    const publish = await vendorA.unsafePatch('/api/store-builder/admin', {
+        expectedRevision: 0,
+        theme: {
+            ...draft.body.data.theme,
+            seo: {
+                ...(draft.body.data.theme.seo || {}),
+                socialImage: ownUrl,
+                socialImageAssetId: ownAsset._id,
+                socialImageAlt: 'Shop A social sharing image',
+                socialImageWidth: 1200,
+                socialImageHeight: 630,
+                socialImageMimeType: 'image/webp'
+            }
+        }
+    });
+    assert.equal(publish.status, 200);
+    assert.equal(String(publish.body.data.theme.seo.socialImageAssetId), String(ownAsset._id));
+    assert.equal(publish.body.data.theme.seo.socialImageWidth, 1200);
+    const promoted = await StoreBuilderAsset.findById(ownAsset._id).lean();
+    assert.equal(promoted.status, 'active');
+    assert.equal(promoted.expiresAt, null);
+});
+
+test('expired Store Builder asset cleanup deletes abandoned media but preserves published references', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA } = ctx.data.shops;
+    const abandonedUrl = 'https://cdn.example.com/abandoned.webp';
+    const publishedUrl = 'https://cdn.example.com/published.webp';
+    const abandoned = await StoreBuilderAsset.create({
+        shop_id: shopA._id,
+        url: abandonedUrl,
+        publicId: `store-builder/${shopA._id}/abandoned`,
+        status: 'temporary',
+        expiresAt: new Date(Date.now() - 60_000)
+    });
+    const published = await StoreBuilderAsset.create({
+        shop_id: shopA._id,
+        url: publishedUrl,
+        publicId: `store-builder/${shopA._id}/published`,
+        status: 'temporary',
+        expiresAt: new Date(Date.now() - 60_000)
+    });
+    await Shop.updateOne({ _id: shopA._id }, { $set: { 'theme.logoUrl': publishedUrl } });
+
+    const originalDestroy = cloudinary.uploader.destroy;
+    const destroyed = [];
+    cloudinary.uploader.destroy = async (publicId) => {
+        destroyed.push(publicId);
+        return { result: 'ok' };
+    };
+    t.after(() => {
+        cloudinary.uploader.destroy = originalDestroy;
+    });
+
+    const result = await cleanupExpiredStoreBuilderAssets();
+    assert.equal(result.deleted, 1);
+    assert.equal(result.skipped, 1);
+    assert.deepEqual(destroyed, [abandoned.publicId]);
+    assert.equal((await StoreBuilderAsset.findById(abandoned._id).lean()).status, 'deleted');
+    assert.equal((await StoreBuilderAsset.findById(published._id).lean()).status, 'active');
 });

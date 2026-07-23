@@ -1,198 +1,220 @@
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import {
+    BadgeCheck,
+    ChevronDown,
+    CreditCard,
+    Crown,
+    History,
+    LifeBuoy,
+    LockKeyhole,
+    ShieldCheck,
+    X
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
-    LayoutDashboard,
-    Package,
-    ShoppingCart,
-    Users,
-    Settings,
-    X,
-    Truck,
-    Palette,
-    TicketPercent,
-    BarChart3,
-    TrendingUp,
-    Shield,
-    ShieldCheck,
-    Crown,
-    Boxes,
-    RefreshCcw,
-    Bell,
-    History,
-    BadgeCheck,
-    FileText,
-    LockKeyhole,
-    CreditCard,
-    Images,
-    LifeBuoy
-} from 'lucide-react';
+    filterVendorNavigation,
+    findActiveNavigation,
+    getVendorNavigationStorageKey
+} from '../../config/dashboardNavigation.jsx';
 import { FEATURE_LABELS, hasFeature } from '../../utils/featureAccess';
-import { hasStaffPermission } from '../../utils/staffPermissions';
+
+const platformNavigation = {
+    superAdmin: [
+        { label: 'Super Admin', path: '/super-admin', icon: Crown },
+        { label: 'Support Center', path: '/super-admin/support', icon: LifeBuoy },
+        { label: 'Billing', path: '/super-admin/billing', icon: CreditCard },
+        { label: 'Trusted Badges', path: '/super-admin/badges', icon: ShieldCheck },
+        { label: 'Vendor Verification', path: '/super-admin/vendor-verifications', icon: BadgeCheck },
+        { label: 'Platform Audit Logs', path: '/super-admin/audit-logs', icon: History }
+    ],
+    support: [{ label: 'Support Center', path: '/support', icon: LifeBuoy }]
+};
+
+const readExpandedGroups = (key, activeGroupId) => {
+    if (typeof window === 'undefined') return activeGroupId ? [activeGroupId] : [];
+    try {
+        const stored = JSON.parse(window.localStorage.getItem(key) || '[]');
+        const groups = Array.isArray(stored) ? stored.filter(Boolean) : [];
+        return [...new Set(activeGroupId ? [...groups, activeGroupId] : groups)];
+    } catch {
+        return activeGroupId ? [activeGroupId] : [];
+    }
+};
+
+const VendorNavigationLink = ({ item, user, onNavigate }) => {
+    const Icon = item.icon;
+    const locked = !hasFeature(user, item.feature);
+    if (locked) {
+        return (
+            <div
+                title={`${FEATURE_LABELS[item.feature] || item.label} is not available on your current plan.`}
+                aria-disabled="true"
+                className="group flex min-h-11 cursor-not-allowed items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-400"
+            >
+                <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-300" aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                <LockKeyhole className="ml-2 h-3.5 w-3.5 flex-shrink-0 text-slate-300" aria-hidden="true" />
+                <span className="sr-only">Locked by current plan</span>
+            </div>
+        );
+    }
+    return (
+        <NavLink
+            to={item.path}
+            end={item.path === '/dashboard'}
+            onClick={onNavigate}
+            aria-label={item.label}
+            className={({ isActive }) => `group flex min-h-11 items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                isActive
+                    ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+            }`}
+        >
+            <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-400 transition group-hover:text-slate-600" aria-hidden="true" />
+            <span>{item.label}</span>
+        </NavLink>
+    );
+};
+
+const PlatformNavigation = ({ items, onNavigate }) => (
+    <nav className="space-y-1.5 px-4" aria-label="Platform navigation">
+        {items.map(item => {
+            const Icon = item.icon;
+            return (
+                <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.path === '/super-admin' || item.path === '/support'}
+                    onClick={onNavigate}
+                    className={({ isActive }) => `group flex min-h-11 items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        isActive ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                    }`}
+                >
+                    <Icon className="mr-3 h-5 w-5 text-slate-400" aria-hidden="true" />
+                    {item.label}
+                </NavLink>
+            );
+        })}
+    </nav>
+);
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user } = useAuth();
     const location = useLocation();
     const isSuperAdmin = user?.role === 'SuperAdmin';
     const isSupportUser = ['SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(user?.role);
+    const groups = useMemo(() => filterVendorNavigation(user), [user]);
+    const activeNavigation = useMemo(
+        () => findActiveNavigation(groups, location.pathname),
+        [groups, location.pathname]
+    );
+    const storageKey = getVendorNavigationStorageKey(user);
+    const [navigationState, setNavigationState] = useState(() => ({
+        key: storageKey,
+        expandedGroups: readExpandedGroups(storageKey, activeNavigation?.group?.id)
+    }));
+    const expandedGroups = navigationState.key === storageKey
+        ? navigationState.expandedGroups
+        : readExpandedGroups(storageKey, activeNavigation?.group?.id);
+    const activeGroupId = activeNavigation?.group?.id;
+    const visibleExpandedGroups = useMemo(() => (
+        activeGroupId && !expandedGroups.includes(activeGroupId)
+            ? [...expandedGroups, activeGroupId]
+            : expandedGroups
+    ), [activeGroupId, expandedGroups]);
 
-    const vendorNavItems = [
-        { name: 'Overview', path: '/dashboard', icon: LayoutDashboard, permission: 'overview' },
-        { name: 'Products', path: '/dashboard/products', icon: Package, permission: 'products' },
-        { name: 'Catalog Tools', path: '/dashboard/catalog-tools', icon: Boxes, feature: 'bulkProductTools', permission: 'catalogTools' },
-        { name: 'Orders', path: '/dashboard/orders', icon: ShoppingCart, permission: 'orders' },
-        { name: 'Returns', path: '/dashboard/returns', icon: RefreshCcw, permission: 'returns' },
-        { name: 'Customers', path: '/dashboard/customers', icon: Users, feature: 'customerSection', permission: 'customers' },
-        { name: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText, permission: 'privacyRequests' },
-        { name: 'Notifications', path: '/dashboard/notifications', icon: Bell, feature: 'notifications', permission: 'notifications' },
-        { name: 'Verification', path: '/dashboard/verification', icon: BadgeCheck, adminOnly: true },
-        { name: 'Trusted Badge', path: '/dashboard/badges', icon: ShieldCheck, adminOnly: true, feature: 'trustSystem' },
-        { name: 'Billing', path: '/dashboard/billing', icon: CreditCard, adminOnly: true },
-        { name: 'Promotions', path: '/dashboard/promotions', icon: TicketPercent, feature: 'coupons', permission: 'promotions' },
-        { name: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp, feature: 'growthCenter', permission: 'growthCenter' },
-        { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, feature: 'analytics', permission: 'analytics' },
-        { name: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, feature: 'storeBuilder', permission: 'storeBuilder' },
-        { name: 'Launch Banners', path: '/dashboard/banners', icon: Images, feature: 'scheduledBanners', permission: 'bannersManage' },
-        { name: 'Staff', path: '/dashboard/staff', icon: Shield, adminOnly: true, feature: 'staffAccounts' },
-        { name: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, permission: 'activityLogs' },
+    useEffect(() => {
+        if (isSuperAdmin || isSupportUser || navigationState.key !== storageKey || typeof window === 'undefined') return;
+        try {
+            window.localStorage.setItem(storageKey, JSON.stringify(expandedGroups));
+        } catch {
+            // Navigation still works when browser storage is unavailable.
+        }
+    }, [expandedGroups, isSuperAdmin, isSupportUser, navigationState.key, storageKey]);
 
-        // 🚚 NEW: Added the Shipping link here
-        { name: 'Shipping', path: '/dashboard/shipping', icon: Truck, permission: 'shipping' },
-
-        { name: 'Settings', path: '/dashboard/settings', icon: Settings, permission: 'settings' },
-        { name: 'Help & Support', path: '/dashboard/support', icon: LifeBuoy },
-    ];
-
-    const superAdminNavItems = [
-        { name: 'Super Admin', path: '/super-admin', icon: Crown },
-        { name: 'Support Center', path: '/super-admin/support', icon: LifeBuoy },
-        { name: 'Billing', path: '/super-admin/billing', icon: CreditCard },
-        { name: 'Trusted Badges', path: '/super-admin/badges', icon: ShieldCheck },
-        { name: 'Vendor Verification', path: '/super-admin/vendor-verifications', icon: BadgeCheck },
-        { name: 'Platform Audit Logs', path: '/super-admin/audit-logs', icon: History }
-    ];
-
-    const supportNavItems = [
-        { name: 'Support Center', path: '/support', icon: LifeBuoy }
-    ];
-
-    const navItems = isSupportUser
-        ? supportNavItems
-        : (isSuperAdmin
-            ? superAdminNavItems
-            : vendorNavItems.filter(item => (
-            (!item.adminOnly || user?.role === 'VendorAdmin') &&
-            hasStaffPermission(user, item.permission)
-        )));
-    const activeItem = navItems
-        .filter(item => item.path === '/dashboard' ? location.pathname === item.path : location.pathname.startsWith(item.path))
-        .sort((a, b) => b.path.length - a.path.length)[0] || navItems[0];
-    const ActiveIcon = activeItem?.icon;
-    const activeItemLocked = activeItem ? !hasFeature(user, activeItem.feature) : false;
+    const toggleGroup = (groupId) => {
+        setNavigationState({
+            key: storageKey,
+            expandedGroups: expandedGroups.includes(groupId)
+                ? expandedGroups.filter(id => id !== groupId)
+                : [...expandedGroups, groupId]
+        });
+    };
+    const closeMobileNavigation = () => setIsOpen(false);
 
     return (
         <>
-            {/* Mobile Dark Overlay Backdrop */}
             {isOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm transition-opacity md:hidden"
-                    onClick={() => setIsOpen(false)}
+                <button
+                    type="button"
+                    className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm md:hidden"
+                    onClick={closeMobileNavigation}
+                    aria-label="Close navigation"
                 />
             )}
 
-            {/* The Sidebar itself */}
-            <div className={`
-                fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white
-                transform transition-transform duration-300 ease-in-out
-                md:static md:translate-x-0 
-                ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
-            `}>
+            <aside className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+                isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+            }`} aria-label="Dashboard navigation">
                 <div className="flex h-16 items-center justify-between border-b border-slate-200 px-6">
                     <span className="text-2xl font-black tracking-tight text-slate-950">
                         {isSuperAdmin || isSupportUser ? 'Platform.' : 'ScaleUp.'}
                     </span>
-
                     <button
-                        onClick={() => setIsOpen(false)}
-                        className="rounded-lg p-2 -mr-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 md:hidden"
+                        type="button"
+                        onClick={closeMobileNavigation}
+                        className="-mr-2 rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 md:hidden"
                         aria-label="Close navigation"
                     >
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto py-6">
-                    <nav className="space-y-1.5 px-4">
-                        <p className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
-                            Current page
-                        </p>
-                        {activeItem && activeItemLocked ? (
-                            <div
-                                title={`${FEATURE_LABELS[activeItem.feature] || activeItem.name} is not available on your current plan.`}
-                                className="group flex cursor-not-allowed items-center rounded-lg bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-400 ring-1 ring-slate-100"
-                            >
-                                <ActiveIcon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-300" />
-                                <span className="min-w-0 flex-1 truncate">{activeItem.name}</span>
-                                <LockKeyhole className="ml-2 h-3.5 w-3.5 flex-shrink-0 text-slate-300" />
-                            </div>
-                        ) : activeItem && (
-                            <NavLink
-                                to={activeItem.path}
-                                end={activeItem.path === '/dashboard'}
-                                onClick={() => setIsOpen(false)}
-                                className="group flex items-center rounded-lg bg-indigo-50 px-3 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm ring-1 ring-indigo-100"
-                            >
-                                <ActiveIcon className="flex-shrink-0 mr-3 h-5 w-5 text-indigo-600" />
-                                <span>{activeItem.name}</span>
-                            </NavLink>
-                        )}
-        <div className="pt-4">
-            <p className="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">
-                Navigation
-            </p>
-            <div className="mt-2 space-y-1.5">
-                {navItems
-                    .filter(item => item.path !== activeItem?.path)
-                    .map((item) => {
-                        const Icon = item.icon;
-                        const locked = !hasFeature(user, item.feature);
-
-                        if (locked) {
-                            return (
-                                <div
-                                    key={item.name}
-                                    title={`${FEATURE_LABELS[item.feature] || item.name} is not available on your current plan.`}
-                                    className="group flex cursor-not-allowed items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-400"
-                                >
-                                    <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-300" />
-                                    <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                                    <LockKeyhole className="ml-2 h-3.5 w-3.5 flex-shrink-0 text-slate-300" />
-                                </div>
-                            );
-                        }
-
-                        return (
-                            <NavLink
-                                key={item.name}
-                                to={item.path}
-                                end={item.path === '/dashboard'}
-                                onClick={() => setIsOpen(false)}
-                                className={({ isActive }) => `
-                                    group flex items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition
-                                    ${isActive
-                                        ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100'
-                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}
-                                `}
-                            >
-                                <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-400 transition group-hover:text-slate-600" />
-                                <span>{item.name}</span>
-                            </NavLink>
-                        );
-                    })}
-            </div>
-        </div>
-                    </nav>
+                <div className="flex-1 overflow-y-auto py-5">
+                    {isSupportUser ? (
+                        <PlatformNavigation items={platformNavigation.support} onNavigate={closeMobileNavigation} />
+                    ) : isSuperAdmin ? (
+                        <PlatformNavigation items={platformNavigation.superAdmin} onNavigate={closeMobileNavigation} />
+                    ) : (
+                        <nav className="space-y-2 px-3" aria-label="Vendor navigation">
+                            {groups.map(group => {
+                                if (group.standalone) {
+                                    return group.items.map(item => (
+                                        <VendorNavigationLink key={item.id} item={item} user={user} onNavigate={closeMobileNavigation} />
+                                    ));
+                                }
+                                const expanded = visibleExpandedGroups.includes(group.id);
+                                const containsActiveRoute = activeNavigation?.group?.id === group.id;
+                                return (
+                                    <section key={group.id} aria-labelledby={`nav-group-${group.id}`}>
+                                        <button
+                                            type="button"
+                                            id={`nav-group-${group.id}`}
+                                            onClick={() => toggleGroup(group.id)}
+                                            aria-expanded={expanded}
+                                            aria-controls={`nav-items-${group.id}`}
+                                            className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-black uppercase tracking-wide transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                containsActiveRoute ? 'text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                                            }`}
+                                        >
+                                            <span>{group.label}</span>
+                                            <ChevronDown className={`h-4 w-4 transition-transform motion-reduce:transition-none ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+                                        </button>
+                                        {expanded && (
+                                            <div id={`nav-items-${group.id}`} className="mt-1 space-y-1 pl-1">
+                                                {group.items.map(item => (
+                                                    <VendorNavigationLink key={item.id} item={item} user={user} onNavigate={closeMobileNavigation} />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+                                );
+                            })}
+                        </nav>
+                    )}
                 </div>
-            </div>
+            </aside>
         </>
     );
 };
