@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { ChevronDown, ChevronUp, Copy, CreditCard, Eye, EyeOff, Lock, Minus, Package, Pencil, Plus, ShieldCheck, ShoppingBag, Star, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CreditCard, Eye, EyeOff, Lock, Minus, Package, Pencil, Plus, ShieldCheck, ShoppingBag, Star } from 'lucide-react';
 import {
     REFERENCE_SAMPLE_CATEGORIES,
     REFERENCE_SAMPLE_PRODUCTS,
@@ -11,11 +11,11 @@ import {
 import { FALLBACK_THEME, normalizeTheme } from '@scaleup/storefront-theme';
 import { getDefaultPolicyText } from '../../../utils/storeBuilderPolicies.js';
 
-const deviceClasses = {
-    desktop: 'w-[1180px] max-w-none',
-    tablet: 'w-[768px] max-w-none',
-    mobile: 'w-[390px] max-w-none',
-    smallMobile: 'w-[320px] max-w-none'
+const deviceWidths = {
+    desktop: 1180,
+    tablet: 768,
+    mobile: 390,
+    smallMobile: 320
 };
 
 const getPrice = (product = {}) => product.finalPrice || product.sellingPrice || product.pricing?.sellingPrice || product.price || 2190;
@@ -34,12 +34,8 @@ const PreviewSectionToolbar = ({
     locked,
     section,
     sectionIndex,
-    sectionCount,
     onSelectElement,
-    onMoveSection,
-    onDuplicateSection,
-    onToggleSectionVisibility,
-    onRemoveSection
+    onToggleSectionVisibility
 }) => {
     const isDynamicSection = (id?.startsWith('section:') || id?.startsWith('section-')) && Number.isInteger(sectionIndex) && sectionIndex >= 0;
     const isVisible = section?.isEnabled !== false;
@@ -74,21 +70,9 @@ const PreviewSectionToolbar = ({
             </button>
             {isDynamicSection && (
                 <>
-                    <button type="button" className={buttonClass} disabled={sectionIndex <= 0} onClick={event => handleAction(event, () => onMoveSection?.(sectionIndex, -1))} title="Move section up" aria-label={`Move ${label || 'section'} up`}>
-                        <ChevronUp size={13} />
-                    </button>
-                    <button type="button" className={buttonClass} disabled={sectionIndex >= sectionCount - 1} onClick={event => handleAction(event, () => onMoveSection?.(sectionIndex, 1))} title="Move section down" aria-label={`Move ${label || 'section'} down`}>
-                        <ChevronDown size={13} />
-                    </button>
-                    <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onDuplicateSection?.(sectionIndex))} aria-label={`Duplicate ${label || 'section'}`}>
-                        <Copy size={13} />
-                    </button>
                     <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onToggleSectionVisibility?.(sectionIndex, !isVisible))} aria-label={`${isVisible ? 'Hide' : 'Show'} ${label || 'section'}`}>
                         {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
                         {isVisible ? 'Hide' : 'Show'}
-                    </button>
-                    <button type="button" className={`${buttonClass} text-red-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700`} onClick={event => handleAction(event, () => onRemoveSection?.(sectionIndex))} aria-label={`Delete ${label || 'section'}`}>
-                        <Trash2 size={13} />
                     </button>
                 </>
             )}
@@ -362,17 +346,17 @@ export const StorefrontPreview = ({
     storewideDiscount,
     shopName,
     device,
+    previewZoom = 'fit',
     previewPage = 'home',
     availableProducts = [],
     availableCategories = [],
     availableReviews = [],
     activeElement,
     onSelectElement,
-    onMoveSection,
-    onDuplicateSection,
-    onToggleSectionVisibility,
-    onRemoveSection
+    onToggleSectionVisibility
 }) => {
+    const previewContainerRef = useRef(null);
+    const [fitScale, setFitScale] = useState(1);
     const normalizedTheme = normalizeTheme(theme || {});
     const isMobilePreview = device === 'mobile' || device === 'smallMobile';
     const products = availableProducts.length > 0
@@ -426,17 +410,13 @@ export const StorefrontPreview = ({
                         locked={Boolean(meta.locked)}
                         section={section}
                         sectionIndex={sectionIndex}
-                        sectionCount={sections.length}
                         onSelectElement={onSelectElement}
-                        onMoveSection={onMoveSection}
-                        onDuplicateSection={onDuplicateSection}
                         onToggleSectionVisibility={onToggleSectionVisibility}
-                        onRemoveSection={onRemoveSection}
                     />
                 );
             }
         };
-    }, [activeElement, normalizedTheme.homepageSections, onDuplicateSection, onMoveSection, onRemoveSection, onSelectElement, onToggleSectionVisibility]);
+    }, [activeElement, normalizedTheme.homepageSections, onSelectElement, onToggleSectionVisibility]);
     const frameLabel = device === 'desktop'
         ? `${previewPage}.scaleup.store`
         : device === 'tablet'
@@ -449,6 +429,24 @@ export const StorefrontPreview = ({
         : device === 'tablet'
             ? 'rounded-[2rem] border-[10px] border-slate-900 bg-white shadow-2xl shadow-slate-900/20'
             : 'rounded-[2.4rem] border-[10px] border-slate-950 bg-white shadow-2xl shadow-slate-900/25';
+    const frameWidth = deviceWidths[device] || deviceWidths.desktop;
+    const requestedScale = previewZoom === 'fit' ? fitScale : Number(previewZoom);
+    const previewScale = Number.isFinite(requestedScale) ? Math.max(0.4, Math.min(1, requestedScale)) : 1;
+
+    useEffect(() => {
+        const container = previewContainerRef.current;
+        if (!container || previewZoom !== 'fit') return undefined;
+        const updateScale = () => {
+            const availableWidth = Math.max(240, container.clientWidth - 32);
+            setFitScale(Math.min(1, availableWidth / frameWidth));
+        };
+        updateScale();
+        if (typeof ResizeObserver === 'undefined') return undefined;
+        const observer = new ResizeObserver(updateScale);
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, [frameWidth, previewZoom]);
+
     const renderPreviewPage = () => {
         if (previewPage === 'product') return <ProductPreviewPage products={products} />;
         if (previewPage === 'cart') return <CartPreviewPage products={products} />;
@@ -479,12 +477,11 @@ export const StorefrontPreview = ({
     };
 
     return (
-        <div className="isolate overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
-            <div className="mx-auto mb-3 flex max-w-[1180px] items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">
-                <span>Interactive preview</span>
-                <span>{availableProducts.length ? 'Uses your published catalog data' : 'Sample layout content only'}</span>
-            </div>
-            <div className={`mx-auto transition-all duration-300 ${deviceClasses[device]}`}>
+        <div ref={previewContainerRef} className="isolate overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
+            <div
+                className="mx-auto max-w-none transition-all duration-300"
+                style={{ width: `${frameWidth}px`, zoom: previewScale }}
+            >
                 <div className={`${isMobilePreview ? 'max-h-[760px] overflow-y-auto' : 'overflow-hidden'} ${frameClass}`}>
                     {device === 'desktop' ? (
                         <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2">

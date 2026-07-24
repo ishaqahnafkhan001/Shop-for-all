@@ -36,15 +36,18 @@ test('store builder shell separates navigation, preview, inspector, issues, and 
     const inspector = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderEditorPanel.jsx');
 
     assert.match(page, /StoreBuilderShell/);
-    assert.match(sidebar, /Sections/);
-    assert.match(sidebar, /Theme settings/);
+    assert.match(sidebar, /Store layout/);
+    assert.match(sidebar, /Brand and design/);
+    assert.match(sidebar, /Store experience/);
+    assert.match(sidebar, /Connections/);
+    assert.doesNotMatch(sidebar, /Theme settings/);
     assert.match(sidebar, /getSectionSelectionId/);
     assert.match(sidebar, /Move section up/);
     assert.match(sidebar, /Duplicate section/);
     assert.match(page, /onSelectElement=\{selectEditorTarget\}|selectEditorTarget=\{selectEditorTarget\}/);
     assert.match(header, /Issues \{validationCount \|\| 0\}/);
     assert.match(header, /Version history/);
-    assert.match(header, /\['structure', 'Sections'\]/);
+    assert.match(header, /\['structure', 'Store'\]/);
     assert.match(header, /\['preview', 'Preview'\]/);
     assert.match(header, /\['edit', 'Settings'\]/);
     assert.match(inspector, /2xl:static/);
@@ -63,6 +66,27 @@ test('dynamic Store Builder sections use stable ids for selection and duplicatio
     assert.match(page, /createBuilderSectionId/);
     assert.match(page, /setActiveElement\(`section:\$\{duplicateId\}`\)/);
     assert.match(renderer, /`section:\$\{stableSectionId\}`/);
+});
+
+test('store builder polish keeps editing contextual and preview controls focused', () => {
+    const page = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
+    const sidebar = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderSidebar.jsx');
+    const previewPanel = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPreviewPanel.jsx');
+    const preview = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx');
+    const heroEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/HeroEditor.jsx');
+    const sectionsEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/DynamicSectionsEditor.jsx');
+
+    assert.match(sidebar, /Find Store Builder settings/);
+    assert.doesNotMatch(sidebar, /navigationMode/);
+    assert.match(previewPanel, /DeviceSwitcher/);
+    assert.match(previewPanel, /option value="fit">Fit/);
+    assert.match(preview, /ResizeObserver/);
+    assert.match(preview, /previewZoom === 'fit'/);
+    assert.match(heroEditor, /selectedSlideId/);
+    assert.match(heroEditor, /Advanced image positioning/);
+    assert.match(sectionsEditor, /Section library/);
+    assert.match(sectionsEditor, /getSectionIndexFromSelection/);
+    assert.doesNotMatch(page, /builderNavigationMode/);
 });
 
 test('Homepage SEO routes reuse Store Builder permission, feature, and suspension guards', () => {

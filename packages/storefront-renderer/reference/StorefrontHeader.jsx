@@ -91,9 +91,10 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                 href={item.url || "#"}
                 prefetch={false}
                 onClick={onClick}
-                className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
+                className="inline-flex max-w-32 items-center rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
+                title={item.label}
             >
-                {item.label}
+                <span className="truncate whitespace-nowrap">{item.label}</span>
             </LinkSlot>
         );
     }
@@ -105,10 +106,11 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                 href={item.url || "#"}
                 prefetch={false}
                 onClick={onClick}
-                className="inline-flex items-center gap-1 rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
+                className="inline-flex max-w-36 items-center gap-1 rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
+                title={item.label}
             >
-                {item.label}
-                <ChevronDown size={14} className="transition group-hover:rotate-180" />
+                <span className="truncate whitespace-nowrap">{item.label}</span>
+                <ChevronDown size={14} className="shrink-0 transition group-hover:rotate-180" />
             </LinkSlot>
             <div className="invisible absolute left-0 top-full z-40 min-w-56 translate-y-2 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
                 {children.map((child, index) => (
@@ -122,6 +124,53 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                     >
                         {child.label}
                     </LinkSlot>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const HeaderOverflowMenu = ({ items, LinkComponent }) => {
+    if (!items.length) return null;
+
+    return (
+        <div className="group relative">
+            <button
+                type="button"
+                className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
+                aria-label="Open more navigation links"
+                aria-haspopup="menu"
+            >
+                More
+                <ChevronDown size={14} className="transition group-hover:rotate-180 group-focus-within:rotate-180" />
+            </button>
+            <div role="menu" className="invisible absolute right-0 top-full z-40 min-w-56 max-w-72 translate-y-2 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                {items.map((item, index) => (
+                    <div key={`${item.label}-${index}`} role="none">
+                        <LinkSlot
+                            LinkComponent={LinkComponent}
+                            href={item.url || "#"}
+                            prefetch={false}
+                            className="block truncate rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 hover:text-[var(--sf-navbar-hover)]"
+                            role="menuitem"
+                            title={item.label}
+                        >
+                            {item.label}
+                        </LinkSlot>
+                        {(item.children || []).map((child, childIndex) => (
+                            <LinkSlot
+                                key={`${child.label}-${childIndex}`}
+                                LinkComponent={LinkComponent}
+                                href={child.url || "#"}
+                                prefetch={false}
+                                className="ml-3 block truncate rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-[var(--sf-navbar-hover)]"
+                                role="menuitem"
+                                title={child.label}
+                            >
+                                {child.label}
+                            </LinkSlot>
+                        ))}
+                    </div>
                 ))}
             </div>
         </div>
@@ -145,6 +194,8 @@ export function ReferenceStorefrontHeader({
     const brandName = shopName || subdomain || "Storefront";
     const navLinks = getSortedNavigation(theme);
     const headerNavLinks = navLinks.filter((item) => !["track order", "account", "cart"].includes(String(item.label || "").toLowerCase()));
+    const visibleHeaderNavLinks = headerNavLinks.slice(0, 3);
+    const overflowHeaderNavLinks = headerNavLinks.slice(3);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const forcedDesktopLayoutClass = "grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
     const desktopLayoutClass = "lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
@@ -168,22 +219,23 @@ export function ReferenceStorefrontHeader({
     );
     const actionSlot = (
         <div className="flex min-w-0 items-center justify-end gap-1 xl:gap-2">
-            <nav className="mr-2 hidden max-w-full items-center gap-1 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] xl:flex">
-                {headerNavLinks.slice(0, 5).map((item, index) => (
+            <nav className="mr-1 hidden min-w-0 items-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] xl:flex 2xl:mr-2 2xl:gap-1">
+                {visibleHeaderNavLinks.map((item, index) => (
                     <HeaderNavItem
                         key={`${item.label}-${index}`}
                         item={item}
                         LinkComponent={LinkComponent}
                     />
                 ))}
+                <HeaderOverflowMenu items={overflowHeaderNavLinks} LinkComponent={LinkComponent} />
             </nav>
             <LinkSlot LinkComponent={LinkComponent} href="/track" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <Truck size={17} className="shrink-0" />
-                <span className="hidden xl:inline">Track Order</span>
+                <span className="hidden 2xl:inline">Track Order</span>
             </LinkSlot>
             <LinkSlot LinkComponent={LinkComponent} href="/account" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <User size={17} className="shrink-0" />
-                <span className="hidden xl:inline">Account</span>
+                <span className="hidden 2xl:inline">Account</span>
             </LinkSlot>
             <LinkSlot
                 LinkComponent={LinkComponent}
@@ -192,7 +244,7 @@ export function ReferenceStorefrontHeader({
                 className="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-slate-950 px-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 xl:px-4"
             >
                 <ShoppingBag size={17} className="shrink-0" />
-                <span className="hidden xl:inline">Cart</span>
+                <span className="hidden 2xl:inline">Cart</span>
                 {cartCount > 0 && (
                     <span className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
                         {cartCount}

@@ -138,10 +138,6 @@ export function ReferenceStorefrontHome({
                         ) : (
                             <div className="absolute inset-0" style={{ backgroundColor: "var(--sf-hero-background)" }} />
                         )}
-                        <div className="absolute inset-0 hidden bg-gradient-to-r from-slate-950/90 via-slate-950/65 to-slate-950/20 sm:block" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/92 via-slate-950/76 to-slate-950/54 sm:hidden" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(20,184,166,.26),transparent_34%)]" />
-                        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950/82 via-slate-950/38 to-transparent" />
                         {hasMultipleHeroSlides && (
                             <>
                                 <button

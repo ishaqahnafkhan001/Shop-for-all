@@ -261,7 +261,6 @@ export const colorSectionGroups = [
             { path: 'hero.background', label: 'Hero fallback background' },
             { path: 'hero.title', label: 'Hero title', contrastWith: 'hero.background' },
             { path: 'hero.subtitle', label: 'Hero subtitle', contrastWith: 'hero.background' },
-            { path: 'hero.overlay', label: 'Hero overlay' },
             { path: 'hero.primaryButtonBackground', label: 'Primary button background' },
             { path: 'hero.primaryButtonText', label: 'Primary button text', contrastWith: 'hero.primaryButtonBackground' },
             { path: 'hero.secondaryButtonBackground', label: 'Secondary button background' },
@@ -367,4 +366,3 @@ export const colorSectionGroups = [
 ];
 
 export const nestedColorFields = flattenNestedColorFields(colorSectionGroups);
-

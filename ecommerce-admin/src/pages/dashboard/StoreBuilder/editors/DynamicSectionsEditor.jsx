@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp, Copy, LayoutTemplate, Lock, Plus, Search, Trash2, Unlock, Upload, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, LayoutTemplate, Lock, Plus, Search, Trash2, Unlock, Upload, X } from 'lucide-react';
+import { useState } from 'react';
 import {
     BuilderButton,
     BuilderCard,
@@ -10,6 +11,7 @@ import {
 } from '../builderUi.jsx';
 import {
     editorSectionOptions,
+    getSectionIndexFromSelection,
     getSectionSelectionId,
     inlineSectionPresets,
     isHomepageSectionLocked
@@ -28,11 +30,7 @@ export function DynamicSectionsEditor({
     setReviewPicker,
     uploadingThemeImage,
     addHomepageSection,
-    selectEditorTarget,
-    moveHomepageSection,
-    duplicateHomepageSection,
     toggleHomepageSectionLock,
-    removeHomepageSection,
     updateHomepageSection,
     getBannerImages,
     handleBannerImagesUpload,
@@ -47,61 +45,43 @@ export function DynamicSectionsEditor({
     loadReviewOptions,
     updateReviewSelection
 }) {
+    const [sectionLibraryOpen, setSectionLibraryOpen] = useState(false);
+    const selectedSectionIndex = getSectionIndexFromSelection(activeElement, theme);
+    const selectedSectionEntries = selectedSectionIndex >= 0 && theme.homepageSections?.[selectedSectionIndex]
+        ? [{ section: theme.homepageSections[selectedSectionIndex], index: selectedSectionIndex }]
+        : [];
+
     return (
                     <BuilderCard
                         title="Homepage sections"
-                        description="Navbar, Hero, All Products, and Footer are fixed. Add flexible sections between Hero and All Products."
+                        description="Add a section or select one from the Store Layout list to edit it."
                         icon={LayoutTemplate}
-                        actions={<BuilderButton type="button" variant="secondary" onClick={() => addHomepageSection()}><Plus size={16} /> Add section</BuilderButton>}
+                        actions={<BuilderButton type="button" variant="secondary" onClick={() => setSectionLibraryOpen(open => !open)}><Plus size={16} /> Add section</BuilderButton>}
                     >
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">Homepage order</p>
-                                    <p className="mt-1 text-sm font-semibold text-slate-700">
-                                        Fixed sections stay in place. Flexible sections render between Hero and All Products.
-                                    </p>
-                                </div>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-black text-amber-800">
-                                    <Lock size={12} /> Locked frame
-                                </span>
-                            </div>
-                            <div className="mt-3 grid gap-2 text-xs font-bold text-slate-600">
-                                {[
-                                    { label: 'Navbar', note: 'Fixed header', locked: true },
-                                    { label: 'Hero Banner', note: 'Fixed opening section', locked: true },
-                                    { label: 'Flexible content area', note: 'Add, duplicate, hide, reorder, and edit sections here', locked: false },
-                                    { label: 'All Products', note: 'Fixed catalog section', locked: true },
-                                    { label: 'Footer', note: 'Fixed closing section', locked: true }
-                                ].map(item => (
-                                    <div
-                                        key={item.label}
-                                        className={`flex flex-col gap-1 rounded-lg border px-3 py-2 sm:flex-row sm:items-center sm:justify-between ${
-                                            item.locked
-                                                ? 'border-slate-200 bg-white'
-                                                : 'border-indigo-200 bg-indigo-50 text-indigo-800'
-                                        }`}
-                                    >
-                                        <span className="inline-flex items-center gap-2">
-                                            {item.locked ? <Lock size={13} className="text-amber-600" /> : <LayoutTemplate size={13} />}
-                                            {item.label}
-                                        </span>
-                                        <span className="text-[11px] font-semibold opacity-75">{item.note}</span>
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                            <span>Flexible sections appear between Hero and All Products.</span>
+                            <span className="shrink-0 rounded-full bg-white px-2 py-1 font-black text-slate-500">{theme.homepageSections?.length || 0} sections</span>
                         </div>
-                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+
+                        {sectionLibraryOpen && <div className="rounded-lg border border-indigo-200 bg-white p-3 shadow-sm">
                             <div className="mb-3">
-                                <p className="text-xs font-black uppercase tracking-wide text-slate-400">Add flexible section</p>
-                                <p className="mt-1 text-sm text-slate-500">Choose a starter layout. You can edit, hide, duplicate, or reorder it after adding.</p>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Section library</p>
+                                        <p className="mt-1 text-sm text-slate-500">Choose one layout to add to the homepage.</p>
+                                    </div>
+                                    <button type="button" aria-label="Close section library" onClick={() => setSectionLibraryOpen(false)} className="min-h-10 min-w-10 rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="mx-auto" size={16} /></button>
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 gap-3">
                                 {inlineSectionPresets.map(preset => (
                                     <button
                                         key={preset.templateId}
                                         type="button"
-                                        onClick={() => addHomepageSection(preset)}
+                                        onClick={() => {
+                                            addHomepageSection(preset);
+                                            setSectionLibraryOpen(false);
+                                        }}
                                         className="group grid grid-cols-[72px_minmax(0,1fr)] gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50"
                                     >
                                         <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
@@ -133,16 +113,20 @@ export function DynamicSectionsEditor({
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </div>}
                         {(theme.homepageSections || []).length === 0 && (
                             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
                                 No flexible homepage sections yet. Add a banner, featured products, reviews, or promotional content block.
                             </div>
                         )}
-                        {(theme.homepageSections || []).map((section, index) => {
+                        {(theme.homepageSections || []).length > 0 && selectedSectionEntries.length === 0 && !sectionLibraryOpen && (
+                            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
+                                <p className="text-sm font-bold text-slate-700">Select a section to edit</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">Choose it from Store Layout or click it in the live preview.</p>
+                            </div>
+                        )}
+                        {selectedSectionEntries.map(({ section, index }) => {
                             const locked = isHomepageSectionLocked(section);
-                            const previousLocked = isHomepageSectionLocked((theme.homepageSections || [])[index - 1]);
-                            const nextLocked = isHomepageSectionLocked((theme.homepageSections || [])[index + 1]);
                             const selectedProductIds = section.settings?.productIds || section.settings?.source?.productIds || [];
                             const selectedProducts = selectedProductIds
                                 .map(productId => availableProducts.find(product => String(product._id) === String(productId)))
@@ -188,23 +172,9 @@ export function DynamicSectionsEditor({
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <button type="button" onClick={() => selectEditorTarget(sectionSelectionId)} className="rounded-md px-2 py-2 text-xs font-black text-indigo-600 hover:bg-indigo-100" title="Edit section">
-                                            Edit
-                                        </button>
-                                        <button type="button" onClick={() => moveHomepageSection(index, -1)} disabled={locked || previousLocked || index === 0} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30" title="Move section up">
-                                            <ChevronUp size={16} />
-                                        </button>
-                                        <button type="button" onClick={() => moveHomepageSection(index, 1)} disabled={locked || nextLocked || index === (theme.homepageSections || []).length - 1} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30" title="Move section down">
-                                            <ChevronDown size={16} />
-                                        </button>
-                                        <button type="button" onClick={() => duplicateHomepageSection(index)} disabled={locked} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30" title="Duplicate section">
-                                            <Copy size={16} />
-                                        </button>
-                                        <button type="button" onClick={() => toggleHomepageSectionLock(index)} className="rounded-md p-2 text-slate-500 hover:bg-slate-100" title={locked ? 'Unlock section' : 'Lock section'}>
+                                        <button type="button" onClick={() => toggleHomepageSectionLock(index)} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50" title={locked ? 'Unlock section' : 'Lock section'}>
                                             {locked ? <Unlock size={16} /> : <Lock size={16} />}
-                                        </button>
-                                        <button type="button" onClick={() => removeHomepageSection(index)} disabled={locked} className="rounded-md p-2 text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30" title="Remove section">
-                                            <Trash2 size={16} />
+                                            {locked ? 'Unlock' : 'Lock'}
                                         </button>
                                     </div>
                                 </div>

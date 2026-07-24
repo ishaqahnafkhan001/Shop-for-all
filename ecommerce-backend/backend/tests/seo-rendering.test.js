@@ -111,6 +111,9 @@ test('shared storefront renderer uses responsive images and avoids eager catalog
     assert.match(productCard, /getResponsiveImageSrcSet\(imageUrl,\s*\[180,\s*280,\s*360,\s*560\]\)/);
     assert.match(productCard, /prefetch=\{false\}/);
     assert.match(storefrontHeader, /prefetch=\{false\}/);
+    assert.match(storefrontHeader, /const HeaderOverflowMenu/);
+    assert.match(storefrontHeader, /headerNavLinks\.slice\(0,\s*3\)/);
+    assert.match(storefrontHeader, /headerNavLinks\.slice\(3\)/);
     assert.match(storefrontFooter, /prefetch=\{false\}/);
 });
 
@@ -731,12 +734,14 @@ test('store builder UX pass keeps preview and live renderer aligned', () => {
     assert.match(storefrontHome, /setInterval\(\(\)\s*=>[\s\S]*5000/);
     assert.match(storefrontHome, /heroPaused/);
 
-    assert.match(storeBuilderSidebar, /Sections/);
-    assert.match(storeBuilderSidebar, /Theme settings/);
+    assert.match(storeBuilderSidebar, /Store layout/);
+    assert.match(storeBuilderSidebar, /Brand and design/);
+    assert.match(storeBuilderSidebar, /Find Store Builder settings/);
     assert.doesNotMatch(storeBuilderSidebar, /Customize your store/);
+    assert.doesNotMatch(storeBuilderSidebar, /Theme settings/);
     assert.doesNotMatch(storeBuilderConstants, /label:\s*'Hero button'/);
     assert.match(storeBuilderConstants, /storeLayoutItems/);
-    assert.match(storeBuilderHeader, /\['structure', 'Sections'\]/);
+    assert.match(storeBuilderHeader, /\['structure', 'Store'\]/);
 
     assert.match(colorEditor, /colorPalettePresets/);
     assert.match(colorEditor, /Quick Setup/);

@@ -132,7 +132,6 @@ const StoreBuilderPage = () => {
     const [issuesOpen, setIssuesOpen] = useState(false);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [inspectorOpen, setInspectorOpen] = useState(true);
-    const [builderNavigationMode, setBuilderNavigationMode] = useState('sections');
     const [advancedColorsOpen, setAdvancedColorsOpen] = useState(false);
     const [colorMode, setColorMode] = useState('quick');
     const [colorSearch, setColorSearch] = useState('');
@@ -286,7 +285,6 @@ const StoreBuilderPage = () => {
         const selection = resolveEditorComponent(target, theme);
         setActiveElement(target);
         if (selection?.group) setActiveGroup(selection.group);
-        setBuilderNavigationMode('sections');
         setInspectorOpen(true);
         setMobileWorkspace('edit');
     };
@@ -294,7 +292,6 @@ const StoreBuilderPage = () => {
     const selectSettingsGroup = (groupId) => {
         setActiveGroup(groupId);
         setActiveElement(groupElementMap[groupId] || groupId);
-        setBuilderNavigationMode('theme');
         setInspectorOpen(true);
         setMobileWorkspace('edit');
     };
@@ -1635,11 +1632,7 @@ const StoreBuilderPage = () => {
                         setReviewPicker={setReviewPicker}
                         uploadingThemeImage={uploadingThemeImage}
                         addHomepageSection={addHomepageSection}
-                        selectEditorTarget={selectEditorTarget}
-                        moveHomepageSection={moveHomepageSection}
-                        duplicateHomepageSection={duplicateHomepageSection}
                         toggleHomepageSectionLock={toggleHomepageSectionLock}
-                        removeHomepageSection={removeHomepageSection}
                         updateHomepageSection={updateHomepageSection}
                         getBannerImages={getBannerImages}
                         handleBannerImagesUpload={handleBannerImagesUpload}
@@ -1718,8 +1711,6 @@ const StoreBuilderPage = () => {
                 statusLabel={hasUnsavedChanges ? 'Unsaved changes' : 'Published'}
                 lastSavedLabel={formatBuilderDate(lastSavedAt) || 'Current session'}
                 lastPublishedLabel={formatBuilderDate(lastPublishedAt) || publishedVersionLabel}
-                device={device}
-                onDeviceChange={setDevice}
                 canUndo={canUndo}
                 canRedo={canRedo}
                 saving={saving}
@@ -1780,8 +1771,6 @@ const StoreBuilderPage = () => {
                     mobileWorkspace={mobileWorkspace}
                     activeElement={activeElement}
                     activeGroup={activeGroup}
-                    navigationMode={builderNavigationMode}
-                    onNavigationModeChange={setBuilderNavigationMode}
                     selectEditorTarget={selectEditorTarget}
                     selectSettingsGroup={selectSettingsGroup}
                     validation={validationDetails}
@@ -1803,6 +1792,7 @@ const StoreBuilderPage = () => {
                             previewPage={previewPage}
                             setPreviewPage={setPreviewPage}
                             device={device}
+                            setDevice={setDevice}
                             theme={theme}
                             storewideDiscount={storewideDiscount}
                             shopName={shopName}
@@ -1811,10 +1801,7 @@ const StoreBuilderPage = () => {
                             availableReviews={availableReviews}
                             activeElement={activeElement}
                             selectEditorTarget={selectEditorTarget}
-                            moveHomepageSection={moveHomepageSection}
-                            duplicateHomepageSection={duplicateHomepageSection}
                             toggleHomepageSectionVisibility={toggleHomepageSectionVisibility}
-                            removeHomepageSection={removeHomepageSection}
                         />
                     </Suspense>
                     <StoreBuilderEditorPanel

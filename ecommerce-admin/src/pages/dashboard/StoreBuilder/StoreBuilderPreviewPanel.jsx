@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { StorefrontPreview } from './StorefrontPreview.jsx';
+import { DeviceSwitcher } from './builderUi.jsx';
 
 export function StoreBuilderPreviewPanel({
     mobileWorkspace,
@@ -7,6 +9,7 @@ export function StoreBuilderPreviewPanel({
     previewPage,
     setPreviewPage,
     device,
+    setDevice,
     theme,
     storewideDiscount,
     shopName,
@@ -15,19 +18,19 @@ export function StoreBuilderPreviewPanel({
     availableReviews,
     activeElement,
     selectEditorTarget,
-    moveHomepageSection,
-    duplicateHomepageSection,
-    toggleHomepageSectionVisibility,
-    removeHomepageSection
+    toggleHomepageSectionVisibility
 }) {
+    const [previewZoom, setPreviewZoom] = useState('fit');
+
     return (
         <section className={`${mobileWorkspace === 'preview' ? 'block' : 'hidden'} min-w-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:block`}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 className="text-base font-bold text-slate-950">Live preview</h2>
-                    <p className="mt-1 text-sm text-slate-500">The preview updates live from the settings panel.</p>
+                    <p className="mt-1 text-sm text-slate-500">Select an element in the preview to edit it.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    <DeviceSwitcher value={device} onChange={setDevice} />
                     <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
                         {previewPages.map(page => (
                             <button
@@ -45,6 +48,19 @@ export function StoreBuilderPreviewPanel({
                             </button>
                         ))}
                     </div>
+                    <label className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 text-xs font-bold text-slate-500">
+                        <span className="sr-only">Preview zoom</span>
+                        <select
+                            value={previewZoom}
+                            onChange={event => setPreviewZoom(event.target.value)}
+                            className="bg-transparent text-xs font-black text-slate-700 outline-none"
+                            aria-label="Preview zoom"
+                        >
+                            <option value="fit">Fit</option>
+                            <option value="0.75">75%</option>
+                            <option value="1">100%</option>
+                        </select>
+                    </label>
                     <button
                         type="button"
                         onClick={() => setMobileWorkspace('edit')}
@@ -52,9 +68,6 @@ export function StoreBuilderPreviewPanel({
                     >
                         Edit selected
                     </button>
-                    <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-600">
-                        {device}
-                    </div>
                 </div>
             </div>
             <StorefrontPreview
@@ -63,15 +76,13 @@ export function StoreBuilderPreviewPanel({
                 shopName={shopName}
                 device={device}
                 previewPage={previewPage}
+                previewZoom={previewZoom}
                 availableProducts={availableProducts}
                 availableCategories={productCategories}
                 availableReviews={availableReviews}
                 activeElement={activeElement}
                 onSelectElement={selectEditorTarget}
-                onMoveSection={moveHomepageSection}
-                onDuplicateSection={duplicateHomepageSection}
                 onToggleSectionVisibility={toggleHomepageSectionVisibility}
-                onRemoveSection={removeHomepageSection}
             />
         </section>
     );
