@@ -1,7 +1,6 @@
 import {
     CreditCard,
     FileText,
-    Globe,
     LayoutTemplate,
     Link as LinkIcon,
     Palette,
@@ -153,8 +152,7 @@ export const settingsGroups = [
     { id: 'products', label: 'Product cards', icon: ShoppingBag, description: 'Product grid appearance' },
     { id: 'checkout', label: 'Checkout', icon: CreditCard, description: 'Checkout trust and branding' },
     { id: 'mobile', label: 'Mobile', icon: Smartphone, description: 'Small-screen controls' },
-    { id: 'policies', label: 'Policies', icon: FileText, description: 'Refund, shipping, privacy, terms' },
-    { id: 'domain', label: 'Domain', icon: Globe, description: 'Custom domain status' }
+    { id: 'policies', label: 'Policies', icon: FileText, description: 'Refund, shipping, privacy, terms' }
 ];
 
 export const structureTree = [
@@ -211,8 +209,7 @@ export const groupElementMap = {
     checkout: 'checkoutBranding',
     mobile: 'mobile',
     footer: 'footer',
-    policies: 'policies',
-    domain: 'domain'
+    policies: 'policies'
 };
 
 export const storeLayoutItems = [
@@ -224,7 +221,7 @@ export const storeLayoutItems = [
         group: 'navigation',
         icon: LinkIcon,
         locked: true,
-        relatedTargets: ['header', 'logo', 'navigation']
+        relatedTargets: ['header', 'navigation']
     },
     {
         id: 'hero',
@@ -309,15 +306,6 @@ export const storeLayoutItems = [
         group: 'policies',
         icon: FileText,
         relatedTargets: ['policies']
-    },
-    {
-        id: 'domain',
-        label: 'Domain',
-        description: 'Custom domain status',
-        target: 'domain',
-        group: 'domain',
-        icon: Globe,
-        relatedTargets: ['domain']
     }
 ];
 
@@ -354,7 +342,6 @@ export const editorComponentRegistry = {
     typography: { label: 'Typography', group: 'typography' },
     layout: { label: 'Layout', group: 'layout' },
     mobile: { label: 'Mobile', group: 'mobile' },
-    domain: { label: 'Domain', group: 'domain' },
     homepageSeo: { label: 'Homepage SEO', group: 'seo' },
     heroTitle: { label: 'Hero title', group: 'hero' },
     heroSubtitle: { label: 'Hero subtitle', group: 'hero' },

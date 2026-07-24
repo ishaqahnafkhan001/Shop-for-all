@@ -15,7 +15,7 @@ import {
 const FooterColumn = ({ title, links, LinkComponent }) => (
     <div>
         <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">{title}</h3>
-        <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-text)]">
+        <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-link)]">
             {links.map((link) => (
                 <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
@@ -28,7 +28,7 @@ const FooterColumn = ({ title, links, LinkComponent }) => (
 const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, LinkComponent }) => (
     <div>
         <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">Support</h3>
-        <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-text)]">
+        <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-link)]">
             {links.map((link) => (
                 <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
@@ -44,7 +44,7 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
         {socialLinks.length > 0 && (
             <div className="mt-7 flex flex-wrap items-center gap-3">
                 {socialLinks.map((item) => (
-                    <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} prefetch={false} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-footer-link-hover)] hover:text-white">
+                    <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} prefetch={false} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-[var(--sf-footer-link)] transition hover:bg-[var(--sf-footer-link-hover)] hover:text-white">
                         {item.short}
                     </LinkSlot>
                 ))}
@@ -54,12 +54,12 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
 );
 
 const FooterAccordion = ({ title, links, LinkComponent }) => (
-    <details className="group border-b border-slate-200 py-3.5">
+    <details className="group border-b py-3.5" style={{ borderColor: "var(--sf-footer-border)" }}>
         <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-[var(--sf-footer-heading)]">
             {title}
             <ChevronDown size={17} className="transition group-open:rotate-180" />
         </summary>
-        <div className="mt-3 grid gap-2.5 pb-1 text-sm font-semibold text-[var(--sf-footer-text)]">
+        <div className="mt-3 grid gap-2.5 pb-1 text-sm font-semibold text-[var(--sf-footer-link)]">
             {links.map((link) => (
                 <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
@@ -178,7 +178,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                 {socialLinks.length > 0 && (
                                     <div className="mt-4 flex flex-wrap items-center gap-2.5 sm:gap-3">
                                         {socialLinks.map((item) => (
-                                            <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} prefetch={false} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-accent)] hover:text-white">
+                                            <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} prefetch={false} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-[var(--sf-footer-link)] transition hover:bg-[var(--sf-footer-link-hover)] hover:text-white">
                                                 {item.short}
                                             </LinkSlot>
                                         ))}

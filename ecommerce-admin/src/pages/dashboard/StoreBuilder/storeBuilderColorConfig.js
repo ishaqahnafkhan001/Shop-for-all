@@ -1,4 +1,11 @@
 import { isHexColor } from './storeBuilderThemeUtils.js';
+export {
+    applyCompatibleColorUpdates,
+    getColorPathValue,
+    legacyColorPathMap,
+    mergeColorUpdates,
+    setColorPathValue
+} from './storeBuilderColorState.js';
 
 export const colorPalettePresets = [
     {
@@ -181,29 +188,6 @@ export const buildBrandColorSet = (brandColor) => ({
     }
 });
 
-export const mergeColorUpdates = (current = {}, updates = {}) => Object.entries(updates || {}).reduce((acc, [key, value]) => {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-        acc[key] = mergeColorUpdates(acc[key] || {}, value);
-    } else {
-        acc[key] = value;
-    }
-    return acc;
-}, { ...(current || {}) });
-
-export const getColorPathValue = (colors = {}, path = '') => path.split('.').reduce((acc, key) => acc?.[key], colors);
-
-export const setColorPathValue = (colors = {}, path = '', value) => {
-    const [group, key] = path.split('.');
-    if (!group || !key) return { ...(colors || {}), [path]: value };
-    return {
-        ...(colors || {}),
-        [group]: {
-            ...(colors?.[group] || {}),
-            [key]: value
-        }
-    };
-};
-
 const flattenNestedColorFields = (groups = []) => groups.flatMap(group => group.fields.map(field => ({ ...field, groupId: group.id, groupTitle: group.title })));
 
 export const contrastRatio = (foreground, background) => {
@@ -290,6 +274,8 @@ export const colorSectionGroups = [
             { path: 'productCard.buyNowText', label: 'Buy Now text', contrastWith: 'productCard.buyNowBackground' },
             { path: 'productCard.outOfStockBackground', label: 'Out-of-stock background' },
             { path: 'productCard.outOfStockText', label: 'Out-of-stock text', contrastWith: 'productCard.outOfStockBackground' },
+            { path: 'productCard.stockBackground', label: 'In-stock badge background' },
+            { path: 'productCard.stockText', label: 'In-stock badge text', contrastWith: 'productCard.stockBackground' },
             { path: 'productCard.variantChipBackground', label: 'Variant chip background' },
             { path: 'productCard.variantChipText', label: 'Variant chip text', contrastWith: 'productCard.variantChipBackground' },
             { path: 'productCard.variantChipSelectedBackground', label: 'Selected variant background' },

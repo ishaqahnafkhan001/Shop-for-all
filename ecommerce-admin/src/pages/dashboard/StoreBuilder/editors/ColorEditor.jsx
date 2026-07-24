@@ -58,7 +58,7 @@ export function ColorEditor({
                 help={field.help || field.path}
                 error={invalid ? 'Enter a valid hex color, for example #0f766e.' : contrastWarning}
             >
-                <div className="flex gap-2" data-field-path={`colors.${field.path}`}>
+                <div className="flex min-w-0 gap-2" data-field-path={`colors.${field.path}`}>
                     <input
                         type="color"
                         value={isHexColor(value) ? value : '#000000'}
@@ -69,7 +69,7 @@ export function ColorEditor({
                     <input
                         value={value}
                         onChange={event => setColorPath(field.path, event.target.value)}
-                        className={inputClass}
+                        className={`${inputClass} min-w-0`}
                         placeholder="#0f766e"
                         aria-label={`${field.label} hex value`}
                     />
@@ -104,16 +104,16 @@ export function ColorEditor({
             )}
 
             {activeColorMode === 'quick' && (
-                <div className="space-y-5">
-                    <div className="grid gap-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+                <div className="min-w-0 space-y-5">
+                    <div className="grid min-w-0 gap-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4">
                         <div className="space-y-4">
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                            <div className="flex min-w-0 flex-col gap-4">
                                 <FieldShell
                                     label="Main brand color"
                                     help="Used for buttons, links, highlights, product actions, checkout accents, and hover states."
                                     error={!isHexColor(mainBrandColor) ? 'Enter a valid hex color, for example #0f766e.' : ''}
                                 >
-                                    <div className="flex gap-2" data-field-path="colors.brand.primary">
+                                    <div className="flex min-w-0 gap-2" data-field-path="colors.brand.primary">
                                         <input
                                             type="color"
                                             value={isHexColor(mainBrandColor) ? mainBrandColor : defaultTheme.colors.accent}
@@ -124,17 +124,17 @@ export function ColorEditor({
                                         <input
                                             value={mainBrandColor}
                                             onChange={event => setMainBrandColor(event.target.value)}
-                                            className={inputClass}
+                                            className={`${inputClass} min-w-0`}
                                             placeholder="#0f766e"
                                             aria-label="Main brand color hex value"
                                         />
                                     </div>
                                 </FieldShell>
-                                <BuilderButton type="button" onClick={applyBrandColor} className="sm:mb-6">
-                                    Apply brand color
+                                <BuilderButton type="button" onClick={applyBrandColor} className="w-full">
+                                    Apply brand color to storefront
                                 </BuilderButton>
                             </div>
-                            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                            <div className="grid grid-cols-4 gap-2">
                                 {['brand.primary', 'brand.hover', 'brand.soft', 'brand.ring', 'productCard.addToCartBackground', 'productCard.buyNowBackground', 'allProducts.paginationActiveBackground', 'footer.linkHover'].map(path => (
                                     <span
                                         key={path}
@@ -169,27 +169,27 @@ export function ColorEditor({
                     </div>
 
                     <div>
-                        <div className="mb-3 flex items-center justify-between gap-3">
-                            <div>
+                        <div className="mb-3 flex min-w-0 flex-col gap-3">
+                            <div className="min-w-0">
                                 <p className="text-sm font-black text-slate-950">Palette presets</p>
                                 <p className="mt-1 text-xs text-slate-500">Pick a polished starting point. You can still edit every section after.</p>
                             </div>
-                            <BuilderButton type="button" variant="secondary" onClick={resetColorPalette}>Reset palette</BuilderButton>
+                            <BuilderButton type="button" variant="secondary" onClick={resetColorPalette} className="w-full">Reset palette</BuilderButton>
                         </div>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-2">
                             {colorPalettePresets.map(preset => (
                                 <button
                                     key={preset.name}
                                     type="button"
                                     onClick={() => applyColorSet(preset.colors, preset.name)}
-                                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="flex w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 >
-                                    <span>
+                                    <span className="min-w-0">
                                         <span className="block text-sm font-black text-slate-900">{preset.name}</span>
                                         <span className="mt-1 block text-xs text-slate-500">Apply this storefront palette</span>
                                     </span>
                                     <span className="flex shrink-0 overflow-hidden rounded-full border border-slate-200">
-                                        {preset.swatches.map(color => <span key={color} className="h-8 w-8" style={{ backgroundColor: color }} />)}
+                                        {preset.swatches.map(color => <span key={color} className="h-7 w-7" style={{ backgroundColor: color }} />)}
                                     </span>
                                 </button>
                             ))}
@@ -238,7 +238,7 @@ export function ColorEditor({
                                         <div className="flex justify-end">
                                             <BuilderButton type="button" variant="subtle" onClick={() => resetColorGroup(group.id)}>Reset this section</BuilderButton>
                                         </div>
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{group.fields.map(renderNestedColorField)}</div>
+                                        <div className="grid grid-cols-1 gap-4">{group.fields.map(renderNestedColorField)}</div>
                                     </div>
                                 )}
                             </div>
@@ -269,7 +269,7 @@ export function ColorEditor({
                             {colorGroups.map(group => (
                                 <div key={group.title} className="rounded-lg border border-slate-200 p-3">
                                     <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">{group.title}</h3>
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div className="grid grid-cols-1 gap-4">
                                         {group.fields.map(field => (
                                             <FieldShell
                                                 key={field.key}
@@ -277,7 +277,7 @@ export function ColorEditor({
                                                 help={field.help}
                                                 error={!isHexColor(theme.colors?.[field.key]) ? 'Enter a valid hex color, for example #0f766e.' : ''}
                                             >
-                                                <div className="flex gap-2" data-field-path={`colors.${field.key}`}>
+                                                <div className="flex min-w-0 gap-2" data-field-path={`colors.${field.key}`}>
                                                     <input
                                                         type="color"
                                                         value={isHexColor(theme.colors?.[field.key]) ? theme.colors[field.key] : '#000000'}
@@ -288,7 +288,7 @@ export function ColorEditor({
                                                     <input
                                                         value={theme.colors?.[field.key] || ''}
                                                         onChange={event => setColor(field.key, event.target.value)}
-                                                        className={inputClass}
+                                                        className={`${inputClass} min-w-0`}
                                                         aria-label={`${field.label} hex value`}
                                                     />
                                                 </div>

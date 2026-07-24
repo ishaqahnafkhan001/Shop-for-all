@@ -77,6 +77,11 @@ const helpTextByPath = [
         body: 'Change colors, logo, homepage sections, checkout branding, policies, and navigation. Preview first, then save to publish.'
     },
     {
+        match: '/dashboard/domain',
+        title: 'Custom Domain',
+        body: 'Connect your own domain, add the required DNS records, and verify ownership and storefront routing.'
+    },
+    {
         match: '/dashboard/shipping',
         title: 'Shipping',
         body: 'Connect courier settings before sending confirmed orders. Keep pickup address and phone number accurate.'

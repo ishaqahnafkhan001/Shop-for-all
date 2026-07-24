@@ -6,6 +6,7 @@ import {
     CreditCard,
     FileSearch,
     FileText,
+    Globe,
     History,
     Images,
     LayoutDashboard,
@@ -62,6 +63,7 @@ export const vendorNavigationGroups = [
         label: 'Storefront',
         items: [
             { id: 'store-builder', label: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, permission: 'storeBuilder', feature: 'storeBuilder' },
+            { id: 'custom-domain', label: 'Custom Domain', path: '/dashboard/domain', icon: Globe, permission: 'storeBuilder', feature: 'customDomain' },
             { id: 'shipping', label: 'Shipping', path: '/dashboard/shipping', icon: Truck, permission: 'shipping' },
             { id: 'notifications', label: 'Notifications', path: '/dashboard/notifications', icon: Bell, permission: 'notifications', feature: 'notifications' }
         ]

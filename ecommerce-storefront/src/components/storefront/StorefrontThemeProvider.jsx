@@ -64,12 +64,13 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         const sections = groups.sections || {};
         const footer = groups.footer || {};
         const checkout = groups.checkout || {};
+        const storefrontForeground = brand.secondary || cssTheme.foreground;
 
         return {
             ...referenceStyle,
             '--background': cssTheme.background,
-            '--foreground': cssTheme.foreground,
-            '--sf-ink': cssTheme.foreground,
+            '--foreground': storefrontForeground,
+            '--sf-ink': storefrontForeground,
             '--sf-surface': productCard.background || checkout.cardBackground || cssTheme.cardBackground,
             '--sf-surface-subtle': allProducts.background || sections.background || checkout.background || cssTheme.accentBg,
             '--sf-surface-raised': sections.faqBackground || allProducts.filterBackground || '#f1f5f9',
@@ -87,7 +88,7 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
             '--sf-accent-light': cssTheme.accentLight,
             '--sf-accent-ring': brand.ring || cssTheme.accentRing,
             '--sf-background': cssTheme.background,
-            '--sf-foreground': cssTheme.foreground,
+            '--sf-foreground': storefrontForeground,
             '--sf-header-background': header.background || cssTheme.headerBackground,
             '--sf-primary-button-hover-bg': cssTheme.primaryButtonHoverBg,
             '--sf-secondary-button-bg': cssTheme.secondaryButtonBg,

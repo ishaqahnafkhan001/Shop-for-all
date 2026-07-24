@@ -205,8 +205,11 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
     const sections = groups.sections || {};
     const footer = groups.footer || {};
     const checkout = groups.checkout || {};
+    const storefrontForeground = brand.secondary || cssTheme.foreground;
 
     return {
+        "--sf-background": cssTheme.background,
+        "--sf-foreground": storefrontForeground,
         "--sf-accent": brand.accent || cssTheme.accent,
         "--sf-accent-hover": brand.hover || cssTheme.accentHover,
         "--sf-accent-soft": brand.soft || cssTheme.accentSoft,
@@ -236,7 +239,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-product-card-background": productCard.background || cssTheme.cardBackground,
         "--sf-product-card-border": productCard.border || cssTheme.cardBorder,
         "--sf-product-card-shadow": productCard.shadow || cssTheme.cardBorder,
-        "--sf-product-card-title": productCard.title || cssTheme.foreground,
+        "--sf-product-card-title": productCard.title || storefrontForeground,
         "--sf-product-card-category": productCard.category || cssTheme.footerText,
         "--sf-product-card-price": productCard.price || cssTheme.priceColor,
         "--sf-product-card-compare-at-price": productCard.compareAtPrice || "#94a3b8",
@@ -259,7 +262,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-price-color": productCard.price || cssTheme.priceColor,
         "--sf-rating-color": productCard.ratingStar || cssTheme.ratingColor,
         "--sf-all-products-background": allProducts.background || cssTheme.background,
-        "--sf-all-products-title": allProducts.title || cssTheme.foreground,
+        "--sf-all-products-title": allProducts.title || storefrontForeground,
         "--sf-all-products-subtitle": allProducts.subtitle || cssTheme.footerText,
         "--sf-all-products-filter-bg": allProducts.filterBackground || "#ffffff",
         "--sf-all-products-filter-text": allProducts.filterText || "#475569",
@@ -269,7 +272,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-all-products-pagination-active-bg": allProducts.paginationActiveBackground || brand.primary || cssTheme.accent,
         "--sf-all-products-pagination-active-text": allProducts.paginationActiveText || "#ffffff",
         "--sf-section-background": sections.background || "#ffffff",
-        "--sf-section-title": sections.title || cssTheme.foreground,
+        "--sf-section-title": sections.title || storefrontForeground,
         "--sf-section-subtitle": sections.subtitle || cssTheme.footerText,
         "--sf-section-banner-overlay": sections.bannerOverlay || "#020617",
         "--sf-section-banner-text": sections.bannerText || "#ffffff",
@@ -298,7 +301,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-checkout-error": checkout.error || "#dc2626",
         "--sf-checkout-success": checkout.success || "#047857",
         fontFamily: cssTheme.fontFamily,
-        color: cssTheme.foreground,
+        color: storefrontForeground,
         backgroundColor: cssTheme.background,
     };
 };

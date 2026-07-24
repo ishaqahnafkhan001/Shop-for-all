@@ -10,8 +10,7 @@ export const editorRegistry = Object.freeze({
     checkout: { id: 'checkout', selection: 'checkoutBranding', label: 'Checkout appearance' },
     mobile: { id: 'mobile', selection: 'mobile', label: 'Mobile appearance' },
     footer: { id: 'footer', selection: 'footer', label: 'Footer' },
-    policies: { id: 'policies', selection: 'policies', label: 'Policies' },
-    domain: { id: 'domain', selection: 'domain', label: 'Domain' }
+    policies: { id: 'policies', selection: 'policies', label: 'Policies' }
 });
 
 export const resolveEditorRegistryEntry = (group) => editorRegistry[group] || editorRegistry.brand;

@@ -77,17 +77,13 @@ export function StoreBuilderSidebar({
 
     const settingGroups = {
         design: themeSettingItems.filter(item => ['brand', 'colors', 'typography', 'layout', 'mobile'].includes(item.id) && matchesSearch(item, search)),
-        experience: themeSettingItems.filter(item => ['checkout', 'policies'].includes(item.id) && matchesSearch(item, search)),
-        connections: themeSettingItems.filter(item => item.id === 'domain' && matchesSearch(item, search))
+        experience: themeSettingItems.filter(item => ['checkout', 'policies'].includes(item.id) && matchesSearch(item, search))
     };
     const showDynamicSections = !search || matchesSearch(sectionsItem, search) || matchingDynamicSections.length > 0;
     const hasResults = fixedItems.length > 0 || showDynamicSections || Object.values(settingGroups).some(items => items.length > 0) || matchesSearch(seoStatusItem, search);
 
     const renderSetting = (item) => {
-        const lockedByPlan = planAccess?.storeBuilderAccess !== 'full' && (
-            ['layout', 'mobile'].includes(item.id) ||
-            (item.id === 'domain' && planAccess?.features?.customDomain === false)
-        );
+        const lockedByPlan = planAccess?.storeBuilderAccess !== 'full' && ['layout', 'mobile'].includes(item.id);
         return (
             <NavigationRow
                 key={item.id}
@@ -189,9 +185,8 @@ export function StoreBuilderSidebar({
 
                         {settingGroups.design.length > 0 && <NavigationGroup title="Brand and design">{settingGroups.design.map(renderSetting)}</NavigationGroup>}
                         {settingGroups.experience.length > 0 && <NavigationGroup title="Store experience">{settingGroups.experience.map(renderSetting)}</NavigationGroup>}
-                        {(settingGroups.connections.length > 0 || matchesSearch(seoStatusItem, search)) && (
-                            <NavigationGroup title="Connections">
-                                {settingGroups.connections.map(renderSetting)}
+                        {matchesSearch(seoStatusItem, search) && (
+                            <NavigationGroup title="More tools">
                                 {matchesSearch(seoStatusItem, search) && (
                                     <a href="/dashboard/seo" className="flex min-h-11 items-start gap-3 rounded-lg px-3 py-2.5 text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                         <seoStatusItem.icon size={18} className="mt-0.5 text-slate-400" aria-hidden="true" />

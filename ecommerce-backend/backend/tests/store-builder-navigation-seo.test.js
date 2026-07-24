@@ -39,7 +39,7 @@ test('store builder shell separates navigation, preview, inspector, issues, and 
     assert.match(sidebar, /Store layout/);
     assert.match(sidebar, /Brand and design/);
     assert.match(sidebar, /Store experience/);
-    assert.match(sidebar, /Connections/);
+    assert.match(sidebar, /More tools/);
     assert.doesNotMatch(sidebar, /Theme settings/);
     assert.match(sidebar, /getSectionSelectionId/);
     assert.match(sidebar, /Move section up/);
@@ -51,9 +51,28 @@ test('store builder shell separates navigation, preview, inspector, issues, and 
     assert.match(header, /\['preview', 'Preview'\]/);
     assert.match(header, /\['edit', 'Settings'\]/);
     assert.match(inspector, /2xl:static/);
+    assert.match(inspector, /xl:top-16/);
+    assert.doesNotMatch(inspector, /xl:inset-y-0/);
     assert.match(drawer, /aria-modal="true"/);
     assert.match(drawer, /event\.key === 'Escape'/);
     assert.match(drawer, /returnFocusRef\.current/);
+});
+
+test('custom domain is a separate plan-gated dashboard workspace', () => {
+    const app = readRepo('ecommerce-admin/src/App.jsx');
+    const navigation = readRepo('ecommerce-admin/src/config/dashboardNavigation.jsx');
+    const page = readRepo('ecommerce-admin/src/pages/dashboard/CustomDomainPage.jsx');
+    const builderPage = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
+    const builderConstants = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/storeBuilderConstants.jsx');
+
+    assert.match(app, /path="domain"[\s\S]*withPermission\('storeBuilder'[\s\S]*withFeature\('customDomain'/);
+    assert.match(navigation, /label:\s*'Custom Domain'[\s\S]*path:\s*'\/dashboard\/domain'[\s\S]*feature:\s*'customDomain'/);
+    assert.match(page, /API\.get\('\/store-builder\/admin'\)/);
+    assert.match(page, /API\.patch\('\/store-builder\/admin'/);
+    assert.match(page, /API\.post\('\/store-builder\/admin\/custom-domain\/check'\)/);
+    assert.doesNotMatch(builderPage, /case 'domain'/);
+    assert.doesNotMatch(builderPage, /<DomainEditor/);
+    assert.doesNotMatch(builderConstants, /id:\s*'domain'/);
 });
 
 test('dynamic Store Builder sections use stable ids for selection and duplication', () => {
@@ -63,6 +82,7 @@ test('dynamic Store Builder sections use stable ids for selection and duplicatio
 
     assert.match(constants, /getSectionSelectionId/);
     assert.match(constants, /target\.startsWith\('section:'\)/);
+    assert.match(constants, /relatedTargets:\s*\['header',\s*'navigation'\]/);
     assert.match(page, /createBuilderSectionId/);
     assert.match(page, /setActiveElement\(`section:\$\{duplicateId\}`\)/);
     assert.match(renderer, /`section:\$\{stableSectionId\}`/);
@@ -73,6 +93,8 @@ test('store builder polish keeps editing contextual and preview controls focused
     const sidebar = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderSidebar.jsx');
     const previewPanel = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPreviewPanel.jsx');
     const preview = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx');
+    const colorEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx');
+    const storefrontHome = readRepo('packages/storefront-renderer/reference/StorefrontHome.jsx');
     const heroEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/HeroEditor.jsx');
     const sectionsEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/DynamicSectionsEditor.jsx');
 
@@ -82,6 +104,13 @@ test('store builder polish keeps editing contextual and preview controls focused
     assert.match(previewPanel, /option value="fit">Fit/);
     assert.match(preview, /ResizeObserver/);
     assert.match(preview, /previewZoom === 'fit'/);
+    assert.match(preview, /data-preview-device=\{device\}/);
+    assert.match(preview, /Math\.max\(0\.25/);
+    assert.match(page, /xl:pr-\[396px\] 2xl:pr-4/);
+    assert.match(storefrontHome, /previewHeroHeightClass/);
+    assert.match(storefrontHome, /heroActionsClass/);
+    assert.doesNotMatch(colorEditor, /sm:grid-cols-2/);
+    assert.match(page, /setMainBrandColor[\s\S]*buildBrandColorSet\(value\)/);
     assert.match(heroEditor, /selectedSlideId/);
     assert.match(heroEditor, /Advanced image positioning/);
     assert.match(sectionsEditor, /Section library/);

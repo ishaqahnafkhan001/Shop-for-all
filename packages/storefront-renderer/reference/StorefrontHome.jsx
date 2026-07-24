@@ -78,12 +78,27 @@ export function ReferenceStorefrontHome({
     const heroMobilePosition = `${activeHeroSlide.mobileFocalPoint?.x ?? 50}% ${activeHeroSlide.mobileFocalPoint?.y ?? 50}%`;
     const mobileHeroSrcSet = getResponsiveImageSrcSet(activeMobileHeroImage, [420, 640, 760], { crop: "fill" });
     const desktopHeroSrcSet = getResponsiveImageSrcSet(activeHeroImage, [960, 1280, 1600, 1920], { crop: "fill" });
-    const heroHeightClass = hero.height === "Compact"
+    const liveHeroHeightClass = hero.height === "Compact"
         ? "min-h-[318px] min-[390px]:min-h-[332px] sm:min-h-[460px] lg:min-h-[500px]"
         : hero.height === "Tall"
             ? "min-h-[370px] min-[390px]:min-h-[390px] sm:min-h-[600px] lg:min-h-[680px]"
             : "min-h-[338px] min-[390px]:min-h-[360px] sm:min-h-[520px] lg:min-h-[580px]";
-    const heroClass = `relative isolate overflow-hidden rounded-[1.25rem] text-white shadow-xl shadow-slate-300/50 sm:rounded-[2rem] sm:shadow-2xl sm:shadow-slate-300/60 ${heroHeightClass}`;
+    const previewHeroHeightClass = hero.height === "Compact"
+        ? (previewDevice === "smallMobile" ? "min-h-[318px]" : forcedMobilePreview ? "min-h-[332px]" : previewDevice === "tablet" ? "min-h-[460px]" : "min-h-[500px]")
+        : hero.height === "Tall"
+            ? (previewDevice === "smallMobile" ? "min-h-[370px]" : forcedMobilePreview ? "min-h-[390px]" : previewDevice === "tablet" ? "min-h-[600px]" : "min-h-[680px]")
+            : (previewDevice === "smallMobile" ? "min-h-[338px]" : forcedMobilePreview ? "min-h-[360px]" : previewDevice === "tablet" ? "min-h-[520px]" : "min-h-[580px]");
+    const heroHeightClass = previewDevice ? previewHeroHeightClass : liveHeroHeightClass;
+    const heroFrameClass = previewDevice
+        ? (forcedMobilePreview ? "rounded-[1.25rem] shadow-xl shadow-slate-300/50" : "rounded-[2rem] shadow-2xl shadow-slate-300/60")
+        : "rounded-[1.25rem] shadow-xl shadow-slate-300/50 sm:rounded-[2rem] sm:shadow-2xl sm:shadow-slate-300/60";
+    const heroContentClass = previewDevice
+        ? (forcedMobilePreview ? "justify-end p-4" : previewDevice === "tablet" ? "justify-between p-8" : "justify-between p-12")
+        : "justify-end p-4 max-[360px]:p-3.5 sm:justify-between sm:p-8 lg:p-12";
+    const heroActionsClass = previewDevice
+        ? (forcedMobilePreview ? "flex flex-col items-stretch gap-2.5" : "flex flex-row flex-wrap items-center gap-3")
+        : "flex max-w-3xl flex-col items-stretch gap-2.5 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center sm:gap-3";
+    const heroClass = `relative isolate overflow-hidden text-white ${heroFrameClass} ${heroHeightClass}`;
     const heroTitleClass = previewDevice
         ? `max-w-4xl font-black leading-[1.02] tracking-tight text-white drop-shadow-sm ${forcedMobilePreview ? "text-[1.85rem] max-[360px]:text-[1.65rem]" : previewDevice === "tablet" ? "text-5xl" : "text-7xl"}`
         : "max-w-4xl text-[1.85rem] font-black leading-[1.02] tracking-tight text-white drop-shadow-sm max-[360px]:text-[1.65rem] sm:text-5xl sm:leading-[0.98] md:text-6xl lg:text-7xl";
@@ -158,8 +173,8 @@ export function ReferenceStorefrontHome({
                                 </button>
                             </>
                         )}
-                        <div className={`relative z-10 flex ${heroHeightClass} flex-col justify-end p-4 max-[360px]:p-3.5 sm:justify-between sm:p-8 lg:p-12`}>
-                            <div className="max-w-4xl pb-1 sm:pb-0 sm:pt-4 lg:pt-6">
+                        <div className={`relative z-10 flex ${heroHeightClass} ${heroContentClass} flex-col`}>
+                            <div className={`max-w-4xl ${previewDevice ? (forcedMobilePreview ? "pb-1" : "pt-4") : "pb-1 sm:pb-0 sm:pt-4 lg:pt-6"}`}>
                                 {(activeHeroSlide.badgeText || "Limited time offer") && (
                                     <p className="inline-flex max-w-full rounded-full border border-teal-200/25 bg-white/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-teal-100 shadow-lg shadow-teal-950/20 backdrop-blur sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.22em]">
                                         {activeHeroSlide.badgeText || "Limited time offer"}
@@ -179,8 +194,8 @@ export function ReferenceStorefrontHome({
                                     </p>
                                 )}
                             </div>
-                            <div className="mt-4 space-y-3 sm:mt-8 sm:space-y-4">
-                                <div className="flex max-w-3xl flex-col items-stretch gap-2.5 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center sm:gap-3">
+                            <div className={previewDevice ? (forcedMobilePreview ? "mt-4 space-y-3" : "mt-8 space-y-4") : "mt-4 space-y-3 sm:mt-8 sm:space-y-4"}>
+                                <div className={heroActionsClass}>
                                     <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || "#products"} prefetch={false} className="inline-flex min-h-11 items-center justify-center rounded-full px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-primary-button-bg)", color: "var(--sf-hero-primary-button-text)" }}>
                                         {activeHeroSlide.primaryCtaText || "Shop Now"}
                                         <ChevronRight size={16} className="ml-1" />

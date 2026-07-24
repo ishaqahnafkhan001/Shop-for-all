@@ -39,8 +39,8 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
         <div className="my-5 h-px bg-slate-200" />
         <h4 className="mb-3 text-sm font-black" style={{ color: "var(--sf-all-products-title)" }}>Price Range</h4>
         <div className="grid grid-cols-2 gap-2 max-[360px]:grid-cols-1">
-            <input type="number" aria-label="Minimum price" placeholder="Min" value={priceInput.min} onChange={onMinPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
-            <input type="number" aria-label="Maximum price" placeholder="Max" value={priceInput.max} onChange={onMaxPriceChange} className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" />
+            <input type="number" aria-label="Minimum price" placeholder="Min" value={priceInput.min} onChange={onMinPriceChange} className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }} />
+            <input type="number" aria-label="Maximum price" placeholder="Max" value={priceInput.max} onChange={onMaxPriceChange} className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100" style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }} />
         </div>
         <button type="button" onClick={onPriceApply} className="mt-3 w-full rounded-full px-4 py-3 text-sm font-black transition hover:-translate-y-0.5" style={{ backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" }}>Apply Price</button>
         <div className="my-5 h-px bg-slate-200" />
@@ -128,8 +128,8 @@ export function StorefrontAllProducts({
         ? "relative col-span-2 w-full min-w-0"
         : "relative col-span-2 w-full min-w-0 sm:col-auto sm:flex-1 lg:w-[min(36vw,420px)] lg:flex-none";
     const catalogSelectClass = forcedMobilePreview
-        ? "min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100"
-        : "min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36 sm:rounded-full sm:px-4";
+        ? "min-h-12 w-full rounded-2xl border border-slate-200 px-3 text-sm font-black outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100"
+        : "min-h-12 w-full rounded-2xl border border-slate-200 px-3 text-sm font-black outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:w-36 sm:rounded-full sm:px-4";
     const productLayoutClass = forcedNarrowPreview
         ? "grid gap-5"
         : "grid min-w-0 gap-5 sm:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]";
@@ -175,7 +175,7 @@ export function StorefrontAllProducts({
                                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input value={catalogSearch} onChange={onCatalogSearchChange} aria-label="Search catalog" placeholder="Search catalog" className="min-h-12 w-full rounded-2xl border border-slate-200 py-2.5 pl-11 pr-4 text-sm font-semibold outline-none focus:border-[var(--sf-accent)] focus:ring-4 focus:ring-teal-100 sm:rounded-full" style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }} />
                                 </label>
-                                <select value={filters.sort} onChange={onSortChange} aria-label="Sort products" className={catalogSelectClass}>
+                                <select value={filters.sort} onChange={onSortChange} aria-label="Sort products" className={catalogSelectClass} style={{ backgroundColor: "var(--sf-all-products-dropdown-bg)", color: "var(--sf-all-products-filter-text)" }}>
                                     <option value="newest">Newest</option>
                                     <option value="priceAsc">Price low</option>
                                     <option value="priceDesc">Price high</option>

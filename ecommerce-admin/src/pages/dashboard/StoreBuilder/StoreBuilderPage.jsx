@@ -55,6 +55,7 @@ import {
     syncHeroLegacyFields
 } from './storeBuilderThemeUtils.js';
 import {
+    applyCompatibleColorUpdates,
     buildBrandColorSet,
     colorSectionGroups,
     contrastRatio,
@@ -67,7 +68,6 @@ import {
 const StoreBuilderPreviewPanel = lazy(() => import('./StoreBuilderPreviewPanel.jsx').then(module => ({ default: module.StoreBuilderPreviewPanel })));
 const ColorEditor = lazy(() => import('./editors/ColorEditor.jsx').then(module => ({ default: module.ColorEditor })));
 const DynamicSectionsEditor = lazy(() => import('./editors/DynamicSectionsEditor.jsx').then(module => ({ default: module.DynamicSectionsEditor })));
-const DomainEditor = lazy(() => import('./editors/DomainEditor.jsx').then(module => ({ default: module.DomainEditor })));
 const BrandEditor = lazy(() => import('./editors/BasicEditors.jsx').then(module => ({ default: module.BrandEditor })));
 const TypographyEditor = lazy(() => import('./editors/BasicEditors.jsx').then(module => ({ default: module.TypographyEditor })));
 const LayoutEditor = lazy(() => import('./editors/BasicEditors.jsx').then(module => ({ default: module.LayoutEditor })));
@@ -99,7 +99,6 @@ const StoreBuilderPage = () => {
     const [saving, setSaving] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [uploadingThemeImage, setUploadingThemeImage] = useState(false);
-    const [checkingDomain, setCheckingDomain] = useState(false);
     const [shopName, setShopName] = useState('');
     const [shopSubdomain, setShopSubdomain] = useState('');
     const [planAccess, setPlanAccess] = useState(DEFAULT_PLAN_ACCESS);
@@ -225,9 +224,6 @@ const StoreBuilderPage = () => {
     }, [activeElement, theme]);
     const selectedPlanRestriction = useMemo(() => {
         if (planAccess.storeBuilderAccess === 'full') return '';
-        if (activeGroup === 'domain' && planAccess.features?.customDomain === false) {
-            return planAccess.capabilityMetadata?.customDomain?.label || 'Custom domains are not included in your current plan.';
-        }
         if (['layout', 'mobile'].includes(activeGroup)) {
             return planAccess.capabilityMetadata?.advancedDesign?.label || 'Advanced design controls are not included in your current plan.';
         }
@@ -518,7 +514,7 @@ const StoreBuilderPage = () => {
     const setColor = (key, value) => {
         setTheme(prev => ({
             ...prev,
-            colors: { ...prev.colors, [key]: value }
+            colors: applyCompatibleColorUpdates(prev.colors || {}, { [key]: value })
         }));
     };
 
@@ -532,7 +528,7 @@ const StoreBuilderPage = () => {
     const applyColorSet = (colors = {}, label = 'Palette') => {
         setTheme(prev => ({
             ...prev,
-            colors: mergeColorUpdates(
+            colors: applyCompatibleColorUpdates(
                 prev.colors || {},
                 colors?.accent ? mergeColorUpdates(buildBrandColorSet(colors.accent), colors) : colors
             )
@@ -541,7 +537,7 @@ const StoreBuilderPage = () => {
     };
 
     const applyBrandColor = () => {
-        const brandColor = theme.colors?.accent || defaultTheme.colors.accent;
+        const brandColor = theme.colors?.brand?.primary || theme.colors?.accent || defaultTheme.colors.accent;
         if (!isHexColor(brandColor)) {
             toast.error('Choose a valid main brand color first.');
             return;
@@ -595,14 +591,16 @@ const StoreBuilderPage = () => {
     const setMainBrandColor = (value) => {
         setTheme(prev => ({
             ...prev,
-            colors: mergeColorUpdates(prev.colors || {}, {
-                accent: value,
-                brand: {
-                    ...(prev.colors?.brand || {}),
-                    primary: value,
-                    accent: value
-                }
-            })
+            colors: isHexColor(value)
+                ? mergeColorUpdates(prev.colors || {}, buildBrandColorSet(value))
+                : mergeColorUpdates(prev.colors || {}, {
+                    accent: value,
+                    brand: {
+                        ...(prev.colors?.brand || {}),
+                        primary: value,
+                        accent: value
+                    }
+                })
         }));
     };
 
@@ -1396,7 +1394,6 @@ const StoreBuilderPage = () => {
             const payload = {
                 theme,
                 searchAliases,
-                customDomain,
                 storewideDiscount: Math.max(0, Math.min(100, Number(storewideDiscount) || 0)),
                 expectedRevision: themeRevision
             };
@@ -1454,40 +1451,6 @@ const StoreBuilderPage = () => {
             toast.error(err.response?.data?.error || 'Failed to save store builder');
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleCheckCustomDomain = async () => {
-        if (!customDomain?.domain) {
-            toast.error('Add and publish a custom domain first.');
-            return;
-        }
-        if (hasUnsavedChanges) {
-            toast.error('Publish your latest domain changes before checking DNS.');
-            return;
-        }
-
-        setCheckingDomain(true);
-        try {
-            const { data } = await API.post('/store-builder/admin/custom-domain/check');
-            const nextDomain = { ...customDomain, ...(data.data || {}) };
-            setCustomDomain(nextDomain);
-            const nextSnapshot = stableStringify({ theme, searchAliases, customDomain: nextDomain, storewideDiscount: Number(storewideDiscount) || 0 });
-            setInitialSnapshot(nextSnapshot);
-            lastHistorySnapshotRef.current = nextSnapshot;
-            toast.success(data.data?.message || 'Domain verification checked');
-        } catch (err) {
-            const nextData = err.response?.data?.data;
-            if (nextData) {
-                const nextDomain = { ...customDomain, ...nextData };
-                setCustomDomain(nextDomain);
-                const nextSnapshot = stableStringify({ theme, searchAliases, customDomain: nextDomain, storewideDiscount: Number(storewideDiscount) || 0 });
-                setInitialSnapshot(nextSnapshot);
-                lastHistorySnapshotRef.current = nextSnapshot;
-            }
-            toast.error(err.response?.data?.message || err.response?.data?.error || 'Domain verification failed');
-        } finally {
-            setCheckingDomain(false);
         }
     };
 
@@ -1664,18 +1627,6 @@ const StoreBuilderPage = () => {
                 return (
                     <PoliciesEditor theme={theme} shopName={shopName} updatePolicy={updatePolicy} resetPolicyToDefault={resetPolicyToDefault} />
                 );
-            case 'domain':
-                return (
-                    <Suspense fallback={<div className="h-72 animate-pulse rounded-lg border border-slate-200 bg-slate-100" aria-label="Loading domain editor" />}>
-                        <DomainEditor
-                            customDomain={customDomain}
-                            setCustomDomain={setCustomDomain}
-                            hasUnsavedChanges={hasUnsavedChanges}
-                            checkingDomain={checkingDomain}
-                            onCheckDomain={handleCheckCustomDomain}
-                        />
-                    </Suspense>
-                );
             default:
                 return null;
         }
@@ -1766,7 +1717,9 @@ const StoreBuilderPage = () => {
                 </div>
             )}
 
-            <div className="mx-auto grid max-w-[1800px] grid-cols-1 gap-4 p-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(520px,1fr)_380px]">
+            <div className={`mx-auto grid max-w-[1800px] grid-cols-1 gap-4 p-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(520px,1fr)_380px] ${
+                inspectorOpen ? 'xl:pr-[396px] 2xl:pr-4' : ''
+            }`}>
                 <StoreBuilderSidebar
                     mobileWorkspace={mobileWorkspace}
                     activeElement={activeElement}

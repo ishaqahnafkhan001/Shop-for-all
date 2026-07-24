@@ -431,13 +431,13 @@ export const StorefrontPreview = ({
             : 'rounded-[2.4rem] border-[10px] border-slate-950 bg-white shadow-2xl shadow-slate-900/25';
     const frameWidth = deviceWidths[device] || deviceWidths.desktop;
     const requestedScale = previewZoom === 'fit' ? fitScale : Number(previewZoom);
-    const previewScale = Number.isFinite(requestedScale) ? Math.max(0.4, Math.min(1, requestedScale)) : 1;
+    const previewScale = Number.isFinite(requestedScale) ? Math.max(0.25, Math.min(1, requestedScale)) : 1;
 
     useEffect(() => {
         const container = previewContainerRef.current;
         if (!container || previewZoom !== 'fit') return undefined;
         const updateScale = () => {
-            const availableWidth = Math.max(240, container.clientWidth - 32);
+            const availableWidth = Math.max(120, container.clientWidth - 32);
             setFitScale(Math.min(1, availableWidth / frameWidth));
         };
         updateScale();
@@ -477,7 +477,13 @@ export const StorefrontPreview = ({
     };
 
     return (
-        <div ref={previewContainerRef} className="isolate overflow-x-auto rounded-lg border border-slate-200 bg-slate-100 p-4">
+        <div
+            ref={previewContainerRef}
+            className={`isolate rounded-lg border border-slate-200 bg-slate-100 p-4 ${
+                previewZoom === 'fit' ? 'overflow-x-hidden' : 'overflow-x-auto'
+            }`}
+            data-preview-device={device}
+        >
             <div
                 className="mx-auto max-w-none transition-all duration-300"
                 style={{ width: `${frameWidth}px`, zoom: previewScale }}

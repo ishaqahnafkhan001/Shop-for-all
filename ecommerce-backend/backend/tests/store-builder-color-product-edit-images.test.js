@@ -13,6 +13,7 @@ const importStorefrontTheme = () => import(pathToFileURL(path.join(repoRoot, 'ec
 test('store builder color controls are centralized in the Colors panel', () => {
     const storeBuilderPage = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
     const colorConfig = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/storeBuilderColorConfig.js');
+    const colorState = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/storeBuilderColorState.js');
     const colorEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx');
     const productPanel = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ProductCardsEditor.jsx');
 
@@ -22,7 +23,14 @@ test('store builder color controls are centralized in the Colors panel', () => {
     assert.match(colorConfig, /Product Cards/);
     assert.match(colorConfig, /productCard\.addToCartBackground/);
     assert.match(colorConfig, /productCard\.buyNowBackground/);
+    assert.match(colorConfig, /productCard\.stockBackground/);
+    assert.match(colorConfig, /productCard\.stockText/);
     assert.match(colorConfig, /productCard\.variantChipSelectedText/);
+    assert.match(colorState, /footerBackground:\s*\['footer\.background'\]/);
+    assert.match(colorState, /navbarBackground:\s*\['header\.background'\]/);
+    assert.match(colorState, /priceColor:\s*\['productCard\.price'\]/);
+    assert.match(colorState, /applyCompatibleColorUpdates/);
+    assert.match(storeBuilderPage, /applyCompatibleColorUpdates\(prev\.colors \|\| \{\}, \{ \[key\]: value \}\)/);
 
     assert.doesNotMatch(productPanel, /type="color"/);
     assert.doesNotMatch(productPanel, /setThemeGroup\('productCard', 'priceColor'/);
@@ -63,9 +71,54 @@ test('product card renderer lets Color section values override legacy product ca
     assert.equal(authoritativeColorTheme.colors.productCard.addToCartBackground, '#fedcba');
 });
 
+test('advanced legacy color edits are mirrored to authoritative storefront color groups', async () => {
+    const colorState = await import(pathToFileURL(path.join(
+        repoRoot,
+        'ecommerce-admin/src/pages/dashboard/StoreBuilder/storeBuilderColorState.js'
+    )).href);
+    const { normalizeTheme } = await importStorefrontTheme();
+    const updates = {
+        footerBackground: '#102030',
+        footerText: '#d8e1ea',
+        footerLink: '#56aabb',
+        navbarBackground: '#112233',
+        navbarText: '#f8fafc',
+        cardBackground: '#fffaf0',
+        cardBorder: '#cbd5e1',
+        priceColor: '#7c2d12',
+        saleBadgeBg: '#dc2626',
+        saleBadgeText: '#ffffff',
+        ratingColor: '#f59e0b',
+        primaryButtonBg: '#0f766e',
+        primaryButtonText: '#ffffff'
+    };
+    const colors = colorState.applyCompatibleColorUpdates(normalizeTheme({}).colors, updates);
+    const normalized = normalizeTheme({ colors });
+
+    assert.equal(normalized.colors.footer.background, updates.footerBackground);
+    assert.equal(normalized.colors.footer.text, updates.footerText);
+    assert.equal(normalized.colors.footer.heading, updates.footerLink);
+    assert.equal(normalized.colors.footer.link, updates.footerLink);
+    assert.equal(normalized.colors.header.background, updates.navbarBackground);
+    assert.equal(normalized.colors.header.text, updates.navbarText);
+    assert.equal(normalized.colors.header.icon, updates.navbarText);
+    assert.equal(normalized.colors.productCard.background, updates.cardBackground);
+    assert.equal(normalized.colors.productCard.border, updates.cardBorder);
+    assert.equal(normalized.colors.productCard.price, updates.priceColor);
+    assert.equal(normalized.colors.productCard.saleBadgeBackground, updates.saleBadgeBg);
+    assert.equal(normalized.colors.productCard.saleBadgeText, updates.saleBadgeText);
+    assert.equal(normalized.colors.productCard.ratingStar, updates.ratingColor);
+    assert.equal(normalized.colors.productCard.addToCartBackground, updates.primaryButtonBg);
+    assert.equal(normalized.colors.productCard.addToCartText, updates.primaryButtonText);
+    assert.equal(normalized.colors.checkout.buttonBackground, updates.primaryButtonBg);
+    assert.equal(normalized.colors.checkout.buttonText, updates.primaryButtonText);
+});
+
 test('storefront color groups persist and apply across all storefront page wrappers', () => {
     const shopModel = readBackend('models/Shop.js');
     const themeProvider = readRepo('ecommerce-storefront/src/components/storefront/StorefrontThemeProvider.jsx');
+    const referenceCore = readRepo('packages/storefront-renderer/reference/referenceCore.jsx');
+    const footer = readRepo('packages/storefront-renderer/reference/StorefrontFooter.jsx');
     const storefrontCss = readRepo('ecommerce-storefront/src/app/globals.css');
 
     assert.match(shopModel, /themeColorGroups/);
@@ -79,6 +132,9 @@ test('storefront color groups persist and apply across all storefront page wrapp
     assert.match(themeProvider, /'--sf-border'/);
     assert.match(themeProvider, /'--sf-success'/);
     assert.match(themeProvider, /'--sf-danger'/);
+    assert.match(themeProvider, /brand\.secondary \|\| cssTheme\.foreground/);
+    assert.match(referenceCore, /"--sf-foreground": storefrontForeground/);
+    assert.match(footer, /text-\[var\(--sf-footer-link\)\]/);
 
     assert.match(storefrontCss, /var\(--sf-background/);
     assert.match(storefrontCss, /var\(--sf-surface-subtle/);
