@@ -23,6 +23,47 @@ const cleanAliases = (value) => (Array.isArray(value) ? value : String(value || 
     .filter(Boolean)
     .slice(0, 8);
 
+const buildLegacySeoBootstrap = (response) => {
+    const responseData = response?.data || {};
+    const source = responseData.bootstrap || responseData.data || {};
+    const shop = source.shop || source;
+    const theme = shop.theme || source.theme || {};
+    const customDomain = shop.customDomain || {};
+    const verifiedDomain = customDomain.status === 'Verified' ? String(customDomain.domain || '').trim() : '';
+    const subdomain = String(shop.subdomain || '').trim();
+    const canonical = verifiedDomain
+        ? `https://${verifiedDomain}/`
+        : (subdomain ? `https://${subdomain}.scaleup.codes/` : '');
+
+    return {
+        compatibilityMode: true,
+        published: {
+            seo: theme.seo || {},
+            searchAliases: shop.searchAliases || source.searchAliases || []
+        },
+        draft: null,
+        themeRevision: Number(shop.themeRevision || source.publication?.revision || 0),
+        lastPublishedAt: shop.lastPublishedAt || source.publication?.lastPublishedAt || null,
+        resolvedSeo: null,
+        health: null,
+        capabilities: responseData.planAccess?.capabilityMetadata || source.planAccess?.capabilityMetadata || {},
+        domain: {
+            subdomain,
+            customDomain,
+            canonical,
+            sitemap: canonical ? `${canonical.replace(/\/$/, '')}/sitemap.xml` : '',
+            robots: canonical ? `${canonical.replace(/\/$/, '')}/robots.txt` : ''
+        },
+        shop: {
+            shopName: shop.shopName || '',
+            subdomain
+        },
+        seoStats: source.seoStats || {},
+        socialAsset: null,
+        legacyTheme: theme
+    };
+};
+
 export function useHomepageSeo() {
     const [bootstrap, setBootstrap] = useState(null);
     const [savedSeo, setSavedSeo] = useState({});
@@ -63,15 +104,22 @@ export function useHomepageSeo() {
         setLoading(true);
         setError('');
         try {
-            const response = await API.get('/store-builder/admin/seo/bootstrap');
+            let data;
+            try {
+                const response = await API.get('/store-builder/admin/seo/bootstrap');
+                data = response.data?.data;
+            } catch (requestError) {
+                if (requestError.response?.status !== 404) throw requestError;
+                const fallbackResponse = await API.get('/store-builder/admin');
+                data = buildLegacySeoBootstrap(fallbackResponse);
+            }
             if (preserveDraft) {
-                const data = response.data?.data;
                 setBootstrap(data);
                 setThemeRevision(Number(data?.themeRevision || 0));
                 setSavedSeo(data?.published?.seo || {});
                 setSavedAliases(data?.published?.searchAliases || []);
             } else {
-                hydrate(response.data);
+                hydrate(data);
             }
         } catch (requestError) {
             setError(requestError.response?.data?.error || 'Homepage SEO could not be loaded.');
@@ -96,6 +144,11 @@ export function useHomepageSeo() {
 
     const saveDraft = useCallback(async ({ quiet = false } = {}) => {
         if (!isDirty) return null;
+        if (bootstrap?.compatibilityMode) {
+            setDraftStatus('local');
+            if (!quiet) toast.success('SEO changes are kept locally until you publish');
+            return { seo: draftSeo, searchAliases: cleanAliases(draftAliases), localOnly: true };
+        }
         saveRequest.current?.abort?.();
         const controller = new AbortController();
         saveRequest.current = controller;
@@ -115,7 +168,7 @@ export function useHomepageSeo() {
             if (!quiet) toast.error(requestError.response?.data?.error || 'SEO draft could not be saved.');
             return null;
         }
-    }, [draftAliases, draftSeo, isDirty, themeRevision]);
+    }, [bootstrap?.compatibilityMode, draftAliases, draftSeo, isDirty, themeRevision]);
 
     useEffect(() => {
         window.clearTimeout(autosaveTimer.current);
@@ -142,12 +195,31 @@ export function useHomepageSeo() {
         setPublishing(true);
         setConflict(null);
         try {
-            const response = await API.post('/store-builder/admin/seo/publish', {
-                seo: draftSeo,
-                searchAliases: cleanAliases(draftAliases),
-                expectedRevision: themeRevision
-            });
-            const data = response.data?.data || {};
+            let data;
+            if (bootstrap?.compatibilityMode) {
+                const response = await API.patch('/store-builder/admin', {
+                    theme: {
+                        ...(bootstrap.legacyTheme || {}),
+                        seo: draftSeo
+                    },
+                    searchAliases: cleanAliases(draftAliases),
+                    expectedRevision: themeRevision
+                });
+                const savedShop = response.data?.data || {};
+                data = {
+                    seo: savedShop.theme?.seo || draftSeo,
+                    searchAliases: savedShop.searchAliases || cleanAliases(draftAliases),
+                    themeRevision: Number(savedShop.themeRevision || themeRevision),
+                    lastPublishedAt: savedShop.lastPublishedAt || new Date().toISOString()
+                };
+            } else {
+                const response = await API.post('/store-builder/admin/seo/publish', {
+                    seo: draftSeo,
+                    searchAliases: cleanAliases(draftAliases),
+                    expectedRevision: themeRevision
+                });
+                data = response.data?.data || {};
+            }
             setSavedSeo(data.seo || {});
             setDraftSeo(data.seo || {});
             setSavedAliases(data.searchAliases || []);
@@ -180,16 +252,18 @@ export function useHomepageSeo() {
         } finally {
             setPublishing(false);
         }
-    }, [draftAliases, draftSeo, load, themeRevision]);
+    }, [bootstrap?.compatibilityMode, bootstrap?.legacyTheme, draftAliases, draftSeo, load, themeRevision]);
 
     const discardDraft = useCallback(async () => {
-        await API.delete('/store-builder/admin/seo/draft');
+        if (!bootstrap?.compatibilityMode) {
+            await API.delete('/store-builder/admin/seo/draft');
+        }
         setDraftSeo(savedSeo);
         setDraftAliases(savedAliases);
         setConflict(null);
         setDraftStatus('idle');
         toast.success('SEO draft discarded');
-    }, [savedAliases, savedSeo]);
+    }, [bootstrap?.compatibilityMode, savedAliases, savedSeo]);
 
     const rebaseDraftOnLatest = useCallback(async () => {
         await load({ preserveDraft: true });

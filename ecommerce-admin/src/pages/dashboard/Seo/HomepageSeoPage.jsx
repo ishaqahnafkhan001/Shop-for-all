@@ -122,6 +122,14 @@ export default function HomepageSeoPage() {
             </header>
 
             <main className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
+                {seo.bootstrap?.compatibilityMode && (
+                    <div role="status" className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                        <p className="font-black">Compatibility mode</p>
+                        <p className="mt-1 leading-6">
+                            Homepage SEO can still be published safely, but server-side SEO drafts and revision conflict checks require the latest backend deployment.
+                        </p>
+                    </div>
+                )}
                 {seo.conflict && (
                     <div role="alert" className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4">
                         <h2 className="font-black text-red-900">Another session published storefront changes</h2>

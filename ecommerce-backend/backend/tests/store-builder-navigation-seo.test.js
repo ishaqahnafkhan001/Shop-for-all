@@ -98,6 +98,7 @@ test('standalone Homepage SEO page is deep-linkable and preserves local drafts o
     const app = readRepo('ecommerce-admin/src/App.jsx');
     const page = readRepo('ecommerce-admin/src/pages/dashboard/Seo/HomepageSeoPage.jsx');
     const hook = readRepo('ecommerce-admin/src/pages/dashboard/Seo/hooks/useHomepageSeo.js');
+    const storeBuilderBootstrap = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useStoreBuilderBootstrap.js');
 
     assert.match(app, /path="seo"/);
     assert.match(page, /Search Appearance/);
@@ -112,5 +113,10 @@ test('standalone Homepage SEO page is deep-linkable and preserves local drafts o
     assert.match(hook, /\/store-builder\/admin\/seo\/draft/);
     assert.match(hook, /\/store-builder\/admin\/seo\/publish/);
     assert.match(hook, /payload\.code === 'THEME_CONFLICT'/);
+    assert.match(hook, /requestError\.response\?\.status !== 404/);
+    assert.match(hook, /buildLegacySeoBootstrap/);
+    assert.match(hook, /bootstrap\?\.compatibilityMode/);
+    assert.match(page, /Compatibility mode/);
+    assert.match(storeBuilderBootstrap, /API\.get\('\/store-builder\/admin'\)/);
     assert.match(page, /Your local SEO draft has been preserved/);
 });
