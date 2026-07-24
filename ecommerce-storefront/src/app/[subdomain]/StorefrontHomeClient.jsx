@@ -181,6 +181,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
     const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', minRating: '', sort: 'newest', page: 1 });
     const [priceInput, setPriceInput] = useState({ min: '', max: '' });
     const [catalogSearch, setCatalogSearch] = useState('');
+    const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState('');
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     const {
@@ -196,7 +197,10 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
         loading,
         error,
         pagination
-    } = useShopData(subdomain, filters, initialData);
+    } = useShopData(subdomain, {
+        ...filters,
+        search: debouncedCatalogSearch
+    }, initialData);
     const [dismissedSalePopupId, setDismissedSalePopupId] = useState('');
     const theme = normalizeTheme(shop?.theme || initialData?.shop?.theme || {});
     const storewideDiscount = shop?.storewideDiscount || initialData?.shop?.storewideDiscount || 0;
@@ -227,6 +231,20 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
     useEffect(() => {
         if (shop) hydrateThemeSettings(shop);
     }, [hydrateThemeSettings, shop]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setDebouncedCatalogSearch(catalogSearch.trim());
+        }, 350);
+
+        return () => window.clearTimeout(timer);
+    }, [catalogSearch]);
+
+    const handleCatalogSearchChange = useCallback((event) => {
+        const value = event?.target?.value || '';
+        setCatalogSearch(value);
+        setFilters(prev => prev.page === 1 ? prev : { ...prev, page: 1 });
+    }, []);
 
     const handleCategoryChange = useCallback((category) => {
         setFilters(prev => ({ ...prev, category, page: 1 }));
@@ -378,7 +396,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
                 priceInput={priceInput}
                 catalogSearch={catalogSearch}
                 mobileFiltersOpen={mobileFiltersOpen}
-                onCatalogSearchChange={event => setCatalogSearch(event.target.value)}
+                onCatalogSearchChange={handleCatalogSearchChange}
                 onSortChange={handleSortChange}
                 onFilterOpen={() => setMobileFiltersOpen(true)}
                 onFilterClose={() => setMobileFiltersOpen(false)}

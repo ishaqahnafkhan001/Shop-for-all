@@ -15,18 +15,35 @@ import {
     noindexMetadata
 } from "@/lib/seo";
 
-const getCollectionPageData = async (subdomain, slug, host = "") => {
+const getCollectionFilters = (searchParams = {}) => ({
+    page: Math.max(Number(searchParams.page) || 1, 1),
+    limit: Math.min(Math.max(Number(searchParams.limit) || 12, 1), 48),
+    sort: ["newest", "oldest", "price_asc", "price_desc", "rating_desc"].includes(searchParams.sort)
+        ? searchParams.sort
+        : "newest"
+});
+
+const getCollectionPageData = async (subdomain, slug, host = "", searchParams = {}) => {
+    const filters = getCollectionFilters(searchParams);
+
     try {
         const [shop, collectionData] = await Promise.all([
             fetchStorefrontInfo(subdomain, { storefrontHost: host }),
-            fetchStorefrontCollection(subdomain, slug, { page: 1, limit: 48, sort: "newest" }, { storefrontHost: host })
+            fetchStorefrontCollection(subdomain, slug, filters, { storefrontHost: host })
         ]);
 
         return {
             shop,
             collection: collectionData?.collection || null,
             products: collectionData?.products || [],
-            pagination: collectionData?.pagination || null
+            pagination: collectionData?.pagination || {
+                page: filters.page,
+                limit: filters.limit,
+                totalItems: collectionData?.products?.length || 0,
+                totalPages: 1,
+                pages: 1
+            },
+            filters
         };
     } catch (error) {
         if (![404, 423].includes(error.status)) {
@@ -61,11 +78,12 @@ export async function generateMetadata({ params }) {
     });
 }
 
-export default async function CollectionPage({ params }) {
+export default async function CollectionPage({ params, searchParams }) {
     const { subdomain, slug } = await params;
+    const resolvedSearchParams = await searchParams;
     const headerStore = await headers();
     const host = headerStore.get("host") || "";
-    const data = await getCollectionPageData(subdomain, slug, host);
+    const data = await getCollectionPageData(subdomain, slug, host, resolvedSearchParams || {});
 
     if (!data?.collection || !data?.shop) notFound();
 
@@ -105,9 +123,12 @@ export default async function CollectionPage({ params }) {
                 />
             )}
             <CollectionPageClient
+                key={JSON.stringify(data.filters)}
                 shop={data.shop}
                 collection={data.collection}
                 products={data.products}
+                pagination={data.pagination}
+                filters={data.filters}
             />
         </>
     );

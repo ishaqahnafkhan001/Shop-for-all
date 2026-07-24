@@ -69,7 +69,7 @@ export default function CategoryPageClient({ shop, category, products = [], pagi
         ...(theme.productCard || {}),
         colors: productCardColors || {},
     }), [theme.productCard, productCardColors]);
-    const total = pagination?.total ?? normalizedProducts.length;
+    const total = pagination?.totalItems ?? pagination?.total ?? normalizedProducts.length;
     const page = pagination?.page || 1;
     const totalPages = pagination?.totalPages || pagination?.pages || 1;
     const hasRatingData = normalizedProducts.some(product => Number(product.averageRating || 0) > 0 || Number(product.numReviews || 0) > 0) || Boolean(filters.rating);

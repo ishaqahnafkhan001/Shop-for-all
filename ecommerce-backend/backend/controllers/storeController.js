@@ -23,6 +23,7 @@ const {
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
 const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
+const { buildPagination } = require('../utils/pagination');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
@@ -348,11 +349,11 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 products: pricedProducts,
                 categories: categories.filter(Boolean),
                 collections,
-                pagination: {
+                pagination: buildPagination({
+                    total: totalProducts,
                     page: currentPage,
-                    pages: Math.ceil(totalProducts / limit) || 1,
-                    total: totalProducts
-                }
+                    limit
+                })
             }
         };
 

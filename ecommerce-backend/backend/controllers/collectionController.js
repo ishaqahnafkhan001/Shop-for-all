@@ -15,6 +15,7 @@ const {
 const {
     applyScheduledSalesToProducts
 } = require('../services/sales/scheduledSaleService');
+const { buildPagination } = require('../utils/pagination');
 
 const slugify = (value = '') =>
     value
@@ -243,11 +244,7 @@ exports.getPublicCollectionBySlug = async (req, res) => {
             data: {
                 collection: sanitizePublicCollection(collection, total),
                 products: sanitizePublicProducts(pricedProducts),
-                pagination: {
-                    total,
-                    page,
-                    pages: Math.ceil(total / limit) || 1
-                }
+                pagination: buildPagination({ total, page, limit })
             }
         });
     } catch (err) {

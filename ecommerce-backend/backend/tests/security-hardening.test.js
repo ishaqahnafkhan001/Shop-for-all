@@ -709,6 +709,31 @@ test('vendor admin pagination responses keep compatibility metadata', () => {
     assert.match(adminNotifications, /PaginationBar/);
 });
 
+test('storefront pagination keeps page sizes, metadata, and controls consistent', () => {
+    const productController = read('controllers/productController.js');
+    const storeController = read('controllers/storeController.js');
+    const collectionController = read('controllers/collectionController.js');
+    const shopDataHook = readProject('ecommerce-storefront/src/hooks/useShopData.js');
+    const homeClient = readProject('ecommerce-storefront/src/app/[subdomain]/StorefrontHomeClient.jsx');
+    const allProducts = readProject('packages/storefront-renderer/reference/StorefrontAllProducts.jsx');
+    const collectionPage = readProject('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/page.jsx');
+    const collectionClient = readProject('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx');
+
+    assert.match(productController, /normalizeStorefrontPageLimit/);
+    assert.match(productController, /isStorefrontRequest[\s\S]*normalizeStorefrontPageLimit\(req\.query\.limit,\s*9\)/);
+    assert.match(storeController, /pagination:\s*buildPagination\(\{[\s\S]*limit/);
+    assert.match(collectionController, /pagination:\s*buildPagination\(\{\s*total,\s*page,\s*limit\s*\}\)/);
+    assert.match(shopDataHook, /\.\.\.\(search && \{ search \}\)/);
+    assert.match(homeClient, /debouncedCatalogSearch/);
+    assert.match(allProducts, /pagination\?\.totalPages \?\? pagination\?\.pages/);
+    assert.match(allProducts, /getVisiblePageNumbers\(currentPage,\s*totalPages\)/);
+    assert.match(allProducts, /aria-label="Product pagination"/);
+    assert.doesNotMatch(allProducts, /mt-8 hidden items-center justify-center/);
+    assert.match(collectionPage, /resolvedSearchParams/);
+    assert.match(collectionPage, /pagination=\{data\.pagination\}/);
+    assert.match(collectionClient, /aria-label="Collection pagination"/);
+});
+
 test('stock mutations use explicit semantics, idempotency, and inventory movement logs', () => {
     const inventoryController = read('controllers/inventory.js');
     const inventoryLog = read('models/InventoryLog.js');

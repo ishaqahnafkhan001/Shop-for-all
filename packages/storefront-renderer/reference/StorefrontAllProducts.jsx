@@ -14,6 +14,14 @@ import {
 } from "./referenceCore";
 import { ProductCard } from "./StorefrontProductCard";
 
+const getVisiblePageNumbers = (currentPage, totalPages, maxVisible = 5) => {
+    const visibleCount = Math.min(totalPages, maxVisible);
+    const centeredStart = currentPage - Math.floor(visibleCount / 2);
+    const start = Math.max(1, Math.min(centeredStart, totalPages - visibleCount + 1));
+
+    return Array.from({ length: visibleCount }, (_, index) => start + index);
+};
+
 const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange }) => (
     <div className="min-w-0 rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-5" style={{ backgroundColor: "var(--sf-all-products-filter-bg)", color: "var(--sf-all-products-filter-text)" }}>
         <div className="mb-5 flex items-center justify-between">
@@ -96,9 +104,7 @@ export function StorefrontAllProducts({
 }) {
     if (allProducts.isEnabled === false) return null;
 
-    const filteredProducts = catalogSearch.trim()
-        ? catalogProducts.filter((product) => `${product.title || ""} ${product.category || ""}`.toLowerCase().includes(catalogSearch.toLowerCase()))
-        : catalogProducts;
+    const filteredProducts = catalogProducts;
     const desktopColumns = Math.min(Math.max(allProducts.desktopColumns || layout.productColumnsDesktop || 3, 2), 5);
     const tabletColumns = Math.min(Math.max(allProducts.tabletColumns || 2, 1), 4);
     const mobileColumns = Math.min(Math.max(allProducts.mobileColumns || layout.productColumnsMobile || 2, 1), 2);
@@ -143,6 +149,16 @@ export function StorefrontAllProducts({
             onClear: () => onCatalogSearchChange({ target: { value: "" } }),
         } : null,
     ].filter(Boolean);
+    const totalPages = Math.max(Number(pagination?.totalPages ?? pagination?.pages) || 1, 1);
+    const currentPage = Math.min(
+        Math.max(Number(pagination?.page ?? filters.page) || 1, 1),
+        totalPages
+    );
+    const visiblePageNumbers = getVisiblePageNumbers(currentPage, totalPages);
+    const totalMatchingProducts = Math.max(
+        Number(pagination?.totalItems ?? pagination?.total) || 0,
+        filteredProducts.length
+    );
 
     return (
         <>
@@ -177,7 +193,9 @@ export function StorefrontAllProducts({
 
                         <div className="mb-4 flex flex-col gap-2 px-1 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[1.25rem] sm:border sm:border-slate-200 sm:p-3 sm:shadow-sm" style={{ backgroundColor: "var(--sf-all-products-filter-bg)" }}>
                             <p className="text-xs font-black uppercase tracking-[0.14em]" style={{ color: "var(--sf-all-products-filter-text)" }}>
-                                Showing {filteredProducts.length} product{filteredProducts.length === 1 ? "" : "s"}
+                                Showing {filteredProducts.length}
+                                {totalMatchingProducts > filteredProducts.length ? ` of ${totalMatchingProducts}` : ""}
+                                {" "}product{totalMatchingProducts === 1 ? "" : "s"}
                             </p>
                             {activeFilterChips.length > 0 ? (
                                 <div className="flex min-w-0 flex-wrap gap-2">
@@ -249,29 +267,50 @@ export function StorefrontAllProducts({
                                     </div>
                                 )}
 
-                                {pagination?.pages > 1 && (
-                                    <div className="mt-8 hidden items-center justify-center gap-2 md:flex">
-                                        <button type="button" onClick={() => onPageChange(filters.page - 1)} disabled={filters.page === 1} aria-label="Previous product page" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black disabled:opacity-40" style={{ backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}>Previous</button>
-                                        {Array.from({ length: Math.min(pagination.pages, 5) }, (_, index) => {
-                                            const pageNumber = index + 1;
-                                            return (
+                                {totalPages > 1 && (
+                                    <nav aria-label="Product pagination" className="mt-8 flex flex-wrap items-center justify-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => onPageChange(currentPage - 1)}
+                                            disabled={currentPage <= 1 || pagination?.hasPrevPage === false}
+                                            aria-label="Previous product page"
+                                            className="min-h-11 rounded-full border border-slate-200 px-3 text-sm font-black disabled:opacity-40 sm:px-4"
+                                            style={{ backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}
+                                        >
+                                            <span className="sm:hidden">Prev</span>
+                                            <span className="hidden sm:inline">Previous</span>
+                                        </button>
+                                        <div className="hidden items-center gap-2 sm:flex">
+                                            {visiblePageNumbers.map((pageNumber) => (
                                                 <button
                                                     key={pageNumber}
                                                     type="button"
                                                     onClick={() => onPageChange(pageNumber)}
                                                     aria-label={`Go to product page ${pageNumber}`}
-                                                    aria-current={filters.page === pageNumber ? "page" : undefined}
-                                                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-black"
-                                                    style={filters.page === pageNumber
+                                                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                                                    className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-black"
+                                                    style={currentPage === pageNumber
                                                         ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" }
                                                         : { backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}
                                                 >
                                                     {pageNumber}
                                                 </button>
-                                            );
-                                        })}
-                                        <button type="button" onClick={() => onPageChange(filters.page + 1)} disabled={filters.page === pagination.pages} aria-label="Next product page" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-black disabled:opacity-40" style={{ backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}>Next</button>
-                                    </div>
+                                            ))}
+                                        </div>
+                                        <span className="min-w-[6.5rem] text-center text-xs font-black sm:hidden" style={{ color: "var(--sf-all-products-pagination-text)" }}>
+                                            Page {currentPage} of {totalPages}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => onPageChange(currentPage + 1)}
+                                            disabled={currentPage >= totalPages || pagination?.hasNextPage === false}
+                                            aria-label="Next product page"
+                                            className="min-h-11 rounded-full border border-slate-200 px-3 text-sm font-black disabled:opacity-40 sm:px-4"
+                                            style={{ backgroundColor: "var(--sf-all-products-pagination-bg)", color: "var(--sf-all-products-pagination-text)" }}
+                                        >
+                                            Next
+                                        </button>
+                                    </nav>
                                 )}
                             </main>
                         </div>

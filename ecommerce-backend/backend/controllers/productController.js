@@ -66,6 +66,12 @@ const normalizePageLimit = (value, fallback = 25) => {
         : fallback;
 };
 
+const normalizeStorefrontPageLimit = (value, fallback = 9) => {
+    const requested = parseInt(value, 10);
+    if (!Number.isFinite(requested) || requested <= 0) return fallback;
+    return Math.min(requested, 48);
+};
+
 
 // ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...
 
@@ -337,9 +343,11 @@ exports.getShopProducts = async (req, res) => {
         const shopObjectId = new mongoose.Types.ObjectId(shopId);
         const { sort } = req.query;
 
-        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-        const limit = normalizePageLimit(req.query.limit, 25);
         const isStorefrontRequest = !req.user || req.user.role === 'Customer';
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = isStorefrontRequest
+            ? normalizeStorefrontPageLimit(req.query.limit, 9)
+            : normalizePageLimit(req.query.limit, 25);
         const query = buildProductListQuery({
             shopId,
             filters: req.query,

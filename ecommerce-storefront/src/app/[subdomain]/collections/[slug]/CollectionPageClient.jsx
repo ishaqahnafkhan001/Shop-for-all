@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Layers3, PackageX } from "lucide-react";
 import { useStorefrontProductActions } from "@/hooks/useStorefrontProductActions";
 import { normalizeTheme } from "@/lib/theme";
@@ -15,8 +15,11 @@ import {
     tabletGridClasses
 } from "@/components/storefront/reference/referenceCore";
 
-export default function CollectionPageClient({ shop, collection, products = [] }) {
+export default function CollectionPageClient({ shop, collection, products = [], pagination = {}, filters = {} }) {
     const params = useParams();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const productActions = useStorefrontProductActions({ subdomain: params?.subdomain || shop?.subdomain });
     const theme = normalizeTheme(shop?.theme || {});
     const productCardColors = theme.colors?.productCard;
@@ -42,6 +45,22 @@ export default function CollectionPageClient({ shop, collection, products = [] }
         ...(theme.productCard || {}),
         colors: productCardColors || {},
     }), [theme.productCard, productCardColors]);
+    const total = Number(pagination?.totalItems ?? pagination?.total) || normalizedProducts.length;
+    const page = Math.max(Number(pagination?.page ?? filters.page) || 1, 1);
+    const totalPages = Math.max(Number(pagination?.totalPages ?? pagination?.pages) || 1, 1);
+
+    const updateQuery = (updates = {}) => {
+        const next = new URLSearchParams(searchParams.toString());
+        Object.entries(updates).forEach(([key, value]) => {
+            if (value === undefined || value === null || value === "" || value === "newest") {
+                next.delete(key);
+            } else {
+                next.set(key, String(value));
+            }
+        });
+        const query = next.toString();
+        router.push(query ? `${pathname}?${query}` : pathname);
+    };
 
     return (
         <div className="sf-page">
@@ -66,7 +85,7 @@ export default function CollectionPageClient({ shop, collection, products = [] }
                                 </p>
                             )}
                             <p className="mt-4 text-sm font-bold text-slate-500">
-                                {collection.productCount || normalizedProducts.length} product{Number(collection.productCount || normalizedProducts.length) === 1 ? "" : "s"}
+                                {total} product{total === 1 ? "" : "s"}
                             </p>
                         </div>
                         {collection.image && (
@@ -87,6 +106,22 @@ export default function CollectionPageClient({ shop, collection, products = [] }
             </section>
 
             <section className="sf-shell-wide py-8 sm:py-12">
+                <div className="mb-5 flex justify-end">
+                    <label className="flex items-center gap-2 text-sm font-black text-slate-600">
+                        Sort
+                        <select
+                            value={filters.sort || "newest"}
+                            onChange={(event) => updateQuery({ sort: event.target.value, page: 1 })}
+                            className="sf-field min-h-11 rounded-full px-4 py-2 text-sm"
+                        >
+                            <option value="newest">Newest</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="rating_desc">Best Rated</option>
+                        </select>
+                    </label>
+                </div>
                 {normalizedProducts.length === 0 ? (
                     <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm">
                         <PackageX size={48} className="mx-auto mb-4 text-slate-300" />
@@ -99,22 +134,45 @@ export default function CollectionPageClient({ shop, collection, products = [] }
                         </Link>
                     </div>
                 ) : (
-                    <div className={`grid ${gridClass} ${gridGapClass} ${normalizedProducts.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
-                        {normalizedProducts.map((product, index) => (
-                            <ProductCard
-                                key={product._id}
-                                product={product}
-                                index={index}
-                                storewideDiscount={shop?.storewideDiscount || 0}
-                                productCard={themedProductCard}
-                                onProductAdd={(item) => productActions.addProductToCart(item, { location: 'collection' })}
-                                onProductBuyNow={(item) => productActions.buyNow(item, { location: 'collection' })}
-                                onWishlistToggle={productActions.toggleWishlist}
-                                isWishlisted={productActions.isWishlisted}
-                                LinkComponent={Link}
-                            />
-                        ))}
-                    </div>
+                    <>
+                        <div className={`grid ${gridClass} ${gridGapClass} ${normalizedProducts.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
+                            {normalizedProducts.map((product, index) => (
+                                <ProductCard
+                                    key={product._id}
+                                    product={product}
+                                    index={index}
+                                    storewideDiscount={shop?.storewideDiscount || 0}
+                                    productCard={themedProductCard}
+                                    onProductAdd={(item) => productActions.addProductToCart(item, { location: 'collection' })}
+                                    onProductBuyNow={(item) => productActions.buyNow(item, { location: 'collection' })}
+                                    onWishlistToggle={productActions.toggleWishlist}
+                                    isWishlisted={productActions.isWishlisted}
+                                    LinkComponent={Link}
+                                />
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <nav aria-label="Collection pagination" className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                                <button
+                                    type="button"
+                                    disabled={page <= 1 || pagination?.hasPrevPage === false}
+                                    onClick={() => updateQuery({ page: Math.max(1, page - 1) })}
+                                    className="min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:opacity-40"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-sm font-black text-slate-500">Page {page} of {totalPages}</span>
+                                <button
+                                    type="button"
+                                    disabled={page >= totalPages || pagination?.hasNextPage === false}
+                                    onClick={() => updateQuery({ page: page + 1 })}
+                                    className="min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 disabled:opacity-40"
+                                >
+                                    Next
+                                </button>
+                            </nav>
+                        )}
+                    </>
                 )}
             </section>
             {productActions.variantPicker}

@@ -63,7 +63,8 @@ export const useShopData = (subdomain, filters, initialData = null) => {
         category,
         minPrice,
         maxPrice,
-        minRating
+        minRating,
+        search
     } = filters;
     const hasInitialData = Boolean(initialData?.shop);
     const hasInitialError = Boolean(initialData?.error && !initialData?.shop);
@@ -105,6 +106,7 @@ export const useShopData = (subdomain, filters, initialData = null) => {
             ...(minPrice && { minPrice }),
             ...(maxPrice && { maxPrice }),
             ...(minRating && { minRating }),
+            ...(search && { search }),
         };
 
         const fetchProductsOnly = async () => {
@@ -160,7 +162,7 @@ export const useShopData = (subdomain, filters, initialData = null) => {
         }
 
         return () => { isMounted = false; };
-    }, [subdomain, page, sort, category, minPrice, maxPrice, minRating, refreshKey]);
+    }, [subdomain, page, sort, category, minPrice, maxPrice, minRating, search, refreshKey]);
 
     return { ...data, refreshBootstrap };
 };
