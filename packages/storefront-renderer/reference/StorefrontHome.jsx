@@ -10,6 +10,7 @@ import {
     EditorSelectionFrame,
     getHeroSlides,
     getReferenceThemeStyle,
+    getResponsiveImageSrcSet,
     isPreviewMobile,
     isPreviewNarrow,
     LinkSlot,
@@ -75,6 +76,8 @@ export function ReferenceStorefrontHome({
     const forcedNarrowPreview = isPreviewNarrow(previewDevice);
     const heroDesktopPosition = `${activeHeroSlide.desktopFocalPoint?.x ?? 50}% ${activeHeroSlide.desktopFocalPoint?.y ?? 50}%`;
     const heroMobilePosition = `${activeHeroSlide.mobileFocalPoint?.x ?? 50}% ${activeHeroSlide.mobileFocalPoint?.y ?? 50}%`;
+    const mobileHeroSrcSet = getResponsiveImageSrcSet(activeMobileHeroImage, [420, 640, 760], { crop: "fill" });
+    const desktopHeroSrcSet = getResponsiveImageSrcSet(activeHeroImage, [960, 1280, 1600, 1920], { crop: "fill" });
     const heroHeightClass = hero.height === "Compact"
         ? "min-h-[318px] min-[390px]:min-h-[332px] sm:min-h-[460px] lg:min-h-[500px]"
         : hero.height === "Tall"
@@ -109,11 +112,17 @@ export function ReferenceStorefrontHome({
                     >
                         {activeHeroImage ? (
                             <picture>
-                                {activeMobileHeroImage && activeMobileHeroImage !== activeHeroImage && (
-                                    <source media="(max-width: 640px)" srcSet={optimizeCloudinaryImage(activeMobileHeroImage, { width: 760, crop: "fill" })} />
+                                {activeMobileHeroImage && (
+                                    <source
+                                        media="(max-width: 640px)"
+                                        srcSet={mobileHeroSrcSet}
+                                        sizes="calc(100vw - 24px)"
+                                    />
                                 )}
                                 <img
-                                    src={optimizeCloudinaryImage(forcedMobilePreview ? activeMobileHeroImage : activeHeroImage, { width: forcedMobilePreview ? 760 : 1920, crop: "fill" })}
+                                    src={optimizeCloudinaryImage(forcedMobilePreview ? activeMobileHeroImage : activeHeroImage, { width: forcedMobilePreview ? 760 : 1600, crop: "fill" })}
+                                    srcSet={forcedMobilePreview ? mobileHeroSrcSet : desktopHeroSrcSet}
+                                    sizes={forcedMobilePreview ? "760px" : "(max-width: 1536px) calc(100vw - 24px), 1472px"}
                                     alt={activeHeroSlide.title || hero.title || "Store banner"}
                                     width="1920"
                                     height="720"
@@ -176,12 +185,12 @@ export function ReferenceStorefrontHome({
                             </div>
                             <div className="mt-4 space-y-3 sm:mt-8 sm:space-y-4">
                                 <div className="flex max-w-3xl flex-col items-stretch gap-2.5 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center sm:gap-3">
-                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || "#products"} className="inline-flex min-h-11 items-center justify-center rounded-full px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-primary-button-bg)", color: "var(--sf-hero-primary-button-text)" }}>
+                                    <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.primaryCtaLink || "#products"} prefetch={false} className="inline-flex min-h-11 items-center justify-center rounded-full px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/20 transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-primary-button-bg)", color: "var(--sf-hero-primary-button-text)" }}>
                                         {activeHeroSlide.primaryCtaText || "Shop Now"}
                                         <ChevronRight size={16} className="ml-1" />
                                     </LinkSlot>
                                     {activeHeroSlide.secondaryCtaText && (
-                                        <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || "#products"} className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-secondary-button-bg)", color: "var(--sf-hero-secondary-button-text)" }}>
+                                        <LinkSlot LinkComponent={LinkComponent} href={activeHeroSlide.secondaryCtaLink || "#products"} prefetch={false} className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 px-4 py-2.5 text-sm font-black shadow-lg shadow-slate-950/10 backdrop-blur transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3" style={{ backgroundColor: "var(--sf-hero-secondary-button-bg)", color: "var(--sf-hero-secondary-button-text)" }}>
                                             {activeHeroSlide.secondaryCtaText}
                                             <ChevronRight size={16} className="ml-1" />
                                         </LinkSlot>

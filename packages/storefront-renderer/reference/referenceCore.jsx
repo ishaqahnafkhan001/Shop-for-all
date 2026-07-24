@@ -131,6 +131,17 @@ export const optimizeCloudinaryImage = (src = "", { width = 900, quality = "auto
     }
 };
 
+export const getResponsiveImageSrcSet = (src = "", widths = [], options = {}) => {
+    if (!src || !Array.isArray(widths)) return "";
+
+    return [...new Set(widths)]
+        .map(Number)
+        .filter(width => Number.isFinite(width) && width > 0)
+        .sort((left, right) => left - right)
+        .map(width => `${optimizeCloudinaryImage(src, { ...options, width })} ${width}w`)
+        .join(", ");
+};
+
 export const getPrice = (product) => product?.finalPrice || product?.sellingPrice || product?.pricing?.sellingPrice || product?.price || 0;
 export const normalizeImageList = (...lists) => [...new Set(lists.flat().filter(Boolean).map(String))];
 export const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || "Section";
@@ -292,9 +303,10 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
     };
 };
 
-export const DefaultLink = ({ href, children, className, onClick, ...props }) => (
-    <a href={href} className={className} onClick={onClick} {...props}>{children}</a>
-);
+export const DefaultLink = ({ href, children, className, onClick, prefetch, ...props }) => {
+    void prefetch;
+    return <a href={href} className={className} onClick={onClick} {...props}>{children}</a>;
+};
 
 export const LinkSlot = ({ LinkComponent = DefaultLink, href, children, className, onClick, ...props }) => (
     <LinkComponent href={href} className={className} onClick={onClick} {...props}>{children}</LinkComponent>

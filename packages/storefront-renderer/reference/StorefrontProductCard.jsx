@@ -12,6 +12,7 @@ import {
     getCardImageAlt,
     getImageUrl,
     getPrice,
+    getResponsiveImageSrcSet,
     imageAspectClasses,
     imageRadiusClasses,
     LinkSlot,
@@ -120,11 +121,13 @@ export const ProductCard = memo(function ProductCard({
                 borderColor: cardColors.border,
             }}
         >
-            <LinkSlot LinkComponent={LinkComponent} href={`/products/${product.slug || product._id}`} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
+            <LinkSlot LinkComponent={LinkComponent} href={`/products/${product.slug || product._id}`} prefetch={false} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
             <div className={`relative overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 ring-1 ring-slate-900/5 ${aspectClass} ${imageFrameSpacing} ${imageRadiusClass}`}>
                 {imageUrl && !imageFailed ? (
                     <img
                         src={optimizeCloudinaryImage(imageUrl, { width: 560 })}
+                        srcSet={getResponsiveImageSrcSet(imageUrl, [180, 280, 360, 560])}
+                        sizes="(max-width: 639px) calc((100vw - 44px) / 2), (max-width: 1023px) 30vw, (max-width: 1535px) 22vw, 280px"
                         alt={getCardImageAlt(product)}
                         width="560"
                         height="560"

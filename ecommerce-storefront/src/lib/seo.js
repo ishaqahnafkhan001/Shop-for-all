@@ -193,6 +193,23 @@ const appendIconVersion = (url = "", version = "") => {
     return `${url}${url.includes("?") ? "&" : "?"}v=${cleanVersion}`;
 };
 
+const getCloudinaryIconUrl = (url = "", size = 48) => {
+    if (!url || url.startsWith("data:")) return "";
+
+    try {
+        const parsed = new URL(url);
+        const uploadSegment = "/image/upload/";
+        if (parsed.hostname !== "res.cloudinary.com" || !parsed.pathname.includes(uploadSegment)) return "";
+
+        const [prefix, suffix] = parsed.pathname.split(uploadSegment);
+        const safeSize = Math.min(512, Math.max(16, Number(size) || 48));
+        parsed.pathname = `${prefix}${uploadSegment}f_png,q_auto:eco,c_fit,w_${safeSize},h_${safeSize}/${suffix}`;
+        return parsed.toString();
+    } catch {
+        return "";
+    }
+};
+
 const getThemeBrandColor = (theme = {}) => (
     theme?.colors?.accent ||
     theme?.colors?.primary ||
@@ -217,21 +234,28 @@ export const resolveStorefrontIcon = ({ shop = {}, shopName = "" } = {}) => {
     ];
     const selected = candidates.map(value => String(value || "").trim()).find(isSafeIconUrl);
     const version = shop?.logoUpdatedAt || shop?.updatedAt || theme?.updatedAt || selected || shopName;
-    const url = selected
+    const sourceUrl = selected
         ? appendIconVersion(selected, version)
         : buildInitialsIcon({ shopName, theme });
-    const type = getIconMimeType(url);
+    const cloudinary32 = getCloudinaryIconUrl(selected, 32);
+    const cloudinary48 = getCloudinaryIconUrl(selected, 48);
+    const cloudinary180 = getCloudinaryIconUrl(selected, 180);
+    const icon32 = cloudinary32 ? appendIconVersion(cloudinary32, version) : sourceUrl;
+    const icon48 = cloudinary48 ? appendIconVersion(cloudinary48, version) : sourceUrl;
+    const appleIcon = cloudinary180 ? appendIconVersion(cloudinary180, version) : sourceUrl;
+    const iconType = cloudinary48 ? "image/png" : getIconMimeType(sourceUrl);
+    const appleType = cloudinary180 ? "image/png" : getIconMimeType(sourceUrl);
 
     return {
-        faviconUrl: url,
-        appleTouchIconUrl: url,
+        faviconUrl: icon48,
+        appleTouchIconUrl: appleIcon,
         icons: {
             icon: [
-                { url, type, sizes: "32x32" },
-                { url, type, sizes: "48x48" }
+                { url: icon32, type: cloudinary32 ? "image/png" : iconType, sizes: "32x32" },
+                { url: icon48, type: iconType, sizes: "48x48" }
             ],
-            shortcut: [{ url, type }],
-            apple: [{ url, type, sizes: "180x180" }]
+            shortcut: [{ url: icon48, type: iconType }],
+            apple: [{ url: appleIcon, type: appleType, sizes: "180x180" }]
         }
     };
 };

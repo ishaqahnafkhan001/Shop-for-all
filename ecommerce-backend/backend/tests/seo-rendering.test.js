@@ -77,6 +77,43 @@ test('storefront product image SEO helpers tolerate null product values', async 
     assert.deepEqual(getProductImageUrls(null), []);
 });
 
+test('storefront branding serves size-bounded Cloudinary icon variants', async () => {
+    const { resolveStorefrontIcon } = await importStorefrontSeo();
+    const icon = resolveStorefrontIcon({
+        shopName: 'ADI',
+        shop: {
+            updatedAt: '2026-07-25T00:00:00.000Z',
+            theme: {
+                faviconUrl: 'https://res.cloudinary.com/demo/image/upload/v1/shop_branding/icon.svg'
+            }
+        }
+    });
+
+    assert.match(icon.icons.icon[0].url, /f_png,q_auto:eco,c_fit,w_32,h_32/);
+    assert.match(icon.icons.icon[1].url, /f_png,q_auto:eco,c_fit,w_48,h_48/);
+    assert.match(icon.icons.apple[0].url, /f_png,q_auto:eco,c_fit,w_180,h_180/);
+    assert.equal(icon.icons.icon[0].type, 'image/png');
+    assert.equal(icon.icons.apple[0].type, 'image/png');
+    assert.equal(icon.faviconUrl, icon.icons.icon[1].url);
+});
+
+test('shared storefront renderer uses responsive images and avoids eager catalog prefetch', () => {
+    const referenceCore = readRepo('packages/storefront-renderer/reference/referenceCore.jsx');
+    const storefrontHome = readRepo('packages/storefront-renderer/reference/StorefrontHome.jsx');
+    const productCard = readRepo('packages/storefront-renderer/reference/StorefrontProductCard.jsx');
+    const storefrontHeader = readRepo('packages/storefront-renderer/reference/StorefrontHeader.jsx');
+    const storefrontFooter = readRepo('packages/storefront-renderer/reference/StorefrontFooter.jsx');
+
+    assert.match(referenceCore, /export const getResponsiveImageSrcSet/);
+    assert.match(storefrontHome, /mobileHeroSrcSet/);
+    assert.match(storefrontHome, /\[420,\s*640,\s*760\]/);
+    assert.doesNotMatch(storefrontHome, /activeMobileHeroImage !== activeHeroImage/);
+    assert.match(productCard, /getResponsiveImageSrcSet\(imageUrl,\s*\[180,\s*280,\s*360,\s*560\]\)/);
+    assert.match(productCard, /prefetch=\{false\}/);
+    assert.match(storefrontHeader, /prefetch=\{false\}/);
+    assert.match(storefrontFooter, /prefetch=\{false\}/);
+});
+
 test('storefront canonical helpers preserve verified custom-domain host exactly', async () => {
     const {
         buildHomepageJsonLd,

@@ -89,6 +89,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
             <LinkSlot
                 LinkComponent={LinkComponent}
                 href={item.url || "#"}
+                prefetch={false}
                 onClick={onClick}
                 className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
             >
@@ -102,6 +103,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
             <LinkSlot
                 LinkComponent={LinkComponent}
                 href={item.url || "#"}
+                prefetch={false}
                 onClick={onClick}
                 className="inline-flex items-center gap-1 rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
             >
@@ -114,6 +116,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                         key={`${child.label}-${index}`}
                         LinkComponent={LinkComponent}
                         href={child.url}
+                        prefetch={false}
                         onClick={onClick}
                         className="block rounded-xl px-3 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-[var(--sf-navbar-hover)]"
                     >
@@ -146,7 +149,7 @@ export function ReferenceStorefrontHeader({
     const forcedDesktopLayoutClass = "grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
     const desktopLayoutClass = "lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
     const brandSlot = (
-        <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0">
+        <LinkSlot LinkComponent={LinkComponent} href="/" prefetch={false} className="min-w-0">
             <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
         </LinkSlot>
     );
@@ -174,17 +177,18 @@ export function ReferenceStorefrontHeader({
                     />
                 ))}
             </nav>
-            <LinkSlot LinkComponent={LinkComponent} href="/track" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
+            <LinkSlot LinkComponent={LinkComponent} href="/track" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <Truck size={17} className="shrink-0" />
                 <span className="hidden xl:inline">Track Order</span>
             </LinkSlot>
-            <LinkSlot LinkComponent={LinkComponent} href="/account" className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
+            <LinkSlot LinkComponent={LinkComponent} href="/account" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <User size={17} className="shrink-0" />
                 <span className="hidden xl:inline">Account</span>
             </LinkSlot>
             <LinkSlot
                 LinkComponent={LinkComponent}
                 href="/cart"
+                prefetch={false}
                 className="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-slate-950 px-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 xl:px-4"
             >
                 <ShoppingBag size={17} className="shrink-0" />
@@ -227,12 +231,13 @@ export function ReferenceStorefrontHeader({
                             >
                                 <Menu size={20} />
                             </button>
-                            <LinkSlot LinkComponent={LinkComponent} href="/" className="min-w-0 flex-1">
+                            <LinkSlot LinkComponent={LinkComponent} href="/" prefetch={false} className="min-w-0 flex-1">
                                 <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
                             </LinkSlot>
                             <LinkSlot
                                 LinkComponent={LinkComponent}
                                 href="/cart"
+                                prefetch={false}
                                 className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm sm:h-11 sm:w-11"
                                 aria-label="Cart"
                             >
@@ -275,6 +280,7 @@ export function ReferenceStorefrontHeader({
                                     <LinkSlot
                                         LinkComponent={LinkComponent}
                                         href={item.url || "#"}
+                                        prefetch={false}
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="block px-4 py-3 text-sm font-black text-slate-800 transition hover:text-[var(--sf-navbar-hover)]"
                                     >
@@ -287,6 +293,7 @@ export function ReferenceStorefrontHeader({
                                                     key={`${child.label}-${childIndex}`}
                                                     LinkComponent={LinkComponent}
                                                     href={child.url}
+                                                    prefetch={false}
                                                     onClick={() => setMobileMenuOpen(false)}
                                                     className="mt-2 block rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-600"
                                                 >

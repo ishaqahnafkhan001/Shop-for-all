@@ -17,7 +17,7 @@ const FooterColumn = ({ title, links, LinkComponent }) => (
         <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">{title}</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link-hover)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
                 </LinkSlot>
             ))}
@@ -30,13 +30,13 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
         <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">Support</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link-hover)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
                 </LinkSlot>
             ))}
         </div>
         {contactHref && (
-            <LinkSlot LinkComponent={LinkComponent} href={contactHref} className="mt-6 inline-flex items-center gap-2 text-base font-black text-[var(--sf-footer-link)] transition hover:text-[var(--sf-footer-link-hover)]">
+            <LinkSlot LinkComponent={LinkComponent} href={contactHref} prefetch={false} className="mt-6 inline-flex items-center gap-2 text-base font-black text-[var(--sf-footer-link)] transition hover:text-[var(--sf-footer-link-hover)]">
                 <Mail size={18} />
                 {contactLabel}
             </LinkSlot>
@@ -44,7 +44,7 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
         {socialLinks.length > 0 && (
             <div className="mt-7 flex flex-wrap items-center gap-3">
                 {socialLinks.map((item) => (
-                    <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-footer-link-hover)] hover:text-white">
+                    <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} prefetch={false} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-footer-link-hover)] hover:text-white">
                         {item.short}
                     </LinkSlot>
                 ))}
@@ -61,7 +61,7 @@ const FooterAccordion = ({ title, links, LinkComponent }) => (
         </summary>
         <div className="mt-3 grid gap-2.5 pb-1 text-sm font-semibold text-[var(--sf-footer-text)]">
             {links.map((link) => (
-                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} className="transition hover:text-[var(--sf-footer-link-hover)]">
+                <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
                     {link.label}
                 </LinkSlot>
             ))}
@@ -170,7 +170,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                 <FooterAccordion title="Store" links={storeLinks} LinkComponent={LinkComponent} />
                                 <FooterAccordion title="Support" links={supportLinks} LinkComponent={LinkComponent} />
                                 {contactHref && (
-                                    <LinkSlot LinkComponent={LinkComponent} href={contactHref} className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-black text-[var(--sf-footer-link)]">
+                                    <LinkSlot LinkComponent={LinkComponent} href={contactHref} prefetch={false} className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-black text-[var(--sf-footer-link)]">
                                         <Mail size={17} />
                                         {theme.footer?.contactLabel || "Contact store"}
                                     </LinkSlot>
@@ -178,7 +178,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                 {socialLinks.length > 0 && (
                                     <div className="mt-4 flex flex-wrap items-center gap-2.5 sm:gap-3">
                                         {socialLinks.map((item) => (
-                                            <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-accent)] hover:text-white">
+                                            <LinkSlot key={item.key} LinkComponent={LinkComponent} href={item.href} prefetch={false} target="_blank" rel="noreferrer" aria-label={item.label} className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-black uppercase text-slate-500 transition hover:bg-[var(--sf-accent)] hover:text-white">
                                                 {item.short}
                                             </LinkSlot>
                                         ))}
@@ -214,7 +214,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                     {mobileLinks.map((item) => {
                         const Icon = item.icon;
                         return (
-                            <LinkSlot key={item.label} LinkComponent={LinkComponent} href={item.href} className="relative flex flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-[var(--sf-accent)]">
+                            <LinkSlot key={item.label} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="relative flex flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-[var(--sf-accent)]">
                                 <Icon size={18} />
                                 <span>{item.label}</span>
                                 {item.badge > 0 && <span className="absolute right-4 top-0 h-4 min-w-4 rounded-full bg-[var(--sf-accent)] px-1 text-[10px] leading-4 text-white">{item.badge}</span>}
