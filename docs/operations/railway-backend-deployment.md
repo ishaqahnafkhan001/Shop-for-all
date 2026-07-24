@@ -11,6 +11,7 @@ Configure the Railway backend API service as follows:
 - Root Directory: repository root (`/`) or empty
 - Builder: Dockerfile
 - Dockerfile Path: `/ecommerce-backend/backend/Dockerfile`
+- Config File Path: `/ecommerce-backend/backend/railway.json`
 - Custom Build Command: empty
 - Custom Start Command: empty
 - Healthcheck Path: `/api/health`
@@ -21,6 +22,16 @@ the shared theme package before dependency installation.
 
 Redeploy without the previous build cache after changing from Railpack to the
 Dockerfile builder.
+
+If the Railway UI still invokes Railpack, add this service variable:
+
+```text
+RAILWAY_DOCKERFILE_PATH=/ecommerce-backend/backend/Dockerfile
+```
+
+The build log must contain `Using detected Dockerfile`. If it still says
+`railpack process exited`, the service is not reading the backend config or the
+Dockerfile changes have not been pushed to the deployed Git branch.
 
 ## Worker service
 
