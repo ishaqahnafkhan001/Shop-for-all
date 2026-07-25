@@ -6,6 +6,7 @@ import {
     buildBreadcrumbJsonLd,
     buildStorefrontMetadata,
     buildProductJsonLd,
+    getCategoryCanonicalUrl,
     getHomepageCanonicalUrl,
     getOgImage,
     getProductCanonicalUrl,
@@ -85,6 +86,9 @@ export default async function Page({ params }) {
         ? getProductCanonicalUrl({ host, subdomain, shop, product: initialProduct })
         : '';
     const homepageUrl = getHomepageCanonicalUrl({ host, subdomain, shop });
+    const categoryUrl = initialProduct?.category
+        ? getCategoryCanonicalUrl({ host, subdomain, shop, category: initialProduct.category })
+        : homepageUrl;
     const productJsonLd = initialProduct ? buildProductJsonLd({
         product: initialProduct,
         shop,
@@ -93,7 +97,7 @@ export default async function Page({ params }) {
     const breadcrumbJsonLd = initialProduct ? buildBreadcrumbJsonLd({
         items: [
             { name: shop?.shopName || shop?.name || 'Store', url: homepageUrl },
-            { name: initialProduct.category || 'Products', url: homepageUrl },
+            { name: initialProduct.category || 'Products', url: categoryUrl },
             { name: initialProduct.title, url: productUrl }
         ]
     }) : null;

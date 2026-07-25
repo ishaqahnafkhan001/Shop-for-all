@@ -95,6 +95,12 @@ test('storefront branding serves size-bounded Cloudinary icon variants', async (
     assert.equal(icon.icons.icon[0].type, 'image/png');
     assert.equal(icon.icons.apple[0].type, 'image/png');
     assert.equal(icon.faviconUrl, icon.icons.icon[1].url);
+    assert.doesNotMatch(icon.faviconUrl, /\?v=/);
+    assert.equal(
+        fs.existsSync(path.join(repoRoot, 'ecommerce-storefront/src/app/favicon.ico')),
+        false,
+        'a static platform favicon must not compete with tenant storefront icons'
+    );
 });
 
 test('shared storefront renderer uses responsive images and avoids eager catalog prefetch', () => {
@@ -218,7 +224,7 @@ test('storefront canonical helpers preserve verified custom-domain host exactly'
     });
     assert.equal(starterBranding.fullTitle, 'ADI | Home | Scaleup');
     assert.equal(starterBranding.openGraphSiteName, 'ADI');
-    assert.equal(starterBranding.faviconUrl, 'https://cdn.example.com/adi-icon.svg?v=2026-07-01T00%3A00%3A00.000Z');
+    assert.equal(starterBranding.faviconUrl, 'https://cdn.example.com/adi-icon.svg');
     assert.equal(starterBranding.icons.icon[0].type, 'image/svg+xml');
 
     const growthBranding = resolveStorefrontBranding({
@@ -560,6 +566,7 @@ test('homepage, product, and policy routes render server metadata', () => {
 test('sitemap and robots expose only public SEO URLs and noindex private pages', () => {
     const sitemap = readRepo('ecommerce-storefront/src/app/[subdomain]/sitemap.xml/route.js');
     const robots = readRepo('ecommerce-storefront/src/app/[subdomain]/robots.txt/route.js');
+    const publicProductSerializer = read('services/publicProductSerializer.js');
 
     assert.match(sitemap, /fetchStorefrontInfo/);
     assert.match(sitemap, /fetchStorefrontProducts/);
@@ -571,6 +578,9 @@ test('sitemap and robots expose only public SEO URLs and noindex private pages',
     assert.match(sitemap, /collection\?\.slug/);
     assert.match(sitemap, /collection\.productCount/);
     assert.match(sitemap, /getPolicyCanonicalUrl/);
+    assert.match(sitemap, /lastmod:\s*product\.updatedAt \|\| product\.createdAt/);
+    assert.match(publicProductSerializer, /createdAt:\s*1/);
+    assert.match(publicProductSerializer, /updatedAt:\s*1/);
     assert.match(sitemap, /\/policies/);
     assert.match(sitemap, /isShopSearchVisible\(shop\)/);
     assert.match(sitemap, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"><\/urlset>/);
@@ -689,6 +699,10 @@ test('public collection and category SEO routes are tenant-safe', () => {
     assert.match(collectionClient, /LinkComponent=\{Link\}/);
     assert.match(categoryPage, /export async function generateMetadata/);
     assert.match(categoryPage, /getCategoryCanonicalUrl/);
+    assert.match(
+        readRepo('ecommerce-storefront/src/app/[subdomain]/products/[id]/page.jsx'),
+        /getCategoryCanonicalUrl\(\{\s*host,\s*subdomain,\s*shop,\s*category:\s*initialProduct\.category\s*\}\)/
+    );
     assert.match(categoryPage, /fetchStorefrontProducts/);
     assert.match(categoryPage, /getCategoryFilters/);
     assert.match(categoryPage, /searchParams/);

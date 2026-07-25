@@ -176,23 +176,6 @@ const getIconMimeType = (url = "") => {
     return "image/png";
 };
 
-const hashString = (value = "") => {
-    let hash = 0;
-    const text = String(value || "");
-    for (let index = 0; index < text.length; index += 1) {
-        hash = ((hash << 5) - hash) + text.charCodeAt(index);
-        hash |= 0;
-    }
-    return Math.abs(hash).toString(36);
-};
-
-const appendIconVersion = (url = "", version = "") => {
-    if (!url || url.startsWith("data:")) return url;
-    const cleanVersion = encodeURIComponent(String(version || hashString(url)).slice(0, 32));
-    if (!cleanVersion) return url;
-    return `${url}${url.includes("?") ? "&" : "?"}v=${cleanVersion}`;
-};
-
 const getCloudinaryIconUrl = (url = "", size = 48) => {
     if (!url || url.startsWith("data:")) return "";
 
@@ -233,16 +216,15 @@ export const resolveStorefrontIcon = ({ shop = {}, shopName = "" } = {}) => {
         theme?.header?.faviconUrl
     ];
     const selected = candidates.map(value => String(value || "").trim()).find(isSafeIconUrl);
-    const version = shop?.logoUpdatedAt || shop?.updatedAt || theme?.updatedAt || selected || shopName;
     const sourceUrl = selected
-        ? appendIconVersion(selected, version)
+        ? selected
         : buildInitialsIcon({ shopName, theme });
     const cloudinary32 = getCloudinaryIconUrl(selected, 32);
     const cloudinary48 = getCloudinaryIconUrl(selected, 48);
     const cloudinary180 = getCloudinaryIconUrl(selected, 180);
-    const icon32 = cloudinary32 ? appendIconVersion(cloudinary32, version) : sourceUrl;
-    const icon48 = cloudinary48 ? appendIconVersion(cloudinary48, version) : sourceUrl;
-    const appleIcon = cloudinary180 ? appendIconVersion(cloudinary180, version) : sourceUrl;
+    const icon32 = cloudinary32 || sourceUrl;
+    const icon48 = cloudinary48 || sourceUrl;
+    const appleIcon = cloudinary180 || sourceUrl;
     const iconType = cloudinary48 ? "image/png" : getIconMimeType(sourceUrl);
     const appleType = cloudinary180 ? "image/png" : getIconMimeType(sourceUrl);
 

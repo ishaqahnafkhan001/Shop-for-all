@@ -41,6 +41,11 @@ export const metadata = {
         description: LANDING_DESCRIPTION,
         images: [ogImage],
     },
+    icons: {
+        icon: [{ url: "/scaleup-logo.svg", type: "image/svg+xml" }],
+        shortcut: [{ url: "/scaleup-logo.svg", type: "image/svg+xml" }],
+        apple: [{ url: "/scaleup-logo.svg", type: "image/svg+xml" }],
+    },
     robots: {
         index: process.env.VERCEL_ENV === "preview" ? false : true,
         follow: process.env.VERCEL_ENV === "preview" ? false : true,

@@ -6,6 +6,8 @@ const PUBLIC_PRODUCT_CARD_PROJECT = {
     imageAltText: 1,
     coverMediaId: 1,
     images: { $slice: ['$images', 1] },
+    createdAt: 1,
+    updatedAt: 1,
     pricing: {
         sellingPrice: '$pricing.sellingPrice',
         discount: '$pricing.discount',
