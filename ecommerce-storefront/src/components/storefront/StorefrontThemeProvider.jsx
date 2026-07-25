@@ -65,6 +65,9 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
         const footer = groups.footer || {};
         const checkout = groups.checkout || {};
         const storefrontForeground = brand.secondary || cssTheme.foreground;
+        const mobileNavOffset = theme.mobile?.showBottomNavigation === false
+            ? '0px'
+            : 'calc(4rem + env(safe-area-inset-bottom))';
 
         return {
             ...referenceStyle,
@@ -97,6 +100,7 @@ export default function StorefrontThemeProvider({ subdomain, children }) {
             '--sf-navbar-bg': header.background || cssTheme.navbarBackground,
             '--sf-card-bg': productCard.background || cssTheme.cardBackground,
             '--sf-footer-bg': footer.background || cssTheme.footerBackground,
+            '--sf-mobile-nav-offset': mobileNavOffset,
             '--sf-heading-font': cssTheme.headingFont,
             '--sf-heading-weight': cssTheme.headingWeight,
             '--sf-base-size': `${cssTheme.baseSize}px`,

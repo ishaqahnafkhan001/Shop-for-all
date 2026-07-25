@@ -142,7 +142,7 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
         : productImages;
 
     return (
-        <div className="sf-page pb-32 lg:pb-0">
+        <div className="sf-page sf-mobile-action-page">
             <div className="sf-shell-wide py-5 sm:py-8 lg:py-10">
                 <Link href="/" className="mb-6 inline-flex items-center text-sm font-bold text-slate-500 transition-colors hover:text-[var(--sf-accent)] group">
                     <div className="mr-3 rounded-full bg-white p-2 shadow-sm transition-colors group-hover:bg-[var(--sf-accent)] group-hover:text-white">
@@ -248,7 +248,7 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
             </div>
 
             {displayStock > 0 && (
-                <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+                <div className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
                     <div className="mx-auto grid max-w-xl gap-2 min-[390px]:grid-cols-[minmax(0,1fr)_auto] min-[390px]:items-center min-[390px]:gap-3">
                         <div className="min-w-0 flex-1">
                             <p className="line-clamp-1 text-sm font-black text-slate-950">{product.title}</p>

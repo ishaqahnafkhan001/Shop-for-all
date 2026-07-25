@@ -966,6 +966,10 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     const checkoutPage = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx');
     const checkoutSections = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/components/CheckoutSections.jsx');
     const checkoutTotals = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutTotals.js');
+    const productDetails = readProject('ecommerce-storefront/src/components/product/ProductDetails.jsx');
+    const themeProvider = readProject('ecommerce-storefront/src/components/storefront/StorefrontThemeProvider.jsx');
+    const footer = readProject('packages/storefront-renderer/reference/StorefrontFooter.jsx');
+    const storefrontCss = readProject('ecommerce-storefront/src/app/globals.css');
 
     assert.match(storefrontRoutes, /'\/:subdomain\/recommendations\/cart'[\s\S]*resolveTenant[\s\S]*getCartRecommendations/);
     assert.match(storeController, /exports\.getCartRecommendations/);
@@ -986,12 +990,26 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     assert.match(cartPage, /\/storefront\/\$\{subdomain\}\/recommendations\/cart/);
     assert.match(cartPage, /You may also like/);
     assert.match(cartPage, /productActions\.buyNow/);
+    assert.match(cartPage, /sf-mobile-action-page/);
+    assert.match(cartPage, /sf-mobile-action-bar/);
+    assert.match(productDetails, /sf-mobile-action-page/);
+    assert.match(productDetails, /sf-mobile-action-bar/);
+    assert.match(themeProvider, /'--sf-mobile-nav-offset': mobileNavOffset/);
+    assert.match(footer, /height:\s*"var\(--sf-mobile-nav-offset/);
+    assert.match(storefrontCss, /\.sf-mobile-action-bar\s*\{[\s\S]*bottom:\s*var\(--sf-mobile-nav-offset/);
 
     assert.match(checkoutPage, /CheckoutOtpModal/);
     assert.match(checkoutPage, /setOtpModalOpen\(true\)/);
     assert.match(checkoutPage, /executePlaceOrder\(\{\s*verificationToken:\s*token\s*\}\)/);
+    assert.match(checkoutPage, /<\/CheckoutPageShell>\s*<CheckoutOtpModal/);
     assert.match(checkoutPage, /phoneVerificationToken,\n\s*idempotencyKey:\s*getCheckoutIdempotencyKey\(\),/);
     assert.doesNotMatch(checkoutPage, /Please verify your phone number before placing the order/);
+    assert.match(checkoutSections, /<form onSubmit=\{handleSubmit\}/);
+    assert.match(checkoutSections, /event\.preventDefault\(\);[\s\S]*event\.stopPropagation\(\);[\s\S]*onVerifyCode\(\)/);
+    assert.match(checkoutSections, /enterKeyHint="done"/);
+    assert.match(checkoutSections, /autoComplete="one-time-code"/);
+    assert.match(checkoutSections, /sf-mobile-action-page/);
+    assert.match(checkoutSections, /sf-mobile-action-bar/);
     assert.match(checkoutSections, /<select[\s\S]*name="city"/);
     assert.match(checkoutSections, /<option value="Inside Dhaka">Inside Dhaka<\/option>/);
     assert.match(checkoutSections, /<option value="Outside Dhaka">Outside Dhaka<\/option>/);

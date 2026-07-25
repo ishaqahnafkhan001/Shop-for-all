@@ -166,7 +166,7 @@ export function CheckoutTrustBadges() {
 
 export function CheckoutPageShell({ checkoutBranding, children, mobileStickyBar, onSubmit }) {
     return (
-        <div className="sf-page pb-28 lg:pb-0">
+        <div className="sf-page sf-mobile-action-page">
             <div className="sf-shell-wide py-8 sm:py-10">
                 <CheckoutBrandingBanner checkoutBranding={checkoutBranding} />
                 <CheckoutHeader />
@@ -794,7 +794,7 @@ export function CheckoutOrderSummary({
 
 export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted, totalAmount }) {
     return (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Pay on delivery</p>
@@ -830,10 +830,20 @@ export function CheckoutOtpModal({
 
     const isBusy = sending || verifying || state === "placing_order";
     const isOtpInput = state === "otp_input" || state === "verifying" || state === "error";
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (isBusy) return;
+        if (isOtpInput) {
+            if (otp.length === 6) onVerifyCode();
+            return;
+        }
+        onSendCode();
+    };
 
     return (
         <div className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-otp-title">
-            <div className="w-full overflow-hidden rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-w-md sm:rounded-[2rem]">
+            <form onSubmit={handleSubmit} className="w-full overflow-hidden rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-w-md sm:rounded-[2rem]">
                 <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
                     <div className="flex items-start gap-3">
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -881,6 +891,9 @@ export function CheckoutOtpModal({
                                 onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
                                 placeholder="000000"
                                 inputMode="numeric"
+                                enterKeyHint="done"
+                                autoComplete="one-time-code"
+                                pattern="[0-9]*"
                                 maxLength={6}
                                 disabled={isBusy}
                                 className="sf-field text-center text-lg font-black tracking-[0.35em]"
@@ -906,8 +919,7 @@ export function CheckoutOtpModal({
 
                         {!isOtpInput ? (
                             <button
-                                type="button"
-                                onClick={onSendCode}
+                                type="submit"
                                 disabled={isBusy}
                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
                             >
@@ -916,8 +928,7 @@ export function CheckoutOtpModal({
                             </button>
                         ) : (
                             <button
-                                type="button"
-                                onClick={onVerifyCode}
+                                type="submit"
                                 disabled={isBusy || otp.length !== 6}
                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
                             >
@@ -927,7 +938,7 @@ export function CheckoutOtpModal({
                         )}
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
     );
 }

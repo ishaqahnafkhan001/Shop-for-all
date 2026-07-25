@@ -416,45 +416,47 @@ export default function CheckoutPage({ params }) {
     }
 
     return (
-        <CheckoutPageShell
-            checkoutBranding={checkoutBranding}
-            onSubmit={handlePlaceOrder}
-            mobileStickyBar={(
-                <CheckoutMobileStickyBar
-                    loading={loading}
-                    phoneVerified={phoneOtp.verified}
-                    policyAccepted={policyAccepted}
-                    totalAmount={totalAmount}
-                />
-            )}
-        >
-            <CheckoutDetailsColumn
-                formData={formData}
-                isDhaka={isDhaka}
-                onInputChange={handleInputChange}
-            />
-
-            <CheckoutOrderSummary
-                cartItems={cartItems}
+        <>
+            <CheckoutPageShell
                 checkoutBranding={checkoutBranding}
-                finalShippingCost={finalShippingCost}
-                loading={loading}
-                onApplyPromotion={handleApplyPromotion}
-                policies={policies}
-                policyAccepted={policyAccepted}
-                productsDetails={productsDetails}
-                promotionCode={promotionCode}
-                promotionDiscount={promotionDiscount}
-                promotionMessage={promotionMessage}
-                phoneVerified={phoneOtp.verified}
-                removeFromCart={removeFromCart}
-                setPolicyAccepted={setPolicyAccepted}
-                setPromotionCode={setPromotionCode}
-                subtotal={subtotal}
-                totalAmount={totalAmount}
-                updateQuantity={updateQuantity}
-                visiblePolicies={visiblePolicies}
-            />
+                onSubmit={handlePlaceOrder}
+                mobileStickyBar={(
+                    <CheckoutMobileStickyBar
+                        loading={loading}
+                        phoneVerified={phoneOtp.verified}
+                        policyAccepted={policyAccepted}
+                        totalAmount={totalAmount}
+                    />
+                )}
+            >
+                <CheckoutDetailsColumn
+                    formData={formData}
+                    isDhaka={isDhaka}
+                    onInputChange={handleInputChange}
+                />
+
+                <CheckoutOrderSummary
+                    cartItems={cartItems}
+                    checkoutBranding={checkoutBranding}
+                    finalShippingCost={finalShippingCost}
+                    loading={loading}
+                    onApplyPromotion={handleApplyPromotion}
+                    policies={policies}
+                    policyAccepted={policyAccepted}
+                    productsDetails={productsDetails}
+                    promotionCode={promotionCode}
+                    promotionDiscount={promotionDiscount}
+                    promotionMessage={promotionMessage}
+                    phoneVerified={phoneOtp.verified}
+                    removeFromCart={removeFromCart}
+                    setPolicyAccepted={setPolicyAccepted}
+                    setPromotionCode={setPromotionCode}
+                    subtotal={subtotal}
+                    totalAmount={totalAmount}
+                    updateQuantity={updateQuantity}
+                    visiblePolicies={visiblePolicies}
+                />
+            </CheckoutPageShell>
             <CheckoutOtpModal
                 error={otpModalError}
                 maskedPhone={phoneOtp.maskedPhone || maskCheckoutPhone(formData.phone)}
@@ -470,6 +472,6 @@ export default function CheckoutPage({ params }) {
                 state={otpModalState}
                 verifying={phoneOtp.verifying}
             />
-        </CheckoutPageShell>
+        </>
     );
 }

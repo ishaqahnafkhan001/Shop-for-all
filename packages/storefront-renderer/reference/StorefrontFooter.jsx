@@ -118,6 +118,12 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
     const desktopColumnsClass = forceNarrowFooter ? "hidden" : "hidden lg:contents";
     const mobileColumnsClass = forceNarrowFooter ? "block" : "lg:hidden";
     const bottomNavClass = `${preview ? "sticky bottom-0" : "fixed inset-x-0 bottom-0"} z-50 ${previewDevice ? (previewDevice === "desktop" ? "hidden" : "grid") : "grid md:hidden"} grid-cols-5 border-t border-slate-200 bg-white/95 px-1 py-2 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur`;
+    const bottomNavStyle = preview
+        ? { minHeight: "4rem" }
+        : {
+            height: "var(--sf-mobile-nav-offset, calc(4rem + env(safe-area-inset-bottom)))",
+            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+        };
     const mobileLinks = [
         { label: "Home", href: "/", icon: Home },
         { label: "Search", href: "/#products", icon: Search },
@@ -210,7 +216,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
             </EditorSelectionFrame>
 
             {theme.mobile?.showBottomNavigation && (
-                <nav className={bottomNavClass}>
+                <nav className={bottomNavClass} style={bottomNavStyle}>
                     {mobileLinks.map((item) => {
                         const Icon = item.icon;
                         return (

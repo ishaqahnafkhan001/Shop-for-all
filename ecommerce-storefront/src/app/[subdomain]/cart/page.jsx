@@ -112,7 +112,7 @@ export default function CartPage() {
     }
 
     return (
-        <div className="sf-page pb-28 lg:pb-0">
+        <div className="sf-page sf-mobile-action-page">
         <div className="sf-shell-wide py-8 sm:py-10">
             <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex items-center">
@@ -387,7 +387,7 @@ export default function CartPage() {
         </div>
         {productActions.variantPicker}
 
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{cartItems.length} item{cartItems.length === 1 ? '' : 's'} total</p>
