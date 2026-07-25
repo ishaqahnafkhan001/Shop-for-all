@@ -118,6 +118,25 @@ export const proofCards = [
 
 export const pricingPlans = [
     {
+        name: "Beginner",
+        slug: "beginner",
+        price: "৳499",
+        period: "/month",
+        yearly: "৳4,990/year",
+        audience: "Best for launching your first store",
+        cta: "Start Free Trial",
+        features: [
+            "Up to 25 products",
+            "Up to 3 images per product",
+            "Unlimited orders and returns",
+            "Fixed responsive storefront",
+            "Pathao and RedX shipping tools",
+            "Scaleup subdomain",
+            "No AI, Store Builder, or analytics",
+            "No staff accounts",
+        ],
+    },
+    {
         name: "Starter",
         slug: "starter",
         price: "৳999",

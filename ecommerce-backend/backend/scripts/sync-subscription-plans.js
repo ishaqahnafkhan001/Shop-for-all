@@ -54,7 +54,7 @@ const run = async () => {
 
     console.log(dryRun
         ? 'Subscription plan dry run completed; no records changed.'
-        : 'Subscription plans synchronized: starter, growth, pro');
+        : 'Subscription plans synchronized: beginner, starter, growth, pro');
     await mongoose.disconnect();
 };
 

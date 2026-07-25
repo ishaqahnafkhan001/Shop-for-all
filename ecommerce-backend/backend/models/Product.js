@@ -122,6 +122,12 @@ const productSchema = new Schema({
     },
     schedulePlanBlockedAt: { type: Date, default: null, index: true },
     schedulePlanBlockedReason: { type: String, trim: true, maxlength: 240, default: '' },
+    planPausedPublication: {
+        active: { type: Boolean, default: false },
+        publishAt: { type: Date, default: null },
+        pausedAt: { type: Date, default: null },
+        planKey: { type: String, trim: true, lowercase: true, default: '' }
+    },
     publishedAt: {
         type: Date,
         default: null
@@ -153,6 +159,24 @@ const productSchema = new Schema({
 
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
+    planArchive: {
+        active: { type: Boolean, default: false, index: true },
+        planKey: { type: String, trim: true, lowercase: true, default: '' },
+        archivedAt: { type: Date, default: null },
+        previousStatus: {
+            type: String,
+            enum: ['', 'Draft', 'Published', 'Archived'],
+            default: ''
+        },
+        previousIsActive: { type: Boolean, default: true },
+        reconciliationId: { type: String, trim: true, default: '' }
+    },
+    entitlementMedia: {
+        restricted: { type: Boolean, default: false },
+        visibleSources: [{ type: String, trim: true }],
+        restrictedAt: { type: Date, default: null },
+        planKey: { type: String, trim: true, lowercase: true, default: '' }
+    },
 
 }, {
     timestamps: true,

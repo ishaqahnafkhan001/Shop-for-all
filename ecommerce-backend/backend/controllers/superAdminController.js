@@ -33,20 +33,27 @@ const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
 const CRITICAL_FEATURE_FLAGS = new Set([
     'storeBuilder',
+    'homepageSeo',
     'analytics',
+    'dashboardTopProducts',
+    'lowStockAlerts',
     'staffAccounts',
     'growthCenter',
     'customDomain',
     'customerSection',
+    'emailCampaigns',
     'trustSystem',
+    'publicVerifiedBadge',
     'notifications',
+    'privacyRequests',
+    'activityLogs',
     'scheduledProductPublishing',
     'scheduledSales'
 ]);
 const resolveCanonicalPlanKey = (value) => {
     const key = String(value || '').trim().toLowerCase();
     if (!PLAN_DEFINITIONS[key]) {
-        const error = new Error('Plan must be starter, growth, or pro.');
+        const error = new Error('Plan must be beginner, starter, growth, or pro.');
         error.statusCode = 400;
         throw error;
     }

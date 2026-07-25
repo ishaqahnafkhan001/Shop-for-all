@@ -42,6 +42,7 @@ const {
     getRevenueAnalyticsData
 } = require('../services/orders/orderAnalyticsService');
 const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpService');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
 
 
 
@@ -687,7 +688,13 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getDashboardOverview = async (req, res) => {
     try {
-        const response = await getDashboardOverviewResponse(req.tenantId);
+        const planAccess = req.planAccess || await getShopPlanAccess(req.tenantId);
+        const response = await getDashboardOverviewResponse(req.tenantId, {
+            topProducts: Boolean(planAccess.features.dashboardTopProducts),
+            lowStockAlerts: Boolean(planAccess.features.lowStockAlerts),
+            revenueTrends: Boolean(planAccess.features.analytics),
+            customerMetrics: Boolean(planAccess.features.customerSection)
+        });
         res.status(200).json(response);
     } catch (err) {
         console.error("Dashboard overview error:", err);

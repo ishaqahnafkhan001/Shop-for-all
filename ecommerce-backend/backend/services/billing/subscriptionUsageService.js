@@ -7,7 +7,11 @@ const getSubscriptionUsage = async (shopOrId, options = {}) => {
     const access = options.access || await require('./planAccessService').getShopPlanAccess(shopOrId);
     const shopId = access.shop?._id || shopOrId?._id || shopOrId;
     const [productCount, staffCount, aiGeneration] = await Promise.all([
-        Product.countDocuments({ shop_id: shopId, isDeleted: { $ne: true } }),
+        Product.countDocuments({
+            shop_id: shopId,
+            isDeleted: { $ne: true },
+            status: { $ne: 'Archived' }
+        }),
         User.countDocuments({ shop_id: shopId, role: 'VendorStaff', status: 'Active' }),
         getWeeklyAiUsage({ shopId, limit: access.limits.aiProductCreationsPerWeek })
     ]);

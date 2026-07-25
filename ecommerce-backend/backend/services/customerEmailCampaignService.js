@@ -9,6 +9,7 @@ const {
     productPromotionTemplate
 } = require('./mail/templates/productPromotionTemplate');
 const { sanitizePublicProduct } = require('./publicProductSerializer');
+const { hasFeature } = require('./shops/featureAccessService');
 
 const cleanText = (value = '', max = 2000) => String(value || '').trim().slice(0, max);
 
@@ -96,6 +97,22 @@ const createCampaignJob = async ({ shopId, sentBy, type, subject, message = '', 
 };
 
 const processCustomerEmailCampaignJob = async (job) => {
+    if (!(await hasFeature(job.shop_id, 'emailCampaigns'))) {
+        await CustomerEmailCampaign.updateOne(
+            { _id: job.payload?.campaignId, shopId: job.shop_id },
+            {
+                $set: {
+                    status: 'cancelled',
+                    lastError: 'Customer email campaigns are not included in the current plan.'
+                }
+            }
+        );
+        return {
+            cancelled: true,
+            reason: 'Customer email campaigns are not included in the current plan.'
+        };
+    }
+
     const campaign = await CustomerEmailCampaign.findOne({
         _id: job.payload?.campaignId,
         shopId: job.shop_id
@@ -131,6 +148,18 @@ const processCustomerEmailCampaignJob = async (job) => {
     let failedCount = 0;
 
     for (const customer of customers) {
+        if (!(await hasFeature(job.shop_id, 'emailCampaigns'))) {
+            campaign.sentCount = sentCount;
+            campaign.failedCount = failedCount;
+            campaign.status = 'cancelled';
+            campaign.lastError = 'Campaign stopped because customer email campaigns are not included in the current plan.';
+            await campaign.save();
+            return {
+                cancelled: true,
+                reason: campaign.lastError
+            };
+        }
+
         try {
             const html = campaign.type === 'product'
                 ? productPromotionTemplate({

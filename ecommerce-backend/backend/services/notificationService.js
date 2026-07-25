@@ -24,6 +24,8 @@ const createNotification = async ({
                                   }) => {
     try {
         if (!shop_id || !type || !title || !message) return [];
+        const { hasFeature } = require('./shops/featureAccessService');
+        if (!(await hasFeature(shop_id, 'notifications'))) return [];
 
         const recipients = Array.isArray(recipientUserIds)
             ? recipientUserIds.filter(Boolean)

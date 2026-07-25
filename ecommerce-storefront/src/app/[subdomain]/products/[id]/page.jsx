@@ -1,5 +1,9 @@
 import ProductDetails from '@/components/product/ProductDetails';
-import { fetchStorefrontInfo, fetchStorefrontProduct } from '@/lib/storefrontServer';
+import {
+    fetchStorefrontInfo,
+    fetchStorefrontProduct,
+    getStorefrontPlanRedirectUrl
+} from '@/lib/storefrontServer';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
@@ -21,6 +25,8 @@ const getInitialProduct = async (subdomain, id, host = '') => {
     try {
         return await fetchStorefrontProduct(subdomain, id, { storefrontHost: host });
     } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(error, `/products/${encodeURIComponent(id)}`);
+        if (redirectTo) return { __redirectTo: redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error('Server product detail fetch error:', error.message);
         }
@@ -32,6 +38,8 @@ const getStoreInfo = async (subdomain, host = '') => {
     try {
         return await fetchStorefrontInfo(subdomain, { storefrontHost: host });
     } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(error, '/');
+        if (redirectTo) return { __redirectTo: redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error('Server shop info fetch error:', error.message);
         }
@@ -51,7 +59,7 @@ export async function generateMetadata({ params }) {
         getStoreInfo(subdomain, host)
     ]);
 
-    if (!product) {
+    if (!product || product.__redirectTo || shop?.__redirectTo) {
         return noindexMetadata('Product unavailable', 'This product is currently unavailable.');
     }
 
@@ -77,6 +85,9 @@ export default async function Page({ params }) {
         getInitialProduct(subdomain, id, host),
         getStoreInfo(subdomain, host)
     ]);
+    if (initialProduct?.__redirectTo || shop?.__redirectTo) {
+        redirect(initialProduct?.__redirectTo || shop.__redirectTo);
+    }
 
     if (initialProduct?.slug && isObjectId(id)) {
         redirect(`/products/${initialProduct.slug}`);

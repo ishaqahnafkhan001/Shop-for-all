@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const JOB_STATUSES = ['queued', 'running', 'completed', 'failed', 'dead'];
+const JOB_STATUSES = ['queued', 'running', 'completed', 'failed', 'dead', 'cancelled'];
 
 const jobSchema = new Schema({
     queue: {
@@ -60,6 +60,16 @@ const jobSchema = new Schema({
         type: String,
         trim: true,
         maxlength: 2000,
+        default: ''
+    },
+    cancelledAt: {
+        type: Date,
+        default: null
+    },
+    cancellationReason: {
+        type: String,
+        trim: true,
+        maxlength: 500,
         default: ''
     },
     idempotencyKey: {

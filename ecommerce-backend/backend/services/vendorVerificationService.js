@@ -273,7 +273,7 @@ const approveVerification = async ({ verification, reviewer, req }) => {
             type: 'system',
             title: phoneVerified ? 'Vendor verification completed' : 'NID verification approved',
             message: phoneVerified
-                ? 'Your NID and phone verification are complete. Your store is now a verified seller.'
+                ? 'Your NID and phone verification are complete. Your compliance verification is approved.'
                 : 'Your NID verification has been approved. Verify the owner phone number to complete vendor verification.',
             entityType: 'VendorVerification',
             entityId: verification._id,

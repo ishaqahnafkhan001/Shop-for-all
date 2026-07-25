@@ -9,7 +9,8 @@ const { logAudit } = require('../services/auditLogService');
 const { buildPagination } = require('../utils/pagination');
 const {
     parseProductPayload,
-    resolveVariantImageReferences
+    resolveVariantImageReferences,
+    getUniqueProductImageSources
 } = require('../services/products/productMediaService');
 const {
     generateProductContentSuggestion
@@ -52,6 +53,10 @@ const {
     getWeeklyAiUsage
 } = require('../services/billing/planUsageService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
+const {
+    reserveQuota,
+    releaseQuotaSafely
+} = require('../services/billing/planQuotaReservationService');
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -120,13 +125,16 @@ const ensureProductSchedulePermission = async (req, payload = {}) => {
 
 const getPlanContext = async (req) => req.planAccess || getShopPlanAccess(req.tenantId);
 
-const assertProductImageLimit = async (req, imageCount) => {
+const assertProductImageLimit = async (req, productOrCount) => {
     const context = await getPlanContext(req);
     const limit = context.limits.imagesPerProduct;
+    const imageCount = typeof productOrCount === 'number'
+        ? productOrCount
+        : getUniqueProductImageSources(productOrCount).length;
     if (limit !== null && Number(imageCount || 0) > Number(limit)) {
         const error = new Error('Product image limit reached');
         error.statusCode = 403;
-        error.payload = buildLimitError(context, 'imagesPerProduct', Number(imageCount || 0), limit);
+        error.payload = await buildLimitError(context, 'imagesPerProduct', Number(imageCount || 0), limit);
         throw error;
     }
     return context;
@@ -135,7 +143,9 @@ const assertProductImageLimit = async (req, imageCount) => {
 const assertScheduledPublishingPlan = async (req, payload) => {
     if (!isSchedulingProductPublication(payload)) return null;
     const context = await getPlanContext(req);
-    return context.features.scheduledProductPublishing ? null : buildFeatureError(context, 'scheduledProductPublishing');
+    return context.features.scheduledProductPublishing
+        ? null
+        : await buildFeatureError(context, 'scheduledProductPublishing');
 };
 
 const sendAiLimitError = async (req, res, error) => {
@@ -144,7 +154,7 @@ const sendAiLimitError = async (req, res, error) => {
         shopId: req.tenantId,
         limit: context.limits.aiProductCreationsPerWeek
     });
-    const payload = buildLimitError(
+    const payload = await buildLimitError(
         context,
         'aiProductCreationsPerWeek',
         usage,
@@ -559,6 +569,11 @@ exports.createProduct = async (req, res) => {
                 lowStockThreshold: value.lowStockThreshold
             })];
         }
+        await assertProductImageLimit(req, {
+            images: value.images || imageUrls,
+            coverMediaId: value.coverMediaId,
+            variants: value.variants
+        });
 
         value.slug = await getUniqueSlug({
             shopId: req.tenantId,
@@ -654,6 +669,7 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
+    let restoreQuotaReservation = null;
 
     try {
         const shopId = req.tenantId;
@@ -759,6 +775,43 @@ exports.updateProduct = async (req, res) => {
             await session.abortTransaction();
             return res.status(403).json({ success: false, error: 'Missing staff permission: productsSchedule' });
         }
+        await assertProductImageLimit(req, {
+            images: value.images || product.images || [],
+            coverMediaId: value.coverMediaId ?? product.coverMediaId,
+            variants: value.variants || product.variants || []
+        });
+        if (
+            product.status === 'Archived' &&
+            value.status !== undefined &&
+            value.status !== 'Archived'
+        ) {
+            const context = await getPlanContext(req);
+            const limit = context.limits.productCount;
+            if (limit !== null) {
+                try {
+                    restoreQuotaReservation = await reserveQuota({
+                        shopId,
+                        resource: 'products',
+                        requested: 1,
+                        limit,
+                        getCommittedUsage: () => Product.countDocuments({
+                            shop_id: shopId,
+                            isDeleted: { $ne: true },
+                            status: { $ne: 'Archived' }
+                        })
+                    });
+                } catch (quotaError) {
+                    if (quotaError.code !== 'PLAN_LIMIT_REACHED') throw quotaError;
+                    await session.abortTransaction();
+                    return res.status(403).json(await buildLimitError(
+                        context,
+                        'productCount',
+                        quotaError.usage,
+                        limit
+                    ));
+                }
+            }
+        }
 
         const beforeAudit = {
             title: product.title,
@@ -797,9 +850,29 @@ exports.updateProduct = async (req, res) => {
         for (const field of SCALAR) {
             if (value[field] !== undefined) product[field] = value[field];
         }
+        if (
+            product.planArchive?.active &&
+            value.status !== undefined &&
+            value.status !== 'Archived'
+        ) {
+            product.planArchive.active = false;
+            product.planArchive.planKey = '';
+            product.planArchive.archivedAt = null;
+            product.planArchive.previousStatus = '';
+            product.planArchive.previousIsActive = true;
+            product.planArchive.reconciliationId = '';
+        }
         if (value.publicationStatus !== undefined || value.publishAt !== undefined) {
             product.schedulePlanBlockedAt = null;
             product.schedulePlanBlockedReason = '';
+            if (value.publicationStatus === 'scheduled') {
+                product.planPausedPublication = {
+                    active: false,
+                    publishAt: null,
+                    pausedAt: null,
+                    planKey: ''
+                };
+            }
         }
 
         if (value.pricing) {
@@ -861,6 +934,7 @@ exports.updateProduct = async (req, res) => {
         console.error('Update product error:', err);
         return res.status(400).json({ success: false, error: err.message });
     } finally {
+        releaseQuotaSafely(restoreQuotaReservation);
         session.endSession();
     }
 };

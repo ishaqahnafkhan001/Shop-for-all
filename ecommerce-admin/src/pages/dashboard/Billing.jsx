@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
     AlertTriangle,
@@ -17,25 +18,34 @@ import API from '../../api/api';
 import { AdminErrorState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 
 const formatPlanLimit = (value) => value === null ? 'Unlimited' : Number(value || 0).toLocaleString();
+const PLAN_ORDER = ['beginner', 'starter', 'growth', 'pro'];
 
 const buildPlanFeatureList = (plan = {}) => {
     const limits = plan.limits || {};
     const features = plan.features || {};
     return [
         `${formatPlanLimit(limits.productCount)} products`,
-        `${formatPlanLimit(limits.aiProductCreationsPerWeek)} AI products weekly`,
         `${formatPlanLimit(limits.imagesPerProduct)} images per product`,
-        `${formatPlanLimit(limits.staffAccounts)} staff account${limits.staffAccounts === 1 ? '' : 's'}`,
-        `${plan.storeBuilderAccess === 'full' ? 'Full' : 'Limited'} Store Builder`,
-        `${formatPlanLimit(limits.activityLogRetentionDays)}-day activity logs`,
-        features.growthCenter ? 'Growth Center' : 'No Growth Center',
-        features.customDomain ? 'Custom domain' : 'ScaleUp subdomain',
-        features.customerSection ? 'Customer management' : 'No customer management',
-        features.trustSystem ? 'Trust system' : 'No trust system',
-        features.notifications ? 'Notification Center' : 'No Notification Center',
-        features.scheduledSales ? 'Scheduled sales' : 'No scheduled sales',
-        features.scheduledProductPublishing ? 'Scheduled product publishing' : 'No scheduled product publishing'
-    ];
+        'Unlimited orders and returns',
+        limits.staffAccounts > 0
+            ? `${formatPlanLimit(limits.staffAccounts)} staff account${limits.staffAccounts === 1 ? '' : 's'}`
+            : 'Owner-operated store',
+        limits.aiProductCreationsPerWeek > 0
+            ? `${formatPlanLimit(limits.aiProductCreationsPerWeek)} AI products weekly`
+            : null,
+        plan.storeBuilderAccess === 'none'
+            ? 'Fixed responsive storefront'
+            : `${plan.storeBuilderAccess === 'full' ? 'Full' : 'Limited'} Store Builder`,
+        features.activityLogs ? `${formatPlanLimit(limits.activityLogRetentionDays)}-day activity logs` : null,
+        features.analytics ? 'Sales analytics' : null,
+        features.growthCenter ? 'Growth Center' : null,
+        features.customDomain ? 'Custom domain' : 'Scaleup subdomain',
+        features.customerSection ? 'Customer management' : null,
+        features.notifications ? 'Notification Center' : null,
+        features.lowStockAlerts ? 'Low-stock alerts' : null,
+        features.scheduledSales ? 'Scheduled sales' : null,
+        features.scheduledProductPublishing ? 'Scheduled product publishing' : null
+    ].filter(Boolean);
 };
 
 const providerLabels = {
@@ -144,6 +154,8 @@ const BillingBanner = ({ subscription, latestInvoice }) => {
 };
 
 const Billing = () => {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [current, setCurrent] = useState(null);
@@ -154,6 +166,10 @@ const Billing = () => {
     const [selectedInvoiceId, setSelectedInvoiceId] = useState('');
     const [creatingPlan, setCreatingPlan] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [upgradeIntent, setUpgradeIntent] = useState(null);
+    const [downgradePreview, setDowngradePreview] = useState(null);
+    const [retainedProductIds, setRetainedProductIds] = useState([]);
+    const [downgradePending, setDowngradePending] = useState(false);
     const [paymentForm, setPaymentForm] = useState({
         provider: 'manual_bkash',
         transactionId: '',
@@ -197,6 +213,27 @@ const Billing = () => {
         return () => window.clearTimeout(timer);
     }, [load]);
 
+    useEffect(() => {
+        const token = searchParams.get('intent');
+        if (!token) return undefined;
+        let active = true;
+        API.get(`/admin/billing/upgrade-intents/${encodeURIComponent(token)}`)
+            .then(response => {
+                if (!active) return;
+                const intent = response.data?.data || null;
+                setUpgradeIntent(intent);
+                if (intent?.status === 'completed' && intent?.returnTo) {
+                    navigate(intent.returnTo, { replace: true });
+                }
+            })
+            .catch(() => {
+                if (active) setUpgradeIntent(null);
+            });
+        return () => {
+            active = false;
+        };
+    }, [navigate, searchParams]);
+
     const latestInvoice = current?.latestInvoice;
     const subscription = current?.subscription;
     const billingDisplay = current?.billingDisplay || {};
@@ -208,9 +245,12 @@ const Billing = () => {
         ...plan,
         monthly: plan.monthlyPrice,
         yearly: plan.yearlyPrice,
-        recommended: plan.key === 'growth',
+        recommended: upgradeIntent?.recommendedPlan
+            ? plan.key === upgradeIntent.recommendedPlan
+            : plan.key === 'growth',
         features: buildPlanFeatureList(plan)
-    })), [current?.availablePlans]);
+    })), [current?.availablePlans, upgradeIntent?.recommendedPlan]);
+    const currentPlanIndex = PLAN_ORDER.indexOf(planAccess.planKey);
     const formatUsage = (used, limit) => `${Number(used || 0).toLocaleString()} / ${limit === null ? 'Unlimited' : Number(limit || 0).toLocaleString()}`;
     const selectedInvoice = useMemo(() => {
         return invoices.find(invoice => String(invoice.id || invoice._id) === String(selectedInvoiceId));
@@ -220,7 +260,11 @@ const Billing = () => {
         setCreatingPlan(planName);
         try {
             await API.post('/admin/billing/events/upgrade-clicked', { planName }).catch(() => null);
-            const res = await API.post('/admin/billing/invoices', { planName, billingCycle: cycle });
+            const res = await API.post('/admin/billing/invoices', {
+                planName,
+                billingCycle: cycle,
+                upgradeIntentToken: searchParams.get('intent') || undefined
+            });
             toast.success(`${planName} invoice created`);
             const invoice = res.data.data;
             await load();
@@ -231,6 +275,77 @@ const Billing = () => {
             toast.error(err.response?.data?.error || 'Failed to create invoice');
         } finally {
             setCreatingPlan('');
+        }
+    };
+
+    const previewDowngrade = async (plan) => {
+        setCreatingPlan(plan.name);
+        try {
+            const response = await API.post('/admin/billing/downgrade/preview', {
+                planKey: plan.key
+            });
+            const preview = response.data?.data;
+            setDowngradePreview(preview);
+            setRetainedProductIds(
+                (preview?.availableProducts || [])
+                    .filter(product => product.selectedByDefault)
+                    .map(product => String(product.id))
+            );
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Unable to preview this downgrade');
+        } finally {
+            setCreatingPlan('');
+        }
+    };
+
+    const toggleRetainedProduct = (productId) => {
+        if (!downgradePreview) return;
+        const id = String(productId);
+        setRetainedProductIds(current => {
+            if (current.includes(id)) return current.filter(value => value !== id);
+            if (
+                downgradePreview.productLimit !== null &&
+                current.length >= Number(downgradePreview.productLimit)
+            ) {
+                toast.error(`Choose no more than ${downgradePreview.productLimit} products`);
+                return current;
+            }
+            return [...current, id];
+        });
+    };
+
+    const scheduleDowngrade = async () => {
+        if (!downgradePreview || downgradePending) return;
+        if (downgradePreview.requiresProductSelection && retainedProductIds.length === 0) {
+            toast.error('Choose the products you want to keep active');
+            return;
+        }
+        setDowngradePending(true);
+        try {
+            await API.post('/admin/billing/downgrade/schedule', {
+                planKey: downgradePreview.targetPlan.key,
+                retainedProductIds
+            });
+            toast.success(`Downgrade to ${downgradePreview.targetPlan.name} scheduled`);
+            setDowngradePreview(null);
+            await load();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Unable to schedule this downgrade');
+        } finally {
+            setDowngradePending(false);
+        }
+    };
+
+    const cancelDowngrade = async () => {
+        setDowngradePending(true);
+        try {
+            await API.post('/admin/billing/downgrade/cancel');
+            toast.success('Scheduled downgrade cancelled');
+            await load();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Unable to cancel this downgrade');
+        } finally {
+            setDowngradePending(false);
         }
     };
 
@@ -303,6 +418,25 @@ const Billing = () => {
             </div>
 
             <BillingBanner subscription={subscription} latestInvoice={latestInvoice} />
+
+            {subscription?.pendingPlanEffectiveAt && subscription?.reconciliation?.status !== 'cancelled' && (
+                <section className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="font-black">Downgrade to {subscription.pendingPlanName} is scheduled</p>
+                        <p className="mt-1 text-sm text-amber-800">
+                            It will take effect on {formatDate(subscription.pendingPlanEffectiveAt)}. Your retained data remains stored.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={cancelDowngrade}
+                        disabled={downgradePending}
+                        className="min-h-11 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-black text-amber-900 disabled:opacity-60"
+                    >
+                        {downgradePending ? 'Cancelling...' : 'Cancel downgrade'}
+                    </button>
+                </section>
+            )}
 
             <section className="grid gap-4 lg:grid-cols-3">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
@@ -398,11 +532,15 @@ const Billing = () => {
                     </div>
                     <div className="rounded-xl bg-slate-50 p-4">
                         <p className="text-xs font-bold uppercase text-slate-400">Images per product</p>
-                        <p className="mt-1 font-black text-slate-950">Up to {limits.imagesPerProduct || 5}</p>
+                        <p className="mt-1 font-black text-slate-950">Up to {limits.imagesPerProduct ?? 5}</p>
                     </div>
                     <div className="rounded-xl bg-slate-50 p-4">
                         <p className="text-xs font-bold uppercase text-slate-400">Activity logs</p>
-                        <p className="mt-1 font-black text-slate-950">{limits.activityLogRetentionDays || 7} days</p>
+                        <p className="mt-1 font-black text-slate-950">
+                            {planAccess.features?.activityLogs
+                                ? `${limits.activityLogRetentionDays || 7} days`
+                                : 'Not included'}
+                        </p>
                     </div>
                 </div>
             </section>
@@ -452,7 +590,7 @@ const Billing = () => {
                         ))}
                     </div>
                 </div>
-                <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {plans.map(plan => (
                         <div
                             key={plan.name}
@@ -468,7 +606,7 @@ const Billing = () => {
                                 {money(cycle === 'yearly' ? plan.yearly : plan.monthly)}
                                 <span className="text-sm font-bold text-slate-500">/{cycle === 'yearly' ? 'year' : 'month'}</span>
                             </p>
-                            {plan.name !== 'Starter' && (
+                            {plan.badgeEligible && (
                                 <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-emerald-700">
                                     <BadgeCheck className="h-4 w-4" />
                                     Eligible to apply for Trusted Badge after requirements are met.
@@ -483,12 +621,29 @@ const Billing = () => {
                                 ))}
                             </div>
                             <button
-                                onClick={() => createInvoice(plan.name)}
-                                disabled={creatingPlan === plan.name}
+                                onClick={() => {
+                                    const targetIndex = PLAN_ORDER.indexOf(plan.key);
+                                    if (targetIndex < currentPlanIndex) {
+                                        previewDowngrade(plan);
+                                    } else if (targetIndex > currentPlanIndex || subscription?.status !== 'active') {
+                                        createInvoice(plan.name);
+                                    }
+                                }}
+                                disabled={
+                                    creatingPlan === plan.name ||
+                                    (
+                                        PLAN_ORDER.indexOf(plan.key) === currentPlanIndex &&
+                                        subscription?.status === 'active'
+                                    )
+                                }
                                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                             >
                                 {creatingPlan === plan.name ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                                Create invoice
+                                {PLAN_ORDER.indexOf(plan.key) < currentPlanIndex
+                                    ? 'Schedule downgrade'
+                                    : PLAN_ORDER.indexOf(plan.key) === currentPlanIndex && subscription?.status === 'active'
+                                        ? 'Current plan'
+                                        : 'Create invoice'}
                             </button>
                         </div>
                     ))}
@@ -669,6 +824,84 @@ const Billing = () => {
                     </div>
                 </div>
             </section>
+
+            {downgradePreview && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="downgrade-title"
+                    className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 sm:items-center sm:p-6"
+                >
+                    <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl sm:max-w-2xl sm:rounded-2xl sm:p-6">
+                        <h2 id="downgrade-title" className="text-xl font-black text-slate-950">
+                            Downgrade to {downgradePreview.targetPlan.name}
+                        </h2>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                            This change takes effect at the end of the current paid period. No products or media are deleted.
+                        </p>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-xl bg-slate-50 p-4">
+                                <p className="text-xs font-bold uppercase text-slate-400">Effective date</p>
+                                <p className="mt-1 font-black text-slate-950">{formatDate(downgradePreview.effectiveAt)}</p>
+                            </div>
+                            <div className="rounded-xl bg-slate-50 p-4">
+                                <p className="text-xs font-bold uppercase text-slate-400">Active products</p>
+                                <p className="mt-1 font-black text-slate-950">
+                                    {retainedProductIds.length} / {downgradePreview.productLimit ?? 'Unlimited'}
+                                </p>
+                            </div>
+                        </div>
+                        {downgradePreview.requiresProductSelection && (
+                            <div className="mt-5">
+                                <p className="text-sm font-black text-slate-900">Choose products to keep active</p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Other products are archived reversibly and can return after an eligible upgrade.
+                                </p>
+                                <div className="mt-3 max-h-72 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-2">
+                                    {(downgradePreview.availableProducts || []).map(product => {
+                                        const checked = retainedProductIds.includes(String(product.id));
+                                        return (
+                                            <label
+                                                key={product.id}
+                                                className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    onChange={() => toggleRetainedProduct(product.id)}
+                                                    className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                                                />
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-sm font-bold text-slate-900">{product.title}</span>
+                                                    <span className="text-xs text-slate-500">{product.status}</span>
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setDowngradePreview(null)}
+                                disabled={downgradePending}
+                                className="min-h-11 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-black text-slate-700"
+                            >
+                                Keep current plan
+                            </button>
+                            <button
+                                type="button"
+                                onClick={scheduleDowngrade}
+                                disabled={downgradePending}
+                                className="min-h-11 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:opacity-60"
+                            >
+                                {downgradePending ? 'Scheduling...' : 'Confirm scheduled downgrade'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

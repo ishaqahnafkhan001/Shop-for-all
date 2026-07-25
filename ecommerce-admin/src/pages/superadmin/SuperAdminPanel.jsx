@@ -571,7 +571,7 @@ const SuperAdminPanel = () => {
                             }}
                             className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
                         >
-                            {['starter', 'growth', 'pro'].map(slug => (
+                            {['beginner', 'starter', 'growth', 'pro'].map(slug => (
                                 <option key={slug} value={slug}>{slug[0].toUpperCase() + slug.slice(1)}</option>
                             ))}
                         </select>
@@ -596,6 +596,7 @@ const SuperAdminPanel = () => {
                             />
                         ))}
                         <select value={planForm.storeBuilderAccess} onChange={event => setPlanForm(prev => ({ ...prev, storeBuilderAccess: event.target.value }))} className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                            <option value="none">No Store Builder</option>
                             <option value="limited">Limited Store Builder</option>
                             <option value="full">Full Store Builder</option>
                         </select>

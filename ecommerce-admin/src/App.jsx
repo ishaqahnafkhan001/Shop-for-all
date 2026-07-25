@@ -134,15 +134,15 @@ function App() {
                         <Route path="promotions" element={withSuspense(withPermission('promotions', withFeature('coupons', <Promotions />)))} />
                         <Route path="banners" element={withSuspense(withPermission('bannersManage', withFeature('scheduledBanners', <PromotionalBanner />)))} />
                         <Route path="customers" element={withSuspense(withPermission('customers', withFeature('customerSection', <CustomerList />)))} />
-                        <Route path="privacy-requests" element={withSuspense(withPermission('privacyRequests', <PrivacyRequests />))} />
+                        <Route path="privacy-requests" element={withSuspense(withPermission('privacyRequests', withFeature('privacyRequests', <PrivacyRequests />)))} />
                         <Route path="growth" element={withSuspense(withPermission('growthCenter', withFeature('growthCenter', <GrowthCenter />)))} />
                         <Route path="analytics" element={withSuspense(withPermission('analytics', withFeature('analytics', <AdvancedAnalytics />)))} />
                         <Route path="store-builder" element={withSuspense(withPermission('storeBuilder', withFeature('storeBuilder', <StoreBuilder />)))} />
-                        <Route path="seo" element={withSuspense(withPermission('storeBuilder', withFeature('storeBuilder', <HomepageSeo />)))} />
+                        <Route path="seo" element={withSuspense(withPermission('storeBuilder', withFeature('storeBuilder', withFeature('homepageSeo', <HomepageSeo />))))} />
                         <Route path="domain" element={withSuspense(withPermission('storeBuilder', withFeature('storeBuilder', withFeature('customDomain', <CustomDomain />))))} />
                         <Route path="shipping" element={withSuspense(withPermission('shipping', <ShippingSettings />))} />
                         <Route path="settings" element={withSuspense(withPermission('settings', <ShopSettings />))} />
-                        <Route path="activity-logs" element={withSuspense(withPermission('activityLogs', <ActivityLogs />))} />
+                        <Route path="activity-logs" element={withSuspense(withPermission('activityLogs', withFeature('activityLogs', <ActivityLogs />)))} />
                         <Route path="support" element={withSuspense(<SupportCenter />)} />
                     </Route>
                 </Route>

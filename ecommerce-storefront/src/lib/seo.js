@@ -62,6 +62,7 @@ const getHostLabel = (host = "") => normalizeHost(host).split(":")[0];
 
 export const isCustomDomainFullyVerified = (customDomain = {}) => (
     customDomain?.status === "Verified" &&
+    customDomain?.planInactive !== true &&
     Boolean(customDomain?.domain) &&
     customDomain?.ownershipVerified === true &&
     (
@@ -134,6 +135,7 @@ export const normalizeStorefrontPlan = (plan = null) => {
     if (normalized.some(value => value === "pro" || value.includes("pro-plan"))) return "pro";
     if (normalized.some(value => value === "growth" || value.includes("growth-plan"))) return "growth";
     if (normalized.some(value => value === "starter" || value === "trial" || value === "trialing" || value.includes("starter-plan"))) return "starter";
+    if (normalized.some(value => value === "beginner" || value.includes("beginner-plan"))) return "beginner";
     return "unknown";
 };
 
@@ -152,7 +154,7 @@ export const buildStorefrontTitle = ({ shopName = "", pageTitle = "", planKey = 
     }
 
     const parts = [cleanShopName, cleanPageTitle].filter(Boolean);
-    if (planKey === "starter" || planKey === "unknown") parts.push(PLATFORM_NAME);
+    if (planKey === "beginner" || planKey === "starter" || planKey === "unknown") parts.push(PLATFORM_NAME);
     return truncateAtWord(parts.join(" | "), 120);
 };
 

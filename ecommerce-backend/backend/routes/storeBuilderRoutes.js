@@ -77,6 +77,7 @@ router.get(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
+    requireShopFeature('homepageSeo'),
     getStoreBuilderSeoBootstrap
 );
 
@@ -86,6 +87,7 @@ router.put(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
+    requireShopFeature('homepageSeo'),
     blockVerificationSuspendedShop,
     storeBuilderWriteLimiter,
     saveStoreBuilderSeoDraft
@@ -97,6 +99,7 @@ router.delete(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
+    requireShopFeature('homepageSeo'),
     blockVerificationSuspendedShop,
     storeBuilderWriteLimiter,
     deleteStoreBuilderSeoDraft
@@ -108,6 +111,7 @@ router.post(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
+    requireShopFeature('homepageSeo'),
     blockVerificationSuspendedShop,
     storeBuilderWriteLimiter,
     publishStoreBuilderSeo
@@ -119,6 +123,7 @@ router.post(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('storeBuilder'),
     requireShopFeature('storeBuilder'),
+    requireShopFeature('homepageSeo'),
     blockVerificationSuspendedShop,
     storeBuilderAiLimiter,
     suggestStoreSeo

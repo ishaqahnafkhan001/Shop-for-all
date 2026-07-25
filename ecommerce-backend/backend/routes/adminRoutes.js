@@ -16,9 +16,15 @@ const {
     requireProductLimit,
     requireStaffLimit
 } = require('../middlewares/billingGate');
-const { upload, nidUpload } = require('../config/cloudinary');
+const { cloudinary, upload, nidUpload, brandUpload } = require('../config/cloudinary');
 const { getShopPlanAccess, buildLimitError } = require('../services/billing/planAccessService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
+const Product = require('../models/Product');
+const {
+    reserveQuota,
+    releaseQuotaSafely
+} = require('../services/billing/planQuotaReservationService');
+const { getUniqueProductImageSources } = require('../services/products/productMediaService');
 
 // =========================
 // Controllers
@@ -122,6 +128,11 @@ const {
     getVendorOnboarding
 } = require('../controllers/onboardingController');
 const {
+    getBasicStoreSettings,
+    updateBasicStoreSettings,
+    uploadBasicStoreBrandAsset
+} = require('../controllers/basicStoreSettingsController');
+const {
     getVendorAnnouncements
 } = require('../controllers/platformAnnouncementController');
 
@@ -132,13 +143,34 @@ const productMediaUploadMiddleware = upload.fields([
     { name: 'images', maxCount: 15 },
     { name: 'videos', maxCount: 2 }
 ]);
+const getUploadedProductMedia = (req) => Object.values(req.files || {}).flat().filter(Boolean);
+const cleanupUploadedProductMedia = async (req) => {
+    const uploaded = getUploadedProductMedia(req);
+    await Promise.all(uploaded.map(file => {
+        const publicId = file.public_id || file.filename;
+        if (!publicId) return null;
+        return cloudinary.uploader.destroy(publicId, {
+            resource_type: file.resource_type || (file.mimetype?.startsWith('video/') ? 'video' : 'image')
+        }).catch(() => null);
+    }));
+};
+const registerFailedUploadCleanup = (req, res) => {
+    if (req.productUploadCleanupRegistered) return;
+    req.productUploadCleanupRegistered = true;
+    res.once('finish', () => {
+        if (res.statusCode >= 400) cleanupUploadedProductMedia(req).catch(() => {});
+    });
+};
 const productMediaUpload = (req, res, next) => {
     productMediaUploadMiddleware(req, res, async (err) => {
-        if (!err) return next();
+        if (!err) {
+            registerFailedUploadCleanup(req, res);
+            return next();
+        }
         const planLimit = err.code === 'PLAN_IMAGE_LIMIT';
         if (planLimit && req.planAccess) {
             const limit = req.planAccess.limits.imagesPerProduct;
-            const payload = buildLimitError(req.planAccess, 'imagesPerProduct', req.planImageUploadCount, limit);
+            const payload = await buildLimitError(req.planAccess, 'imagesPerProduct', req.planImageUploadCount, limit);
             await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
                 req,
                 shopId: req.tenantId,
@@ -156,6 +188,88 @@ const productMediaUpload = (req, res, next) => {
             error: err.message || 'Invalid product media.'
         });
     });
+};
+const parseMultipartArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+const reserveProductImageCapacity = async (req, res, next) => {
+    try {
+        const uploadedImages = req.files?.images || [];
+        if (!uploadedImages.length || !req.params.id) return next();
+        const context = req.planAccess || await getShopPlanAccess(req.tenantId);
+        req.planAccess = context;
+        const limit = context.limits.imagesPerProduct;
+        if (limit === null) return next();
+
+        const product = await Product.findOne({
+            _id: req.params.id,
+            shop_id: req.tenantId,
+            isDeleted: false
+        }).select('images coverMediaId variants.image').lean();
+        if (!product) return next();
+
+        const currentImages = (product.images || []).map(String).filter(Boolean);
+        const requestedExisting = req.body.existingImages === undefined
+            ? currentImages
+            : parseMultipartArray(req.body.existingImages)
+                .map(String)
+                .filter(image => currentImages.includes(image));
+        const removed = new Set(parseMultipartArray(req.body.removedImages).map(String));
+        const keptImages = requestedExisting.filter(image => !removed.has(image));
+        const baseProduct = {
+            images: keptImages,
+            coverMediaId: removed.has(String(product.coverMediaId || '')) ? '' : product.coverMediaId,
+            variants: (product.variants || []).filter(variant => !removed.has(String(variant.image || '')))
+        };
+        const baseUsage = getUniqueProductImageSources(baseProduct).length;
+        const uploadedSources = getUniqueProductImageSources({
+            images: uploadedImages.map(file => file.path)
+        });
+        const requested = uploadedSources.length;
+
+        let reservation;
+        try {
+            reservation = await reserveQuota({
+                shopId: req.tenantId,
+                resource: `images:${req.params.id}`,
+                requested,
+                limit,
+                getCommittedUsage: async () => baseUsage
+            });
+        } catch (error) {
+            if (error.code !== 'PLAN_LIMIT_REACHED') throw error;
+            await cleanupUploadedProductMedia(req);
+            const payload = await buildLimitError(context, 'imagesPerProduct', baseUsage, limit);
+            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
+                req,
+                shopId: req.tenantId,
+                subscriptionId: context.subscription?._id,
+                planKey: context.planKey,
+                affectedResources: ['images'],
+                metadata: { resource: 'images', usage: payload.usage, notifyVendor: false }
+            });
+            return res.status(403).json(payload);
+        }
+
+        req.planImageQuotaReservation = reservation;
+        res.once('finish', () => releaseQuotaSafely(reservation));
+        res.once('close', () => releaseQuotaSafely(reservation));
+        return next();
+    } catch (error) {
+        await cleanupUploadedProductMedia(req);
+        return res.status(500).json({
+            success: false,
+            code: 'IMAGE_QUOTA_CHECK_FAILED',
+            error: 'Unable to verify product image capacity.'
+        });
+    }
 };
 const attachPlanAccess = async (req, res, next) => {
     try {
@@ -234,6 +348,31 @@ router.get(
     getVendorAnnouncements
 );
 
+router.get(
+    '/basic-store-settings',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    getBasicStoreSettings
+);
+
+router.patch(
+    '/basic-store-settings',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    updateBasicStoreSettings
+);
+
+router.post(
+    '/basic-store-settings/brand-asset',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    brandUpload.single('asset'),
+    uploadBasicStoreBrandAsset
+);
+
 // ======================================================
 // VENDOR VERIFICATION
 // ======================================================
@@ -283,6 +422,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('privacyRequests'),
+    requireShopFeature('privacyRequests'),
     getAdminDataRequests
 );
 
@@ -291,6 +431,7 @@ router.patch(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('privacyRequests'),
+    requireShopFeature('privacyRequests'),
     updateAdminDataRequest
 );
 
@@ -313,6 +454,7 @@ router.post(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('customers'),
     requireShopFeature('customerSection'),
+    requireShopFeature('emailCampaigns'),
     createCustomerEmailCampaign
 );
 
@@ -322,6 +464,7 @@ router.post(
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('customers'),
     requireShopFeature('customerSection'),
+    requireShopFeature('emailCampaigns'),
     createProductEmailCampaign
 );
 
@@ -456,6 +599,7 @@ router.get(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('activityLogs'),
+    requireShopFeature('activityLogs'),
     getAuditLogs
 );
 
@@ -586,6 +730,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    requireShopFeature('aiProductCreation'),
     blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     generateDescription
@@ -596,6 +741,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    requireShopFeature('aiProductCreation'),
     blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
     productAiLimiter,
@@ -676,6 +822,7 @@ router.patch(
     blockVerificationSuspendedShop,
     attachPlanAccess,
     productMediaUpload,
+    reserveProductImageCapacity,
     updateProduct
 );
 

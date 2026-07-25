@@ -16,7 +16,7 @@ const featureDenied = async (req, res, context, feature, metadata = {}) => {
             ...metadata
         }
     });
-    return res.status(403).json(buildFeatureError(context, feature));
+    return res.status(403).json(await buildFeatureError(context, feature));
 };
 
 const requireShopFeature = (feature) => async (req, res, next) => {

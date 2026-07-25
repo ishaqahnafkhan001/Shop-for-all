@@ -24,6 +24,16 @@ const shopMembershipSchema = new Schema({
         enum: ['Active', 'Suspended'],
         default: 'Active'
     },
+    planSuspendedAt: {
+        type: Date,
+        default: null
+    },
+    planSuspendedFor: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
     legacyUser_id: {
         type: Schema.Types.ObjectId,
         ref: 'User',

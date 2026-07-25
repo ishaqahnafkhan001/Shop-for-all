@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const planQuotaReservationSchema = new mongoose.Schema({
     shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shop', required: true, index: true },
-    resource: { type: String, enum: ['products', 'staff'], required: true },
+    resource: { type: String, trim: true, maxlength: 160, required: true },
     slot: { type: Number, required: true, min: 1 },
     operationId: { type: String, required: true, index: true },
     expiresAt: { type: Date, required: true }

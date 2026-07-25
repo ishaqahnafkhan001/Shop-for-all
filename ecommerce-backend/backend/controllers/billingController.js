@@ -39,6 +39,25 @@ const {
     rejectManualPayment
 } = require('../services/billing/paymentVerificationService');
 const { runBillingLifecycleCheck } = require('../services/billing/billingLifecycleService');
+const {
+    getDowngradePreview,
+    scheduleDowngrade,
+    cancelScheduledDowngrade
+} = require('../services/billing/subscriptionDowngradeService');
+const {
+    selectBeginnerPrompt,
+    dismissPrompt,
+    createUpgradeIntent,
+    resolveUpgradeIntent
+} = require('../services/billing/beginnerConversionService');
+const { getFeatureDefinition } = require('../config/subscriptionFeatures');
+
+const UPGRADE_INTENT_LIMIT_KEYS = new Set([
+    'productCount',
+    'imagesPerProduct',
+    'staffAccounts',
+    'aiProductCreationsPerWeek'
+]);
 
 const getPagination = (query = {}) => {
     const page = Math.max(1, Number(query.page) || 1);
@@ -77,6 +96,8 @@ const serializeSubscription = (subscription) => {
         pendingPlanId: plain.pendingPlanId,
         pendingPlanName: plain.pendingPlanName || '',
         pendingPlanSlug: plain.pendingPlanSlug || '',
+        pendingPlanEffectiveAt: plain.pendingPlanEffectiveAt || null,
+        reconciliation: plain.reconciliation || null,
         trialStartedAt: plain.trialStartedAt,
         trialEndsAt: plain.trialEndsAt,
         trialDaysLeft: daysUntil(plain.trialEndsAt),
@@ -180,7 +201,7 @@ exports.getVendorBillingCurrent = async (req, res) => {
         const access = await getShopPlanAccess(shop);
         const [usagePayload, availablePlans] = await Promise.all([
             getSubscriptionUsage(shop, { access }),
-            Promise.all(['starter', 'growth', 'pro'].map(getPlanBySlugOrNameOrDefault))
+            Promise.all(['beginner', 'starter', 'growth', 'pro'].map(getPlanBySlugOrNameOrDefault))
         ]);
 
         res.status(200).json({
@@ -215,7 +236,8 @@ exports.getVendorBillingCurrent = async (req, res) => {
                     currency: item.currency || 'BDT',
                     limits: item.limits,
                     features: item.features,
-                    storeBuilderAccess: item.storeBuilderAccess
+                    storeBuilderAccess: item.storeBuilderAccess,
+                    badgeEligible: Boolean(item.badgeEligible)
                 })),
                 trialDays: TRIAL_DAYS,
                 graceDays: GRACE_DAYS
@@ -235,6 +257,236 @@ exports.getVendorBillingUsage = async (req, res) => {
     } catch (err) {
         console.error('Get vendor billing usage error:', err);
         res.status(err.statusCode || 500).json({ success: false, error: 'Failed to load plan usage' });
+    }
+};
+
+const serializeDowngradePreview = (preview) => ({
+    currentPlan: {
+        key: getPlanSlug(preview.currentPlan),
+        name: preview.currentPlan.name
+    },
+    targetPlan: {
+        key: getPlanSlug(preview.targetPlan),
+        name: preview.targetPlan.name,
+        limits: preview.targetPlan.limits,
+        features: preview.targetPlan.features
+    },
+    effectiveAt: preview.effectiveAt,
+    requiresProductSelection: preview.requiresProductSelection,
+    productCount: preview.productCount,
+    productLimit: preview.productLimit,
+    selectedProductCount: preview.selectedProductCount,
+    availableProducts: preview.availableProducts,
+    retainedProducts: preview.retainedProducts,
+    productsToArchive: preview.productsToArchive,
+    requestedRetainedProductIds: preview.requestedRetainedProductIds,
+    resolvedRetainedProductIds: preview.resolvedRetainedProductIds,
+    effects: preview.effects
+});
+
+exports.previewVendorDowngrade = async (req, res) => {
+    try {
+        const preview = await getDowngradePreview({
+            shopId: getShopIdFromReq(req),
+            targetPlanRef: req.body?.planKey || req.body?.planSlug || req.body?.planName,
+            retainedProductIds: req.body?.retainedProductIds
+        });
+        res.status(200).json({ success: true, data: serializeDowngradePreview(preview) });
+    } catch (err) {
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'DOWNGRADE_PREVIEW_FAILED',
+            error: err.message || 'Unable to preview this downgrade.'
+        });
+    }
+};
+
+exports.scheduleVendorDowngrade = async (req, res) => {
+    try {
+        const subscription = await scheduleDowngrade({
+            shopId: getShopIdFromReq(req),
+            targetPlanRef: req.body?.planKey || req.body?.planSlug || req.body?.planName,
+            retainedProductIds: req.body?.retainedProductIds,
+            reason: req.body?.reason || '',
+            req
+        });
+        res.status(202).json({
+            success: true,
+            message: `Downgrade to ${subscription.pendingPlanName} is scheduled for the current period end.`,
+            data: serializeSubscription(subscription)
+        });
+    } catch (err) {
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'DOWNGRADE_SCHEDULE_FAILED',
+            error: err.message || 'Unable to schedule this downgrade.',
+            ...(err.preview ? { preview: serializeDowngradePreview(err.preview) } : {})
+        });
+    }
+};
+
+exports.cancelVendorDowngrade = async (req, res) => {
+    try {
+        const subscription = await cancelScheduledDowngrade({
+            shopId: getShopIdFromReq(req),
+            reason: req.body?.reason || '',
+            req
+        });
+        if (!subscription) {
+            return res.status(404).json({
+                success: false,
+                code: 'PENDING_DOWNGRADE_NOT_FOUND',
+                error: 'No pending downgrade was found.'
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: 'Scheduled downgrade cancelled.',
+            data: serializeSubscription(subscription)
+        });
+    } catch (err) {
+        return res.status(400).json({
+            success: false,
+            code: 'DOWNGRADE_CANCEL_FAILED',
+            error: err.message || 'Unable to cancel this downgrade.'
+        });
+    }
+};
+
+exports.getVendorDowngradeStatus = async (req, res) => {
+    try {
+        const subscription = await Subscription.findOne({ shopId: getShopIdFromReq(req) });
+        if (!subscription) {
+            return res.status(404).json({ success: false, error: 'Subscription not found' });
+        }
+        return res.status(200).json({
+            success: true,
+            data: {
+                pendingPlanEffectiveAt: subscription.pendingPlanEffectiveAt || null,
+                pendingPlanName: subscription.pendingPlanName || '',
+                pendingPlanSlug: subscription.pendingPlanSlug || '',
+                reconciliation: subscription.reconciliation || null
+            }
+        });
+    } catch {
+        return res.status(500).json({
+            success: false,
+            error: 'Unable to load downgrade status.'
+        });
+    }
+};
+
+exports.getVendorConversionPrompt = async (req, res) => {
+    try {
+        const data = await selectBeginnerPrompt({
+            shopId: getShopIdFromReq(req),
+            surface: String(req.query?.surface || 'overview').slice(0, 60),
+            req
+        });
+        return res.status(200).json({ success: true, data });
+    } catch (err) {
+        console.error('Get conversion prompt error:', err);
+        return res.status(500).json({
+            success: false,
+            error: 'Unable to load the current growth recommendation.'
+        });
+    }
+};
+
+exports.dismissVendorConversionPrompt = async (req, res) => {
+    try {
+        const category = String(req.params.category || '').trim();
+        if (!category || !/^[a-z0-9_-]{1,80}$/i.test(category)) {
+            return res.status(400).json({ success: false, error: 'A valid prompt category is required.' });
+        }
+        const data = await dismissPrompt({
+            shopId: getShopIdFromReq(req),
+            category,
+            milestoneKey: req.body?.milestoneKey || '',
+            req
+        });
+        return res.status(200).json({ success: true, data });
+    } catch (err) {
+        console.error('Dismiss conversion prompt error:', err);
+        return res.status(500).json({ success: false, error: 'Unable to dismiss this recommendation.' });
+    }
+};
+
+exports.createVendorUpgradeIntent = async (req, res) => {
+    try {
+        const capability = String(req.body?.capability || '').trim();
+        const limitKey = String(req.body?.limitKey || '').trim();
+        if (capability && !getFeatureDefinition(capability)) {
+            return res.status(400).json({ success: false, error: 'Unknown plan capability.' });
+        }
+        if (limitKey && !UPGRADE_INTENT_LIMIT_KEYS.has(limitKey)) {
+            return res.status(400).json({ success: false, error: 'Unknown plan limit.' });
+        }
+        if (!capability && !limitKey) {
+            return res.status(400).json({
+                success: false,
+                error: 'A capability or plan limit is required.'
+            });
+        }
+        const data = await createUpgradeIntent({
+            shopId: getShopIdFromReq(req),
+            userId: req.user?._id || req.user?.id || null,
+            capability,
+            limitKey,
+            returnTo: req.body?.returnTo,
+            req
+        });
+        return res.status(201).json({ success: true, data });
+    } catch (err) {
+        console.error('Create upgrade intent error:', err);
+        return res.status(500).json({ success: false, error: 'Unable to begin the upgrade flow.' });
+    }
+};
+
+exports.getVendorUpgradeIntent = async (req, res) => {
+    try {
+        const data = await resolveUpgradeIntent({
+            shopId: getShopIdFromReq(req),
+            token: req.params.token
+        });
+        if (!data) {
+            return res.status(404).json({
+                success: false,
+                code: 'UPGRADE_INTENT_NOT_FOUND',
+                error: 'This upgrade link is invalid or has expired.'
+            });
+        }
+        return res.status(200).json({ success: true, data });
+    } catch {
+        return res.status(404).json({
+            success: false,
+            code: 'UPGRADE_INTENT_NOT_FOUND',
+            error: 'This upgrade link is invalid or has expired.'
+        });
+    }
+};
+
+exports.forceSuperAdminDowngrade = async (req, res) => {
+    try {
+        const subscription = await Subscription.findById(req.params.id);
+        if (!subscription) {
+            return res.status(404).json({ success: false, error: 'Subscription not found' });
+        }
+        const updated = await scheduleDowngrade({
+            shopId: subscription.shopId,
+            targetPlanRef: req.body?.planKey || req.body?.planSlug || req.body?.planName,
+            retainedProductIds: req.body?.retainedProductIds,
+            reason: req.body?.reason || 'Forced by Super Admin',
+            forceImmediate: true,
+            req
+        });
+        return res.status(200).json({ success: true, data: serializeSubscription(updated) });
+    } catch (err) {
+        return res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'FORCED_DOWNGRADE_FAILED',
+            error: err.message || 'Unable to apply the forced downgrade.'
+        });
     }
 };
 
@@ -372,6 +624,27 @@ exports.createVendorInvoice = async (req, res) => {
         const planName = fallbackPlan.name || normalizePlanName(requestedPlan);
         const planSlug = fallbackPlan.slug || getPlanSlug(planName);
         const billingCycle = req.body.billingCycle === 'yearly' ? 'yearly' : 'monthly';
+        const upgradeIntentToken = String(req.body.upgradeIntentToken || '').trim();
+        const upgradeIntent = upgradeIntentToken
+            ? await resolveUpgradeIntent({ shopId, token: upgradeIntentToken })
+            : null;
+        if (upgradeIntentToken && (!upgradeIntent || upgradeIntent.status !== 'active')) {
+            return res.status(400).json({
+                success: false,
+                code: 'UPGRADE_INTENT_INVALID',
+                error: 'This upgrade request is invalid or has expired.'
+            });
+        }
+        if (
+            upgradeIntent?.recommendedPlan &&
+            upgradeIntent.recommendedPlan !== planSlug
+        ) {
+            return res.status(400).json({
+                success: false,
+                code: 'UPGRADE_PLAN_MISMATCH',
+                error: `This upgrade request is for the ${upgradeIntent.recommendedPlan} plan.`
+            });
+        }
         const plan = await VendorPlan.findOne({
             isActive: { $ne: false },
             $or: [{ name: planName }, { slug: planSlug }]
@@ -386,6 +659,7 @@ exports.createVendorInvoice = async (req, res) => {
             planId: plan?._id || null,
             planName,
             planSlug,
+            upgradeIntentId: upgradeIntent?.id || null,
             billingCycle,
             amount,
             dueDate,

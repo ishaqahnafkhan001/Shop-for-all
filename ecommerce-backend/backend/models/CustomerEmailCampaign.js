@@ -16,7 +16,7 @@ const customerEmailCampaignSchema = new Schema({
     failedCount: { type: Number, min: 0, default: 0 },
     status: {
         type: String,
-        enum: ['queued', 'sending', 'completed', 'failed'],
+        enum: ['queued', 'sending', 'completed', 'failed', 'cancelled'],
         default: 'queued',
         index: true
     },

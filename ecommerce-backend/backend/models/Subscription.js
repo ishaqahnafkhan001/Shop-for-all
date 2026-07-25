@@ -72,6 +72,34 @@ const subscriptionSchema = new mongoose.Schema({
         lowercase: true,
         default: ''
     },
+    pendingPlanEffectiveAt: {
+        type: Date,
+        default: null,
+        index: true
+    },
+    reconciliation: {
+        operationId: { type: String, trim: true, default: '' },
+        targetPlanId: { type: mongoose.Schema.Types.ObjectId, ref: 'VendorPlan', default: null },
+        targetPlanName: { type: String, trim: true, default: '' },
+        targetPlanSlug: { type: String, trim: true, lowercase: true, default: '' },
+        retainedProductIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+        status: {
+            type: String,
+            enum: ['idle', 'pending', 'running', 'completed', 'failed', 'cancelled'],
+            default: 'idle'
+        },
+        attempts: { type: Number, min: 0, default: 0 },
+        lastError: { type: String, trim: true, maxlength: 1000, default: '' },
+        scheduledAt: { type: Date, default: null },
+        startedAt: { type: Date, default: null },
+        completedAt: { type: Date, default: null },
+        cancelledAt: { type: Date, default: null },
+        forced: { type: Boolean, default: false },
+        requestedBy: { type: mongoose.Schema.Types.ObjectId, default: null },
+        requestId: { type: String, trim: true, maxlength: 120, default: '' },
+        reason: { type: String, trim: true, maxlength: 500, default: '' },
+        summary: { type: mongoose.Schema.Types.Mixed, default: null }
+    },
     graceEndsAt: Date,
     lastInvoiceId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -88,5 +116,6 @@ const subscriptionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 subscriptionSchema.index({ shopId: 1, status: 1 });
+subscriptionSchema.index({ 'reconciliation.status': 1, pendingPlanEffectiveAt: 1 });
 
 module.exports = mongoose.model('Subscription', subscriptionSchema);

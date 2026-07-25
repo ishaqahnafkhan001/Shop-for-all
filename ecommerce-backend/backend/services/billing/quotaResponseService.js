@@ -1,9 +1,11 @@
+const { PLAN_ORDER } = require('../../config/subscriptionPlans');
+
 const RESOURCE_DEFINITIONS = Object.freeze({
     products: {
         errorCode: 'PRODUCT_LIMIT_REACHED',
         label: 'Product',
         limitKey: 'productCount',
-        upgradeReason: 'Increase product capacity'
+        upgradeReason: 'Add more products and expand your catalogue'
     },
     staff: {
         errorCode: 'STAFF_LIMIT_REACHED',
@@ -21,7 +23,7 @@ const RESOURCE_DEFINITIONS = Object.freeze({
         errorCode: 'IMAGE_LIMIT_REACHED',
         label: 'Product image',
         limitKey: 'imagesPerProduct',
-        upgradeReason: 'Add more images to each product'
+        upgradeReason: 'Show more product angles, details, and variants'
     }
 });
 
@@ -39,7 +41,10 @@ const buildRichQuotaError = ({ context, resource, used, limit, message = '' }) =
         limitKey: resource,
         upgradeReason: 'Increase plan capacity'
     };
-    const recommended = context?.planKey === 'starter' ? 'growth' : context?.planKey === 'growth' ? 'pro' : null;
+    const currentIndex = PLAN_ORDER.indexOf(context?.planKey);
+    const recommended = currentIndex >= 0 && currentIndex < PLAN_ORDER.length - 1
+        ? PLAN_ORDER[currentIndex + 1]
+        : null;
     const finalMessage = message || `${definition.label} limit reached.`;
     return {
         success: false,
@@ -57,7 +62,9 @@ const buildRichQuotaError = ({ context, resource, used, limit, message = '' }) =
         upgrade: {
             recommended,
             reason: definition.upgradeReason
-        }
+        },
+        recommendedPlan: recommended,
+        upgradeReason: definition.upgradeReason
     };
 };
 

@@ -29,6 +29,12 @@ const invoiceSchema = new mongoose.Schema({
         lowercase: true,
         default: ''
     },
+    upgradeIntentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'UpgradeIntent',
+        default: null,
+        index: true
+    },
     invoiceNumber: {
         type: String,
         required: true,

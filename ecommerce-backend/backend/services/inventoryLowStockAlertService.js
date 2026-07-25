@@ -8,6 +8,7 @@ const {
     buildVendorEventEmail
 } = require('./vendorNotificationEmailService');
 const logger = require('./logger');
+const { hasFeature } = require('./shops/featureAccessService');
 
 const LOW_STOCK_ALERT_QUEUE = 'inventory-alerts';
 const LOW_STOCK_ALERT_JOB = 'inventory.low_stock_alert';
@@ -129,6 +130,9 @@ const enqueueLowStockAlertFromStockChange = async ({
 }) => {
     try {
         if (!shopId || !productId || !variantId) return null;
+        if (!(await hasFeature(shopId, 'lowStockAlerts'))) {
+            return null;
+        }
 
         const product = await Product.findOne({
             _id: productId,
@@ -230,6 +234,24 @@ const processLowStockAlertJob = async (job) => {
         threshold,
         source
     } = job.payload || {};
+
+    if (!(await hasFeature(job.shop_id, 'lowStockAlerts'))) {
+        await resetLowStockAlertState({
+            shopId: job.shop_id,
+            productId,
+            variantId
+        });
+        logger.info('low_stock_alert_cancelled_plan_blocked', {
+            jobId: job._id,
+            shopId: job.shop_id,
+            productId,
+            variantId
+        });
+        return {
+            cancelled: true,
+            reason: 'Low-stock alerts are not included in the current plan.'
+        };
+    }
 
     const [shop, product] = await Promise.all([
         Shop.findById(job.shop_id).select('shopName name subdomain').lean(),

@@ -7,6 +7,7 @@ const {
     getSuperAdminInvoices,
     getSuperAdminPayments,
     updateSuperAdminSubscriptionStatus,
+    forceSuperAdminDowngrade,
     createSuperAdminInvoice,
     updateSuperAdminInvoice,
     verifySuperAdminPayment,
@@ -19,6 +20,7 @@ router.get('/subscriptions', getSuperAdminSubscriptions);
 router.get('/invoices', getSuperAdminInvoices);
 router.get('/payments', getSuperAdminPayments);
 router.patch('/subscriptions/:id/status', updateSuperAdminSubscriptionStatus);
+router.post('/subscriptions/:id/force-downgrade', forceSuperAdminDowngrade);
 router.post('/invoices', createSuperAdminInvoice);
 router.patch('/invoices/:id', updateSuperAdminInvoice);
 router.patch('/payments/:id/verify', verifySuperAdminPayment);

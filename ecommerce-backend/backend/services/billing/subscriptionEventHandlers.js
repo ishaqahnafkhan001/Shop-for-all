@@ -7,6 +7,7 @@ const { evaluateUsageWarnings } = require('./subscriptionWarningService');
 const { recordSubscriptionAnalyticsEvent } = require('./subscriptionAnalyticsService');
 const { recordSubscriptionAuditEvent } = require('./subscriptionAuditService');
 const { SUBSCRIPTION_EVENTS } = require('./subscriptionEvents');
+const { hasFeature } = require('../shops/featureAccessService');
 
 let initialized = false;
 
@@ -64,7 +65,8 @@ const notificationContent = (event) => {
         };
     }
     if (event.type === SUBSCRIPTION_EVENTS.TRIAL_STARTED) {
-        return { title: 'Free trial started', message: 'Your 14-day Starter trial is active.', severity: 'success' };
+        const planName = event.newValue?.planName || event.metadata?.planName || 'selected';
+        return { title: 'Free trial started', message: `Your 14-day ${planName} trial is active.`, severity: 'success' };
     }
     if (event.type === SUBSCRIPTION_EVENTS.TRIAL_CONVERTED) {
         return { title: 'Subscription activated', message: 'Your trial has been converted to an active subscription.', severity: 'success' };
@@ -90,6 +92,9 @@ const initializeSubscriptionEventHandlers = () => {
         name: 'subscription.reconciliation',
         priority: 10,
         handler: async event => {
+            if (event.metadata?.reconciliationSummary) {
+                return event.metadata.reconciliationSummary;
+            }
             const planKey = event.newValue?.planKey || event.metadata?.newPlanKey || event.planKey;
             if (!event.shopId || !planKey) return null;
             return reconcileShopPlan({ shopId: event.shopId, planKey });
@@ -159,6 +164,7 @@ const initializeSubscriptionEventHandlers = () => {
             if (event.metadata?.notifyVendor === false) return null;
             const content = notificationContent(event);
             if (!content || !event.shopId) return null;
+            if (!(await hasFeature(event.shopId, 'notifications'))) return null;
             return createNotification({
                 shop_id: event.shopId,
                 type: 'system',

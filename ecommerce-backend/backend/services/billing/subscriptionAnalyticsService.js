@@ -14,7 +14,10 @@ const EVENT_TYPE_MAP = Object.freeze({
     FeatureBlocked: 'feature_blocked',
     QuotaReached: 'quota_reached',
     QuotaWarning: 'quota_warning',
-    UpgradeClicked: 'upgrade_clicked'
+    UpgradeClicked: 'beginner_upgrade_cta_clicked',
+    UpgradePromptViewed: 'beginner_upgrade_prompt_viewed',
+    UpgradePromptDismissed: 'beginner_upgrade_prompt_dismissed',
+    GrowthMilestone: 'beginner_growth_milestone'
 });
 
 const resolveAnalyticsType = (event) => {

@@ -5,6 +5,7 @@ const { protect } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/role');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const { requirePermission } = require('../middlewares/permission');
+const { requireShopFeature } = require('../middlewares/featureGate');
 
 const {
     updateStock,
@@ -28,7 +29,7 @@ router.patch('/stock', blockVerificationSuspendedShop, requirePermission('invent
 router.get('/logs', requirePermission('inventoryRead'), getInventoryLogs);     // FIX: was defined in controller but never registered
 router.get('/movement', requirePermission('inventoryRead'), getStockMovement);
 router.get('/top-products', requirePermission('inventoryRead'), getTopProducts);       // FIX: removed redundant per-route protect()
-router.get('/low-stock', requirePermission('inventoryRead'), getLowStock);
+router.get('/low-stock', requirePermission('inventoryRead'), requireShopFeature('lowStockAlerts'), getLowStock);
 router.get('/adjustments', requirePermission('inventoryRead'), getStockAdjustments);
 router.get('/revenue', requirePermission('analytics'), getRevenueOverview);   // FIX: removed redundant per-route protect(); use simple overview here
 router.get('/revenue/analytics', requirePermission('analytics'), getRevenueAnalytics); // detailed month/year breakdown kept as separate endpoint

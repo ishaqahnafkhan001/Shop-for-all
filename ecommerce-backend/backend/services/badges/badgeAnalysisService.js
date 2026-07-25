@@ -6,6 +6,7 @@ const User = require('../../models/User');
 const { createNotification } = require('../notificationService');
 const { logPlatformAudit } = require('../platformAuditLogService');
 const { BADGE_THRESHOLDS, getEligibilitySnapshot } = require('./badgeEligibilityService');
+const { hasFeature } = require('../shops/featureAccessService');
 
 const NEGATIVE_KEYWORDS = [
     'fake',
@@ -107,6 +108,15 @@ const processBadgeAnalysisJob = async (job) => {
     const applicationId = job.payload?.applicationId;
     const application = await BadgeApplication.findById(applicationId);
     if (!application) throw new Error('Badge application not found');
+    if (!(await hasFeature(application.shopId, 'trustSystem'))) {
+        application.status = 'pending_analysis';
+        application.analysisSummary = 'Badge analysis is paused because the trust system is not included in the current plan.';
+        await application.save();
+        return {
+            cancelled: true,
+            reason: application.analysisSummary
+        };
+    }
 
     application.status = 'analyzing';
     await application.save();
@@ -132,6 +142,15 @@ const processBadgeAnalysisJob = async (job) => {
     ]);
 
     const scored = scoreSnapshot(snapshot, negativeReviewCount + seriousAbuseReports);
+    if (!(await hasFeature(application.shopId, 'trustSystem'))) {
+        application.status = 'pending_analysis';
+        application.analysisSummary = 'Badge analysis was stopped because the trust system is not included in the current plan.';
+        await application.save();
+        return {
+            cancelled: true,
+            reason: application.analysisSummary
+        };
+    }
     const analysisSummary = `Store scored ${scored.score}/100. Recommendation: ${scored.recommendation}.`;
 
     application.eligibilitySnapshot = snapshot;

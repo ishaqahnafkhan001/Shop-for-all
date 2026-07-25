@@ -9,16 +9,18 @@ const {
     isPlatformRootHost,
     isValidCustomDomain,
     isPlatformDomain,
-    buildVerifiedCustomDomainQuery
+    buildKnownCustomDomainQuery,
+    PLATFORM_ROOT_DOMAIN
 } = require('../utils/domainUtils');
 const tenantCache = new Map();
 const TENANT_CACHE_TTL = 5 * 60 * 1000;
 const TENANT_AVAILABILITY_CHECK_TTL = 30 * 1000;
 
-const unavailableResponse = (res) => res.status(423).json({
+const unavailableResponse = (res, extra = {}) => res.status(423).json({
     success: false,
     code: 'STORE_UNAVAILABLE',
-    error: 'This store is temporarily unavailable.'
+    error: 'This store is temporarily unavailable.',
+    ...extra
 });
 
 const normalizeSubdomain = (subdomain = '') => String(subdomain || '').trim().toLowerCase();
@@ -76,7 +78,7 @@ const getRequestedTenant = (req) => {
             return {
                 key: customDomainFromHost,
                 tenantType: 'customDomain',
-                query: buildVerifiedCustomDomainQuery(customDomainFromHost)
+                query: buildKnownCustomDomainQuery(customDomainFromHost)
             };
         }
     }
@@ -89,7 +91,7 @@ const getRequestedTenant = (req) => {
         return {
             key: customDomain,
             tenantType: 'customDomain',
-            query: buildVerifiedCustomDomainQuery(customDomain)
+            query: buildKnownCustomDomainQuery(customDomain)
         };
     }
 
@@ -110,6 +112,8 @@ const isAvailabilityFresh = (shop = {}) => (
 const buildCachedTenant = (shop) => ({
     _id: shop._id,
     shopName: shop.shopName,
+    subdomain: shop.subdomain,
+    customDomain: shop.customDomain,
     isActive: shop.isActive,
     approvalStatus: shop.approvalStatus,
     suspensionReason: shop.suspensionReason,
@@ -124,10 +128,18 @@ const attachActiveTenant = async ({ req, res, shop, tenantKey, cacheKey, tenantT
 
     if (tenantType === 'customDomain') {
         const { hasFeature } = require('../services/shops/featureAccessService');
-        if (!(await hasFeature(currentShop?._id, 'customDomain'))) {
+        if (
+            currentShop?.customDomain?.planInactive === true ||
+            !(await hasFeature(currentShop?._id, 'customDomain'))
+        ) {
             await cache.del(cacheKey);
             tenantCache.delete(tenantKey);
-            return unavailableResponse(res);
+            return unavailableResponse(res, {
+                code: 'CUSTOM_DOMAIN_PLAN_INACTIVE',
+                platformHost: currentShop?.subdomain
+                    ? `${currentShop.subdomain}.${PLATFORM_ROOT_DOMAIN}`
+                    : ''
+            });
         }
     }
 
@@ -180,7 +192,7 @@ exports.resolveTenant = async (req, res, next) => {
         }
 
         const shop = await Shop.findOne(query)
-            .select('_id shopName isActive approvalStatus suspensionReason verification createdAt');
+            .select('_id shopName subdomain customDomain isActive approvalStatus suspensionReason verification createdAt');
 
         if (!shop) {
             return res.status(404).json({ error: "Store not found." });

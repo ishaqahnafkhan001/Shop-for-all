@@ -63,11 +63,12 @@ const buildVendorVerificationStatus = ({ shop, verification } = {}) => {
     };
 };
 
-const buildPublicShopVerification = (shop = {}) => {
+const buildPublicShopVerification = (shop = {}, { eligible = true } = {}) => {
     const status = buildVendorVerificationStatus({ shop });
+    const isVerified = Boolean(eligible && status.isVendorVerified);
     return {
-        isVerified: Boolean(status.isVendorVerified),
-        label: status.isVendorVerified ? 'Verified seller' : ''
+        isVerified,
+        label: isVerified ? 'Verified seller' : ''
     };
 };
 

@@ -223,9 +223,21 @@ const getDashboardStatsData = async (tenantId) => {
     };
 };
 
-const getDashboardOverviewResponse = async (tenantId) => {
+const getDashboardOverviewResponse = async (
+    tenantId,
+    capabilities = {
+        topProducts: true,
+        lowStockAlerts: true,
+        revenueTrends: true,
+        customerMetrics: true
+    }
+) => {
     const shopId = new mongoose.Types.ObjectId(tenantId);
-    const cacheKey = `admin:dashboard-overview:${shopId}`;
+    const topProductsEnabled = capabilities.topProducts !== false;
+    const lowStockEnabled = capabilities.lowStockAlerts !== false;
+    const revenueTrendsEnabled = capabilities.revenueTrends !== false;
+    const customerMetricsEnabled = capabilities.customerMetrics !== false;
+    const cacheKey = `admin:dashboard-overview:${shopId}:top-${Number(topProductsEnabled)}:stock-${Number(lowStockEnabled)}:trends-${Number(revenueTrendsEnabled)}:customers-${Number(customerMetricsEnabled)}`;
     const cached = await cache.get(cacheKey);
     if (cached) return cached;
 
@@ -251,10 +263,11 @@ const getDashboardOverviewResponse = async (tenantId) => {
             {
                 $group: {
                     _id: null,
-                    totalRevenue: { $sum: '$pricing.total' },
-                    totalItemsSold: { $sum: '$items.quantity' },
-                    totalCost: { $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] } },
-                    itemsRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+                        totalRevenue: { $sum: '$pricing.total' },
+                        totalItemsSold: { $sum: '$items.quantity' },
+                        totalCost: { $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] } },
+                        itemsRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+                        deliveredOrderIds: { $addToSet: '$_id' }
                 }
             },
             {
@@ -262,6 +275,7 @@ const getDashboardOverviewResponse = async (tenantId) => {
                     _id: 0,
                     totalRevenue: 1,
                     totalItemsSold: 1,
+                    completedOrders: { $size: '$deliveredOrderIds' },
                     netProfit: { $subtract: ['$itemsRevenue', '$totalCost'] }
                 }
             }
@@ -271,8 +285,10 @@ const getDashboardOverviewResponse = async (tenantId) => {
             status: { $in: ['Pending', 'Processing', 'Shipped'] }
         }),
         Product.countDocuments({ shop_id: shopId, isDeleted: false }),
-        User.countDocuments({ shop_id: shopId, role: 'Customer' }),
-        Order.aggregate([
+        customerMetricsEnabled
+            ? User.countDocuments({ shop_id: shopId, role: 'Customer' })
+            : Promise.resolve(0),
+        revenueTrendsEnabled ? Order.aggregate([
             { $match: deliveredMatch },
             { $unwind: '$items' },
             {
@@ -296,7 +312,7 @@ const getDashboardOverviewResponse = async (tenantId) => {
             },
             { $sort: { year: 1, month: 1 } },
             { $limit: 12 }
-        ]),
+        ]) : Promise.resolve([]),
         InventoryLog.aggregate([
             { $match: { shop_id: shopId, createdAt: { $gte: thirtyDaysAgo } } },
             {
@@ -330,7 +346,7 @@ const getDashboardOverviewResponse = async (tenantId) => {
             { $unwind: '$product' },
             { $project: { _id: 0, productId: '$_id', title: '$product.title', totalAdjustment: 1 } }
         ]),
-        InventoryLog.aggregate([
+        topProductsEnabled ? InventoryLog.aggregate([
             { $match: { shop_id: shopId, type: 'ORDER', change: { $lt: 0 }, createdAt: { $gte: thirtyDaysAgo } } },
             { $group: { _id: '$productId', totalSold: { $sum: { $multiply: ['$change', -1] } } } },
             { $sort: { totalSold: -1 } },
@@ -354,16 +370,17 @@ const getDashboardOverviewResponse = async (tenantId) => {
                     totalSold: 1
                 }
             }
-        ]),
-        Product.find({
+        ]) : Promise.resolve([]),
+        lowStockEnabled ? Product.find({
             shop_id: shopId,
             isDeleted: false
-        }).select('title variants lowStockThreshold').limit(500).lean()
+        }).select('title variants lowStockThreshold').limit(500).lean() : Promise.resolve([])
     ]);
 
     const stats = {
         totalRevenue: deliveredSummary[0]?.totalRevenue || 0,
         totalItemsSold: deliveredSummary[0]?.totalItemsSold || 0,
+        completedOrders: deliveredSummary[0]?.completedOrders || 0,
         netProfit: deliveredSummary[0]?.netProfit || 0,
         activeOrders,
         totalProducts,
@@ -372,6 +389,13 @@ const getDashboardOverviewResponse = async (tenantId) => {
     const response = {
         success: true,
         data: {
+            capabilities: {
+                topProducts: topProductsEnabled,
+                lowStockAlerts: lowStockEnabled,
+                revenueTrends: revenueTrendsEnabled,
+                customerMetrics: customerMetricsEnabled,
+                recentActivity: true
+            },
             stats,
             revenue: {
                 overview: stats,

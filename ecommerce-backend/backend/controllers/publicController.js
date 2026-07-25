@@ -50,7 +50,14 @@ const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
 const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
+
+const applyPublicPlanSettings = (shop, planAccess) => {
+    if (!shop || !planAccess) return shop;
+    shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
+    if (!planAccess.features.coupons) shop.storewideDiscount = 0;
+    return shop;
+};
 const RETURN_WINDOW_HOURS = 24;
 const RETURN_WINDOW_MS = RETURN_WINDOW_HOURS * 60 * 60 * 1000;
 const ACTIVE_RETURN_STATUSES = ['Requested', 'Approved', 'Received'];
@@ -740,8 +747,10 @@ exports.getPublicShopDetails = async (req, res) => {
             .lean();
         if (!shop) return res.status(404).json({ error: "Shop not found" });
         const planAccess = await getShopPlanAccess(shop._id);
-        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
-        shop.shopVerification = buildPublicShopVerification(shop);
+        applyPublicPlanSettings(shop, planAccess);
+        shop.shopVerification = buildPublicShopVerification(shop, {
+            eligible: planAccess.features.publicVerifiedBadge
+        });
         delete shop.verification;
         delete shop.isActive;
         delete shop.approvalStatus;

@@ -6,6 +6,7 @@ const PUBLIC_PRODUCT_CARD_PROJECT = {
     imageAltText: 1,
     coverMediaId: 1,
     images: { $slice: ['$images', 1] },
+    entitlementMedia: 1,
     createdAt: 1,
     updatedAt: 1,
     pricing: {
@@ -97,13 +98,37 @@ const sanitizePublicProduct = (product) => {
     if (!clean) return clean;
 
     clean.pricing = sanitizePublicPricing(clean.pricing || {});
+    const mediaRestriction = clean.entitlementMedia;
+    if (mediaRestriction?.restricted) {
+        const visibleSources = new Set(
+            (mediaRestriction.visibleSources || [])
+                .map(value => String(value || '').trim())
+                .filter(Boolean)
+        );
+        clean.images = (clean.images || []).filter(image => visibleSources.has(String(image)));
+        if (!visibleSources.has(String(clean.coverMediaId || ''))) {
+            clean.coverMediaId = clean.images[0] || '';
+        }
+    }
     if (Array.isArray(clean.variants)) {
-        clean.variants = clean.variants.map(sanitizePublicVariant);
+        clean.variants = clean.variants.map(variant => {
+            const sanitized = sanitizePublicVariant(variant);
+            if (
+                mediaRestriction?.restricted &&
+                sanitized.image &&
+                !(mediaRestriction.visibleSources || []).includes(sanitized.image)
+            ) {
+                delete sanitized.image;
+            }
+            return sanitized;
+        });
     }
 
     clean.features = sanitizePublicSellingPoints(clean.features);
     clean.specifications = sanitizePublicKeyValueItems(clean.specifications);
     clean.comments = sanitizePublicKeyValueItems(clean.comments);
+    delete clean.entitlementMedia;
+    delete clean.planArchive;
     delete clean.__v;
 
     return clean;

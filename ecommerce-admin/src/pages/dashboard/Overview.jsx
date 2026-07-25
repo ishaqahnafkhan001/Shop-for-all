@@ -13,6 +13,7 @@ import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import BillingAlert from '../../components/dashboard/BillingAlert.jsx';
 import TrustedBadgeStatusCard from '../../components/dashboard/TrustedBadgeStatusCard.jsx';
 import SubscriptionUsageBanner from '../../components/dashboard/SubscriptionUsageBanner.jsx';
+import BeginnerGrowthCard from '../../components/dashboard/BeginnerGrowthCard.jsx';
 import { hasFeature } from '../../utils/featureAccess.js';
 
 const DashboardRevenueChart = lazy(() => import('./components/DashboardRevenueChart.jsx'));
@@ -28,6 +29,12 @@ const Overview = () => {
   const [adjustments, setAdjustments] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [lowStock, setLowStock] = useState([]);
+  const [capabilities, setCapabilities] = useState({
+    topProducts: true,
+    lowStockAlerts: true,
+    revenueTrends: true,
+    recentActivity: true
+  });
   const [announcements, setAnnouncements] = useState([]);
   const [overviewError, setOverviewError] = useState('');
   const canViewPlatformAnnouncements = user?.role === 'VendorAdmin' || user?.role === 'VendorStaff';
@@ -67,6 +74,7 @@ const Overview = () => {
       setAdjustments(overviewData.adjustments || []);
       setTopProducts(overviewData.topProducts || []);
       setLowStock(overviewData.lowStock || []);
+      setCapabilities(previous => ({ ...previous, ...(overviewData.capabilities || {}) }));
 
     } catch {
       setOverviewError('Dashboard load failed. Please retry in a moment.');
@@ -115,7 +123,9 @@ const Overview = () => {
 
   const statCards = [
     { title: 'Total Revenue', value: `৳ ${overview.totalRevenue?.toLocaleString() || 0}`, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'Net Profit',    value: `৳ ${overview.netProfit?.toLocaleString() || 0}`,     icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    capabilities.revenueTrends
+      ? { title: 'Net Profit', value: `৳ ${overview.netProfit?.toLocaleString() || 0}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+      : { title: 'Products', value: stats?.totalProducts || 0, icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { title: 'Items Sold',    value: overview.totalItemsSold || 0,                         icon: Package,    color: 'text-purple-600', bg: 'bg-purple-50' },
     { title: 'Active Orders', value: stats?.activeOrders || 0,                             icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50' }
   ];
@@ -179,7 +189,8 @@ const Overview = () => {
         {user?.role === 'VendorAdmin' && <VendorOnboardingChecklist />}
         {user?.role === 'VendorAdmin' && <BillingAlert />}
         {user?.role === 'VendorAdmin' && <SubscriptionUsageBanner />}
-        {user?.role === 'VendorAdmin' && <TrustedBadgeStatusCard />}
+        {user?.role === 'VendorAdmin' && <BeginnerGrowthCard user={user} stats={stats} />}
+        {user?.role === 'VendorAdmin' && hasFeature(user, 'trustSystem') && <TrustedBadgeStatusCard />}
         {overviewError && (
           <AdminErrorState
             title="Dashboard data could not load"
@@ -220,6 +231,7 @@ const Overview = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* CHART SECTION */}
+          {capabilities.revenueTrends && (
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm lg:col-span-2 flex flex-col hover:shadow-md transition-shadow duration-300">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-gray-800">Financial Performance</h2>
@@ -238,11 +250,13 @@ const Overview = () => {
                 </div>
             )}
           </div>
+          )}
 
           {/* SIDE PANEL */}
-          <div className="flex flex-col gap-6">
+          <div className={`flex flex-col gap-6 ${capabilities.revenueTrends ? '' : 'lg:col-span-3'}`}>
 
             {/* Low Stock */}
+            {capabilities.lowStockAlerts && (
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
               <h2 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wider">
                 <div className="p-1.5 bg-red-50 rounded-lg">
@@ -268,6 +282,7 @@ const Overview = () => {
                 )}
               </div>
             </div>
+            )}
 
             {/* Stock Movement */}
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
@@ -338,7 +353,7 @@ const Overview = () => {
         </div>
 
         {/* TOP PRODUCTS TABLE */}
-        {topProducts.length > 0 && (
+        {capabilities.topProducts && topProducts.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
               <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">

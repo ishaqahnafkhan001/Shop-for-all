@@ -2,12 +2,12 @@
  * @typedef {Object} SubscriptionFeatureDefinition
  * @property {string} key
  * @property {string} label
- * @property {'starter'|'growth'|'pro'|null} requiredPlan
+ * @property {'beginner'|'starter'|'growth'|'pro'|null} requiredPlan
  * @property {string} upgradeReason
  * @property {string|null} [shopOverrideKey]
  * @property {string[]} [aliases]
  * @property {string|null} [capabilityKey]
- * @property {'limited'|'full'|null} [storeBuilderAccess]
+ * @property {'none'|'limited'|'full'|null} [storeBuilderAccess]
  */
 
 const defineFeature = (key, definition) => Object.freeze({
@@ -23,6 +23,11 @@ const defineFeature = (key, definition) => Object.freeze({
 
 const FEATURE_REGISTRY = Object.freeze({
     storeBuilder: defineFeature('storeBuilder', { label: 'Store Builder', requiredPlan: 'starter' }),
+    homepageSeo: defineFeature('homepageSeo', {
+        label: 'Homepage SEO',
+        requiredPlan: 'starter',
+        upgradeReason: 'Control homepage search titles, descriptions, and search-engine settings'
+    }),
     storeBuilderFull: defineFeature('storeBuilderFull', {
         label: 'Full Store Builder',
         requiredPlan: 'growth',
@@ -36,6 +41,16 @@ const FEATURE_REGISTRY = Object.freeze({
         shopOverrideKey: 'storeBuilder'
     }),
     analytics: defineFeature('analytics', { label: 'Analytics', requiredPlan: 'starter' }),
+    dashboardTopProducts: defineFeature('dashboardTopProducts', {
+        label: 'Top product insights',
+        requiredPlan: 'starter',
+        upgradeReason: 'Identify popular products and understand what is driving sales'
+    }),
+    lowStockAlerts: defineFeature('lowStockAlerts', {
+        label: 'Low-stock alerts',
+        requiredPlan: 'starter',
+        upgradeReason: 'Receive warnings before products run out of stock'
+    }),
     coupons: defineFeature('coupons', { label: 'Coupons', requiredPlan: 'starter' }),
     customDomain: defineFeature('customDomain', { label: 'Custom domain', requiredPlan: 'growth' }),
     staffAccounts: defineFeature('staffAccounts', { label: 'Staff accounts', requiredPlan: 'starter' }),
@@ -56,8 +71,26 @@ const FEATURE_REGISTRY = Object.freeze({
         shopOverrideKey: null
     }),
     customerSection: defineFeature('customerSection', { label: 'Customer management', requiredPlan: 'growth' }),
+    emailCampaigns: defineFeature('emailCampaigns', {
+        label: 'Customer email campaigns',
+        requiredPlan: 'growth',
+        upgradeReason: 'Bring customers back with targeted product and store emails'
+    }),
     trustSystem: defineFeature('trustSystem', { label: 'Trust system', requiredPlan: 'growth' }),
+    publicVerifiedBadge: defineFeature('publicVerifiedBadge', {
+        label: 'Public Verified Seller badge',
+        requiredPlan: 'starter',
+        shopOverrideKey: null
+    }),
     notifications: defineFeature('notifications', { label: 'Notification Center', requiredPlan: 'growth' }),
+    privacyRequests: defineFeature('privacyRequests', {
+        label: 'Privacy Requests management',
+        requiredPlan: 'starter'
+    }),
+    activityLogs: defineFeature('activityLogs', {
+        label: 'Activity Logs',
+        requiredPlan: 'starter'
+    }),
     scheduledProductPublishing: defineFeature('scheduledProductPublishing', {
         label: 'Scheduled product publishing',
         requiredPlan: 'pro'

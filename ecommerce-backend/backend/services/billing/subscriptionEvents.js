@@ -16,7 +16,10 @@ const SUBSCRIPTION_EVENTS = Object.freeze({
     QUOTA_REACHED: 'QuotaReached',
     QUOTA_WARNING: 'QuotaWarning',
     USAGE_CHANGED: 'UsageChanged',
-    UPGRADE_CLICKED: 'UpgradeClicked'
+    UPGRADE_CLICKED: 'UpgradeClicked',
+    UPGRADE_PROMPT_VIEWED: 'UpgradePromptViewed',
+    UPGRADE_PROMPT_DISMISSED: 'UpgradePromptDismissed',
+    GROWTH_MILESTONE: 'GrowthMilestone'
 });
 
 const actorFromRequest = (req) => ({

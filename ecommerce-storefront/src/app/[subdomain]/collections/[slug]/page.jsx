@@ -1,7 +1,11 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import CollectionPageClient from "./CollectionPageClient";
-import { fetchStorefrontCollection, fetchStorefrontInfo } from "@/lib/storefrontServer";
+import {
+    fetchStorefrontCollection,
+    fetchStorefrontInfo,
+    getStorefrontPlanRedirectUrl
+} from "@/lib/storefrontServer";
 import {
     buildBreadcrumbJsonLd,
     buildCollectionItemListJsonLd,
@@ -46,6 +50,11 @@ const getCollectionPageData = async (subdomain, slug, host = "", searchParams = 
             filters
         };
     } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(
+            error,
+            `/collections/${encodeURIComponent(slug)}`
+        );
+        if (redirectTo) return { redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error("Server collection page fetch error:", error.message);
         }
@@ -84,6 +93,7 @@ export default async function CollectionPage({ params, searchParams }) {
     const headerStore = await headers();
     const host = headerStore.get("host") || "";
     const data = await getCollectionPageData(subdomain, slug, host, resolvedSearchParams || {});
+    if (data?.redirectTo) redirect(data.redirectTo);
 
     if (!data?.collection || !data?.shop) notFound();
 

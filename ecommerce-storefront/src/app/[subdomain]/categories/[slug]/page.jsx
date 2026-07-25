@@ -1,8 +1,12 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import CategoryPageClient from "./CategoryPageClient";
-import { fetchStorefrontInfo, fetchStorefrontProducts } from "@/lib/storefrontServer";
+import {
+    fetchStorefrontInfo,
+    fetchStorefrontProducts,
+    getStorefrontPlanRedirectUrl
+} from "@/lib/storefrontServer";
 import {
     buildBreadcrumbJsonLd,
     buildStorefrontMetadata,
@@ -79,6 +83,11 @@ const getCategoryPageData = async (subdomain, slug, host = "", searchParams = {}
             exists: categoryExists || products.length > 0
         };
     } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(
+            error,
+            `/categories/${encodeURIComponent(slug)}`
+        );
+        if (redirectTo) return { redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error("Server category page fetch error:", error.message);
         }
@@ -114,6 +123,7 @@ export default async function CategoryPage({ params, searchParams }) {
     const headerStore = await headers();
     const host = headerStore.get("host") || "";
     const data = await getCategoryPageData(subdomain, slug, host, resolvedSearchParams || {});
+    if (data?.redirectTo) redirect(data.redirectTo);
 
     if (!data?.shop || !data?.exists) notFound();
 

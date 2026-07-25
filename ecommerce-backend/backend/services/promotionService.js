@@ -1,6 +1,7 @@
 const Promotion = require('../models/Promotion');
 const User = require('../models/User');
 const Order = require('../models/Order');
+const { hasFeature } = require('./shops/featureAccessService');
 
 const normalizeCode = (code) => {
     return String(code || '').trim().toUpperCase();
@@ -134,6 +135,16 @@ exports.evaluatePromotion = async ({
         return {
             valid: false,
             error: 'Coupon code is required',
+            discountAmount: 0,
+            freeShipping: false
+        };
+    }
+
+    if (!(await hasFeature(shopId, 'coupons'))) {
+        return {
+            valid: false,
+            code: 'FEATURE_NOT_INCLUDED',
+            error: 'Coupons are not available for this store.',
             discountAmount: 0,
             freeShipping: false
         };

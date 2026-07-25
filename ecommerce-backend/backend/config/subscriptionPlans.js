@@ -1,6 +1,19 @@
 const UNLIMITED = null;
 
 const STORE_BUILDER_CAPABILITIES = {
+    none: {
+        basicBranding: false,
+        basicHeader: false,
+        standardHero: false,
+        featuredProducts: false,
+        basicFooter: false,
+        allProducts: false,
+        advancedSections: false,
+        sectionReordering: false,
+        scheduledBanners: false,
+        premiumLayouts: false,
+        advancedDesign: false
+    },
     limited: {
         basicBranding: true,
         basicHeader: true,
@@ -30,6 +43,49 @@ const STORE_BUILDER_CAPABILITIES = {
 };
 
 const PLAN_DEFINITIONS = {
+    beginner: {
+        key: 'beginner',
+        slug: 'beginner',
+        name: 'Beginner',
+        monthlyPrice: 499,
+        yearlyPrice: 4990,
+        currency: 'BDT',
+        limits: {
+            aiProductCreationsPerWeek: 0,
+            imagesPerProduct: 3,
+            staffAccounts: 0,
+            productCount: 25,
+            activityLogRetentionDays: 7
+        },
+        features: {
+            aiProductCreation: false,
+            storeBuilder: false,
+            homepageSeo: false,
+            coupons: false,
+            analytics: false,
+            dashboardTopProducts: false,
+            lowStockAlerts: false,
+            bulkProductTools: false,
+            staffAccounts: false,
+            aiAdGenerator: false,
+            growthCenter: false,
+            customDomain: false,
+            customerSection: false,
+            emailCampaigns: false,
+            trustSystem: false,
+            publicVerifiedBadge: false,
+            notifications: false,
+            privacyRequests: false,
+            activityLogs: false,
+            scheduledProductPublishing: false,
+            scheduledSales: false,
+            platformBrandingRemoval: false
+        },
+        storeBuilderAccess: 'none',
+        storeBuilderCapabilities: STORE_BUILDER_CAPABILITIES.none,
+        badgeEligible: false,
+        prioritySupport: false
+    },
     starter: {
         key: 'starter',
         slug: 'starter',
@@ -47,16 +103,23 @@ const PLAN_DEFINITIONS = {
         features: {
             aiProductCreation: true,
             storeBuilder: true,
+            homepageSeo: true,
             coupons: true,
             analytics: true,
+            dashboardTopProducts: true,
+            lowStockAlerts: true,
             bulkProductTools: false,
             staffAccounts: true,
             aiAdGenerator: false,
             growthCenter: false,
             customDomain: false,
             customerSection: false,
+            emailCampaigns: false,
             trustSystem: false,
+            publicVerifiedBadge: true,
             notifications: false,
+            privacyRequests: true,
+            activityLogs: true,
             scheduledProductPublishing: false,
             scheduledSales: false,
             platformBrandingRemoval: false
@@ -83,16 +146,23 @@ const PLAN_DEFINITIONS = {
         features: {
             aiProductCreation: true,
             storeBuilder: true,
+            homepageSeo: true,
             coupons: true,
             analytics: true,
+            dashboardTopProducts: true,
+            lowStockAlerts: true,
             bulkProductTools: true,
             staffAccounts: true,
             aiAdGenerator: true,
             growthCenter: true,
             customDomain: true,
             customerSection: true,
+            emailCampaigns: true,
             trustSystem: true,
+            publicVerifiedBadge: true,
             notifications: true,
+            privacyRequests: true,
+            activityLogs: true,
             scheduledProductPublishing: false,
             scheduledSales: true,
             platformBrandingRemoval: true
@@ -119,16 +189,23 @@ const PLAN_DEFINITIONS = {
         features: {
             aiProductCreation: true,
             storeBuilder: true,
+            homepageSeo: true,
             coupons: true,
             analytics: true,
+            dashboardTopProducts: true,
+            lowStockAlerts: true,
             bulkProductTools: true,
             staffAccounts: true,
             aiAdGenerator: true,
             growthCenter: true,
             customDomain: true,
             customerSection: true,
+            emailCampaigns: true,
             trustSystem: true,
+            publicVerifiedBadge: true,
             notifications: true,
+            privacyRequests: true,
+            activityLogs: true,
             scheduledProductPublishing: true,
             scheduledSales: true,
             platformBrandingRemoval: true
@@ -141,16 +218,27 @@ const PLAN_DEFINITIONS = {
 };
 
 const FEATURE_MINIMUM_PLAN = {
+    aiProductCreation: 'starter',
+    storeBuilder: 'starter',
+    homepageSeo: 'starter',
+    analytics: 'starter',
+    dashboardTopProducts: 'starter',
+    lowStockAlerts: 'starter',
+    staffAccounts: 'starter',
+    privacyRequests: 'starter',
+    activityLogs: 'starter',
+    publicVerifiedBadge: 'starter',
     growthCenter: 'growth',
     customDomain: 'growth',
     customerSection: 'growth',
+    emailCampaigns: 'growth',
     trustSystem: 'growth',
     notifications: 'growth',
     scheduledSales: 'growth',
     scheduledProductPublishing: 'pro'
 };
 
-const PLAN_ORDER = ['starter', 'growth', 'pro'];
+const PLAN_ORDER = ['beginner', 'starter', 'growth', 'pro'];
 
 const normalizePlanKey = (value = 'starter') => {
     const normalized = String(value || 'starter').trim().toLowerCase();

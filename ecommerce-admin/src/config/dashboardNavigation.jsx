@@ -24,6 +24,7 @@ import {
     Users
 } from 'lucide-react';
 import { hasStaffPermission } from '../utils/staffPermissions';
+import { hasFeature } from '../utils/featureAccess';
 
 export const VENDOR_NAVIGATION_VERSION = 'v2';
 
@@ -55,7 +56,7 @@ export const vendorNavigationGroups = [
             { id: 'banners', label: 'Launch Banners', path: '/dashboard/banners', icon: Images, permission: 'bannersManage', feature: 'scheduledBanners' },
             { id: 'growth', label: 'Growth Center', path: '/dashboard/growth', icon: TrendingUp, permission: 'growthCenter', feature: 'growthCenter' },
             { id: 'analytics', label: 'Analytics', path: '/dashboard/analytics', icon: BarChart3, permission: 'analytics', feature: 'analytics' },
-            { id: 'seo', label: 'Homepage SEO', path: '/dashboard/seo', icon: FileSearch, permission: 'storeBuilder', feature: 'storeBuilder' }
+            { id: 'seo', label: 'Homepage SEO', path: '/dashboard/seo', icon: FileSearch, permission: 'storeBuilder', feature: 'homepageSeo' }
         ]
     },
     {
@@ -83,8 +84,8 @@ export const vendorNavigationGroups = [
         id: 'security-support',
         label: 'Security & Support',
         items: [
-            { id: 'privacy-requests', label: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText, permission: 'privacyRequests' },
-            { id: 'activity-logs', label: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, permission: 'activityLogs' },
+            { id: 'privacy-requests', label: 'Privacy Requests', path: '/dashboard/privacy-requests', icon: FileText, permission: 'privacyRequests', feature: 'privacyRequests' },
+            { id: 'activity-logs', label: 'Activity Logs', path: '/dashboard/activity-logs', icon: History, permission: 'activityLogs', feature: 'activityLogs' },
             { id: 'support', label: 'Help & Support', path: '/dashboard/support', icon: LifeBuoy }
         ]
     }
@@ -101,7 +102,8 @@ export const filterVendorNavigation = (user = {}) => vendorNavigationGroups
         ...group,
         items: group.items.filter(item => (
             (!item.ownerOnly || user?.role === 'VendorAdmin') &&
-            hasStaffPermission(user, item.permission)
+            hasStaffPermission(user, item.permission) &&
+            (!item.feature || hasFeature(user, item.feature))
         ))
     }))
     .filter(group => group.items.length > 0);

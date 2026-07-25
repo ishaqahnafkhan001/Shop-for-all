@@ -1,3 +1,9 @@
+const {
+    FALLBACK_THEME,
+    cloneTheme,
+    normalizeTheme
+} = require('@scaleup/storefront-theme');
+
 const deepEqual = (left, right) => JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 
 const STARTER_EDITABLE_SECTION_TYPES = new Set(['Hero', 'FeaturedProducts']);
@@ -47,6 +53,35 @@ const assertStoreBuilderUpdateAllowed = ({ currentTheme = {}, incomingTheme = {}
 
 const getPublicThemeForPlan = (theme = {}, planAccess = {}) => {
     if (planAccess?.storeBuilderAccess === 'full') return theme;
+
+    if (planAccess?.storeBuilderAccess === 'none') {
+        const normalized = normalizeTheme(theme);
+        const defaults = cloneTheme(FALLBACK_THEME);
+
+        return normalizeTheme({
+            ...defaults,
+            logoUrl: normalized.logoUrl,
+            faviconUrl: normalized.faviconUrl,
+            checkoutBranding: {
+                ...defaults.checkoutBranding,
+                logoUrl: normalized.logoUrl
+            },
+            paymentSettings: normalized.paymentSettings,
+            footer: {
+                ...defaults.footer,
+                text: normalized.footer?.text || '',
+                contactLabel: normalized.footer?.contactLabel || defaults.footer.contactLabel,
+                contactEmail: normalized.footer?.contactEmail || '',
+                facebookUrl: normalized.footer?.facebookUrl || '',
+                instagramUrl: normalized.footer?.instagramUrl || '',
+                twitterUrl: normalized.footer?.twitterUrl || '',
+                youtubeUrl: normalized.footer?.youtubeUrl || '',
+                tiktokUrl: normalized.footer?.tiktokUrl || '',
+                links: []
+            },
+            policies: normalized.policies
+        });
+    }
 
     return {
         ...theme,

@@ -1,4 +1,13 @@
-const PLATFORM_ROOT_DOMAIN = 'scaleup.codes';
+const PLATFORM_ROOT_DOMAIN = String(
+    process.env.PLATFORM_ROOT_DOMAIN ||
+    process.env.STOREFRONT_PLATFORM_DOMAIN ||
+    'scaleup.codes'
+)
+    .trim()
+    .toLowerCase()
+    .replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
+    .split(/[/?#]/)[0]
+    .replace(/^\.+|\.+$/g, '') || 'scaleup.codes';
 const RESERVED_PLATFORM_HOSTS = new Set([
     PLATFORM_ROOT_DOMAIN,
     `www.${PLATFORM_ROOT_DOMAIN}`,
@@ -108,6 +117,7 @@ const isPlatformRootHost = (hostname = '') => {
 
 const isCustomDomainFullyVerified = (customDomain = {}) => (
     customDomain?.status === 'Verified' &&
+    customDomain?.planInactive !== true &&
     Boolean(normalizeCustomDomain(customDomain?.domain)) &&
     customDomain?.ownershipVerified === true &&
     (
@@ -117,6 +127,17 @@ const isCustomDomainFullyVerified = (customDomain = {}) => (
 );
 
 const buildVerifiedCustomDomainQuery = (domain) => ({
+    'customDomain.domain': normalizeCustomDomain(domain),
+    'customDomain.status': 'Verified',
+    'customDomain.planInactive': { $ne: true },
+    'customDomain.ownershipVerified': true,
+    $or: [
+        { 'customDomain.routingVerified': true },
+        { 'customDomain.manuallyVerifiedRouting': true }
+    ]
+});
+
+const buildKnownCustomDomainQuery = (domain) => ({
     'customDomain.domain': normalizeCustomDomain(domain),
     'customDomain.status': 'Verified',
     'customDomain.ownershipVerified': true,
@@ -139,5 +160,6 @@ module.exports = {
     getPlatformSubdomainFromHostname,
     isPlatformRootHost,
     isCustomDomainFullyVerified,
-    buildVerifiedCustomDomainQuery
+    buildVerifiedCustomDomainQuery,
+    buildKnownCustomDomainQuery
 };

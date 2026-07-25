@@ -6,6 +6,7 @@ const {
     suspendForBilling,
     BILLING_SUSPENSION_REASON
 } = require('./subscriptionService');
+const { processDueDowngrades } = require('./subscriptionDowngradeService');
 
 const findTrialsEndingSoon = (now = new Date()) => {
     const soon = addDays(now, 3);
@@ -34,6 +35,7 @@ const runBillingLifecycleCheck = async ({ req = null, now = new Date() } = {}) =
     const expiredTrials = await findExpiredTrials(now);
     const pastDue = await findPastDueSubscriptions(now);
     const graceExpired = await findGraceExpiredSubscriptions(now);
+    const downgradeResult = await processDueDowngrades({ now, limit: 50 });
 
     const movedToGrace = [];
     const suspended = [];
@@ -60,7 +62,8 @@ const runBillingLifecycleCheck = async ({ req = null, now = new Date() } = {}) =
 
     return {
         movedToGrace: movedToGrace.length,
-        suspended: suspended.length
+        suspended: suspended.length,
+        downgrades: downgradeResult
     };
 };
 

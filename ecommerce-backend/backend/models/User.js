@@ -29,6 +29,21 @@ const userSchema = new mongoose.Schema({
         enum: ['Active', 'Suspended'],
         default: 'Active'
     },
+    sessionVersion: {
+        type: Number,
+        min: 0,
+        default: 0
+    },
+    planSuspendedAt: {
+        type: Date,
+        default: null
+    },
+    planSuspendedFor: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
     permissions: {
         overview: { type: Boolean, default: false },
         products: { type: Boolean, default: true },

@@ -1,5 +1,5 @@
 import StorefrontHomeClient from './StorefrontHomeClient';
-import { fetchStorefrontBootstrap } from '@/lib/storefrontServer';
+import { fetchStorefrontBootstrap, getStorefrontPlanRedirectUrl } from '@/lib/storefrontServer';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import {
@@ -23,6 +23,8 @@ const getInitialStorefrontData = async (subdomain, host = '') => {
             fresh: true,
         });
     } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(error, '/');
+        if (redirectTo) return { shop: null, redirectTo };
         if ([404, 423].includes(error.status)) {
             return {
                 shop: null,
@@ -78,6 +80,7 @@ export default async function VendorHomePage({ params, searchParams }) {
     const headerStore = await headers();
     const host = headerStore.get('host') || '';
     const initialData = await getInitialStorefrontData(subdomain, host);
+    if (initialData?.redirectTo) redirect(initialData.redirectTo);
     const shop = initialData?.shop;
     const homepageUrl = shop ? getHomepageCanonicalUrl({ host, subdomain, shop }) : '';
     const homepageJsonLd = shop ? buildHomepageJsonLd({

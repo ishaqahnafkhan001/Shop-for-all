@@ -1,4 +1,4 @@
-import { fetchStorefrontInfo } from "@/lib/storefrontServer";
+import { fetchStorefrontInfo, getStorefrontPlanRedirectUrl } from "@/lib/storefrontServer";
 import { getShopBaseUrl } from "@/lib/seo";
 
 const privatePaths = [
@@ -38,7 +38,9 @@ export async function GET(request, { params }) {
                 "cache-control": "no-cache, max-age=0, must-revalidate"
             }
         });
-    } catch {
+    } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(error, "/robots.txt");
+        if (redirectTo) return Response.redirect(redirectTo, 307);
         return new Response("User-agent: *\nDisallow: /\n", {
             headers: {
                 "content-type": "text/plain; charset=utf-8",

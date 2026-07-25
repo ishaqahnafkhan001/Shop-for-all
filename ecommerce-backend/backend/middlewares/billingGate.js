@@ -102,12 +102,13 @@ const requireProductLimit = (getRequestedCount = () => 1) => async (req, res, ne
                 limit,
                 getCommittedUsage: () => Product.countDocuments({
                     shop_id: shopId,
-                    isDeleted: { $ne: true }
+                    isDeleted: { $ne: true },
+                    status: { $ne: 'Archived' }
                 })
             });
         } catch (error) {
             if (error.code !== 'PLAN_LIMIT_REACHED') throw error;
-            const payload = buildLimitError(context, 'productCount', error.usage, limit);
+            const payload = await buildLimitError(context, 'productCount', error.usage, limit);
             await emitQuotaReached(req, context, 'products', payload.usage);
             return res.status(403).json(payload);
         }
@@ -158,7 +159,7 @@ const requireStaffLimit = async (req, res, next) => {
             }
         }
         if (!capacity.canAddStaff) {
-            const payload = buildLimitError(context, 'staffAccounts', capacity.usedStaffCount, capacity.staffLimit);
+            const payload = await buildLimitError(context, 'staffAccounts', capacity.usedStaffCount, capacity.staffLimit);
             payload.remainingStaffSlots = capacity.remainingStaffSlots;
             await emitQuotaReached(req, context, 'staff', payload.usage);
             return res.status(403).json(payload);

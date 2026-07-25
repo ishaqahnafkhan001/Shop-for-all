@@ -317,7 +317,7 @@ const updateShopUser = async (req, res) => {
                 const capacity = await getStaffCapacity(req.user.shopId);
                 if (!capacity.canAddStaff) {
                     const context = await getShopPlanAccess(req.user.shopId);
-                    const payload = buildLimitError(context, 'staffAccounts', capacity.usedStaffCount, capacity.staffLimit);
+                    const payload = await buildLimitError(context, 'staffAccounts', capacity.usedStaffCount, capacity.staffLimit);
                     payload.legacyCode = 'STAFF_LIMIT_REACHED';
                     payload.remainingStaffSlots = capacity.remainingStaffSlots;
                     await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
@@ -345,7 +345,7 @@ const updateShopUser = async (req, res) => {
                 } catch (error) {
                     if (error.code !== 'PLAN_LIMIT_REACHED') throw error;
                     const context = await getShopPlanAccess(req.user.shopId);
-                    const payload = buildLimitError(context, 'staffAccounts', error.usage, capacity.staffLimit);
+                    const payload = await buildLimitError(context, 'staffAccounts', error.usage, capacity.staffLimit);
                     payload.legacyCode = 'STAFF_LIMIT_REACHED';
                     payload.remainingStaffSlots = 0;
                     await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {
@@ -360,9 +360,18 @@ const updateShopUser = async (req, res) => {
                 }
             }
             user.status = req.body.status;
+            if (req.body.status === 'Active') {
+                user.planSuspendedAt = null;
+                user.planSuspendedFor = '';
+            }
             if (user.membership_id) {
                 await ShopMembership.findByIdAndUpdate(user.membership_id, {
-                    status: req.body.status
+                    $set: {
+                        status: req.body.status,
+                        ...(req.body.status === 'Active'
+                            ? { planSuspendedAt: null, planSuspendedFor: '' }
+                            : {})
+                    }
                 });
             }
         }

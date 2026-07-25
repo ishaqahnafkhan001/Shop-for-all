@@ -11,7 +11,10 @@ const {
 
 const LEGACY_DEFAULT_FEATURES = {
     storeBuilder: true,
+    homepageSeo: true,
     analytics: true,
+    dashboardTopProducts: true,
+    lowStockAlerts: true,
     coupons: true,
     customDomain: false,
     staffAccounts: true,
@@ -20,8 +23,12 @@ const LEGACY_DEFAULT_FEATURES = {
     aiAdGenerator: true,
     aiProductCreation: true,
     customerSection: false,
+    emailCampaigns: false,
     trustSystem: false,
+    publicVerifiedBadge: true,
     notifications: false,
+    privacyRequests: true,
+    activityLogs: true,
     scheduledProductPublishing: false,
     scheduledSales: false,
     storeBuilderFull: false,
@@ -57,7 +64,12 @@ const getEffectivePlanRef = (shop, subscription) => {
     const plainSubscription = toPlain(subscription);
     const status = plainSubscription?.status || 'active';
 
-    if (status === 'trialing') return 'Starter';
+    if (status === 'trialing') {
+        return plainSubscription.intendedPlanSlug ||
+            plainSubscription.intendedPlanName ||
+            plainSubscription.planId ||
+            'Starter';
+    }
 
     if (status === 'pending_approval') {
         return plainSubscription.activePlanSlug ||

@@ -77,6 +77,20 @@ const bannerSchema = new Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    planInactiveAt: {
+        type: Date,
+        default: null
+    },
+    planInactiveFor: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        default: ''
+    },
+    planPreviousActive: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

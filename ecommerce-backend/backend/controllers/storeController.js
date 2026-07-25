@@ -25,7 +25,7 @@ const { getShopPlanAccess } = require('../services/billing/planAccessService');
 const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
 const { buildPagination } = require('../utils/pagination');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const getActiveBannerQuery = (shopId, now = new Date()) => ({
@@ -88,6 +88,13 @@ const applyDefaultPoliciesToShopPayload = (shop) => {
         ...(shop.theme || {}),
         policies: result.policies
     };
+    return shop;
+};
+
+const applyPublicPlanSettings = (shop, planAccess) => {
+    if (!shop || !planAccess) return shop;
+    shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
+    if (!planAccess.features.coupons) shop.storewideDiscount = 0;
     return shop;
 };
 
@@ -154,10 +161,12 @@ exports.getStoreInfo = async (req, res) => {
             return res.status(404).json({ error: "Shop details not found." });
         }
         const planAccess = await getShopPlanAccess(shop._id);
-        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
+        applyPublicPlanSettings(shop, planAccess);
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
-        shop.shopVerification = buildPublicShopVerification(shop);
+        shop.shopVerification = buildPublicShopVerification(shop, {
+            eligible: planAccess.features.publicVerifiedBadge
+        });
         await attachPublicBranding(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;
@@ -189,7 +198,9 @@ exports.getStorefrontBootstrap = async (req, res) => {
         const limit = 9;
         const skip = (currentPage - 1) * limit;
         const shopObjectId = new mongoose.Types.ObjectId(shopId);
+        const planAccess = await getShopPlanAccess(shopId);
         const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
+            plan: planAccess.planKey,
             page: currentPage,
             sort,
             category,
@@ -234,10 +245,12 @@ exports.getStorefrontBootstrap = async (req, res) => {
 
         const [shop, banners, products, totalProducts, categories, collections] = await Promise.all([
             Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
-            Banner.find(getActiveBannerQuery(shopId))
-                .populate('scheduledProduct', 'title slug status publicationStatus publishAt isActive isDeleted')
-                .sort({ createdAt: -1 })
-                .lean(),
+            planAccess.features.scheduledBanners
+                ? Banner.find(getActiveBannerQuery(shopId))
+                    .populate('scheduledProduct', 'title slug status publicationStatus publishAt isActive isDeleted')
+                    .sort({ createdAt: -1 })
+                    .lean()
+                : Promise.resolve([]),
             Product.aggregate([
                 { $match: query },
                 { $sort: sortQuery },
@@ -264,11 +277,12 @@ exports.getStorefrontBootstrap = async (req, res) => {
         }
 
         await ensureThemeSectionArchitecture(shop);
-        const planAccess = await getShopPlanAccess(shopId);
-        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
+        applyPublicPlanSettings(shop, planAccess);
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
-        shop.shopVerification = buildPublicShopVerification(shop);
+        shop.shopVerification = buildPublicShopVerification(shop, {
+            eligible: planAccess.features.publicVerifiedBadge
+        });
         await attachPublicBranding(shop);
         delete shop.badgeStatus;
         delete shop.badgeType;
@@ -336,7 +350,9 @@ exports.getStorefrontBootstrap = async (req, res) => {
             }, {});
         }
 
-        const activeSalePopups = await getActiveSalePopups({ shopId });
+        const activeSalePopups = planAccess.features.scheduledSales
+            ? await getActiveSalePopups({ shopId })
+            : [];
 
         const response = {
             success: true,
@@ -444,7 +460,7 @@ exports.getBatchProducts = async (req, res) => {
             isActive: true,
             status: 'Published'
         })
-            .select('title slug category collections imageAltText coverMediaId images pricing variants averageRating numReviews')
+            .select('title slug category collections imageAltText coverMediaId images pricing variants averageRating numReviews entitlementMedia')
             .lean({ virtuals: true });
 
         const pricedProducts = await applyScheduledSalesToProducts({ shopId: req.tenantId, products });

@@ -1,4 +1,9 @@
-import { fetchStorefrontCollections, fetchStorefrontInfo, fetchStorefrontProducts } from "@/lib/storefrontServer";
+import {
+    fetchStorefrontCollections,
+    fetchStorefrontInfo,
+    fetchStorefrontProducts,
+    getStorefrontPlanRedirectUrl
+} from "@/lib/storefrontServer";
 import {
     getCollectionCanonicalUrl,
     getHomepageCanonicalUrl,
@@ -98,7 +103,9 @@ export async function GET(request, { params }) {
                 "cache-control": "no-cache, max-age=0, must-revalidate"
             }
         });
-    } catch {
+    } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(error, "/sitemap.xml");
+        if (redirectTo) return Response.redirect(redirectTo, 307);
         return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`, {
             headers: {
                 "content-type": "application/xml; charset=utf-8",

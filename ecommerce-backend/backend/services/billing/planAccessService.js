@@ -1,6 +1,6 @@
 const Shop = require('../../models/Shop');
 const { PLAN_ORDER } = require('../../config/subscriptionPlans');
-const { getFeatureDefinition } = require('../../config/subscriptionFeatures');
+const { getFeatureDefinition, getPlanFeatureValue } = require('../../config/subscriptionFeatures');
 const { ensureSubscriptionExists } = require('./subscriptionService');
 const { getPlanByIdOrNameOrDefault, getPlanLimits, getPlanSlug } = require('./billingPlanService');
 const {
@@ -27,6 +27,39 @@ const getUpgradePlan = (currentPlan, requiredPlan = null) => {
     if (requiredPlan) return requiredPlan;
     const index = PLAN_ORDER.indexOf(getPlanSlug(currentPlan));
     return index >= 0 && index < PLAN_ORDER.length - 1 ? PLAN_ORDER[index + 1] : null;
+};
+
+const getLowestEligiblePlan = async (currentPlan, feature) => {
+    const currentKey = getPlanSlug(currentPlan);
+    const currentIndex = PLAN_ORDER.indexOf(currentKey);
+    const candidates = currentIndex >= 0 ? PLAN_ORDER.slice(currentIndex + 1) : PLAN_ORDER;
+
+    for (const planKey of candidates) {
+        const plan = await getPlanByIdOrNameOrDefault(planKey);
+        if (getPlanFeatureValue(plan, feature)) return getPlanSlug(plan);
+    }
+
+    return null;
+};
+
+const getLowestEligiblePlanForLimit = async (currentPlan, limitKey, currentLimit) => {
+    const currentKey = getPlanSlug(currentPlan);
+    const currentIndex = PLAN_ORDER.indexOf(currentKey);
+    const candidates = currentIndex >= 0 ? PLAN_ORDER.slice(currentIndex + 1) : PLAN_ORDER;
+    const numericCurrentLimit = currentLimit === null ? null : Number(currentLimit);
+
+    for (const planKey of candidates) {
+        const plan = await getPlanByIdOrNameOrDefault(planKey);
+        const candidateLimit = plan.limits?.[limitKey] ?? plan[limitKey] ?? null;
+        if (
+            candidateLimit === null ||
+            (numericCurrentLimit !== null && Number(candidateLimit) > numericCurrentLimit)
+        ) {
+            return getPlanSlug(plan);
+        }
+    }
+
+    return null;
 };
 
 const getShopPlanAccess = async (shopOrId, { includeUsage = false } = {}) => {
@@ -75,21 +108,23 @@ const getShopPlanAccess = async (shopOrId, { includeUsage = false } = {}) => {
     return context;
 };
 
-const buildFeatureError = (context, feature) => {
+const buildFeatureError = async (context, feature) => {
     const definition = getFeatureDefinition(feature);
-    const requiredPlan = definition?.requiredPlan || getUpgradePlan(context.plan);
+    const requiredPlan = await getLowestEligiblePlan(context.plan, feature);
     const label = definition?.label || String(feature || 'feature')
         .replace(/([a-z])([A-Z])/g, '$1 $2')
         .replace(/^./, value => value.toUpperCase());
     return {
         success: false,
-        code: 'FEATURE_NOT_AVAILABLE',
+        code: 'FEATURE_NOT_INCLUDED',
         errorCode: `${String(feature || 'feature').replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase()}_NOT_AVAILABLE`,
         error: `${label} is not available on your current plan.`,
         message: `${label} is available on the ${requiredPlan ? requiredPlan[0].toUpperCase() + requiredPlan.slice(1) : 'higher'} plan.`,
         feature,
         currentPlan: context.planKey,
         requiredPlan,
+        recommendedPlan: requiredPlan,
+        upgradeReason: definition?.upgradeReason || `Unlock ${label}`,
         featureStatus: context.featureStatuses?.[feature] || null,
         upgrade: {
             recommended: requiredPlan,
@@ -105,7 +140,7 @@ const LIMIT_RESOURCE_MAP = Object.freeze({
     imagesPerProduct: 'images'
 });
 
-const buildLimitError = (context, limitKey, usage, limit) => {
+const buildLimitError = async (context, limitKey, usage, limit) => {
     const used = typeof usage === 'object' ? usage?.used : usage;
     const result = buildRichQuotaError({
         context,
@@ -114,12 +149,18 @@ const buildLimitError = (context, limitKey, usage, limit) => {
         limit,
         message: `You have reached the ${limit} ${String(limitKey).replace(/([A-Z])/g, ' $1').toLowerCase()} limit of the ${context.planName} plan.`
     });
+    const recommended = await getLowestEligiblePlanForLimit(context.plan, limitKey, limit);
     return {
         ...result,
+        recommendedPlan: recommended,
+        upgrade: {
+            ...result.upgrade,
+            recommended
+        },
         limitKey,
         // Temporary aliases used by existing admin screens.
         usage: typeof usage === 'object' ? { ...result.usage, ...usage } : result.usage,
-        upgradePlan: result.upgrade.recommended
+        upgradePlan: recommended
     };
 };
 
@@ -138,6 +179,8 @@ module.exports = {
     hasPlanFeature,
     getPlanLimit,
     getUpgradePlan,
+    getLowestEligiblePlan,
+    getLowestEligiblePlanForLimit,
     buildFeatureError,
     buildLimitError
 };

@@ -48,11 +48,13 @@ const normalizeProductPublicationFields = (value = {}) => {
 
 const enqueueScheduledProductPublication = async ({ product, shopId }) => {
     if (!product || product.publicationStatus !== 'scheduled' || !product.publishAt) return null;
+    const resolvedShopId = shopId || product.shop_id;
+    if (!(await hasFeature(resolvedShopId, 'scheduledProductPublishing'))) return null;
 
     return enqueueJob({
         queue: SCHEDULED_PRODUCT_QUEUE,
         name: PUBLISH_PRODUCT_JOB,
-        shop_id: shopId || product.shop_id,
+        shop_id: resolvedShopId,
         runAt: product.publishAt,
         payload: {
             productId: product._id

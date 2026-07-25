@@ -64,7 +64,33 @@ const resolveVariantImageReferences = (payload, imageUrls = []) => {
     return payload;
 };
 
+const normalizeSourceIdentity = (value) => {
+    const source = String(value || '').trim();
+    if (!source) return '';
+    try {
+        const url = new URL(source);
+        url.search = '';
+        url.hash = '';
+        return url.toString();
+    } catch {
+        return source;
+    }
+};
+
+const getUniqueProductImageSources = (product = {}) => {
+    const values = [
+        product.coverMediaId,
+        ...(Array.isArray(product.images) ? product.images : []),
+        ...(Array.isArray(product.variants)
+            ? product.variants.map(variant => variant?.image)
+            : [])
+    ];
+    return [...new Set(values.map(normalizeSourceIdentity).filter(Boolean))];
+};
+
 module.exports = {
     parseProductPayload,
-    resolveVariantImageReferences
+    resolveVariantImageReferences,
+    normalizeSourceIdentity,
+    getUniqueProductImageSources
 };

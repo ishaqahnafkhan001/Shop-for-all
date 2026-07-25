@@ -53,6 +53,21 @@ const isCustomDomainHost = (host = '') => {
     return cleanHost.includes('.');
 };
 
+export const getStorefrontPlanRedirectUrl = (error, pathname = '/') => {
+    if (error?.body?.code !== 'CUSTOM_DOMAIN_PLAN_INACTIVE') return '';
+    const platformDomain = String(process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'scaleup.codes')
+        .trim()
+        .toLowerCase()
+        .replace(/^\.+|\.+$/g, '');
+    const host = String(error?.body?.platformHost || '').trim().toLowerCase();
+    if (!platformDomain || (host !== platformDomain && !host.endsWith(`.${platformDomain}`))) return '';
+    const safePath = String(pathname || '/').startsWith('/') && !String(pathname).startsWith('//')
+        ? String(pathname)
+        : '/';
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    return `${protocol}://${host}${safePath}`;
+};
+
 const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontHost = '', fresh = false } = {}) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), getServerFetchTimeoutMs());

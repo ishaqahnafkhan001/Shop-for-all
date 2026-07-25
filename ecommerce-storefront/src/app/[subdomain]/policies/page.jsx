@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { FileText, ShieldCheck } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { POLICY_LABELS, POLICY_TYPES, getPolicyContent } from "@/lib/defaultPolicies";
-import { fetchStorefrontInfo } from "@/lib/storefrontServer";
+import { fetchStorefrontInfo, getStorefrontPlanRedirectUrl } from "@/lib/storefrontServer";
 import {
     buildStorefrontMetadata,
     cleanTextForMeta,
@@ -17,6 +18,8 @@ const getStoreInfo = async (subdomain, host = "") => {
     try {
         return await fetchStorefrontInfo(subdomain, { storefrontHost: host });
     } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(error, "/policies");
+        if (redirectTo) return { __redirectTo: redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error("Server policy index shop info fetch error:", error.message);
         }
@@ -30,7 +33,7 @@ export async function generateMetadata({ params }) {
     const host = headerStore.get("host") || "";
     const shop = await getStoreInfo(subdomain, host);
 
-    if (!shop) {
+    if (!shop || shop.__redirectTo) {
         return noindexMetadata("Store Policies", "This store policy page is currently unavailable.");
     }
 
@@ -56,6 +59,7 @@ export default async function PoliciesPage({ params }) {
     const headerStore = await headers();
     const host = headerStore.get("host") || "";
     const shop = await getStoreInfo(subdomain, host);
+    if (shop?.__redirectTo) redirect(shop.__redirectTo);
     const storeName = shop?.shopName || shop?.name || "this store";
     const policies = shop?.theme?.policies || {};
 

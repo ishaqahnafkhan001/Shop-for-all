@@ -69,7 +69,8 @@ const signSessionToken = ({ account, membership, user }) => jwt.sign(
         accountId: account._id,
         membershipId: membership?._id || null,
         role: user.role,
-        shopId: user.shop_id || null
+        shopId: user.shop_id || null,
+        sessionVersion: Number(user.sessionVersion || 0)
     },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
@@ -112,7 +113,7 @@ const getSessionShopPayload = async (shopOrId) => {
     const shop = typeof shopOrId === 'object' && shopOrId._id
         ? shopOrId
         : await Shop.findById(shopOrId)
-            .select('shopName subdomain plan featureFlags isActive approvalStatus suspensionReason')
+            .select('shopName subdomain plan featureFlags isActive approvalStatus suspensionReason verification.status verification.verifiedAt')
             .lean();
 
     if (!shop) return { shop: null, effectiveFeatures: {}, planAccess: null };
@@ -125,7 +126,9 @@ const getSessionShopPayload = async (shopOrId) => {
             id: shop._id,
             _id: shop._id,
             shopName: shop.shopName,
-            subdomain: shop.subdomain
+            subdomain: shop.subdomain,
+            verificationStatus: shop.verification?.status || 'not_submitted',
+            verificationCompletedAt: shop.verification?.verifiedAt || null
         },
         effectiveFeatures,
         planAccess: {
@@ -488,9 +491,11 @@ exports.registerVendor = async (req, res) => {
         await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.TRIAL_STARTED, {
             req,
             shopId: newShop._id,
-            planKey: 'starter',
+            planKey: selectedPlanSlug || 'starter',
             newValue: {
                 status: 'trialing',
+                planKey: selectedPlanSlug || 'starter',
+                planName: (selectedPlanSlug || 'starter').replace(/^./, value => value.toUpperCase()),
                 intendedPlanSlug: selectedPlanSlug || 'starter',
                 trialEndsAt: newShop.plan?.trialEndsAt || null
             },
@@ -1062,7 +1067,7 @@ exports.getMe = async (req, res) => {
 
         if (user.shop_id) {
             const shop = await Shop.findById(user.shop_id)
-                .select('shopName subdomain plan featureFlags isActive approvalStatus suspensionReason')
+                .select('shopName subdomain plan featureFlags isActive approvalStatus suspensionReason verification.status verification.verifiedAt')
                 .lean();
 
             if (shop) {

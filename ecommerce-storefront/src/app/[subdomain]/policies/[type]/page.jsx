@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import PolicyPageClient from "./PolicyPageClient";
-import { fetchStorefrontInfo } from "@/lib/storefrontServer";
+import { fetchStorefrontInfo, getStorefrontPlanRedirectUrl } from "@/lib/storefrontServer";
 import { POLICY_LABELS, getPolicyContent as getDefaultedPolicyContent } from "@/lib/defaultPolicies";
 import {
     buildStorefrontMetadata,
@@ -23,6 +23,8 @@ const getStoreInfo = async (subdomain, host = "") => {
     try {
         return await fetchStorefrontInfo(subdomain, { storefrontHost: host });
     } catch (error) {
+        const redirectTo = getStorefrontPlanRedirectUrl(error, "/policies");
+        if (redirectTo) return { __redirectTo: redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error("Server policy shop info fetch error:", error.message);
         }
@@ -49,7 +51,7 @@ export async function generateMetadata({ params }) {
     const host = headerStore.get("host") || "";
     const shop = await getStoreInfo(subdomain, host);
 
-    if (!shop) {
+    if (!shop || shop.__redirectTo) {
         return noindexMetadata(label, "This store policy is currently unavailable.");
     }
 
@@ -69,8 +71,12 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function PolicyPage({ params }) {
-    const { type } = await params;
+    const { subdomain, type } = await params;
     if (!POLICY_LABELS[type]) notFound();
+    const headerStore = await headers();
+    const host = headerStore.get("host") || "";
+    const shop = await getStoreInfo(subdomain, host);
+    if (shop?.__redirectTo) redirect(shop.__redirectTo);
 
     return <PolicyPageClient type={type} />;
 }

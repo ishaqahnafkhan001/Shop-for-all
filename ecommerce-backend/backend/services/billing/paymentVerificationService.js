@@ -4,6 +4,7 @@ const Subscription = require('../../models/Subscription');
 const Shop = require('../../models/Shop');
 const User = require('../../models/User');
 const VendorPlan = require('../../models/VendorPlan');
+const UpgradeIntent = require('../../models/UpgradeIntent');
 const { logPlatformAudit } = require('../platformAuditLogService');
 const { createNotification } = require('../notificationService');
 const { createPlatformNotification } = require('../platformNotificationService');
@@ -154,6 +155,21 @@ const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) =>
         invoiceId: paidInvoice._id,
         req
     });
+    if (paidInvoice.upgradeIntentId) {
+        await UpgradeIntent.updateOne(
+            {
+                _id: paidInvoice.upgradeIntentId,
+                shopId: payment.shopId,
+                status: 'active'
+            },
+            {
+                $set: {
+                    status: 'completed',
+                    completedAt: new Date()
+                }
+            }
+        );
+    }
 
     await logPlatformAudit({
         req,

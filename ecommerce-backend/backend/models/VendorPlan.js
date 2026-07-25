@@ -40,23 +40,30 @@ const vendorPlanSchema = new mongoose.Schema({
     features: {
         aiProductCreation: { type: Boolean, default: true },
         storeBuilder: { type: Boolean, default: true },
+        homepageSeo: { type: Boolean, default: true },
         coupons: { type: Boolean, default: true },
         analytics: { type: Boolean, default: true },
+        dashboardTopProducts: { type: Boolean, default: true },
+        lowStockAlerts: { type: Boolean, default: true },
         customDomain: { type: Boolean, default: false },
         staffAccounts: { type: Boolean, default: true },
         bulkProductTools: { type: Boolean, default: true },
         growthCenter: { type: Boolean, default: true },
         aiAdGenerator: { type: Boolean, default: true },
         customerSection: { type: Boolean, default: false },
+        emailCampaigns: { type: Boolean, default: false },
         trustSystem: { type: Boolean, default: false },
+        publicVerifiedBadge: { type: Boolean, default: true },
         notifications: { type: Boolean, default: false },
+        privacyRequests: { type: Boolean, default: true },
+        activityLogs: { type: Boolean, default: true },
         scheduledProductPublishing: { type: Boolean, default: false },
         scheduledSales: { type: Boolean, default: false },
         platformBrandingRemoval: { type: Boolean, default: false }
     },
     storeBuilderAccess: {
         type: String,
-        enum: ['limited', 'full'],
+        enum: ['none', 'limited', 'full'],
         default: 'limited'
     },
     storeBuilderCapabilities: {

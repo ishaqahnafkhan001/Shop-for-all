@@ -30,11 +30,14 @@ const attachUserFromToken = async (req, token) => {
         }
 
         const legacyUser = await User.findById(decoded.id)
-            .select('fullName email role shop_id status account_id membership_id permissions')
+            .select('fullName email role shop_id status account_id membership_id permissions sessionVersion')
             .lean();
 
         if (!legacyUser || legacyUser.status !== 'Active') {
             throw new Error('User inactive');
+        }
+        if (Number(decoded.sessionVersion || 0) !== Number(legacyUser.sessionVersion || 0)) {
+            throw new Error('Session revoked');
         }
 
         if (PLATFORM_ROLES.includes(legacyUser.role)) {
@@ -90,6 +93,17 @@ const attachUserFromToken = async (req, token) => {
     }
 
     if (decoded.shopId && ['VendorAdmin', 'VendorStaff'].includes(decoded.role)) {
+        const legacyUser = await User.findOne({
+            _id: decoded.id,
+            shop_id: decoded.shopId,
+            role: decoded.role,
+            status: 'Active'
+        }).select('sessionVersion').lean();
+        if (!legacyUser) throw new Error('User inactive');
+        if (Number(decoded.sessionVersion || 0) !== Number(legacyUser.sessionVersion || 0)) {
+            throw new Error('Session revoked');
+        }
+
         const shop = await Shop.findById(decoded.shopId)
             .select('isActive approvalStatus suspensionReason verification')
             .lean();

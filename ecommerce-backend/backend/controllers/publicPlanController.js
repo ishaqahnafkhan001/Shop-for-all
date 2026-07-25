@@ -13,21 +13,30 @@ const buildPlanFeatures = (plan) => {
     const features = plan.features || {};
     const items = [
         limits.productCount == null ? 'Unlimited products' : `Up to ${Number(limits.productCount).toLocaleString('en-BD')} products`,
-        limits.aiProductCreationsPerWeek == null
+        limits.aiProductCreationsPerWeek === 0
+            ? 'No AI product creation'
+            : limits.aiProductCreationsPerWeek == null
             ? 'Unlimited AI product creation'
             : `${Number(limits.aiProductCreationsPerWeek).toLocaleString('en-BD')} AI products per week`,
         `Up to ${Number(limits.imagesPerProduct || 0).toLocaleString('en-BD')} images per product`,
-        formatLimit(limits.staffAccounts, 'staff account'),
-        plan.storeBuilderAccess === 'full' ? 'Full Store Builder' : 'Limited Store Builder',
-        `${Number(limits.activityLogRetentionDays || 0).toLocaleString('en-BD')}-day activity logs`
+        limits.staffAccounts === 0 ? 'No staff accounts' : formatLimit(limits.staffAccounts, 'staff account'),
+        plan.storeBuilderAccess === 'none'
+            ? 'Fixed responsive storefront'
+            : plan.storeBuilderAccess === 'full'
+                ? 'Full Store Builder'
+                : 'Limited Store Builder'
     ];
 
     const featureLabels = [
+        ['aiProductCreation', 'AI product creation'],
+        ['storeBuilder', 'Store Builder'],
+        ['homepageSeo', 'Homepage SEO'],
         ['growthCenter', 'Growth Center'],
         ['customDomain', 'Custom domain'],
         ['customerSection', 'Customer management'],
         ['trustSystem', 'Trust system'],
         ['notifications', 'Notification Center'],
+        ['lowStockAlerts', 'Low-stock alerts'],
         ['scheduledSales', 'Scheduled sales'],
         ['scheduledProductPublishing', 'Scheduled product publishing']
     ];
@@ -51,12 +60,14 @@ const serializePublicPlan = (plan) => {
         period: '/month',
         yearly: `৳${Number(plan.yearlyPrice || 0).toLocaleString('en-BD')}/year`,
         currency: plan.currency || 'BDT',
-        audience: slug === 'starter'
+        audience: slug === 'beginner'
+            ? 'Best for launching your first store'
+            : slug === 'starter'
             ? 'Best for new sellers'
             : slug === 'growth'
                 ? 'Best for growing businesses'
                 : 'Best for established brands',
-        cta: slug === 'starter' ? 'Start Free Trial' : `Choose ${plan.name}`,
+        cta: ['beginner', 'starter'].includes(slug) ? 'Start Free Trial' : `Choose ${plan.name}`,
         highlighted: slug === 'growth',
         badge: slug === 'growth' ? 'Recommended' : null,
         features: buildPlanFeatures(plan)
@@ -66,7 +77,7 @@ const serializePublicPlan = (plan) => {
 exports.getPublicPlans = async (req, res) => {
     try {
         const plans = await Promise.all(
-            ['starter', 'growth', 'pro'].map(getPlanBySlugOrNameOrDefault)
+            ['beginner', 'starter', 'growth', 'pro'].map(getPlanBySlugOrNameOrDefault)
         );
 
         return res.status(200).json({

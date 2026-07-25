@@ -1,4 +1,5 @@
 const Banner = require('../models/Banner');
+const { hasFeature } = require('../services/shops/featureAccessService');
 const Product = require('../models/Product');
 const cache = require('../services/cacheService');
 
@@ -228,6 +229,9 @@ exports.getActiveBanners = async (req, res) => {
                 success: false,
                 message: "Tenant resolution failed. Shop ID missing."
             });
+        }
+        if (!(await hasFeature(shop_id, 'scheduledBanners'))) {
+            return res.status(200).json([]);
         }
 
         // 🔹 2. Fetch only ACTIVE banners belonging to THIS specific shop

@@ -89,6 +89,44 @@ const completeJob = async (job) => (
     )
 );
 
+const cancelJob = async (job, reason = 'Cancelled') => (
+    Job.updateOne(
+        {
+            _id: job._id,
+            ...(job.lockId ? { lockId: job.lockId } : {})
+        },
+        {
+            $set: {
+                status: 'cancelled',
+                cancelledAt: new Date(),
+                cancellationReason: String(reason || 'Cancelled').slice(0, 500),
+                lockedAt: null,
+                lockId: '',
+                lastError: ''
+            }
+        }
+    )
+);
+
+const cancelJobs = async (query = {}, reason = 'Cancelled') => (
+    Job.updateMany(
+        {
+            ...query,
+            status: { $in: ['queued', 'failed', 'running'] }
+        },
+        {
+            $set: {
+                status: 'cancelled',
+                cancelledAt: new Date(),
+                cancellationReason: String(reason || 'Cancelled').slice(0, 500),
+                lockedAt: null,
+                lockId: '',
+                lastError: ''
+            }
+        }
+    )
+);
+
 const failJob = async (job, error) => {
     const attempts = Number(job.attempts || 0);
     const maxAttempts = Number(job.maxAttempts || 5);
@@ -139,6 +177,8 @@ module.exports = {
     enqueueJob,
     claimNextJob,
     completeJob,
+    cancelJob,
+    cancelJobs,
     failJob,
     requeueJobs
 };

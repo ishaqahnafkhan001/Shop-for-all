@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Plus, Edit, Trash2, Package, Layers,
-    TrendingDown, Eye, AlertCircle, Search
+    TrendingDown, Eye, AlertCircle, Search, Loader2
 } from 'lucide-react';
 
 // UI Components
@@ -11,6 +11,7 @@ import API from '../../../api/api';
 import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 import PaginationBar from '../../../components/ui/PaginationBar.jsx';
 import PageRefreshButton from '../../../components/ui/PageRefreshButton.jsx';
+import { useAuth } from '../../../context/AuthContext.jsx';
 
 // Hooks
 import { useProducts } from '../../../hooks/useProducts';
@@ -19,6 +20,7 @@ const ProductDetailModal = lazy(() => import('../../../components/products/Produ
 
 const ProductList = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const {
         products,
@@ -35,6 +37,12 @@ const ProductList = () => {
     // --- State for Detail Modal ---
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [upgradePending, setUpgradePending] = useState(false);
+    const productUsage = user?.planAccess?.usageDetails?.products;
+    const isBeginner = user?.planAccess?.planKey === 'beginner';
+    const productsUsed = Number(productUsage?.used ?? pagination.total ?? 0);
+    const productLimit = Number(productUsage?.limit || 25);
+    const isAtProductLimit = isBeginner && productsUsed >= productLimit;
 
     useEffect(() => {
         const nextFilters = {};
@@ -77,6 +85,25 @@ const ProductList = () => {
         setSelectedProduct(null);
     };
 
+    const openProductUpgrade = async (returnTo = '/dashboard/products') => {
+        if (upgradePending) return;
+        setUpgradePending(true);
+        try {
+            const response = await API.post('/admin/billing/upgrade-intents', {
+                limitKey: 'productCount',
+                returnTo
+            });
+            const token = response.data?.data?.token;
+            navigate(token
+                ? `/dashboard/billing?intent=${encodeURIComponent(token)}`
+                : '/dashboard/billing');
+        } catch {
+            navigate('/dashboard/billing');
+        } finally {
+            setUpgradePending(false);
+        }
+    };
+
     // --- Table Column Definitions ---
     const columns = [
         {
@@ -112,7 +139,7 @@ const ProductList = () => {
             label: 'Inventory Status',
             render: (row) => {
                 const stock = row.totalStock ?? 0;
-                const isLowStock = stock > 0 && stock < 5;
+                const isLowStock = !isBeginner && stock > 0 && stock < 5;
                 return (
                     <div className="flex flex-col justify-center gap-1.5">
                         <div className="flex items-center gap-1.5">
@@ -213,15 +240,62 @@ const ProductList = () => {
                         loading={loading && products.length > 0}
                         label="Refresh products"
                     />
-                    <Link
-                        to="/dashboard/products/add"
-                        className="w-full sm:w-auto flex min-h-11 items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm shadow-blue-200 transition-all active:scale-95 duration-200"
-                    >
-                        <Plus size={20} className="mr-2" strokeWidth={2} />
-                        Add Product
-                    </Link>
+                    {isAtProductLimit ? (
+                        <button
+                            type="button"
+                            onClick={() => openProductUpgrade('/dashboard/products/add')}
+                            disabled={upgradePending}
+                            className="flex min-h-11 w-full items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 font-medium text-white transition hover:bg-slate-800 sm:w-auto"
+                        >
+                            {upgradePending && <Loader2 size={18} className="mr-2 animate-spin" />}
+                            View upgrade options
+                        </button>
+                    ) : (
+                        <Link
+                            to="/dashboard/products/add"
+                            className="w-full sm:w-auto flex min-h-11 items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm shadow-blue-200 transition-all active:scale-95 duration-200"
+                        >
+                            <Plus size={20} className="mr-2" strokeWidth={2} />
+                            Add Product
+                        </Link>
+                    )}
                 </div>
             </div>
+
+            {isBeginner && (
+                <section className={`rounded-2xl border p-4 ${productsUsed >= 23 ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-white'}`}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="font-black text-slate-900">Products used: {productsUsed} of {productLimit}</p>
+                            <p className="mt-1 text-sm text-slate-600">
+                                {isAtProductLimit
+                                    ? 'You reached the Beginner catalogue limit. Existing products, stock, orders, and returns remain fully manageable.'
+                                    : productsUsed >= 23
+                                        ? `Only ${productLimit - productsUsed} product slots remain.`
+                                        : productsUsed >= 20
+                                            ? 'Your catalogue is growing. Upgrade when you need more room.'
+                                            : 'Your Beginner plan includes everything needed to manage this catalogue.'}
+                            </p>
+                        </div>
+                        {productsUsed >= 20 && (
+                            <button
+                                type="button"
+                                onClick={() => openProductUpgrade('/dashboard/products')}
+                                disabled={upgradePending}
+                                className="text-left text-sm font-black text-blue-700 underline underline-offset-4 disabled:opacity-60"
+                            >
+                                Compare eligible plans
+                            </button>
+                        )}
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                            className={`h-full rounded-full ${isAtProductLimit ? 'bg-amber-600' : 'bg-blue-600'}`}
+                            style={{ width: `${Math.min((productsUsed / productLimit) * 100, 100)}%` }}
+                        />
+                    </div>
+                </section>
+            )}
 
             <div className="grid gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_180px_150px_170px]">
                 <label className="relative block">
@@ -325,7 +399,7 @@ const ProductList = () => {
                                         </p>
                                         <div className="flex items-center gap-2 mt-2">
                                             <span className="text-slate-900 font-bold text-sm">৳{p.finalPrice?.toLocaleString()}</span>
-                                            {p.totalStock < 5 && p.totalStock > 0 && (
+                                            {!isBeginner && p.totalStock < 5 && p.totalStock > 0 && (
                                                 <span className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-bold flex items-center border border-amber-100">
                                                     Low Stock
                                                 </span>

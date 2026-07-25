@@ -111,7 +111,6 @@ const createTrialForShop = async (shopOrId, options = {}) => {
     const existing = await getCurrentSubscriptionForShop(shop._id, { session });
     if (existing) return existing;
 
-    const effectiveTrialPlan = await getPlanIdentity('Starter', session);
     const intendedPlanRef = options.intendedPlanId ||
         options.intendedPlanSlug ||
         options.selectedPlanSlug ||
@@ -120,6 +119,10 @@ const createTrialForShop = async (shopOrId, options = {}) => {
         shop.plan?.intendedPlanName ||
         'Starter';
     const intendedPlan = await getPlanIdentity(intendedPlanRef, session);
+    const effectiveTrialPlan = intendedPlan;
+    const trialPlanDetails = await getPlanByIdOrNameOrDefault(
+        intendedPlan.id || intendedPlan.slug || intendedPlan.name
+    );
     const trialEndsAt = shop.plan?.trialEndsAt || addDays(now, TRIAL_DAYS);
 
     const [subscription] = await Subscription.create([{
@@ -142,7 +145,10 @@ const createTrialForShop = async (shopOrId, options = {}) => {
                     'plan.name': 'Trial',
                     'plan.status': 'Trialing',
                     'plan.trialEndsAt': trialEndsAt,
-                    'plan.productLimit': shop.plan?.productLimit || 100,
+                    'plan.productLimit': trialPlanDetails?.limits?.productCount ??
+                        trialPlanDetails?.productLimit ??
+                        shop.plan?.productLimit ??
+                        100,
                     'plan.intendedPlanName': intendedPlan.name,
                     'plan.intendedPlanSlug': intendedPlan.slug
                 }
@@ -160,6 +166,7 @@ const createTrialForShop = async (shopOrId, options = {}) => {
             newValue: {
                 status: subscription.status,
                 planKey: effectiveTrialPlan.slug,
+                planName: effectiveTrialPlan.name,
                 trialStartedAt: now,
                 trialEndsAt
             },
@@ -306,6 +313,12 @@ const activateSubscription = async ({
     current.pendingPlanId = null;
     current.pendingPlanName = '';
     current.pendingPlanSlug = '';
+    current.pendingPlanEffectiveAt = null;
+    if (current.reconciliation?.status && ['pending', 'failed'].includes(current.reconciliation.status)) {
+        current.reconciliation.status = 'cancelled';
+        current.reconciliation.cancelledAt = now;
+        current.reconciliation.reason = 'Cancelled because a new plan payment was activated.';
+    }
     current.graceEndsAt = undefined;
     current.suspendedAt = undefined;
     current.suspensionReason = '';

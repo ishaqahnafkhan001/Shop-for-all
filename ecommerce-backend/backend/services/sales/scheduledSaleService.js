@@ -427,6 +427,7 @@ const applyScheduledSaleToProduct = (product = {}, sales = [], collectionMembers
 const applyScheduledSalesToProducts = async ({ shopId, products = [], now = new Date() }) => {
     const ids = products.map(product => product?._id).filter(Boolean);
     if (!ids.length) return products;
+    if (!(await hasFeature(shopId, 'scheduledSales'))) return products;
     const [sales, collectionMembership] = await Promise.all([
         getActiveScheduledSales({ shopId, productIds: ids, now }),
         getCollectionMembershipForProducts({ shopId, productIds: ids })
@@ -485,6 +486,7 @@ const getActiveSalePopups = async ({ shopId, now = new Date(), limit = 3 } = {})
 };
 
 const getScheduledSaleLinePrice = async ({ shopId, product, variant, session }) => {
+    if (!(await hasFeature(shopId, 'scheduledSales'))) return null;
     const [sales, collectionMembership] = await Promise.all([
         getActiveScheduledSales({
             shopId,
