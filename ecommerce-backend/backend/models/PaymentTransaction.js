@@ -52,7 +52,8 @@ const paymentTransactionSchema = new mongoose.Schema({
     screenshotUrl: {
         type: String,
         trim: true,
-        default: ''
+        default: '',
+        select: false
     },
     status: {
         type: String,
@@ -92,5 +93,7 @@ paymentTransactionSchema.index(
 );
 paymentTransactionSchema.index({ invoiceId: 1, status: 1 });
 paymentTransactionSchema.index({ shopId: 1, status: 1, createdAt: -1 });
+paymentTransactionSchema.index({ shopId: 1, createdAt: -1 });
+paymentTransactionSchema.index({ status: 1, updatedAt: 1 });
 
 module.exports = mongoose.model('PaymentTransaction', paymentTransactionSchema);

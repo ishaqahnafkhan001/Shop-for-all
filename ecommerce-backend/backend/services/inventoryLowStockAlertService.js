@@ -9,6 +9,7 @@ const {
 } = require('./vendorNotificationEmailService');
 const logger = require('./logger');
 const { hasFeature } = require('./shops/featureAccessService');
+const { assertJobEntitlementStillValid } = require('./workers/jobEntitlementService');
 
 const LOW_STOCK_ALERT_QUEUE = 'inventory-alerts';
 const LOW_STOCK_ALERT_JOB = 'inventory.low_stock_alert';
@@ -311,6 +312,10 @@ const processLowStockAlertJob = async (job) => {
     const title = `Low stock: ${productTitle}`;
     const message = `${productTitle} (${variantLabel}) has ${currentStock} left. Low-stock threshold is ${effectiveThreshold}.`;
 
+    await assertJobEntitlementStillValid({
+        job,
+        feature: 'lowStockAlerts'
+    });
     await createNotification({
         shop_id: job.shop_id,
         type: 'inventory',
@@ -369,6 +374,10 @@ const processLowStockAlertJob = async (job) => {
         actionUrl
     });
 
+    await assertJobEntitlementStillValid({
+        job,
+        feature: 'lowStockAlerts'
+    });
     await sendVendorNotificationEmail({
         to: recipients,
         subject: `Low stock warning: ${productTitle}`,

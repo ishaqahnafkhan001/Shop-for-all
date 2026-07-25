@@ -171,7 +171,7 @@ test('custom domain save rejects platform, duplicate, and plan-disabled domains'
         customDomain: { domain: 'starter-domain.example.com' }
     });
     assert.equal(blockedByFeature.status, 403);
-    assert.equal(blockedByFeature.body.code, 'FEATURE_NOT_AVAILABLE');
+    assert.equal(blockedByFeature.body.code, 'FEATURE_NOT_INCLUDED');
 
     await setShopPlan({ shopId: shopA._id, plan: ctx.data.plans.growth });
     await Shop.updateOne(

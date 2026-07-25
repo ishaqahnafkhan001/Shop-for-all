@@ -216,6 +216,9 @@ const cleanupExpiredStoreBuilderAssets = async ({ limit = 100 } = {}) => {
         const referenced = await Shop.exists({
             _id: asset.shop_id,
             $or: [
+                { 'branding.logoAssetId': asset._id },
+                { 'branding.faviconAssetId': asset._id },
+                { 'branding.heroImageAssetId': asset._id },
                 { 'theme.logoUrl': asset.url },
                 { 'theme.faviconUrl': asset.url },
                 { 'theme.checkoutBranding.logoUrl': asset.url },

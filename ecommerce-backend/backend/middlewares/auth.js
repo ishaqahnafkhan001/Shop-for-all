@@ -5,8 +5,7 @@ const Shop = require('../models/Shop');
 const ShopMembership = require('../models/ShopMembership');
 const { isVerificationSuspension } = require('../services/vendorVerificationService');
 const { isBillingSuspension } = require('../services/billing/subscriptionService');
-
-const PLATFORM_ROLES = ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'];
+const { PLATFORM_ROLES } = require('../config/platformPermissions');
 
 const getTokenFromRequest = (req) => {
     if (req.cookies && req.cookies.token) return req.cookies.token;
@@ -79,7 +78,8 @@ const attachUserFromToken = async (req, token) => {
             email: legacyUser.email,
             shopId: legacyUser.shop_id,
             shop_id: legacyUser.shop_id,
-            permissions: legacyUser.permissions
+            permissions: legacyUser.permissions,
+            authTime: Number(decoded.authTime || (decoded.iat ? decoded.iat * 1000 : 0))
         };
 
         req.tenantId = PLATFORM_ROLES.includes(legacyUser.role)

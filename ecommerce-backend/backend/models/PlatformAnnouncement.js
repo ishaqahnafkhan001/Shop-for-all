@@ -29,6 +29,18 @@ const platformAnnouncementSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    targetPlans: [{
+        type: String,
+        enum: ['beginner', 'starter', 'growth', 'pro'],
+        lowercase: true,
+        trim: true
+    }],
+    targetStatuses: [{
+        type: String,
+        enum: ['trialing', 'active', 'grace', 'past_due', 'pending_approval', 'suspended', 'cancelled'],
+        lowercase: true,
+        trim: true
+    }],
     targetPlanId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'VendorPlan',
@@ -77,5 +89,6 @@ const platformAnnouncementSchema = new mongoose.Schema({
 platformAnnouncementSchema.index({ isPublished: 1, archivedAt: 1, createdAt: -1 });
 platformAnnouncementSchema.index({ severity: 1, audience: 1, createdAt: -1 });
 platformAnnouncementSchema.index({ targetAudience: 1, targetPlan: 1, targetPlanId: 1, targetShopId: 1, expiresAt: 1 });
+platformAnnouncementSchema.index({ targetPlans: 1, targetStatuses: 1, isPublished: 1, expiresAt: 1 });
 
 module.exports = mongoose.model('PlatformAnnouncement', platformAnnouncementSchema);

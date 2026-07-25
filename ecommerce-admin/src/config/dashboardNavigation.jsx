@@ -63,6 +63,7 @@ export const vendorNavigationGroups = [
         id: 'storefront',
         label: 'Storefront',
         items: [
+            { id: 'store-branding', label: 'Store Branding', path: '/dashboard/settings/store-branding', icon: Images, permission: 'settings', feature: 'basicStoreBranding' },
             { id: 'store-builder', label: 'Store Builder', path: '/dashboard/store-builder', icon: Palette, permission: 'storeBuilder', feature: 'storeBuilder' },
             { id: 'custom-domain', label: 'Custom Domain', path: '/dashboard/domain', icon: Globe, permission: 'storeBuilder', feature: 'customDomain' },
             { id: 'shipping', label: 'Shipping', path: '/dashboard/shipping', icon: Truck, permission: 'shipping' },

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { PLATFORM_ROLES } = require('../config/platformPermissions');
 
 const userSchema = new mongoose.Schema({
     fullName: {
@@ -18,10 +19,11 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Password is required'],
+        select: false
     },
     role: {
         type: String,
-        enum: ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport', 'VendorAdmin', 'VendorStaff', 'Customer'],
+        enum: [...PLATFORM_ROLES, 'VendorAdmin', 'VendorStaff', 'Customer'],
         default: 'Customer'
     },
     status: {
@@ -76,7 +78,7 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Shop',
         required: function() {
-            return !['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(this.role);
+            return !PLATFORM_ROLES.includes(this.role);
         },
         index: true
     },

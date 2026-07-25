@@ -64,6 +64,15 @@ API.interceptors.response.use(
             csrfToken = null;
         }
 
+        if (
+            error.response?.status === 403 &&
+            error.response?.data?.code === 'RECENT_AUTH_REQUIRED' &&
+            !String(error.config?.url || '').includes('/auth/step-up') &&
+            typeof window !== 'undefined'
+        ) {
+            window.dispatchEvent(new CustomEvent('platform:recent-auth-required'));
+        }
+
         return Promise.reject(error);
     }
 );

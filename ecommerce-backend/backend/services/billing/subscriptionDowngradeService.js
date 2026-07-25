@@ -179,6 +179,10 @@ const scheduleDowngrade = async ({
         retainedProductIds: preview.resolvedRetainedProductIds,
         status: 'pending',
         attempts: 0,
+        maxAttempts: 6,
+        reconciliationType: 'downgrade',
+        lastAttemptAt: null,
+        nextRetryAt: effectiveAt,
         lastError: '',
         scheduledAt: now,
         startedAt: null,
@@ -253,12 +257,23 @@ const executeScheduledDowngrade = async ({
         {
             _id: subscriptionId,
             'reconciliation.status': { $in: ['pending', 'failed'] },
-            pendingPlanEffectiveAt: { $lte: now }
+            pendingPlanEffectiveAt: { $lte: now },
+            $or: [
+                { 'reconciliation.nextRetryAt': null },
+                { 'reconciliation.nextRetryAt': { $lte: now } }
+            ],
+            $expr: {
+                $lt: [
+                    '$reconciliation.attempts',
+                    { $ifNull: ['$reconciliation.maxAttempts', 6] }
+                ]
+            }
         },
         {
             $set: {
                 'reconciliation.status': 'running',
                 'reconciliation.startedAt': now,
+                'reconciliation.lastAttemptAt': now,
                 'reconciliation.lastError': ''
             },
             $inc: { 'reconciliation.attempts': 1 }
@@ -292,8 +307,13 @@ const executeScheduledDowngrade = async ({
         subscription.pendingPlanEffectiveAt = null;
         subscription.reconciliation.status = 'completed';
         subscription.reconciliation.completedAt = new Date();
+        subscription.reconciliation.nextRetryAt = null;
         subscription.reconciliation.lastError = '';
         subscription.reconciliation.summary = summary;
+        subscription.entitlementVersion = Math.max(
+            0,
+            Number(subscription.entitlementVersion) || 0
+        ) + 1;
         await subscription.save();
 
         await Shop.updateOne(
@@ -332,9 +352,32 @@ const executeScheduledDowngrade = async ({
         });
         return subscription;
     } catch (error) {
+        const attempts = Number(subscription.reconciliation.attempts) || 1;
+        const maxAttempts = Number(subscription.reconciliation.maxAttempts) || 6;
         subscription.reconciliation.status = 'failed';
         subscription.reconciliation.lastError = String(error?.message || error).slice(0, 1000);
+        subscription.reconciliation.nextRetryAt = attempts >= maxAttempts
+            ? null
+            : new Date(now.getTime() + Math.min(
+                6 * 60 * 60 * 1000,
+                (2 ** Math.max(0, attempts - 1)) * 30 * 1000
+            ));
         await subscription.save();
+        if (attempts >= maxAttempts) {
+            await logPlatformAudit({
+                action: 'billing.downgrade_reconciliation_exhausted',
+                entityType: 'Subscription',
+                entityId: subscription._id,
+                shop_id: subscription.shopId,
+                message: 'Scheduled downgrade reconciliation exhausted automatic retries',
+                reason: subscription.reconciliation.lastError,
+                severity: 'critical',
+                metadata: {
+                    operationId: subscription.reconciliation.operationId,
+                    attempts
+                }
+            });
+        }
         throw error;
     }
 };
@@ -342,7 +385,17 @@ const executeScheduledDowngrade = async ({
 const processDueDowngrades = async ({ limit = 20, now = new Date() } = {}) => {
     const due = await Subscription.find({
         'reconciliation.status': { $in: ['pending', 'failed'] },
-        pendingPlanEffectiveAt: { $lte: now }
+        pendingPlanEffectiveAt: { $lte: now },
+        $or: [
+            { 'reconciliation.nextRetryAt': null },
+            { 'reconciliation.nextRetryAt': { $lte: now } }
+        ],
+        $expr: {
+            $lt: [
+                '$reconciliation.attempts',
+                { $ifNull: ['$reconciliation.maxAttempts', 6] }
+            ]
+        }
     }).select('_id').sort({ pendingPlanEffectiveAt: 1 }).limit(limit).lean();
 
     let completed = 0;

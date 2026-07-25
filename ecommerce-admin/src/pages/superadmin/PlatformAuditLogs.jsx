@@ -4,6 +4,55 @@ import { ClipboardList, Eye, Search, X } from 'lucide-react';
 import API from '../../api/api';
 import { EmptyState, PaginationControls, SectionCard, StatusBadge } from './SuperAdminComponents.jsx';
 
+const AUDIT_METADATA_FIELDS = {
+    reason: 'Reason',
+    previousStatus: 'Previous status',
+    newStatus: 'New status',
+    previousPeriodEnd: 'Previous period end',
+    newPeriodEnd: 'New period end',
+    days: 'Extension days',
+    oldPlanKey: 'Previous plan',
+    newPlanKey: 'New plan',
+    newPlanName: 'New plan name',
+    changedFeatures: 'Changed features',
+    documentType: 'Document type',
+    previousBadgeStatus: 'Previous badge status',
+    newBadgeStatus: 'New badge status',
+    previousDomainStatus: 'Previous domain status',
+    newDomainStatus: 'New domain status',
+    invoiceId: 'Invoice',
+    paymentId: 'Payment',
+    subscriptionId: 'Subscription',
+    shopId: 'Shop'
+};
+
+const formatAuditValue = (value) => {
+    if (Array.isArray(value)) return value.join(', ');
+    if (value && typeof value === 'object') return 'Recorded in the protected audit event';
+    if (value === null || value === undefined || value === '') return '-';
+    return String(value);
+};
+
+const SafeAuditMetadata = ({ metadata = {} }) => {
+    const entries = Object.entries(AUDIT_METADATA_FIELDS)
+        .filter(([key]) => Object.prototype.hasOwnProperty.call(metadata, key));
+
+    if (!entries.length) {
+        return <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No additional display-safe details were recorded.</p>;
+    }
+
+    return (
+        <dl className="grid gap-3 sm:grid-cols-2">
+            {entries.map(([key, label]) => (
+                <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</dt>
+                    <dd className="mt-1 break-words text-sm font-semibold text-slate-800">{formatAuditValue(metadata[key])}</dd>
+                </div>
+            ))}
+        </dl>
+    );
+};
+
 const PlatformAuditLogs = () => {
     const [logs, setLogs] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });
@@ -130,7 +179,7 @@ const PlatformAuditLogs = () => {
                             {selected.reason && <p><span className="font-bold text-slate-950">Reason:</span> {selected.reason}</p>}
                             <div>
                                 <p className="mb-2 font-bold text-slate-950">Metadata</p>
-                                <pre className="overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{JSON.stringify(selected.metadata || {}, null, 2)}</pre>
+                                <SafeAuditMetadata metadata={selected.metadata || {}} />
                             </div>
                         </div>
                     </div>

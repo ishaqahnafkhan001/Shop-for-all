@@ -4,6 +4,7 @@ const { enqueueJob } = require('../jobQueueService');
 const cache = require('../cacheService');
 const logger = require('../logger');
 const { hasFeature } = require('../shops/featureAccessService');
+const { assertJobEntitlementStillValid } = require('../workers/jobEntitlementService');
 
 const SCHEDULED_PRODUCT_QUEUE = 'scheduled-products';
 const PUBLISH_PRODUCT_JOB = 'products.publish_scheduled';
@@ -81,7 +82,7 @@ const canPublishForShop = async (shopId) => {
     return true;
 };
 
-const publishScheduledProduct = async ({ productId, shopId, source = 'worker' }) => {
+const publishScheduledProduct = async ({ productId, shopId, source = 'worker', job = null }) => {
     if (!productId || !shopId) {
         throw new Error('Scheduled product publish requires productId and shopId');
     }
@@ -106,6 +107,12 @@ const publishScheduledProduct = async ({ productId, shopId, source = 'worker' })
         return null;
     }
 
+    if (job) {
+        await assertJobEntitlementStillValid({
+            job,
+            feature: 'scheduledProductPublishing'
+        });
+    }
     const now = new Date();
     const product = await Product.findOneAndUpdate(
         {
@@ -156,7 +163,8 @@ const processScheduledProductJob = async (job) => {
     return publishScheduledProduct({
         productId: job.payload?.productId,
         shopId: job.shop_id,
-        source: `job:${job._id}`
+        source: `job:${job._id}`,
+        job
     });
 };
 

@@ -1,6 +1,7 @@
 // routes/authRoutes.js
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
 // =========================
@@ -24,7 +25,8 @@ const {
     forgotPassword,
     verifyResetOtp,
     resetPassword,
-    updatePassword
+    updatePassword,
+    stepUpAuthentication
 } = require('../controllers/authController');
 const {
     getSupportInvitation,
@@ -68,6 +70,19 @@ router.post(
 router.post(
     '/login',
     login
+);
+
+router.post(
+    '/step-up',
+    protect,
+    rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: process.env.NODE_ENV === 'production' ? 8 : 80,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { success: false, error: 'Too many authentication attempts. Please try again later.' }
+    }),
+    stepUpAuthentication
 );
 
 router.get(

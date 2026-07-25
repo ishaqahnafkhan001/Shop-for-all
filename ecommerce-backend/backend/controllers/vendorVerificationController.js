@@ -28,9 +28,14 @@ const { maskPhone, normalizeBDPhone } = require('../utils/phoneUtils');
 const { syncShopVendorVerifiedFlag } = require('../services/verification/vendorVerificationStatusService');
 const {
     DOCUMENT_TYPES,
-    getSignedNidDocumentUrl,
-    serializeVerificationPrivacy
+    getSignedNidDocumentUrl
 } = require('../services/vendorVerificationPrivacyService');
+const { serializeVerificationSummary } = require('../services/superAdmin/superAdminSerializers');
+const {
+    createAuditIntent,
+    materializeAuditIntent,
+    runCriticalGovernanceAction
+} = require('../services/platformAuditOutboxService');
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 const DEFAULT_LIMIT = 10;
@@ -90,10 +95,9 @@ const invalidateShopCache = async (shop) => {
 
 const getVerificationById = async (id) => {
     if (!isValidObjectId(id)) return null;
-    return VendorVerification.findById(id);
+    return VendorVerification.findById(id)
+        .select('+nidNumber +nidFrontUrl +nidBackUrl +nidDocuments.front +nidDocuments.back');
 };
-
-const serializeVerification = (verification, options = {}) => serializeVerificationPrivacy(verification, options);
 
 const validateDocumentType = (type) => (
     Object.values(DOCUMENT_TYPES).includes(type) ? type : null
@@ -226,7 +230,8 @@ exports.getVendorVerificationDocument = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid document type' });
         }
 
-        const verification = await VendorVerification.findOne({ shop_id: req.tenantId });
+        const verification = await VendorVerification.findOne({ shop_id: req.tenantId })
+            .select('+nidFrontUrl +nidBackUrl +nidDocuments.front +nidDocuments.back');
         if (!verification) {
             return res.status(404).json({ success: false, error: 'Verification not found' });
         }
@@ -501,7 +506,8 @@ exports.getVendorVerifications = async (req, res) => {
         }
 
         if (search) {
-            const regex = new RegExp(escapeRegex(String(search).trim()), 'i');
+            const normalizedSearch = String(search).trim().slice(0, 80);
+            const regex = new RegExp(escapeRegex(normalizedSearch), 'i');
             const [shops, owners] = await Promise.all([
                 Shop.find({ $or: [{ shopName: regex }, { subdomain: regex }] }).select('_id').lean(),
                 User.find({
@@ -527,6 +533,7 @@ exports.getVendorVerifications = async (req, res) => {
 
         const [verifications, total, summary] = await Promise.all([
             VendorVerification.find(query)
+                .select('+nidNumber')
                 .populate('shop_id', 'shopName subdomain isActive approvalStatus suspensionReason verification createdAt')
                 .populate('owner_id', 'fullName email')
                 .populate('reviewedBy', 'fullName email')
@@ -540,7 +547,7 @@ exports.getVendorVerifications = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: verifications.map(verification => serializeVerification(verification, { includeFullNid: false })),
+            data: verifications.map(serializeVerificationSummary),
             summary,
             pagination: paginationPayload({ page, limit, total })
         });
@@ -553,6 +560,7 @@ exports.getVendorVerifications = async (req, res) => {
 exports.getVendorVerificationById = async (req, res) => {
     try {
         const verification = await VendorVerification.findById(req.params.id)
+            .select('+nidNumber')
             .populate('shop_id', 'shopName subdomain isActive approvalStatus suspensionReason verification createdAt')
             .populate('owner_id', 'fullName email')
             .populate('reviewedBy', 'fullName email')
@@ -564,7 +572,7 @@ exports.getVendorVerificationById = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: serializeVerification(verification, { includeFullNid: true })
+            data: serializeVerificationSummary(verification)
         });
     } catch (err) {
         console.error('Get vendor verification detail error:', err);
@@ -584,20 +592,38 @@ exports.getSuperAdminVendorVerificationDocument = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Verification not found' });
         }
 
+        const reason = String(req.query.reason || '').trim();
+        if (!reason) {
+            return res.status(400).json({
+                success: false,
+                code: 'DOCUMENT_ACCESS_REASON_REQUIRED',
+                error: 'A reason is required to view a verification document.'
+            });
+        }
+
         const signed = await getSignedNidDocumentUrl({ verification, type });
-
-        await logPlatformAudit({
-            req,
-            action: 'vendor_verification.document_viewed',
-            entityType: 'VendorVerification',
-            entityId: verification._id,
-            entityLabel: `NID ${type}`,
-            shop_id: verification.shop_id,
-            message: `Super Admin viewed vendor verification ${type} document`,
-            metadata: { documentType: type },
-            severity: 'warning'
+        const auditIntent = await createAuditIntent({
+            audit: {
+                req,
+                action: 'vendor_verification.document_viewed',
+                entityType: 'VendorVerification',
+                entityId: verification._id,
+                entityLabel: `NID ${type}`,
+                shop_id: verification.shop_id,
+                message: `Platform reviewer viewed vendor verification ${type} document`,
+                reason,
+                metadata: { documentType: type },
+                severity: 'warning'
+            }
         });
+        try {
+            await materializeAuditIntent(auditIntent);
+        } catch (auditError) {
+            console.error('[Verification] Document audit materialization deferred:', auditError.message);
+        }
 
+        res.set('Cache-Control', 'no-store, private');
+        res.set('Pragma', 'no-cache');
         res.status(200).json({ success: true, url: signed.url, expiresAt: signed.expiresAt });
     } catch (err) {
         console.error('Get super admin verification document error:', err);
@@ -612,27 +638,72 @@ exports.approveVendorVerification = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Verification not found' });
         }
 
-        const { shop } = await approveVerification({ verification, reviewer: req.user, req });
+        if (!['pending', 'rejected'].includes(verification.status)) {
+            return res.status(409).json({
+                success: false,
+                code: 'VERIFICATION_INVALID_STATE',
+                error: `Verification cannot be approved while it is ${verification.status}.`
+            });
+        }
+
+        const result = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const current = await VendorVerification.findOne({
+                    _id: verification._id,
+                    status: verification.status,
+                    __v: verification.__v
+                }).session(session);
+                if (!current) {
+                    const conflict = new Error('Another reviewer changed this verification. Reload and try again.');
+                    conflict.code = 'VERIFICATION_REVIEW_CONFLICT';
+                    conflict.statusCode = 409;
+                    throw conflict;
+                }
+                return approveVerification({
+                    verification: current,
+                    reviewer: req.user,
+                    req,
+                    session,
+                    skipSideEffects: true
+                });
+            },
+            audit: ({ shop, verification: updated }) => ({
+                req,
+                action: 'vendor_verification.approved',
+                entityType: 'VendorVerification',
+                entityId: updated._id,
+                entityLabel: shop.shopName,
+                shop_id: shop._id,
+                message: `Vendor verification approved for ${shop.shopName}`,
+                metadata: { previousStatus: verification.status, status: updated.status }
+            })
+        });
+        const { shop, verification: updatedVerification, overall } = result;
         await invalidateShopCache(shop);
-        await logPlatformAudit({
-            req,
-            action: 'vendor_verification.approved',
-            entityType: 'VendorVerification',
-            entityId: verification._id,
-            entityLabel: shop.shopName,
+        await createNotification({
             shop_id: shop._id,
-            message: `Vendor verification approved for ${shop.shopName}`,
-            metadata: { status: verification.status }
+            type: 'system',
+            title: overall?.phoneVerified ? 'Vendor verification completed' : 'NID verification approved',
+            message: overall?.phoneVerified
+                ? 'Your NID and phone verification are complete. Your compliance verification is approved.'
+                : 'Your NID verification has been approved. Verify the owner phone number to complete vendor verification.',
+            entityType: 'VendorVerification',
+            entityId: updatedVerification._id,
+            severity: 'success'
         });
 
         res.status(200).json({
             success: true,
             message: 'Vendor verification approved',
-            data: buildStatusPayload({ shop, verification })
+            data: buildStatusPayload({ shop, verification: updatedVerification })
         });
     } catch (err) {
         console.error('Approve vendor verification error:', err);
-        res.status(400).json({ success: false, error: err.message || 'Failed to approve verification' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'VERIFICATION_APPROVAL_FAILED',
+            error: err.message || 'Failed to approve verification'
+        });
     }
 };
 
@@ -650,28 +721,78 @@ exports.rejectVendorVerification = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Verification not found' });
         }
 
-        const { shop } = await rejectVerification({ verification, reviewer: req.user, rejectionReason, adminNote, req });
+        if (!['pending', 'approved'].includes(verification.status)) {
+            return res.status(409).json({
+                success: false,
+                code: 'VERIFICATION_INVALID_STATE',
+                error: `Verification cannot be rejected while it is ${verification.status}.`
+            });
+        }
+
+        const result = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const current = await VendorVerification.findOne({
+                    _id: verification._id,
+                    status: verification.status,
+                    __v: verification.__v
+                }).session(session);
+                if (!current) {
+                    const conflict = new Error('Another reviewer changed this verification. Reload and try again.');
+                    conflict.code = 'VERIFICATION_REVIEW_CONFLICT';
+                    conflict.statusCode = 409;
+                    throw conflict;
+                }
+                return rejectVerification({
+                    verification: current,
+                    reviewer: req.user,
+                    rejectionReason,
+                    adminNote,
+                    req,
+                    session,
+                    skipSideEffects: true
+                });
+            },
+            audit: ({ shop, verification: updated }) => ({
+                req,
+                action: 'vendor_verification.rejected',
+                entityType: 'VendorVerification',
+                entityId: updated._id,
+                entityLabel: shop.shopName,
+                shop_id: shop._id,
+                message: `Vendor verification rejected for ${shop.shopName}`,
+                reason: rejectionReason,
+                metadata: {
+                    previousStatus: verification.status,
+                    status: updated.status,
+                    hasAdminNote: Boolean(adminNote)
+                },
+                severity: 'warning'
+            })
+        });
+        const { shop, verification: updatedVerification } = result;
         await invalidateShopCache(shop);
-        await logPlatformAudit({
-            req,
-            action: 'vendor_verification.rejected',
-            entityType: 'VendorVerification',
-            entityId: verification._id,
-            entityLabel: shop.shopName,
+        await createNotification({
             shop_id: shop._id,
-            message: `Vendor verification rejected for ${shop.shopName}`,
-            reason: rejectionReason,
-            metadata: { adminNote },
-            severity: 'warning'
+            type: 'system',
+            title: 'Store verification rejected',
+            message: `Your NID verification was rejected: ${rejectionReason}`,
+            entityType: 'VendorVerification',
+            entityId: updatedVerification._id,
+            severity: 'warning',
+            metadata: { reason: rejectionReason }
         });
 
         res.status(200).json({
             success: true,
             message: 'Vendor verification rejected',
-            data: buildStatusPayload({ shop, verification })
+            data: buildStatusPayload({ shop, verification: updatedVerification })
         });
     } catch (err) {
         console.error('Reject vendor verification error:', err);
-        res.status(400).json({ success: false, error: err.message || 'Failed to reject verification' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'VERIFICATION_REJECTION_FAILED',
+            error: err.message || 'Failed to reject verification'
+        });
     }
 };

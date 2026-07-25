@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
     AlertTriangle,
@@ -18,6 +18,7 @@ import {
     X
 } from 'lucide-react';
 import API from '../../api/api';
+import useDebouncedValue from '../../hooks/useDebouncedValue.js';
 import { EmptyState, PaginationControls, SectionCard } from './SuperAdminComponents.jsx';
 
 const tabs = [
@@ -28,6 +29,9 @@ const tabs = [
     'Revenue by Plan',
     'Subscription Timeline'
 ];
+const tabKey = (tab) => tab.toLowerCase().replace(/\s+/g, '-');
+const tabFromKey = (value) => tabs.find(tab => tabKey(tab) === value) || 'Subscriptions';
+const positivePage = (value) => Math.max(1, Number(value) || 1);
 
 const money = (value) => `৳${Number(value || 0).toLocaleString()}`;
 
@@ -68,27 +72,79 @@ const StatusBadge = ({ value }) => (
     </span>
 );
 
-const ActionModal = ({ action, reason, setReason, note, setNote, onClose, onConfirm, loading }) => {
+const ActionModal = ({
+    action,
+    reason,
+    setReason,
+    note,
+    setNote,
+    extensionDays,
+    setExtensionDays,
+    onClose,
+    onConfirm,
+    loading
+}) => {
+    const titleId = useId();
+    const descriptionId = useId();
+    const dialogRef = useRef(null);
+    const initialFocusRef = useRef(null);
+
+    useEffect(() => {
+        if (!action) return undefined;
+        const previousFocus = document.activeElement;
+        window.setTimeout(() => initialFocusRef.current?.focus(), 0);
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape' && !loading) onClose();
+            if (event.key !== 'Tab') return;
+            const focusable = [...(dialogRef.current?.querySelectorAll(
+                'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled])'
+            ) || [])];
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            previousFocus?.focus?.();
+        };
+    }, [action, loading, onClose]);
+
     if (!action) return null;
     const requiresReason = action.requiresReason;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-            <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                aria-describedby={descriptionId}
+                className="w-full max-w-lg rounded-2xl bg-white shadow-2xl"
+            >
                 <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                    <h2 className="text-lg font-black text-slate-950">{action.title}</h2>
+                    <h2 id={titleId} className="text-lg font-black text-slate-950">{action.title}</h2>
                     <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close modal">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
                 <div className="space-y-4 p-5">
-                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                    <p id={descriptionId} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
                         {action.warning}
                     </p>
                     {requiresReason && (
                         <label className="block">
                             <span className="text-sm font-bold text-slate-950">Reason</span>
                             <textarea
+                                ref={initialFocusRef}
                                 value={reason}
                                 onChange={event => setReason(event.target.value)}
                                 rows={4}
@@ -101,11 +157,27 @@ const ActionModal = ({ action, reason, setReason, note, setNote, onClose, onConf
                         <label className="block">
                             <span className="text-sm font-bold text-slate-950">Admin note</span>
                             <textarea
+                                ref={requiresReason ? undefined : initialFocusRef}
                                 value={note}
                                 onChange={event => setNote(event.target.value)}
                                 rows={3}
                                 className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
                                 placeholder="Optional internal note."
+                            />
+                        </label>
+                    )}
+                    {action.requiresDays && (
+                        <label className="block">
+                            <span className="text-sm font-bold text-slate-950">Extension days</span>
+                            <input
+                                ref={action.requiresReason || action.allowNote ? undefined : initialFocusRef}
+                                type="number"
+                                min="1"
+                                max="365"
+                                step="1"
+                                value={extensionDays}
+                                onChange={event => setExtensionDays(event.target.value)}
+                                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
                             />
                         </label>
                     )}
@@ -116,7 +188,11 @@ const ActionModal = ({ action, reason, setReason, note, setNote, onClose, onConf
                     </button>
                     <button
                         onClick={onConfirm}
-                        disabled={loading || (requiresReason && !reason.trim())}
+                        disabled={
+                            loading ||
+                            (requiresReason && !reason.trim()) ||
+                            (action.requiresDays && (!Number.isInteger(Number(extensionDays)) || Number(extensionDays) < 1 || Number(extensionDays) > 365))
+                        }
                         className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                     >
                         {loading ? 'Working...' : action.confirmLabel}
@@ -128,57 +204,184 @@ const ActionModal = ({ action, reason, setReason, note, setNote, onClose, onConf
 };
 
 const SuperAdminBilling = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialTab = tabFromKey(searchParams.get('tab'));
+    const initialPage = positivePage(searchParams.get('page'));
     const [overview, setOverview] = useState({});
     const [subscriptions, setSubscriptions] = useState([]);
     const [invoices, setInvoices] = useState([]);
     const [payments, setPayments] = useState([]);
     const [timeline, setTimeline] = useState([]);
-    const [activeTab, setActiveTab] = useState('Subscriptions');
+    const [activeTab, setActiveTab] = useState(initialTab);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [action, setAction] = useState(null);
     const [reason, setReason] = useState('');
     const [note, setNote] = useState('');
-    const [filters, setFilters] = useState({ search: '', status: '' });
+    const [extensionDays, setExtensionDays] = useState('30');
+    const [filters, setFilters] = useState({
+        search: searchParams.get('search') || '',
+        status: searchParams.get('status') || ''
+    });
+    const debouncedSearch = useDebouncedValue(filters.search, 300);
     const [pagination, setPagination] = useState({
-        subscriptions: { page: 1, limit: 20, total: 0, pages: 1 },
-        invoices: { page: 1, limit: 20, total: 0, pages: 1 },
-        payments: { page: 1, limit: 20, total: 0, pages: 1 }
+        subscriptions: { page: ['Subscriptions', 'Trial Monitor'].includes(initialTab) ? initialPage : 1, limit: 20, total: 0, pages: 1 },
+        invoices: { page: initialTab === 'Invoices' ? initialPage : 1, limit: 20, total: 0, pages: 1 },
+        payments: { page: initialTab === 'Payment Verification' ? initialPage : 1, limit: 20, total: 0, pages: 1 }
     });
 
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [overviewRes, subscriptionsRes, invoicesRes, paymentsRes, timelineRes] = await Promise.all([
-                API.get('/super-admin/billing/overview'),
-                API.get('/super-admin/billing/subscriptions', { params: { page: pagination.subscriptions.page, limit: 20, status: filters.status || undefined } }),
-                API.get('/super-admin/billing/invoices', { params: { page: pagination.invoices.page, limit: 20, search: filters.search || undefined } }),
-                API.get('/super-admin/billing/payments', { params: { page: pagination.payments.page, limit: 20, status: activeTab === 'Payment Verification' ? 'pending' : undefined, search: filters.search || undefined } }),
-                API.get('/super-admin/subscription-timeline', { params: { limit: 50 } })
-            ]);
+    const currentPageKey = ['Subscriptions', 'Trial Monitor'].includes(activeTab)
+        ? 'subscriptions'
+        : (activeTab === 'Invoices' ? 'invoices' : (activeTab === 'Payment Verification' ? 'payments' : null));
 
-            setOverview(overviewRes.data.data || {});
-            setSubscriptions(subscriptionsRes.data.data || []);
-            setInvoices(invoicesRes.data.data || []);
-            setPayments(paymentsRes.data.data || []);
-            setTimeline(timelineRes.data.data || []);
-            setPagination(prev => ({
-                ...prev,
-                subscriptions: subscriptionsRes.data.pagination || prev.subscriptions,
-                invoices: invoicesRes.data.pagination || prev.invoices,
-                payments: paymentsRes.data.pagination || prev.payments
-            }));
-        } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to load billing dashboard');
-        } finally {
-            setLoading(false);
-        }
-    }, [activeTab, filters.search, filters.status, pagination.invoices.page, pagination.payments.page, pagination.subscriptions.page]);
+    const updateLocation = useCallback((updates = {}, { replace = true } = {}) => {
+        setSearchParams(current => {
+            const next = new URLSearchParams(current);
+            Object.entries(updates).forEach(([key, value]) => {
+                if (value === undefined || value === null || value === '' || value === 1) next.delete(key);
+                else next.set(key, String(value));
+            });
+            return next.toString() === current.toString() ? current : next;
+        }, { replace });
+    }, [setSearchParams]);
 
     useEffect(() => {
-        const timer = window.setTimeout(load, 0);
+        const timer = window.setTimeout(() => {
+            const nextTab = tabFromKey(searchParams.get('tab'));
+            const nextSearch = searchParams.get('search') || '';
+            const nextStatus = searchParams.get('status') || '';
+            const nextPage = positivePage(searchParams.get('page'));
+            setActiveTab(previous => previous === nextTab ? previous : nextTab);
+            setFilters(previous => (
+                previous.search === nextSearch && previous.status === nextStatus
+                    ? previous
+                    : { search: nextSearch, status: nextStatus }
+            ));
+            const key = ['Subscriptions', 'Trial Monitor'].includes(nextTab)
+                ? 'subscriptions'
+                : (nextTab === 'Invoices' ? 'invoices' : (nextTab === 'Payment Verification' ? 'payments' : null));
+            if (key) {
+                setPagination(previous => previous[key].page === nextPage
+                    ? previous
+                    : { ...previous, [key]: { ...previous[key], page: nextPage } });
+            }
+        }, 0);
         return () => window.clearTimeout(timer);
-    }, [load]);
+    }, [searchParams]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            updateLocation({
+                tab: tabKey(activeTab) === tabKey('Subscriptions') ? '' : tabKey(activeTab),
+                search: debouncedSearch,
+                status: filters.status,
+                page: currentPageKey ? pagination[currentPageKey].page : ''
+            });
+        }, 0);
+        return () => window.clearTimeout(timer);
+    }, [
+        activeTab,
+        currentPageKey,
+        debouncedSearch,
+        filters.status,
+        pagination,
+        updateLocation
+    ]);
+
+    const loadOverview = useCallback(async (signal) => {
+        try {
+            const response = await API.get('/super-admin/billing/overview', { signal });
+            setOverview(response.data.data || {});
+        } catch (err) {
+            if (err.code !== 'ERR_CANCELED') toast.error(err.response?.data?.error || 'Failed to load billing summary');
+        }
+    }, []);
+
+    const loadActiveTab = useCallback(async (signal) => {
+        setLoading(true);
+        try {
+            if (['Subscriptions', 'Trial Monitor'].includes(activeTab)) {
+                const response = await API.get('/super-admin/billing/subscriptions', {
+                    params: {
+                        page: pagination.subscriptions.page,
+                        limit: 20,
+                        status: activeTab === 'Trial Monitor' ? 'trialing' : (filters.status || undefined)
+                    },
+                    signal
+                });
+                setSubscriptions(response.data.data || []);
+                setPagination(prev => ({
+                    ...prev,
+                    subscriptions: response.data.pagination || prev.subscriptions
+                }));
+            } else if (activeTab === 'Invoices') {
+                const response = await API.get('/super-admin/billing/invoices', {
+                    params: {
+                        page: pagination.invoices.page,
+                        limit: 20,
+                        search: debouncedSearch || undefined
+                    },
+                    signal
+                });
+                setInvoices(response.data.data || []);
+                setPagination(prev => ({
+                    ...prev,
+                    invoices: response.data.pagination || prev.invoices
+                }));
+            } else if (activeTab === 'Payment Verification') {
+                const response = await API.get('/super-admin/billing/payments', {
+                    params: {
+                        page: pagination.payments.page,
+                        limit: 20,
+                        status: 'pending',
+                        search: debouncedSearch || undefined
+                    },
+                    signal
+                });
+                setPayments(response.data.data || []);
+                setPagination(prev => ({
+                    ...prev,
+                    payments: response.data.pagination || prev.payments
+                }));
+            } else if (activeTab === 'Subscription Timeline') {
+                const response = await API.get('/super-admin/subscription-timeline', { params: { limit: 50 }, signal });
+                setTimeline(response.data.data || []);
+            }
+        } catch (err) {
+            if (err.code !== 'ERR_CANCELED') toast.error(err.response?.data?.error || `Failed to load ${activeTab.toLowerCase()}`);
+        } finally {
+            if (!signal?.aborted) setLoading(false);
+        }
+    }, [
+        activeTab,
+        debouncedSearch,
+        filters.status,
+        pagination.invoices.page,
+        pagination.payments.page,
+        pagination.subscriptions.page
+    ]);
+
+    const load = useCallback(async () => {
+        await Promise.all([loadOverview(), loadActiveTab()]);
+    }, [loadActiveTab, loadOverview]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => loadOverview(controller.signal), 0);
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [loadOverview]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => loadActiveTab(controller.signal), 0);
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [loadActiveTab]);
 
     const summary = overview.summary || {};
 
@@ -190,7 +393,7 @@ const SuperAdminBilling = () => {
         { label: 'Past due shops', value: summary.pastDueShops || 0, icon: ShieldAlert, tone: 'amber' },
         { label: 'Pending payments', value: summary.pendingManualPayments || 0, icon: CreditCard, tone: 'indigo' },
         { label: 'Billing suspended', value: summary.suspendedForBilling || 0, icon: AlertTriangle, tone: 'rose' },
-        { label: 'Revenue this month', value: money(summary.revenueThisMonth || 0), icon: Banknote, tone: 'emerald' },
+        { label: 'Net payments collected', value: money(summary.netCollected ?? summary.revenueThisMonth ?? 0), icon: Banknote, tone: 'emerald' },
         { label: 'Paid invoices this month', value: summary.paidInvoicesThisMonth || 0, icon: FileText, tone: 'slate' }
     ];
 
@@ -203,6 +406,7 @@ const SuperAdminBilling = () => {
     const openAction = (config) => {
         setReason('');
         setNote('');
+        setExtensionDays('30');
         setAction(config);
     };
 
@@ -210,13 +414,18 @@ const SuperAdminBilling = () => {
         setAction(null);
         setReason('');
         setNote('');
+        setExtensionDays('30');
     };
 
     const confirmAction = async () => {
         if (!action) return;
         setActionLoading(true);
         try {
-            await action.onConfirm({ reason: reason.trim(), note: note.trim() });
+            await action.onConfirm({
+                reason: reason.trim(),
+                note: note.trim(),
+                days: Number(extensionDays)
+            });
             toast.success(action.successMessage || 'Action completed');
             closeAction();
             await load();
@@ -228,6 +437,12 @@ const SuperAdminBilling = () => {
     };
 
     const updateSubscriptionStatus = (subscription, status) => {
+        const actionByStatus = {
+            active: 'reactivate',
+            suspended: 'suspend',
+            cancelled: 'cancel'
+        };
+        const actionName = actionByStatus[status];
         const labels = {
             active: 'Reactivate subscription',
             suspended: 'Suspend for billing',
@@ -242,11 +457,29 @@ const SuperAdminBilling = () => {
             requiresReason: ['suspended', 'cancelled'].includes(status),
             allowNote: status === 'active',
             successMessage: 'Subscription updated',
-            onConfirm: ({ reason: actionReason, note: adminNote }) => API.patch(`/super-admin/billing/subscriptions/${subscription.id}/status`, {
-                status,
+            onConfirm: ({ reason: actionReason }) => API.post(`/super-admin/billing/subscriptions/${subscription.id}/actions/${actionName}`, {
                 reason: actionReason,
-                adminNote
+                expectedVersion: subscription.version
             })
+        });
+    };
+
+    const extendSubscription = (subscription) => {
+        openAction({
+            title: 'Extend subscription period',
+            warning: 'This is a manual billing exception. It changes the paid-period end date and is recorded in the durable audit timeline.',
+            confirmLabel: 'Extend period',
+            requiresReason: true,
+            requiresDays: true,
+            successMessage: 'Subscription period extended',
+            onConfirm: ({ reason: actionReason, days }) => API.post(
+                `/super-admin/billing/subscriptions/${subscription.id}/actions/extend`,
+                {
+                    reason: actionReason,
+                    days,
+                    expectedVersion: subscription.version
+                }
+            )
         });
     };
 
@@ -276,6 +509,29 @@ const SuperAdminBilling = () => {
         });
     };
 
+    const openPaymentProof = async (payment) => {
+        const proofWindow = window.open('about:blank', '_blank');
+        if (proofWindow) {
+            proofWindow.opener = null;
+            proofWindow.document.title = 'Loading payment proof...';
+        }
+        try {
+            const response = await API.get(`/super-admin/billing/payments/${payment.id}/proof`, {
+                params: { reason: 'Manual payment verification' }
+            });
+            const url = response.data?.data?.url;
+            if (!url) throw new Error('Payment proof is unavailable');
+            if (!proofWindow) {
+                toast.error('Allow popups for this dashboard to open payment proof.');
+                return;
+            }
+            proofWindow.location.replace(url);
+        } catch (err) {
+            proofWindow?.close();
+            toast.error(err.response?.data?.error || err.message || 'Failed to open payment proof');
+        }
+    };
+
     const runLifecycle = async () => {
         try {
             await API.post('/super-admin/billing/lifecycle/check');
@@ -291,9 +547,18 @@ const SuperAdminBilling = () => {
             ...prev,
             [key]: { ...prev[key], page }
         }));
+        updateLocation({ page }, { replace: false });
     };
 
-    if (loading) {
+    const hasHydratedContent = Boolean(
+        overview.summary ||
+        subscriptions.length ||
+        invoices.length ||
+        payments.length ||
+        timeline.length
+    );
+
+    if (loading && !hasHydratedContent) {
         return (
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                 <div className="flex min-h-[40vh] items-center justify-center rounded-2xl border border-slate-200 bg-white">
@@ -349,7 +614,16 @@ const SuperAdminBilling = () => {
                     {tabs.map(tab => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                const key = ['Subscriptions', 'Trial Monitor'].includes(tab)
+                                    ? 'subscriptions'
+                                    : (tab === 'Invoices' ? 'invoices' : (tab === 'Payment Verification' ? 'payments' : null));
+                                updateLocation({
+                                    tab: tabKey(tab) === tabKey('Subscriptions') ? '' : tabKey(tab),
+                                    page: key ? pagination[key].page : ''
+                                }, { replace: false });
+                            }}
                             className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition ${activeTab === tab ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
                         >
                             {tab}
@@ -361,14 +635,20 @@ const SuperAdminBilling = () => {
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                             value={filters.search}
-                            onChange={event => setFilters(prev => ({ ...prev, search: event.target.value }))}
+                            onChange={event => {
+                                setFilters(prev => ({ ...prev, search: event.target.value }));
+                                if (currentPageKey) setPage(currentPageKey, 1);
+                            }}
                             placeholder="Search invoice or transaction"
                             className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 sm:w-72"
                         />
                     </label>
                     <select
                         value={filters.status}
-                        onChange={event => setFilters(prev => ({ ...prev, status: event.target.value }))}
+                        onChange={event => {
+                            setFilters(prev => ({ ...prev, status: event.target.value }));
+                            if (currentPageKey) setPage(currentPageKey, 1);
+                        }}
                         className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
                     >
                         <option value="">All subscription statuses</option>
@@ -382,6 +662,13 @@ const SuperAdminBilling = () => {
                     </select>
                 </div>
             </div>
+
+            {loading && (
+                <div role="status" aria-live="polite" className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+                    <Loader2 className="h-4 w-4 animate-spin text-indigo-600" />
+                    Updating {activeTab.toLowerCase()}...
+                </div>
+            )}
 
             {activeTab === 'Subscriptions' && (
                 <SectionCard title="Subscriptions" icon={Store}>
@@ -434,15 +721,26 @@ const SuperAdminBilling = () => {
                                                         View shop
                                                     </Link>
                                                 )}
-                                                <button onClick={() => updateSubscriptionStatus(item, 'active')} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
-                                                    Reactivate
-                                                </button>
-                                                <button onClick={() => updateSubscriptionStatus(item, 'suspended')} className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100">
-                                                    Suspend
-                                                </button>
-                                                <button onClick={() => updateSubscriptionStatus(item, 'cancelled')} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">
-                                                    Cancel
-                                                </button>
+                                                {item.allowedActions?.includes('reactivate') && (
+                                                    <button onClick={() => updateSubscriptionStatus(item, 'active')} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
+                                                        Reactivate
+                                                    </button>
+                                                )}
+                                                {item.allowedActions?.includes('suspend') && (
+                                                    <button onClick={() => updateSubscriptionStatus(item, 'suspended')} className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100">
+                                                        Suspend
+                                                    </button>
+                                                )}
+                                                {item.allowedActions?.includes('cancel') && (
+                                                    <button onClick={() => updateSubscriptionStatus(item, 'cancelled')} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200">
+                                                        Cancel
+                                                    </button>
+                                                )}
+                                                {item.allowedActions?.includes('extend') && (
+                                                    <button onClick={() => extendSubscription(item)} className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100">
+                                                        Extend
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -527,10 +825,10 @@ const SuperAdminBilling = () => {
                                         <td className="px-5 py-4">{payment.senderNumber || '-'}</td>
                                         <td className="px-5 py-4">{formatDate(payment.createdAt)}</td>
                                         <td className="px-5 py-4">
-                                            {payment.screenshotUrl ? (
-                                                <a href={payment.screenshotUrl} target="_blank" rel="noreferrer" className="font-bold text-indigo-600 hover:text-indigo-700">
+                                            {payment.proofAvailable ? (
+                                                <button type="button" onClick={() => openPaymentProof(payment)} className="font-bold text-indigo-600 hover:text-indigo-700">
                                                     Open proof
-                                                </a>
+                                                </button>
                                             ) : '-'}
                                         </td>
                                         <td className="px-5 py-4">
@@ -653,6 +951,8 @@ const SuperAdminBilling = () => {
                 setReason={setReason}
                 note={note}
                 setNote={setNote}
+                extensionDays={extensionDays}
+                setExtensionDays={setExtensionDays}
                 onClose={closeAction}
                 onConfirm={confirmAction}
                 loading={actionLoading}

@@ -5,7 +5,6 @@ import { ArrowLeft, BadgeCheck, Building2, ClipboardList, Flag, Globe, ShieldAle
 import API from '../../api/api';
 import { EmptyState, ReasonModal, SectionCard, StatusBadge } from './SuperAdminComponents.jsx';
 
-const featureKeys = ['storeBuilder', 'coupons', 'analytics', 'customDomain', 'staffAccounts', 'bulkProductTools', 'growthCenter', 'aiAdGenerator'];
 const criticalFeatureKeys = new Set(['storeBuilder', 'analytics', 'staffAccounts', 'growthCenter']);
 
 const ShopDetail = () => {
@@ -15,12 +14,20 @@ const ShopDetail = () => {
     const [reasonModal, setReasonModal] = useState(null);
     const [reason, setReason] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
+    const [registry, setRegistry] = useState({ plans: [], features: [] });
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await API.get(`/super-admin/shops/${shopId}`);
-            setDetail(data.data || null);
+            const [detailResult, plansResult] = await Promise.allSettled([
+                API.get(`/super-admin/shops/${shopId}`),
+                API.get('/super-admin/plans')
+            ]);
+            if (detailResult.status === 'rejected') throw detailResult.reason;
+            setDetail(detailResult.value.data.data || null);
+            if (plansResult.status === 'fulfilled') {
+                setRegistry(plansResult.value.data.registry || { plans: [], features: [] });
+            }
         } catch {
             toast.error('Failed to load shop detail');
         } finally {
@@ -74,18 +81,30 @@ const ShopDetail = () => {
         await run('');
     };
 
-    const updatePlan = async (planName) => {
-        try {
-            await API.patch(`/super-admin/shops/${shopId}/plan`, { plan: { ...(detail?.shop?.plan || {}), name: planName } });
-            toast.success('Plan updated');
-            await load();
-        } catch {
-            toast.error('Failed to update plan');
-        }
+    const updatePlan = (planName) => {
+        const selectedPlan = registry.plans.find(plan => plan.key === planName);
+        openReasonModal({
+            title: `Change plan to ${selectedPlan?.name || planName}`,
+            warning: 'This immediately changes subscription capabilities and may reconcile plan-restricted resources. Billing dates are preserved.',
+            confirmLabel: 'Change plan',
+            error: 'Failed to update plan',
+            onConfirm: async (actionReason) => {
+                await API.patch(`/super-admin/shops/${shopId}/plan`, {
+                    plan: { name: planName, slug: planName },
+                    reason: actionReason
+                });
+                toast.success('Plan updated');
+            }
+        });
     };
 
     const toggleFeature = async (key) => {
-        const nextValue = !detail?.shop?.featureFlags?.[key];
+        const entitlement = detail?.shop?.featureEntitlements?.[key];
+        if (!entitlement?.planAllowed) {
+            toast.error('This feature is excluded by the current plan and cannot be enabled with a shop override.');
+            return;
+        }
+        const nextValue = entitlement.shopOverride === false;
         const run = async (actionReason = '') => {
             await API.patch(`/super-admin/shops/${shopId}/feature-flags`, {
                 featureFlags: { [key]: nextValue },
@@ -121,7 +140,7 @@ const ShopDetail = () => {
         );
     }
 
-    const { shop, owner, verification, domain, abuseReports = [], recentAuditLogs = [] } = detail;
+    const { shop, owner, verification, domain, billing, abuseReports = [], recentAuditLogs = [] } = detail;
 
     return (
         <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
@@ -143,7 +162,7 @@ const ShopDetail = () => {
             <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">Status</p><div className="mt-2"><StatusBadge value={shop.approvalStatus} /></div></div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">Active</p><p className="mt-2 text-lg font-black">{shop.isActive ? 'Yes' : 'No'}</p></div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">Plan</p><p className="mt-2 text-lg font-black">{shop.plan?.name || 'Starter'}</p></div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">Plan</p><p className="mt-2 text-lg font-black">{billing?.planDisplay || shop.plan?.name || 'Beginner'}</p></div>
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">Verification</p><div className="mt-2"><StatusBadge value={verification?.status} /></div></div>
             </div>
 
@@ -167,22 +186,43 @@ const ShopDetail = () => {
                     <div className="space-y-4 p-5">
                         <label className="block">
                             <span className="text-sm font-bold text-slate-950">Plan</span>
-                            <select value={shop.plan?.name || 'Starter'} onChange={event => updatePlan(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-                                <option>Starter</option>
-                                <option>Growth</option>
-                                <option>Enterprise</option>
+                            <select value={String(shop.plan?.name || 'Starter').toLowerCase()} onChange={event => updatePlan(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
+                                {registry.plans.map(plan => (
+                                    <option key={plan.key} value={plan.key}>{plan.name}</option>
+                                ))}
                             </select>
                         </label>
+                        <p className="text-xs leading-5 text-slate-500">
+                            Green means effectively enabled. Gray plan-excluded features cannot be enabled by shop overrides.
+                        </p>
                         <div className="flex flex-wrap gap-2">
-                            {featureKeys.map(key => (
-                                <button
-                                    key={key}
-                                    onClick={() => toggleFeature(key)}
-                                    className={`rounded-full px-3 py-1.5 text-xs font-bold ${shop.featureFlags?.[key] ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
-                                >
-                                    {key}
-                                </button>
-                            ))}
+                            {registry.features
+                                .filter(feature => feature.overridePolicy === 'disable_only')
+                                .map(({ key, label }) => {
+                                    const entitlement = shop.featureEntitlements?.[key];
+                                    const enabled = shop.effectiveFeatures?.[key] === true;
+                                    const planAllowed = entitlement?.planAllowed === true;
+                                    return (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            onClick={() => toggleFeature(key)}
+                                            disabled={!planAllowed}
+                                            title={!planAllowed
+                                                ? `${label} is excluded by ${billing?.planDisplay || 'the current plan'}`
+                                                : enabled ? 'Click to disable for this shop' : 'Click to enable the plan-allowed feature'}
+                                            className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                                                enabled
+                                                    ? 'bg-emerald-50 text-emerald-700'
+                                                    : planAllowed
+                                                        ? 'bg-amber-50 text-amber-700'
+                                                        : 'cursor-not-allowed bg-slate-100 text-slate-400'
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
                         </div>
                     </div>
                 </SectionCard>

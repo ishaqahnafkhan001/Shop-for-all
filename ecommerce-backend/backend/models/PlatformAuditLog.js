@@ -56,6 +56,13 @@ const platformAuditLogSchema = new Schema({
         enum: ['info', 'warning', 'critical'],
         default: 'info',
         index: true
+    },
+    outboxEventId: {
+        type: String,
+        trim: true,
+        unique: true,
+        sparse: true,
+        select: false
     }
 }, { timestamps: true });
 

@@ -2,6 +2,8 @@ const Order = require('../models/Order');
 const Shop = require('../models/Shop');
 const { processPathaoSyncJob } = require('./pathaoSyncJobService');
 const { createRedxParcel } = require('./redx/redxService');
+const { assertJobEntitlementStillValid } = require('./workers/jobEntitlementService');
+const { COURIER_CREDENTIAL_SELECT } = require('./courierConfigService');
 
 const processRedxCreateParcelJob = async (job) => {
     const order = await Order.findOne({
@@ -16,7 +18,7 @@ const processRedxCreateParcelJob = async (job) => {
         throw new Error('Order already has a Pathao shipment');
     }
 
-    const shop = await Shop.findById(job.shop_id);
+    const shop = await Shop.findById(job.shop_id).select(COURIER_CREDENTIAL_SELECT);
     if (!shop) throw new Error('Shop not found for RedX parcel creation');
 
     order.shippingProvider = 'redx';
@@ -31,6 +33,7 @@ const processRedxCreateParcelJob = async (job) => {
     await order.save();
 
     try {
+        await assertJobEntitlementStillValid({ job });
         const result = await createRedxParcel({
             shop,
             order,

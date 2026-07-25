@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const Job = require('../models/Job');
+const Subscription = require('../models/Subscription');
 const logger = require('./logger');
 
 const DEFAULT_LOCK_MS = 5 * 60 * 1000;
@@ -21,13 +22,17 @@ const enqueueJob = async ({
     idempotencyKey = ''
 }) => {
     try {
+        const subscription = shop_id
+            ? await Subscription.findOne({ shopId: shop_id }).select('entitlementVersion').lean()
+            : null;
         const data = {
             queue,
             name,
             payload,
             shop_id,
             runAt,
-            maxAttempts
+            maxAttempts,
+            entitlementVersion: subscription?.entitlementVersion ?? null
         };
         if (idempotencyKey) data.idempotencyKey = idempotencyKey;
 
@@ -35,7 +40,7 @@ const enqueueJob = async ({
         return job;
     } catch (error) {
         if (error?.code === 11000 && idempotencyKey) {
-            return Job.findOne({ idempotencyKey });
+            return Job.findOne({ idempotencyKey }).select('+payload +lockId');
         }
         throw error;
     }
@@ -72,7 +77,7 @@ const claimNextJob = async ({ queues = [], lockMs = DEFAULT_LOCK_MS } = {}) => {
             new: true,
             sort: { runAt: 1, createdAt: 1 }
         }
-    );
+    ).select('+payload +lockId');
 };
 
 const completeJob = async (job) => (

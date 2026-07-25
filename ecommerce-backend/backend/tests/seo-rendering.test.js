@@ -597,7 +597,9 @@ test('sitemap and robots expose only public SEO URLs and noindex private pages',
     assert.match(robots, /getShopBaseUrl/);
     assert.match(robots, /Sitemap: \$\{baseUrl\.replace\(\/\\\/\$\/,\s*""\)\}\/sitemap\.xml/);
     assert.match(robots, /Sitemap:/);
-    assert.match(robots, /catch \{\s*return new Response\("User-agent: \*\\nDisallow: \/\\n"/);
+    assert.match(robots, /catch \(error\) \{/);
+    assert.match(robots, /getStorefrontPlanRedirectUrl\(error, "\/robots\.txt"\)/);
+    assert.match(robots, /return new Response\("User-agent: \*\\nDisallow: \/\\n"/);
 
     ['cart', 'checkout', 'account', 'signup', 'track'].forEach(route => {
         const layout = readRepo(`ecommerce-storefront/src/app/[subdomain]/${route}/layout.jsx`);

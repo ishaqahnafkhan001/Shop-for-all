@@ -24,11 +24,6 @@ const { getBillingDisplayForSubscription } = require('../services/billing/billin
 const {
     ensureSubscriptionExists,
     getCurrentSubscriptionForShop,
-    activateSubscription,
-    markPastDue,
-    enterGracePeriod,
-    suspendForBilling,
-    cancelSubscription,
     TRIAL_DAYS,
     GRACE_DAYS
 } = require('../services/billing/subscriptionService');
@@ -38,6 +33,11 @@ const {
     verifyManualPayment,
     rejectManualPayment
 } = require('../services/billing/paymentVerificationService');
+const {
+    createAuditIntent,
+    materializeAuditIntent,
+    runCriticalGovernanceAction
+} = require('../services/platformAuditOutboxService');
 const { runBillingLifecycleCheck } = require('../services/billing/billingLifecycleService');
 const {
     getDowngradePreview,
@@ -51,6 +51,15 @@ const {
     resolveUpgradeIntent
 } = require('../services/billing/beginnerConversionService');
 const { getFeatureDefinition } = require('../config/subscriptionFeatures');
+const { resolveSubscriptionAccess } = require('../services/billing/subscriptionAccessResolver');
+const {
+    allowedActionsForSubscription,
+    executeSubscriptionAction
+} = require('../services/billing/superAdminSubscriptionTransitionService');
+const {
+    serializePaymentSummary,
+    serializeSubscriptionSummary
+} = require('../services/superAdmin/superAdminSerializers');
 
 const UPGRADE_INTENT_LIMIT_KEYS = new Set([
     'productCount',
@@ -73,6 +82,28 @@ const paginationMeta = ({ page, limit, total }) => ({
 });
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''));
+const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const safeSearchRegex = (value) => {
+    const normalized = String(value || '').trim().slice(0, 80);
+    return normalized ? new RegExp(escapeRegex(normalized), 'i') : null;
+};
+
+const getReportingMonthRange = (now = new Date()) => {
+    const offsetMinutes = Number(process.env.REPORTING_TIMEZONE_OFFSET_MINUTES || 360);
+    const offsetMs = offsetMinutes * 60 * 1000;
+    const shifted = new Date(now.getTime() + offsetMs);
+    const monthStart = new Date(Date.UTC(
+        shifted.getUTCFullYear(),
+        shifted.getUTCMonth(),
+        1
+    ) - offsetMs);
+    const nextMonthStart = new Date(Date.UTC(
+        shifted.getUTCFullYear(),
+        shifted.getUTCMonth() + 1,
+        1
+    ) - offsetMs);
+    return { monthStart, nextMonthStart, offsetMinutes };
+};
 
 const daysUntil = (date) => {
     if (!date) return null;
@@ -82,6 +113,7 @@ const daysUntil = (date) => {
 const serializeSubscription = (subscription) => {
     if (!subscription) return null;
     const plain = subscription.toObject ? subscription.toObject() : subscription;
+    const access = resolveSubscriptionAccess({ subscription: plain });
     return {
         id: plain._id,
         shopId: plain.shopId,
@@ -91,7 +123,13 @@ const serializeSubscription = (subscription) => {
         intendedPlanId: plain.intendedPlanId || null,
         intendedPlanName: plain.intendedPlanName || '',
         intendedPlanSlug: plain.intendedPlanSlug || '',
-        status: plain.status,
+        status: access.subscriptionStatus,
+        rawStatus: access.rawSubscriptionStatus,
+        paymentReviewStatus: access.paymentReviewStatus,
+        isTrialActive: access.isTrialActive,
+        isOperational: access.isOperational,
+        entitlementVersion: access.entitlementVersion,
+        version: Number(plain.__v) || 0,
         billingCycle: plain.billingCycle,
         pendingPlanId: plain.pendingPlanId,
         pendingPlanName: plain.pendingPlanName || '',
@@ -568,7 +606,11 @@ exports.getVendorPayments = async (req, res) => {
         if (req.query.status) query.status = req.query.status;
 
         const [items, total] = await Promise.all([
-            PaymentTransaction.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+            PaymentTransaction.find(query)
+                .select('+screenshotUrl')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
             PaymentTransaction.countDocuments(query)
         ]);
 
@@ -685,17 +727,15 @@ exports.createVendorInvoice = async (req, res) => {
 
 exports.getSuperAdminBillingOverview = async (req, res) => {
     try {
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
+        const { monthStart, nextMonthStart, offsetMinutes } = getReportingMonthRange();
         const soon = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
-        const [subscriptions, invoices, payments, revenueByPlan] = await Promise.all([
+        const [subscriptions, invoices, payments, revenueByPlan, monthlyCollected, monthlyRefunds] = await Promise.all([
             Subscription.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
             Invoice.aggregate([{ $group: { _id: '$status', count: { $sum: 1 }, amount: { $sum: '$amount' } } }]),
             PaymentTransaction.aggregate([{ $group: { _id: '$status', count: { $sum: 1 }, amount: { $sum: '$amount' } } }]),
             Invoice.aggregate([
-                { $match: { status: 'paid', paidAt: { $gte: monthStart } } },
+                { $match: { status: 'paid', paidAt: { $gte: monthStart, $lt: nextMonthStart } } },
                 {
                     $lookup: {
                         from: 'vendorplans',
@@ -713,16 +753,42 @@ exports.getSuperAdminBillingOverview = async (req, res) => {
                     }
                 },
                 { $sort: { '_id.plan': 1, '_id.cycle': 1 } }
+            ]),
+            Invoice.aggregate([
+                { $match: { status: 'paid', paidAt: { $gte: monthStart, $lt: nextMonthStart } } },
+                {
+                    $group: {
+                        _id: null,
+                        grossCollected: { $sum: '$amount' },
+                        paidInvoiceCount: { $sum: 1 }
+                    }
+                }
+            ]),
+            PaymentTransaction.aggregate([
+                {
+                    $match: {
+                        status: 'refunded',
+                        updatedAt: { $gte: monthStart, $lt: nextMonthStart }
+                    }
+                },
+                { $group: { _id: null, refunds: { $sum: '$amount' } } }
             ])
         ]);
 
         const subCount = Object.fromEntries(subscriptions.map(item => [item._id, item.count]));
-        const invoiceCount = Object.fromEntries(invoices.map(item => [item._id, item.count]));
-        const invoiceAmount = Object.fromEntries(invoices.map(item => [item._id, item.amount]));
         const paymentCount = Object.fromEntries(payments.map(item => [item._id, item.count]));
-        const [trialsEndingSoon, billingSuspended] = await Promise.all([
+        const grossCollected = Number(monthlyCollected[0]?.grossCollected) || 0;
+        const refunds = Number(monthlyRefunds[0]?.refunds) || 0;
+        const paidInvoiceCount = Number(monthlyCollected[0]?.paidInvoiceCount) || 0;
+        const [trialsEndingSoon, billingSuspended, pendingApprovalSubscriptions] = await Promise.all([
             Subscription.countDocuments({ status: 'trialing', trialEndsAt: { $lte: soon, $gte: new Date() } }),
-            Subscription.countDocuments({ status: 'suspended' })
+            Subscription.countDocuments({ status: 'suspended' }),
+            Subscription.countDocuments({
+                $or: [
+                    { paymentReviewStatus: 'pending_approval' },
+                    { status: 'pending_approval' }
+                ]
+            })
         ]);
 
         res.status(200).json({
@@ -734,15 +800,23 @@ exports.getSuperAdminBillingOverview = async (req, res) => {
                 summary: {
                     activeSubscriptions: subCount.active || 0,
                     trialingShops: subCount.trialing || 0,
-                    pendingApprovalSubscriptions: subCount.pending_approval || 0,
+                    pendingApprovalSubscriptions,
                     trialsEndingSoon,
                     pastDueShops: (subCount.past_due || 0) + (subCount.grace || 0),
                     pendingManualPayments: paymentCount.pending || 0,
                     suspendedForBilling: billingSuspended,
-                    revenueThisMonth: invoiceAmount.paid || 0,
-                    paidInvoicesThisMonth: invoiceCount.paid || 0
+                    revenueThisMonth: grossCollected - refunds,
+                    paidInvoicesThisMonth: paidInvoiceCount,
+                    grossCollected,
+                    refunds,
+                    netCollected: grossCollected - refunds
                 },
-                revenueByPlan
+                revenueByPlan,
+                reportingPeriod: {
+                    monthStart,
+                    nextMonthStart,
+                    timezoneOffsetMinutes: offsetMinutes
+                }
             }
         });
     } catch (err) {
@@ -786,6 +860,9 @@ exports.getSuperAdminSubscriptions = async (req, res) => {
             success: true,
             data: items.map(item => {
                 const row = serializeSubscription(item);
+                const safeSubscription = serializeSubscriptionSummary(item, {
+                    allowedActions: allowedActionsForSubscription(item)
+                });
                 const shopId = String(item.shopId?._id || item.shopId || '');
                 const billingDisplay = getBillingDisplayForSubscription({
                     subscription: row,
@@ -793,7 +870,9 @@ exports.getSuperAdminSubscriptions = async (req, res) => {
                     pendingPlan: item.pendingPlanId && typeof item.pendingPlanId === 'object' ? item.pendingPlanId : null
                 });
                 return {
+                    ...safeSubscription,
                     ...row,
+                    allowedActions: safeSubscription.allowedActions || [],
                     shop: item.shopId && typeof item.shopId === 'object' ? item.shopId : null,
                     plan: item.planId && typeof item.planId === 'object' ? item.planId : null,
                     pendingPlan: item.pendingPlanId && typeof item.pendingPlanId === 'object' ? item.pendingPlanId : null,
@@ -819,7 +898,8 @@ exports.getSuperAdminInvoices = async (req, res) => {
         const query = {};
         if (req.query.status) query.status = req.query.status;
         if (req.query.shopId && isValidObjectId(req.query.shopId)) query.shopId = req.query.shopId;
-        if (req.query.search) query.invoiceNumber = { $regex: String(req.query.search), $options: 'i' };
+        const searchRegex = safeSearchRegex(req.query.search);
+        if (searchRegex) query.invoiceNumber = searchRegex;
 
         const [items, total] = await Promise.all([
             Invoice.find(query).populate('shopId', 'shopName subdomain').populate('planId', 'name slug').sort({ createdAt: -1 }).skip(skip).limit(limit),
@@ -827,7 +907,7 @@ exports.getSuperAdminInvoices = async (req, res) => {
         ]);
         const payments = await PaymentTransaction.find({
             invoiceId: { $in: items.map(item => item._id) }
-        }).sort({ createdAt: -1 }).lean();
+        }).select('+screenshotUrl').sort({ createdAt: -1 }).lean();
         const paymentMap = payments.reduce((acc, payment) => {
             const key = String(payment.invoiceId);
             if (!acc[key]) acc[key] = payment;
@@ -840,7 +920,7 @@ exports.getSuperAdminInvoices = async (req, res) => {
                 ...serializeInvoice(item),
                 shop: item.shopId && typeof item.shopId === 'object' ? item.shopId : null,
                 plan: item.planId && typeof item.planId === 'object' ? item.planId : null,
-                submittedPayment: paymentMap[String(item._id)] || null
+                submittedPayment: serializePaymentSummary(paymentMap[String(item._id)])
             })),
             pagination: paginationMeta({ page, limit, total })
         });
@@ -856,10 +936,12 @@ exports.getSuperAdminPayments = async (req, res) => {
         if (req.query.status) query.status = req.query.status;
         if (req.query.provider) query.provider = req.query.provider;
         if (req.query.shopId && isValidObjectId(req.query.shopId)) query.shopId = req.query.shopId;
-        if (req.query.search) query.transactionId = { $regex: String(req.query.search), $options: 'i' };
+        const searchRegex = safeSearchRegex(req.query.search);
+        if (searchRegex) query.transactionId = searchRegex;
 
         const [items, total] = await Promise.all([
             PaymentTransaction.find(query)
+                .select('+screenshotUrl')
                 .populate('shopId', 'shopName subdomain')
                 .populate({
                     path: 'invoiceId',
@@ -875,7 +957,7 @@ exports.getSuperAdminPayments = async (req, res) => {
         res.status(200).json({
             success: true,
             data: items.map(item => ({
-                ...serializePayment(item),
+                ...serializePaymentSummary(item),
                 shop: item.shopId && typeof item.shopId === 'object' ? item.shopId : null,
                 invoice: item.invoiceId && typeof item.invoiceId === 'object' ? item.invoiceId : null
             })),
@@ -886,63 +968,118 @@ exports.getSuperAdminPayments = async (req, res) => {
     }
 };
 
+exports.getSuperAdminPaymentProof = async (req, res) => {
+    try {
+        const payment = await PaymentTransaction.findById(req.params.id)
+            .select('shopId invoiceId +screenshotUrl');
+        if (!payment) {
+            return res.status(404).json({ success: false, error: 'Payment not found' });
+        }
+
+        const url = String(payment.screenshotUrl || '').trim();
+        if (!/^https:\/\//i.test(url)) {
+            return res.status(404).json({ success: false, error: 'Payment proof is not available' });
+        }
+
+        const auditIntent = await createAuditIntent({
+            audit: {
+                req,
+                action: 'billing.payment_proof_viewed',
+                entityType: 'PaymentTransaction',
+                entityId: payment._id,
+                shop_id: payment.shopId,
+                message: 'Platform billing reviewer opened manual payment proof',
+                reason: String(req.query.reason || 'Manual payment verification').slice(0, 300),
+                metadata: { invoiceId: payment.invoiceId },
+                severity: 'warning'
+            }
+        });
+        try {
+            await materializeAuditIntent(auditIntent);
+        } catch (auditError) {
+            console.error('[Billing] Payment proof audit materialization deferred:', auditError.message);
+        }
+
+        res.set('Cache-Control', 'no-store, private');
+        res.set('Pragma', 'no-cache');
+        return res.status(200).json({
+            success: true,
+            data: { url }
+        });
+    } catch (err) {
+        return res.status(400).json({
+            success: false,
+            code: err.code || 'PAYMENT_PROOF_ACCESS_FAILED',
+            error: err.message || 'Unable to open payment proof'
+        });
+    }
+};
+
 exports.updateSuperAdminSubscriptionStatus = async (req, res) => {
     try {
-        const subscription = await Subscription.findById(req.params.id);
-        if (!subscription) return res.status(404).json({ success: false, error: 'Subscription not found' });
-
-        const { status, reason, billingCycle } = req.body;
-        if (!['trialing', 'pending_approval', 'active', 'past_due', 'grace', 'suspended', 'cancelled'].includes(status)) {
-            return res.status(400).json({ success: false, error: 'Valid subscription status is required' });
-        }
-
-        const previousStatus = subscription.status;
-        let updated = subscription;
-        if (status === 'active') {
-            updated = await activateSubscription({
-                subscription,
-                planId: subscription.planId,
-                billingCycle: billingCycle || subscription.billingCycle,
-                req
-            });
-        } else if (status === 'past_due') {
-            updated = await markPastDue(subscription, { req });
-        } else if (status === 'grace') {
-            updated = await enterGracePeriod(subscription, { req });
-        } else if (status === 'suspended') {
-            if (!reason) return res.status(400).json({ success: false, error: 'Reason is required to suspend billing' });
-            updated = await suspendForBilling(subscription, { req, reason });
-        } else if (status === 'cancelled') {
-            updated = await cancelSubscription(subscription, { req, reason });
-        } else {
-            subscription.status = status;
-            updated = await subscription.save();
-            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
-                req,
-                shopId: updated.shopId,
-                subscriptionId: updated._id,
-                planKey: updated.activePlanSlug || 'starter',
-                oldValue: { status: previousStatus },
-                newValue: { status: updated.status },
-                reason: reason || '',
-                affectedResources: ['subscription']
+        const legacyActionMap = {
+            active: 'reactivate',
+            suspended: 'suspend',
+            cancelled: 'cancel'
+        };
+        const action = legacyActionMap[String(req.body.status || '')];
+        if (!action) {
+            return res.status(400).json({
+                success: false,
+                code: 'UNSAFE_GENERIC_STATUS_CHANGE',
+                error: 'Use an explicit subscription action. Lifecycle statuses cannot be assigned directly.'
             });
         }
 
-        await logPlatformAudit({
-            req,
-            action: 'billing.subscription_status_changed',
-            entityType: 'Subscription',
-            entityId: updated._id,
-            shop_id: updated.shopId,
-            message: `Subscription status changed to ${updated.status}`,
-            reason: reason || '',
-            severity: updated.status === 'suspended' ? 'warning' : 'info'
+        const updated = await executeSubscriptionAction({
+            subscriptionId: req.params.id,
+            action,
+            reason: req.body.reason,
+            expectedVersion: req.body.expectedVersion,
+            req
         });
-
-        res.status(200).json({ success: true, data: serializeSubscription(updated) });
+        res.status(200).json({
+            success: true,
+            data: {
+                ...serializeSubscription(updated),
+                allowedActions: allowedActionsForSubscription(updated)
+            }
+        });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to update subscription' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'SUBSCRIPTION_ACTION_FAILED',
+            error: err.message || 'Failed to update subscription',
+            allowedActions: err.allowedActions || undefined
+        });
+    }
+};
+
+exports.executeSuperAdminSubscriptionAction = async (req, res) => {
+    try {
+        const updated = await executeSubscriptionAction({
+            subscriptionId: req.params.id,
+            action: req.params.action,
+            reason: req.body.reason,
+            expectedVersion: req.body.expectedVersion,
+            days: req.body.days,
+            targetDate: req.body.targetDate,
+            req
+        });
+        res.status(200).json({
+            success: true,
+            data: {
+                ...serializeSubscription(updated),
+                allowedActions: allowedActionsForSubscription(updated)
+            }
+        });
+    } catch (err) {
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'SUBSCRIPTION_ACTION_FAILED',
+            error: err.message || 'Failed to execute subscription action',
+            allowedActions: err.allowedActions || undefined
+        });
     }
 };
 
@@ -996,28 +1133,106 @@ exports.createSuperAdminInvoice = async (req, res) => {
 
 exports.updateSuperAdminInvoice = async (req, res) => {
     try {
-        const invoice = await Invoice.findById(req.params.id);
+        if (req.body.status !== undefined) {
+            return res.status(409).json({
+                success: false,
+                code: 'INVOICE_STATUS_ACTION_REQUIRED',
+                error: 'Invoice status must be changed through the payment approval or rejection workflow.'
+            });
+        }
+
+        const invoice = await Invoice.findById(req.params.id).select('_id shopId status dueDate notes amount __v');
         if (!invoice) return res.status(404).json({ success: false, error: 'Invoice not found' });
 
-        const allowed = ['status', 'dueDate', 'notes', 'amount'];
-        allowed.forEach((key) => {
-            if (req.body[key] !== undefined) invoice[key] = req.body[key];
-        });
-        await invoice.save();
+        if (['paid', 'rejected', 'cancelled', 'expired'].includes(invoice.status)) {
+            return res.status(409).json({
+                success: false,
+                code: 'INVOICE_FINALIZED',
+                error: 'A finalized invoice cannot be edited.'
+            });
+        }
 
-        await logPlatformAudit({
-            req,
-            action: 'billing.invoice_updated',
-            entityType: 'Invoice',
-            entityId: invoice._id,
-            shop_id: invoice.shopId,
-            message: 'Billing invoice updated by Super Admin',
-            metadata: { status: invoice.status, amount: invoice.amount }
+        const expectedVersion = Number.isInteger(Number(req.body.expectedVersion))
+            ? Number(req.body.expectedVersion)
+            : Number(invoice.__v || 0);
+        const updates = {};
+        if (req.body.dueDate !== undefined) {
+            const dueDate = req.body.dueDate ? new Date(req.body.dueDate) : null;
+            if (dueDate && Number.isNaN(dueDate.getTime())) {
+                return res.status(400).json({
+                    success: false,
+                    code: 'INVALID_DUE_DATE',
+                    error: 'A valid due date is required.'
+                });
+            }
+            updates.dueDate = dueDate;
+        }
+        if (req.body.notes !== undefined) {
+            updates.notes = String(req.body.notes || '').trim().slice(0, 1000);
+        }
+        if (req.body.amount !== undefined) {
+            const amount = Number(req.body.amount);
+            if (!Number.isFinite(amount) || amount < 0) {
+                return res.status(400).json({
+                    success: false,
+                    code: 'INVALID_INVOICE_AMOUNT',
+                    error: 'Invoice amount must be a non-negative number.'
+                });
+            }
+            updates.amount = amount;
+        }
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({
+                success: false,
+                code: 'NO_INVOICE_CHANGES',
+                error: 'No supported invoice changes were provided.'
+            });
+        }
+
+        const updatedInvoice = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const updated = await Invoice.findOneAndUpdate(
+                    {
+                        _id: invoice._id,
+                        __v: expectedVersion,
+                        status: { $in: ['unpaid', 'submitted'] }
+                    },
+                    {
+                        $set: updates,
+                        $inc: { __v: 1 }
+                    },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const conflict = new Error('Invoice changed while you were editing it. Refresh and try again.');
+                    conflict.statusCode = 409;
+                    conflict.code = 'INVOICE_VERSION_CONFLICT';
+                    throw conflict;
+                }
+                return updated;
+            },
+            audit: (updated) => ({
+                req,
+                action: 'billing.invoice_updated',
+                entityType: 'Invoice',
+                entityId: updated._id,
+                shop_id: updated.shopId,
+                message: 'Billing invoice updated by a platform administrator',
+                metadata: {
+                    changedFields: Object.keys(updates),
+                    amount: updated.amount,
+                    status: updated.status
+                }
+            })
         });
 
-        res.status(200).json({ success: true, data: serializeInvoice(invoice) });
+        res.status(200).json({ success: true, data: serializeInvoice(updatedInvoice) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to update invoice' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'INVOICE_UPDATE_FAILED',
+            error: err.message || 'Failed to update invoice'
+        });
     }
 };
 
@@ -1029,9 +1244,13 @@ exports.verifySuperAdminPayment = async (req, res) => {
             adminNote: req.body.adminNote || ''
         });
 
-        res.status(200).json({ success: true, data: serializePayment(payment) });
+        res.status(200).json({ success: true, data: serializePaymentSummary(payment) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to verify payment' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'PAYMENT_APPROVAL_FAILED',
+            error: err.message || 'Failed to verify payment'
+        });
     }
 };
 
@@ -1044,9 +1263,13 @@ exports.rejectSuperAdminPayment = async (req, res) => {
             adminNote: req.body.adminNote || ''
         });
 
-        res.status(200).json({ success: true, data: serializePayment(payment) });
+        res.status(200).json({ success: true, data: serializePaymentSummary(payment) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to reject payment' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'PAYMENT_REJECTION_FAILED',
+            error: err.message || 'Failed to reject payment'
+        });
     }
 };
 
@@ -1058,3 +1281,6 @@ exports.runSuperAdminBillingLifecycleCheck = async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to run billing lifecycle check' });
     }
 };
+
+// Exported for deterministic reporting-boundary tests; this is not mounted as an API action.
+exports.getReportingMonthRange = getReportingMonthRange;

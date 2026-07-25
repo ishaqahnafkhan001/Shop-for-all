@@ -77,7 +77,7 @@ test('vendor verified badge is computed from NID approval plus phone verificatio
     const vendorService = read('services/vendorVerificationService.js');
 
     assert.match(statusService, /nidStatus === 'approved' && phoneVerified && activeApproved/);
-    assert.match(storeController, /shop\.shopVerification = buildPublicShopVerification\(shop\)/);
+    assert.match(storeController, /shop\.shopVerification = buildPublicShopVerification\(shop, \{[\s\S]*eligible: planAccess\.features\.publicVerifiedBadge/);
     assert.match(vendorService, /const phoneVerified = Boolean\(shop\.verification\?\.phoneVerified\)/);
     assert.match(vendorService, /if \(isVerificationSuspension\(shop\)\) \{[\s\S]*if \(phoneVerified\)/);
 });

@@ -1,6 +1,8 @@
 const PlatformAnnouncement = require('../models/PlatformAnnouncement');
 const Shop = require('../models/Shop');
 const Subscription = require('../models/Subscription');
+const { resolveSubscriptionAccess } = require('../services/billing/subscriptionAccessResolver');
+const { normalizePlanKey } = require('../config/subscriptionPlans');
 
 const isSameId = (a, b) => String(a || '') === String(b || '');
 
@@ -20,7 +22,9 @@ const getVendorAnnouncementContext = async (shopId) => {
             shop: null,
             isTrial: false,
             activePlanNames: new Set(),
-            activePlanIds: new Set()
+            activePlanIds: new Set(),
+            activePlanKeys: new Set(),
+            subscriptionStatus: ''
         };
     }
 
@@ -31,16 +35,34 @@ const getVendorAnnouncementContext = async (shopId) => {
 
     const activePlanNames = new Set();
     const activePlanIds = new Set();
+    const activePlanKeys = new Set();
     let isTrial = false;
+    let subscriptionStatus = '';
 
     if (subscription) {
-        if (subscription.status === 'trialing') {
+        const access = resolveSubscriptionAccess({ subscription, shop });
+        subscriptionStatus = access.subscriptionStatus || subscription.status || '';
+        const planName = subscription.activePlanName || subscription.planId?.name || '';
+        const planKey = subscription.activePlanSlug || planName;
+        if (planName) activePlanNames.add(planName);
+        if (planKey) activePlanKeys.add(normalizePlanKey(planKey));
+        if (subscription.planId?._id) activePlanIds.add(String(subscription.planId._id));
+        if (access.subscriptionStatus === 'trialing') {
             isTrial = true;
         }
 
-        if (subscription.status === 'active' && subscription.planId?.name) {
+        if (access.subscriptionStatus === 'active' && subscription.planId?.name) {
             activePlanNames.add(subscription.planId.name);
             activePlanIds.add(String(subscription.planId._id));
+            activePlanKeys.add(normalizePlanKey(subscription.activePlanSlug || subscription.planId.name));
+        }
+
+        if (access.subscriptionStatus === 'trialing' && (subscription.activePlanName || subscription.planId?.name)) {
+            activePlanNames.add(subscription.activePlanName || subscription.planId.name);
+            activePlanKeys.add(normalizePlanKey(subscription.activePlanSlug || subscription.activePlanName || subscription.planId.name));
+            if (subscription.planId?._id) {
+                activePlanIds.add(String(subscription.planId._id));
+            }
         }
     }
 
@@ -48,17 +70,21 @@ const getVendorAnnouncementContext = async (shopId) => {
         isTrial = true;
     } else if (shop?.plan?.name) {
         activePlanNames.add(shop.plan.name);
+        activePlanKeys.add(normalizePlanKey(shop.plan.activePlanSlug || shop.plan.name));
     }
 
     if (shop?.plan?.status === 'Active' && shop.plan.name) {
         activePlanNames.add(shop.plan.name);
+        activePlanKeys.add(normalizePlanKey(shop.plan.activePlanSlug || shop.plan.name));
     }
 
     return {
         shop,
         isTrial,
         activePlanNames,
-        activePlanIds
+        activePlanIds,
+        activePlanKeys,
+        subscriptionStatus
     };
 };
 
@@ -67,9 +93,22 @@ const matchesAnnouncementTarget = (announcement, { shopId, context }) => {
         return isSameId(announcement.targetShopId, shopId);
     }
 
-    if (announcement.targetPlanId) {
-        return context.activePlanIds.has(String(announcement.targetPlanId));
+    const targetPlans = Array.isArray(announcement.targetPlans)
+        ? announcement.targetPlans.filter(Boolean)
+        : [];
+    const targetStatuses = Array.isArray(announcement.targetStatuses)
+        ? announcement.targetStatuses.filter(Boolean)
+        : [];
+    if (announcement.targetPlanId && !context.activePlanIds.has(String(announcement.targetPlanId))) {
+        return false;
     }
+    if (targetPlans.length && !targetPlans.some(plan => context.activePlanKeys.has(normalizePlanKey(plan)))) {
+        return false;
+    }
+    if (targetStatuses.length && !targetStatuses.includes(context.subscriptionStatus)) {
+        return false;
+    }
+    if (announcement.targetPlanId || targetPlans.length || targetStatuses.length) return true;
 
     const targetPlan = String(announcement.targetPlan || '').trim();
     if (targetPlan) {

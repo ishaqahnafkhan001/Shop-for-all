@@ -8,9 +8,15 @@ const {
     assertFeatureKey,
     getPlanFeatureValue
 } = require('../../config/subscriptionFeatures');
+const {
+    getEffectivePlanRef: resolveEffectivePlanRef,
+    resolveSubscriptionAccess
+} = require('../billing/subscriptionAccessResolver');
 
 const LEGACY_DEFAULT_FEATURES = {
+    basicStoreBranding: true,
     storeBuilder: true,
+    advancedStoreDesign: false,
     homepageSeo: true,
     analytics: true,
     dashboardTopProducts: true,
@@ -36,7 +42,6 @@ const LEGACY_DEFAULT_FEATURES = {
     platformBrandingRemoval: false
 };
 
-const BILLING_ALLOWED_STATUSES = new Set(['trialing', 'active', 'past_due', 'grace']);
 const isShopRecord = (value) => Boolean(
     value &&
     typeof value === 'object' &&
@@ -60,31 +65,7 @@ const getNestedFeature = (source, featureName) => {
 };
 
 const getEffectivePlanRef = (shop, subscription) => {
-    const plainShop = toPlain(shop);
-    const plainSubscription = toPlain(subscription);
-    const status = plainSubscription?.status || 'active';
-
-    if (status === 'trialing') {
-        return plainSubscription.intendedPlanSlug ||
-            plainSubscription.intendedPlanName ||
-            plainSubscription.planId ||
-            'Starter';
-    }
-
-    if (status === 'pending_approval') {
-        return plainSubscription.activePlanSlug ||
-            plainSubscription.activePlanName ||
-            plainSubscription.planId ||
-            'Starter';
-    }
-
-    return plainSubscription.activePlanSlug ||
-        plainSubscription.activePlanName ||
-        plainSubscription.planId ||
-        plainShop.plan?.activePlanSlug ||
-        plainShop.plan?.activePlanName ||
-        plainShop.plan?.name ||
-        'Starter';
+    return resolveEffectivePlanRef({ shop, subscription });
 };
 
 const getPlanFeatures = async (shop, subscription = null) => {
@@ -95,13 +76,15 @@ const getPlanFeatures = async (shop, subscription = null) => {
     }, { ...LEGACY_DEFAULT_FEATURES });
 };
 
-const computeFeatureStatuses = (shop, planFeatures = LEGACY_DEFAULT_FEATURES, billingStatus = 'active') => {
+const computeFeatureStatuses = (shop, planFeatures = LEGACY_DEFAULT_FEATURES, access = { isOperational: true }) => {
     const plainShop = toPlain(shop);
     const shopFlags = toPlain(plainShop.featureFlags);
     const shopAvailable = Boolean(plainShop) &&
         plainShop.isActive !== false &&
         plainShop.approvalStatus === 'Approved';
-    const billingAllows = BILLING_ALLOWED_STATUSES.has(String(billingStatus || 'active'));
+    const billingAllows = typeof access === 'object'
+        ? access.isOperational !== false
+        : ['trialing', 'active', 'past_due', 'grace'].includes(String(access || ''));
 
     return FEATURE_KEYS.reduce((acc, featureName) => {
         const definition = assertFeatureKey(featureName);
@@ -119,7 +102,7 @@ const computeFeatureStatuses = (shop, planFeatures = LEGACY_DEFAULT_FEATURES, bi
             ? getNestedFeature(shopFlags, definition.shopOverrideKey)
             : undefined;
 
-        const defaultAllows = planAllows !== false;
+        const defaultAllows = planAllows === true;
         const overrideAllows = shopOverride !== false;
         let reason = 'enabled';
         if (!shopAvailable) reason = 'shop_unavailable';
@@ -141,8 +124,8 @@ const computeFeatureStatuses = (shop, planFeatures = LEGACY_DEFAULT_FEATURES, bi
     }, {});
 };
 
-const computeEffectiveFeatures = (shop, planFeatures = LEGACY_DEFAULT_FEATURES, billingStatus = 'active') => {
-    const statuses = computeFeatureStatuses(shop, planFeatures, billingStatus);
+const computeEffectiveFeatures = (shop, planFeatures = LEGACY_DEFAULT_FEATURES, access = { isOperational: true }) => {
+    const statuses = computeFeatureStatuses(shop, planFeatures, access);
     return Object.fromEntries(Object.entries(statuses).map(([key, status]) => [key, status.enabled]));
 };
 
@@ -171,8 +154,9 @@ const getShopFeatureStatuses = async (shopOrId) => {
     }
 
     const subscription = await ensureSubscriptionExists(shop);
+    const access = resolveSubscriptionAccess({ subscription, shop });
     const planFeatures = await getPlanFeatures(shop, subscription);
-    return computeFeatureStatuses(shop, planFeatures, subscription.status);
+    return computeFeatureStatuses(shop, planFeatures, access);
 };
 
 const getShopFeatureFlags = async (shopOrId) => {
@@ -202,7 +186,6 @@ const getFeatureStatus = async (shopOrId, featureName) => {
 module.exports = {
     FEATURE_KEYS,
     LEGACY_DEFAULT_FEATURES,
-    BILLING_ALLOWED_STATUSES,
     computeFeatureStatuses,
     computeEffectiveFeatures,
     getEffectivePlanRef,

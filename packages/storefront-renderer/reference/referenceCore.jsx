@@ -155,10 +155,14 @@ export const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
     subtitle: slide.subtitle ?? (index === 0 ? hero.subtitle : "") ?? "",
     badgeText: slide.badgeText ?? (index === 0 ? hero.badgeText : "") ?? "",
     discountText: slide.discountText ?? "",
-    primaryCtaText: slide.primaryCtaText || (index === 0 ? hero.ctaLabel : "") || "Shop Now",
-    primaryCtaLink: slide.primaryCtaLink || (index === 0 ? hero.ctaUrl : "") || "#products",
+    primaryCtaText: slide.primaryCtaText !== undefined
+        ? slide.primaryCtaText
+        : ((index === 0 ? hero.ctaLabel : "") || "Shop Now"),
+    primaryCtaLink: slide.primaryCtaLink !== undefined
+        ? slide.primaryCtaLink
+        : ((index === 0 ? hero.ctaUrl : "") || "#products"),
     secondaryCtaText: slide.secondaryCtaText ?? "Explore Collection",
-    secondaryCtaLink: slide.secondaryCtaLink || "#products",
+    secondaryCtaLink: slide.secondaryCtaLink !== undefined ? slide.secondaryCtaLink : "#products",
     desktopFocalPoint: {
         x: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.x) || 50)),
         y: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.y) || 50)),

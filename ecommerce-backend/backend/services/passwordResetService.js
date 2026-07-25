@@ -112,7 +112,7 @@ const findOrCreateAccountFromLegacy = async ({ email, audience, shop }) => {
         query.shop_id = shop._id;
     }
 
-    const legacyUsers = await User.find(query).limit(2);
+    const legacyUsers = await User.find(query).select('+password').limit(2);
     if (legacyUsers.length !== 1) return null;
 
     const legacyUser = legacyUsers[0];
@@ -139,7 +139,7 @@ const createMembershipFromLegacyIfSafe = async ({ email, audience, shop, account
         status: 'Active',
         role: { $in: getRolesForAudience(audience) },
         shop_id: shop._id
-    }).limit(2);
+    }).select('+password').limit(2);
 
     if (legacyUsers.length !== 1) return null;
 

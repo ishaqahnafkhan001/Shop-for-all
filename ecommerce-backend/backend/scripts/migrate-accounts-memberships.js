@@ -11,7 +11,7 @@ const StaffPermission = require('../models/StaffPermission');
 const run = async () => {
     await connectDB();
 
-    const users = await User.find().sort({ createdAt: 1 });
+    const users = await User.find().select('+password').sort({ createdAt: 1 });
 
     for (const user of users) {
         let account = await Account.findOne({ email: user.email });

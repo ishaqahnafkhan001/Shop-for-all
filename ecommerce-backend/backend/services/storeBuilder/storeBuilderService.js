@@ -36,6 +36,7 @@ const BUILDER_SHOP_FIELDS = [
 
 const getActorId = (req) => req?.user?._id || req?.user?.id || null;
 const getActorName = (req) => String(req?.user?.fullName || req?.user?.email || req?.user?.role || 'Vendor').slice(0, 120);
+const toJsonSafeTheme = (theme) => JSON.parse(JSON.stringify(theme || {}));
 
 const normalizeShopAliases = async ({ aliases, shop }) => {
     const result = normalizeSearchAliases({ aliases, officialName: shop?.shopName });
@@ -68,7 +69,7 @@ const normalizeShopAliases = async ({ aliases, shop }) => {
 };
 
 const normalizeThemeForShop = async (theme, shop) => {
-    const sanitizedTheme = sanitizeThemePayload(theme);
+    const sanitizedTheme = sanitizeThemePayload(toJsonSafeTheme(theme));
     const validation = validateTheme(sanitizedTheme);
     if (!validation.valid) {
         const error = new Error(validation.errors[0]?.message || 'The Store Builder theme is invalid.');
@@ -438,7 +439,7 @@ const publishStoreBuilder = async ({
                 });
             }
         }
-        savedShop.theme = normalizeTheme(savedShop.theme);
+        savedShop.theme = normalizeTheme(toJsonSafeTheme(savedShop.theme));
         return savedShop;
     };
 

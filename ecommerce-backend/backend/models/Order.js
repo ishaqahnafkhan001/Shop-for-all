@@ -482,6 +482,7 @@ const orderSchema = new Schema({
  * 🚀 Indexes
  */
 orderSchema.index({ shop_id: 1, createdAt: -1 });
+orderSchema.index({ createdAt: -1 });
 orderSchema.index({ shop_id: 1, status: 1 });
 orderSchema.index({ customer: 1, createdAt: -1 });
 orderSchema.index({ shop_id: 1, isDeleted: 1 });

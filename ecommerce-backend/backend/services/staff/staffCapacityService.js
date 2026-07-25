@@ -1,6 +1,7 @@
 const User = require('../../models/User');
 const Shop = require('../../models/Shop');
 const { getPlanByIdOrNameOrDefault } = require('../billing/billingPlanService');
+const { resolveSubscriptionAccess } = require('../billing/subscriptionAccessResolver');
 const { ensureSubscriptionExists } = require('../billing/subscriptionService');
 const { computeEffectiveFeatures, getEffectivePlanRef, getPlanFeatures } = require('../shops/featureAccessService');
 
@@ -103,7 +104,8 @@ const getStaffCapacity = async (shopId) => {
             status: 'Active'
         })
     ]);
-    const effectiveFeatures = computeEffectiveFeatures(shop, planFeatures, subscription.status);
+    const access = resolveSubscriptionAccess({ subscription, shop });
+    const effectiveFeatures = computeEffectiveFeatures(shop, planFeatures, access);
     const plan = await getEffectivePlanForShop(shop, subscription);
     const staffLimit = normalizeStaffLimit(plan.staffLimit);
     const featureEnabled = Boolean(effectiveFeatures.staffAccounts);
@@ -130,7 +132,7 @@ const getStaffCapacity = async (shopId) => {
         canAddStaff,
         featureEnabled,
         planName: plan.name || shop.plan?.name || 'Starter',
-        subscriptionStatus: subscription?.status || 'active',
+        subscriptionStatus: access.subscriptionStatus,
         message
     };
 };

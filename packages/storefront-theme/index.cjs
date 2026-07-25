@@ -484,10 +484,20 @@ const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
     subtitle: cleanText(slide.subtitle || (index === 0 ? hero.subtitle : ''), 280),
     badgeText: cleanText(slide.badgeText, 80),
     discountText: cleanText(slide.discountText, 80),
-    primaryCtaText: cleanText(slide.primaryCtaText || (index === 0 ? hero.ctaLabel : '') || 'Shop Now', 80),
-    primaryCtaLink: sanitizeThemeUrl(slide.primaryCtaLink || (index === 0 ? hero.ctaUrl : '') || '#products'),
-    secondaryCtaText: cleanText(slide.secondaryCtaText || 'Explore Collection', 80),
-    secondaryCtaLink: sanitizeThemeUrl(slide.secondaryCtaLink || '#products'),
+    primaryCtaText: cleanText(
+        slide.primaryCtaText !== undefined ? slide.primaryCtaText : ((index === 0 ? hero.ctaLabel : '') || 'Shop Now'),
+        80
+    ),
+    primaryCtaLink: sanitizeThemeUrl(
+        slide.primaryCtaLink !== undefined ? slide.primaryCtaLink : ((index === 0 ? hero.ctaUrl : '') || '#products')
+    ),
+    secondaryCtaText: cleanText(
+        slide.secondaryCtaText !== undefined ? slide.secondaryCtaText : 'Explore Collection',
+        80
+    ),
+    secondaryCtaLink: sanitizeThemeUrl(
+        slide.secondaryCtaLink !== undefined ? slide.secondaryCtaLink : '#products'
+    ),
     desktopFocalPoint: normalizeFocalPoint(slide.desktopFocalPoint),
     mobileFocalPoint: normalizeFocalPoint(slide.mobileFocalPoint),
 });

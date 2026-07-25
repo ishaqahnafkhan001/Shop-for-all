@@ -23,8 +23,23 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 test('canonical subscription matrix uses exact launch prices, limits, and features', () => {
     assert.deepEqual(
         Object.fromEntries(Object.entries(PLAN_DEFINITIONS).map(([key, plan]) => [key, plan.monthlyPrice])),
-        { starter: 999, growth: 1999, pro: 3999 }
+        { beginner: 499, starter: 999, growth: 1999, pro: 3999 }
     );
+    assert.deepEqual(PLAN_DEFINITIONS.beginner.limits, {
+        aiProductCreationsPerWeek: 0,
+        imagesPerProduct: 3,
+        staffAccounts: 0,
+        productCount: 25,
+        activityLogRetentionDays: 7
+    });
+    assert.equal(PLAN_DEFINITIONS.beginner.yearlyPrice, 4990);
+    assert.equal(PLAN_DEFINITIONS.beginner.features.aiProductCreation, false);
+    assert.equal(PLAN_DEFINITIONS.beginner.features.storeBuilder, false);
+    assert.equal(PLAN_DEFINITIONS.beginner.features.homepageSeo, false);
+    assert.equal(PLAN_DEFINITIONS.beginner.features.analytics, false);
+    assert.equal(PLAN_DEFINITIONS.beginner.features.lowStockAlerts, false);
+    assert.equal(PLAN_DEFINITIONS.beginner.features.staffAccounts, false);
+    assert.equal(PLAN_DEFINITIONS.beginner.features.publicVerifiedBadge, false);
     assert.deepEqual(PLAN_DEFINITIONS.starter.limits, {
         aiProductCreationsPerWeek: 10,
         imagesPerProduct: 5,
@@ -49,6 +64,7 @@ test('canonical subscription matrix uses exact launch prices, limits, and featur
 });
 
 test('legacy plan names normalize safely and unlimited is represented only by null', () => {
+    assert.equal(normalizePlanKey('Beginner'), 'beginner');
     assert.equal(normalizePlanKey('Growth Plan'), 'growth');
     assert.equal(normalizePlanKey('PRO'), 'pro');
     assert.equal(normalizePlanKey('legacy-free-plan'), 'starter');

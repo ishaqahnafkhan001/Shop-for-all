@@ -23,9 +23,13 @@ const {
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
 const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
+const {
+    applyBrandingToPublicTheme,
+    resolveStoreBranding
+} = require('../services/shops/storeBrandingService');
 const { buildPagination } = require('../utils/pagination');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const getActiveBannerQuery = (shopId, now = new Date()) => ({
@@ -98,6 +102,18 @@ const applyPublicPlanSettings = (shop, planAccess) => {
     return shop;
 };
 
+const applyEssentialBranding = async (shop, planAccess) => {
+    if (!shop) return shop;
+    const branding = await resolveStoreBranding(shop);
+    shop.theme = applyBrandingToPublicTheme({
+        theme: shop.theme || {},
+        branding,
+        storeBuilderEnabled: Boolean(planAccess?.features?.storeBuilder)
+    });
+    shop.branding = branding;
+    return shop;
+};
+
 const attachPublicBranding = async (shop) => {
     if (!shop) return shop;
     shop.showPlatformBranding = !(await hasFeature(shop._id, 'platformBrandingRemoval'));
@@ -162,6 +178,7 @@ exports.getStoreInfo = async (req, res) => {
         }
         const planAccess = await getShopPlanAccess(shop._id);
         applyPublicPlanSettings(shop, planAccess);
+        await applyEssentialBranding(shop, planAccess);
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop, {
@@ -278,6 +295,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
 
         await ensureThemeSectionArchitecture(shop);
         applyPublicPlanSettings(shop, planAccess);
+        await applyEssentialBranding(shop, planAccess);
         applyDefaultPoliciesToShopPayload(shop);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop, {

@@ -9,6 +9,7 @@ const User = require('../models/User');
 const { enqueueJob } = require('./jobQueueService');
 const logger = require('./logger');
 const { hasFeature } = require('./shops/featureAccessService');
+const { assertJobEntitlementStillValid } = require('./workers/jobEntitlementService');
 
 const formatCurrency = (value) => `৳ ${Number(value || 0).toLocaleString('en-BD')}`;
 const shortId = (value) => `#${String(value || '').slice(-6).toUpperCase()}`;
@@ -158,6 +159,7 @@ const processShopEventJob = async (job) => {
             ? await User.findById(order.customer).select('fullName email').lean()
             : job.payload?.customerSnapshot || {};
 
+        await assertJobEntitlementStillValid({ job });
         await sendNewOrderNotificationNow({ shop_id: job.shop_id, order, customer: customer || job.payload?.customerSnapshot });
         return;
     }
@@ -170,6 +172,7 @@ const processShopEventJob = async (job) => {
         }).select('fullName email').lean();
 
         if (!customer) throw new Error('Customer not found for notification job');
+        await assertJobEntitlementStillValid({ job });
         await sendCustomerRegisteredNotificationNow({ shop_id: job.shop_id, customer });
         return;
     }

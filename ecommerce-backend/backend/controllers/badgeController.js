@@ -5,6 +5,7 @@ const { enqueueJob } = require('../services/jobQueueService');
 const { getBadgeEligibility } = require('../services/badges/badgeEligibilityService');
 const { getBadgeJobStatus } = require('../services/badges/badgeAnalysisService');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
+const { runCriticalGovernanceAction } = require('../services/platformAuditOutboxService');
 const { createNotification } = require('../services/notificationService');
 const cache = require('../services/cacheService');
 
@@ -191,13 +192,21 @@ exports.getSuperAdminBadgeApplications = async (req, res) => {
         if (req.query.status) query.status = req.query.status;
         if (req.query.recommendation) query.recommendation = req.query.recommendation;
 
-        const [items, total] = await Promise.all([
+        const [items, total, statusCounts] = await Promise.all([
             BadgeApplication.find(query)
                 .populate('shopId', 'shopName subdomain badgeStatus badgeType badgeApprovedAt badgeRevokedReason')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
-            BadgeApplication.countDocuments(query)
+            BadgeApplication.countDocuments(query),
+            BadgeApplication.aggregate([
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 }
+                    }
+                }
+            ])
         ]);
 
         const shopIds = items.map(item => item.shopId?._id || item.shopId).filter(Boolean);
@@ -213,6 +222,14 @@ exports.getSuperAdminBadgeApplications = async (req, res) => {
                 row.owner = ownerMap[String(item.shopId?._id || item.shopId)] || null;
                 return row;
             })),
+            summary: statusCounts.reduce((summary, row) => {
+                const count = Number(row.count) || 0;
+                summary.total += count;
+                if (row._id === 'pending_super_admin_review') summary.ready += count;
+                if (row._id === 'approved') summary.approved += count;
+                if (row._id === 'rejected') summary.rejected += count;
+                return summary;
+            }, { total: 0, ready: 0, approved: 0, rejected: 0 }),
             pagination: paginationMeta({ page, limit, total })
         });
     } catch (err) {
@@ -238,54 +255,121 @@ exports.getSuperAdminBadgeApplicationById = async (req, res) => {
 
 exports.approveBadgeApplication = async (req, res) => {
     try {
+        const reason = String(req.body.reason || req.body.superAdminReason || '').trim();
+        if (!reason) {
+            return res.status(400).json({
+                success: false,
+                code: 'BADGE_REVIEW_REASON_REQUIRED',
+                error: 'A review note is required to approve a badge.'
+            });
+        }
         const application = await BadgeApplication.findById(req.params.id);
         if (!application) return res.status(404).json({ success: false, error: 'Badge application not found' });
+        if (application.status !== 'pending_super_admin_review') {
+            return res.status(409).json({
+                success: false,
+                code: 'BADGE_INVALID_STATE',
+                error: `Badge approval is not allowed while the application is ${application.status}.`
+            });
+        }
 
-        application.status = 'approved';
-        application.superAdminDecision = 'approved';
-        application.superAdminReason = req.body.reason || '';
-        application.approvedBy = getActorId(req);
-        application.approvedAt = new Date();
-        await application.save();
+        const eligibility = await getBadgeEligibility(application.shopId);
+        if (!eligibility.eligible) {
+            return res.status(409).json({
+                success: false,
+                code: 'BADGE_NOT_ELIGIBLE',
+                error: 'The shop no longer meets the trusted badge requirements.',
+                reasons: eligibility.missingRequirements.map(item => item.key)
+            });
+        }
 
-        await Shop.updateOne(
-            { _id: application.shopId },
-            {
-                $set: {
-                    badgeStatus: 'active',
-                    badgeType: application.badgeType,
-                    badgeApprovedAt: application.approvedAt,
-                    badgeRevokedAt: null,
-                    badgeRevokedReason: ''
+        const approvedAt = new Date();
+        const approved = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const updated = await BadgeApplication.findOneAndUpdate(
+                    {
+                        _id: application._id,
+                        status: 'pending_super_admin_review',
+                        __v: application.__v
+                    },
+                    {
+                        $set: {
+                            status: 'approved',
+                            superAdminDecision: 'approved',
+                            superAdminReason: reason,
+                            approvedBy: getActorId(req),
+                            approvedAt,
+                            eligibilitySnapshot: eligibility.snapshot
+                        },
+                        $inc: { __v: 1 }
+                    },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const error = new Error('Another reviewer changed this application. Reload and try again.');
+                    error.code = 'BADGE_REVIEW_CONFLICT';
+                    error.statusCode = 409;
+                    throw error;
                 }
-            }
-        );
-        await invalidateBadgeStorefrontCache(application.shopId);
 
-        await logPlatformAudit({
-            req,
-            action: 'badge.approved',
-            entityType: 'BadgeApplication',
-            entityId: application._id,
-            shop_id: application.shopId,
-            message: 'Trusted seller badge approved',
-            reason: application.superAdminReason,
-            metadata: { score: application.analysisScore, recommendation: application.recommendation }
+                const shopUpdate = await Shop.updateOne(
+                    {
+                        _id: application.shopId,
+                        isActive: { $ne: false },
+                        approvalStatus: { $ne: 'Suspended' }
+                    },
+                    {
+                        $set: {
+                            badgeStatus: 'active',
+                            badgeType: application.badgeType,
+                            badgeApprovedAt: approvedAt,
+                            badgeRevokedAt: null,
+                            badgeRevokedReason: ''
+                        }
+                    },
+                    { session }
+                );
+                if (shopUpdate.matchedCount !== 1) {
+                    const error = new Error('The shop is no longer operational.');
+                    error.code = 'BADGE_NOT_ELIGIBLE';
+                    error.statusCode = 409;
+                    throw error;
+                }
+                return updated;
+            },
+            audit: (updated) => ({
+                req,
+                action: 'badge.approved',
+                entityType: 'BadgeApplication',
+                entityId: updated._id,
+                shop_id: updated.shopId,
+                message: 'Trusted seller badge approved',
+                reason,
+                metadata: {
+                    score: updated.analysisScore,
+                    recommendation: updated.recommendation
+                }
+            })
         });
+        await invalidateBadgeStorefrontCache(approved.shopId);
 
         await createNotification({
-            shop_id: application.shopId,
+            shop_id: approved.shopId,
             type: 'system',
             title: 'Trusted Seller badge approved',
             message: 'Your Trusted Seller badge was approved and is now visible on your storefront.',
             entityType: 'BadgeApplication',
-            entityId: application._id,
+            entityId: approved._id,
             severity: 'success'
         });
 
-        res.status(200).json({ success: true, data: await serializeApplication(application) });
+        res.status(200).json({ success: true, data: await serializeApplication(approved) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to approve badge' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'BADGE_APPROVAL_FAILED',
+            error: err.message || 'Failed to approve badge'
+        });
     }
 };
 
@@ -296,39 +380,73 @@ exports.rejectBadgeApplication = async (req, res) => {
 
         const application = await BadgeApplication.findById(req.params.id);
         if (!application) return res.status(404).json({ success: false, error: 'Badge application not found' });
+        if (application.status !== 'pending_super_admin_review') {
+            return res.status(409).json({
+                success: false,
+                code: 'BADGE_INVALID_STATE',
+                error: `Badge rejection is not allowed while the application is ${application.status}.`
+            });
+        }
 
-        application.status = 'rejected';
-        application.superAdminDecision = 'rejected';
-        application.superAdminReason = reason;
-        application.rejectedBy = getActorId(req);
-        application.rejectedAt = new Date();
-        await application.save();
-
-        await logPlatformAudit({
-            req,
-            action: 'badge.rejected',
-            entityType: 'BadgeApplication',
-            entityId: application._id,
-            shop_id: application.shopId,
-            message: 'Trusted seller badge rejected',
-            reason,
-            severity: 'warning'
+        const rejectedAt = new Date();
+        const rejected = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const updated = await BadgeApplication.findOneAndUpdate(
+                    {
+                        _id: application._id,
+                        status: 'pending_super_admin_review',
+                        __v: application.__v
+                    },
+                    {
+                        $set: {
+                            status: 'rejected',
+                            superAdminDecision: 'rejected',
+                            superAdminReason: reason,
+                            rejectedBy: getActorId(req),
+                            rejectedAt
+                        },
+                        $inc: { __v: 1 }
+                    },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const conflict = new Error('Another reviewer changed this application. Reload and try again.');
+                    conflict.code = 'BADGE_REVIEW_CONFLICT';
+                    conflict.statusCode = 409;
+                    throw conflict;
+                }
+                return updated;
+            },
+            audit: updated => ({
+                req,
+                action: 'badge.rejected',
+                entityType: 'BadgeApplication',
+                entityId: updated._id,
+                shop_id: updated.shopId,
+                message: 'Trusted seller badge rejected',
+                reason,
+                severity: 'warning'
+            })
         });
 
         await createNotification({
-            shop_id: application.shopId,
+            shop_id: rejected.shopId,
             type: 'system',
             title: 'Trusted Seller badge rejected',
             message: `Your badge request was rejected: ${reason}`,
             entityType: 'BadgeApplication',
-            entityId: application._id,
+            entityId: rejected._id,
             severity: 'warning',
             metadata: { reason }
         });
 
-        res.status(200).json({ success: true, data: await serializeApplication(application) });
+        res.status(200).json({ success: true, data: await serializeApplication(rejected) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to reject badge' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'BADGE_REJECTION_FAILED',
+            error: err.message || 'Failed to reject badge'
+        });
     }
 };
 
@@ -339,49 +457,84 @@ exports.revokeBadgeApplication = async (req, res) => {
 
         const application = await BadgeApplication.findById(req.params.id);
         if (!application) return res.status(404).json({ success: false, error: 'Badge application not found' });
+        if (application.status !== 'approved') {
+            return res.status(409).json({
+                success: false,
+                code: 'BADGE_INVALID_STATE',
+                error: `Badge revocation is not allowed while the application is ${application.status}.`
+            });
+        }
 
-        application.status = 'revoked';
-        application.superAdminDecision = 'revoked';
-        application.superAdminReason = reason;
-        await application.save();
-
-        await Shop.updateOne(
-            { _id: application.shopId },
-            {
-                $set: {
-                    badgeStatus: 'revoked',
-                    badgeRevokedAt: new Date(),
-                    badgeRevokedReason: reason
+        const revokedAt = new Date();
+        const revoked = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const updated = await BadgeApplication.findOneAndUpdate(
+                    {
+                        _id: application._id,
+                        status: 'approved',
+                        __v: application.__v
+                    },
+                    {
+                        $set: {
+                            status: 'revoked',
+                            superAdminDecision: 'revoked',
+                            superAdminReason: reason
+                        },
+                        $inc: { __v: 1 }
+                    },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const conflict = new Error('Another reviewer changed this application. Reload and try again.');
+                    conflict.code = 'BADGE_REVIEW_CONFLICT';
+                    conflict.statusCode = 409;
+                    throw conflict;
                 }
-            }
-        );
-        await invalidateBadgeStorefrontCache(application.shopId);
 
-        await logPlatformAudit({
-            req,
-            action: 'badge.revoked',
-            entityType: 'BadgeApplication',
-            entityId: application._id,
-            shop_id: application.shopId,
-            message: 'Trusted seller badge revoked',
-            reason,
-            severity: 'warning'
+                await Shop.updateOne(
+                    { _id: updated.shopId, badgeStatus: 'active' },
+                    {
+                        $set: {
+                            badgeStatus: 'revoked',
+                            badgeRevokedAt: revokedAt,
+                            badgeRevokedReason: reason
+                        }
+                    },
+                    { session }
+                );
+                return updated;
+            },
+            audit: updated => ({
+                req,
+                action: 'badge.revoked',
+                entityType: 'BadgeApplication',
+                entityId: updated._id,
+                shop_id: updated.shopId,
+                message: 'Trusted seller badge revoked',
+                reason,
+                severity: 'warning'
+            })
         });
+        await invalidateBadgeStorefrontCache(revoked.shopId);
 
         await createNotification({
-            shop_id: application.shopId,
+            shop_id: revoked.shopId,
             type: 'system',
             title: 'Trusted Seller badge revoked',
             message: `Your badge was revoked: ${reason}`,
             entityType: 'BadgeApplication',
-            entityId: application._id,
+            entityId: revoked._id,
             severity: 'warning',
             metadata: { reason }
         });
 
-        res.status(200).json({ success: true, data: await serializeApplication(application) });
+        res.status(200).json({ success: true, data: await serializeApplication(revoked) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to revoke badge' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'BADGE_REVOCATION_FAILED',
+            error: err.message || 'Failed to revoke badge'
+        });
     }
 };
 

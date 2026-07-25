@@ -18,13 +18,19 @@ const jobSchema = new Schema({
     },
     payload: {
         type: Schema.Types.Mixed,
-        default: {}
+        default: {},
+        select: false
     },
     shop_id: {
         type: Schema.Types.ObjectId,
         ref: 'Shop',
         default: null,
         index: true
+    },
+    entitlementVersion: {
+        type: Number,
+        min: 0,
+        default: null
     },
     status: {
         type: String,
@@ -54,7 +60,8 @@ const jobSchema = new Schema({
     lockId: {
         type: String,
         trim: true,
-        default: ''
+        default: '',
+        select: false
     },
     lastError: {
         type: String,

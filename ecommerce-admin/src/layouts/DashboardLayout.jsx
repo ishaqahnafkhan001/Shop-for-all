@@ -1,9 +1,114 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import Topbar from '../components/dashboard/Topbar';
 import VerificationBanner from '../components/dashboard/VerificationBanner';
-import { CircleHelp } from 'lucide-react';
+import { CircleHelp, ShieldCheck, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import API from '../api/api';
+
+const PlatformStepUpDialog = ({ open, onClose }) => {
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const inputRef = useRef(null);
+    const dialogRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        const previouslyFocused = document.activeElement;
+        window.setTimeout(() => inputRef.current?.focus(), 0);
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape' && !submitting) onClose();
+            if (event.key !== 'Tab') return;
+            const focusable = [...(dialogRef.current?.querySelectorAll(
+                'button:not([disabled]), input:not([disabled])'
+            ) || [])];
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            previouslyFocused?.focus?.();
+        };
+    }, [onClose, open, submitting]);
+
+    if (!open) return null;
+
+    const submit = async (event) => {
+        event.preventDefault();
+        setError('');
+        setSubmitting(true);
+        try {
+            await API.post('/auth/step-up', { password });
+            setPassword('');
+            toast.success('Identity confirmed. Retry the sensitive action.');
+            window.dispatchEvent(new CustomEvent('platform:recent-auth-complete'));
+            onClose();
+        } catch (requestError) {
+            setError(requestError.response?.data?.error || 'Unable to confirm your identity.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4">
+            <form
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="platform-step-up-title"
+                aria-describedby="platform-step-up-description"
+                onSubmit={submit}
+                className="w-full max-w-md rounded-2xl bg-white shadow-2xl"
+            >
+                <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5">
+                    <div className="flex gap-3">
+                        <span className="rounded-xl bg-indigo-50 p-2 text-indigo-700"><ShieldCheck size={20} /></span>
+                        <div>
+                            <h2 id="platform-step-up-title" className="font-black text-slate-950">Confirm your identity</h2>
+                            <p id="platform-step-up-description" className="mt-1 text-sm leading-5 text-slate-500">
+                                Enter your password before performing this sensitive platform action.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onClick={onClose} disabled={submitting} aria-label="Close identity confirmation" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
+                        <X size={18} />
+                    </button>
+                </div>
+                <div className="p-5">
+                    <label htmlFor="platform-step-up-password" className="text-sm font-bold text-slate-900">Password</label>
+                    <input
+                        ref={inputRef}
+                        id="platform-step-up-password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={event => setPassword(event.target.value)}
+                        className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                    />
+                    {error && <p role="alert" className="mt-2 text-sm font-semibold text-rose-700">{error}</p>}
+                </div>
+                <div className="flex justify-end gap-3 border-t border-slate-100 p-5">
+                    <button type="button" onClick={onClose} disabled={submitting} className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-700">Cancel</button>
+                    <button type="submit" disabled={submitting || !password} className="min-h-11 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white disabled:bg-slate-300">
+                        {submitting ? 'Confirming...' : 'Confirm identity'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
 
 const helpTextByPath = [
     {
@@ -106,6 +211,7 @@ const getHelpText = (pathname) => (
 
 const DashboardLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [stepUpOpen, setStepUpOpen] = useState(false);
     const location = useLocation();
     const helpText = getHelpText(location.pathname);
 
@@ -114,6 +220,12 @@ const DashboardLayout = () => {
     useEffect(() => {
         queueMicrotask(() => setIsSidebarOpen(false));
     }, [location.pathname]);
+
+    useEffect(() => {
+        const openStepUp = () => setStepUpOpen(true);
+        window.addEventListener('platform:recent-auth-required', openStepUp);
+        return () => window.removeEventListener('platform:recent-auth-required', openStepUp);
+    }, []);
 
     return (
 
@@ -131,7 +243,7 @@ const DashboardLayout = () => {
                   - overflow-x-hidden: Prevents accidental horizontal scrolling on mobile.
                   - custom scrollbar classes (optional but recommended in your global css)
                 */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth transition-all duration-300">
+            <main inert={stepUpOpen ? true : undefined} className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth transition-all duration-300">
                 {/*
                       Note: Because we added padding and max-w to the `Overview` component
                       in the previous step, we leave this container edge-to-edge.
@@ -154,6 +266,7 @@ const DashboardLayout = () => {
                     <Outlet />
                 </div>
             </main>
+            <PlatformStepUpDialog open={stepUpOpen} onClose={() => setStepUpOpen(false)} />
         </div>
     </div>
 );

@@ -134,8 +134,9 @@ export const normalizeStorefrontPlan = (plan = null) => {
 
     if (normalized.some(value => value === "pro" || value.includes("pro-plan"))) return "pro";
     if (normalized.some(value => value === "growth" || value.includes("growth-plan"))) return "growth";
-    if (normalized.some(value => value === "starter" || value === "trial" || value === "trialing" || value.includes("starter-plan"))) return "starter";
     if (normalized.some(value => value === "beginner" || value.includes("beginner-plan"))) return "beginner";
+    if (normalized.some(value => value === "trial" || value === "trialing")) return "beginner";
+    if (normalized.some(value => value === "starter" || value.includes("starter-plan"))) return "starter";
     return "unknown";
 };
 

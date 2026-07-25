@@ -63,7 +63,10 @@ test('feature evaluation, usage warnings, analytics, and audit timeline remain t
     });
     assert.equal(upgrade.status, 202);
 
-    assert.ok(await SubscriptionAnalyticsEvent.exists({ shopId: shopA._id, eventType: 'upgrade_clicked' }));
+    assert.ok(await SubscriptionAnalyticsEvent.exists({
+        shopId: shopA._id,
+        eventType: 'beginner_upgrade_cta_clicked'
+    }));
     assert.ok(await SubscriptionAuditLog.exists({ shopId: shopA._id, eventType: 'UpgradeClicked' }));
 
     const vendorTimeline = await vendor.get('/api/admin/billing/timeline?limit=100');

@@ -61,16 +61,20 @@ const {
     buildVerifiedCustomDomainQuery
 } = require('../utils/domainUtils');
 
-const PLATFORM_ROLES = ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'];
+const {
+    PLATFORM_ROLES,
+    PLATFORM_ROLE_PERMISSIONS
+} = require('../config/platformPermissions');
 
-const signSessionToken = ({ account, membership, user }) => jwt.sign(
+const signSessionToken = ({ account, membership, user, authTime = Date.now() }) => jwt.sign(
     {
         id: user._id,
         accountId: account._id,
         membershipId: membership?._id || null,
         role: user.role,
         shopId: user.shop_id || null,
-        sessionVersion: Number(user.sessionVersion || 0)
+        sessionVersion: Number(user.sessionVersion || 0),
+        authTime
     },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
@@ -137,6 +141,10 @@ const getSessionShopPayload = async (shopOrId) => {
             monthlyPrice: access.plan.monthlyPrice,
             currency: access.plan.currency || 'BDT',
             subscriptionStatus: access.subscriptionStatus,
+            paymentReviewStatus: access.paymentReviewStatus,
+            isTrialActive: access.isTrialActive,
+            isOperational: access.isOperational,
+            entitlementVersion: access.entitlementVersion,
             limits: access.limits,
             features: access.features,
             storeBuilderAccess: access.storeBuilderAccess,
@@ -482,7 +490,7 @@ exports.registerVendor = async (req, res) => {
 
         await createTrialForShop(newShop, {
             session,
-            selectedPlanSlug: selectedPlanSlug || 'starter',
+            selectedPlanSlug: selectedPlanSlug || 'beginner',
             intendedPlanId: selectedPlanId || null
         });
 
@@ -491,12 +499,12 @@ exports.registerVendor = async (req, res) => {
         await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.TRIAL_STARTED, {
             req,
             shopId: newShop._id,
-            planKey: selectedPlanSlug || 'starter',
+            planKey: 'beginner',
             newValue: {
                 status: 'trialing',
-                planKey: selectedPlanSlug || 'starter',
-                planName: (selectedPlanSlug || 'starter').replace(/^./, value => value.toUpperCase()),
-                intendedPlanSlug: selectedPlanSlug || 'starter',
+                planKey: 'beginner',
+                planName: 'Beginner',
+                intendedPlanSlug: selectedPlanSlug || 'beginner',
                 trialEndsAt: newShop.plan?.trialEndsAt || null
             },
             affectedResources: ['subscription', 'trial']
@@ -580,7 +588,9 @@ exports.registerCustomer = async (req, res) => {
             });
         }
 
-        let account = await Account.findOne({ email: cleanEmail }).session(session);
+        let account = await Account.findOne({ email: cleanEmail })
+            .select('+passwordHash')
+            .session(session);
         const existingShopCustomer = await User.findOne({
             email: cleanEmail,
             shop_id: targetShop._id,
@@ -720,7 +730,7 @@ exports.login = async (req, res) => {
         const { email, password, subdomain } = value;
         const cleanEmail = normalizeEmail(email);
 
-        let account = await Account.findOne({ email: cleanEmail });
+        let account = await Account.findOne({ email: cleanEmail }).select('+passwordHash');
 
         if (!account) {
             let legacyShop = null;
@@ -731,7 +741,7 @@ exports.login = async (req, res) => {
             const legacyUsers = await User.find({
                 email: cleanEmail,
                 ...(legacyShop ? { shop_id: legacyShop._id } : {})
-            });
+            }).select('+password');
 
             if (legacyUsers.length > 1) {
                 return res.status(409).json({
@@ -981,13 +991,13 @@ exports.updatePassword = async (req, res) => {
             return res.status(401).json({ error: 'Not authorized. Please login again.' });
         }
 
-        const user = await User.findById(userId).select('password account_id status');
+        const user = await User.findById(userId).select('+password account_id status');
         if (!user || user.status !== 'Active') {
             return res.status(401).json({ error: 'Not authorized. Please login again.' });
         }
 
         const account = accountId || user.account_id
-            ? await Account.findById(accountId || user.account_id).select('passwordHash status')
+            ? await Account.findById(accountId || user.account_id).select('+passwordHash status')
             : null;
 
         if (account && account.status !== 'Active') {
@@ -1082,6 +1092,9 @@ exports.getMe = async (req, res) => {
 
         user.accountId = req.user?.accountId || user.account_id;
         user.membershipId = req.user?.membershipId || user.membership_id;
+        if (PLATFORM_ROLES.includes(user.role)) {
+            user.platformPermissions = [...(PLATFORM_ROLE_PERMISSIONS[user.role] || [])];
+        }
 
         res.status(200).json({
             success: true,
@@ -1110,4 +1123,50 @@ exports.logout = (req, res) => {
     res.status(200).json({
         message: 'Logged out successfully'
     });
+};
+
+exports.stepUpAuthentication = async (req, res) => {
+    try {
+        if (!req.user?.accountId) {
+            return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Please login first.' });
+        }
+        const password = String(req.body.password || '');
+        if (!password) {
+            return res.status(400).json({ success: false, code: 'PASSWORD_REQUIRED', error: 'Password is required.' });
+        }
+
+        const [account, user] = await Promise.all([
+            Account.findById(req.user.accountId).select('+passwordHash'),
+            User.findById(req.user._id)
+        ]);
+        if (!account || !user || account.status !== 'Active' || user.status !== 'Active') {
+            return res.status(403).json({ success: false, code: 'ACCOUNT_INACTIVE', error: 'Account is inactive.' });
+        }
+        if (!PLATFORM_ROLES.includes(user.role)) {
+            return res.status(403).json({ success: false, code: 'PLATFORM_ACCESS_DENIED', error: 'Platform access denied.' });
+        }
+
+        const passwordMatches = await bcrypt.compare(password, account.passwordHash);
+        if (!passwordMatches) {
+            return res.status(401).json({ success: false, code: 'INVALID_PASSWORD', error: 'Invalid password.' });
+        }
+
+        const token = signSessionToken({
+            account,
+            membership: null,
+            user,
+            authTime: Date.now()
+        });
+        res.cookie('token', token, getCookieOptions());
+        return res.status(200).json({
+            success: true,
+            message: 'Recent authentication confirmed.',
+            recentAuthExpiresInSeconds: Math.floor(
+                (Number(process.env.PLATFORM_RECENT_AUTH_MAX_AGE_MS) || 15 * 60 * 1000) / 1000
+            )
+        });
+    } catch (err) {
+        console.error('Step-up authentication error:', err);
+        return res.status(500).json({ success: false, error: 'Unable to confirm recent authentication.' });
+    }
 };

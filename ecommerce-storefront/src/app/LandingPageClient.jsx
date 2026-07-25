@@ -876,14 +876,14 @@ export default function LandingPageClient({ plans = [] }) {
                             </div>
                             <p className="mt-4 text-sm leading-6 text-slate-600">
                                 {step === 1
-                                    ? `Start with a 14-day free trial. Intended plan: ${selectedPlan?.name || "Starter"}. Payment activates only after Super Admin approval.`
+                                    ? `Start with a 14-day Beginner trial. Intended plan: ${selectedPlan?.name || "Beginner"}. Payment activates only after Super Admin approval.`
                                     : "Enter your code to create the store and open the storefront."}
                             </p>
                             <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm">
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
-                                        <p className="font-black text-slate-950">{selectedPlan?.name || "Starter"} selected</p>
-                                        <p className="mt-1 text-xs font-semibold text-slate-500">Trial features start with Starter. Your selected plan unlocks after payment verification.</p>
+                                        <p className="font-black text-slate-950">{selectedPlan?.name || "Beginner"} selected</p>
+                                        <p className="mt-1 text-xs font-semibold text-slate-500">Trial features start with Beginner. Your selected plan unlocks after payment verification.</p>
                                     </div>
                                     <button
                                         type="button"

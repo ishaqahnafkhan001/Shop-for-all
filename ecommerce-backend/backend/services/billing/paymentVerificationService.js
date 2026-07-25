@@ -6,6 +6,7 @@ const User = require('../../models/User');
 const VendorPlan = require('../../models/VendorPlan');
 const UpgradeIntent = require('../../models/UpgradeIntent');
 const { logPlatformAudit } = require('../platformAuditLogService');
+const { runCriticalGovernanceAction } = require('../platformAuditOutboxService');
 const { createNotification } = require('../notificationService');
 const { createPlatformNotification } = require('../platformNotificationService');
 const { sendSuperAdminPaymentSubmittedEmailSafe } = require('../superAdminEmailService');
@@ -13,6 +14,7 @@ const { markInvoiceSubmitted, markInvoicePaid, rejectInvoice } = require('./invo
 const { getPlanSlug } = require('./billingPlanService');
 const {
     activateSubscription,
+    emitDeferredSubscriptionEvent,
     markPendingApproval,
     returnToTrialOrPastDueAfterRejection
 } = require('./subscriptionService');
@@ -135,64 +137,112 @@ const submitManualPayment = async ({
 const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) => {
     const payment = await PaymentTransaction.findById(paymentId);
     if (!payment) throw new Error('Payment not found');
-    if (['approved', 'verified'].includes(payment.status)) return payment;
 
     const invoice = await Invoice.findById(payment.invoiceId);
     if (!invoice) throw new Error('Invoice not found');
-
-    payment.status = 'approved';
-    payment.verifiedBy = getActorId(req);
-    payment.verifiedAt = new Date();
-    payment.adminNote = adminNote || payment.adminNote;
-    payment.rejectionReason = '';
-    await payment.save();
-
-    const paidInvoice = await markInvoicePaid(invoice._id, { notes: adminNote });
-    await activateSubscription({
-        subscriptionId: paidInvoice.subscriptionId,
-        planId: paidInvoice.planId || paidInvoice.planSlug || paidInvoice.planName,
-        billingCycle: paidInvoice.billingCycle,
-        invoiceId: paidInvoice._id,
-        req
-    });
-    if (paidInvoice.upgradeIntentId) {
-        await UpgradeIntent.updateOne(
-            {
-                _id: paidInvoice.upgradeIntentId,
-                shopId: payment.shopId,
-                status: 'active'
-            },
-            {
-                $set: {
-                    status: 'completed',
-                    completedAt: new Date()
-                }
-            }
-        );
+    if (['approved', 'verified'].includes(payment.status)) {
+        const subscription = await Subscription.findById(invoice.subscriptionId)
+            .select('status lastInvoiceId');
+        if (
+            invoice.status === 'paid' &&
+            subscription?.status === 'active' &&
+            String(subscription.lastInvoiceId || '') === String(invoice._id)
+        ) {
+            return payment;
+        }
     }
 
-    await logPlatformAudit({
-        req,
-        action: 'billing.payment_verified',
-        entityType: 'PaymentTransaction',
-        entityId: payment._id,
-        shop_id: payment.shopId,
-        message: 'Manual payment approved by Super Admin',
-        metadata: { invoiceId: invoice._id, provider: payment.provider, amount: payment.amount }
+    if (payment.status !== 'pending') {
+        const error = new Error(`Payment cannot be approved while it is ${payment.status}.`);
+        error.code = 'PAYMENT_INVALID_STATE';
+        error.statusCode = 409;
+        throw error;
+    }
+
+    const verifiedAt = new Date();
+    const result = await runCriticalGovernanceAction({
+        mutate: async (session) => {
+            const currentPayment = await PaymentTransaction.findOne({
+                _id: payment._id,
+                status: 'pending',
+                __v: payment.__v
+            }).session(session);
+            if (!currentPayment) {
+                const conflict = new Error('Another reviewer changed this payment. Reload and try again.');
+                conflict.code = 'PAYMENT_REVIEW_CONFLICT';
+                conflict.statusCode = 409;
+                throw conflict;
+            }
+
+            currentPayment.status = 'approved';
+            currentPayment.verifiedBy = getActorId(req);
+            currentPayment.verifiedAt = verifiedAt;
+            currentPayment.adminNote = adminNote || currentPayment.adminNote;
+            currentPayment.rejectionReason = '';
+            await currentPayment.save({ session });
+
+            const paidInvoice = await markInvoicePaid(invoice._id, {
+                notes: adminNote,
+                paidAt: verifiedAt,
+                session
+            });
+            const subscription = await activateSubscription({
+                subscriptionId: paidInvoice.subscriptionId,
+                planId: paidInvoice.planId || paidInvoice.planSlug || paidInvoice.planName,
+                billingCycle: paidInvoice.billingCycle,
+                invoiceId: paidInvoice._id,
+                req,
+                now: verifiedAt,
+                session,
+                skipAudit: true,
+                deferEvents: true
+            });
+            if (paidInvoice.upgradeIntentId) {
+                await UpgradeIntent.updateOne(
+                    {
+                        _id: paidInvoice.upgradeIntentId,
+                        shopId: currentPayment.shopId,
+                        status: 'active'
+                    },
+                    {
+                        $set: {
+                            status: 'completed',
+                            completedAt: verifiedAt
+                        }
+                    },
+                    { session }
+                );
+            }
+            return { payment: currentPayment, invoice: paidInvoice, subscription };
+        },
+        audit: ({ payment: approvedPayment, invoice: paidInvoice }) => ({
+            req,
+            action: 'billing.payment_verified',
+            entityType: 'PaymentTransaction',
+            entityId: approvedPayment._id,
+            shop_id: approvedPayment.shopId,
+            message: 'Manual payment approved by platform billing reviewer',
+            metadata: {
+                invoiceId: paidInvoice._id,
+                provider: approvedPayment.provider,
+                amount: approvedPayment.amount
+            }
+        })
     });
+    await emitDeferredSubscriptionEvent(result.subscription);
 
     await createNotification({
-        shop_id: payment.shopId,
+        shop_id: result.payment.shopId,
         type: 'system',
         title: 'Payment verified',
         message: 'Your payment was approved. Your subscription is now active.',
         entityType: 'PaymentTransaction',
-        entityId: payment._id,
+        entityId: result.payment._id,
         severity: 'success',
-        metadata: { invoiceId: invoice._id, amount: payment.amount }
+        metadata: { invoiceId: result.invoice._id, amount: result.payment.amount }
     });
 
-    return payment;
+    return result.payment;
 };
 
 const rejectManualPayment = async ({ paymentId, rejectionReason, req = null, adminNote = '' }) => {
@@ -203,46 +253,80 @@ const rejectManualPayment = async ({ paymentId, rejectionReason, req = null, adm
     const payment = await PaymentTransaction.findById(paymentId);
     if (!payment) throw new Error('Payment not found');
     if (['approved', 'verified'].includes(payment.status)) throw new Error('Approved payments cannot be rejected');
-
-    payment.status = 'rejected';
-    payment.rejectionReason = String(rejectionReason).trim();
-    payment.adminNote = adminNote || payment.adminNote;
-    payment.verifiedBy = getActorId(req);
-    payment.verifiedAt = new Date();
-    await payment.save();
-
-    const invoice = await rejectInvoice(payment.invoiceId, { notes: payment.rejectionReason });
-    const subscription = await Subscription.findById(invoice.subscriptionId);
-    if (subscription) {
-        await returnToTrialOrPastDueAfterRejection(subscription, {
-            req,
-            reason: payment.rejectionReason
-        });
+    if (payment.status === 'rejected') {
+        const rejectedInvoice = await Invoice.findById(payment.invoiceId);
+        if (rejectedInvoice?.status === 'rejected') return payment;
+    }
+    if (payment.status !== 'pending') {
+        const error = new Error(`Payment cannot be rejected while it is ${payment.status}.`);
+        error.code = 'PAYMENT_INVALID_STATE';
+        error.statusCode = 409;
+        throw error;
     }
 
-    await logPlatformAudit({
-        req,
-        action: 'billing.payment_rejected',
-        entityType: 'PaymentTransaction',
-        entityId: payment._id,
-        shop_id: payment.shopId,
-        message: 'Manual payment rejected by Super Admin',
-        reason: payment.rejectionReason,
-        severity: 'warning'
+    const safeReason = String(rejectionReason).trim();
+    const rejectedAt = new Date();
+    const result = await runCriticalGovernanceAction({
+        mutate: async (session) => {
+            const currentPayment = await PaymentTransaction.findOne({
+                _id: payment._id,
+                status: 'pending',
+                __v: payment.__v
+            }).session(session);
+            if (!currentPayment) {
+                const conflict = new Error('Another reviewer changed this payment. Reload and try again.');
+                conflict.code = 'PAYMENT_REVIEW_CONFLICT';
+                conflict.statusCode = 409;
+                throw conflict;
+            }
+
+            currentPayment.status = 'rejected';
+            currentPayment.rejectionReason = safeReason;
+            currentPayment.adminNote = adminNote || currentPayment.adminNote;
+            currentPayment.verifiedBy = getActorId(req);
+            currentPayment.verifiedAt = rejectedAt;
+            await currentPayment.save({ session });
+
+            const rejectedInvoice = await rejectInvoice(currentPayment.invoiceId, {
+                notes: safeReason,
+                session
+            });
+            const subscription = await Subscription.findById(rejectedInvoice.subscriptionId).session(session);
+            if (subscription) {
+                await returnToTrialOrPastDueAfterRejection(subscription, {
+                    req,
+                    reason: safeReason,
+                    session,
+                    deferEvents: true
+                });
+            }
+            return { payment: currentPayment, invoice: rejectedInvoice, subscription };
+        },
+        audit: ({ payment: rejectedPayment }) => ({
+            req,
+            action: 'billing.payment_rejected',
+            entityType: 'PaymentTransaction',
+            entityId: rejectedPayment._id,
+            shop_id: rejectedPayment.shopId,
+            message: 'Manual payment rejected by platform billing reviewer',
+            reason: safeReason,
+            severity: 'warning'
+        })
     });
+    if (result.subscription) await emitDeferredSubscriptionEvent(result.subscription);
 
     await createNotification({
-        shop_id: payment.shopId,
+        shop_id: result.payment.shopId,
         type: 'system',
         title: 'Payment rejected',
-        message: `Your payment was rejected: ${payment.rejectionReason}`,
+        message: `Your payment was rejected: ${safeReason}`,
         entityType: 'PaymentTransaction',
-        entityId: payment._id,
+        entityId: result.payment._id,
         severity: 'warning',
-        metadata: { invoiceId: payment.invoiceId, reason: payment.rejectionReason }
+        metadata: { invoiceId: result.payment.invoiceId, reason: safeReason }
     });
 
-    return payment;
+    return result.payment;
 };
 
 module.exports = {

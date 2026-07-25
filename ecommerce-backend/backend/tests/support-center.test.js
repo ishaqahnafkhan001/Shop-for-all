@@ -34,11 +34,13 @@ test('support account roles are accepted by auth but remain separate from shop m
     const accountModel = read('models/Account.js');
     const authMiddleware = read('middlewares/auth.js');
     const authController = read('controllers/authController.js');
+    const platformPermissions = read('config/platformPermissions.js');
 
-    assert.match(userModel, /SupportAgent/);
-    assert.match(userModel, /TechnicalSupport/);
-    assert.match(userModel, /return !\['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'\]\.includes\(this\.role\)/);
-    assert.match(accountModel, /SupportLead/);
+    assert.match(platformPermissions, /SupportAgent/);
+    assert.match(platformPermissions, /SupportLead/);
+    assert.match(platformPermissions, /TechnicalSupport/);
+    assert.match(userModel, /return !PLATFORM_ROLES\.includes\(this\.role\)/);
+    assert.match(accountModel, /\.\.\.PLATFORM_ROLES/);
     assert.match(authMiddleware, /PLATFORM_ROLES/);
     assert.match(authMiddleware, /account\.platformRole !== legacyUser\.role/);
     assert.match(authController, /PLATFORM_ROLES\.includes\(account\.platformRole\)/);

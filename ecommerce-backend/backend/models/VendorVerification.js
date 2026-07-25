@@ -45,7 +45,8 @@ const vendorVerificationSchema = new Schema({
     },
     nidNumber: {
         type: String,
-        trim: true
+        trim: true,
+        select: false
     },
     nidName: {
         type: String,
@@ -53,15 +54,17 @@ const vendorVerificationSchema = new Schema({
     },
     nidFrontUrl: {
         type: String,
-        default: ''
+        default: '',
+        select: false
     },
     nidBackUrl: {
         type: String,
-        default: ''
+        default: '',
+        select: false
     },
     nidDocuments: {
-        front: { type: nidDocumentSchema, default: () => ({}) },
-        back: { type: nidDocumentSchema, default: () => ({}) }
+        front: { type: nidDocumentSchema, default: () => ({}), select: false },
+        back: { type: nidDocumentSchema, default: () => ({}), select: false }
     },
     submittedAt: Date,
     verificationDeadline: {

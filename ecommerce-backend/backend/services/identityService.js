@@ -3,6 +3,7 @@ const User = require('../models/User');
 const ShopMembership = require('../models/ShopMembership');
 const CustomerProfile = require('../models/CustomerProfile');
 const StaffPermission = require('../models/StaffPermission');
+const { PLATFORM_ROLES } = require('../config/platformPermissions');
 
 const DEFAULT_PERMISSIONS = {
     overview: false,
@@ -122,7 +123,7 @@ const createAccountForLegacyUser = async (legacyUser, session) => {
         emailVerified: Boolean(legacyUser.emailVerified),
         emailVerifiedAt: legacyUser.emailVerifiedAt || null,
         status: legacyUser.status || 'Active',
-        platformRole: ['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(legacyUser.role)
+        platformRole: PLATFORM_ROLES.includes(legacyUser.role)
             ? legacyUser.role
             : 'None'
     }], { session });
@@ -134,7 +135,7 @@ const createAccountForLegacyUser = async (legacyUser, session) => {
 };
 
 const createMembershipForLegacyUser = async (legacyUser, account, session) => {
-    if (['SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'].includes(legacyUser.role) || !legacyUser.shop_id) return null;
+    if (PLATFORM_ROLES.includes(legacyUser.role) || !legacyUser.shop_id) return null;
 
     if (legacyUser.account_id && String(legacyUser.account_id) !== String(account._id)) {
         throw new Error('Legacy user is linked to a different account.');

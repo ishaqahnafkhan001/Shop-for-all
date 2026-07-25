@@ -220,8 +220,14 @@ const ensureShopVerificationStatus = async (shopOrId, options = {}) => {
     };
 };
 
-const approveVerification = async ({ verification, reviewer, req }) => {
-    const shop = await Shop.findById(verification.shop_id);
+const approveVerification = async ({
+    verification,
+    reviewer,
+    req,
+    session = null,
+    skipSideEffects = false
+}) => {
+    const shop = await Shop.findById(verification.shop_id).session(session || null);
     if (!shop) throw new Error('Shop not found');
 
     const reviewerRef = getReviewerRef(reviewer);
@@ -255,10 +261,13 @@ const approveVerification = async ({ verification, reviewer, req }) => {
         }
     }
 
-    await Promise.all([verification.save(), shop.save()]);
-    const overall = await syncShopVendorVerifiedFlag({ shop, verification });
-
     await Promise.all([
+        verification.save({ session }),
+        shop.save({ session })
+    ]);
+    const overall = await syncShopVendorVerifiedFlag({ shop, verification, session });
+
+    if (!skipSideEffects) await Promise.all([
         logAudit({
             req,
             shop_id: shop._id,
@@ -284,8 +293,16 @@ const approveVerification = async ({ verification, reviewer, req }) => {
     return { shop, verification, overall };
 };
 
-const rejectVerification = async ({ verification, reviewer, rejectionReason, adminNote = '', req }) => {
-    const shop = await Shop.findById(verification.shop_id);
+const rejectVerification = async ({
+    verification,
+    reviewer,
+    rejectionReason,
+    adminNote = '',
+    req,
+    session = null,
+    skipSideEffects = false
+}) => {
+    const shop = await Shop.findById(verification.shop_id).session(session || null);
     if (!shop) throw new Error('Shop not found');
 
     const reviewerRef = getReviewerRef(reviewer);
@@ -316,9 +333,12 @@ const rejectVerification = async ({ verification, reviewer, rejectionReason, adm
         shop.suspensionReason = VERIFICATION_SUSPENSION_REASON;
     }
 
-    await Promise.all([verification.save(), shop.save()]);
-
     await Promise.all([
+        verification.save({ session }),
+        shop.save({ session })
+    ]);
+
+    if (!skipSideEffects) await Promise.all([
         logAudit({
             req,
             shop_id: shop._id,

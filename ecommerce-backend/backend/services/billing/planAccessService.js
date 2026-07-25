@@ -10,6 +10,7 @@ const {
 } = require('../shops/featureAccessService');
 const { getSubscriptionUsage, toLegacyUsageShape } = require('./subscriptionUsageService');
 const { buildRichQuotaError } = require('./quotaResponseService');
+const { resolveSubscriptionAccess } = require('./subscriptionAccessResolver');
 
 const getShopId = (shopOrId) => shopOrId?._id || shopOrId;
 const isShopRecord = (value) => Boolean(
@@ -76,9 +77,10 @@ const getShopPlanAccess = async (shopOrId, { includeUsage = false } = {}) => {
     }
 
     const subscription = await ensureSubscriptionExists(shop);
-    const plan = await getPlanByIdOrNameOrDefault(getEffectivePlanRef(shop, subscription));
+    const resolvedAccess = resolveSubscriptionAccess({ subscription, shop });
+    const plan = await getPlanByIdOrNameOrDefault(resolvedAccess.effectivePlanRef);
     const planFeatures = await getPlanFeatures(shop, subscription);
-    const featureStatuses = computeFeatureStatuses(shop, planFeatures, subscription.status);
+    const featureStatuses = computeFeatureStatuses(shop, planFeatures, resolvedAccess);
     const effectiveFeatures = Object.fromEntries(
         Object.entries(featureStatuses).map(([key, status]) => [key, status.enabled])
     );
@@ -94,7 +96,12 @@ const getShopPlanAccess = async (shopOrId, { includeUsage = false } = {}) => {
         featureStatuses,
         storeBuilderAccess: plan.storeBuilderAccess || 'limited',
         storeBuilderCapabilities: plan.storeBuilderCapabilities || {},
-        subscriptionStatus: subscription.status,
+        subscriptionStatus: resolvedAccess.subscriptionStatus,
+        rawSubscriptionStatus: resolvedAccess.rawSubscriptionStatus,
+        paymentReviewStatus: resolvedAccess.paymentReviewStatus,
+        isTrialActive: resolvedAccess.isTrialActive,
+        isOperational: resolvedAccess.isOperational,
+        entitlementVersion: resolvedAccess.entitlementVersion,
         shopOperational: shop.isActive !== false && shop.approvalStatus === 'Approved'
     };
 

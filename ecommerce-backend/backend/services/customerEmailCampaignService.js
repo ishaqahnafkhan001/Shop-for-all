@@ -10,6 +10,7 @@ const {
 } = require('./mail/templates/productPromotionTemplate');
 const { sanitizePublicProduct } = require('./publicProductSerializer');
 const { hasFeature } = require('./shops/featureAccessService');
+const { assertJobEntitlementStillValid } = require('./workers/jobEntitlementService');
 
 const cleanText = (value = '', max = 2000) => String(value || '').trim().slice(0, max);
 
@@ -178,6 +179,10 @@ const processCustomerEmailCampaignJob = async (job) => {
                     message: job.payload.message
                 });
 
+            await assertJobEntitlementStillValid({
+                job,
+                feature: 'emailCampaigns'
+            });
             await sendMail({
                 type: 'admin',
                 to: customer.email,

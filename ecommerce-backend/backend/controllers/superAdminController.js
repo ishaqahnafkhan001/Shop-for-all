@@ -10,9 +10,11 @@ const PlatformAnnouncement = require('../models/PlatformAnnouncement');
 const AbuseReport = require('../models/AbuseReport');
 const VendorVerification = require('../models/VendorVerification');
 const PlatformAuditLog = require('../models/PlatformAuditLog');
+const Job = require('../models/Job');
 const cache = require('../services/cacheService');
 const { invalidateTenantCache } = require('../middlewares/tenant');
 const { logPlatformAudit } = require('../services/platformAuditLogService');
+const { runCriticalGovernanceAction } = require('../services/platformAuditOutboxService');
 const {
     getVendorAdminEmails,
     sendVendorNotificationEmailSafe,
@@ -21,13 +23,44 @@ const {
 const { VERIFICATION_SUSPENSION_REASON, isVerificationSuspension } = require('../services/vendorVerificationService');
 const { getPlanBySlugOrNameOrDefault, getPlanSlug } = require('../services/billing/billingPlanService');
 const { ensureSubscriptionExists } = require('../services/billing/subscriptionService');
-const { PLAN_DEFINITIONS, PLAN_ORDER, STORE_BUILDER_CAPABILITIES, normalizePlanKey } = require('../config/subscriptionPlans');
+const {
+    PLAN_CONFIG_VERSION,
+    PLAN_DEFINITIONS,
+    PLAN_ORDER,
+    SUBSCRIPTION_STATUS_REGISTRY,
+    STORE_BUILDER_CAPABILITIES,
+    normalizePlanKey
+} = require('../config/subscriptionPlans');
+const {
+    FEATURE_REGISTRY,
+    FEATURE_KEYS,
+    getPlanFeatureValue,
+    getFeatureRegistryMetadata,
+    assertValidPlanCapabilityMatrix
+} = require('../config/subscriptionFeatures');
+const {
+    computeFeatureStatuses
+} = require('../services/shops/featureAccessService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const {
     normalizeCustomDomain,
     isValidCustomDomain,
     isPlatformDomain
 } = require('../utils/domainUtils');
+const {
+    serializeAbuseReportSummary,
+    serializeAnnouncementSummary,
+    serializeDomainSummary,
+    serializeInvoiceSummary,
+    serializeOwnerSummary,
+    serializePaymentSummary,
+    serializePlanConfiguration,
+    serializePlatformAuditEvent,
+    serializeSubscriptionSummary,
+    serializeSuperAdminShopDetail,
+    serializeSuperAdminShopListItem,
+    serializeVerificationSummary
+} = require('../services/superAdmin/superAdminSerializers');
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
@@ -61,6 +94,10 @@ const resolveCanonicalPlanKey = (value) => {
 };
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const safeSearchRegex = (value) => {
+    const normalized = String(value || '').trim().slice(0, 80);
+    return normalized ? new RegExp(escapeRegex(normalized), 'i') : null;
+};
 
 const getPagination = (query = {}) => {
     const page = Math.max(parseInt(query.page, 10) || 1, 1);
@@ -76,9 +113,14 @@ const getSort = (query = {}, allowed = ['createdAt', 'updatedAt']) => {
 
 const paginationPayload = ({ page, limit, total }) => ({
     page,
+    pageSize: limit,
     limit,
+    totalItems: total,
     total,
-    pages: Math.ceil(total / limit) || 1
+    totalPages: Math.ceil(total / limit) || 1,
+    pages: Math.ceil(total / limit) || 1,
+    hasNextPage: page < (Math.ceil(total / limit) || 1),
+    hasPrevPage: page > 1
 });
 
 const addDateRange = (query, params, field = 'createdAt') => {
@@ -121,44 +163,61 @@ const daysUntil = (date) => {
     if (!date) return null;
     return Math.ceil((new Date(date).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
 };
+const { resolveSubscriptionAccess } = require('../services/billing/subscriptionAccessResolver');
 
 const getBillingDisplay = (subscription, latestPayment = null) => {
     if (!subscription) {
         return {
             status: 'trialing',
-            planDisplay: 'Trial',
+            planDisplay: PLAN_DEFINITIONS.beginner.name,
+            effectivePlan: 'beginner',
             pendingPlan: '',
             trialDaysLeft: null,
             paymentStatus: latestPayment?.status || ''
         };
     }
 
-    if (subscription.status === 'trialing') {
+    const access = resolveSubscriptionAccess({ subscription });
+    const planDisplay = access.subscriptionStatus === 'trialing'
+        ? (PLAN_DEFINITIONS[access.effectivePlan]?.name || 'Beginner')
+        : (
+            subscription.activePlanName ||
+            subscription.planId?.name ||
+            PLAN_DEFINITIONS[access.effectivePlan]?.name ||
+            'Starter'
+        );
+    if (access.subscriptionStatus === 'trialing') {
+        const paymentPending = access.paymentReviewStatus === 'pending_approval';
         return {
             status: 'trialing',
-            planDisplay: 'Trial',
-            pendingPlan: '',
-            intendedPlan: subscription.intendedPlanName || 'Starter',
+            planDisplay,
+            effectivePlan: access.effectivePlan,
+            pendingPlan: paymentPending ? subscription.pendingPlanName || '' : '',
+            intendedPlan: subscription.intendedPlanName || subscription.activePlanName || 'Beginner',
             trialDaysLeft: daysUntil(subscription.trialEndsAt),
-            paymentStatus: latestPayment?.status || ''
+            paymentStatus: latestPayment?.status || '',
+            paymentReviewStatus: access.paymentReviewStatus
         };
     }
 
-    if (subscription.status === 'pending_approval') {
+    if (access.paymentReviewStatus === 'pending_approval') {
         return {
-            status: 'pending_approval',
-            planDisplay: `Pending ${subscription.pendingPlanName || 'plan'}`,
+            status: access.subscriptionStatus,
+            planDisplay,
+            effectivePlan: access.effectivePlan,
             pendingPlan: subscription.pendingPlanName || '',
             intendedPlan: subscription.intendedPlanName || subscription.pendingPlanName || '',
             trialDaysLeft: daysUntil(subscription.trialEndsAt),
-            paymentStatus: latestPayment?.status || 'pending'
+            paymentStatus: latestPayment?.status || 'pending',
+            paymentReviewStatus: access.paymentReviewStatus
         };
     }
 
     if (subscription.status === 'active') {
         return {
             status: 'active',
-            planDisplay: subscription.activePlanName || subscription.planId?.name || 'Active plan',
+            planDisplay,
+            effectivePlan: access.effectivePlan,
             pendingPlan: '',
             intendedPlan: subscription.intendedPlanName || '',
             trialDaysLeft: null,
@@ -168,10 +227,40 @@ const getBillingDisplay = (subscription, latestPayment = null) => {
 
     return {
         status: subscription.status,
-        planDisplay: subscription.status === 'past_due' ? 'Trial expired' : 'Payment required',
+        planDisplay,
+        effectivePlan: access.effectivePlan,
         pendingPlan: subscription.pendingPlanName || '',
         trialDaysLeft: daysUntil(subscription.trialEndsAt),
         paymentStatus: latestPayment?.status || ''
+    };
+};
+
+const getEffectiveFeatureSnapshot = (shop, subscription) => {
+    const access = resolveSubscriptionAccess({ subscription, shop });
+    const populatedPlan = subscription?.planId && typeof subscription.planId === 'object'
+        ? subscription.planId
+        : null;
+    const plan = populatedPlan?.features
+        ? populatedPlan
+        : (PLAN_DEFINITIONS[access.effectivePlan] || PLAN_DEFINITIONS.starter);
+    const planFeatures = Object.fromEntries(
+        FEATURE_KEYS.map(key => [key, getPlanFeatureValue(plan, key)])
+    );
+    const statuses = computeFeatureStatuses(shop, planFeatures, access);
+
+    return {
+        effectivePlan: access.effectivePlan,
+        effectiveFeatures: Object.fromEntries(
+            Object.entries(statuses).map(([key, status]) => [key, status.enabled])
+        ),
+        featureEntitlements: Object.fromEntries(
+            Object.entries(statuses).map(([key, status]) => [key, {
+                enabled: status.enabled,
+                reason: status.reason,
+                planAllowed: status.planAllowed,
+                shopOverride: status.shopOverride
+            }])
+        )
     };
 };
 
@@ -179,16 +268,18 @@ const serializeShop = (shop, ownerMap, subscriptionMap = new Map(), paymentMap =
     const subscription = subscriptionMap.get(String(shop._id)) || null;
     const latestPayment = paymentMap.get(String(shop._id)) || null;
     return {
-        ...shop,
-        owner: ownerMap.get(String(shop._id)) || null,
+        ...serializeSuperAdminShopListItem(shop),
+        owner: serializeOwnerSummary(ownerMap.get(String(shop._id))),
         billing: getBillingDisplay(subscription, latestPayment),
-        subscription
+        subscription: serializeSubscriptionSummary(subscription),
+        ...getEffectiveFeatureSnapshot(shop, subscription)
     };
 };
 
 const buildShopSearchIds = async (search) => {
     if (!search) return null;
-    const regex = new RegExp(escapeRegex(String(search).trim()), 'i');
+    const regex = safeSearchRegex(search);
+    if (!regex) return null;
     const owners = await User.find({
         role: 'VendorAdmin',
         $or: [{ email: regex }, { fullName: regex }]
@@ -280,20 +371,35 @@ const getPriorityAlerts = async () => {
 
 exports.getPlatformOverview = async (req, res) => {
     try {
+        const reportTo = new Date();
+        const reportFrom = new Date(reportTo.getTime() - (30 * 24 * 60 * 60 * 1000));
         const [
             shopCount,
             activeShopCount,
             suspendedShopCount,
             customerCount,
+            orderCount,
             orderStats,
             failedPayments,
-            alerts
+            alerts,
+            subscriptionStatuses,
+            subscriptionPlans,
+            paymentStats,
+            verification,
+            jobHealth,
+            recentAudit
         ] = await Promise.all([
             Shop.countDocuments(),
             Shop.countDocuments({ isActive: true, approvalStatus: 'Approved' }),
             Shop.countDocuments({ $or: [{ isActive: false }, { approvalStatus: 'Suspended' }] }),
             User.countDocuments({ role: 'Customer' }),
+            Order.estimatedDocumentCount(),
             Order.aggregate([
+                {
+                    $match: {
+                        createdAt: { $gte: reportFrom, $lt: reportTo }
+                    }
+                },
                 {
                     $group: {
                         _id: null,
@@ -303,7 +409,26 @@ exports.getPlatformOverview = async (req, res) => {
                 }
             ]),
             Order.countDocuments({ 'payment.status': 'Failed' }),
-            getPriorityAlerts()
+            getPriorityAlerts(),
+            Subscription.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+            Subscription.aggregate([{ $group: { _id: '$activePlanSlug', count: { $sum: 1 } } }]),
+            PaymentTransaction.aggregate([
+                {
+                    $match: {
+                        status: { $in: ['approved', 'verified'] },
+                        verifiedAt: { $gte: reportFrom, $lt: reportTo }
+                    }
+                },
+                { $group: { _id: null, count: { $sum: 1 }, amount: { $sum: '$amount' } } }
+            ]),
+            getVerificationSummaryCounts(),
+            Job.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+            PlatformAuditLog.find()
+                .select('actorName actorEmail actorRole action entityType entityId entityLabel shop_id message reason metadata severity createdAt')
+                .sort({ createdAt: -1 })
+                .limit(8)
+                .populate('shop_id', 'shopName subdomain')
+                .lean()
         ]);
 
         res.status(200).json({
@@ -313,10 +438,31 @@ exports.getPlatformOverview = async (req, res) => {
                 activeShops: activeShopCount,
                 suspendedShops: suspendedShopCount,
                 customers: customerCount,
-                orders: orderStats[0]?.orders || 0,
+                orders: orderCount,
+                reportingWindowOrders: orderStats[0]?.orders || 0,
                 platformRevenue: orderStats[0]?.revenue || 0,
+                grossMerchandiseValue: orderStats[0]?.revenue || 0,
+                subscriptionRevenue: Number(paymentStats[0]?.amount) || 0,
+                approvedPayments: Number(paymentStats[0]?.count) || 0,
+                reportingWindow: {
+                    type: 'rolling_days',
+                    days: 30,
+                    from: reportFrom,
+                    to: reportTo
+                },
                 failedPayments,
-                alerts
+                alerts,
+                verification,
+                subscriptionsByStatus: Object.fromEntries(
+                    subscriptionStatuses.map(row => [row._id || 'unknown', row.count])
+                ),
+                subscriptionsByPlan: Object.fromEntries(
+                    subscriptionPlans.map(row => [row._id || 'unknown', row.count])
+                ),
+                jobsByStatus: Object.fromEntries(
+                    jobHealth.map(row => [row._id || 'unknown', row.count])
+                ),
+                recentAudit: recentAudit.map(serializePlatformAuditEvent)
             }
         });
     } catch (err) {
@@ -343,6 +489,7 @@ exports.getShops = async (req, res) => {
 
         const [shops, total] = await Promise.all([
             Shop.find(query)
+                .select('shopName displayName subdomain approvalStatus isActive suspensionReason plan featureFlags verification badgeStatus createdAt updatedAt')
                 .sort(getSort(req.query, ['createdAt', 'updatedAt', 'shopName', 'approvalStatus']))
                 .skip(skip)
                 .limit(limit)
@@ -353,11 +500,14 @@ exports.getShops = async (req, res) => {
         const shopIds = shops.map(shop => shop._id);
         const [subscriptions, payments] = await Promise.all([
             Subscription.find({ shopId: { $in: shopIds } })
-                .populate('planId', 'name')
+                .populate('planId', 'name slug features limits storeBuilderAccess storeBuilderCapabilities')
                 .lean(),
-            PaymentTransaction.find({ shopId: { $in: shopIds } })
-                .sort({ createdAt: -1 })
-                .lean()
+            PaymentTransaction.aggregate([
+                { $match: { shopId: { $in: shopIds } } },
+                { $sort: { shopId: 1, createdAt: -1, _id: -1 } },
+                { $group: { _id: '$shopId', latest: { $first: '$$ROOT' } } },
+                { $replaceRoot: { newRoot: '$latest' } }
+            ])
         ]);
         const subscriptionMap = new Map(subscriptions.map(item => [String(item.shopId), item]));
         const paymentMap = payments.reduce((acc, payment) => {
@@ -383,12 +533,19 @@ exports.getShopDetail = async (req, res) => {
         if (!shopId) return res.status(400).json({ success: false, error: 'Invalid shop id' });
 
         const [shop, owner, verification, abuseReports, recentAuditLogs, subscription, latestInvoice, latestPayment] = await Promise.all([
-            Shop.findById(shopId).lean(),
+            Shop.findById(shopId)
+                .select('shopName displayName subdomain approvalStatus isActive suspensionReason plan featureFlags verification badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt badgeRevokedReason customDomain createdAt updatedAt')
+                .lean(),
             User.findOne({ shop_id: shopId, role: 'VendorAdmin' }).select('fullName email status').lean(),
-            VendorVerification.findOne({ shop_id: shopId }).sort({ updatedAt: -1 }).lean(),
+            VendorVerification.findOne({ shop_id: shopId })
+                .select('shop_id owner_id reviewedBy status nidName +nidNumber verificationDeadline submittedAt approvedAt rejectedAt rejectionReason createdAt updatedAt')
+                .sort({ updatedAt: -1 })
+                .lean(),
             AbuseReport.find({ shop_id: shopId }).sort({ createdAt: -1 }).limit(10).lean(),
             PlatformAuditLog.find({ shop_id: shopId }).sort({ createdAt: -1 }).limit(10).lean(),
-            Subscription.findOne({ shopId }).populate('planId', 'name monthlyPrice yearlyPrice').lean(),
+            Subscription.findOne({ shopId })
+                .populate('planId', 'name slug monthlyPrice yearlyPrice features limits storeBuilderAccess storeBuilderCapabilities')
+                .lean(),
             Invoice.findOne({ shopId }).sort({ createdAt: -1 }).lean(),
             PaymentTransaction.findOne({ shopId }).sort({ createdAt: -1 }).lean()
         ]);
@@ -403,29 +560,40 @@ exports.getShopDetail = async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                shop,
-                owner,
-                verification: verification ? {
-                    ...verification,
+                shop: {
+                    ...serializeSuperAdminShopDetail(shop),
+                    ...getEffectiveFeatureSnapshot(shop, subscription)
+                },
+                owner: serializeOwnerSummary(owner),
+                verification: verification ? serializeVerificationSummary(verification, {
                     daysLeft,
                     isExpired: deadline ? new Date(deadline).getTime() < Date.now() : false,
                     isVerificationSuspension: isVerificationSuspension(shop)
-                } : {
+                }) : {
                     status: shop.verification?.status || 'not_submitted',
                     verificationDeadline: deadline,
                     daysLeft,
                     isExpired: deadline ? new Date(deadline).getTime() < Date.now() : false,
                     isVerificationSuspension: isVerificationSuspension(shop)
                 },
-                domain: shop.customDomain || null,
+                domain: serializeDomainSummary(shop.customDomain),
                 billing: {
                     ...getBillingDisplay(subscription, latestPayment),
-                    subscription,
-                    latestInvoice,
-                    latestPayment
+                    subscription: serializeSubscriptionSummary(subscription),
+                    latestInvoice: serializeInvoiceSummary(latestInvoice),
+                    latestPayment: serializePaymentSummary(latestPayment)
                 },
-                abuseReports,
-                recentAuditLogs
+                abuseReports: abuseReports.map(report => ({
+                    _id: report._id,
+                    reason: report.reason,
+                    details: report.details || '',
+                    status: report.status,
+                    internalNote: report.internalNote || '',
+                    resolutionReason: report.resolutionReason || '',
+                    createdAt: report.createdAt,
+                    updatedAt: report.updatedAt
+                })),
+                recentAuditLogs: recentAuditLogs.map(serializePlatformAuditEvent)
             }
         });
     } catch (err) {
@@ -436,25 +604,37 @@ exports.getShopDetail = async (req, res) => {
 
 const updateShopAndLog = async ({ req, shop, update, action, message, reason = '', metadata = {}, severity = 'info' }) => {
     const previousCustomDomain = shop.customDomain?.domain;
-    Object.entries(update).forEach(([key, value]) => shop.set(key, value));
-    await shop.save();
+    const updated = await runCriticalGovernanceAction({
+        mutate: async (session) => {
+            const current = await Shop.findOne({ _id: shop._id, __v: shop.__v }).session(session);
+            if (!current) {
+                const error = new Error('The shop changed. Reload and try again.');
+                error.code = 'SHOP_GOVERNANCE_CONFLICT';
+                error.statusCode = 409;
+                throw error;
+            }
+            Object.entries(update).forEach(([key, value]) => current.set(key, value));
+            await current.save({ session });
+            return current;
+        },
+        audit: (current) => ({
+            req,
+            action,
+            entityType: 'Shop',
+            entityId: current._id,
+            entityLabel: current.shopName,
+            shop_id: current._id,
+            message,
+            reason,
+            metadata,
+            severity
+        })
+    });
     await Promise.all([
-        invalidateShopCache(shop),
+        invalidateShopCache(updated),
         previousCustomDomain ? invalidateTenantCache(previousCustomDomain) : Promise.resolve()
     ]);
-    await logPlatformAudit({
-        req,
-        action,
-        entityType: 'Shop',
-        entityId: shop._id,
-        entityLabel: shop.shopName,
-        shop_id: shop._id,
-        message,
-        reason,
-        metadata,
-        severity
-    });
-    return shop;
+    return updated;
 };
 
 exports.updateShopStatus = async (req, res) => {
@@ -498,8 +678,12 @@ exports.updateShopStatus = async (req, res) => {
             metadata: { before: { approvalStatus: shop.approvalStatus, isActive: shop.isActive }, after: update },
             severity: status === 'Suspended' ? 'warning' : 'info'
         });
+        await Subscription.updateOne(
+            { shopId: shop._id },
+            { $inc: { entitlementVersion: 1 } }
+        );
 
-        res.status(200).json({ success: true, data: updated });
+        res.status(200).json({ success: true, data: serializeSuperAdminShopDetail(updated) });
     } catch (err) {
         console.error('Update shop status error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update shop status' });
@@ -511,6 +695,8 @@ exports.updateShopPlan = async (req, res) => {
         const shop = await Shop.findById(req.params.shopId);
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
+        const reason = getReason(req.body);
+        if (requireReason(res, reason, 'A reason is required for a forced plan change')) return;
         const incoming = req.body.plan || req.body;
         const planKey = resolveCanonicalPlanKey(incoming.slug || incoming.name);
         const planDefinition = await getPlanBySlugOrNameOrDefault(planKey);
@@ -522,27 +708,56 @@ exports.updateShopPlan = async (req, res) => {
             activePlanName: planDefinition.name,
             activePlanSlug: getPlanSlug(planDefinition)
         };
-        const updated = await updateShopAndLog({
-            req,
-            shop,
-            update: { plan },
-            action: 'shop.plan_changed',
-            message: `Shop plan changed to ${plan.name || shop.plan?.name || 'unknown'}`,
-            metadata: { before: beforePlan, after: plan }
-        });
-
         const storedPlan = await VendorPlan.findOne({ slug: planKey }).select('_id name slug').lean();
         const subscription = await ensureSubscriptionExists(shop);
-        await Subscription.findByIdAndUpdate(
-            subscription._id,
-            {
-                $set: {
-                    planId: storedPlan?._id || null,
-                    activePlanName: planDefinition.name,
-                    activePlanSlug: planKey
+        const changed = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const currentShop = await Shop.findOne({
+                    _id: shop._id,
+                    __v: shop.__v
+                }).session(session);
+                const currentSubscription = await Subscription.findOne({
+                    _id: subscription._id,
+                    __v: subscription.__v
+                }).session(session);
+                if (!currentShop || !currentSubscription) {
+                    const error = new Error('The shop or subscription changed. Reload and try again.');
+                    error.code = 'PLAN_CHANGE_CONFLICT';
+                    error.statusCode = 409;
+                    throw error;
                 }
-            }
-        );
+
+                currentShop.plan = plan;
+                await currentShop.save({ session });
+                currentSubscription.planId = storedPlan?._id || null;
+                currentSubscription.activePlanName = planDefinition.name;
+                currentSubscription.activePlanSlug = planKey;
+                currentSubscription.entitlementVersion = Number(currentSubscription.entitlementVersion || 0) + 1;
+                await currentSubscription.save({ session });
+                return { shop: currentShop, subscription: currentSubscription };
+            },
+            audit: ({ shop: updatedShop, subscription: updatedSubscription }) => ({
+                req,
+                action: 'shop.plan_changed',
+                entityType: 'Subscription',
+                entityId: updatedSubscription._id,
+                entityLabel: updatedShop.shopName,
+                shop_id: updatedShop._id,
+                message: `Shop plan changed to ${planDefinition.name}`,
+                reason,
+                metadata: {
+                    fromPlan: beforePlan.activePlanSlug || beforePlan.activePlanName || beforePlan.name || '',
+                    toPlan: planKey
+                },
+                severity: 'warning'
+            })
+        });
+        await Promise.all([
+            invalidateShopCache(changed.shop),
+            shop.customDomain?.domain
+                ? invalidateTenantCache(shop.customDomain.domain)
+                : Promise.resolve()
+        ]);
         const previousPlanKey = normalizePlanKey(
             beforePlan.activePlanSlug || beforePlan.activePlanName || beforePlan.name || 'starter'
         );
@@ -556,11 +771,11 @@ exports.updateShopPlan = async (req, res) => {
         const eventResult = await emitSubscriptionEvent(eventType, {
             req,
             shopId: shop._id,
-            subscriptionId: subscription._id,
+            subscriptionId: changed.subscription._id,
             planKey,
             oldValue: { planKey: previousPlanKey, planName: beforePlan.name || '' },
             newValue: { planKey, planName: planDefinition.name },
-            reason: getReason(req.body),
+            reason,
             affectedResources: ['subscription', 'plan', 'features', 'quotas'],
             metadata: { oldPlanKey: previousPlanKey, newPlanKey: planKey, newPlanName: planDefinition.name }
         });
@@ -585,7 +800,11 @@ exports.updateShopPlan = async (req, res) => {
             });
         }
 
-        res.status(200).json({ success: true, data: updated, reconciliation });
+        res.status(200).json({
+            success: true,
+            data: serializeSuperAdminShopDetail(changed.shop),
+            reconciliation
+        });
     } catch (err) {
         console.error('Update shop plan error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update shop plan' });
@@ -597,7 +816,39 @@ exports.updateShopFeatureFlags = async (req, res) => {
         const shop = await Shop.findById(req.params.shopId);
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        const featureFlags = req.body.featureFlags || req.body;
+        const featureFlags = req.body.featureFlags;
+        if (!featureFlags || typeof featureFlags !== 'object' || Array.isArray(featureFlags)) {
+            return res.status(400).json({
+                success: false,
+                code: 'FEATURE_FLAGS_REQUIRED',
+                error: 'featureFlags must be an object containing supported boolean overrides.'
+            });
+        }
+        const planKey = normalizePlanKey(
+            shop.plan?.activePlanSlug || shop.plan?.activePlanName || shop.plan?.name || 'starter'
+        );
+        const planDefinition = await getPlanBySlugOrNameOrDefault(planKey);
+        for (const [key, value] of Object.entries(featureFlags)) {
+            const definition = FEATURE_REGISTRY[key];
+            if (
+                !definition ||
+                definition.overridePolicy !== 'disable_only' ||
+                typeof value !== 'boolean'
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    code: 'INVALID_FEATURE_OVERRIDE',
+                    error: `Feature override "${key}" is not supported.`
+                });
+            }
+            if (value === true && planDefinition.features?.[key] !== true) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'PLAN_FEATURE_OVERRIDE_DENIED',
+                    error: `The ${planDefinition.name} plan does not include ${definition.label}.`
+                });
+            }
+        }
         const changedCriticalFlag = Object.keys(featureFlags).some(key => (
             CRITICAL_FEATURE_FLAGS.has(key) &&
             shop.featureFlags?.[key] === true &&
@@ -617,6 +868,10 @@ exports.updateShopFeatureFlags = async (req, res) => {
             metadata: { before: shop.featureFlags, after: nextFlags },
             severity: changedCriticalFlag ? 'warning' : 'info'
         });
+        await Subscription.updateOne(
+            { shopId: shop._id },
+            { $inc: { entitlementVersion: 1 } }
+        );
 
         await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.FEATURE_OVERRIDE_CHANGED, {
             req,
@@ -629,7 +884,7 @@ exports.updateShopFeatureFlags = async (req, res) => {
             metadata: { changedFeatures: Object.keys(featureFlags) }
         });
 
-        res.status(200).json({ success: true, data: updated });
+        res.status(200).json({ success: true, data: serializeSuperAdminShopDetail(updated) });
     } catch (err) {
         console.error('Update shop feature flags error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update feature flags' });
@@ -655,37 +910,12 @@ exports.updateShopGovernance = async (req, res) => {
             return exports.updateShopFeatureFlags(req, res);
         }
 
-        const reason = getReason(req.body);
-        if (req.body.isActive === false && requireReason(res, reason, 'Suspension reason is required')) return;
-        if (req.body.customDomain?.status === 'Failed' && requireReason(res, reason, 'Reason is required when marking a domain as failed')) return;
-
-        const updatePayload = { ...req.body };
-        if (updatePayload.isActive === false && !updatePayload.suspensionReason) {
-            updatePayload.suspensionReason = reason;
-        }
-
-        const shop = await Shop.findByIdAndUpdate(
-            req.params.id,
-            { $set: updatePayload },
-            { new: true, runValidators: true }
-        );
-
-        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
-        await invalidateShopCache(shop);
-        await logPlatformAudit({
-            req,
-            action: 'shop.governance_updated',
-            entityType: 'Shop',
-            entityId: shop._id,
-            entityLabel: shop.shopName,
-            shop_id: shop._id,
-            message: 'Shop governance fields updated',
-            reason,
-            metadata: { updatedFields: Object.keys(updatePayload) },
-            severity: updatePayload.isActive === false ? 'warning' : 'info'
+        return res.status(400).json({
+            success: false,
+            code: 'UNSUPPORTED_SHOP_GOVERNANCE_FIELDS',
+            error: 'Use a dedicated shop status, plan, feature, or domain operation.',
+            unsupportedFields: Object.keys(req.body || {}).filter(key => key !== 'reason')
         });
-
-        res.status(200).json({ success: true, data: shop });
     } catch (err) {
         console.error('Update shop governance error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update shop' });
@@ -695,7 +925,20 @@ exports.updateShopGovernance = async (req, res) => {
 exports.getPlans = async (req, res) => {
     try {
         const plans = await VendorPlan.find().sort({ monthlyPrice: 1 });
-        res.status(200).json({ success: true, data: plans });
+        res.status(200).json({
+            success: true,
+            data: plans.map(serializePlanConfiguration),
+            registry: {
+                version: PLAN_CONFIG_VERSION,
+                plans: PLAN_ORDER.map(key => ({
+                    key,
+                    name: PLAN_DEFINITIONS[key].name
+                })),
+                features: getFeatureRegistryMetadata(),
+                subscriptionStatuses: SUBSCRIPTION_STATUS_REGISTRY,
+                storeBuilderAccess: Object.keys(STORE_BUILDER_CAPABILITIES)
+            }
+        });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Failed to fetch plans' });
     }
@@ -706,6 +949,32 @@ exports.upsertPlan = async (req, res) => {
         const planKey = resolveCanonicalPlanKey(req.body.slug || req.body.name);
         const current = await VendorPlan.findOne({ slug: planKey }).lean();
         const limits = req.body.limits || {};
+        const incomingFeatures = req.body.features || {};
+        const unknownFeatures = Object.keys(incomingFeatures).filter(key => !FEATURE_REGISTRY[key]);
+        if (unknownFeatures.length) {
+            return res.status(400).json({
+                success: false,
+                code: 'UNKNOWN_PLAN_CAPABILITY',
+                error: `Unsupported capabilities: ${unknownFeatures.join(', ')}`
+            });
+        }
+        const nonEditableFeatures = Object.keys(incomingFeatures).filter(
+            key => FEATURE_REGISTRY[key]?.editableCommercially !== true
+        );
+        if (nonEditableFeatures.length) {
+            return res.status(400).json({
+                success: false,
+                code: 'PLAN_CAPABILITY_NOT_EDITABLE',
+                error: `These capabilities are derived and cannot be edited directly: ${nonEditableFeatures.join(', ')}`
+            });
+        }
+        if (Object.values(incomingFeatures).some(value => typeof value !== 'boolean')) {
+            return res.status(400).json({
+                success: false,
+                code: 'INVALID_PLAN_CAPABILITY_VALUE',
+                error: 'Capability values must be true or false.'
+            });
+        }
         const numericFields = [
             req.body.monthlyPrice,
             req.body.yearlyPrice,
@@ -717,49 +986,117 @@ exports.upsertPlan = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Plan prices and limits must be zero or positive numbers.' });
         }
         const storeBuilderAccess = req.body.storeBuilderAccess || current?.storeBuilderAccess || PLAN_DEFINITIONS[planKey].storeBuilderAccess;
+        if (!STORE_BUILDER_CAPABILITIES[storeBuilderAccess]) {
+            return res.status(400).json({
+                success: false,
+                code: 'INVALID_STORE_BUILDER_ACCESS',
+                error: 'Store Builder access must be none, limited, or full.'
+            });
+        }
         const accessChanged = storeBuilderAccess !== current?.storeBuilderAccess;
+        const features = {
+            ...PLAN_DEFINITIONS[planKey].features,
+            ...(current?.features || {}),
+            ...incomingFeatures
+        };
+        assertValidPlanCapabilityMatrix({
+            [planKey]: { features }
+        });
         const payload = {
-            ...req.body,
             name: planKey[0].toUpperCase() + planKey.slice(1),
             slug: planKey,
+            monthlyPrice: req.body.monthlyPrice ?? current?.monthlyPrice ?? PLAN_DEFINITIONS[planKey].monthlyPrice,
+            yearlyPrice: req.body.yearlyPrice ?? current?.yearlyPrice ?? PLAN_DEFINITIONS[planKey].yearlyPrice,
+            currency: req.body.currency || current?.currency || PLAN_DEFINITIONS[planKey].currency,
             limits: {
+                ...PLAN_DEFINITIONS[planKey].limits,
                 ...(current?.limits || {}),
                 ...limits
             },
-            features: {
-                ...(current?.features || {}),
-                ...(req.body.features || {})
-            },
+            features,
             storeBuilderAccess,
             storeBuilderCapabilities: accessChanged
                 ? { ...STORE_BUILDER_CAPABILITIES[storeBuilderAccess], ...(req.body.storeBuilderCapabilities || {}) }
-                : { ...(current?.storeBuilderCapabilities || {}), ...(req.body.storeBuilderCapabilities || {}) }
+                : {
+                    ...STORE_BUILDER_CAPABILITIES[storeBuilderAccess],
+                    ...(current?.storeBuilderCapabilities || {}),
+                    ...(req.body.storeBuilderCapabilities || {})
+                },
+            badgeEligible: req.body.badgeEligible ?? current?.badgeEligible ?? PLAN_DEFINITIONS[planKey].badgeEligible,
+            prioritySupport: req.body.prioritySupport ?? current?.prioritySupport ?? PLAN_DEFINITIONS[planKey].prioritySupport,
+            isActive: req.body.isActive ?? current?.isActive ?? true
         };
+        payload.planConfigVersion = PLAN_CONFIG_VERSION;
+        payload.lastSyncedAt = new Date();
         payload.productLimit = payload.limits.productCount ?? payload.productLimit ?? current?.productLimit ?? null;
         payload.staffLimit = payload.limits.staffAccounts ?? payload.staffLimit ?? current?.staffLimit ?? null;
-        const plan = await VendorPlan.findOneAndUpdate(
-            { slug: planKey },
-            { $set: payload },
-            { upsert: true, new: true, runValidators: true }
-        );
+        const expectedVersion = req.body.expectedVersion;
+        if (
+            current &&
+            expectedVersion !== undefined &&
+            Number(expectedVersion) !== Number(current.__v || 0)
+        ) {
+            return res.status(409).json({
+                success: false,
+                code: 'PLAN_CONFIG_CONFLICT',
+                error: 'This plan was changed by another administrator. Reload and try again.'
+            });
+        }
 
-        await logPlatformAudit({
-            req,
-            action: 'plan.upserted',
-            entityType: 'VendorPlan',
-            entityId: plan._id,
-            entityLabel: plan.name,
-            message: `Vendor plan ${plan.name} saved`,
-            metadata: { before: current, after: plan }
+        const plan = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                if (!current) {
+                    const [created] = await VendorPlan.create([{
+                        ...payload,
+                        configRevision: 1
+                    }], { session });
+                    return created;
+                }
+
+                const updated = await VendorPlan.findOneAndUpdate(
+                    { _id: current._id, __v: current.__v || 0 },
+                    {
+                        $set: payload,
+                        $inc: { __v: 1, configRevision: 1 }
+                    },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const conflict = new Error('This plan was changed by another administrator. Reload and try again.');
+                    conflict.code = 'PLAN_CONFIG_CONFLICT';
+                    conflict.statusCode = 409;
+                    throw conflict;
+                }
+                return updated;
+            },
+            audit: updated => ({
+                req,
+                action: 'plan.upserted',
+                entityType: 'VendorPlan',
+                entityId: updated._id,
+                entityLabel: updated.name,
+                message: `Vendor plan ${updated.name} saved`,
+                metadata: {
+                    planKey,
+                    previousRevision: current?.configRevision || 0,
+                    newRevision: updated.configRevision,
+                    changedCapabilities: Object.keys(incomingFeatures),
+                    changedLimits: Object.keys(limits)
+                }
+            })
         });
 
         const affectedSubscriptions = await Subscription.find({
             $or: [
                 { activePlanSlug: planKey },
                 { planId: plan._id },
-                ...(planKey === 'starter' ? [{ status: 'trialing' }] : [])
+                ...(planKey === 'beginner' ? [{ status: 'trialing' }] : [])
             ]
-        }).select('shopId').lean();
+        }).select('_id shopId').lean();
+        await Subscription.updateMany(
+            { _id: { $in: affectedSubscriptions.map(item => item._id) } },
+            { $inc: { entitlementVersion: 1 } }
+        );
         const reconciliation = { processed: 0, failed: 0 };
         for (const subscription of affectedSubscriptions) {
             try {
@@ -781,9 +1118,19 @@ exports.upsertPlan = async (req, res) => {
             }
         }
 
-        res.status(200).json({ success: true, data: plan, reconciliation });
+        res.status(200).json({
+            success: true,
+            data: serializePlanConfiguration(plan),
+            reconciliation,
+            registryVersion: PLAN_CONFIG_VERSION
+        });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to save plan' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'PLAN_SAVE_FAILED',
+            error: err.message || 'Failed to save plan',
+            validationErrors: err.validationErrors
+        });
     }
 };
 
@@ -805,7 +1152,22 @@ exports.getDomains = async (req, res) => {
 
         const [shops, total] = await Promise.all([
             Shop.find(query)
-                .select('shopName subdomain customDomain')
+                .select([
+                    'shopName',
+                    'subdomain',
+                    'customDomain.domain',
+                    'customDomain.status',
+                    'customDomain.adminNote',
+                    'customDomain.ownershipVerified',
+                    'customDomain.routingVerified',
+                    'customDomain.manuallyVerifiedRouting',
+                    'customDomain.verifiedAt',
+                    'customDomain.lastCheckedAt',
+                    'customDomain.lastDnsCheckStatus',
+                    'customDomain.lastDnsCheckError',
+                    'customDomain.lastOwnershipCheckStatus',
+                    'customDomain.lastRoutingCheckStatus'
+                ].join(' '))
                 .sort(getSort(req.query, ['updatedAt', 'createdAt', 'shopName']))
                 .skip(skip)
                 .limit(limit)
@@ -827,8 +1189,11 @@ exports.getDomains = async (req, res) => {
             data: shops.map(shop => {
                 const domain = normalizeCustomDomain(shop.customDomain?.domain);
                 return {
-                    ...shop,
-                    owner: ownerMap.get(String(shop._id)) || null,
+                    _id: shop._id,
+                    shopName: shop.shopName || '',
+                    subdomain: shop.subdomain || '',
+                    customDomain: serializeDomainSummary(shop.customDomain),
+                    owner: serializeOwnerSummary(ownerMap.get(String(shop._id))),
                     customDomainWarnings: getDomainWarnings(domain, countMap.get(domain) || 1)
                 };
             }),
@@ -905,11 +1270,20 @@ exports.updateDomain = async (req, res) => {
                 ? `Domain manually verified for ${existingDomain}`
                 : `Domain status changed to ${status}`,
             reason: reason || (status === 'Verified' ? adminNote : ''),
-            metadata: { customDomain, manualRoutingVerification: manuallyVerifiedRouting },
+            metadata: {
+                customDomain: serializeDomainSummary(customDomain),
+                manualRoutingVerification: manuallyVerifiedRouting
+            },
             severity: status === 'Failed' ? 'warning' : 'info'
         });
 
-        res.status(200).json({ success: true, data: updated });
+        res.status(200).json({
+            success: true,
+            data: {
+                ...serializeSuperAdminShopDetail(updated),
+                customDomain: serializeDomainSummary(updated.customDomain)
+            }
+        });
     } catch (err) {
         console.error('Update domain error:', err);
         const duplicateDomain = err?.code === 11000 && String(err?.message || '').includes('customDomain');
@@ -927,13 +1301,15 @@ exports.getFailedPayments = async (req, res) => {
         addDateRange(query, req.query);
 
         if (req.query.search) {
-            const regex = new RegExp(escapeRegex(String(req.query.search).trim()), 'i');
-            const customers = await User.find({ email: regex }).select('_id').lean();
-            query.$or = [
-                { orderNumber: regex },
-                { orderId: regex },
-                ...(customers.length ? [{ customer: { $in: customers.map(customer => customer._id) } }] : [])
-            ];
+            const regex = safeSearchRegex(req.query.search);
+            if (regex) {
+                const customers = await User.find({ email: regex }).select('_id').lean();
+                query.$or = [
+                    { orderNumber: regex },
+                    { orderId: regex },
+                    ...(customers.length ? [{ customer: { $in: customers.map(customer => customer._id) } }] : [])
+                ];
+            }
         }
 
         const [orders, total] = await Promise.all([
@@ -949,7 +1325,25 @@ exports.getFailedPayments = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: orders,
+            data: orders.map(order => ({
+                id: order._id,
+                orderNumber: order.orderNumber || order.orderId || '',
+                shop: order.shop_id ? {
+                    id: order.shop_id._id,
+                    shopName: order.shop_id.shopName || '',
+                    subdomain: order.shop_id.subdomain || ''
+                } : null,
+                customerAvailable: Boolean(order.customer),
+                status: order.status || '',
+                payment: {
+                    status: order.payment?.status || '',
+                    method: order.payment?.method || ''
+                },
+                total: Number(order.pricing?.total) || 0,
+                currency: order.pricing?.currency || 'BDT',
+                createdAt: order.createdAt || null,
+                updatedAt: order.updatedAt || null
+            })),
             pagination: paginationPayload({ page, limit, total })
         });
     } catch (err) {
@@ -968,8 +1362,10 @@ exports.getAnnouncements = async (req, res) => {
         if (req.query.severity && req.query.severity !== 'all') query.severity = req.query.severity;
         if (req.query.audience && req.query.audience !== 'all') query.audience = req.query.audience;
         if (req.query.search) {
-            const regex = new RegExp(escapeRegex(String(req.query.search).trim()), 'i');
-            query.$or = [{ title: regex }, { message: regex }, { severity: regex }, { audience: regex }];
+            const regex = safeSearchRegex(req.query.search);
+            if (regex) {
+                query.$or = [{ title: regex }, { message: regex }, { severity: regex }, { audience: regex }];
+            }
         }
         addDateRange(query, req.query);
 
@@ -983,8 +1379,15 @@ exports.getAnnouncements = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: announcements,
-            pagination: paginationPayload({ page, limit, total })
+            data: announcements.map(serializeAnnouncementSummary),
+            pagination: paginationPayload({ page, limit, total }),
+            registry: {
+                plans: PLAN_ORDER.map(key => ({
+                    key,
+                    name: PLAN_DEFINITIONS[key]?.name || key
+                })),
+                subscriptionStatuses: SUBSCRIPTION_STATUS_REGISTRY
+            }
         });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Failed to fetch announcements' });
@@ -992,9 +1395,50 @@ exports.getAnnouncements = async (req, res) => {
 };
 
 const normalizeAnnouncementPayload = (body = {}) => {
-    const payload = { ...body };
+    const allowed = [
+        'title',
+        'message',
+        'audience',
+        'targetAudience',
+        'targetPlan',
+        'targetPlanId',
+        'targetShopId',
+        'targetPlans',
+        'targetStatuses',
+        'severity',
+        'isActive',
+        'isPublished',
+        'publishedAt',
+        'startAt',
+        'expiresAt'
+    ];
+    const payload = Object.fromEntries(
+        allowed
+            .filter(key => Object.prototype.hasOwnProperty.call(body, key))
+            .map(key => [key, body[key]])
+    );
 
     payload.targetPlan = String(payload.targetPlan || '').trim();
+    if (payload.targetPlan.toLowerCase() === 'trial') {
+        payload.targetPlan = '';
+        payload.targetStatuses = ['trialing'];
+    } else if (payload.targetPlan) {
+        payload.targetPlan = resolveCanonicalPlanKey(payload.targetPlan);
+    }
+    payload.targetPlans = Array.isArray(payload.targetPlans)
+        ? [...new Set(payload.targetPlans.map(resolveCanonicalPlanKey))]
+        : [];
+    const allowedStatuses = new Set(SUBSCRIPTION_STATUS_REGISTRY);
+    payload.targetStatuses = Array.isArray(payload.targetStatuses)
+        ? [...new Set(payload.targetStatuses.map(value => String(value || '').trim().toLowerCase()))]
+        : [];
+    const invalidStatuses = payload.targetStatuses.filter(status => !allowedStatuses.has(status));
+    if (invalidStatuses.length) {
+        const error = new Error(`Unsupported subscription statuses: ${invalidStatuses.join(', ')}`);
+        error.code = 'INVALID_ANNOUNCEMENT_STATUS';
+        error.statusCode = 400;
+        throw error;
+    }
     payload.targetPlanId = payload.targetPlanId ? asObjectId(payload.targetPlanId) : null;
     payload.targetShopId = payload.targetShopId ? asObjectId(payload.targetShopId) : null;
 
@@ -1016,7 +1460,12 @@ const normalizeAnnouncementPayload = (body = {}) => {
     if (!['all_vendors', 'all_shops', 'plan', 'shop'].includes(payload.targetAudience)) {
         if (payload.targetShopId) {
             payload.targetAudience = 'shop';
-        } else if (payload.targetPlan || payload.targetPlanId) {
+        } else if (
+            payload.targetPlan ||
+            payload.targetPlanId ||
+            payload.targetPlans.length ||
+            payload.targetStatuses.length
+        ) {
             payload.targetAudience = 'plan';
         } else {
             payload.targetAudience = 'all_vendors';
@@ -1034,17 +1483,24 @@ exports.createAnnouncement = async (req, res) => {
             isActive: req.body.isPublished !== false,
             publishedAt: req.body.isPublished === false ? null : (req.body.publishedAt || new Date())
         };
-        const announcement = await PlatformAnnouncement.create(payload);
-        await logPlatformAudit({
-            req,
-            action: 'announcement.created',
-            entityType: 'PlatformAnnouncement',
-            entityId: announcement._id,
-            entityLabel: announcement.title,
-            message: `Announcement created: ${announcement.title}`,
-            metadata: { announcement }
+        const announcement = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const [created] = await PlatformAnnouncement.create([payload], { session });
+                return created;
+            },
+            audit: created => ({
+                req,
+                action: 'announcement.created',
+                entityType: 'PlatformAnnouncement',
+                entityId: created._id,
+                entityLabel: created.title,
+                message: `Announcement created: ${created.title}`,
+                metadata: {
+                    status: created.isPublished ? 'published' : 'draft'
+                }
+            })
         });
-        res.status(201).json({ success: true, data: announcement });
+        res.status(201).json({ success: true, data: serializeAnnouncementSummary(announcement) });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message || 'Failed to create announcement' });
     }
@@ -1053,47 +1509,71 @@ exports.createAnnouncement = async (req, res) => {
 exports.updateAnnouncement = async (req, res) => {
     try {
         const payload = normalizeAnnouncementPayload(req.body);
-        const announcement = await PlatformAnnouncement.findByIdAndUpdate(
-            req.params.id,
-            payload,
-            { new: true, runValidators: true }
-        );
-
-        if (!announcement) return res.status(404).json({ success: false, error: 'Announcement not found' });
-
-        await logPlatformAudit({
-            req,
-            action: 'announcement.updated',
-            entityType: 'PlatformAnnouncement',
-            entityId: announcement._id,
-            entityLabel: announcement.title,
-            message: `Announcement updated: ${announcement.title}`,
-            metadata: { update: payload }
+        const announcement = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const filter = { _id: req.params.id };
+                if (Number.isFinite(Number(req.body.expectedVersion))) {
+                    filter.__v = Number(req.body.expectedVersion);
+                }
+                const updated = await PlatformAnnouncement.findOneAndUpdate(
+                    filter,
+                    { $set: payload, $inc: { __v: 1 } },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const conflict = new Error('Announcement changed or was not found. Reload and try again.');
+                    conflict.statusCode = 409;
+                    conflict.code = 'ANNOUNCEMENT_UPDATE_CONFLICT';
+                    throw conflict;
+                }
+                return updated;
+            },
+            audit: updated => ({
+                req,
+                action: 'announcement.updated',
+                entityType: 'PlatformAnnouncement',
+                entityId: updated._id,
+                entityLabel: updated.title,
+                message: `Announcement updated: ${updated.title}`,
+                metadata: { changedFields: Object.keys(payload) }
+            })
         });
-
-        res.status(200).json({ success: true, data: announcement });
+        res.status(200).json({ success: true, data: serializeAnnouncementSummary(announcement) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to update announcement' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'ANNOUNCEMENT_UPDATE_FAILED',
+            error: err.message || 'Failed to update announcement'
+        });
     }
 };
 
 exports.publishAnnouncement = async (req, res) => {
     try {
-        const announcement = await PlatformAnnouncement.findByIdAndUpdate(
-            req.params.id,
-            { isPublished: true, isActive: true, publishedAt: new Date(), archivedAt: null },
-            { new: true, runValidators: true }
-        );
-        if (!announcement) return res.status(404).json({ success: false, error: 'Announcement not found' });
-        await logPlatformAudit({
-            req,
-            action: 'announcement.published',
-            entityType: 'PlatformAnnouncement',
-            entityId: announcement._id,
-            entityLabel: announcement.title,
-            message: `Announcement published: ${announcement.title}`
+        const announcement = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const updated = await PlatformAnnouncement.findByIdAndUpdate(
+                    req.params.id,
+                    { isPublished: true, isActive: true, publishedAt: new Date(), archivedAt: null },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const notFound = new Error('Announcement not found');
+                    notFound.statusCode = 404;
+                    throw notFound;
+                }
+                return updated;
+            },
+            audit: updated => ({
+                req,
+                action: 'announcement.published',
+                entityType: 'PlatformAnnouncement',
+                entityId: updated._id,
+                entityLabel: updated.title,
+                message: `Announcement published: ${updated.title}`
+            })
         });
-        res.status(200).json({ success: true, data: announcement });
+        res.status(200).json({ success: true, data: serializeAnnouncementSummary(announcement) });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message || 'Failed to publish announcement' });
     }
@@ -1101,21 +1581,30 @@ exports.publishAnnouncement = async (req, res) => {
 
 exports.unpublishAnnouncement = async (req, res) => {
     try {
-        const announcement = await PlatformAnnouncement.findByIdAndUpdate(
-            req.params.id,
-            { isPublished: false, isActive: false },
-            { new: true, runValidators: true }
-        );
-        if (!announcement) return res.status(404).json({ success: false, error: 'Announcement not found' });
-        await logPlatformAudit({
-            req,
-            action: 'announcement.unpublished',
-            entityType: 'PlatformAnnouncement',
-            entityId: announcement._id,
-            entityLabel: announcement.title,
-            message: `Announcement unpublished: ${announcement.title}`
+        const announcement = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const updated = await PlatformAnnouncement.findByIdAndUpdate(
+                    req.params.id,
+                    { isPublished: false, isActive: false },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const notFound = new Error('Announcement not found');
+                    notFound.statusCode = 404;
+                    throw notFound;
+                }
+                return updated;
+            },
+            audit: updated => ({
+                req,
+                action: 'announcement.unpublished',
+                entityType: 'PlatformAnnouncement',
+                entityId: updated._id,
+                entityLabel: updated.title,
+                message: `Announcement unpublished: ${updated.title}`
+            })
         });
-        res.status(200).json({ success: true, data: announcement });
+        res.status(200).json({ success: true, data: serializeAnnouncementSummary(announcement) });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message || 'Failed to unpublish announcement' });
     }
@@ -1123,22 +1612,31 @@ exports.unpublishAnnouncement = async (req, res) => {
 
 exports.archiveAnnouncement = async (req, res) => {
     try {
-        const announcement = await PlatformAnnouncement.findByIdAndUpdate(
-            req.params.id,
-            { isPublished: false, isActive: false, archivedAt: new Date() },
-            { new: true, runValidators: true }
-        );
-        if (!announcement) return res.status(404).json({ success: false, error: 'Announcement not found' });
-        await logPlatformAudit({
-            req,
-            action: 'announcement.archived',
-            entityType: 'PlatformAnnouncement',
-            entityId: announcement._id,
-            entityLabel: announcement.title,
-            message: `Announcement archived: ${announcement.title}`,
-            severity: 'warning'
+        const announcement = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const updated = await PlatformAnnouncement.findByIdAndUpdate(
+                    req.params.id,
+                    { isPublished: false, isActive: false, archivedAt: new Date() },
+                    { new: true, runValidators: true, session }
+                );
+                if (!updated) {
+                    const notFound = new Error('Announcement not found');
+                    notFound.statusCode = 404;
+                    throw notFound;
+                }
+                return updated;
+            },
+            audit: updated => ({
+                req,
+                action: 'announcement.archived',
+                entityType: 'PlatformAnnouncement',
+                entityId: updated._id,
+                entityLabel: updated.title,
+                message: `Announcement archived: ${updated.title}`,
+                severity: 'warning'
+            })
         });
-        res.status(200).json({ success: true, data: announcement });
+        res.status(200).json({ success: true, data: serializeAnnouncementSummary(announcement) });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message || 'Failed to archive announcement' });
     }
@@ -1151,15 +1649,17 @@ exports.getAbuseReports = async (req, res) => {
         if (req.query.status && req.query.status !== 'all') query.status = req.query.status;
         addDateRange(query, req.query);
         if (req.query.search) {
-            const regex = new RegExp(escapeRegex(String(req.query.search).trim()), 'i');
-            const shops = await Shop.find({ $or: [{ shopName: regex }, { subdomain: regex }] }).select('_id').lean();
-            query.$or = [
-                { reporterEmail: regex },
-                { reason: regex },
-                { details: regex },
-                { status: regex },
-                ...(shops.length ? [{ shop_id: { $in: shops.map(shop => shop._id) } }] : [])
-            ];
+            const regex = safeSearchRegex(req.query.search);
+            if (regex) {
+                const shops = await Shop.find({ $or: [{ shopName: regex }, { subdomain: regex }] }).select('_id').lean();
+                query.$or = [
+                    { reporterEmail: regex },
+                    { reason: regex },
+                    { details: regex },
+                    { status: regex },
+                    ...(shops.length ? [{ shop_id: { $in: shops.map(shop => shop._id) } }] : [])
+                ];
+            }
         }
 
         const [reports, total] = await Promise.all([
@@ -1174,7 +1674,7 @@ exports.getAbuseReports = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: reports,
+            data: reports.map(report => serializeAbuseReportSummary(report)),
             pagination: paginationPayload({ page, limit, total })
         });
     } catch (err) {
@@ -1188,7 +1688,7 @@ exports.getAbuseReportById = async (req, res) => {
             .populate('shop_id', 'shopName subdomain approvalStatus isActive suspensionReason')
             .lean();
         if (!report) return res.status(404).json({ success: false, error: 'Abuse report not found' });
-        res.status(200).json({ success: true, data: report });
+        res.status(200).json({ success: true, data: serializeAbuseReportSummary(report) });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Failed to fetch abuse report' });
     }
@@ -1203,34 +1703,52 @@ exports.updateAbuseReportStatus = async (req, res) => {
         const reason = getReason(req.body);
         if (['Resolved', 'Dismissed'].includes(status) && requireReason(res, reason, 'Reason is required for this abuse action')) return;
 
-        const report = await AbuseReport.findByIdAndUpdate(
-            req.params.id,
-            {
-                status,
-                internalNote: req.body.internalNote || req.body.reason || '',
-                resolutionReason: ['Resolved', 'Dismissed'].includes(status) ? reason : ''
+        const report = await runCriticalGovernanceAction({
+            mutate: async (session) => {
+                const filter = { _id: req.params.id };
+                if (Number.isFinite(Number(req.body.expectedVersion))) {
+                    filter.__v = Number(req.body.expectedVersion);
+                }
+                const updated = await AbuseReport.findOneAndUpdate(
+                    filter,
+                    {
+                        $set: {
+                            status,
+                            internalNote: String(req.body.internalNote || req.body.reason || '').trim(),
+                            resolutionReason: ['Resolved', 'Dismissed'].includes(status) ? reason : ''
+                        },
+                        $inc: { __v: 1 }
+                    },
+                    { new: true, runValidators: true, session }
+                ).populate('shop_id', 'shopName subdomain');
+                if (!updated) {
+                    const conflict = new Error('Abuse report changed or was not found. Reload and try again.');
+                    conflict.statusCode = 409;
+                    conflict.code = 'ABUSE_REPORT_CONFLICT';
+                    throw conflict;
+                }
+                return updated;
             },
-            { new: true, runValidators: true }
-        ).populate('shop_id', 'shopName subdomain');
-
-        if (!report) return res.status(404).json({ success: false, error: 'Abuse report not found' });
-
-        await logPlatformAudit({
-            req,
-            action: 'abuse_report.status_changed',
-            entityType: 'AbuseReport',
-            entityId: report._id,
-            entityLabel: report.reason,
-            shop_id: report.shop_id?._id || report.shop_id,
-            message: `Abuse report marked ${status}`,
-            reason,
-            metadata: { status, internalNote: req.body.internalNote || '' },
-            severity: ['Resolved', 'Dismissed'].includes(status) ? 'warning' : 'info'
+            audit: updated => ({
+                req,
+                action: 'abuse_report.status_changed',
+                entityType: 'AbuseReport',
+                entityId: updated._id,
+                entityLabel: updated.reason,
+                shop_id: updated.shop_id?._id || updated.shop_id,
+                message: `Abuse report marked ${status}`,
+                reason,
+                metadata: { status },
+                severity: ['Resolved', 'Dismissed'].includes(status) ? 'warning' : 'info'
+            })
         });
-
-        res.status(200).json({ success: true, data: report });
+        res.status(200).json({ success: true, data: serializeAbuseReportSummary(report) });
     } catch (err) {
-        res.status(400).json({ success: false, error: err.message || 'Failed to update abuse report' });
+        res.status(err.statusCode || 400).json({
+            success: false,
+            code: err.code || 'ABUSE_REPORT_UPDATE_FAILED',
+            error: err.message || 'Failed to update abuse report'
+        });
     }
 };
 
@@ -1247,16 +1765,18 @@ exports.getPlatformAuditLogs = async (req, res) => {
         if (shopId) query.shop_id = shopId;
         addDateRange(query, req.query);
         if (req.query.search) {
-            const regex = new RegExp(escapeRegex(String(req.query.search).trim()), 'i');
-            query.$or = [
-                { actorName: regex },
-                { actorEmail: regex },
-                { action: regex },
-                { entityType: regex },
-                { entityLabel: regex },
-                { message: regex },
-                { reason: regex }
-            ];
+            const regex = safeSearchRegex(req.query.search);
+            if (regex) {
+                query.$or = [
+                    { actorName: regex },
+                    { actorEmail: regex },
+                    { action: regex },
+                    { entityType: regex },
+                    { entityLabel: regex },
+                    { message: regex },
+                    { reason: regex }
+                ];
+            }
         }
 
         const [logs, total] = await Promise.all([
@@ -1271,7 +1791,7 @@ exports.getPlatformAuditLogs = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: logs,
+            data: logs.map(serializePlatformAuditEvent),
             pagination: paginationPayload({ page, limit, total })
         });
     } catch (err) {

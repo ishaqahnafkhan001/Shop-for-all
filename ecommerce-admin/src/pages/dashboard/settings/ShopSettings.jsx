@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Image, Palette, Save, Upload } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ExternalLink, Palette, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 
@@ -35,13 +35,10 @@ const ShopSettings = () => {
     const [settings, setSettings] = useState(EMPTY_SETTINGS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [uploading, setUploading] = useState('');
     const [error, setError] = useState('');
-    const logoInputRef = useRef(null);
-    const iconInputRef = useRef(null);
     const isBeginner = user?.planAccess?.planKey === 'beginner';
 
-    const loadSettings = async () => {
+    const loadSettings = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
@@ -52,11 +49,14 @@ const ShopSettings = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        loadSettings();
-    }, []);
+        const timer = window.setTimeout(() => {
+            loadSettings();
+        }, 0);
+        return () => window.clearTimeout(timer);
+    }, [loadSettings]);
 
     const updateField = (path, value) => {
         setSettings(previous => {
@@ -83,23 +83,6 @@ const ShopSettings = () => {
             toast.error(requestError.response?.data?.error || 'Store settings could not be saved.');
         } finally {
             setSaving(false);
-        }
-    };
-
-    const uploadBrandAsset = async (file, target) => {
-        if (!file) return;
-        const formData = new FormData();
-        formData.append('asset', file);
-        formData.append('target', target);
-        setUploading(target);
-        try {
-            const response = await API.post('/admin/basic-store-settings/brand-asset', formData);
-            setSettings({ ...EMPTY_SETTINGS, ...(response.data?.data || settings) });
-            toast.success(target === 'favicon' ? 'Browser icon updated' : 'Store logo updated');
-        } catch (requestError) {
-            toast.error(requestError.response?.data?.error || 'This image could not be uploaded.');
-        } finally {
-            setUploading('');
         }
     };
 
@@ -155,44 +138,19 @@ const ShopSettings = () => {
                     </a>
                 )}
 
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    {[
-                        { key: 'logo', label: 'Storefront logo', url: settings.logoUrl, ref: logoInputRef },
-                        { key: 'favicon', label: 'Browser tab icon', url: settings.faviconUrl, ref: iconInputRef }
-                    ].map(item => (
-                        <div key={item.key} className="rounded-xl border border-slate-200 p-4">
-                            <p className="text-sm font-bold text-slate-900">{item.label}</p>
-                            <div className="mt-3 flex items-center gap-4">
-                                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                                    {item.url ? (
-                                        <img src={item.url} alt="" className="h-full w-full object-contain" />
-                                    ) : (
-                                        <Image size={22} className="text-slate-400" />
-                                    )}
-                                </div>
-                                <div>
-                                    <input
-                                        ref={item.ref}
-                                        type="file"
-                                        accept={item.key === 'favicon' ? '.svg,.png,.webp,.jpg,.jpeg,.ico' : '.svg,.png,.webp,.jpg,.jpeg'}
-                                        className="hidden"
-                                        onChange={event => uploadBrandAsset(event.target.files?.[0], item.key)}
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        isLoading={uploading === item.key}
-                                        onClick={() => item.ref.current?.click()}
-                                    >
-                                        <Upload size={16} /> Upload
-                                    </Button>
-                                    <p className="mt-2 text-xs leading-5 text-slate-500">
-                                        {item.key === 'favicon' ? 'Square SVG, PNG, WebP, JPG, or ICO.' : 'SVG, PNG, WebP, or JPG.'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                <div className="mt-6 flex flex-col gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-slate-900">Logo, browser icon, and storefront hero</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                            Essential visual identity is managed separately from advanced Store Builder design.
+                        </p>
+                    </div>
+                    <Link
+                        to="/dashboard/settings/store-branding"
+                        className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+                    >
+                        <Palette size={16} className="mr-2" /> Open Store Branding
+                    </Link>
                 </div>
             </section>
 

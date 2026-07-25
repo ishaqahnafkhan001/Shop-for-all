@@ -92,6 +92,22 @@ const StatusBadge = ({ value }) => (
 const BillingBanner = ({ subscription, latestInvoice }) => {
     if (!subscription) return null;
 
+    if (subscription.paymentReviewStatus === 'pending_approval' || subscription.status === 'pending_approval') {
+        return (
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-indigo-950">
+                <div className="flex gap-3">
+                    <CreditCard className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-600" />
+                    <div>
+                        <p className="font-black">Payment submitted and waiting for Super Admin approval.</p>
+                        <p className="mt-1 text-sm text-indigo-800">
+                            Your current plan access remains available while the payment is reviewed.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (subscription.status === 'trialing') {
         return (
             <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sky-950">
@@ -100,7 +116,7 @@ const BillingBanner = ({ subscription, latestInvoice }) => {
                         <CalendarClock className="mt-0.5 h-5 w-5 flex-shrink-0 text-sky-600" />
                         <div>
                             <p className="font-black">Your free trial ends in {Math.max(subscription.trialDaysLeft || 0, 0)} days.</p>
-                            <p className="mt-1 text-sm text-sky-800">You can build your store and test checkout before choosing a plan.</p>
+                            <p className="mt-1 text-sm text-sky-800">Your Beginner features remain available throughout the trial.</p>
                         </div>
                     </div>
                     <a href="#plans" className="rounded-xl bg-sky-700 px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-sky-800">
@@ -131,20 +147,6 @@ const BillingBanner = ({ subscription, latestInvoice }) => {
                             Pay invoice
                         </a>
                     )}
-                </div>
-            </div>
-        );
-    }
-
-    if (subscription.status === 'pending_approval') {
-        return (
-            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-indigo-950">
-                <div className="flex gap-3">
-                    <CreditCard className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-600" />
-                    <div>
-                        <p className="font-black">Payment submitted and waiting for Super Admin approval.</p>
-                        <p className="mt-1 text-sm text-indigo-800">Your selected plan will become active after the platform owner verifies your manual payment.</p>
-                    </div>
                 </div>
             </div>
         );
@@ -241,15 +243,16 @@ const Billing = () => {
     const limits = planAccess.limits || {};
     const usage = planAccess.usage || {};
     const usageWarnings = planAccess.warnings || [];
+    const recommendedPlanKey = upgradeIntent?.recommendedPlan;
     const plans = useMemo(() => (current?.availablePlans || []).map(plan => ({
         ...plan,
         monthly: plan.monthlyPrice,
         yearly: plan.yearlyPrice,
-        recommended: upgradeIntent?.recommendedPlan
-            ? plan.key === upgradeIntent.recommendedPlan
+        recommended: recommendedPlanKey
+            ? plan.key === recommendedPlanKey
             : plan.key === 'growth',
         features: buildPlanFeatureList(plan)
-    })), [current?.availablePlans, upgradeIntent?.recommendedPlan]);
+    })), [current?.availablePlans, recommendedPlanKey]);
     const currentPlanIndex = PLAN_ORDER.indexOf(planAccess.planKey);
     const formatUsage = (used, limit) => `${Number(used || 0).toLocaleString()} / ${limit === null ? 'Unlimited' : Number(limit || 0).toLocaleString()}`;
     const selectedInvoice = useMemo(() => {
@@ -454,7 +457,9 @@ const Billing = () => {
                             {subscription?.status === 'trialing' && billingDisplay.intendedPlanName && (
                                 <p className="mt-1 text-xs font-semibold text-slate-500">Intended after trial: {billingDisplay.intendedPlanName}</p>
                             )}
-                            {subscription?.status === 'pending_approval' && billingDisplay.pendingPlanName && (
+                            {(subscription?.paymentReviewStatus === 'pending_approval' ||
+                                subscription?.status === 'pending_approval') &&
+                                billingDisplay.pendingPlanName && (
                                 <p className="mt-1 text-xs font-semibold text-indigo-600">Waiting to activate: {billingDisplay.pendingPlanName}</p>
                             )}
                         </div>

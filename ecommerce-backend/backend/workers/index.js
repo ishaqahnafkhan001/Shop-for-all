@@ -32,14 +32,28 @@ const { initializeSubscriptionEventHandlers } = require('../services/billing/sub
 const { cleanupExpiredStoreBuilderAssets } = require('../services/storeBuilder/storeBuilderAssetService');
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { processDueDowngrades } = require('../services/billing/subscriptionDowngradeService');
+const { syncSubscriptionPlans } = require('../scripts/sync-subscription-plans');
+const { runBillingLifecycleCheck } = require('../services/billing/billingLifecycleService');
+const {
+    processPendingSubscriptionReconciliations
+} = require('../services/billing/subscriptionReconciliationService');
+const {
+    assertJobEntitlementStillValid
+} = require('../services/workers/jobEntitlementService');
+const { processNextAuditIntent } = require('../services/platformAuditOutboxService');
 
 initializeSubscriptionEventHandlers();
 
 const POLL_INTERVAL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 3000);
+const BILLING_LIFECYCLE_INTERVAL_MS = Math.max(
+    60 * 1000,
+    Number(process.env.BILLING_LIFECYCLE_INTERVAL_MS) || 15 * 60 * 1000
+);
 let shuttingDown = false;
 let nextActivityCleanupAt = 0;
 let nextStoreBuilderAssetCleanupAt = 0;
 let nextSubscriptionReconciliationAt = 0;
+let nextBillingLifecycleAt = 0;
 
 const handlers = {
     notifications: processShopEventJob,
@@ -83,6 +97,14 @@ const processNextJob = async () => {
             return true;
         }
 
+        await assertJobEntitlementStillValid({
+            job,
+            feature: requiredFeature,
+            allowInactive: job.queue === 'support',
+            expectedEntitlementVersion: job.queue === 'support'
+                ? null
+                : job.entitlementVersion
+        });
         const result = await handler(job);
         if (result?.cancelled) {
             await cancelJob(job, result.reason || 'Cancelled by handler');
@@ -91,6 +113,15 @@ const processNextJob = async () => {
         await completeJob(job);
         logger.info('job_completed', { jobId: job._id, queue: job.queue, name: job.name });
     } catch (error) {
+        if (error?.code === 'JOB_ENTITLEMENT_SUPPRESSED') {
+            logger.info('job_suppressed_entitlement_changed', {
+                jobId: job._id,
+                shopId: job.shop_id,
+                queue: job.queue,
+                reason: error.message
+            });
+            return true;
+        }
         if (job.queue === 'badges') {
             await markBadgeAnalysisFailed(job, error);
         }
@@ -109,11 +140,37 @@ const processNextJob = async () => {
 
 const run = async () => {
     await connectDB();
+    const planSync = await syncSubscriptionPlans();
+    logger.info('subscription_plans_synchronized', planSync);
     logger.info('worker_started', { queues: Object.keys(handlers) });
 
     while (!shuttingDown) {
+        if (Date.now() >= nextBillingLifecycleAt) {
+            nextBillingLifecycleAt = Date.now() + BILLING_LIFECYCLE_INTERVAL_MS;
+            try {
+                const lifecycle = await runBillingLifecycleCheck();
+                logger.info(
+                    lifecycle.skipped
+                        ? 'billing_lifecycle_skipped'
+                        : 'billing_lifecycle_processed',
+                    lifecycle
+                );
+            } catch (error) {
+                logger.error('billing_lifecycle_failed', {
+                    error: String(error?.message || error)
+                });
+            }
+        }
+
         const processed = await processNextJob();
         if (!processed) {
+            try {
+                await processNextAuditIntent();
+            } catch (error) {
+                logger.error('platform_audit_outbox_failed', {
+                    error: String(error?.message || error)
+                });
+            }
             await processOverdueScheduledProducts({ limit: 25 });
             await processScheduledSaleStates({ limit: 50 });
             if (Date.now() >= nextActivityCleanupAt) {
@@ -127,10 +184,16 @@ const run = async () => {
                 logger.info('store_builder_asset_cleanup_processed', cleanup);
             }
             if (Date.now() >= nextSubscriptionReconciliationAt) {
-                const reconciliation = await processDueDowngrades({ limit: 20 });
+                const [downgrades, planChanges] = await Promise.all([
+                    processDueDowngrades({ limit: 20 }),
+                    processPendingSubscriptionReconciliations({ limit: 20 })
+                ]);
                 nextSubscriptionReconciliationAt = Date.now() + (60 * 1000);
-                if (reconciliation.processed > 0) {
-                    logger.info('subscription_downgrades_processed', reconciliation);
+                if (downgrades.processed > 0) {
+                    logger.info('subscription_downgrades_processed', downgrades);
+                }
+                if (planChanges.processed > 0) {
+                    logger.info('subscription_reconciliations_processed', planChanges);
                 }
             }
             await sleep(POLL_INTERVAL_MS);

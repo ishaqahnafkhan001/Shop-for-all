@@ -1,7 +1,10 @@
 const cache = require('../cacheService');
 const { subscribe } = require('../events/domainEventBus');
 const { createNotification } = require('../notificationService');
-const { reconcileShopPlan } = require('./subscriptionReconciliationService');
+const {
+    scheduleSubscriptionReconciliation,
+    executePendingSubscriptionReconciliation
+} = require('./subscriptionReconciliationService');
 const { getSubscriptionUsage } = require('./subscriptionUsageService');
 const { evaluateUsageWarnings } = require('./subscriptionWarningService');
 const { recordSubscriptionAnalyticsEvent } = require('./subscriptionAnalyticsService');
@@ -26,7 +29,6 @@ const lifecycleEvents = [
 ];
 
 const reconciliationEvents = [
-    SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED,
     SUBSCRIPTION_EVENTS.PLAN_DOWNGRADED,
     SUBSCRIPTION_EVENTS.PLAN_UPGRADED,
     SUBSCRIPTION_EVENTS.TRIAL_CONVERTED,
@@ -97,7 +99,30 @@ const initializeSubscriptionEventHandlers = () => {
             }
             const planKey = event.newValue?.planKey || event.metadata?.newPlanKey || event.planKey;
             if (!event.shopId || !planKey) return null;
-            return reconcileShopPlan({ shopId: event.shopId, planKey });
+            const reconciliationType = event.type === SUBSCRIPTION_EVENTS.PLAN_UPGRADED ||
+                event.type === SUBSCRIPTION_EVENTS.TRIAL_CONVERTED
+                ? 'upgrade'
+                : event.type === SUBSCRIPTION_EVENTS.QUOTA_LIMIT_CHANGED
+                    ? 'quota_change'
+                    : 'plan_change';
+            const subscription = await scheduleSubscriptionReconciliation({
+                subscriptionId: event.subscriptionId,
+                shopId: event.shopId,
+                planKey,
+                reconciliationType,
+                operationId: event.eventId
+            });
+            if (!subscription) return null;
+            try {
+                return await executePendingSubscriptionReconciliation({
+                    subscriptionId: subscription._id
+                });
+            } catch {
+                return {
+                    status: 'failed',
+                    retryAt: subscription.reconciliation?.nextRetryAt || null
+                };
+            }
         }
     });
 
@@ -109,7 +134,10 @@ const initializeSubscriptionEventHandlers = () => {
             if (!event.shopId) return null;
             await Promise.all([
                 cache.delPattern(`storefront:*:${event.shopId}:*`),
-                cache.del(`subscription:usage:${event.shopId}`)
+                cache.delPattern(`admin:dashboard-overview:${event.shopId}:*`),
+                cache.del(`subscription:usage:${event.shopId}`),
+                cache.del(`subscription:access:${event.shopId}`),
+                cache.del(`navigation:${event.shopId}`)
             ]);
             return { invalidated: true };
         }

@@ -40,7 +40,7 @@ const requireShopFeature = (feature) => async (req, res, next) => {
                 message: 'This shop is not active and approved.'
             });
         }
-        if (!['trialing', 'active', 'past_due', 'grace'].includes(context.subscriptionStatus)) {
+        if (!context.isOperational) {
             return res.status(403).json({
                 success: false,
                 code: 'SUBSCRIPTION_INACTIVE',

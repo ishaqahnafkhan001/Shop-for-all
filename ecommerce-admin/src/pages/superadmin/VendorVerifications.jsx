@@ -243,7 +243,9 @@ const VendorVerifications = () => {
     const openDocument = async (item, type) => {
         if (!item?._id) return;
         try {
-            const { data } = await API.get(`/super-admin/vendor-verifications/${item._id}/document/${type}`);
+            const { data } = await API.get(`/super-admin/vendor-verifications/${item._id}/document/${type}`, {
+                params: { reason: 'Vendor identity verification review' }
+            });
             if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer');
         } catch (err) {
             toast.error(err.response?.data?.error || 'Unable to open signed NID document');

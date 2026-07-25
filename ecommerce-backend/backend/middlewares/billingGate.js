@@ -5,11 +5,10 @@ const { ensureSubscriptionExists, isBillingSuspension } = require('../services/b
 const { getPlanByIdOrNameOrDefault } = require('../services/billing/billingPlanService');
 const { getStaffCapacity } = require('../services/staff/staffCapacityService');
 const { getEffectivePlanRef } = require('../services/shops/featureAccessService');
+const { resolveSubscriptionAccess } = require('../services/billing/subscriptionAccessResolver');
 const { getShopPlanAccess, buildLimitError } = require('../services/billing/planAccessService');
 const { reserveQuota, releaseQuotaSafely } = require('../services/billing/planQuotaReservationService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
-
-const OPERATIONAL_SUBSCRIPTION_STATUSES = new Set(['trialing', 'active', 'past_due', 'grace']);
 
 const billingDenied = (res, message = 'Your subscription is not active.') => res.status(403).json({
     success: false,
@@ -60,13 +59,19 @@ const getBillingContext = async (req) => {
 
     const subscription = await ensureSubscriptionExists(shop);
     const plan = await getEffectivePlan(shop, subscription);
-    return { shopId, shop, subscription, plan };
+    return {
+        shopId,
+        shop,
+        subscription,
+        plan,
+        access: resolveSubscriptionAccess({ subscription, shop })
+    };
 };
 
 const blockBillingSuspendedShop = async (req, res, next) => {
     try {
-        const { shop, subscription } = await getBillingContext(req);
-        const blockedBySubscription = !OPERATIONAL_SUBSCRIPTION_STATUSES.has(subscription.status);
+        const { shop, access } = await getBillingContext(req);
+        const blockedBySubscription = !access.isOperational;
         const blockedByShop = isBillingSuspension(shop);
 
         if (blockedBySubscription || blockedByShop) {
@@ -82,8 +87,8 @@ const blockBillingSuspendedShop = async (req, res, next) => {
 
 const requireProductLimit = (getRequestedCount = () => 1) => async (req, res, next) => {
     try {
-        const { shopId, subscription } = await getBillingContext(req);
-        if (!OPERATIONAL_SUBSCRIPTION_STATUSES.has(subscription.status)) {
+        const { shopId, access } = await getBillingContext(req);
+        if (!access.isOperational) {
             return billingDenied(res, 'Your store billing is not active. Please submit payment for verification.');
         }
 
@@ -129,8 +134,8 @@ const requireStaffLimit = async (req, res, next) => {
     try {
         if (req.body?.role && req.body.role !== 'VendorStaff') return next();
 
-        const { subscription } = await getBillingContext(req);
-        if (!OPERATIONAL_SUBSCRIPTION_STATUSES.has(subscription.status)) {
+        const { access } = await getBillingContext(req);
+        if (!access.isOperational) {
             return billingDenied(res, 'Your store billing is not active. Please submit payment for verification.');
         }
 
@@ -178,7 +183,6 @@ const requireStaffLimit = async (req, res, next) => {
 };
 
 module.exports = {
-    OPERATIONAL_SUBSCRIPTION_STATUSES,
     blockBillingSuspendedShop,
     requireProductLimit,
     requireStaffLimit

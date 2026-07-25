@@ -94,7 +94,7 @@ const getEligibilitySnapshot = async (shopId) => {
         snapshot: {
             plan,
             trustSystemIncluded: Boolean(access.features.trustSystem),
-            subscriptionStatus: subscription?.status || 'missing',
+            subscriptionStatus: access.subscriptionStatus || 'missing',
             verificationStatus: shop.verification?.status || 'not_submitted',
             shopAgeDays: daysBetween(shop.createdAt),
             completedSales,

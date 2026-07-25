@@ -385,6 +385,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
             />
             <ReferenceStorefrontHome
                 theme={theme}
+                shopName={shop?.shopName || initialData?.shop?.shopName || subdomain}
                 products={products}
                 categories={categories}
                 sectionProducts={sectionProducts}

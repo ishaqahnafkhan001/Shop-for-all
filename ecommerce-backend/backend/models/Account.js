@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const { PLATFORM_ROLES } = require('../config/platformPermissions');
 
 const accountSchema = new Schema({
     email: {
@@ -12,7 +13,8 @@ const accountSchema = new Schema({
     },
     passwordHash: {
         type: String,
-        required: true
+        required: true,
+        select: false
     },
     fullName: {
         type: String,
@@ -43,7 +45,7 @@ const accountSchema = new Schema({
     },
     platformRole: {
         type: String,
-        enum: ['None', 'SuperAdmin', 'SupportAgent', 'SupportLead', 'TechnicalSupport'],
+        enum: ['None', ...PLATFORM_ROLES],
         default: 'None'
     }
 }, { timestamps: true });

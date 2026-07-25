@@ -1,5 +1,7 @@
 export const FEATURE_LABELS = {
+    basicStoreBranding: 'Store Branding',
     storeBuilder: 'Customize your store',
+    advancedStoreDesign: 'Advanced Store Design',
     homepageSeo: 'Homepage SEO',
     analytics: 'Advanced analytics',
     dashboardTopProducts: 'Top product insights',
@@ -25,7 +27,9 @@ export const FEATURE_LABELS = {
 };
 
 export const FEATURE_MESSAGES = {
+    basicStoreBranding: 'Essential Store Branding is not enabled for this store.',
     storeBuilder: 'Store Builder is not enabled for your store.',
+    advancedStoreDesign: 'Advanced Store Design is not enabled for your store.',
     homepageSeo: 'Homepage SEO controls are not enabled for your store.',
     analytics: 'Analytics is not enabled for your store.',
     dashboardTopProducts: 'Top product insights are not enabled for your store.',

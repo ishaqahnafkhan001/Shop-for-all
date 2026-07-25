@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 
 const connectDB = require('./config/db');
+const { syncSubscriptionPlans } = require('./scripts/sync-subscription-plans');
 
 const { errorHandler } = require('./middlewares/error');
 const { csrfProtection } = require('./middlewares/csrf');
@@ -174,6 +175,11 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
     await connectDB();
+    const planSync = await syncSubscriptionPlans();
+    console.log(
+        `[Billing] synchronized ${planSync.created + planSync.updated} plans ` +
+        `(config version ${planSync.planConfigVersion})`
+    );
 
     app.listen(PORT, '0.0.0.0', () => {
         console.log(

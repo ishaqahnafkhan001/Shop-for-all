@@ -165,7 +165,7 @@ exports.createShopUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(value.password, salt);
 
-        let account = await Account.findOne({ email: cleanEmail });
+        let account = await Account.findOne({ email: cleanEmail }).select('+passwordHash');
 
         if (account) {
             const passwordMatches = await bcrypt.compare(value.password, account.passwordHash);

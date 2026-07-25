@@ -16,7 +16,13 @@ const {
     requireProductLimit,
     requireStaffLimit
 } = require('../middlewares/billingGate');
-const { cloudinary, upload, nidUpload, brandUpload } = require('../config/cloudinary');
+const {
+    cloudinary,
+    upload,
+    nidUpload,
+    brandUpload,
+    essentialBrandingUpload
+} = require('../config/cloudinary');
 const { getShopPlanAccess, buildLimitError } = require('../services/billing/planAccessService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const Product = require('../models/Product');
@@ -132,6 +138,14 @@ const {
     updateBasicStoreSettings,
     uploadBasicStoreBrandAsset
 } = require('../controllers/basicStoreSettingsController');
+const {
+    getStoreBranding,
+    getStoreBrandingDestinations,
+    updateStoreBranding,
+    uploadStoreBrandingAsset,
+    removeStoreBrandingAsset,
+    resetStoreBranding
+} = require('../controllers/storeBrandingController');
 const {
     getVendorAnnouncements
 } = require('../controllers/platformAnnouncementController');
@@ -321,6 +335,34 @@ const productAiLimiter = rateLimit({
         message: 'Too many AI suggestion requests. Please try again later.'
     }
 });
+const brandingMutationLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        code: 'BRANDING_RATE_LIMITED',
+        message: 'Too many branding changes. Please wait a few minutes and try again.'
+    }
+});
+const setBrandingAssetTarget = target => (req, _res, next) => {
+    req.brandingAssetTarget = target;
+    next();
+};
+const uploadEssentialBrandingAsset = (req, res, next) => {
+    essentialBrandingUpload.single('asset')(req, res, error => {
+        if (!error) return next();
+        const tooLarge = error.code === 'LIMIT_FILE_SIZE';
+        return res.status(400).json({
+            success: false,
+            code: tooLarge ? 'BRANDING_ASSET_TOO_LARGE' : 'INVALID_BRANDING_ASSET',
+            message: tooLarge
+                ? 'This branding image is too large.'
+                : 'Use a supported image with valid file contents and dimensions.'
+        });
+    });
+};
 const returnProofUpload = upload.fields([
     { name: 'proofImages', maxCount: 3 },
     { name: 'proofVideo', maxCount: 1 }
@@ -371,6 +413,68 @@ router.post(
     requirePermission('settings'),
     brandUpload.single('asset'),
     uploadBasicStoreBrandAsset
+);
+
+router.get(
+    '/store-branding',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    requireShopFeature('basicStoreBranding'),
+    getStoreBranding
+);
+
+router.get(
+    '/store-branding/destinations',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    requireShopFeature('basicStoreBranding'),
+    getStoreBrandingDestinations
+);
+
+router.patch(
+    '/store-branding',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    requireShopFeature('basicStoreBranding'),
+    brandingMutationLimiter,
+    updateStoreBranding
+);
+
+for (const target of ['logo', 'favicon', 'hero']) {
+    router.post(
+        `/store-branding/${target}`,
+        protect,
+        authorize('VendorAdmin', 'VendorStaff'),
+        requirePermission('settings'),
+        requireShopFeature('basicStoreBranding'),
+        brandingMutationLimiter,
+        setBrandingAssetTarget(target),
+        uploadEssentialBrandingAsset,
+        uploadStoreBrandingAsset
+    );
+    router.delete(
+        `/store-branding/${target}`,
+        protect,
+        authorize('VendorAdmin', 'VendorStaff'),
+        requirePermission('settings'),
+        requireShopFeature('basicStoreBranding'),
+        brandingMutationLimiter,
+        setBrandingAssetTarget(target),
+        removeStoreBrandingAsset
+    );
+}
+
+router.post(
+    '/store-branding/reset',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('settings'),
+    requireShopFeature('basicStoreBranding'),
+    brandingMutationLimiter,
+    resetStoreBranding
 );
 
 // ======================================================

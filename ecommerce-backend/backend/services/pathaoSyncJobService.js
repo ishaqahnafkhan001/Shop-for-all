@@ -2,6 +2,8 @@ const Order = require('../models/Order');
 const Shop = require('../models/Shop');
 const { getPathaoToken, createPathaoOrder } = require('./pathaoService');
 const { toLocalBDPhone } = require('../utils/phoneUtils');
+const { assertJobEntitlementStillValid } = require('./workers/jobEntitlementService');
+const { COURIER_CREDENTIAL_SELECT } = require('./courierConfigService');
 
 const normalizePathaoPhone = (phone) => {
     const localPhone = toLocalBDPhone(phone);
@@ -43,7 +45,7 @@ const processPathaoSyncJob = async (job) => {
     if (!order) throw new Error('Order not found for Pathao sync');
     if (order.isPathaoSynced) return;
 
-    const shop = await Shop.findById(job.shop_id);
+    const shop = await Shop.findById(job.shop_id).select(COURIER_CREDENTIAL_SELECT);
     if (!shop) throw new Error('Shop not found for Pathao sync');
     if (!shop.pathaoStoreId) throw new Error('Pathao store location is not configured');
 
@@ -61,6 +63,7 @@ const processPathaoSyncJob = async (job) => {
     await order.save();
 
     try {
+        await assertJobEntitlementStillValid({ job });
         const customCreds = shop.pathaoCredentials && shop.pathaoCredentials.client_id ? shop.pathaoCredentials : null;
         const token = await getPathaoToken(customCreds);
         const isLive = customCreds ? customCreds.isLive : false;

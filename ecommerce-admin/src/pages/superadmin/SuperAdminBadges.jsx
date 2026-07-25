@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
@@ -78,11 +78,16 @@ const DetailModal = ({ application, onClose, onApprove, onReject, onRevoke, onRe
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-            <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl">
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="badge-detail-title"
+                className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl"
+            >
                 <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
                     <div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-lg font-black text-slate-950">{shop.shopName || 'Badge application'}</h2>
+                            <h2 id="badge-detail-title" className="text-lg font-black text-slate-950">{shop.shopName || 'Badge application'}</h2>
                             <StatusBadge value={application.status} />
                             {application.recommendation && <StatusBadge value={application.recommendation} />}
                         </div>
@@ -187,6 +192,7 @@ const DetailModal = ({ application, onClose, onApprove, onReject, onRevoke, onRe
 
 const SuperAdminBadges = () => {
     const [items, setItems] = useState([]);
+    const [overview, setOverview] = useState({ total: 0, ready: 0, approved: 0, rejected: 0 });
     const [selected, setSelected] = useState(null);
     const [filters, setFilters] = useState({ page: 1, status: 'all', recommendation: 'all' });
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });
@@ -207,6 +213,7 @@ const SuperAdminBadges = () => {
                 }
             });
             setItems(data.data || []);
+            setOverview(data.summary || { total: 0, ready: 0, approved: 0, rejected: 0 });
             setPagination(data.pagination || { page: 1, limit: 20, total: 0, pages: 1 });
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to load badge applications');
@@ -219,16 +226,6 @@ const SuperAdminBadges = () => {
         const timer = window.setTimeout(load, 0);
         return () => window.clearTimeout(timer);
     }, [load]);
-
-    const overview = useMemo(() => {
-        return items.reduce((acc, item) => {
-            acc.total += 1;
-            if (item.status === 'pending_super_admin_review') acc.ready += 1;
-            if (item.status === 'approved') acc.approved += 1;
-            if (item.status === 'rejected') acc.rejected += 1;
-            return acc;
-        }, { total: 0, ready: 0, approved: 0, rejected: 0 });
-    }, [items]);
 
     const openDetail = async (item) => {
         try {
@@ -255,11 +252,6 @@ const SuperAdminBadges = () => {
         }
     };
 
-    const approveSelected = () => {
-        if (!selected) return;
-        runAction(() => API.patch(`/super-admin/badges/${selected.id}/approve`, { reason: 'Approved after Super Admin review.' }), 'Badge approved');
-    };
-
     const rerunSelected = () => {
         if (!selected) return;
         runAction(() => API.post(`/super-admin/badges/${selected.id}/rerun-analysis`), 'Badge analysis queued');
@@ -267,6 +259,11 @@ const SuperAdminBadges = () => {
 
     const openReasonAction = (type) => {
         const labels = {
+            approve: {
+                title: 'Approve trusted badge',
+                warning: 'Approval publishes a trust badge on the storefront. Record the evidence-based reason for this decision.',
+                confirmLabel: 'Approve badge'
+            },
             reject: {
                 title: 'Reject badge request',
                 warning: 'Rejection tells the vendor why the badge was not approved. A clear reason is required.',
@@ -287,7 +284,11 @@ const SuperAdminBadges = () => {
         const type = reasonModal.type;
         runAction(
             () => API.patch(`/super-admin/badges/${selected.id}/${type}`, { reason: reason.trim() }),
-            type === 'reject' ? 'Badge request rejected' : 'Badge revoked'
+            type === 'approve'
+                ? 'Badge approved'
+                : type === 'reject'
+                    ? 'Badge request rejected'
+                    : 'Badge revoked'
         );
     };
 
@@ -413,7 +414,7 @@ const SuperAdminBadges = () => {
             <DetailModal
                 application={selected}
                 onClose={() => setSelected(null)}
-                onApprove={approveSelected}
+                onApprove={() => openReasonAction('approve')}
                 onReject={() => openReasonAction('reject')}
                 onRevoke={() => openReasonAction('revoke')}
                 onRerun={rerunSelected}

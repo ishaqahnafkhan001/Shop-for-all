@@ -1,5 +1,14 @@
 const { encryptSecret, maskSecret } = require('../utils/secretCrypto');
 
+const COURIER_CREDENTIAL_SELECT = [
+    '+couriers.redx.tokenEncrypted',
+    '+pathaoCredentials.client_id',
+    '+pathaoCredentials.client_secret',
+    '+pathaoCredentials.username',
+    '+pathaoCredentials.password',
+    '+pathaoCredentials.isLive'
+].join(' ');
+
 const getPathaoConfig = (shop = {}) => {
     const pathao = shop.couriers?.pathao || {};
     const storeId = pathao.storeId || shop.pathaoStoreId || null;
@@ -105,6 +114,7 @@ const mirrorPathaoConfigOnShop = (shop, { storeId, storeName = '', enabled = tru
 };
 
 module.exports = {
+    COURIER_CREDENTIAL_SELECT,
     applyRedxConfigToShop,
     clearRedxConfigFromShop,
     getCourierSummary,

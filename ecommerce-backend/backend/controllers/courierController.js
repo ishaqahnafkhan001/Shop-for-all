@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Shop = require('../models/Shop');
 const { enqueueJob, requeueJobs } = require('../services/jobQueueService');
 const {
+    COURIER_CREDENTIAL_SELECT,
     applyRedxConfigToShop,
     clearRedxConfigFromShop,
     getCourierSummary
@@ -60,7 +61,7 @@ const redxPickupStoreSchema = Joi.object({
 });
 
 const getShop = async (shopId) => {
-    const shop = await Shop.findById(shopId);
+    const shop = await Shop.findById(shopId).select(COURIER_CREDENTIAL_SELECT);
     if (!shop) {
         const error = new Error('Shop not found');
         error.statusCode = 404;

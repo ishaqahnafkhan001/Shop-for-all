@@ -5,6 +5,7 @@ const { getVendorAdminEmails } = require('../vendorNotificationEmailService');
 const { sendMail } = require('../mail/mailService');
 const User = require('../../models/User');
 const SupportTicket = require('../../models/SupportTicket');
+const { assertJobEntitlementStillValid } = require('../workers/jobEntitlementService');
 
 const getAdminUrl = (path = '') => {
     const base = process.env.ADMIN_APP_URL || process.env.ADMIN_URL || process.env.CLIENT_URL || 'http://localhost:5173';
@@ -80,6 +81,11 @@ const processSupportJob = async (job) => {
         if (!ticket) throw new Error('Support ticket not found for vendor email');
         const recipients = await getVendorAdminEmails(ticket.shop_id);
         if (recipients.length === 0) return;
+        await assertJobEntitlementStillValid({
+            job,
+            allowInactive: true,
+            expectedEntitlementVersion: null
+        });
         await sendMail({
             type: 'admin',
             to: recipients,
@@ -100,6 +106,11 @@ const processSupportJob = async (job) => {
     if (job.name === 'support.staff_email') {
         const user = await User.findById(job.payload?.userId).select('email fullName status').lean();
         if (!user || user.status !== 'Active' || !user.email) return;
+        await assertJobEntitlementStillValid({
+            job,
+            allowInactive: true,
+            expectedEntitlementVersion: null
+        });
         await sendMail({
             type: 'admin',
             to: user.email,
@@ -118,6 +129,11 @@ const processSupportJob = async (job) => {
     }
 
     if (job.name === 'support.invitation_email') {
+        await assertJobEntitlementStillValid({
+            job,
+            allowInactive: true,
+            expectedEntitlementVersion: null
+        });
         await sendMail({
             type: 'admin',
             to: job.payload?.email,

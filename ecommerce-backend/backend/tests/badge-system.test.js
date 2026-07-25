@@ -101,17 +101,18 @@ test('background badge analysis scores applications and notifies Super Admin rev
     assert.match(worker, /markBadgeAnalysisFailed/);
 });
 
-test('Super Admin badge routes require SuperAdmin and reason-gate negative decisions', () => {
+test('platform badge routes use scoped permissions, recent auth, and reason-gated decisions', () => {
     const superRoutes = read('routes/superAdminRoutes.js');
     const badgeRoutes = read('routes/superAdminBadgeRoutes.js');
     const controller = read('controllers/badgeController.js');
 
     assert.match(superRoutes, /router\.use\('\/badges',\s*superAdminBadgeRoutes\)/);
-    assert.match(superRoutes, /router\.use\(authorize\('SuperAdmin'\)\)/);
-    assert.match(badgeRoutes, /router\.patch\('\/:id\/approve',\s*approveBadgeApplication\)/);
-    assert.match(badgeRoutes, /router\.patch\('\/:id\/reject',\s*rejectBadgeApplication\)/);
-    assert.match(badgeRoutes, /router\.patch\('\/:id\/revoke',\s*revokeBadgeApplication\)/);
-    assert.match(badgeRoutes, /router\.post\('\/:id\/rerun-analysis',\s*rerunBadgeAnalysis\)/);
+    assert.match(superRoutes, /router\.use\(requirePlatformRole\)/);
+    assert.match(badgeRoutes, /'\/:id\/approve'[\s\S]*requirePlatformPermission\('trust\.badges\.review'\)[\s\S]*requireRecentAuthentication[\s\S]*approveBadgeApplication/);
+    assert.match(badgeRoutes, /'\/:id\/reject'[\s\S]*requirePlatformPermission\('trust\.badges\.review'\)[\s\S]*requireRecentAuthentication[\s\S]*rejectBadgeApplication/);
+    assert.match(badgeRoutes, /'\/:id\/revoke'[\s\S]*requirePlatformPermission\('trust\.badges\.revoke'\)[\s\S]*requireRecentAuthentication[\s\S]*revokeBadgeApplication/);
+    assert.match(badgeRoutes, /'\/:id\/rerun-analysis'[\s\S]*requirePlatformPermission\('trust\.badges\.review'\)[\s\S]*rerunBadgeAnalysis/);
+    assert.match(controller, /A review note is required to approve a badge/);
     assert.match(controller, /Reason is required to reject badge application/);
     assert.match(controller, /Reason is required to revoke badge/);
     assert.match(controller, /badge\.approved/);
@@ -141,18 +142,29 @@ test('public storefront only exposes active trusted badge after verification and
 test('admin UI exposes vendor and Super Admin badge pages without changing API shape', () => {
     const app = readRepo('ecommerce-admin/src/App.jsx');
     const sidebar = readRepo('ecommerce-admin/src/components/dashboard/Sidebar.jsx');
+    const vendorNavigation = readRepo('ecommerce-admin/src/config/dashboardNavigation.jsx');
     const vendorPage = readRepo('ecommerce-admin/src/pages/dashboard/TrustedBadge.jsx');
     const superPage = readRepo('ecommerce-admin/src/pages/superadmin/SuperAdminBadges.jsx');
 
     assert.match(app, /dashboard\/TrustedBadge/);
     assert.match(app, /superadmin\/SuperAdminBadges/);
     assert.match(app, /path="badges" element=\{withSuspense\(withFeature\('trustSystem',\s*<TrustedBadge \/>/);
-    assert.match(app, /path="badges" element=\{withSuspense\(<SuperAdminBadges \/>/);
-    assert.match(sidebar, /Trusted Badge/);
-    assert.match(sidebar, /Trusted Badges/);
+    assert.match(app, /path="badges" element=\{withSuspense\(withPlatformPermission\('trust\.badges\.read',\s*<SuperAdminBadges \/>/);
+    assert.match(vendorNavigation, /label:\s*'Trusted Badge'[\s\S]*feature:\s*'trustSystem'/);
+    assert.match(sidebar, /\{\s*label:\s*'Badges',\s*path:\s*'\/super-admin\/badges'/);
     assert.match(vendorPage, /\/admin\/badges\/status/);
     assert.match(vendorPage, /\/admin\/badges\/request/);
     assert.match(superPage, /\/super-admin\/badges/);
     assert.match(superPage, /\/:id\/reject|reject/);
     assert.match(superPage, /\/:id\/revoke|revoke/);
+});
+
+test('Super Admin badge summary is aggregated across the platform, not the current page', () => {
+    const controller = read('controllers/badgeController.js');
+    const superPage = readRepo('ecommerce-admin/src/pages/superadmin/SuperAdminBadges.jsx');
+
+    assert.match(controller, /BadgeApplication\.aggregate\(\[/);
+    assert.match(controller, /summary:\s*statusCounts\.reduce/);
+    assert.match(superPage, /setOverview\(data\.summary/);
+    assert.doesNotMatch(superPage, /items\.reduce\(\(acc,\s*item\)/);
 });

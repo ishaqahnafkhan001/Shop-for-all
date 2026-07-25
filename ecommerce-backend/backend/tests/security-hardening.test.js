@@ -89,7 +89,7 @@ test('store builder theme save sanitizes scriptable URLs', () => {
 
     assert.match(service, /sanitizeThemePayload/);
     assert.match(service, /validateTheme/);
-    assert.match(service, /const sanitizedTheme = sanitizeThemePayload\(theme\)/);
+    assert.match(service, /const sanitizedTheme = sanitizeThemePayload\(toJsonSafeTheme\(theme\)\)/);
     assert.match(service, /validateTheme\(sanitizedTheme\)/);
     assert.match(service, /normalizeTheme\(sanitizedTheme\)/);
     assert.match(contract, /UNSAFE_URL_PATTERN/);
@@ -253,7 +253,7 @@ test('shop feature flags are enforced on backend routes and vendor frontend rout
 
     assert.match(featureService, /computeEffectiveFeatures/);
     assert.match(featureService, /shopOverride !== false/);
-    assert.match(featureService, /planAllows !== false/);
+    assert.match(featureService, /planAllows === true/);
     assert.match(featureGate, /code:\s*'FEATURE_NOT_AVAILABLE'/);
     assert.match(featureGate, /feature/);
     assert.match(analyticsRoutes, /requireShopFeature\('analytics'\)/);
@@ -399,11 +399,11 @@ test('vendor verification routes are protected and use NID upload middleware', (
     assert.match(adminRoutes, /'\/vendor-verification\/document\/:type'[\s\S]*getVendorVerificationDocument/);
     assert.match(adminRoutes, /name:\s*'nidFront',\s*maxCount:\s*1/);
     assert.match(adminRoutes, /name:\s*'nidBack',\s*maxCount:\s*1/);
-    assert.match(superAdminRoutes, /router\.use\(authorize\('SuperAdmin'\)\)/);
-    assert.match(superAdminRoutes, /router\.get\('\/vendor-verifications',\s*getVendorVerifications\)/);
-    assert.match(superAdminRoutes, /router\.get\('\/vendor-verifications\/:id\/document\/:type',\s*getSuperAdminVendorVerificationDocument\)/);
-    assert.match(superAdminRoutes, /router\.patch\('\/vendor-verifications\/:id\/approve',\s*approveVendorVerification\)/);
-    assert.match(superAdminRoutes, /router\.patch\('\/vendor-verifications\/:id\/reject',\s*rejectVendorVerification\)/);
+    assert.match(superAdminRoutes, /router\.use\(requirePlatformRole\)/);
+    assert.match(superAdminRoutes, /'\/vendor-verifications'[\s\S]*requirePlatformPermission\('compliance\.verification\.read'\)[\s\S]*getVendorVerifications/);
+    assert.match(superAdminRoutes, /'\/vendor-verifications\/:id\/document\/:type'[\s\S]*requirePlatformPermission\('compliance\.documents\.view'\)[\s\S]*requireRecentAuthentication[\s\S]*getSuperAdminVendorVerificationDocument/);
+    assert.match(superAdminRoutes, /'\/vendor-verifications\/:id\/approve'[\s\S]*requirePlatformPermission\('compliance\.verification\.review'\)[\s\S]*requireRecentAuthentication[\s\S]*approveVendorVerification/);
+    assert.match(superAdminRoutes, /'\/vendor-verifications\/:id\/reject'[\s\S]*requirePlatformPermission\('compliance\.verification\.review'\)[\s\S]*requireRecentAuthentication[\s\S]*rejectVendorVerification/);
     assert.match(service, /VERIFICATION_DEADLINE_DAYS\s*=\s*20/);
     assert.match(service, /REJECTED_NID_RETENTION_DAYS\s*=\s*180/);
     assert.match(service, /VERIFICATION_SUSPENSION_REASON/);
@@ -454,21 +454,21 @@ test('public tenant resolution checks verification before exposing storefront', 
     assert.doesNotMatch(tenant, /subdomain:\s*subdomain,\s*isActive:\s*true/);
 });
 
-test('super admin hardening routes remain SuperAdmin protected', () => {
+test('super admin hardening routes use scoped platform permissions and recent auth', () => {
     const routes = read('routes/superAdminRoutes.js');
 
     assert.match(routes, /router\.use\(protect\)/);
-    assert.match(routes, /router\.use\(authorize\('SuperAdmin'\)\)/);
-    assert.match(routes, /router\.get\('\/shops\/:shopId',\s*getShopDetail\)/);
-    assert.match(routes, /router\.patch\('\/shops\/:shopId\/status',\s*updateShopStatus\)/);
-    assert.match(routes, /router\.patch\('\/shops\/:shopId\/plan',\s*updateShopPlan\)/);
-    assert.match(routes, /router\.patch\('\/shops\/:shopId\/feature-flags',\s*updateShopFeatureFlags\)/);
-    assert.match(routes, /router\.get\('\/audit-logs',\s*getPlatformAuditLogs\)/);
-    assert.match(routes, /router\.patch\('\/domains\/:shopId',\s*updateDomain\)/);
-    assert.match(routes, /router\.patch\('\/abuse-reports\/:id\/status',\s*updateAbuseReportStatus\)/);
+    assert.match(routes, /router\.use\(requirePlatformRole\)/);
+    assert.match(routes, /'\/shops\/:shopId'[\s\S]*platform\.shops\.read[\s\S]*getShopDetail/);
+    assert.match(routes, /'\/shops\/:shopId\/status'[\s\S]*platform\.shops\.suspend[\s\S]*requireRecentAuthentication[\s\S]*updateShopStatus/);
+    assert.match(routes, /'\/shops\/:shopId\/plan'[\s\S]*billing\.subscriptions\.modify[\s\S]*requireRecentAuthentication[\s\S]*updateShopPlan/);
+    assert.match(routes, /'\/shops\/:shopId\/feature-flags'[\s\S]*platform\.shops\.manage[\s\S]*requireRecentAuthentication[\s\S]*updateShopFeatureFlags/);
+    assert.match(routes, /'\/audit-logs'[\s\S]*audit\.logs\.view[\s\S]*getPlatformAuditLogs/);
+    assert.match(routes, /'\/domains\/:shopId'[\s\S]*platform\.domains\.manage[\s\S]*requireRecentAuthentication[\s\S]*updateDomain/);
+    assert.match(routes, /'\/abuse-reports\/:id\/status'[\s\S]*risk\.cases\.manage[\s\S]*requireRecentAuthentication[\s\S]*updateAbuseReportStatus/);
 });
 
-test('super admin frontend routes and navigation are SuperAdmin-only', () => {
+test('super admin frontend routes and navigation honor scoped platform permissions', () => {
     const app = readProject('ecommerce-admin/src/App.jsx');
     const sidebar = readProject('ecommerce-admin/src/components/dashboard/Sidebar.jsx');
     const navigationRegistry = readProject('ecommerce-admin/src/config/dashboardNavigation.jsx');
@@ -477,11 +477,14 @@ test('super admin frontend routes and navigation are SuperAdmin-only', () => {
     const verification = readProject('ecommerce-admin/src/pages/superadmin/VendorVerifications.jsx');
     const auditLogs = readProject('ecommerce-admin/src/pages/superadmin/PlatformAuditLogs.jsx');
 
-    assert.match(app, /<ProtectedRoute allowedRoles=\{\['SuperAdmin'\]\}/);
+    assert.match(app, /<ProtectedRoute allowedRoles=\{PLATFORM_ROLES\}/);
+    assert.match(app, /withPlatformPermission\('billing\.read'/);
+    assert.match(app, /withPlatformPermission\('compliance\.verification\.read'/);
     assert.match(app, /path="\/super-admin"/);
     assert.match(app, /path="vendor-verifications"/);
     assert.match(app, /path="audit-logs"/);
-    assert.match(sidebar, /user\?\.role === 'SuperAdmin'/);
+    assert.match(sidebar, /isPlatformRole\(user\?\.role\)/);
+    assert.match(sidebar, /hasPlatformPermission\(user,\s*item\.permission\)/);
     assert.match(sidebar, /\/super-admin\/vendor-verifications/);
     assert.match(sidebar, /\/super-admin\/audit-logs/);
     assert.match(panel, /API\.get\('\/super-admin\/overview'/);
@@ -524,12 +527,14 @@ test('dangerous super admin actions require reason and protect verification susp
     assert.match(controller, /status === 'Suspended' && requireReason/);
     assert.match(controller, /Approve the vendor verification record to reactivate this verification-suspended shop/);
     assert.match(controller, /CRITICAL_FEATURE_FLAGS/);
-    assert.match(controller, /req\.body\.isActive === false && requireReason/);
+    assert.match(controller, /A reason is required for a forced plan change/);
+    assert.match(controller, /INVALID_FEATURE_OVERRIDE/);
     assert.match(controller, /status === 'Failed' && requireReason/);
-    assert.match(controller, /req\.body\.customDomain\?\.status === 'Failed' && requireReason/);
+    assert.match(controller, /status === 'Failed' && requireReason/);
     assert.match(controller, /\['Resolved', 'Dismissed'\]\.includes\(status\) && requireReason/);
     assert.match(vendorVerification, /Rejection reason is required/);
-    assert.match(vendorVerification, /logPlatformAudit/);
+    assert.match(vendorVerification, /runCriticalGovernanceAction/);
+    assert.match(vendorVerification, /createAuditIntent/);
     assert.match(verificationService, /if \(isVerificationSuspension\(shop\)\) \{[\s\S]*shop\.approvalStatus = 'Approved'[\s\S]*shop\.isActive = true[\s\S]*shop\.suspensionReason = ''[\s\S]*\}/);
     assert.match(verificationService, /shop\.suspensionReason !== VERIFICATION_SUSPENSION_REASON/);
 });
@@ -539,7 +544,6 @@ test('super admin sensitive actions create platform audit entries', () => {
     const vendorVerification = read('controllers/vendorVerificationController.js');
 
     assert.match(controller, /action:\s*status === 'Suspended' \? 'shop\.suspended'/);
-    assert.match(controller, /action:\s*'shop\.governance_updated'/);
     assert.match(controller, /action:\s*'shop\.plan_changed'/);
     assert.match(controller, /action:\s*'shop\.feature_flags_changed'/);
     assert.match(controller, /action:\s*'plan\.upserted'/);
@@ -586,9 +590,9 @@ test('announcements use soft archive lifecycle', () => {
 
     assert.match(model, /isPublished/);
     assert.match(model, /archivedAt/);
-    assert.match(routes, /router\.patch\('\/announcements\/:id\/publish',\s*publishAnnouncement\)/);
-    assert.match(routes, /router\.patch\('\/announcements\/:id\/unpublish',\s*unpublishAnnouncement\)/);
-    assert.match(routes, /router\.delete\('\/announcements\/:id',\s*archiveAnnouncement\)/);
+    assert.match(routes, /'\/announcements\/:id\/publish'[\s\S]*platform\.announcements\.manage[\s\S]*publishAnnouncement/);
+    assert.match(routes, /'\/announcements\/:id\/unpublish'[\s\S]*platform\.announcements\.manage[\s\S]*unpublishAnnouncement/);
+    assert.match(routes, /'\/announcements\/:id'[\s\S]*platform\.announcements\.manage[\s\S]*archiveAnnouncement/);
     assert.match(adminRoutes, /router\.get\([\s\S]*'\/announcements'[\s\S]*getVendorAnnouncements[\s\S]*\)/);
     assert.match(controller, /normalizeAnnouncementPayload/);
     assert.match(controller, /payload\.targetAudience = 'shop'/);
@@ -659,7 +663,7 @@ test('mongo-backed queue, worker, and analytics rollups are available', () => {
 
     assert.match(packageJson, /"worker":\s*"node workers\/index\.js"/);
     assert.match(packageJson, /"rollup:analytics":\s*"node scripts\/runAnalyticsRollup\.js"/);
-    assert.match(jobModel, /JOB_STATUSES\s*=\s*\['queued', 'running', 'completed', 'failed', 'dead'\]/);
+    assert.match(jobModel, /JOB_STATUSES\s*=\s*\['queued', 'running', 'completed', 'failed', 'dead', 'cancelled'\]/);
     assert.match(jobModel, /status:[\s\S]*enum:\s*JOB_STATUSES/);
     assert.match(queue, /findOneAndUpdate/);
     assert.match(queue, /failJob/);

@@ -5,6 +5,7 @@ const { isVerificationSuspension } = require('../vendorVerificationService');
 const { logPlatformAudit } = require('../platformAuditLogService');
 const { PLAN_ORDER } = require('../../config/subscriptionPlans');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('./subscriptionEvents');
+const { resolveSubscriptionAccess } = require('./subscriptionAccessResolver');
 const {
     getPlanByNameOrDefault,
     getPlanByIdOrNameOrDefault,
@@ -93,6 +94,8 @@ const findPlanDocument = async (planRef, session) => {
     );
 };
 
+const DEFAULT_TRIAL_PLAN = 'beginner';
+
 const getPlanIdentity = async (planRef = 'Starter', session) => {
     const storedPlan = await findPlanDocument(planRef, session);
     const plan = storedPlan || await getPlanByIdOrNameOrDefault(planRef || 'Starter');
@@ -117,17 +120,19 @@ const createTrialForShop = async (shopOrId, options = {}) => {
         options.intendedPlanName ||
         shop.plan?.intendedPlanSlug ||
         shop.plan?.intendedPlanName ||
-        'Starter';
+        DEFAULT_TRIAL_PLAN;
     const intendedPlan = await getPlanIdentity(intendedPlanRef, session);
-    const effectiveTrialPlan = intendedPlan;
+    const effectiveTrialPlan = await getPlanIdentity(DEFAULT_TRIAL_PLAN, session);
     const trialPlanDetails = await getPlanByIdOrNameOrDefault(
-        intendedPlan.id || intendedPlan.slug || intendedPlan.name
+        effectiveTrialPlan.id || effectiveTrialPlan.slug || effectiveTrialPlan.name
     );
     const trialEndsAt = shop.plan?.trialEndsAt || addDays(now, TRIAL_DAYS);
 
     const [subscription] = await Subscription.create([{
         shopId: shop._id,
         planId: effectiveTrialPlan.id,
+        activePlanName: effectiveTrialPlan.name,
+        activePlanSlug: effectiveTrialPlan.slug,
         intendedPlanId: intendedPlan.id,
         intendedPlanName: intendedPlan.name,
         intendedPlanSlug: intendedPlan.slug,
@@ -148,7 +153,9 @@ const createTrialForShop = async (shopOrId, options = {}) => {
                     'plan.productLimit': trialPlanDetails?.limits?.productCount ??
                         trialPlanDetails?.productLimit ??
                         shop.plan?.productLimit ??
-                        100,
+                        25,
+                    'plan.activePlanName': effectiveTrialPlan.name,
+                    'plan.activePlanSlug': effectiveTrialPlan.slug,
                     'plan.intendedPlanName': intendedPlan.name,
                     'plan.intendedPlanSlug': intendedPlan.slug
                 }
@@ -191,11 +198,14 @@ const markPendingApproval = async ({
     if (!current) throw new Error('Subscription not found');
     const previous = {
         status: current.status,
+        paymentReviewStatus: current.paymentReviewStatus || 'none',
         pendingPlanSlug: current.pendingPlanSlug || '',
         pendingPlanName: current.pendingPlanName || ''
     };
 
-    current.status = 'pending_approval';
+    current.paymentReviewStatus = 'pending_approval';
+    current.paymentReviewStartedAt = new Date();
+    current.paymentReviewCompletedAt = null;
     current.pendingPlanId = planId || null;
     current.pendingPlanName = planName || '';
     current.pendingPlanSlug = planSlug || getPlanSlug(planName || 'Starter');
@@ -207,10 +217,11 @@ const markPendingApproval = async ({
         req,
         shopId: current.shopId,
         subscriptionId: current._id,
-        planKey: current.activePlanSlug || 'starter',
+        planKey: current.activePlanSlug || DEFAULT_TRIAL_PLAN,
         oldValue: previous,
         newValue: {
             status: current.status,
+            paymentReviewStatus: current.paymentReviewStatus,
             pendingPlanSlug: current.pendingPlanSlug,
             pendingPlanName: current.pendingPlanName,
             billingCycle: current.billingCycle
@@ -286,26 +297,39 @@ const activateSubscription = async ({
     billingCycle = 'monthly',
     invoiceId = null,
     req = null,
-    now = new Date()
+    now = new Date(),
+    session = null,
+    skipAudit = false,
+    deferEvents = false
 }) => {
-    const current = subscription || await Subscription.findById(subscriptionId);
+    const current = subscription || await Subscription.findById(subscriptionId).session(session || null);
     if (!current) throw new Error('Subscription not found');
+    if (
+        current.status === 'active' &&
+        invoiceId &&
+        String(current.lastInvoiceId || '') === String(invoiceId)
+    ) {
+        return current;
+    }
     const previous = {
         status: current.status,
+        paymentReviewStatus: current.paymentReviewStatus || 'none',
         planKey: current.activePlanSlug || current.pendingPlanSlug || '',
         planName: current.activePlanName || current.pendingPlanName || '',
         currentPeriodEnd: current.currentPeriodEnd || null,
-        hadActiveSubscription: Boolean(current.activatedAt || current.currentPeriodStart || current.activePlanSlug)
+        hadActiveSubscription: Boolean(current.activatedAt || current.currentPeriodStart)
     };
 
     const effectivePlanRef = planId || current.pendingPlanId || current.planId || current.pendingPlanSlug || current.pendingPlanName || 'Starter';
-    const plan = await getPlanIdentity(effectivePlanRef);
+    const plan = await getPlanIdentity(effectivePlanRef, session);
 
     const periodDays = billingCycle === 'yearly' ? 365 : 30;
     current.planId = plan.id || null;
     current.activePlanName = plan.name;
     current.activePlanSlug = plan.slug;
     current.status = 'active';
+    current.paymentReviewStatus = 'approved';
+    current.paymentReviewCompletedAt = now;
     current.billingCycle = billingCycle;
     current.currentPeriodStart = now;
     current.currentPeriodEnd = addDays(now, periodDays);
@@ -323,9 +347,10 @@ const activateSubscription = async ({
     current.suspendedAt = undefined;
     current.suspensionReason = '';
     current.lastInvoiceId = invoiceId || current.lastInvoiceId || null;
-    await current.save();
+    current.entitlementVersion = Math.max(0, Number(current.entitlementVersion) || 0) + 1;
+    await current.save({ session });
 
-    const shop = await Shop.findById(current.shopId);
+    const shop = await Shop.findById(current.shopId).session(session || null);
     if (shop) {
         const hydratedPlan = await getPlanByNameOrDefault(plan.name || 'Starter');
         const planName = plan?.name || shop.plan?.name || 'Starter';
@@ -344,10 +369,10 @@ const activateSubscription = async ({
             update.suspensionReason = '';
         }
 
-        await Shop.updateOne({ _id: shop._id }, { $set: update });
+        await Shop.updateOne({ _id: shop._id }, { $set: update }, { session });
     }
 
-    await logPlatformAudit({
+    if (!skipAudit) await logPlatformAudit({
         req,
         action: 'billing.subscription_activated',
         entityType: 'Subscription',
@@ -365,7 +390,10 @@ const activateSubscription = async ({
     const previousPlanIndex = PLAN_ORDER.indexOf(previous.planKey);
     const nextPlanIndex = PLAN_ORDER.indexOf(current.activePlanSlug);
     let eventType = SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED;
-    if (previous.status === 'trialing' || (previous.status === 'pending_approval' && !previous.hadActiveSubscription)) {
+    if (previous.status === 'trialing' || (
+        previous.paymentReviewStatus === 'pending_approval' &&
+        !previous.hadActiveSubscription
+    )) {
         eventType = SUBSCRIPTION_EVENTS.TRIAL_CONVERTED;
     } else if (previous.status === 'active' && previous.planKey === current.activePlanSlug) {
         eventType = SUBSCRIPTION_EVENTS.SUBSCRIPTION_RENEWED;
@@ -375,7 +403,7 @@ const activateSubscription = async ({
         eventType = SUBSCRIPTION_EVENTS.PLAN_DOWNGRADED;
     }
 
-    await emitSubscriptionEvent(eventType, {
+    const eventPayload = {
         req,
         shopId: current.shopId,
         subscriptionId: current._id,
@@ -390,7 +418,12 @@ const activateSubscription = async ({
         },
         affectedResources: ['subscription', 'plan', 'features', 'quotas'],
         metadata: { billingCycle, invoiceId: current.lastInvoiceId || null }
-    });
+    };
+    if (deferEvents) {
+        current.$locals.deferredSubscriptionEvent = { eventType, eventPayload };
+    } else {
+        await emitSubscriptionEvent(eventType, eventPayload);
+    }
 
     return current;
 };
@@ -398,8 +431,10 @@ const activateSubscription = async ({
 const markPastDue = async (subscription, options = {}) => {
     const now = options.now || new Date();
     const previousStatus = subscription.status;
+    if (previousStatus === 'past_due') return subscription;
     subscription.status = 'past_due';
     subscription.graceEndsAt = addDays(now, GRACE_DAYS);
+    subscription.entitlementVersion = Math.max(0, Number(subscription.entitlementVersion) || 0) + 1;
     await subscription.save();
     await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_EXPIRED, {
         req: options.req || null,
@@ -417,6 +452,7 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
     const now = options.now || new Date();
     const previous = {
         status: subscription.status,
+        paymentReviewStatus: subscription.paymentReviewStatus || 'none',
         pendingPlanSlug: subscription.pendingPlanSlug || '',
         pendingPlanName: subscription.pendingPlanName || ''
     };
@@ -424,10 +460,13 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
     subscription.pendingPlanId = null;
     subscription.pendingPlanName = '';
     subscription.pendingPlanSlug = '';
+    subscription.paymentReviewStatus = 'rejected';
+    subscription.paymentReviewCompletedAt = now;
 
-    if (subscription.status === 'active') {
-        await subscription.save();
-        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+    const access = resolveSubscriptionAccess({ subscription, now });
+    if (subscription.status === 'active' && access.isOperational) {
+        await subscription.save({ session: options.session });
+        const eventPayload = {
             req: options.req || null,
             shopId: subscription.shopId,
             subscriptionId: subscription._id,
@@ -437,7 +476,15 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
             reason: options.reason || 'Payment rejected',
             affectedResources: ['subscription', 'payment_approval'],
             metadata: { notifyVendor: false }
-        });
+        };
+        if (options.deferEvents) {
+            subscription.$locals.deferredSubscriptionEvent = {
+                eventType: SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED,
+                eventPayload
+            };
+        } else {
+            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, eventPayload);
+        }
         return subscription;
     }
 
@@ -449,34 +496,53 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
         subscription.graceEndsAt = addDays(now, GRACE_DAYS);
     }
 
-    await subscription.save();
-    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+    await subscription.save({ session: options.session });
+    const eventPayload = {
         req: options.req || null,
         shopId: subscription.shopId,
         subscriptionId: subscription._id,
-        planKey: subscription.activePlanSlug || 'starter',
+        planKey: subscription.activePlanSlug || DEFAULT_TRIAL_PLAN,
         oldValue: previous,
         newValue: { status: subscription.status, pendingPlanSlug: '', graceEndsAt: subscription.graceEndsAt || null },
         reason: options.reason || 'Payment rejected',
         affectedResources: ['subscription', 'payment_approval'],
         metadata: { notifyVendor: false }
-    });
+    };
+    if (options.deferEvents) {
+        subscription.$locals.deferredSubscriptionEvent = {
+            eventType: SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED,
+            eventPayload
+        };
+    } else {
+        await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, eventPayload);
+    }
     return subscription;
+};
+
+const emitDeferredSubscriptionEvent = async (subscription) => {
+    const deferred = subscription?.$locals?.deferredSubscriptionEvent;
+    if (!deferred) return null;
+    delete subscription.$locals.deferredSubscriptionEvent;
+    return emitSubscriptionEvent(deferred.eventType, deferred.eventPayload);
 };
 
 const enterGracePeriod = async (subscription, options = {}) => {
     const now = options.now || new Date();
     const previousStatus = subscription.status;
+    if (previousStatus === 'grace') return subscription;
     subscription.status = 'grace';
     subscription.graceEndsAt = subscription.graceEndsAt || addDays(now, GRACE_DAYS);
+    subscription.entitlementVersion = Math.max(0, Number(subscription.entitlementVersion) || 0) + 1;
     await subscription.save();
     await emitSubscriptionEvent(
-        previousStatus === 'trialing' ? SUBSCRIPTION_EVENTS.TRIAL_ENDED : SUBSCRIPTION_EVENTS.SUBSCRIPTION_EXPIRED,
+        ['trialing', 'pending_approval'].includes(previousStatus)
+            ? SUBSCRIPTION_EVENTS.TRIAL_ENDED
+            : SUBSCRIPTION_EVENTS.SUBSCRIPTION_EXPIRED,
         {
             req: options.req || null,
             shopId: subscription.shopId,
             subscriptionId: subscription._id,
-            planKey: subscription.activePlanSlug || 'starter',
+            planKey: subscription.activePlanSlug || DEFAULT_TRIAL_PLAN,
             oldValue: { status: previousStatus },
             newValue: { status: subscription.status, graceEndsAt: subscription.graceEndsAt },
             affectedResources: ['subscription', 'trial'],
@@ -491,9 +557,11 @@ const suspendForBilling = async (subscription, options = {}) => {
     const now = options.now || new Date();
 
     const previousStatus = subscription.status;
+    if (previousStatus === 'suspended') return subscription;
     subscription.status = 'suspended';
     subscription.suspendedAt = now;
     subscription.suspensionReason = reason;
+    subscription.entitlementVersion = Math.max(0, Number(subscription.entitlementVersion) || 0) + 1;
     await subscription.save();
 
     const shop = await Shop.findById(subscription.shopId);
@@ -538,8 +606,10 @@ const suspendForBilling = async (subscription, options = {}) => {
 
 const cancelSubscription = async (subscription, options = {}) => {
     const previousStatus = subscription.status;
+    if (previousStatus === 'cancelled') return subscription;
     subscription.status = 'cancelled';
     subscription.cancelledAt = options.now || new Date();
+    subscription.entitlementVersion = Math.max(0, Number(subscription.entitlementVersion) || 0) + 1;
     await subscription.save();
     await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CANCELLED, {
         req: options.req || null,
@@ -564,6 +634,7 @@ module.exports = {
     createTrialForShop,
     ensureSubscriptionExists,
     activateSubscription,
+    emitDeferredSubscriptionEvent,
     markPendingApproval,
     returnToTrialOrPastDueAfterRejection,
     markPastDue,

@@ -30,6 +30,9 @@ const getSubscriptionUsage = async (shopOrId, options = {}) => {
         plan: access.planName,
         planKey: access.planKey,
         subscriptionStatus: access.subscriptionStatus,
+        paymentReviewStatus: access.paymentReviewStatus,
+        isTrialActive: access.isTrialActive,
+        isOperational: access.isOperational,
         usage
     };
 

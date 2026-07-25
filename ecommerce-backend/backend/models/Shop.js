@@ -50,6 +50,46 @@ const heroSlideSchema = new mongoose.Schema({
     }
 }, { _id: false });
 
+const essentialBrandingSchema = new mongoose.Schema({
+    logoAssetId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StoreBuilderAsset',
+        default: null
+    },
+    faviconAssetId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StoreBuilderAsset',
+        default: null
+    },
+    heroImageAssetId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StoreBuilderAsset',
+        default: null
+    },
+    logoRemoved: { type: Boolean, default: false },
+    faviconRemoved: { type: Boolean, default: false },
+    heroImageRemoved: { type: Boolean, default: false },
+    heroTitle: { type: String, trim: true, maxlength: 80, default: '' },
+    heroSubtitle: { type: String, trim: true, maxlength: 180, default: '' },
+    heroCtaLabel: { type: String, trim: true, maxlength: 30, default: '' },
+    heroCtaType: {
+        type: String,
+        enum: ['SHOP', 'PRODUCT', 'CATEGORY', 'COLLECTION', 'CUSTOM_URL', 'NONE'],
+        default: 'SHOP'
+    },
+    heroCtaTargetId: { type: String, trim: true, maxlength: 120, default: '' },
+    heroCtaUrl: { type: String, trim: true, maxlength: 500, default: '' },
+    heroHidden: { type: Boolean, default: false },
+    source: {
+        type: String,
+        enum: ['default', 'derived', 'migrated', 'explicit'],
+        default: 'default'
+    },
+    version: { type: Number, min: 0, default: 0 },
+    updatedAt: { type: Date, default: null },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+}, { _id: false });
+
 const colorField = (defaultValue) => ({ type: String, trim: true, default: defaultValue });
 
 const themeColorGroups = {
@@ -282,6 +322,7 @@ const shopSchema = new mongoose.Schema({
         planInactive: { type: Boolean, default: false },
         planInactiveAt: Date
     },
+    branding: { type: essentialBrandingSchema, default: () => ({}) },
     theme: {
         version: { type: Number, default: 2, min: 1 },
         logoUrl: { type: String, default: '' },
@@ -581,6 +622,7 @@ const shopSchema = new mongoose.Schema({
     lastPublishedAt: { type: Date, default: null },
     lastPublishedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     featureFlags: {
+        basicStoreBranding: { type: Boolean, default: true },
         storeBuilder: { type: Boolean, default: true },
         coupons: { type: Boolean, default: true },
         analytics: { type: Boolean, default: true },
@@ -638,7 +680,7 @@ const shopSchema = new mongoose.Schema({
         },
         redx: {
             enabled: { type: Boolean, default: false },
-            tokenEncrypted: { type: String, default: '' },
+            tokenEncrypted: { type: String, default: '', select: false },
             tokenLast4: { type: String, trim: true, default: '' },
             pickupStoreId: { type: String, trim: true, default: '' },
             pickupStoreName: { type: String, trim: true, default: '' },
@@ -665,11 +707,11 @@ const shopSchema = new mongoose.Schema({
         default: null // Null means the vendor hasn't set up their Pathao shipping location yet
     },
     pathaoCredentials: {
-        client_id: { type: String, default: null },
-        client_secret: { type: String, default: null },
-        username: { type: String, default: null },
-        password: { type: String, default: null },
-        isLive: { type: Boolean, default: false } // True for Hermes (Live), False for Sandbox
+        client_id: { type: String, default: null, select: false },
+        client_secret: { type: String, default: null, select: false },
+        username: { type: String, default: null, select: false },
+        password: { type: String, default: null, select: false },
+        isLive: { type: Boolean, default: false, select: false } // True for Hermes (Live), False for Sandbox
     }
 }, { timestamps: true });
 

@@ -46,6 +46,25 @@ const subscriptionSchema = new mongoose.Schema({
         default: 'trialing',
         index: true
     },
+    paymentReviewStatus: {
+        type: String,
+        enum: ['none', 'pending_approval', 'approved', 'rejected'],
+        default: 'none',
+        index: true
+    },
+    paymentReviewStartedAt: {
+        type: Date,
+        default: null
+    },
+    paymentReviewCompletedAt: {
+        type: Date,
+        default: null
+    },
+    entitlementVersion: {
+        type: Number,
+        min: 0,
+        default: 1
+    },
     billingCycle: {
         type: String,
         enum: ['monthly', 'yearly'],
@@ -89,6 +108,14 @@ const subscriptionSchema = new mongoose.Schema({
             default: 'idle'
         },
         attempts: { type: Number, min: 0, default: 0 },
+        maxAttempts: { type: Number, min: 1, default: 6 },
+        reconciliationType: {
+            type: String,
+            enum: ['downgrade', 'upgrade', 'plan_change', 'quota_change', ''],
+            default: ''
+        },
+        lastAttemptAt: { type: Date, default: null },
+        nextRetryAt: { type: Date, default: null },
         lastError: { type: String, trim: true, maxlength: 1000, default: '' },
         scheduledAt: { type: Date, default: null },
         startedAt: { type: Date, default: null },

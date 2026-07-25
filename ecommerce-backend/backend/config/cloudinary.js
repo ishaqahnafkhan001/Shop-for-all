@@ -54,6 +54,31 @@ const buildStoreBuilderUploadOptions = (file, req) => ({
     }
 });
 
+const buildEssentialBrandingUploadOptions = (file, req) => {
+    const target = String(req?.brandingAssetTarget || 'logo');
+    const isHero = target === 'hero';
+    const isFavicon = target === 'favicon';
+
+    return {
+        folder: `shop_branding/${String(req?.tenantId || 'unknown')}/essential`,
+        resource_type: 'image',
+        allowed_formats: isFavicon
+            ? ['png', 'webp', 'ico']
+            : ['jpg', 'png', 'jpeg', 'webp'],
+        format: 'webp',
+        transformation: [
+            isHero
+                ? { width: 2400, height: 1600, crop: 'limit' }
+                : { width: isFavicon ? 512 : 1200, height: isFavicon ? 512 : 1200, crop: 'limit' },
+            { quality: 'auto' }
+        ],
+        context: {
+            purpose: `essential_branding_${target}`,
+            shop_id: String(req?.tenantId || '')
+        }
+    };
+};
+
 const isRasterSignatureValid = (buffer, mimetype) => {
     if (!Buffer.isBuffer(buffer) || buffer.length < 12) return false;
     if (mimetype === 'image/jpeg') return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
@@ -137,6 +162,28 @@ const brandStorage = new CloudinaryMulterStorage(
 const storeBuilderStorage = new CloudinaryMulterStorage(
     buildStoreBuilderUploadOptions,
     (buffer, file) => validateImageBuffer(buffer, file)
+);
+const essentialBrandingStorage = new CloudinaryMulterStorage(
+    buildEssentialBrandingUploadOptions,
+    (buffer, file, req) => {
+        const target = String(req?.brandingAssetTarget || 'logo');
+        const maxBytes = target === 'favicon'
+            ? 1024 * 1024
+            : target === 'hero'
+                ? 6 * 1024 * 1024
+                : 2 * 1024 * 1024;
+        if (buffer.length > maxBytes) {
+            const error = new Error(`The ${target} image is too large.`);
+            error.code = 'BRANDING_ASSET_TOO_LARGE';
+            throw error;
+        }
+        if (target === 'favicon') {
+            return ['image/png', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'].includes(file?.mimetype) &&
+                validateImageBuffer(buffer, file, { allowIcon: true });
+        }
+        return ['image/jpeg', 'image/png', 'image/webp'].includes(file?.mimetype) &&
+            validateImageBuffer(buffer, file);
+    }
 );
 const supportStorage = new CloudinaryMulterStorage(buildSupportUploadOptions);
 
@@ -240,6 +287,24 @@ const storeBuilderUpload = multer({
     }
 });
 
+const essentialBrandingUpload = multer({
+    storage: essentialBrandingStorage,
+    limits: {
+        fileSize: 6 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        const target = String(req?.brandingAssetTarget || 'logo');
+        const allowed = target === 'favicon'
+            ? ['image/png', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon']
+            : ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.mimetype)) {
+            return cb(new Error(`Unsupported ${target} image type`));
+        }
+        cb(null, true);
+    }
+});
+
 const supportUpload = multer({
     storage: supportStorage,
     limits: {
@@ -327,6 +392,7 @@ module.exports = {
     cloudinary,
     upload,
     brandUpload,
+    essentialBrandingUpload,
     storeBuilderUpload,
     supportUpload,
     nidUpload,

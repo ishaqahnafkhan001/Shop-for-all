@@ -52,31 +52,45 @@ const createInvoice = async ({
 };
 
 const markInvoiceSubmitted = async (invoiceId, options = {}) => {
-    const invoice = await Invoice.findById(invoiceId);
+    const invoice = await Invoice.findById(invoiceId).session(options.session || null);
     if (!invoice) throw new Error('Invoice not found');
     if (invoice.status === 'paid') throw new Error('Invoice is already paid');
     invoice.status = 'submitted';
     if (options.notes) invoice.notes = options.notes;
-    await invoice.save();
+    await invoice.save({ session: options.session });
     return invoice;
 };
 
 const markInvoicePaid = async (invoiceId, options = {}) => {
-    const invoice = await Invoice.findById(invoiceId);
+    const invoice = await Invoice.findById(invoiceId).session(options.session || null);
     if (!invoice) throw new Error('Invoice not found');
+    if (invoice.status === 'paid') return invoice;
+    if (invoice.status !== 'submitted') {
+        const error = new Error(`Invoice cannot be paid while it is ${invoice.status}.`);
+        error.code = 'INVOICE_INVALID_STATE';
+        error.statusCode = 409;
+        throw error;
+    }
     invoice.status = 'paid';
     invoice.paidAt = options.paidAt || new Date();
     if (options.notes) invoice.notes = options.notes;
-    await invoice.save();
+    await invoice.save({ session: options.session });
     return invoice;
 };
 
 const rejectInvoice = async (invoiceId, options = {}) => {
-    const invoice = await Invoice.findById(invoiceId);
+    const invoice = await Invoice.findById(invoiceId).session(options.session || null);
     if (!invoice) throw new Error('Invoice not found');
+    if (invoice.status === 'rejected') return invoice;
+    if (invoice.status !== 'submitted') {
+        const error = new Error(`Invoice cannot be rejected while it is ${invoice.status}.`);
+        error.code = 'INVOICE_INVALID_STATE';
+        error.statusCode = 409;
+        throw error;
+    }
     invoice.status = 'rejected';
     if (options.notes) invoice.notes = options.notes;
-    await invoice.save();
+    await invoice.save({ session: options.session });
     return invoice;
 };
 

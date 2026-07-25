@@ -7,6 +7,7 @@ const { createNotification } = require('../notificationService');
 const { logPlatformAudit } = require('../platformAuditLogService');
 const { BADGE_THRESHOLDS, getEligibilitySnapshot } = require('./badgeEligibilityService');
 const { hasFeature } = require('../shops/featureAccessService');
+const { assertJobEntitlementStillValid } = require('../workers/jobEntitlementService');
 
 const NEGATIVE_KEYWORDS = [
     'fake',
@@ -121,6 +122,7 @@ const processBadgeAnalysisJob = async (job) => {
     application.status = 'analyzing';
     await application.save();
 
+    await assertJobEntitlementStillValid({ job, feature: 'trustSystem' });
     await createNotification({
         shop_id: application.shopId,
         type: 'system',
@@ -167,6 +169,7 @@ const processBadgeAnalysisJob = async (job) => {
     application.status = 'pending_super_admin_review';
     await application.save();
 
+    await assertJobEntitlementStillValid({ job, feature: 'trustSystem' });
     await createNotification({
         shop_id: application.shopId,
         type: 'system',
@@ -178,6 +181,7 @@ const processBadgeAnalysisJob = async (job) => {
         metadata: { score: scored.score, recommendation: scored.recommendation }
     });
 
+    await assertJobEntitlementStillValid({ job, feature: 'trustSystem' });
     await notifySuperAdmins({
         shopId: application.shopId,
         title: 'Badge request ready for review',

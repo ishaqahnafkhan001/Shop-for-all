@@ -63,9 +63,9 @@ test('backend custom-domain routing and persistence guards are wired', () => {
     const storefrontServer = readProject('ecommerce-storefront/src/lib/storefrontServer.js');
     const storefrontApi = readProject('ecommerce-storefront/src/api/api.js');
 
-    assert.match(tenant, /buildVerifiedCustomDomainQuery\(customDomain\)/);
+    assert.match(tenant, /buildKnownCustomDomainQuery\(customDomain\)/);
     assert.match(tenant, /customDomainFromHost/);
-    assert.match(tenant, /buildVerifiedCustomDomainQuery\(customDomainFromHost\)/);
+    assert.match(tenant, /buildKnownCustomDomainQuery\(customDomainFromHost\)/);
     assert.match(domainUtils, /'customDomain\.status': 'Verified'/);
     assert.match(domainUtils, /'customDomain\.ownershipVerified': true/);
     assert.match(domainUtils, /'customDomain\.routingVerified': true/);
@@ -85,7 +85,7 @@ test('backend custom-domain routing and persistence guards are wired', () => {
     assert.match(superAdmin, /manualRoutingVerification/);
     assert.match(superAdmin, /assertCustomDomainAvailable\(existingDomain, shop\._id\)/);
     assert.match(superAdmin, /customDomainWarnings/);
-    assert.match(superAdminRoutes, /router\.post\('\/domains\/:shopId\/check-dns',\s*checkSuperAdminCustomDomainDns\)/);
+    assert.match(superAdminRoutes, /router\.post\('\/domains\/:shopId\/check-dns',\s*requirePlatformPermission\('platform\.domains\.manage'\),\s*requireRecentAuthentication,\s*checkSuperAdminCustomDomainDns\)/);
     assert.match(customDomainController, /checkVendorCustomDomainDns/);
     assert.match(customDomainController, /checkSuperAdminCustomDomainDns/);
     assert.match(customDomainController, /Shop\.findById\(req\.tenantId\)/);

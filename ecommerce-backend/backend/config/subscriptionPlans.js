@@ -1,4 +1,5 @@
 const UNLIMITED = null;
+const PLAN_CONFIG_VERSION = 2;
 
 const STORE_BUILDER_CAPABILITIES = {
     none: {
@@ -58,6 +59,7 @@ const PLAN_DEFINITIONS = {
             activityLogRetentionDays: 7
         },
         features: {
+            basicStoreBranding: true,
             aiProductCreation: false,
             storeBuilder: false,
             homepageSeo: false,
@@ -101,6 +103,7 @@ const PLAN_DEFINITIONS = {
             activityLogRetentionDays: 7
         },
         features: {
+            basicStoreBranding: true,
             aiProductCreation: true,
             storeBuilder: true,
             homepageSeo: true,
@@ -144,6 +147,7 @@ const PLAN_DEFINITIONS = {
             activityLogRetentionDays: 30
         },
         features: {
+            basicStoreBranding: true,
             aiProductCreation: true,
             storeBuilder: true,
             homepageSeo: true,
@@ -187,6 +191,7 @@ const PLAN_DEFINITIONS = {
             activityLogRetentionDays: 45
         },
         features: {
+            basicStoreBranding: true,
             aiProductCreation: true,
             storeBuilder: true,
             homepageSeo: true,
@@ -218,6 +223,7 @@ const PLAN_DEFINITIONS = {
 };
 
 const FEATURE_MINIMUM_PLAN = {
+    basicStoreBranding: 'beginner',
     aiProductCreation: 'starter',
     storeBuilder: 'starter',
     homepageSeo: 'starter',
@@ -239,6 +245,15 @@ const FEATURE_MINIMUM_PLAN = {
 };
 
 const PLAN_ORDER = ['beginner', 'starter', 'growth', 'pro'];
+const SUBSCRIPTION_STATUS_REGISTRY = Object.freeze([
+    'trialing',
+    'active',
+    'grace',
+    'past_due',
+    'pending_approval',
+    'suspended',
+    'cancelled'
+]);
 
 const normalizePlanKey = (value = 'starter') => {
     const normalized = String(value || 'starter').trim().toLowerCase();
@@ -252,7 +267,9 @@ const getCanonicalPlan = (value = 'starter') => PLAN_DEFINITIONS[normalizePlanKe
 
 module.exports = {
     UNLIMITED,
+    PLAN_CONFIG_VERSION,
     PLAN_ORDER,
+    SUBSCRIPTION_STATUS_REGISTRY,
     PLAN_DEFINITIONS,
     FEATURE_MINIMUM_PLAN,
     STORE_BUILDER_CAPABILITIES,

@@ -6,11 +6,22 @@ const Shop = require('../../models/Shop');
 const User = require('../../models/User');
 const ShopMembership = require('../../models/ShopMembership');
 const CustomerEmailCampaign = require('../../models/CustomerEmailCampaign');
+const Subscription = require('../../models/Subscription');
 const cache = require('../cacheService');
 const { cancelJobs } = require('../jobQueueService');
 const { normalizeSourceIdentity } = require('../products/productMediaService');
 const { getPlanBySlugOrNameOrDefault } = require('./billingPlanService');
 const { getPlanFeatureValue } = require('../../config/subscriptionFeatures');
+const { logPlatformAudit } = require('../platformAuditLogService');
+
+const RECONCILIATION_MAX_ATTEMPTS = 6;
+const getReconciliationRetryAt = (attempts, now = new Date()) => {
+    const delayMs = Math.min(
+        6 * 60 * 60 * 1000,
+        Math.max(30 * 1000, (2 ** Math.max(0, Number(attempts) - 1)) * 30 * 1000)
+    );
+    return new Date(now.getTime() + delayMs);
+};
 
 const statusRank = (product = {}) => {
     const status = product.planArchive?.active
@@ -443,10 +454,182 @@ const reconcileShopPlan = async ({
     return summary;
 };
 
+const scheduleSubscriptionReconciliation = async ({
+    subscriptionId = null,
+    shopId = null,
+    planKey,
+    reconciliationType = 'plan_change',
+    operationId,
+    req = null
+}) => {
+    const subscription = subscriptionId
+        ? await Subscription.findById(subscriptionId)
+        : await Subscription.findOne({ shopId });
+    if (!subscription) return null;
+    if (
+        subscription.reconciliation?.operationId === operationId &&
+        ['pending', 'running', 'completed'].includes(subscription.reconciliation.status)
+    ) {
+        return subscription;
+    }
+
+    const plan = await getPlanBySlugOrNameOrDefault(planKey);
+    const now = new Date();
+    subscription.reconciliation = {
+        operationId,
+        targetPlanId: plan._id || subscription.planId || null,
+        targetPlanName: plan.name,
+        targetPlanSlug: plan.slug,
+        retainedProductIds: [],
+        status: 'pending',
+        attempts: 0,
+        maxAttempts: RECONCILIATION_MAX_ATTEMPTS,
+        reconciliationType,
+        lastAttemptAt: null,
+        nextRetryAt: now,
+        lastError: '',
+        scheduledAt: now,
+        startedAt: null,
+        completedAt: null,
+        cancelledAt: null,
+        forced: false,
+        requestedBy: req?.user?._id || req?.user?.id || null,
+        requestId: req?.requestId || req?.id || '',
+        reason: '',
+        summary: null
+    };
+    await subscription.save();
+    return subscription;
+};
+
+const executePendingSubscriptionReconciliation = async ({
+    subscriptionId,
+    now = new Date()
+}) => {
+    const subscription = await Subscription.findOneAndUpdate(
+        {
+            _id: subscriptionId,
+            'reconciliation.reconciliationType': { $ne: 'downgrade' },
+            'reconciliation.status': { $in: ['pending', 'failed'] },
+            $or: [
+                { 'reconciliation.nextRetryAt': null },
+                { 'reconciliation.nextRetryAt': { $lte: now } }
+            ],
+            $expr: {
+                $lt: [
+                    '$reconciliation.attempts',
+                    { $ifNull: ['$reconciliation.maxAttempts', RECONCILIATION_MAX_ATTEMPTS] }
+                ]
+            }
+        },
+        {
+            $set: {
+                'reconciliation.status': 'running',
+                'reconciliation.startedAt': now,
+                'reconciliation.lastAttemptAt': now,
+                'reconciliation.lastError': ''
+            },
+            $inc: { 'reconciliation.attempts': 1 }
+        },
+        { new: true }
+    );
+    if (!subscription) return null;
+
+    try {
+        const plan = await getPlanBySlugOrNameOrDefault(
+            subscription.reconciliation.targetPlanSlug ||
+            subscription.activePlanSlug ||
+            subscription.activePlanName
+        );
+        const summary = await reconcileShopPlan({
+            shopId: subscription.shopId,
+            plan,
+            planKey: plan.slug,
+            operationId: subscription.reconciliation.operationId
+        });
+        subscription.reconciliation.status = 'completed';
+        subscription.reconciliation.completedAt = new Date();
+        subscription.reconciliation.nextRetryAt = null;
+        subscription.reconciliation.lastError = '';
+        subscription.reconciliation.summary = summary;
+        await subscription.save();
+        return summary;
+    } catch (error) {
+        const attempts = Number(subscription.reconciliation.attempts) || 1;
+        const maxAttempts = Number(subscription.reconciliation.maxAttempts) ||
+            RECONCILIATION_MAX_ATTEMPTS;
+        const exhausted = attempts >= maxAttempts;
+        subscription.reconciliation.status = 'failed';
+        subscription.reconciliation.lastError = String(error?.message || error).slice(0, 1000);
+        subscription.reconciliation.nextRetryAt = exhausted
+            ? null
+            : getReconciliationRetryAt(attempts, now);
+        await subscription.save();
+
+        if (exhausted) {
+            await logPlatformAudit({
+                action: 'billing.reconciliation_exhausted',
+                entityType: 'Subscription',
+                entityId: subscription._id,
+                shop_id: subscription.shopId,
+                message: 'Subscription reconciliation exhausted automatic retries',
+                reason: subscription.reconciliation.lastError,
+                severity: 'critical',
+                metadata: {
+                    operationId: subscription.reconciliation.operationId,
+                    reconciliationType: subscription.reconciliation.reconciliationType,
+                    attempts
+                }
+            });
+        }
+        throw error;
+    }
+};
+
+const processPendingSubscriptionReconciliations = async ({
+    limit = 20,
+    now = new Date()
+} = {}) => {
+    const pending = await Subscription.find({
+        'reconciliation.reconciliationType': { $ne: 'downgrade' },
+        'reconciliation.status': { $in: ['pending', 'failed'] },
+        $or: [
+            { 'reconciliation.nextRetryAt': null },
+            { 'reconciliation.nextRetryAt': { $lte: now } }
+        ],
+        $expr: {
+            $lt: [
+                '$reconciliation.attempts',
+                { $ifNull: ['$reconciliation.maxAttempts', RECONCILIATION_MAX_ATTEMPTS] }
+            ]
+        }
+    }).select('_id').sort({ 'reconciliation.nextRetryAt': 1, updatedAt: 1 }).limit(limit).lean();
+
+    let completed = 0;
+    let failed = 0;
+    for (const item of pending) {
+        try {
+            const result = await executePendingSubscriptionReconciliation({
+                subscriptionId: item._id,
+                now
+            });
+            if (result) completed += 1;
+        } catch {
+            failed += 1;
+        }
+    }
+    return { processed: pending.length, completed, failed };
+};
+
 module.exports = {
+    RECONCILIATION_MAX_ATTEMPTS,
+    getReconciliationRetryAt,
     compareProductsForRetention,
     getUniqueMediaSources,
     buildRetentionSelection,
     reconcileProducts,
-    reconcileShopPlan
+    reconcileShopPlan,
+    scheduleSubscriptionReconciliation,
+    executePendingSubscriptionReconciliation,
+    processPendingSubscriptionReconciliations
 };

@@ -1,4 +1,5 @@
 const { getPlanSlug } = require('./billingPlanService');
+const { resolveSubscriptionAccess } = require('./subscriptionAccessResolver');
 
 const toPlain = (value) => {
     if (!value) return null;
@@ -18,6 +19,7 @@ const getBillingDisplayForSubscription = ({ subscription, activePlan, pendingPla
     const pendingSlug = plain?.pendingPlanSlug || (pendingName ? getPlanSlug(pendingName) : '');
     const intendedName = plain?.intendedPlanName || '';
     const intendedSlug = plain?.intendedPlanSlug || (intendedName ? getPlanSlug(intendedName) : '');
+    const resolvedAccess = plain ? resolveSubscriptionAccess({ subscription: plain }) : null;
 
     if (!plain) {
         return {
@@ -26,30 +28,34 @@ const getBillingDisplayForSubscription = ({ subscription, activePlan, pendingPla
             activePlanSlug: '',
             pendingPlanName: '',
             pendingPlanSlug: '',
-            intendedPlanName: 'Starter',
-            intendedPlanSlug: 'starter',
-            effectivePlanName: 'Starter',
-            effectivePlanSlug: 'starter'
+            intendedPlanName: 'Beginner',
+            intendedPlanSlug: 'beginner',
+            effectivePlanName: 'Beginner',
+            effectivePlanSlug: 'beginner'
         };
     }
 
-    if (plain.status === 'trialing') {
+    if (resolvedAccess.subscriptionStatus === 'trialing') {
+        const effectiveName = activeName || getPlanName(activePlan) || 'Beginner';
+        const effectiveSlug = activeSlug || getPlanSlug(effectiveName);
+        const paymentPending = resolvedAccess.paymentReviewStatus === 'pending_approval';
         return {
-            displayPlan: 'Trial',
-            activePlanName: '',
-            activePlanSlug: '',
-            pendingPlanName: '',
-            pendingPlanSlug: '',
-            intendedPlanName: intendedName || 'Starter',
-            intendedPlanSlug: intendedSlug || 'starter',
-            effectivePlanName: 'Starter',
-            effectivePlanSlug: 'starter'
+            displayPlan: paymentPending ? `Trial · Pending ${pendingName || 'plan'}` : 'Trial',
+            activePlanName: effectiveName,
+            activePlanSlug: effectiveSlug,
+            pendingPlanName: paymentPending ? pendingName : '',
+            pendingPlanSlug: paymentPending ? pendingSlug : '',
+            intendedPlanName: intendedName || effectiveName,
+            intendedPlanSlug: intendedSlug || effectiveSlug,
+            effectivePlanName: effectiveName,
+            effectivePlanSlug: effectiveSlug,
+            paymentReviewStatus: resolvedAccess.paymentReviewStatus
         };
     }
 
-    if (plain.status === 'pending_approval') {
-        const effectiveName = activeName || 'Starter';
-        const effectiveSlug = activeSlug || 'starter';
+    if (resolvedAccess.paymentReviewStatus === 'pending_approval') {
+        const effectiveName = activeName || 'Beginner';
+        const effectiveSlug = activeSlug || 'beginner';
         return {
             displayPlan: `Pending ${pendingName || 'plan'}`,
             activePlanName: activeName,
@@ -59,7 +65,8 @@ const getBillingDisplayForSubscription = ({ subscription, activePlan, pendingPla
             intendedPlanName: intendedName || pendingName || 'Starter',
             intendedPlanSlug: intendedSlug || pendingSlug || 'starter',
             effectivePlanName: effectiveName,
-            effectivePlanSlug: effectiveSlug
+            effectivePlanSlug: effectiveSlug,
+            paymentReviewStatus: resolvedAccess.paymentReviewStatus
         };
     }
 

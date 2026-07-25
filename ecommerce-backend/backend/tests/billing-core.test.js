@@ -12,11 +12,23 @@ const {
 } = require('../services/billing/billingPlanService');
 const { getBillingDisplayForSubscription } = require('../services/billing/billingDisplayService');
 const { isBillingSuspension, TRIAL_DAYS, GRACE_DAYS } = require('../services/billing/subscriptionService');
+const { getEffectivePlanRef } = require('../services/shops/featureAccessService');
 
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-test('billing default plans match Starter Growth Pro business rules', () => {
+test('billing default plans match Beginner Starter Growth Pro business rules', () => {
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.monthlyPrice, 499);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.slug, 'beginner');
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.yearlyPrice, 4990);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.productLimit, 25);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.staffLimit, 0);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.limits.imagesPerProduct, 3);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.limits.aiProductCreationsPerWeek, 0);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.features.storeBuilder, false);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.features.aiProductCreation, false);
+    assert.equal(DEFAULT_PLAN_DEFINITIONS.Beginner.features.analytics, false);
+
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Starter.monthlyPrice, 999);
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Starter.slug, 'starter');
     assert.equal(DEFAULT_PLAN_DEFINITIONS.Starter.yearlyPrice, 9990);
@@ -97,9 +109,9 @@ test('billing routes are protected and mounted under vendor and super admin APIs
     assert.match(vendorRoutes, /authorize\('VendorAdmin'\)/);
     assert.doesNotMatch(vendorRoutes, /VendorStaff/);
     assert.match(vendorRoutes, /router\.post\('\/invoices',\s*createVendorInvoice\)/);
-    assert.match(superRoutes, /router\.use\(authorize\('SuperAdmin'\)\)/);
-    assert.match(superBillingRoutes, /\/payments\/:id\/verify/);
-    assert.match(superBillingRoutes, /\/payments\/:id\/reject/);
+    assert.match(superRoutes, /router\.use\(requirePlatformRole\)/);
+    assert.match(superBillingRoutes, /\/payments\/:id\/verify[\s\S]*billing\.payments\.review[\s\S]*requireRecentAuthentication/);
+    assert.match(superBillingRoutes, /\/payments\/:id\/reject[\s\S]*billing\.payments\.review[\s\S]*requireRecentAuthentication/);
     assert.match(superRoutes, /router\.get\('\/notifications'/);
     assert.match(superRoutes, /router\.patch\('\/notifications\/read-all'/);
     assert.match(superRoutes, /router\.patch\('\/notifications\/:id\/read'/);
@@ -109,20 +121,24 @@ test('new vendor registration creates a trial subscription in the existing trans
     const authController = read('controllers/authController.js');
 
     assert.match(authController, /createTrialForShop/);
-    assert.match(authController, /selectedPlanSlug:\s*selectedPlanSlug \|\| 'starter'/);
+    assert.match(authController, /selectedPlanSlug:\s*selectedPlanSlug \|\| 'beginner'/);
     assert.match(authController, /intendedPlanId:\s*selectedPlanId \|\| null/);
     const validation = read('validations/shopValidation.js');
     assert.match(validation, /selectedPlanSlug/);
     assert.match(authController, /isBillingSuspension\(memberShop\)/);
     assert.match(authController, /isVerificationSuspension\(memberShop\)/);
     const subscriptionService = read('services/billing/subscriptionService.js');
+    assert.match(subscriptionService, /DEFAULT_TRIAL_PLAN = 'beginner'/);
+    assert.match(subscriptionService, /effectiveTrialPlan = await getPlanIdentity\(DEFAULT_TRIAL_PLAN, session\)/);
+    assert.match(subscriptionService, /activePlanName:\s*effectiveTrialPlan\.name/);
+    assert.match(subscriptionService, /activePlanSlug:\s*effectiveTrialPlan\.slug/);
     assert.match(subscriptionService, /'plan\.name':\s*'Trial'/);
     assert.match(subscriptionService, /'plan\.status':\s*'Trialing'/);
     assert.equal(TRIAL_DAYS, 14);
     assert.equal(GRACE_DAYS, 3);
 });
 
-test('manual payment verification and rejection create platform audit entries', () => {
+test('manual payment verification and rejection use durable audited transitions', () => {
     const service = read('services/billing/paymentVerificationService.js');
     const controller = read('controllers/billingController.js');
 
@@ -134,7 +150,10 @@ test('manual payment verification and rejection create platform audit entries', 
     assert.match(service, /subscription\.pending_approval/);
     assert.match(service, /createPlatformNotification/);
     assert.match(service, /sendSuperAdminPaymentSubmittedEmailSafe/);
-    assert.match(service, /payment\.status = 'approved'/);
+    assert.match(service, /runCriticalGovernanceAction/);
+    assert.match(service, /currentPayment\.status = 'approved'/);
+    assert.match(service, /billing\.payment_verified/);
+    assert.match(service, /billing\.payment_rejected/);
     assert.match(service, /returnToTrialOrPastDueAfterRejection/);
     assert.match(service, /Rejection reason is required/);
     assert.match(service, /createNotification/);
@@ -148,23 +167,28 @@ test('billing display separates trial, intended, pending, and active plans', () 
     const trial = getBillingDisplayForSubscription({
         subscription: {
             status: 'trialing',
+            activePlanName: 'Beginner',
+            activePlanSlug: 'beginner',
             intendedPlanName: 'Growth',
             intendedPlanSlug: 'growth'
         }
     });
     assert.equal(trial.displayPlan, 'Trial');
-    assert.equal(trial.effectivePlanName, 'Starter');
+    assert.equal(trial.effectivePlanName, 'Beginner');
+    assert.equal(trial.effectivePlanSlug, 'beginner');
     assert.equal(trial.intendedPlanName, 'Growth');
 
     const pending = getBillingDisplayForSubscription({
         subscription: {
             status: 'pending_approval',
+            activePlanName: 'Beginner',
+            activePlanSlug: 'beginner',
             pendingPlanName: 'Pro',
             pendingPlanSlug: 'pro'
         }
     });
     assert.equal(pending.displayPlan, 'Pending Pro');
-    assert.equal(pending.effectivePlanName, 'Starter');
+    assert.equal(pending.effectivePlanName, 'Beginner');
 
     const active = getBillingDisplayForSubscription({
         subscription: {
@@ -175,6 +199,21 @@ test('billing display separates trial, intended, pending, and active plans', () 
     });
     assert.equal(active.displayPlan, 'Growth');
     assert.equal(active.effectivePlanName, 'Growth');
+});
+
+test('trial entitlements use the active Beginner plan, not the intended paid plan', () => {
+    const effectivePlan = getEffectivePlanRef(
+        { plan: { name: 'Trial', activePlanSlug: 'beginner' } },
+        {
+            status: 'trialing',
+            activePlanName: 'Beginner',
+            activePlanSlug: 'beginner',
+            intendedPlanName: 'Growth',
+            intendedPlanSlug: 'growth'
+        }
+    );
+
+    assert.equal(effectivePlan, 'beginner');
 });
 
 test('billing suspension is recognized without matching verification suspension', () => {
