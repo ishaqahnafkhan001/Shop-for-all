@@ -967,6 +967,8 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     const checkoutSections = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/components/CheckoutSections.jsx');
     const checkoutTotals = readProject('ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutTotals.js');
     const productDetails = readProject('ecommerce-storefront/src/components/product/ProductDetails.jsx');
+    const productInfo = readProject('ecommerce-storefront/src/components/product/ProductInfo.jsx');
+    const productExtras = readProject('ecommerce-storefront/src/components/product/ProductExtras.jsx');
     const themeProvider = readProject('ecommerce-storefront/src/components/storefront/StorefrontThemeProvider.jsx');
     const footer = readProject('packages/storefront-renderer/reference/StorefrontFooter.jsx');
     const storefrontCss = readProject('ecommerce-storefront/src/app/globals.css');
@@ -994,6 +996,21 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     assert.match(cartPage, /sf-mobile-action-bar/);
     assert.match(productDetails, /sf-mobile-action-page/);
     assert.match(productDetails, /sf-mobile-action-bar/);
+    assert.match(productInfo, /line-clamp-4/);
+    assert.match(productInfo, /Show more/);
+    assert.match(productInfo, /Show less/);
+    assert.match(productExtras, /useState\('details'\)/);
+    assert.match(productExtras, /role="tablist"/);
+    assert.match(productExtras, /Highlights/);
+    assert.match(productExtras, /Buying guide/);
+    assert.match(productDetails, /ProductInformationTabs/);
+    assert.ok(
+        productDetails.indexOf('<RelatedProducts') < productDetails.indexOf('<ReviewSection'),
+        'related products should render above customer reviews'
+    );
+    assert.doesNotMatch(productDetails, /<ProductFeatures/);
+    assert.doesNotMatch(productDetails, /<ProductSpecifications/);
+    assert.doesNotMatch(productDetails, /<ExpertNotes/);
     assert.match(themeProvider, /'--sf-mobile-nav-offset': mobileNavOffset/);
     assert.match(footer, /height:\s*"var\(--sf-mobile-nav-offset/);
     assert.match(storefrontCss, /\.sf-mobile-action-bar\s*\{[\s\S]*bottom:\s*var\(--sf-mobile-nav-offset/);

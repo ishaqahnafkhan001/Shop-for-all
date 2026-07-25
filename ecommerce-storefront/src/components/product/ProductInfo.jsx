@@ -1,6 +1,6 @@
 "use client";
-import React, { memo } from 'react';
-import { BadgeCheck, Star, Wallet } from 'lucide-react';
+import React, { memo, useState } from 'react';
+import { BadgeCheck, ChevronDown, ChevronUp, Star, Wallet } from 'lucide-react';
 
 const StarRow = memo(function StarRow({ rating, size = 16 }) {
     return (
@@ -27,6 +27,10 @@ const ProductInfo = memo(function ProductInfo({
                                                   displayDiscount,
                                                   description,
                                               }) {
+    const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+    const displayDescription = description || 'Elevate your daily routine with this premium quality product.';
+    const canCollapseDescription = displayDescription.trim().length > 180;
+
     return (
         <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
@@ -79,9 +83,22 @@ const ProductInfo = memo(function ProductInfo({
                 </div>
             </div>
 
-            <p className="text-base leading-7 text-slate-600">
-                {description || 'Elevate your daily routine with this premium quality product.'}
-            </p>
+            <div>
+                <p className={`text-base leading-7 text-slate-600 ${canCollapseDescription && !descriptionExpanded ? 'line-clamp-4' : ''}`}>
+                    {displayDescription}
+                </p>
+                {canCollapseDescription && (
+                    <button
+                        type="button"
+                        onClick={() => setDescriptionExpanded(expanded => !expanded)}
+                        aria-expanded={descriptionExpanded}
+                        className="mt-2 inline-flex min-h-10 items-center gap-1.5 text-sm font-black text-[var(--sf-accent)] transition hover:text-[var(--sf-accent-hover)]"
+                    >
+                        {descriptionExpanded ? 'Show less' : 'Show more'}
+                        {descriptionExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                )}
+            </div>
         </div>
     );
 });

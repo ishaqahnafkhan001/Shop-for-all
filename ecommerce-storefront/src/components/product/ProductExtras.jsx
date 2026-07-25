@@ -1,9 +1,9 @@
 "use client";
-import React, { memo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { ChevronDown, ClipboardList, Sparkles, Zap } from 'lucide-react';
 
-export const ProductFeatures = memo(function ProductFeatures({ features }) {
-    const normalizedFeatures = Array.isArray(features)
+const normalizeFeatures = (features) => (
+    Array.isArray(features)
         ? features
             .map(feature => {
                 if (typeof feature === 'string') {
@@ -16,7 +16,11 @@ export const ProductFeatures = memo(function ProductFeatures({ features }) {
                 return point && reason ? { point, reason } : null;
             })
             .filter(Boolean)
-        : [];
+        : []
+);
+
+export const ProductFeatures = memo(function ProductFeatures({ features }) {
+    const normalizedFeatures = normalizeFeatures(features);
 
     if (!normalizedFeatures.length) return null;
 
@@ -105,5 +109,129 @@ export const ExpertNotes = memo(function ExpertNotes({ comments }) {
                 </div>
             </div>
         </aside>
+    );
+});
+
+const EmptyTabState = ({ label }) => (
+    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+        <p className="text-sm font-bold text-slate-500">{label} have not been added for this product yet.</p>
+    </div>
+);
+
+export const ProductInformationTabs = memo(function ProductInformationTabs({
+    features,
+    specifications,
+    comments,
+}) {
+    const [activeTab, setActiveTab] = useState('details');
+    const normalizedFeatures = useMemo(() => normalizeFeatures(features), [features]);
+    const normalizedSpecifications = Array.isArray(specifications)
+        ? specifications.filter(spec => spec?.title && spec?.value)
+        : [];
+    const normalizedComments = Array.isArray(comments)
+        ? comments.filter(comment => comment?.title && comment?.value)
+        : [];
+    const tabs = [
+        { id: 'highlights', label: 'Highlights', icon: Sparkles },
+        { id: 'details', label: 'Details', icon: ClipboardList },
+        { id: 'buying-guide', label: 'Buying guide', icon: Zap },
+    ];
+
+    const handleTabKeyDown = (event, index) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const nextIndex = event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+                ? tabs.length - 1
+                : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        const nextTab = tabs[nextIndex];
+        setActiveTab(nextTab.id);
+        document.getElementById(`product-info-tab-${nextTab.id}`)?.focus();
+    };
+
+    return (
+        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
+            <div
+                role="tablist"
+                aria-label="Product information"
+                className="grid grid-cols-3 border-b border-slate-200 bg-slate-50"
+            >
+                {tabs.map((tab, index) => {
+                    const Icon = tab.icon;
+                    const selected = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            id={`product-info-tab-${tab.id}`}
+                            type="button"
+                            role="tab"
+                            aria-selected={selected}
+                            aria-controls={`product-info-panel-${tab.id}`}
+                            tabIndex={selected ? 0 : -1}
+                            onClick={() => setActiveTab(tab.id)}
+                            onKeyDown={event => handleTabKeyDown(event, index)}
+                            className={`flex min-h-14 min-w-0 items-center justify-center gap-1.5 border-b-2 px-2 py-3 text-xs font-black transition sm:gap-2 sm:px-4 sm:text-sm ${
+                                selected
+                                    ? 'border-[var(--sf-accent)] bg-white text-[var(--sf-accent)]'
+                                    : 'border-transparent text-slate-500 hover:bg-white hover:text-slate-900'
+                            }`}
+                        >
+                            <Icon size={16} className="shrink-0" />
+                            <span className="min-w-0 leading-4">{tab.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div
+                id={`product-info-panel-${activeTab}`}
+                role="tabpanel"
+                aria-labelledby={`product-info-tab-${activeTab}`}
+                className="p-4 sm:p-6"
+            >
+                {activeTab === 'details' && (
+                    normalizedSpecifications.length ? (
+                        <dl className="overflow-hidden rounded-lg border border-slate-200">
+                            {normalizedSpecifications.map((spec, index) => (
+                                <div key={`${spec.title}-${index}`} className="grid gap-1 border-b border-slate-200 px-4 py-4 last:border-0 sm:grid-cols-[minmax(130px,0.35fr)_1fr] sm:gap-5">
+                                    <dt className="text-xs font-black uppercase tracking-wider text-slate-500">{spec.title}</dt>
+                                    <dd className="text-sm font-bold text-slate-950">{spec.value}</dd>
+                                </div>
+                            ))}
+                        </dl>
+                    ) : <EmptyTabState label="Product details" />
+                )}
+
+                {activeTab === 'highlights' && (
+                    normalizedFeatures.length ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {normalizedFeatures.map((feature, index) => (
+                                <div key={`${feature.point}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                    <h3 className="text-sm font-black text-slate-950">{feature.point}</h3>
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">{feature.reason}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : <EmptyTabState label="Product highlights" />
+                )}
+
+                {activeTab === 'buying-guide' && (
+                    normalizedComments.length ? (
+                        <div className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200">
+                            {normalizedComments.map((comment, index) => (
+                                <details key={`${comment.title}-${index}`} className="group px-4 py-4" open={index === 0}>
+                                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black text-slate-950">
+                                        <span>{comment.title}</span>
+                                        <ChevronDown size={17} className="shrink-0 text-[var(--sf-accent)] transition group-open:rotate-180" />
+                                    </summary>
+                                    <p className="mt-3 text-sm leading-6 text-slate-600">{comment.value}</p>
+                                </details>
+                            ))}
+                        </div>
+                    ) : <EmptyTabState label="Buying guide notes" />
+                )}
+            </div>
+        </section>
     );
 });

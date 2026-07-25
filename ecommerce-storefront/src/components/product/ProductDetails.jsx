@@ -11,7 +11,7 @@ import ProductImageGallery   from './ProductImageGallery';
 import ProductInfo           from './ProductInfo';
 import VariantSelector       from './VariantSelector';
 import ActionButtons         from './ActionButtons';
-import { ProductFeatures, ProductSpecifications, ExpertNotes } from './ProductExtras';
+import { ProductInformationTabs } from './ProductExtras';
 import { trackStorefrontEvent } from '@/utils/analyticsTracker';
 import { getImageUrlFromValue } from '@/lib/seo';
 
@@ -223,15 +223,19 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
                     </aside>
                 </div>
 
-                <div className="mt-12 grid gap-6 border-t border-slate-200 pt-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
-                    <div className="space-y-8">
-                        <ProductFeatures    features={product.features} />
-                        <ProductSpecifications specifications={product.specifications} />
-                    </div>
-                    <ExpertNotes comments={product.comments} />
+                <div className="mt-12 border-t border-slate-200 pt-8">
+                    <ProductInformationTabs
+                        features={product.features}
+                        specifications={product.specifications}
+                        comments={product.comments}
+                    />
                 </div>
 
-                {/* ── LAZY: reviews + related products ── */}
+                {/* ── LAZY: related products + reviews ── */}
+                <Suspense fallback={null}>
+                    <RelatedProducts subdomain={subdomain} products={relatedProducts} />
+                </Suspense>
+
                 <Suspense fallback={<div className="mt-24 h-64 rounded-3xl bg-gray-50 animate-pulse" />}>
                     <ReviewSection
                         subdomain={subdomain}
@@ -240,10 +244,6 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
                         reviews={reviews}
                         onReviewSuccess={refreshProductStats}
                     />
-                </Suspense>
-
-                <Suspense fallback={null}>
-                    <RelatedProducts subdomain={subdomain} products={relatedProducts} />
                 </Suspense>
             </div>
 
