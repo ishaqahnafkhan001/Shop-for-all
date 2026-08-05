@@ -105,15 +105,15 @@ test('storefront branding serves size-bounded Cloudinary icon variants', async (
 
 test('shared storefront renderer uses responsive images and avoids eager catalog prefetch', () => {
     const referenceCore = readRepo('packages/storefront-renderer/reference/referenceCore.jsx');
-    const storefrontHome = readRepo('packages/storefront-renderer/reference/StorefrontHome.jsx');
+    const storefrontHero = readRepo('packages/storefront-renderer/reference/StorefrontHero.jsx');
     const productCard = readRepo('packages/storefront-renderer/reference/StorefrontProductCard.jsx');
     const storefrontHeader = readRepo('packages/storefront-renderer/reference/StorefrontHeader.jsx');
     const storefrontFooter = readRepo('packages/storefront-renderer/reference/StorefrontFooter.jsx');
 
     assert.match(referenceCore, /export const getResponsiveImageSrcSet/);
-    assert.match(storefrontHome, /mobileHeroSrcSet/);
-    assert.match(storefrontHome, /\[420,\s*640,\s*760\]/);
-    assert.doesNotMatch(storefrontHome, /activeMobileHeroImage !== activeHeroImage/);
+    assert.match(storefrontHero, /mobileHeroSrcSet/);
+    assert.match(storefrontHero, /\[420,\s*640,\s*760\]/);
+    assert.doesNotMatch(storefrontHero, /activeMobileHeroImage !== activeHeroImage/);
     assert.match(productCard, /getResponsiveImageSrcSet\(imageUrl,\s*\[180,\s*280,\s*360,\s*560\]\)/);
     assert.match(productCard, /prefetch=\{false\}/);
     assert.match(storefrontHeader, /prefetch=\{false\}/);
@@ -683,7 +683,7 @@ test('public collection and category SEO routes are tenant-safe', () => {
     const homePage = readRepo('ecommerce-storefront/src/app/[subdomain]/page.jsx');
     const categoryPage = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/page.jsx');
     const categoryClient = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx');
-    const sectionRenderer = readRepo('packages/storefront-renderer/reference/StorefrontSectionRenderer.jsx');
+    const sectionVariants = readRepo('packages/storefront-renderer/reference/StorefrontSectionVariants.jsx');
     const themeContract = readRepo('packages/storefront-theme/index.cjs');
     const collectionController = read('controllers/collectionController.js');
     const storefrontRoutes = read('routes/storefrontRoutes.js');
@@ -710,7 +710,7 @@ test('public collection and category SEO routes are tenant-safe', () => {
     assert.match(categoryPage, /searchParams/);
     assert.match(categoryPage, /minPrice/);
     assert.match(categoryClient, /ProductCard/);
-    assert.match(sectionRenderer, /href=\{`\/categories\/\$\{encodeURIComponent\(category\)\}`\}/);
+    assert.match(sectionVariants, /href:\s*`\/categories\/\$\{encodeURIComponent\(slug\)\}`/);
     assert.match(homePage, /legacyCategory/);
     assert.match(homePage, /redirect\(`\/categories\/\$\{encodeURIComponent/);
 
@@ -736,6 +736,7 @@ test('store builder UX pass keeps preview and live renderer aligned', () => {
     const colorEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx');
     const storefrontHeader = readRepo('packages/storefront-renderer/reference/StorefrontHeader.jsx');
     const storefrontHome = readRepo('packages/storefront-renderer/reference/StorefrontHome.jsx');
+    const storefrontHero = readRepo('packages/storefront-renderer/reference/StorefrontHero.jsx');
     const referenceCore = readRepo('packages/storefront-renderer/reference/referenceCore.jsx');
     const storefrontTheme = readRepo('packages/storefront-theme/index.cjs');
 
@@ -747,8 +748,8 @@ test('store builder UX pass keeps preview and live renderer aligned', () => {
     assert.doesNotMatch(referenceCore, /24\/7 Support/);
     assert.doesNotMatch(referenceCore, /Secure Payment/);
     assert.doesNotMatch(storefrontHome, /serviceCards/);
-    assert.match(storefrontHome, /setInterval\(\(\)\s*=>[\s\S]*5000/);
-    assert.match(storefrontHome, /heroPaused/);
+    assert.match(storefrontHero, /setInterval\(\(\)\s*=>[\s\S]*5000/);
+    assert.match(storefrontHero, /heroPaused/);
 
     assert.match(storeBuilderSidebar, /Store layout/);
     assert.match(storeBuilderSidebar, /Brand and design/);

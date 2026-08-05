@@ -19,6 +19,7 @@ const { fillMissingPolicyDefaults } = require('../policies/defaultPolicyTemplate
 const { buildPublicProductQuery } = require('../products/publicProductQueryService');
 const { ensureThemeSectionArchitecture } = require('../themeSectionService');
 const { getShopPlanAccess } = require('../billing/planAccessService');
+const { assertStoreBuilderUpdateAllowed } = require('../billing/storeBuilderPlanService');
 const logger = require('../logger');
 const { logAudit } = require('../auditLogService');
 const {
@@ -205,9 +206,15 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
     };
 };
 
-const saveStoreBuilderDraft = async ({ shopId, req, theme, searchAliases, customDomain, storewideDiscount, basedOnRevision }) => {
-    const shop = await Shop.findById(shopId).select('_id shopName searchAliases themeRevision').lean();
+const saveStoreBuilderDraft = async ({ shopId, req, theme, searchAliases, customDomain, storewideDiscount, basedOnRevision, planAccess }) => {
+    const shop = await Shop.findById(shopId).select('_id shopName searchAliases theme themeRevision').lean();
     if (!shop) return null;
+    const effectivePlanAccess = planAccess || await getShopPlanAccess(shopId);
+    assertStoreBuilderUpdateAllowed({
+        currentTheme: shop.theme || {},
+        incomingTheme: theme || {},
+        planAccess: effectivePlanAccess
+    });
     const normalizedTheme = await normalizeThemeForShop(theme, shop);
     const aliasResult = await normalizeShopAliases({ aliases: searchAliases === undefined ? shop.searchAliases : searchAliases, shop });
     await assertThemeAssetOwnership({ shopId, theme: normalizedTheme });

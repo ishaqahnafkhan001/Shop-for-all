@@ -4,17 +4,18 @@ import { BarChart3, ChevronDown, CircleCheck, Home, Lock, Mail, Search, Shopping
 
 import { getSortedNavigation, normalizeTheme } from "@scaleup/storefront-theme";
 import {
-    containerClass,
     DefaultLink,
     EditorSelectionFrame,
+    getContainerClass,
     getReferenceThemeStyle,
+    headingStyle,
     isPreviewNarrow,
     LinkSlot,
 } from "./referenceCore";
 
 const FooterColumn = ({ title, links, LinkComponent }) => (
     <div>
-        <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">{title}</h3>
+        <h3 className="text-sm font-black" style={{ ...headingStyle, color: "var(--sf-footer-heading)" }}>{title}</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-link)]">
             {links.map((link) => (
                 <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
@@ -27,7 +28,7 @@ const FooterColumn = ({ title, links, LinkComponent }) => (
 
 const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, LinkComponent }) => (
     <div>
-        <h3 className="text-sm font-black text-[var(--sf-footer-heading)]">Support</h3>
+        <h3 className="text-sm font-black" style={{ ...headingStyle, color: "var(--sf-footer-heading)" }}>Support</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-link)]">
             {links.map((link) => (
                 <LinkSlot key={link.label} LinkComponent={LinkComponent} href={link.href} prefetch={false} className="transition hover:text-[var(--sf-footer-link-hover)]">
@@ -55,7 +56,7 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
 
 const FooterAccordion = ({ title, links, LinkComponent }) => (
     <details className="group border-b py-3.5" style={{ borderColor: "var(--sf-footer-border)" }}>
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black text-[var(--sf-footer-heading)]">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black" style={{ ...headingStyle, color: "var(--sf-footer-heading)" }}>
             {title}
             <ChevronDown size={17} className="transition group-open:rotate-180" />
         </summary>
@@ -97,6 +98,7 @@ const buildMailto = (email = "") => {
 
 export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, subdomain, cartCount = 0, LinkComponent = DefaultLink, preview = false, previewDevice, editor, shopVerification }) {
     const theme = normalizeTheme(themeCandidate);
+    const storefrontContainerClass = getContainerClass(theme.layout);
     const brandName = shopName || subdomain || "Storefront";
     const footerLinks = (theme.footer?.links || []).filter((item) => item?.label && item?.url);
     const navigationLinks = getSortedNavigation(theme).map((item) => ({ label: item.label, href: item.url }));
@@ -137,7 +139,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
         <>
             <EditorSelectionFrame editor={editor} id="footer" label="Footer" locked>
                 <footer className="min-w-0 overflow-x-hidden border-t pb-20 pt-7 text-[var(--sf-footer-text)] sm:pt-10 md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
-                    <div className={containerClass}>
+                    <div className={storefrontContainerClass}>
                         <div className={footerGridClass}>
                             <div className="min-w-0">
                                 <div className="flex min-w-0 items-center gap-3">
@@ -145,7 +147,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                         {getInitials(brandName)}
                                     </span>
                                     <div className="min-w-0">
-                                        <h2 className="truncate text-lg font-black text-[var(--sf-footer-heading)] sm:text-xl">{brandName}</h2>
+                                        <h2 className="truncate text-lg font-black sm:text-xl" style={{ ...headingStyle, color: "var(--sf-footer-heading)" }}>{brandName}</h2>
                                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--sf-footer-text)] sm:text-sm">Storefront</p>
                                     </div>
                                 </div>

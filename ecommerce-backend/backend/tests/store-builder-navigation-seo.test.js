@@ -94,7 +94,7 @@ test('store builder polish keeps editing contextual and preview controls focused
     const previewPanel = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPreviewPanel.jsx');
     const preview = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx');
     const colorEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx');
-    const storefrontHome = readRepo('packages/storefront-renderer/reference/StorefrontHome.jsx');
+    const storefrontHero = readRepo('packages/storefront-renderer/reference/StorefrontHero.jsx');
     const heroEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/HeroEditor.jsx');
     const sectionsEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/DynamicSectionsEditor.jsx');
 
@@ -107,8 +107,8 @@ test('store builder polish keeps editing contextual and preview controls focused
     assert.match(preview, /data-preview-device=\{device\}/);
     assert.match(preview, /Math\.max\(0\.25/);
     assert.match(page, /xl:pr-\[396px\] 2xl:pr-4/);
-    assert.match(storefrontHome, /previewHeroHeightClass/);
-    assert.match(storefrontHome, /heroActionsClass/);
+    assert.match(storefrontHero, /previewHeight/);
+    assert.match(storefrontHero, /HeroButtons/);
     assert.doesNotMatch(colorEditor, /sm:grid-cols-2/);
     assert.match(page, /setMainBrandColor[\s\S]*buildBrandColorSet\(value\)/);
     assert.match(heroEditor, /selectedSlideId/);

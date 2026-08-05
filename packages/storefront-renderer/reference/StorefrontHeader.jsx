@@ -15,9 +15,9 @@ import {
 
 import { getSortedNavigation, normalizeTheme } from "@scaleup/storefront-theme";
 import {
-    containerClass,
     DefaultLink,
     EditorSelectionFrame,
+    getContainerClass,
     isPreviewNarrow,
     LinkSlot,
     noop,
@@ -54,20 +54,20 @@ const VerifiedSellerBadge = ({ verification }) => {
     );
 };
 
-const BrandMark = ({ theme, brandName, trustedBadge, shopVerification }) => (
-    <span className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+const BrandMark = ({ theme, brandName, trustedBadge, shopVerification, compact = false }) => (
+    <span className={`flex min-w-0 items-center ${compact ? "gap-2" : "gap-2.5 sm:gap-3"}`}>
         {theme.logoUrl ? (
             <img
                 src={optimizeCloudinaryImage(theme.logoUrl, { width: 96 })}
                 alt={brandName}
                 width="40"
                 height="40"
-                className="h-9 w-9 rounded-2xl border border-slate-200 object-cover shadow-sm sm:h-10 sm:w-10"
+                className={`${compact ? "h-8 w-8 rounded-xl" : "h-9 w-9 rounded-2xl sm:h-10 sm:w-10"} border border-slate-200 object-cover shadow-sm`}
                 loading="eager"
                 decoding="async"
             />
         ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 sm:h-10 sm:w-10">
+            <span className={`flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 ${compact ? "h-8 w-8" : "h-9 w-9 sm:h-10 sm:w-10"}`}>
                 {brandName.slice(0, 1).toUpperCase()}
             </span>
         )}
@@ -191,6 +191,9 @@ export function ReferenceStorefrontHeader({
     shopVerification,
 }) {
     const theme = normalizeTheme(themeCandidate);
+    const headerVariant = theme.header?.variant || "standard";
+    const storefrontContainerClass = getContainerClass(theme.layout);
+    const compactMobileHeader = theme.mobile?.compactHeader !== false;
     const brandName = shopName || subdomain || "Storefront";
     const navLinks = getSortedNavigation(theme);
     const headerNavLinks = navLinks.filter((item) => !["track order", "account", "cart"].includes(String(item.label || "").toLowerCase()));
@@ -217,9 +220,8 @@ export function ReferenceStorefrontHeader({
             </button>
         </div>
     );
-    const actionSlot = (
-        <div className="flex min-w-0 items-center justify-end gap-1 xl:gap-2">
-            <nav className="mr-1 hidden min-w-0 items-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] xl:flex 2xl:mr-2 2xl:gap-1">
+    const navigationSlot = (
+        <nav className="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1">
                 {visibleHeaderNavLinks.map((item, index) => (
                     <HeaderNavItem
                         key={`${item.label}-${index}`}
@@ -228,7 +230,10 @@ export function ReferenceStorefrontHeader({
                     />
                 ))}
                 <HeaderOverflowMenu items={overflowHeaderNavLinks} LinkComponent={LinkComponent} />
-            </nav>
+        </nav>
+    );
+    const utilitySlot = (
+        <div className="flex shrink-0 items-center justify-end gap-1 xl:gap-2">
             <LinkSlot LinkComponent={LinkComponent} href="/track" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <Truck size={17} className="shrink-0" />
                 <span className="hidden 2xl:inline">Track Order</span>
@@ -253,53 +258,94 @@ export function ReferenceStorefrontHeader({
             </LinkSlot>
         </div>
     );
-    const desktopSlots = [brandSlot, searchSlot, actionSlot];
+    const compactSearchSlot = (
+        <button
+            type="button"
+            onClick={onSearch}
+            aria-label="Search products"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-[var(--sf-navbar-hover)]"
+        >
+            <Search size={18} />
+        </button>
+    );
+    const standardActionSlot = (
+        <div className="flex min-w-0 items-center justify-end gap-1 xl:gap-2">
+            <div className="mr-1 hidden min-w-0 xl:block 2xl:mr-2">{navigationSlot}</div>
+            {utilitySlot}
+        </div>
+    );
     const forceNarrowHeader = isPreviewNarrow(previewDevice);
     const desktopHeaderClass = previewDevice
-        ? (forceNarrowHeader ? "hidden" : `grid h-[76px] items-center gap-6 ${forcedDesktopLayoutClass}`)
-        : `hidden h-[76px] items-center gap-6 lg:grid ${desktopLayoutClass}`;
+        ? (forceNarrowHeader ? "hidden" : headerVariant === "centered" ? "block py-4" : "flex h-[76px] items-center gap-6")
+        : (headerVariant === "centered" ? "hidden py-4 lg:block" : "hidden h-[76px] items-center gap-6 lg:flex");
     const mobileHeaderClass = previewDevice
-        ? (forceNarrowHeader ? "flex h-[58px] items-center justify-between gap-2.5 sm:h-[64px]" : "hidden")
-        : "flex h-[58px] items-center justify-between gap-2.5 sm:h-[64px] lg:hidden";
-    const mobileSearchClass = previewDevice
-        ? (forceNarrowHeader ? "pb-2.5" : "hidden")
-        : "pb-2.5 lg:hidden";
+        ? (forceNarrowHeader ? `flex items-center justify-between gap-2.5 ${compactMobileHeader ? "h-[58px] sm:h-[64px]" : "h-[72px] sm:h-[80px]"}` : "hidden")
+        : `flex items-center justify-between gap-2.5 lg:hidden ${compactMobileHeader ? "h-[58px] sm:h-[64px]" : "h-[72px] sm:h-[80px]"}`;
+    const mobileSearchClass = headerVariant === "minimal"
+        ? "hidden"
+        : previewDevice
+            ? (forceNarrowHeader ? (compactMobileHeader ? "pb-2.5" : "pb-4") : "hidden")
+            : `${compactMobileHeader ? "pb-2.5" : "pb-4"} lg:hidden`;
+
+    const desktopHeader = headerVariant === "minimal" ? (
+        <div className="grid w-full min-w-0 grid-cols-[minmax(170px,0.7fr)_minmax(0,1fr)_auto] items-center gap-4">
+            <div className="min-w-0">{brandSlot}</div>
+            <div className="min-w-0">{navigationSlot}</div>
+            <div className="flex items-center gap-1">{compactSearchSlot}{utilitySlot}</div>
+        </div>
+    ) : headerVariant === "centered" ? (
+        <div className="min-w-0" data-header-composition="centered">
+            <div className="flex justify-center">{brandSlot}</div>
+            <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(240px,0.8fr)_minmax(0,1fr)] items-center gap-4 border-t pt-3" style={{ borderColor: "var(--sf-header-border)" }}>
+                <div className="min-w-0 justify-self-start">{navigationSlot}</div>
+                <div className="min-w-0">{searchSlot}</div>
+                <div className="justify-self-end">{utilitySlot}</div>
+            </div>
+        </div>
+    ) : (
+        <div className={`grid w-full min-w-0 items-center gap-6 ${previewDevice ? forcedDesktopLayoutClass : desktopLayoutClass}`}>
+            {[brandSlot, searchSlot, standardActionSlot].map((slot, index) => <div key={index} className="min-w-0">{slot}</div>)}
+        </div>
+    );
 
     return (
         <>
             <EditorSelectionFrame editor={editor} id="header" label="Navbar" locked>
-                <header className="sticky top-0 z-50 border-b bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl" style={{ borderColor: "var(--sf-header-border)" }}>
-                    <div className={containerClass}>
+                <header data-structural-variant={headerVariant} className="sticky top-0 z-50 border-b bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl" style={{ borderColor: "var(--sf-header-border)" }}>
+                    <div className={storefrontContainerClass}>
                         <div className={desktopHeaderClass}>
-                            {desktopSlots.map((slot, index) => <div key={index} className="min-w-0">{slot}</div>)}
+                            {desktopHeader}
                         </div>
 
                         <div className={mobileHeaderClass}>
                             <button
                                 type="button"
                                 onClick={() => setMobileMenuOpen(true)}
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-[var(--sf-navbar-text)] sm:h-11 sm:w-11"
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11"
                                 aria-label="Open menu"
                             >
                                 <Menu size={20} />
                             </button>
-                            <LinkSlot LinkComponent={LinkComponent} href="/" prefetch={false} className="min-w-0 flex-1">
-                                <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
+                            <LinkSlot LinkComponent={LinkComponent} href="/" prefetch={false} className={`min-w-0 flex-1 ${headerVariant === "centered" ? "flex justify-center" : ""}`}>
+                                <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} compact={compactMobileHeader} />
                             </LinkSlot>
-                            <LinkSlot
-                                LinkComponent={LinkComponent}
-                                href="/cart"
-                                prefetch={false}
-                                className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm sm:h-11 sm:w-11"
-                                aria-label="Cart"
-                            >
-                                <ShoppingBag size={18} />
-                                {cartCount > 0 && (
-                                    <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
-                                        {cartCount}
-                                    </span>
-                                )}
-                            </LinkSlot>
+                            <div className="flex shrink-0 items-center gap-1">
+                                {headerVariant === "minimal" && <button type="button" onClick={onSearch} aria-label="Search products" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11"><Search size={18} /></button>}
+                                <LinkSlot
+                                    LinkComponent={LinkComponent}
+                                    href="/cart"
+                                    prefetch={false}
+                                    className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm sm:h-11 sm:w-11"
+                                    aria-label="Cart"
+                                >
+                                    <ShoppingBag size={18} />
+                                    {cartCount > 0 && (
+                                        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
+                                            {cartCount}
+                                        </span>
+                                    )}
+                                </LinkSlot>
+                            </div>
                         </div>
 
                         <div className={mobileSearchClass}>

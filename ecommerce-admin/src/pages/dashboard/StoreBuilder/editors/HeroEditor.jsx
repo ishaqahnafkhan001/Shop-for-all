@@ -1,10 +1,10 @@
 import { ChevronDown, ChevronUp, Image, LayoutTemplate, Plus, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { BuilderButton, BuilderCard, BuilderInput, BuilderSelect, BuilderTextarea, BuilderToggle } from '../builderUi.jsx';
-import { HERO_SLIDE_LIMIT } from '../storeBuilderConstants.jsx';
+import { HERO_SLIDE_LIMIT, heroVariantOptions } from '../storeBuilderConstants.jsx';
 import { getBuilderHeroSlides } from '../storeBuilderThemeUtils.js';
 
-export function HeroEditor({ theme, uploadingThemeImage, setThemeGroup, addHeroSlide, updateHeroSlide, moveHeroSlide, removeHeroSlide, handleThemeImageUpload }) {
+export function HeroEditor({ theme, uploadingThemeImage, setThemeGroup, addHeroSlide, updateHeroSlide, moveHeroSlide, removeHeroSlide, handleThemeImageUpload, advancedDesignEnabled = false }) {
     const heroSlides = getBuilderHeroSlides(theme.hero);
     const [selectedSlideId, setSelectedSlideId] = useState(heroSlides[0]?.id || 'slide-0');
     const matchedIndex = heroSlides.findIndex((item, index) => String(item.id || `slide-${index}`) === String(selectedSlideId));
@@ -25,9 +25,27 @@ export function HeroEditor({ theme, uploadingThemeImage, setThemeGroup, addHeroS
                 icon={LayoutTemplate}
                 actions={<BuilderButton type="button" variant="secondary" onClick={addHeroSlide} disabled={heroSlides.length >= HERO_SLIDE_LIMIT}><Plus size={16} /> Add slide</BuilderButton>}
             >
+                <BuilderSelect
+                    label="Hero layout"
+                    value={theme.hero?.variant || 'fullBleed'}
+                    onChange={event => setThemeGroup('hero', 'variant', event.target.value)}
+                    disabled={!advancedDesignEnabled}
+                    help={advancedDesignEnabled ? 'All layouts keep the same slides, text, and buttons.' : 'Structural layouts require full Store Builder access.'}
+                >
+                    {heroVariantOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </BuilderSelect>
                 <BuilderSelect label="Hero height" value={theme.hero?.height || 'Medium'} onChange={event => setThemeGroup('hero', 'height', event.target.value)}>
                     <option>Compact</option><option>Medium</option><option>Tall</option>
                 </BuilderSelect>
+                <BuilderInput
+                    label="Image overlay"
+                    type="number"
+                    min="0"
+                    max="80"
+                    value={theme.hero?.overlayOpacity ?? 25}
+                    onChange={event => setThemeGroup('hero', 'overlayOpacity', Math.min(80, Math.max(0, Number(event.target.value) || 0)))}
+                    help="Darkens banner images without fading the headline or buttons. Use 0 for no overlay."
+                />
 
                 <div className="space-y-2" role="tablist" aria-label="Hero slides">
                     {heroSlides.map((item, index) => {

@@ -14,7 +14,8 @@ import {
     getSectionIndexFromSelection,
     getSectionSelectionId,
     inlineSectionPresets,
-    isHomepageSectionLocked
+    isHomepageSectionLocked,
+    sectionVariantOptions
 } from '../storeBuilderConstants.jsx';
 
 export function DynamicSectionsEditor({
@@ -29,6 +30,7 @@ export function DynamicSectionsEditor({
     reviewPicker,
     setReviewPicker,
     uploadingThemeImage,
+    handleThemeImageUpload,
     addHomepageSection,
     toggleHomepageSectionLock,
     updateHomepageSection,
@@ -43,7 +45,8 @@ export function DynamicSectionsEditor({
     loadProductOptions,
     updateFeaturedProductsSelection,
     loadReviewOptions,
-    updateReviewSelection
+    updateReviewSelection,
+    advancedDesignEnabled = false
 }) {
     const [sectionLibraryOpen, setSectionLibraryOpen] = useState(false);
     const selectedSectionIndex = getSectionIndexFromSelection(activeElement, theme);
@@ -186,6 +189,19 @@ export function DynamicSectionsEditor({
                                     </BuilderSelect>
                                     <BuilderInput label="Section title" value={section.title || ''} onChange={e => updateHomepageSection(index, 'title', e.target.value)} disabled={locked} />
                                 </div>
+                                {sectionVariantOptions[section.type]?.length > 0 && (
+                                    <div className="mt-3">
+                                        <BuilderSelect
+                                            label="Section layout"
+                                            value={section.settings?.variant || sectionVariantOptions[section.type][0].value}
+                                            onChange={event => updateHomepageSectionSetting(index, 'variant', event.target.value)}
+                                            disabled={locked || !advancedDesignEnabled}
+                                            help={advancedDesignEnabled ? 'Changes presentation only; section content and links stay the same.' : 'Structural layouts require full Store Builder access.'}
+                                        >
+                                            {sectionVariantOptions[section.type].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                        </BuilderSelect>
+                                    </div>
+                                )}
                                 {section.type === 'Banner' && (
                                     <div className="mt-3 grid grid-cols-1 gap-3">
                                         {[
@@ -515,6 +531,29 @@ export function DynamicSectionsEditor({
                                         </BuilderSelect>
                                     </div>
                                 )}
+                                {section.type === 'BrandStory' && (
+                                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                        <BuilderInput
+                                            label="Story image URL"
+                                            value={section.settings?.imageUrl || ''}
+                                            onChange={event => updateHomepageSectionSetting(index, 'imageUrl', event.target.value)}
+                                            disabled={locked}
+                                            placeholder="https://..."
+                                            help="Used by image-based Story layouts. The standard layout remains text-first."
+                                        />
+                                        <label className="mt-2 inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 focus-within:ring-2 focus-within:ring-indigo-500">
+                                            <Upload size={14} />{uploadingThemeImage ? 'Uploading...' : 'Upload story image'}
+                                            <input
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/webp"
+                                                className="hidden"
+                                                disabled={locked || uploadingThemeImage}
+                                                onChange={event => handleThemeImageUpload(event, url => updateHomepageSectionSetting(index, 'imageUrl', url), section.settings?.imageUrl)}
+                                            />
+                                        </label>
+                                        {section.settings?.imageUrl && <img src={section.settings.imageUrl} alt="" className="mt-3 h-32 w-full rounded-lg border border-slate-200 object-cover" />}
+                                    </div>
+                                )}
                                 {['TextBlock', 'Newsletter', 'FAQ', 'TrustBadges', 'BrandStory', 'PromoBlock'].includes(section.type) && (
                                     <div className="mt-3">
                                         <BuilderTextarea
@@ -532,6 +571,14 @@ export function DynamicSectionsEditor({
                                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <BuilderToggle label="Visible on desktop" checked={section.desktopSettings?.isVisible !== false} onChange={() => updateHomepageSectionDesktopSetting(index, 'isVisible', section.desktopSettings?.isVisible === false)} disabled={locked} />
                                     <BuilderToggle label="Visible on mobile" checked={section.mobileSettings?.isVisible !== false} onChange={() => updateHomepageSectionMobileSetting(index, 'isVisible', section.mobileSettings?.isVisible === false)} disabled={locked} />
+                                    {section.type === 'FeaturedProducts' && (
+                                        <BuilderSelect label="Desktop columns" value={section.desktopSettings?.columns || 3} onChange={e => updateHomepageSectionDesktopSetting(index, 'columns', Number(e.target.value))} disabled={locked}>
+                                            <option value={2}>2 columns</option>
+                                            <option value={3}>3 columns</option>
+                                            <option value={4}>4 columns</option>
+                                            <option value={5}>5 columns</option>
+                                        </BuilderSelect>
+                                    )}
                                     {['FeaturedProducts', 'CategoryList'].includes(section.type) && (
                                         <BuilderSelect label="Mobile columns" value={section.mobileSettings?.columns || 2} onChange={e => updateHomepageSectionMobileSetting(index, 'columns', Number(e.target.value))} disabled={locked}>
                                             <option value={1}>1 column</option>

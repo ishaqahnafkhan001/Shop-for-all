@@ -13,6 +13,8 @@ const StoreBuilderDraft = require('../../models/StoreBuilderDraft');
 const StoreBuilderRevision = require('../../models/StoreBuilderRevision');
 const { cloudinary } = require('../../config/cloudinary');
 const { cleanupExpiredStoreBuilderAssets } = require('../../services/storeBuilder/storeBuilderAssetService');
+const { normalizeTheme } = require('@scaleup/storefront-theme');
+const { resolvePrebuiltTheme } = require('@scaleup/storefront-theme/prebuilt');
 
 test('vendor can load and save only their own Store Builder theme', async (t) => {
     const ctx = await createLaunchSafetyContext(t);
@@ -219,6 +221,7 @@ test('Store Builder publish round trip preserves contract fields and rejects sta
     assert.equal(afterLoad.updatedAt.getTime(), beforeLoad.updatedAt.getTime());
 
     const theme = {
+        header: { variant: 'centered' },
         seo: {
             siteName: 'Launch Safety Store',
             title: 'Launch Safety Store Online',
@@ -229,6 +232,7 @@ test('Store Builder publish round trip preserves contract fields and rejects sta
             socialDescription: 'Share the public Launch Safety Store catalog.'
         },
         hero: {
+            variant: 'editorial',
             title: 'Published hero',
             bannerSlides: [{
                 id: 'published-slide',
@@ -245,7 +249,7 @@ test('Store Builder publish round trip preserves contract fields and rejects sta
         homepageSections: [
             { id: 'faq', type: 'FAQ', title: 'Questions', settings: { text: 'Q: Delivery?\nA: Fast.' }, desktopSettings: { isVisible: true }, mobileSettings: { isVisible: false } },
             { id: 'trust', type: 'TrustBadges', title: 'Trust', settings: { text: 'Secure checkout · Fast delivery' }, desktopSettings: { isVisible: false }, mobileSettings: { isVisible: true } },
-            { id: 'story', type: 'BrandStory', title: 'Our story', settings: { text: 'Made with care.', imageUrl: 'https://cdn.example.com/story.webp', focalPoint: { x: 35, y: 65 } }, desktopSettings: { isVisible: true }, mobileSettings: { isVisible: true, focalPoint: { x: 45, y: 55 } } }
+            { id: 'story', type: 'BrandStory', title: 'Our story', settings: { variant: 'imageRight', text: 'Made with care.', imageUrl: 'https://cdn.example.com/story.webp', focalPoint: { x: 35, y: 65 } }, desktopSettings: { isVisible: true }, mobileSettings: { isVisible: true, focalPoint: { x: 45, y: 55 } } }
         ],
         footer: { text: 'Published footer' },
         checkoutBranding: { trustMessage: 'Secure checkout' }
@@ -264,6 +268,9 @@ test('Store Builder publish round trip preserves contract fields and rejects sta
     assert.deepEqual(published.body.data.theme.seo.keywords, ['launch', 'store safety']);
     assert.deepEqual(published.body.data.searchAliases, ['Launch Safety Stores']);
     assert.deepEqual(published.body.data.theme.homepageSections.map(section => section.type), ['FAQ', 'TrustBadges', 'BrandStory']);
+    assert.equal(published.body.data.theme.header.variant, 'centered');
+    assert.equal(published.body.data.theme.hero.variant, 'editorial');
+    assert.equal(published.body.data.theme.homepageSections[2].settings.variant, 'imageRight');
     assert.equal(published.body.data.theme.homepageSections[1].mobileSettings.isVisible, true);
     assert.deepEqual(published.body.data.theme.homepageSections[2].settings.focalPoint, { x: 35, y: 65 });
 
@@ -278,8 +285,64 @@ test('Store Builder publish round trip preserves contract fields and rejects sta
 
     const persisted = await Shop.findById(shopA._id).lean();
     assert.equal(persisted.theme.hero.title, 'Published hero');
+    assert.equal(persisted.theme.header.variant, 'centered');
+    assert.equal(persisted.theme.hero.variant, 'editorial');
+    assert.equal(persisted.theme.homepageSections[2].settings.variant, 'imageRight');
     assert.equal(persisted.themeRevision, 1);
     assert.equal(await StoreBuilderRevision.countDocuments({ shop_id: shopA._id }), 1);
+});
+
+test('full-plan prebuilt blueprint and merchant content survive draft and publish round trips', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+    await setShopPlan({ shopId: shopA._id, plan: ctx.data.plans.growth });
+
+    let sectionIndex = 0;
+    const resolvedTheme = resolvePrebuiltTheme({
+        currentTheme: normalizeTheme({
+            ...(shopA.theme || {}),
+            homepageSections: [
+                { id: 'merchant-story', type: 'BrandStory', title: 'Our real story', settings: { text: 'Merchant-authored story.' } },
+                { id: 'merchant-featured', type: 'FeaturedProducts', title: 'Merchant picks', settings: { productIds: [], source: { type: 'manual', productIds: [] } } },
+                { id: 'merchant-reviews', type: 'Reviews', title: 'Customer notes', settings: { text: 'Merchant-authored review copy.', reviewIds: [] } },
+                { id: 'merchant-newsletter', type: 'Newsletter', title: 'Store updates', settings: { text: 'Merchant-authored update copy.' } }
+            ]
+        }),
+        presetId: 'editorial-fashion',
+        appliedAt: '2026-08-05T00:00:00.000Z',
+        createSectionId: type => `roundtrip-${String(type).toLowerCase()}-${sectionIndex += 1}`
+    });
+    const expectedTypes = ['BrandStory', 'CategoryList', 'FeaturedProducts', 'Reviews', 'Newsletter'];
+    assert.deepEqual(resolvedTheme.homepageSections.filter(section => section.isEnabled !== false).map(section => section.type), expectedTypes);
+
+    const savedDraft = await vendorA.unsafePut('/api/store-builder/admin/draft', {
+        basedOnRevision: 0,
+        theme: resolvedTheme
+    });
+    assert.equal(savedDraft.status, 200, JSON.stringify(savedDraft.body));
+    assert.deepEqual(savedDraft.body.data.theme.homepageSections.filter(section => section.isEnabled !== false).map(section => section.type), expectedTypes);
+    assert.equal(savedDraft.body.data.theme.homepageSections[0].settings.text, 'Merchant-authored story.');
+
+    const loadedDraft = await vendorA.get('/api/store-builder/admin/draft');
+    assert.equal(loadedDraft.status, 200);
+    assert.deepEqual(loadedDraft.body.data.theme.homepageSections.filter(section => section.isEnabled !== false).map(section => section.type), expectedTypes);
+
+    const published = await vendorA.unsafePatch('/api/store-builder/admin', {
+        expectedRevision: 0,
+        theme: loadedDraft.body.data.theme
+    });
+    assert.equal(published.status, 200, JSON.stringify(published.body));
+    assert.deepEqual(published.body.data.theme.homepageSections.filter(section => section.isEnabled !== false).map(section => section.type), expectedTypes);
+    assert.equal(published.body.data.theme.homepageSections[0].settings.text, 'Merchant-authored story.');
+    assert.deepEqual(published.body.data.theme.preset, {
+        id: 'editorial-fashion',
+        version: 2,
+        appliedAt: '2026-08-05T00:00:00.000Z'
+    });
+
+    const persisted = await Shop.findById(shopA._id).lean();
+    assert.deepEqual(persisted.theme.homepageSections.filter(section => section.isEnabled !== false).map(section => section.type), expectedTypes);
 });
 
 test('Store Builder bootstrap hydrates selected products beyond the first page and scopes SEO totals', async (t) => {
@@ -333,11 +396,16 @@ test('Store Builder drafts stay private, publish clears the draft, and restore c
 
     const draftSave = await vendorA.unsafePut('/api/store-builder/admin/draft', {
         basedOnRevision: 0,
-        theme: { hero: { title: 'Private draft hero' } }
+        theme: {
+            preset: { id: 'modern-general', version: 1, appliedAt: '2026-08-05T00:00:00.000Z' },
+            hero: { title: 'Private draft hero' }
+        }
     });
     assert.equal(draftSave.status, 200);
     assert.equal(draftSave.body.data.theme.hero.title, 'Private draft hero');
-    assert.equal((await Shop.findById(shopA._id).lean()).theme.hero.title, 'Shop A Hero');
+    const liveAfterDraft = await Shop.findById(shopA._id).lean();
+    assert.equal(liveAfterDraft.theme.hero.title, 'Shop A Hero');
+    assert.equal(liveAfterDraft.theme.preset || null, null, 'applying a preset to a draft must not change the published theme');
 
     const publishOne = await vendorA.unsafePatch('/api/store-builder/admin', {
         expectedRevision: 0,
@@ -360,9 +428,39 @@ test('Store Builder drafts stay private, publish clears the draft, and restore c
     assert.equal(restore.status, 200, JSON.stringify(restore.body));
     assert.equal(restore.body.data.themeRevision, 3);
     assert.equal(restore.body.data.theme.hero.title, 'Private draft hero');
+    assert.equal(restore.body.data.theme.preset.id, 'modern-general');
+    assert.equal(restore.body.data.theme.preset.version, 1);
     const restoredRevision = await StoreBuilderRevision.findOne({ shop_id: shopA._id, revision: 3 }).lean();
     assert.equal(restoredRevision.source, 'restore');
     assert.equal(restoredRevision.restoredFromRevision, 1);
+});
+
+test('Store Builder draft autosave enforces the same limited-plan boundary as publish', async (t) => {
+    const ctx = await createLaunchSafetyContext(t);
+    const { shopA } = ctx.data.shops;
+    const vendorA = ctx.vendorAClient();
+    await setShopPlan({ shopId: shopA._id, plan: ctx.data.plans.starter });
+
+    const allowedDraft = await vendorA.unsafePut('/api/store-builder/admin/draft', {
+        basedOnRevision: 0,
+        theme: { typography: { headingFont: 'Arial', bodyFont: 'Inter', headingWeight: '700' } }
+    });
+    assert.equal(allowedDraft.status, 200);
+    assert.equal(allowedDraft.body.data.theme.typography.headingFont, 'Arial');
+
+    const blockedDraft = await vendorA.unsafePut('/api/store-builder/admin/draft', {
+        basedOnRevision: 0,
+        theme: { layout: { containerWidth: 'Full Width' } }
+    });
+    assert.equal(blockedDraft.status, 403);
+    assert.equal(blockedDraft.body.code, 'STORE_BUILDER_CAPABILITY_REQUIRED');
+
+    const blockedHeroVariant = await vendorA.unsafePut('/api/store-builder/admin/draft', {
+        basedOnRevision: 0,
+        theme: { hero: { variant: 'split' } }
+    });
+    assert.equal(blockedHeroVariant.status, 403);
+    assert.equal(blockedHeroVariant.body.code, 'STORE_BUILDER_CAPABILITY_REQUIRED');
 });
 
 test('Store Builder asset ownership and lifecycle protect published media', async (t) => {

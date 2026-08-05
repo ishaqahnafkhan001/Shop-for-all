@@ -176,7 +176,7 @@ test('dedicated branding APIs are tenant-authenticated, permission checked, and 
 });
 
 test('live renderer hides empty heroes and never inserts generic promotional claims', () => {
-    const renderer = readRepository('packages/storefront-renderer/reference/StorefrontHome.jsx');
+    const renderer = readRepository('packages/storefront-renderer/reference/StorefrontHero.jsx');
     const core = readRepository('packages/storefront-renderer/reference/referenceCore.jsx');
 
     assert.match(renderer, /hero\.hidden/);

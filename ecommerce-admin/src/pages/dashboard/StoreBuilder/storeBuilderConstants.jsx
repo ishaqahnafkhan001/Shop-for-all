@@ -8,10 +8,48 @@ import {
     ShoppingBag,
     Smartphone
 } from 'lucide-react';
-import { SECTION_REGISTRY } from '@scaleup/storefront-theme';
+import themeContract, { SECTION_REGISTRY } from '@scaleup/storefront-theme';
 
 export const HISTORY_LIMIT = 30;
 export const HERO_SLIDE_LIMIT = 5;
+
+const VARIANT_LABELS = Object.freeze({
+    standard: 'Standard', minimal: 'Minimal', centered: 'Centered',
+    fullBleed: 'Full width', split: 'Split', editorial: 'Editorial',
+    cards: 'Cards', imageGrid: 'Image grid', circles: 'Circles',
+    imageLeft: 'Image left', imageRight: 'Image right', fullWidth: 'Full width',
+    grid: 'Grid', spacious: 'Spacious', mosaic: 'Mosaic', quote: 'Quote',
+    boxed: 'Boxed', overlay: 'Image overlay', strip: 'Compact strip'
+});
+
+// Keep the editor usable when a long-running Vite server still has an older
+// optimized copy of the workspace theme package. Fresh builds use the shared
+// contract; this fallback only bridges that development-cache transition.
+const FALLBACK_STRUCTURAL_VARIANTS = Object.freeze({
+    header: { values: ['standard', 'minimal', 'centered'] },
+    hero: { values: ['fullBleed', 'split', 'centered', 'editorial', 'minimal'] },
+    sections: {
+        Banner: { values: ['overlay', 'split', 'minimal'] },
+        CategoryList: { values: ['cards', 'imageGrid', 'circles', 'editorial'] },
+        BrandStory: { values: ['standard', 'imageLeft', 'imageRight', 'fullWidth', 'editorial'] },
+        Collection: { values: ['grid', 'spacious', 'mosaic'] },
+        CollectionShowcase: { values: ['grid', 'spacious', 'mosaic'] },
+        Reviews: { values: ['cards', 'quote', 'minimal'] },
+        Newsletter: { values: ['boxed', 'fullWidth', 'minimal'] },
+        PromoBlock: { values: ['boxed', 'strip', 'split'] }
+    }
+});
+
+const structuralVariants = themeContract?.STRUCTURAL_VARIANTS || FALLBACK_STRUCTURAL_VARIANTS;
+
+const optionsFromContract = contract => (contract?.values || []).map(value => ({ value, label: VARIANT_LABELS[value] || value }));
+
+export const headerVariantOptions = optionsFromContract(structuralVariants.header || FALLBACK_STRUCTURAL_VARIANTS.header);
+export const heroVariantOptions = optionsFromContract(structuralVariants.hero || FALLBACK_STRUCTURAL_VARIANTS.hero);
+export const sectionVariantOptions = Object.fromEntries(
+    Object.entries(structuralVariants.sections || FALLBACK_STRUCTURAL_VARIANTS.sections)
+        .map(([type, contract]) => [type, optionsFromContract(contract)])
+);
 
 export const inlineSectionPresets = [
     {
@@ -34,7 +72,7 @@ export const inlineSectionPresets = [
         description: 'Help shoppers jump into popular categories.',
         useCase: 'Best for stores with several product families.',
         thumbnail: 'chips',
-        settings: { visualLabel: 'Category Showcase', maxCategories: 10, columns: 4 },
+        settings: { visualLabel: 'Category Showcase', variant: 'cards', maxCategories: 10, columns: 4 },
         mobileSettings: { columns: 2, isVisible: true }
     },
     {
@@ -45,7 +83,7 @@ export const inlineSectionPresets = [
         description: 'Full-width campaign image with text and button.',
         useCase: 'Best for sales, offers, and collection highlights.',
         thumbnail: 'image',
-        settings: { visualLabel: 'Image Banner', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: 'Limited offer', subtitle: 'Add a short campaign message.', buttonText: 'Shop now', buttonLink: '/' },
+        settings: { visualLabel: 'Image Banner', variant: 'overlay', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: 'Limited offer', subtitle: 'Add a short campaign message.', buttonText: 'Shop now', buttonLink: '/' },
         mobileSettings: { isVisible: true }
     },
     {
@@ -56,7 +94,7 @@ export const inlineSectionPresets = [
         description: 'Pair a story, benefit, or offer with rich copy.',
         useCase: 'Best for explaining quality, materials, or brand values.',
         thumbnail: 'split',
-        settings: { visualLabel: 'Image + Text', text: 'Tell customers why this collection matters.' },
+        settings: { visualLabel: 'Image + Text', variant: 'imageLeft', text: 'Tell customers why this collection matters.' },
         mobileSettings: { isVisible: true }
     },
     {
@@ -67,7 +105,7 @@ export const inlineSectionPresets = [
         description: 'Show selected 5-star reviews or a custom quote.',
         useCase: 'Best for trust and social proof.',
         thumbnail: 'quotes',
-        settings: { visualLabel: 'Testimonials', mode: 'text', reviewIds: [], text: 'Share customer quotes and social proof.' },
+        settings: { visualLabel: 'Testimonials', variant: 'cards', mode: 'text', reviewIds: [], text: 'Share customer quotes and social proof.' },
         mobileSettings: { isVisible: true }
     },
     {
@@ -78,7 +116,7 @@ export const inlineSectionPresets = [
         description: 'Compact announcement for a quick promotion.',
         useCase: 'Best for free shipping, COD, or flash deals.',
         thumbnail: 'strip',
-        settings: { visualLabel: 'Promo Strip', text: 'Free delivery on selected products today.' },
+        settings: { visualLabel: 'Promo Strip', variant: 'strip', text: 'Free delivery on selected products today.' },
         mobileSettings: { isVisible: true }
     },
     {
@@ -100,7 +138,7 @@ export const inlineSectionPresets = [
         description: 'Invite shoppers to follow future launches.',
         useCase: 'Best for repeat purchase and audience building.',
         thumbnail: 'mail',
-        settings: { visualLabel: 'Newsletter', text: 'Get product updates, offers, and launches.' },
+        settings: { visualLabel: 'Newsletter', variant: 'boxed', text: 'Get product updates, offers, and launches.' },
         mobileSettings: { isVisible: true }
     },
     {
@@ -111,7 +149,7 @@ export const inlineSectionPresets = [
         description: 'Create a short credibility-building brand block.',
         useCase: 'Best for premium, local, or handmade stores.',
         thumbnail: 'story',
-        settings: { visualLabel: 'Brand Story', text: 'Share what makes your store different.' },
+        settings: { visualLabel: 'Brand Story', variant: 'imageLeft', text: 'Share what makes your store different.' },
         mobileSettings: { isVisible: true }
     },
     {
@@ -133,7 +171,7 @@ export const inlineSectionPresets = [
         description: 'Use category cards as a future-ready collection grid.',
         useCase: 'Best for stores planning collection pages later.',
         thumbnail: 'collections',
-        settings: { visualLabel: 'Collection Grid', maxCategories: 8, columns: 4 },
+        settings: { visualLabel: 'Collection Grid', variant: 'imageGrid', maxCategories: 8, columns: 4 },
         mobileSettings: { columns: 2, isVisible: true }
     }
 ];
