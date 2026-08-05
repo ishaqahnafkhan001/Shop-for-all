@@ -8,20 +8,20 @@ export const ProductFormSection = ({
     actions = null,
     className = ''
 }) => (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
+    <section className={`min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 ${className}`}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex gap-3">
+            <div className="flex min-w-0 gap-3">
                 <div className="mt-0.5 rounded-xl bg-indigo-50 p-2 text-indigo-600">
                     <Icon size={18} />
                 </div>
-                <div>
+                <div className="min-w-0">
                     <h2 className="font-black text-slate-950">{title}</h2>
                     {description && <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>}
                 </div>
             </div>
             {actions}
         </div>
-        <div className="space-y-4">{children}</div>
+        <div className="min-w-0 space-y-4">{children}</div>
     </section>
 );
 
@@ -34,9 +34,9 @@ export const SellerHint = ({ children, tone = 'indigo' }) => {
     }[tone] || 'border-indigo-100 bg-indigo-50 text-indigo-900';
 
     return (
-        <div className={`flex gap-2 rounded-xl border px-3 py-2 text-sm leading-6 ${toneClass}`}>
+        <div className={`flex min-w-0 gap-2 rounded-xl border px-3 py-2 text-sm leading-6 ${toneClass}`}>
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>{children}</p>
+            <p className="min-w-0 break-words">{children}</p>
         </div>
     );
 };

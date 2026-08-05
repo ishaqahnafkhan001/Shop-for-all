@@ -704,21 +704,21 @@ const EditProduct = () => {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <div className="mx-auto max-w-7xl min-w-0 space-y-6 px-3 py-5 sm:px-4 sm:py-6">
 
             {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
+            <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
                     <h1 className="text-xl sm:text-2xl font-bold">Edit Product</h1>
                     <p className="text-sm text-gray-500 mt-1">Update storefront details carefully. Pricing, status, and stock changes can affect live orders.</p>
                 </div>
-                <button onClick={() => navigate(-1)} className="text-sm text-gray-400 hover:text-gray-600">
+                <button onClick={() => navigate(-1)} className="shrink-0 text-sm text-gray-400 hover:text-gray-600">
                     Cancel
                 </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="min-w-0 space-y-6">
 
                 {/* ── BASIC ─────────────────────────────────────────────── */}
                 <ProductFormSection
@@ -1355,7 +1355,7 @@ const EditProduct = () => {
                 </Button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="min-w-0 space-y-4">
                     <ReadinessChecklist items={readinessItems} title="Product health" />
                     <SeoHealthCard
                         title="Product SEO score"

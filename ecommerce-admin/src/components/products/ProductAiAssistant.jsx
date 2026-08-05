@@ -462,18 +462,18 @@ const ProductAiAssistant = ({
         setSuggestion(null);
     };
 
-    const buttonClass = 'inline-flex items-center justify-center gap-1.5 rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60';
+    const buttonClass = 'inline-flex max-w-full items-center justify-center gap-1.5 rounded-lg border border-indigo-100 bg-white px-3 py-2 text-center text-xs font-black text-indigo-700 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60';
 
     return (
-        <div className={compact ? 'space-y-3' : 'rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4'}>
+        <div className={compact ? 'min-w-0 space-y-3' : 'min-w-0 overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4'}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
+                <div className="min-w-0">
                     <p className="text-sm font-black text-slate-950">AI content helper</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-600">
+                    <p className="mt-1 break-words text-xs leading-5 text-slate-600">
                         {imageStatusLabel}
                     </p>
                     {usage && (
-                        <p className="mt-1 text-xs font-bold text-indigo-700">
+                        <p className="mt-1 break-words text-xs font-bold text-indigo-700">
                             {usage.unlimited
                                 ? `${usage.used} AI generations used this week - Unlimited plan`
                                 : `${usage.used} of ${usage.limit} AI generations used this week (${usage.remaining} remaining)`}
@@ -485,14 +485,14 @@ const ProductAiAssistant = ({
                     type="button"
                     onClick={() => generate(SECTIONS)}
                     disabled={isGenerating || !formData.title?.trim()}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-black text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-black text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                     {isGenerating && activeSection === 'all' ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                     {isGenerating && activeSection === 'all' ? 'Generating...' : 'Generate better content with AI'}
                 </button>
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3 flex min-w-0 flex-wrap gap-2">
                 {SECTIONS.map(section => (
                     <button
                         key={section}
