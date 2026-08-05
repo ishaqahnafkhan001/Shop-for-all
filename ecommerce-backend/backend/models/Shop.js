@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
-const { normalizeSearchAliases, normalizeSearchText } = require('@scaleup/storefront-theme');
-const { SECTION_TYPES } = require('@scaleup/storefront-theme');
+const {
+    normalizeSearchAliases,
+    normalizeSearchText,
+    SECTION_TYPES,
+    THEME_SCHEMA_VERSION
+} = require('@scaleup/storefront-theme');
 
 const linkSchema = new mongoose.Schema({
     label: { type: String, trim: true, maxlength: 80 },
@@ -48,6 +52,12 @@ const heroSlideSchema = new mongoose.Schema({
         x: { type: Number, min: 0, max: 100, default: 50 },
         y: { type: Number, min: 0, max: 100, default: 50 }
     }
+}, { _id: false });
+
+const themePresetSchema = new mongoose.Schema({
+    id: { type: String, trim: true, lowercase: true, maxlength: 80, required: true },
+    version: { type: Number, min: 1, required: true },
+    appliedAt: { type: Date, default: null }
 }, { _id: false });
 
 const essentialBrandingSchema = new mongoose.Schema({
@@ -324,7 +334,8 @@ const shopSchema = new mongoose.Schema({
     },
     branding: { type: essentialBrandingSchema, default: () => ({}) },
     theme: {
-        version: { type: Number, default: 2, min: 1 },
+        version: { type: Number, default: THEME_SCHEMA_VERSION, min: 1 },
+        preset: { type: themePresetSchema, default: null },
         logoUrl: { type: String, default: '' },
         faviconUrl: { type: String, default: '' },
         fontFamily: { type: String, default: 'Inter' },
@@ -334,6 +345,11 @@ const shopSchema = new mongoose.Schema({
             default: 'Comfortable'
         },
         header: {
+            variant: {
+                type: String,
+                enum: ['standard', 'minimal', 'centered'],
+                default: 'standard'
+            },
             logoPosition: {
                 type: String,
                 enum: ['Left', 'Center', 'Right'],
@@ -389,6 +405,11 @@ const shopSchema = new mongoose.Schema({
             }
         },
         hero: {
+            variant: {
+                type: String,
+                enum: ['fullBleed', 'split', 'centered', 'editorial', 'minimal'],
+                default: 'fullBleed'
+            },
             title: { type: String, default: '' },
             subtitle: { type: String, default: '' },
             imageUrl: { type: String, default: '' },

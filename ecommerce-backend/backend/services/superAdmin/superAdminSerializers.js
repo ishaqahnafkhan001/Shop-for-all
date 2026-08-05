@@ -113,7 +113,7 @@ const serializeSuperAdminShopDetail = (shop) => {
 const serializeVerificationSummary = (verification, extra = {}) => {
     if (!verification) return null;
     const safe = serializeVerificationPrivacy(verification, { includeFullNid: false });
-    const maskedNid = maskNidNumber(safe.nidNumberMasked || safe.nidNumber || '');
+    const maskedNid = safe.nidNumberMasked || maskNidNumber(safe.nidNumber || '');
     return {
         _id: idOf(safe),
         shop_id: idOf(safe.shop_id),

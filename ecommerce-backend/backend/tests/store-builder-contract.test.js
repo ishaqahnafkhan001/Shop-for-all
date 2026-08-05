@@ -101,6 +101,12 @@ test('representative theme survives Mongoose schema and shared normalization rou
         mobileSettings: { isVisible: index % 2 !== 0, focalPoint: { x: 45, y: 55 } }
     }));
     const theme = normalizeTheme({
+        header: { variant: 'centered' },
+        preset: {
+            id: 'modern-fashion',
+            version: 1,
+            appliedAt: '2026-08-05T00:00:00.000Z'
+        },
         seo: {
             siteName: 'Round Trip Shop',
             title: 'Round Trip Shop Online',
@@ -108,6 +114,7 @@ test('representative theme survives Mongoose schema and shared normalization rou
             keywords: ['round trip', 'store builder']
         },
         hero: {
+            variant: 'editorial',
             bannerSlides: [{
                 id: 'hero-one',
                 desktopImage: 'https://cdn.example.com/hero.webp',
@@ -132,9 +139,16 @@ test('representative theme survives Mongoose schema and shared normalization rou
     const persisted = shop.toObject().theme;
     const reloaded = normalizeTheme(persisted);
     assert.equal(reloaded.seo.siteName, 'Round Trip Shop');
+    assert.equal(reloaded.preset.id, 'modern-fashion');
+    assert.equal(reloaded.preset.version, 1);
+    assert.equal(reloaded.preset.appliedAt, '2026-08-05T00:00:00.000Z');
     assert.deepEqual(reloaded.seo.keywords, ['round trip', 'store builder']);
     assert.deepEqual(reloaded.homepageSections.map(section => section.type), SECTION_TYPES);
     assert.equal(reloaded.hero.bannerSlides[0].mobileImage, 'https://cdn.example.com/hero-mobile.webp');
+    assert.equal(reloaded.header.variant, 'centered');
+    assert.equal(reloaded.hero.variant, 'editorial');
+    assert.equal(reloaded.homepageSections.find(section => section.type === 'CategoryList').settings.variant, 'cards');
+    assert.equal(reloaded.homepageSections.find(section => section.type === 'BrandStory').settings.variant, 'standard');
     assert.equal(reloaded.footer.text, 'Round trip footer');
     assert.equal(reloaded.checkoutBranding.trustMessage, 'Secure checkout');
     assert.equal(reloaded.productCard.showRating, false);

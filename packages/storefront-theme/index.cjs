@@ -2,7 +2,31 @@
 
 const homepageSeo = require('./homepage-seo.cjs');
 
-const THEME_SCHEMA_VERSION = 3;
+const THEME_SCHEMA_VERSION = 4;
+
+const structuralVariant = (defaultValue, values) => Object.freeze({
+    default: defaultValue,
+    values: Object.freeze(values),
+});
+
+const STRUCTURAL_VARIANTS = Object.freeze({
+    header: structuralVariant('standard', ['standard', 'minimal', 'centered']),
+    hero: structuralVariant('fullBleed', ['fullBleed', 'split', 'centered', 'editorial', 'minimal']),
+    sections: Object.freeze({
+        Banner: structuralVariant('overlay', ['overlay', 'split', 'minimal']),
+        CategoryList: structuralVariant('cards', ['cards', 'imageGrid', 'circles', 'editorial']),
+        BrandStory: structuralVariant('standard', ['standard', 'imageLeft', 'imageRight', 'fullWidth', 'editorial']),
+        Collection: structuralVariant('grid', ['grid', 'spacious', 'mosaic']),
+        CollectionShowcase: structuralVariant('grid', ['grid', 'spacious', 'mosaic']),
+        Reviews: structuralVariant('cards', ['cards', 'quote', 'minimal']),
+        Newsletter: structuralVariant('boxed', ['boxed', 'fullWidth', 'minimal']),
+        PromoBlock: structuralVariant('boxed', ['boxed', 'strip', 'split']),
+    }),
+});
+
+const normalizeStructuralVariant = (value, contract) => (
+    contract?.values?.includes(value) ? value : contract?.default
+);
 
 const sectionDefinition = ({
     label,
@@ -37,37 +61,38 @@ const SECTION_REGISTRY = Object.freeze({
     }),
     Collection: sectionDefinition({
         label: 'Collection', category: 'commerce', renderer: 'generic', productSource: true, editorEnabled: false,
-        defaultSettings: { productIds: [], source: { type: 'manual', productIds: [] } }
+        defaultSettings: { variant: 'grid', productIds: [], source: { type: 'manual', productIds: [] } }
     }),
     CategoryList: sectionDefinition({
-        label: 'Category list', category: 'commerce', renderer: 'categories', defaultSettings: { maxCategories: 10, columns: 4 }
+        label: 'Category list', category: 'commerce', renderer: 'categories', defaultSettings: { variant: 'cards', maxCategories: 10, columns: 4 }
     }),
     Banner: sectionDefinition({
         label: 'Image banner', category: 'content', renderer: 'banner', supportsMedia: true, supportsFocalPoint: true,
         migrationAliases: ['BannerGrid'],
-        defaultSettings: { desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: '', subtitle: '', buttonText: '', buttonLink: '/' }
+        defaultSettings: { variant: 'overlay', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: '', subtitle: '', buttonText: '', buttonLink: '/' }
     }),
     TextBlock: sectionDefinition({ label: 'Text block', category: 'content', renderer: 'generic', defaultSettings: { text: '' } }),
-    Newsletter: sectionDefinition({ label: 'Newsletter', category: 'content', renderer: 'generic', previewOnlyAction: true, defaultSettings: { text: '' } }),
-    Reviews: sectionDefinition({ label: 'Reviews', category: 'content', renderer: 'reviews', defaultSettings: { mode: 'text', reviewIds: [], text: '' } }),
+    Newsletter: sectionDefinition({ label: 'Newsletter', category: 'content', renderer: 'generic', previewOnlyAction: true, defaultSettings: { variant: 'boxed', text: '' } }),
+    Reviews: sectionDefinition({ label: 'Reviews', category: 'content', renderer: 'reviews', defaultSettings: { variant: 'cards', mode: 'text', reviewIds: [], text: '' } }),
     FAQ: sectionDefinition({ label: 'FAQ', category: 'content', renderer: 'faq', defaultSettings: { text: '' } }),
     TrustBadges: sectionDefinition({ label: 'Trust badges', category: 'content', renderer: 'trustBadges', defaultSettings: { text: '' } }),
     BrandStory: sectionDefinition({
-        label: 'Brand story', category: 'content', renderer: 'brandStory', supportsMedia: true, supportsFocalPoint: true, defaultSettings: { text: '', imageUrl: '' }
+        label: 'Brand story', category: 'content', renderer: 'brandStory', supportsMedia: true, supportsFocalPoint: true, defaultSettings: { variant: 'standard', text: '', imageUrl: '' }
     }),
-    PromoBlock: sectionDefinition({ label: 'Promotion block', category: 'content', renderer: 'generic', defaultSettings: { text: '' } }),
+    PromoBlock: sectionDefinition({ label: 'Promotion block', category: 'content', renderer: 'generic', defaultSettings: { variant: 'boxed', text: '' } }),
     BrandShowcase: sectionDefinition({
         label: 'Brand showcase', category: 'content', renderer: 'generic', supportsMedia: true, editorEnabled: false, defaultSettings: { text: '', imageUrl: '' }
     }),
     CollectionShowcase: sectionDefinition({
         label: 'Collection showcase', category: 'commerce', renderer: 'generic', productSource: true, editorEnabled: false,
-        defaultSettings: { productIds: [], source: { type: 'manual', productIds: [] } }
+        defaultSettings: { variant: 'grid', productIds: [], source: { type: 'manual', productIds: [] } }
     }),
 });
 
 const SECTION_TYPES = Object.freeze(Object.keys(SECTION_REGISTRY));
 const ALLOWED_THEME_KEYS = Object.freeze([
     'version',
+    'preset',
     'logoUrl',
     'faviconUrl',
     'fontFamily',
@@ -149,15 +174,16 @@ const DEFAULT_COLORS = {
 
 const FALLBACK_THEME = Object.freeze({
     version: THEME_SCHEMA_VERSION,
+    preset: null,
     logoUrl: '',
     faviconUrl: '',
     fontFamily: 'Inter',
     productGridStyle: 'Comfortable',
     colors: DEFAULT_COLORS,
-    header: { logoPosition: 'Left', menuStyle: 'Simple' },
+    header: { variant: 'standard', logoPosition: 'Left', menuStyle: 'Simple' },
     typography: { headingFont: 'Inter', bodyFont: 'Inter', baseSize: 16, headingWeight: '800' },
     hero: {
-        title: '', subtitle: '', imageUrl: '', ctaLabel: 'Shop Now', ctaUrl: '/', overlayOpacity: 25, height: 'Medium', bannerSlides: [],
+        variant: 'fullBleed', title: '', subtitle: '', imageUrl: '', ctaLabel: 'Shop Now', ctaUrl: '/', overlayOpacity: 25, height: 'Medium', bannerSlides: [],
     },
     layout: {
         maxWidth: 'Wide', containerWidth: 'Wide', sectionSpacing: 'Comfortable', contentSpacing: 'Comfortable', sectionWidth: 'Full Width', sectionPaddingTop: 40, sectionPaddingBottom: 40, sectionMarginTop: 0, sectionMarginBottom: 40, productColumnsDesktop: 3, productColumnsMobile: 2, productGap: 'Comfortable', cardAlignment: 'Left',
@@ -257,6 +283,7 @@ const sanitizeThemeUrl = (value = '') => {
 
 const sanitizeThemeValue = (value, key = '', depth = 0) => {
     if (depth > 12) return undefined;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
     if (Array.isArray(value)) {
         return value.slice(0, 100).map(item => sanitizeThemeValue(item, key, depth + 1)).filter(item => item !== undefined);
     }
@@ -290,6 +317,22 @@ const sanitizeThemePayload = (theme = {}) => {
         return acc;
     }, {});
     if (picked.colors) picked.colors = sanitizeColorObject(picked.colors);
+    if (picked.preset) {
+        const presetId = cleanText(picked.preset.id, 80)
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        const presetVersion = Number(picked.preset.version);
+        const appliedAtValue = picked.preset.appliedAt ? cleanText(picked.preset.appliedAt, 40) : '';
+        const appliedAtTimestamp = Date.parse(appliedAtValue);
+        picked.preset = presetId && Number.isInteger(presetVersion) && presetVersion > 0
+            ? {
+                id: presetId,
+                version: Math.min(presetVersion, 100000),
+                appliedAt: Number.isFinite(appliedAtTimestamp) ? new Date(appliedAtTimestamp).toISOString() : null,
+            }
+            : null;
+    }
     if (picked.seo) {
         picked.seo.mode = ['auto', 'manual'].includes(picked.seo.mode) ? picked.seo.mode : 'auto';
         picked.seo.siteName = cleanText(picked.seo.siteName, 80);
@@ -443,6 +486,9 @@ const normalizeHomepageSections = (sections = []) => (Array.isArray(sections) ? 
         const settings = {
             ...cloneTheme(SECTION_REGISTRY[type].defaultSettings),
             ...productSource.settings,
+            ...(STRUCTURAL_VARIANTS.sections[type]
+                ? { variant: normalizeStructuralVariant(productSource.settings?.variant, STRUCTURAL_VARIANTS.sections[type]) }
+                : {}),
             ...(SECTION_REGISTRY[type].supportsFocalPoint
                 ? { focalPoint: normalizeFocalPoint(productSource.settings?.focalPoint) }
                 : {}),
@@ -526,10 +572,116 @@ const normalizeNavigation = (navigation = []) => ensurePolicyNavigationLink(Arra
     }))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
+const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
+const SUPPORTED_THEME_FONTS = new Set(['Inter', 'Arial', 'Georgia', 'Roboto']);
+const SUPPORTED_HEADING_WEIGHTS = new Set(['600', '700', '800', '900']);
+const PRODUCT_CARD_STYLE_DEFAULTS = Object.freeze({
+    Minimal: { shadow: 'None', buttonStyle: 'Outline', titleWeight: '700' },
+    Modern: {},
+    Premium: { shadow: 'Elevated', titleWeight: '800' },
+});
+
+const normalizeLayout = (theme = {}) => {
+    const raw = isPlainObject(theme.layout) ? theme.layout : {};
+    const layout = mergeObject(FALLBACK_THEME.layout, raw);
+    const legacyContainerWidth = { Contained: 'Narrow', Wide: 'Wide', Full: 'Full Width' }[raw.maxWidth];
+    const containerWidth = ['Narrow', 'Standard', 'Wide', 'Full Width'].includes(raw.containerWidth)
+        ? raw.containerWidth
+        : (legacyContainerWidth || FALLBACK_THEME.layout.containerWidth);
+    const sectionSpacing = ['Compact', 'Comfortable', 'Spacious'].includes(raw.sectionSpacing)
+        ? raw.sectionSpacing
+        : (['Compact', 'Comfortable', 'Spacious'].includes(raw.contentSpacing)
+            ? raw.contentSpacing
+            : FALLBACK_THEME.layout.sectionSpacing);
+    const contentSpacing = ['Compact', 'Comfortable', 'Spacious'].includes(raw.contentSpacing)
+        ? raw.contentSpacing
+        : sectionSpacing;
+
+    return {
+        ...layout,
+        containerWidth,
+        maxWidth: containerWidth === 'Narrow' ? 'Contained' : containerWidth === 'Full Width' ? 'Full' : 'Wide',
+        sectionSpacing,
+        contentSpacing,
+        sectionWidth: ['Narrow', 'Standard', 'Wide', 'Full Width'].includes(raw.sectionWidth)
+            ? raw.sectionWidth
+            : FALLBACK_THEME.layout.sectionWidth,
+        sectionPaddingTop: clamp(raw.sectionPaddingTop, 0, 160, FALLBACK_THEME.layout.sectionPaddingTop),
+        sectionPaddingBottom: clamp(raw.sectionPaddingBottom, 0, 160, FALLBACK_THEME.layout.sectionPaddingBottom),
+        sectionMarginTop: clamp(raw.sectionMarginTop, 0, 160, FALLBACK_THEME.layout.sectionMarginTop),
+        sectionMarginBottom: clamp(raw.sectionMarginBottom, 0, 160, FALLBACK_THEME.layout.sectionMarginBottom),
+        productColumnsDesktop: Math.round(clamp(raw.productColumnsDesktop, 2, 5, FALLBACK_THEME.layout.productColumnsDesktop)),
+        productColumnsMobile: Math.round(clamp(raw.productColumnsMobile, 1, 2, FALLBACK_THEME.layout.productColumnsMobile)),
+        productGap: ['Compact', 'Comfortable', 'Spacious', 'Editorial'].includes(raw.productGap)
+            ? raw.productGap
+            : (['Compact', 'Comfortable', 'Spacious', 'Editorial'].includes(theme.productGridStyle)
+                ? theme.productGridStyle
+                : FALLBACK_THEME.layout.productGap),
+        cardAlignment: ['Left', 'Center', 'Right'].includes(raw.cardAlignment)
+            ? raw.cardAlignment
+            : FALLBACK_THEME.layout.cardAlignment,
+    };
+};
+
+const normalizeTypography = (theme = {}) => {
+    const raw = isPlainObject(theme.typography) ? theme.typography : {};
+    const legacyFont = SUPPORTED_THEME_FONTS.has(theme.fontFamily) ? theme.fontFamily : FALLBACK_THEME.fontFamily;
+    return {
+        headingFont: SUPPORTED_THEME_FONTS.has(raw.headingFont) ? raw.headingFont : legacyFont,
+        bodyFont: SUPPORTED_THEME_FONTS.has(raw.bodyFont) ? raw.bodyFont : legacyFont,
+        baseSize: clamp(raw.baseSize, 12, 20, FALLBACK_THEME.typography.baseSize),
+        headingWeight: SUPPORTED_HEADING_WEIGHTS.has(String(raw.headingWeight))
+            ? String(raw.headingWeight)
+            : FALLBACK_THEME.typography.headingWeight,
+    };
+};
+
+const normalizeProductCard = (theme = {}) => {
+    const raw = isPlainObject(theme.productCard) ? theme.productCard : {};
+    const style = Object.prototype.hasOwnProperty.call(PRODUCT_CARD_STYLE_DEFAULTS, raw.style)
+        ? raw.style
+        : FALLBACK_THEME.productCard.style;
+    return mergeObject(FALLBACK_THEME.productCard, {
+        ...PRODUCT_CARD_STYLE_DEFAULTS[style],
+        ...raw,
+        style,
+    });
+};
+
+const normalizeAllProducts = ({ theme, layout, legacyAllProducts }) => {
+    const raw = isPlainObject(theme.allProducts) ? theme.allProducts : {};
+    const spacing = ['Compact', 'Comfortable', 'Spacious', 'Editorial'].includes(raw.spacing)
+        ? raw.spacing
+        : layout.productGap;
+    return mergeObject(FALLBACK_THEME.allProducts, {
+        ...(legacyAllProducts?.title ? { title: legacyAllProducts.title } : {}),
+        ...raw,
+        desktopColumns: Math.round(clamp(
+            hasOwn(raw, 'desktopColumns') ? raw.desktopColumns : layout.productColumnsDesktop,
+            2,
+            5,
+            FALLBACK_THEME.allProducts.desktopColumns
+        )),
+        tabletColumns: Math.round(clamp(raw.tabletColumns, 1, 4, FALLBACK_THEME.allProducts.tabletColumns)),
+        mobileColumns: Math.round(clamp(
+            hasOwn(raw, 'mobileColumns') ? raw.mobileColumns : layout.productColumnsMobile,
+            1,
+            2,
+            FALLBACK_THEME.allProducts.mobileColumns
+        )),
+        spacing,
+    });
+};
+
 const normalizeTheme = (candidate = {}) => {
     const theme = sanitizeThemePayload(isPlainObject(candidate) ? candidate : {});
     const legacyAllProducts = (Array.isArray(theme.homepageSections) ? theme.homepageSections : []).find(isLegacyAllProductsSection);
     const hero = mergeObject(FALLBACK_THEME.hero, theme.hero);
+    hero.variant = normalizeStructuralVariant(theme.hero?.variant, STRUCTURAL_VARIANTS.hero);
+    hero.overlayOpacity = clamp(theme.hero?.overlayOpacity, 0, 80, FALLBACK_THEME.hero.overlayOpacity);
+    hero.height = ['Compact', 'Medium', 'Tall'].includes(theme.hero?.height)
+        ? theme.hero.height
+        : FALLBACK_THEME.hero.height;
     const rawSlides = Array.isArray(hero.bannerSlides) ? hero.bannerSlides : [];
     hero.bannerSlides = rawSlides.slice(0, 5).map((slide, index) => normalizeHeroSlide(slide, index, hero));
     if (!hero.bannerSlides.length && hero.imageUrl) hero.bannerSlides = [normalizeHeroSlide({}, 0, hero)];
@@ -538,23 +690,27 @@ const normalizeTheme = (candidate = {}) => {
         hero.ctaLabel = hero.bannerSlides[0].primaryCtaText || hero.ctaLabel || 'Shop Now';
         hero.ctaUrl = hero.bannerSlides[0].primaryCtaLink || hero.ctaUrl || '/';
     }
+    const layout = normalizeLayout(theme);
+    const typography = normalizeTypography(theme);
 
     return {
         ...cloneTheme(FALLBACK_THEME),
         ...theme,
         version: THEME_SCHEMA_VERSION,
         colors: normalizeThemeColors(theme),
-        header: { ...FALLBACK_THEME.header, ...(theme.header || {}), logoPosition: 'Left' },
-        typography: mergeObject(FALLBACK_THEME.typography, theme.typography),
+        header: {
+            ...FALLBACK_THEME.header,
+            ...(theme.header || {}),
+            variant: normalizeStructuralVariant(theme.header?.variant, STRUCTURAL_VARIANTS.header),
+            logoPosition: 'Left',
+        },
+        typography,
         hero,
-        layout: mergeObject(FALLBACK_THEME.layout, theme.layout),
-        productCard: mergeObject(FALLBACK_THEME.productCard, theme.productCard),
+        layout,
+        productCard: normalizeProductCard(theme),
         checkoutBranding: mergeObject(FALLBACK_THEME.checkoutBranding, theme.checkoutBranding),
         mobile: mergeObject(FALLBACK_THEME.mobile, theme.mobile),
-        allProducts: mergeObject(FALLBACK_THEME.allProducts, {
-            ...(legacyAllProducts?.title ? { title: legacyAllProducts.title } : {}),
-            ...(theme.allProducts || {}),
-        }),
+        allProducts: normalizeAllProducts({ theme, layout, legacyAllProducts }),
         migrations: mergeObject(FALLBACK_THEME.migrations, theme.migrations),
         paymentSettings: {
             ...FALLBACK_THEME.paymentSettings,
@@ -581,11 +737,31 @@ const normalizeTheme = (candidate = {}) => {
 
 const validateTheme = (candidate = {}) => {
     const errors = [];
+    const validateVariant = (value, contract, path) => {
+        if (value !== undefined && !contract.values.includes(value)) {
+            errors.push({ path, code: 'UNSUPPORTED_VARIANT', message: `Unsupported structural variant: ${String(value || 'unknown')}.` });
+        }
+    };
+    validateVariant(candidate?.header?.variant, STRUCTURAL_VARIANTS.header, 'header.variant');
+    validateVariant(candidate?.hero?.variant, STRUCTURAL_VARIANTS.hero, 'hero.variant');
+    if (candidate?.preset !== undefined && candidate.preset !== null) {
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(candidate.preset?.id || ''))) {
+            errors.push({ path: 'preset.id', code: 'INVALID_PRESET', message: 'Theme preset ID must be a lowercase slug.' });
+        }
+        if (!Number.isInteger(Number(candidate.preset?.version)) || Number(candidate.preset?.version) < 1) {
+            errors.push({ path: 'preset.version', code: 'INVALID_PRESET', message: 'Theme preset version must be a positive integer.' });
+        }
+        if (candidate.preset?.appliedAt && Number.isNaN(Date.parse(candidate.preset.appliedAt))) {
+            errors.push({ path: 'preset.appliedAt', code: 'INVALID_PRESET', message: 'Theme preset applied time must be a valid ISO date.' });
+        }
+    }
     const rawSections = Array.isArray(candidate?.homepageSections) ? candidate.homepageSections : [];
     rawSections.forEach((section, index) => {
         const type = section?.type === 'BannerGrid' ? 'Banner' : section?.type;
         if (!SECTION_REGISTRY[type]) {
             errors.push({ path: `homepageSections.${index}.type`, code: 'UNSUPPORTED_SECTION', message: `Unsupported homepage section: ${type || 'unknown'}.`, sectionIndex: index });
+        } else if (STRUCTURAL_VARIANTS.sections[type]) {
+            validateVariant(section?.settings?.variant, STRUCTURAL_VARIANTS.sections[type], `homepageSections.${index}.settings.variant`);
         }
     });
     const checkUrls = (value, path = '', depth = 0) => {
@@ -707,6 +883,7 @@ const summarizeThemeChanges = (before = {}, after = {}) => {
     if (changed('hero')) summaries.push({ area: 'Hero', message: 'Hero content, links, or media changed.' });
     if (changed('homepageSections')) summaries.push({ area: 'Homepage', message: 'Homepage sections changed or were reordered.' });
     if (changed('colors') || changed('typography') || changed('layout')) summaries.push({ area: 'Design', message: 'Store colors, typography, or layout changed.' });
+    if (changed('preset')) summaries.push({ area: 'Theme', message: 'A prebuilt storefront theme was applied.' });
     if (changed('productCard') || changed('allProducts')) summaries.push({ area: 'Catalog', message: 'Product grid or card styling changed.' });
     if (changed('seo')) summaries.push({ area: 'SEO', message: 'Homepage search metadata changed.' });
     if (changed('footer')) summaries.push({ area: 'Footer', message: 'Footer content or links changed.' });
@@ -718,6 +895,7 @@ const summarizeThemeChanges = (before = {}, after = {}) => {
 
 module.exports = {
     THEME_SCHEMA_VERSION,
+    STRUCTURAL_VARIANTS,
     SECTION_REGISTRY,
     SECTION_TYPES,
     ALLOWED_THEME_KEYS,

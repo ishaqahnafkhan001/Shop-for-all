@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, GripVertical, Link, Plus, Trash2, Upload } from 'lucide-react';
-import { BuilderButton, BuilderCard, BuilderInput, BuilderToggle, inputClass } from '../builderUi.jsx';
+import { BuilderButton, BuilderCard, BuilderInput, BuilderSelect, BuilderToggle, inputClass } from '../builderUi.jsx';
+import { headerVariantOptions } from '../storeBuilderConstants.jsx';
 
 export function NavigationEditor({
     theme,
@@ -13,7 +14,8 @@ export function NavigationEditor({
     updateNavigation,
     addNavigationChild,
     updateNavigationChild,
-    removeNavigationChild
+    removeNavigationChild,
+    advancedDesignEnabled = false
 }) {
     return (
         <BuilderCard
@@ -22,6 +24,15 @@ export function NavigationEditor({
             icon={Link}
             actions={<div className="flex flex-wrap gap-2"><BuilderButton type="button" variant="secondary" onClick={addNavigation}><Plus size={16} /> Add link</BuilderButton><BuilderButton type="button" variant="secondary" onClick={addNavigationDropdown}><Plus size={16} /> Add dropdown</BuilderButton></div>}
         >
+            <BuilderSelect
+                label="Header layout"
+                value={theme.header?.variant || 'standard'}
+                onChange={event => setTheme(previous => ({ ...previous, header: { ...(previous.header || {}), variant: event.target.value } }))}
+                disabled={!advancedDesignEnabled}
+                help={advancedDesignEnabled ? 'Changes the desktop composition while keeping the same navigation and mobile drawer.' : 'Structural layouts require full Store Builder access.'}
+            >
+                {headerVariantOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </BuilderSelect>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="mb-3 text-xs font-black uppercase tracking-wide text-slate-400">Store logo</p>
                 <BuilderInput label="Logo URL" value={theme.logoUrl || ''} onChange={event => setTheme(previous => ({ ...previous, logoUrl: event.target.value }))} placeholder="https://..." help="Paste a public image URL or upload a logo file." />

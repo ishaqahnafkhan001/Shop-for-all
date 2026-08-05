@@ -22,11 +22,15 @@ const getPrice = (product = {}) => product.finalPrice || product.sellingPrice ||
 const getImage = (product = {}) => product.imageUrl || product.images?.[0] || '';
 const getSectionLabel = (section = {}) => section.settings?.visualLabel || section.title || section.type || 'Section';
 
-const PreviewLink = ({ href, children, className, ...props }) => (
-    <a href={href || '#'} className={className} onClick={event => event.preventDefault()} {...props}>
-        {children}
-    </a>
-);
+const PreviewLink = ({ href, children, className, ...props }) => {
+    const anchorProps = { ...props };
+    delete anchorProps.prefetch;
+    return (
+        <a href={href || '#'} className={className} onClick={event => event.preventDefault()} {...anchorProps}>
+            {children}
+        </a>
+    );
+};
 
 const PreviewSectionToolbar = ({
     id,

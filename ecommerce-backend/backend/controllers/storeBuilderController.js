@@ -557,7 +557,8 @@ exports.saveStoreBuilderDraft = async (req, res) => {
             searchAliases: req.body?.searchAliases,
             customDomain: req.body?.customDomain || {},
             storewideDiscount: req.body?.storewideDiscount,
-            basedOnRevision: req.body?.basedOnRevision
+            basedOnRevision: req.body?.basedOnRevision,
+            planAccess: req.planAccess
         });
         if (!draft) return res.status(404).json({ success: false, error: 'Shop not found' });
         res.status(200).json({ success: true, message: 'Draft saved', data: draft });

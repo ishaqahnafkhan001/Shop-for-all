@@ -1,6 +1,7 @@
 const {
     FALLBACK_THEME,
     cloneTheme,
+    normalizeHomepageSections,
     normalizeTheme
 } = require('@scaleup/storefront-theme');
 
@@ -12,9 +13,20 @@ const STARTER_RESTRICTED_THEME_KEYS = new Set([
     'productGridStyle',
     'migrations'
 ]);
+const STARTER_RESTRICTED_VARIANT_PATHS = Object.freeze([
+    ['header', 'variant'],
+    ['hero', 'variant']
+]);
 
 const assertStoreBuilderUpdateAllowed = ({ currentTheme = {}, incomingTheme = {}, planAccess }) => {
     if (!incomingTheme || planAccess?.storeBuilderAccess === 'full') return;
+    if (planAccess?.storeBuilderAccess === 'none') {
+        const error = new Error('Store Builder is not included in the current plan.');
+        error.statusCode = 403;
+        error.code = 'FEATURE_NOT_INCLUDED';
+        error.feature = 'storeBuilder';
+        throw error;
+    }
 
     for (const key of STARTER_RESTRICTED_THEME_KEYS) {
         if (incomingTheme[key] !== undefined && !deepEqual(incomingTheme[key], currentTheme[key])) {
@@ -26,10 +38,24 @@ const assertStoreBuilderUpdateAllowed = ({ currentTheme = {}, incomingTheme = {}
         }
     }
 
+    const currentNormalized = normalizeTheme(currentTheme);
+    const incomingNormalized = normalizeTheme(incomingTheme);
+    for (const [group, key] of STARTER_RESTRICTED_VARIANT_PATHS) {
+        if (incomingTheme?.[group]?.[key] !== undefined
+            && !deepEqual(incomingNormalized[group]?.[key], currentNormalized[group]?.[key])) {
+            const error = new Error('Structural layout variants require the Growth plan.');
+            error.statusCode = 403;
+            error.code = 'STORE_BUILDER_CAPABILITY_REQUIRED';
+            error.capability = 'advancedDesign';
+            throw error;
+        }
+    }
+
     if (Array.isArray(incomingTheme.homepageSections)) {
-        const currentSections = Array.isArray(currentTheme.homepageSections) ? currentTheme.homepageSections : [];
-        const currentOrder = currentSections.map(section => String(section.id || section._id || ''));
-        const incomingOrder = incomingTheme.homepageSections.map(section => String(section.id || section._id || ''));
+        const currentSections = normalizeHomepageSections(currentTheme.homepageSections);
+        const incomingSections = normalizeHomepageSections(incomingTheme.homepageSections);
+        const currentOrder = currentSections.map(section => String(section.id || ''));
+        const incomingOrder = incomingSections.map(section => String(section.id || ''));
         if (!deepEqual(currentOrder, incomingOrder)) {
             const error = new Error('Custom section ordering requires the Growth plan.');
             error.statusCode = 403;
@@ -38,7 +64,7 @@ const assertStoreBuilderUpdateAllowed = ({ currentTheme = {}, incomingTheme = {}
             throw error;
         }
 
-        incomingTheme.homepageSections.forEach((section, index) => {
+        incomingSections.forEach((section, index) => {
             const current = currentSections[index];
             if (!STARTER_EDITABLE_SECTION_TYPES.has(section.type) && !deepEqual(section, current)) {
                 const error = new Error('Advanced homepage sections require the Growth plan.');
@@ -93,6 +119,7 @@ const getPublicThemeForPlan = (theme = {}, planAccess = {}) => {
 module.exports = {
     STARTER_EDITABLE_SECTION_TYPES,
     STARTER_RESTRICTED_THEME_KEYS,
+    STARTER_RESTRICTED_VARIANT_PATHS,
     assertStoreBuilderUpdateAllowed,
     getPublicThemeForPlan
 };

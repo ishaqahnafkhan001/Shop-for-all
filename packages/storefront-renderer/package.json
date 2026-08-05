@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./index.jsx",
+    "./design-tokens": "./designTokens.js",
     "./product-card": "./reference/StorefrontProductCard.jsx",
     "./reference-core": "./reference/referenceCore.jsx"
   },

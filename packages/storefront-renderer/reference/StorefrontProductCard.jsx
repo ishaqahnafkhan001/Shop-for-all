@@ -18,6 +18,7 @@ import {
     LinkSlot,
     optimizeCloudinaryImage,
     priceSizeClasses,
+    resolveCardAlignment,
     titleSizeClasses,
 } from "./referenceCore";
 
@@ -56,6 +57,7 @@ export const ProductCard = memo(function ProductCard({
     const titleSizeClass = titleSizeClasses[productCard?.titleSize || "Medium"] || titleSizeClasses.Medium;
     const priceSizeClass = priceSizeClasses[productCard?.priceSize || "Medium"] || priceSizeClasses.Medium;
     const buttonShapeClass = buttonShapeClasses[productCard?.buttonShape || "Pill"] || buttonShapeClasses.Pill;
+    const cardAlignment = resolveCardAlignment(productCard?.cardAlignment);
     const productCardColors = productCard?.colors || {};
     const cardColors = {
         background: productCardColors.background || "var(--sf-product-card-background)",
@@ -159,9 +161,9 @@ export const ProductCard = memo(function ProductCard({
                     </span>
                 )}
             </div>
-            <div className="flex flex-1 flex-col p-3 pt-2.5 sm:p-4 sm:pt-3">
+            <div className={`flex flex-1 flex-col p-3 pt-2.5 sm:p-4 sm:pt-3 ${cardAlignment.textClass}`}>
                 {showRatingRow && (
-                    <div className="mb-2 flex min-w-0 items-center justify-between gap-1 text-[10px] font-bold leading-none sm:text-xs">
+                    <div className={`mb-2 flex min-w-0 items-center gap-1 text-[10px] font-bold leading-none sm:text-xs ${cardAlignment.flexClass}`}>
                         {showRating ? (
                             <>
                                 <span className="flex shrink-0 items-center gap-0.5" style={{ color: cardColors.ratingStar }}>
@@ -189,7 +191,7 @@ export const ProductCard = memo(function ProductCard({
                     <p className="mt-1 line-clamp-1 text-[11px] font-semibold capitalize sm:text-xs" style={{ color: cardColors.category }}>{product.category}</p>
                 )}
                 {(productCard?.showStock !== false || productCard?.showSku) && (
-                    <div className="mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-bold text-slate-500 sm:text-[11px]">
+                    <div className={`mt-2.5 flex flex-wrap gap-1.5 text-[10px] font-bold text-slate-500 sm:text-[11px] ${cardAlignment.flexClass}`}>
                         {productCard?.showStock !== false && (
                             <p
                                 className="max-w-full truncate rounded-full px-2.5 py-1.5 leading-none"

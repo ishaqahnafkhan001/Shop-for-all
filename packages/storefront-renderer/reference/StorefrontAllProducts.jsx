@@ -3,13 +3,17 @@
 import { Filter, PackageX, Search, SlidersHorizontal, Star, X } from "lucide-react";
 
 import {
-    containerClass,
     desktopGridClasses,
     EditorSelectionFrame,
+    getAllProductsPaddingClass,
+    getContainerClass,
+    getSectionWidthClass,
+    headingStyle,
     isPreviewMobile,
     isPreviewNarrow,
     plainGridClasses,
     productGridGapClasses,
+    resolveAllProductsLayout,
     tabletGridClasses,
 } from "./referenceCore";
 import { ProductCard } from "./StorefrontProductCard";
@@ -105,9 +109,8 @@ export function StorefrontAllProducts({
     if (allProducts.isEnabled === false) return null;
 
     const filteredProducts = catalogProducts;
-    const desktopColumns = Math.min(Math.max(allProducts.desktopColumns || layout.productColumnsDesktop || 3, 2), 5);
-    const tabletColumns = Math.min(Math.max(allProducts.tabletColumns || 2, 1), 4);
-    const mobileColumns = Math.min(Math.max(allProducts.mobileColumns || layout.productColumnsMobile || 2, 1), 2);
+    const resolvedLayout = resolveAllProductsLayout(allProducts, layout, theme.productGridStyle);
+    const { desktop: desktopColumns, tablet: tabletColumns, mobile: mobileColumns } = resolvedLayout;
     const mobileGridClass = mobileColumns === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2";
     const liveGridClass = `${mobileGridClass} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
     const gridClass = previewDevice
@@ -117,7 +120,10 @@ export function StorefrontAllProducts({
                 ? plainGridClasses[tabletColumns]
                 : plainGridClasses[desktopColumns])
         : liveGridClass;
-    const gridGapClass = productGridGapClasses[layout.productGap || theme.productGridStyle] || productGridGapClasses.Comfortable;
+    const gridGapClass = productGridGapClasses[resolvedLayout.spacing] || productGridGapClasses.Comfortable;
+    const catalogContainerClass = getContainerClass(layout);
+    const catalogSectionWidthClass = getSectionWidthClass(layout);
+    const catalogPaddingClass = getAllProductsPaddingClass(allProducts.spacing, layout.sectionSpacing, layout.contentSpacing, layout.productGap, theme.productGridStyle);
     const allProductsHeaderClass = forcedNarrowPreview
         ? "mb-4 flex flex-col gap-3"
         : "mb-4 flex flex-col gap-3 sm:mb-6 sm:gap-4 lg:flex-row lg:items-end lg:justify-between";
@@ -163,11 +169,12 @@ export function StorefrontAllProducts({
     return (
         <>
             <EditorSelectionFrame editor={editor} id="allProducts" label="All Products" locked>
-                <section id="products" className="py-6 sm:py-12" style={{ backgroundColor: "var(--sf-all-products-background)" }}>
-                    <div className={containerClass}>
+                <section id="products" className={catalogPaddingClass} style={{ backgroundColor: "var(--sf-all-products-background)" }}>
+                    <div className={catalogContainerClass}>
+                        <div className={`${catalogSectionWidthClass} min-w-0`}>
                         <div className={allProductsHeaderClass}>
                             <div>
-                                <h2 className="text-2xl font-black tracking-tight sm:text-3xl" style={{ color: "var(--sf-all-products-title)" }}>{allProducts.title || "All Products"}</h2>
+                                <h2 className="text-2xl font-black tracking-tight sm:text-3xl" style={{ ...headingStyle, color: "var(--sf-all-products-title)" }}>{allProducts.title || "All Products"}</h2>
                                 <p className="mt-1 text-xs font-semibold sm:text-sm" style={{ color: "var(--sf-all-products-subtitle)" }}>{allProducts.subtitle || "Browse this shop's latest catalog"}</p>
                             </div>
                             <div className={catalogControlsClass}>
@@ -313,6 +320,7 @@ export function StorefrontAllProducts({
                                     </nav>
                                 )}
                             </main>
+                        </div>
                         </div>
                     </div>
                 </section>

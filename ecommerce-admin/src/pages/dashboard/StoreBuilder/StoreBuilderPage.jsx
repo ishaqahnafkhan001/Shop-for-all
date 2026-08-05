@@ -79,6 +79,7 @@ const FooterEditor = lazy(() => import('./editors/FooterEditor.jsx').then(module
 const NavigationEditor = lazy(() => import('./editors/NavigationEditor.jsx').then(module => ({ default: module.NavigationEditor })));
 const HeroEditor = lazy(() => import('./editors/HeroEditor.jsx').then(module => ({ default: module.HeroEditor })));
 const ProductCardsEditor = lazy(() => import('./editors/ProductCardsEditor.jsx').then(module => ({ default: module.ProductCardsEditor })));
+const ThemeGallery = lazy(() => import('./themes/ThemeGallery.jsx'));
 
 const isCustomDomainConnected = (customDomain = {}) => (
     customDomain?.status === 'Verified' &&
@@ -130,6 +131,7 @@ const StoreBuilderPage = () => {
     const [publishReviewOpen, setPublishReviewOpen] = useState(false);
     const [issuesOpen, setIssuesOpen] = useState(false);
     const [historyOpen, setHistoryOpen] = useState(false);
+    const [themeGalleryOpen, setThemeGalleryOpen] = useState(false);
     const [inspectorOpen, setInspectorOpen] = useState(true);
     const [advancedColorsOpen, setAdvancedColorsOpen] = useState(false);
     const [colorMode, setColorMode] = useState('quick');
@@ -290,6 +292,22 @@ const StoreBuilderPage = () => {
         setActiveElement(groupElementMap[groupId] || groupId);
         setInspectorOpen(true);
         setMobileWorkspace('edit');
+    };
+
+    const applyPrebuiltTheme = async (preset) => {
+        try {
+            const { resolvePrebuiltTheme } = await import('@scaleup/storefront-theme/prebuilt');
+            const resolvedTheme = resolvePrebuiltTheme({
+                currentTheme: theme,
+                presetId: preset.id,
+                planAccess,
+                createSectionId: createBuilderSectionId
+            });
+            setTheme(resolvedTheme);
+            toast.success(`${preset.name} applied to your draft. Review it before publishing.`);
+        } catch (error) {
+            toast.error(error?.message || 'Could not apply this storefront theme.');
+        }
     };
 
     const validationDetails = useMemo(() => {
@@ -1553,6 +1571,7 @@ const StoreBuilderPage = () => {
                         addNavigationChild={addNavigationChild}
                         updateNavigationChild={updateNavigationChild}
                         removeNavigationChild={removeNavigationChild}
+                        advancedDesignEnabled={planAccess.storeBuilderAccess === 'full'}
                     />
                 );
             case 'hero':
@@ -1566,6 +1585,7 @@ const StoreBuilderPage = () => {
                         moveHeroSlide={moveHeroSlide}
                         removeHeroSlide={removeHeroSlide}
                         handleThemeImageUpload={handleThemeImageUpload}
+                        advancedDesignEnabled={planAccess.storeBuilderAccess === 'full'}
                     />
                 );
             case 'seo':
@@ -1594,6 +1614,7 @@ const StoreBuilderPage = () => {
                         reviewPicker={reviewPicker}
                         setReviewPicker={setReviewPicker}
                         uploadingThemeImage={uploadingThemeImage}
+                        handleThemeImageUpload={handleThemeImageUpload}
                         addHomepageSection={addHomepageSection}
                         toggleHomepageSectionLock={toggleHomepageSectionLock}
                         updateHomepageSection={updateHomepageSection}
@@ -1609,6 +1630,7 @@ const StoreBuilderPage = () => {
                         updateFeaturedProductsSelection={updateFeaturedProductsSelection}
                         loadReviewOptions={loadReviewOptions}
                         updateReviewSelection={updateReviewSelection}
+                        advancedDesignEnabled={planAccess.storeBuilderAccess === 'full'}
                     />
                 );
             case 'checkout':
@@ -1675,6 +1697,7 @@ const StoreBuilderPage = () => {
                 onSave={handleSave}
                 onOpenIssues={() => setIssuesOpen(true)}
                 onOpenHistory={() => setHistoryOpen(true)}
+                onOpenThemes={() => setThemeGalleryOpen(true)}
                 liveStoreUrl={liveStoreUrl}
                 autosaveStatus={autosave.status}
                 revision={themeRevision}
@@ -1793,6 +1816,22 @@ const StoreBuilderPage = () => {
                     restoreRevision(revisionId);
                 }}
             />
+
+            {themeGalleryOpen && (
+                <Suspense fallback={<div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-100" role="status"><div className="rounded-lg border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-700 shadow-lg">Loading themes…</div></div>}>
+                    <ThemeGallery
+                        open={themeGalleryOpen}
+                        onClose={() => setThemeGalleryOpen(false)}
+                        currentTheme={theme}
+                        planAccess={planAccess}
+                        shopName={shopName}
+                        products={availableProducts}
+                        categories={productCategories}
+                        reviews={availableReviews}
+                        onApply={applyPrebuiltTheme}
+                    />
+                </Suspense>
+            )}
 
             {publishReviewOpen && (
                 <div className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/50 p-0 sm:items-center sm:p-4" role="presentation" onMouseDown={event => {

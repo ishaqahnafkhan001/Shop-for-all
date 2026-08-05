@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Cloud, Ellipsis, ExternalLink, History, Redo2, RefreshCw, RotateCcw, Save, Trash2, Undo2 } from 'lucide-react';
+import { AlertCircle, Cloud, Ellipsis, ExternalLink, History, LayoutTemplate, Redo2, RefreshCw, RotateCcw, Save, Trash2, Undo2 } from 'lucide-react';
 import { BuilderButton } from './builderUi.jsx';
 
 const statusCopy = ({ saving, hasUnsavedChanges, autosaveStatus, conflict, offline }) => {
@@ -28,6 +28,7 @@ export const StoreBuilderHeader = ({
     onSave,
     onOpenIssues,
     onOpenHistory,
+    onOpenThemes,
     liveStoreUrl,
     autosaveStatus,
     revision,
@@ -66,6 +67,7 @@ export const StoreBuilderHeader = ({
                 </div>
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
+                    <button type="button" onClick={onOpenThemes} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><LayoutTemplate size={16} /> Themes</button>
                     <button type="button" aria-label="Undo last change" title="Undo" onClick={onUndo} disabled={!canUndo || saving} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"><Undo2 className="mx-auto" size={17} /></button>
                     <button type="button" aria-label="Redo last change" title="Redo" onClick={onRedo} disabled={!canRedo || saving} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"><Redo2 className="mx-auto" size={17} /></button>
                     <button type="button" onClick={onOpenIssues} className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 ${validationCount ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}><AlertCircle size={16} /> Issues {validationCount || 0}</button>

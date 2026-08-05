@@ -3,6 +3,21 @@
 import { ChevronDown } from "lucide-react";
 
 import { getThemeCssVars } from "@scaleup/storefront-theme";
+import { getContainerClass } from "../designTokens";
+
+export {
+    getAllProductsPaddingClass,
+    getContainerClass,
+    getContentGapClass,
+    getSectionLayout,
+    getSectionWidthClass,
+    headingStyle,
+    resolveAllProductsLayout,
+    resolveCardAlignment,
+    resolveFeaturedProductColumns,
+    resolveGridSpacing,
+    resolveHeroOverlayOpacity,
+} from "../designTokens";
 
 const getImageUrlFromValue = (value) => {
     if (typeof value === "string") return value;
@@ -304,7 +319,12 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-checkout-input-focus": checkout.inputFocus || brand.primary || cssTheme.accent,
         "--sf-checkout-error": checkout.error || "#dc2626",
         "--sf-checkout-success": checkout.success || "#047857",
-        fontFamily: cssTheme.fontFamily,
+        "--sf-body-font": cssTheme.fontFamily,
+        "--sf-heading-font": cssTheme.headingFont,
+        "--sf-heading-weight": String(cssTheme.headingWeight),
+        "--sf-base-size": `${cssTheme.baseSize}px`,
+        fontFamily: "var(--sf-body-font)",
+        fontSize: "var(--sf-base-size)",
         color: storefrontForeground,
         backgroundColor: cssTheme.background,
     };
@@ -319,7 +339,7 @@ export const LinkSlot = ({ LinkComponent = DefaultLink, href, children, classNam
     <LinkComponent href={href} className={className} onClick={onClick} {...props}>{children}</LinkComponent>
 );
 
-export const containerClass = "mx-auto w-full max-w-screen-2xl px-3 sm:px-4 md:px-6 lg:px-8 2xl:px-10";
+export const containerClass = getContainerClass();
 export const isPreviewMobile = (device) => device === "mobile" || device === "smallMobile";
 export const isPreviewNarrow = (device) => isPreviewMobile(device) || device === "tablet";
 

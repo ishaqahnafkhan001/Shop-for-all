@@ -9,6 +9,10 @@
     ".": {
       "require": "./index.cjs",
       "import": "./index.mjs"
+    },
+    "./prebuilt": {
+      "require": "./prebuilt.cjs",
+      "import": "./prebuilt.mjs"
     }
   }
 }

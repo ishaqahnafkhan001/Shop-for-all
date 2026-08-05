@@ -7,6 +7,7 @@ const contract = contractNamespace.default || contractNamespace;
 
 export const {
     THEME_SCHEMA_VERSION,
+    STRUCTURAL_VARIANTS,
     SECTION_REGISTRY,
     SECTION_TYPES,
     ALLOWED_THEME_KEYS,
