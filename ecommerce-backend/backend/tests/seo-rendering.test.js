@@ -3,13 +3,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const { pathToFileURL } = require('node:url');
+const { ensureStorefrontThemeDependency } = require('./helpers/ensureStorefrontThemeDependency');
 
 const root = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(__dirname, '../../..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const readRepo = (file) => fs.readFileSync(path.join(repoRoot, file), 'utf8');
-const importStorefrontSeo = () => import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/seo.js')).href);
-const importStorefrontTheme = () => import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/theme.js')).href);
+const importStorefrontSeo = () => {
+    ensureStorefrontThemeDependency(repoRoot);
+    return import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/seo.js')).href);
+};
+const importStorefrontTheme = () => {
+    ensureStorefrontThemeDependency(repoRoot);
+    return import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/theme.js')).href);
+};
 
 test('public product detail lookup supports tenant-safe slug and ObjectId fallback', () => {
     const storeController = read('controllers/storeController.js');
