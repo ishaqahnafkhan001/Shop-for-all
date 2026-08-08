@@ -7,6 +7,7 @@ import RequireFeature from './components/RequireFeature.jsx';
 import RequireStaffPermission from './components/RequireStaffPermission.jsx';
 import RequirePlatformPermission from './components/RequirePlatformPermission.jsx';
 import AdminRouteFallback from './components/ui/AdminRouteFallback.jsx';
+import RouteErrorBoundary from './components/RouteErrorBoundary.jsx';
 import {
     getPlatformHomePath,
     isPlatformRole,
@@ -74,7 +75,9 @@ const PageFallback = () => (
 );
 
 const withSuspense = (element) => (
-    <Suspense fallback={<PageFallback />}>{element}</Suspense>
+    <RouteErrorBoundary>
+        <Suspense fallback={<PageFallback />}>{element}</Suspense>
+    </RouteErrorBoundary>
 );
 
 const withFeature = (feature, element) => (
