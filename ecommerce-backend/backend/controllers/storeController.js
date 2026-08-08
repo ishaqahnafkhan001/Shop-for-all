@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Banner = require('../models/Banner');
 const Review = require('../models/Review');
 const Collection = require('../models/Collection');
+const Category = require('../models/Category');
 const Subscription = require('../models/Subscription');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
@@ -28,6 +29,8 @@ const {
     resolveStoreBranding
 } = require('../services/shops/storeBrandingService');
 const { buildPagination } = require('../utils/pagination');
+const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
+const { normalizeSearchText } = require('../services/products/productQueryService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
@@ -209,7 +212,9 @@ exports.getStorefrontBootstrap = async (req, res) => {
             category,
             minPrice,
             maxPrice,
-            minRating
+            minRating,
+            search,
+            stock
         } = req.query;
         const currentPage = Math.max(parseInt(page, 10) || 1, 1);
         const limit = 9;
@@ -223,7 +228,9 @@ exports.getStorefrontBootstrap = async (req, res) => {
             category,
             minPrice,
             maxPrice,
-            minRating
+            minRating,
+            search: normalizeSearchText(search),
+            stock
         })}`;
 
         const cached = await cache.get(cacheKey);
@@ -251,6 +258,10 @@ exports.getStorefrontBootstrap = async (req, res) => {
             if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
         }
         if (minRating) query.averageRating = { $gte: Math.min(Math.max(Number(minRating) || 0, 0), 5) };
+        const normalizedSearch = normalizeSearchText(search);
+        if (normalizedSearch) query.$text = { $search: normalizedSearch };
+        if (stock === 'in') query.$expr = { $gt: [{ $sum: '$variants.stock' }, 0] };
+        if (stock === 'out') query.$expr = { $lte: [{ $sum: '$variants.stock' }, 0] };
 
         let sortQuery = { createdAt: -1, _id: 1 };
         if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
@@ -260,7 +271,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 
-        const [shop, banners, products, totalProducts, categories, collections] = await Promise.all([
+        const [shop, banners, products, totalProducts, categories, categoryMetadata, categoryCounts, collections] = await Promise.all([
             Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
             planAccess.features.scheduledBanners
                 ? Banner.find(getActiveBannerQuery(shopId))
@@ -282,6 +293,19 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 isActive: true,
                 status: 'Published'
             }),
+            Category.find({ shop_id: shopId }).select('name coverImage updatedAt').lean(),
+            Product.aggregate([
+                {
+                    $match: {
+                        shop_id: shopObjectId,
+                        isDeleted: false,
+                        isActive: true,
+                        status: 'Published',
+                        category: { $type: 'string', $ne: '' }
+                    }
+                },
+                { $group: { _id: '$category', productCount: { $sum: 1 } } }
+            ]),
             Collection.find({ shop_id: shopId, isActive: true })
                 .select('title slug updatedAt')
                 .sort({ title: 1 })
@@ -382,6 +406,11 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 sectionReviews,
                 products: pricedProducts,
                 categories: categories.filter(Boolean),
+                categoryDetails: mergeCategoryDetails({
+                    names: categories,
+                    metadata: categoryMetadata,
+                    counts: new Map(categoryCounts.map(item => [normalizeCategoryKey(item._id), Number(item.productCount || 0)]))
+                }),
                 collections,
                 pagination: buildPagination({
                     total: totalProducts,

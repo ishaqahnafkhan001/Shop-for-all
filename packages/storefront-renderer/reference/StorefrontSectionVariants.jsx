@@ -22,6 +22,18 @@ const SectionHeading = ({ title, subtitle, colors, centered = false }) => (
     </div>
 );
 
+const ReviewStars = ({ rating }) => {
+    const normalizedRating = Math.min(Math.max(Number(rating) || 0, 0), 5);
+    if (normalizedRating <= 0) return null;
+    return (
+        <div className="flex text-amber-400" aria-label={`${normalizedRating} out of 5 stars`}>
+            {[1, 2, 3, 4, 5].map(star => (
+                <Star key={star} size={13} fill={star <= Math.round(normalizedRating) ? "currentColor" : "none"} className={star <= Math.round(normalizedRating) ? "" : "text-slate-300"} />
+            ))}
+        </div>
+    );
+};
+
 const getCategoryModel = (category, index, products = []) => {
     const name = typeof category === "string" ? category : (category?.name || category?.title || category?.label || "");
     const slug = typeof category === "object" && category?.slug ? category.slug : name;
@@ -30,8 +42,22 @@ const getCategoryModel = (category, index, products = []) => {
         id: typeof category === "object" ? (category?._id || category?.id || slug || index) : `${name}-${index}`,
         name,
         href: `/categories/${encodeURIComponent(slug)}`,
-        image: (typeof category === "object" ? getImageUrl(category) : "") || getImageUrl(representativeProduct),
+        image: (typeof category === "object"
+            ? (category?.coverImage?.url || category?.image || getImageUrl(category))
+            : "") || getImageUrl(representativeProduct),
+        productCount: typeof category === "object" && Number.isFinite(Number(category?.productCount))
+            ? Math.max(Number(category.productCount), 0)
+            : null,
     };
+};
+
+const CategoryCount = ({ count, onImage = false }) => {
+    if (!Number.isFinite(count) || count <= 0) return null;
+    return (
+        <span className={`text-[11px] font-bold ${onImage ? "text-white/80" : "text-slate-500"}`}>
+            {count} product{count === 1 ? "" : "s"}
+        </span>
+    );
 };
 
 export function CategoryVariantSection({ section, categories, catalogProducts, previewDevice, responsiveClass, sectionLayout, contentGapClass, colors, LinkComponent }) {
@@ -57,9 +83,10 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
                     {items.map((item) => (
                         <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="group flex min-w-0 flex-col items-center text-center">
                             <span className="flex aspect-square w-full max-w-36 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-[var(--sf-accent-bg)] text-2xl font-black text-[var(--sf-accent)] shadow-sm transition group-hover:-translate-y-1 group-hover:border-[var(--sf-accent)]">
-                                {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: 360, crop: "fill" })} alt="" width="360" height="360" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : item.name.slice(0, 1).toUpperCase()}
+                                {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: 360, crop: "fill" })} alt={`${item.name} category`} width="360" height="360" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : item.name.slice(0, 1).toUpperCase()}
                             </span>
                             <span className="mt-3 max-w-full truncate text-sm font-black text-slate-700 group-hover:text-[var(--sf-accent)]">{item.name}</span>
+                            <CategoryCount count={item.productCount} />
                         </LinkSlot>
                     ))}
                 </div>
@@ -75,8 +102,11 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
                 <div className={`mt-5 grid ${contentGapClass} ${editorial ? "grid-cols-2 lg:grid-cols-4" : categoryGridClass}`}>
                     {items.map((item, index) => (
                         <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className={`group relative min-h-40 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${editorial && index === 0 ? "col-span-2 row-span-2 min-h-80" : ""}`}>
-                            {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: editorial && index === 0 ? 900 : 520, crop: "fill" })} alt="" width="900" height="680" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <span className="absolute inset-0 flex items-center justify-center bg-[var(--sf-accent-bg)] text-4xl font-black text-[var(--sf-accent)]">{item.name.slice(0, 1).toUpperCase()}</span>}
-                            <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/80 to-transparent px-4 pb-4 pt-12 text-sm font-black text-white">{item.name}</span>
+                            {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: editorial && index === 0 ? 900 : 520, crop: "fill" })} alt={`${item.name} category`} width="900" height="680" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <span className="absolute inset-0 flex items-center justify-center bg-[var(--sf-accent-bg)] text-4xl font-black text-[var(--sf-accent)]">{item.name.slice(0, 1).toUpperCase()}</span>}
+                            <span className="absolute inset-x-0 bottom-0 flex flex-col bg-gradient-to-t from-slate-950/92 via-slate-950/62 to-transparent px-4 pb-4 pt-16 text-sm font-black text-white">
+                                <span>{item.name}</span>
+                                <CategoryCount count={item.productCount} onImage />
+                            </span>
                         </LinkSlot>
                     ))}
                 </div>
@@ -89,8 +119,14 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
             <SectionHeading title={section.title || "Shop by category"} colors={colors} />
             <div className={`mt-4 grid ${contentGapClass} ${categoryGridClass}`}>
                 {items.map((item) => (
-                    <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
-                        {item.name}
+                    <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
+                        {item.image && (
+                            <img src={optimizeCloudinaryImage(item.image, { width: 120, crop: "fill" })} alt={`${item.name} category`} width="48" height="48" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                        )}
+                        <span className="min-w-0">
+                            <span className="block truncate">{item.name}</span>
+                            <CategoryCount count={item.productCount} />
+                        </span>
                     </LinkSlot>
                 ))}
             </div>
@@ -128,7 +164,7 @@ export function ReviewsVariantSection({ section, reviews, responsiveClass, secti
                 <div className={`mt-5 divide-y divide-slate-200 border-y border-slate-200 ${contentGapClass}`}>
                     {items.map((review) => (
                         <div key={review._id} className="grid gap-3 py-5 sm:grid-cols-[140px_minmax(0,1fr)]">
-                            <div><div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>{review.name && <p className="mt-2 text-sm font-black text-slate-900">{review.name}</p>}</div>
+                            <div><ReviewStars rating={review.rating} />{review.name && <p className="mt-2 text-sm font-black text-slate-900">{review.name}</p>}</div>
                             <p className="text-sm font-semibold leading-7" style={{ color: colors.testimonialText || "var(--sf-section-testimonial-text)" }}>{review.comment}</p>
                         </div>
                     ))}
@@ -143,7 +179,7 @@ export function ReviewsVariantSection({ section, reviews, responsiveClass, secti
             <div className={`mt-5 grid ${contentGapClass} sm:grid-cols-2 lg:grid-cols-3`}>
                 {items.map((review) => (
                     <div key={review._id} className="rounded-2xl p-4" style={{ backgroundColor: colors.testimonialBackground || "var(--sf-section-testimonial-bg)" }}>
-                        <div className="flex text-amber-400">{[1, 2, 3, 4, 5].map(star => <Star key={star} size={13} fill="currentColor" />)}</div>
+                        <ReviewStars rating={review.rating} />
                         <p className="mt-3 text-sm font-semibold leading-6" style={{ color: colors.testimonialText || "var(--sf-section-testimonial-text)" }}>“{review.comment}”</p>
                         {(review.name || review.product?.title) && <div className="mt-4 border-t border-slate-200 pt-3"><p className="text-sm font-black text-slate-950">{review.name}</p>{review.product?.title && <p className="text-xs font-semibold text-slate-500">{review.product.title}</p>}</div>}
                     </div>

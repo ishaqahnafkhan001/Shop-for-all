@@ -987,7 +987,8 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     assert.match(productCard, /onProductBuyNow/);
     assert.match(productCard, /onWishlistToggle/);
     assert.match(productCard, /aria-pressed=\{wishlisted\}/);
-    assert.match(productCard, /No reviews yet/);
+    assert.doesNotMatch(productCard, /No reviews yet/);
+    assert.match(productCard, /reviewCount > 0/);
     assert.match(productActions, /`wishlist:\$\{subdomain \|\| "store"\}`/);
     assert.match(productActions, /router\.push\("\/checkout"\)/);
     assert.match(productActions, /\/storefront\/\$\{subdomain\}\/products\/\$\{productKey\}/);

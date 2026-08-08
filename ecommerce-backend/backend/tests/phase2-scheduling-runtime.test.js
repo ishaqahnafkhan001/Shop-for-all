@@ -293,4 +293,21 @@ test('storefront surfaces sale pricing and sale popups without private pricing f
     assert.match(storefrontClient, /sale-popup:\$\{subdomain\}/);
     assert.match(storefrontClient, /once_per_day/);
     assert.match(storefrontClient, /role="dialog"/);
+    assert.match(storefrontClient, /salePopupClosedForPage/);
+    assert.match(storefrontClient, /sm:right-5/);
+    assert.match(storefrontClient, /afterHeroContent/);
+});
+
+test('admin schedule forms convert browser-local date times to explicit UTC values', () => {
+    const promotionsPage = readRepo('ecommerce-admin/src/pages/dashboard/Promotions.jsx');
+    const bannersPage = readRepo('ecommerce-admin/src/pages/dashboard/Promotional Banner/promotionalBanner.jsx');
+    const dateTimeUtility = readRepo('ecommerce-admin/src/utils/dateTime.js');
+
+    assert.match(dateTimeUtility, /new Date\(input\)/);
+    assert.match(dateTimeUtility, /date\.toISOString\(\)/);
+    assert.match(promotionsPage, /startsAt: localDateTimeToUtcIso\(form\.startsAt\)/);
+    assert.match(promotionsPage, /endsAt: localDateTimeToUtcIso\(saleForm\.endsAt\)/);
+    assert.match(promotionsPage, /displayStartsAt: localDateTimeToUtcIso/);
+    assert.match(bannersPage, /formData\.append\('startsAt', localDateTimeToUtcIso\(startsAt\)\)/);
+    assert.match(bannersPage, /formData\.append\('endsAt', localDateTimeToUtcIso\(endsAt\)\)/);
 });

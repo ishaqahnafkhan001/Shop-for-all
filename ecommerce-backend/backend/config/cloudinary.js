@@ -109,6 +109,21 @@ const buildSupportUploadOptions = () => ({
     allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf', 'mp4', 'webm']
 });
 
+const buildCatalogUploadOptions = (file, req) => ({
+    folder: `shop_catalog/${String(req?.tenantId || 'unknown')}`,
+    resource_type: 'image',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    format: 'webp',
+    transformation: [
+        { width: 1800, height: 1200, crop: 'limit' },
+        { quality: 'auto' }
+    ],
+    context: {
+        purpose: 'catalog_cover',
+        shop_id: String(req?.tenantId || '')
+    }
+});
+
 class CloudinaryMulterStorage {
     constructor(optionsBuilder = buildStorefrontUploadOptions, bufferValidator = null) {
         this.optionsBuilder = optionsBuilder;
@@ -186,6 +201,10 @@ const essentialBrandingStorage = new CloudinaryMulterStorage(
     }
 );
 const supportStorage = new CloudinaryMulterStorage(buildSupportUploadOptions);
+const catalogStorage = new CloudinaryMulterStorage(
+    buildCatalogUploadOptions,
+    (buffer, file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file?.mimetype) && validateImageBuffer(buffer, file)
+);
 
 const allowedMimeTypes = new Set([
     'image/jpeg',
@@ -320,6 +339,20 @@ const supportUpload = multer({
     }
 });
 
+const catalogImageUpload = multer({
+    storage: catalogStorage,
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 1
+    },
+    fileFilter: (req, file, cb) => {
+        if (!allowedNidMimeTypes.has(file.mimetype)) {
+            return cb(new Error('Unsupported catalog image type'));
+        }
+        cb(null, true);
+    }
+});
+
 const streamUpload = (buffer, options) => new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
         if (error) return reject(error);
@@ -395,6 +428,7 @@ module.exports = {
     essentialBrandingUpload,
     storeBuilderUpload,
     supportUpload,
+    catalogImageUpload,
     nidUpload,
     uploadNidDocument,
     migrateLegacyNidDocument,

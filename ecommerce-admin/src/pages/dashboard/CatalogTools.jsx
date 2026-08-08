@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Download, Upload, Layers, Wand2 } from 'lucide-react';
+import { Check, Download, Edit3, Image as ImageIcon, Images, Layers, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
+import Modal from '../../components/ui/Modal.jsx';
 import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 
 const emptyCollectionForm = {
@@ -9,6 +10,7 @@ const emptyCollectionForm = {
     slug: '',
     description: '',
     image: '',
+    isActive: true,
     seo: {
         title: '',
         description: ''
@@ -58,10 +60,23 @@ const csvToProducts = (text) => {
 const CatalogTools = () => {
     const [products, setProducts] = useState([]);
     const [collections, setCollections] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [selected, setSelected] = useState([]);
     const [bulk, setBulk] = useState({ category: '', status: '', stock: '', discount: '', lowStockThreshold: '' });
     const [loading, setLoading] = useState(true);
     const [collectionForm, setCollectionForm] = useState(emptyCollectionForm);
+    const [editingCollectionId, setEditingCollectionId] = useState('');
+    const [collectionImageFile, setCollectionImageFile] = useState(null);
+    const [collectionImagePreview, setCollectionImagePreview] = useState('');
+    const [removeCollectionImage, setRemoveCollectionImage] = useState(false);
+    const [collectionSaving, setCollectionSaving] = useState(false);
+    const [categorySavingId, setCategorySavingId] = useState('');
+    const [categoryPhotoPicker, setCategoryPhotoPicker] = useState({
+        category: null,
+        images: [],
+        loading: false,
+        error: ''
+    });
     const [collectionAi, setCollectionAi] = useState({
         loading: false,
         error: '',
@@ -72,18 +87,44 @@ const CatalogTools = () => {
 
     const loadData = async () => {
         setLoading(true);
-        try {
-            const [productsRes, collectionsRes] = await Promise.all([
-                API.get('/admin/products', { params: { limit: 200 } }),
-                API.get('/admin/collections')
-            ]);
+        const [productsResult, collectionsResult, categoriesResult] = await Promise.allSettled([
+            API.get('/admin/products', { params: { limit: 200 } }),
+            API.get('/admin/collections'),
+            API.get('/admin/categories')
+        ]);
+
+        const failedSections = [];
+        if (productsResult.status === 'fulfilled') {
+            const productsRes = productsResult.value;
             setProducts(productsRes.data.data || []);
-            setCollections(collectionsRes.data.data || []);
-        } catch {
-            toast.error('Failed to load catalog tools');
-        } finally {
-            setLoading(false);
+        } else {
+            failedSections.push('products');
         }
+
+        if (collectionsResult.status === 'fulfilled') {
+            const collectionsRes = collectionsResult.value;
+            setCollections(collectionsRes.data.data || []);
+        } else {
+            failedSections.push('collections');
+        }
+
+        if (categoriesResult.status === 'fulfilled') {
+            const categoriesRes = categoriesResult.value;
+            setCategories(categoriesRes.data.data || []);
+        } else if (productsResult.status === 'fulfilled') {
+            const productsPayload = productsResult.value.data || {};
+            const fallbackCategories = productsPayload.categoryDetails
+                || (productsPayload.categories || []).map(name => ({ name, slug: name, image: '', productCount: 0 }));
+            setCategories(fallbackCategories);
+            failedSections.push('category covers');
+        } else {
+            failedSections.push('category covers');
+        }
+
+        if (failedSections.length > 0) {
+            toast.error(`Could not load ${failedSections.join(', ')}. Your other catalog data is still available.`);
+        }
+        setLoading(false);
     };
 
     useEffect(() => {
@@ -144,18 +185,185 @@ const CatalogTools = () => {
         }
     };
 
-    const createCollection = async (e) => {
-        e.preventDefault();
+    const releaseCollectionPreview = () => {
+        if (collectionImagePreview.startsWith('blob:')) URL.revokeObjectURL(collectionImagePreview);
+    };
+
+    const resetCollectionEditor = () => {
+        releaseCollectionPreview();
+        setCollectionForm(emptyCollectionForm);
+        setEditingCollectionId('');
+        setCollectionImageFile(null);
+        setCollectionImagePreview('');
+        setRemoveCollectionImage(false);
+        setCollectionAi({ loading: false, error: '', suggestion: null });
+        setSelected([]);
+    };
+
+    const handleCollectionImageChange = (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+            toast.error('Choose a JPEG, PNG, or WebP image up to 5 MB.');
+            return;
+        }
+        releaseCollectionPreview();
+        setCollectionImageFile(file);
+        setCollectionImagePreview(URL.createObjectURL(file));
+        setRemoveCollectionImage(false);
+    };
+
+    const beginCollectionEdit = (collection) => {
+        releaseCollectionPreview();
+        setEditingCollectionId(collection._id);
+        setCollectionForm({
+            title: collection.title || '',
+            slug: collection.slug || '',
+            description: collection.description || '',
+            image: collection.image || '',
+            isActive: collection.isActive !== false,
+            seo: {
+                title: collection.seo?.title || '',
+                description: collection.seo?.description || ''
+            }
+        });
+        setCollectionImageFile(null);
+        setCollectionImagePreview(collection.image || '');
+        setRemoveCollectionImage(false);
+        setSelected((collection.productIds || []).map(item => String(item?._id || item)));
+        setCollectionAi({ loading: false, error: '', suggestion: null });
+        window.requestAnimationFrame(() => document.getElementById('collection-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    };
+
+    const saveCollection = async (event) => {
+        event.preventDefault();
+        if (collectionSaving) return;
+        setCollectionSaving(true);
         try {
-            await API.post('/admin/collections', {
-                ...collectionForm,
-                productIds: selected
-            });
-            toast.success('Collection created from selected products.');
-            setCollectionForm(emptyCollectionForm);
-            loadData();
+            const payload = new FormData();
+            payload.append('title', collectionForm.title);
+            payload.append('slug', collectionForm.slug);
+            payload.append('description', collectionForm.description);
+            payload.append('isActive', String(collectionForm.isActive !== false));
+            payload.append('seo', JSON.stringify(collectionForm.seo || {}));
+            payload.append('productIds', JSON.stringify(selected));
+            if (collectionImageFile) payload.append('image', collectionImageFile);
+            if (removeCollectionImage) payload.append('removeImage', 'true');
+
+            if (editingCollectionId) {
+                await API.patch(`/admin/collections/${editingCollectionId}`, payload);
+                toast.success('Collection updated.');
+            } else {
+                await API.post('/admin/collections', payload);
+                toast.success('Collection created from selected products.');
+            }
+            resetCollectionEditor();
+            await loadData();
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Failed to create collection');
+            toast.error(err.response?.data?.error || `Failed to ${editingCollectionId ? 'update' : 'create'} collection`);
+        } finally {
+            setCollectionSaving(false);
+        }
+    };
+
+    const deleteCollection = async (collection) => {
+        if (!window.confirm(`Delete "${collection.title}"? Products will not be deleted.`)) return;
+        try {
+            await API.delete(`/admin/collections/${collection._id}`);
+            if (editingCollectionId === collection._id) resetCollectionEditor();
+            setCollections(prev => prev.filter(item => item._id !== collection._id));
+            toast.success('Collection deleted.');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to delete collection');
+        }
+    };
+
+    const saveCategoryCover = async (category, file) => {
+        if (!file) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+            toast.error('Choose a JPEG, PNG, or WebP image up to 5 MB.');
+            return;
+        }
+        const key = String(category._id || category.name);
+        setCategorySavingId(key);
+        try {
+            const payload = new FormData();
+            payload.append('categoryName', category.name);
+            payload.append('altText', `${category.name} category`);
+            payload.append('coverImage', file);
+            const { data } = await API.post('/admin/categories/cover', payload);
+            setCategories(prev => prev.map(item => (
+                item.name === category.name ? { ...item, ...(data.data || {}) } : item
+            )));
+            toast.success(`${category.name} cover updated.`);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to update category cover');
+        } finally {
+            setCategorySavingId('');
+        }
+    };
+
+    const removeCategoryCover = async (category) => {
+        if (!category._id || !category.image || !window.confirm(`Remove the cover from "${category.name}"?`)) return;
+        const key = String(category._id);
+        setCategorySavingId(key);
+        try {
+            const { data } = await API.delete(`/admin/categories/${category._id}/cover`);
+            setCategories(prev => prev.map(item => (
+                item._id === category._id ? { ...item, ...(data.data || {}), image: '' } : item
+            )));
+            toast.success('Category cover removed.');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to remove category cover');
+        } finally {
+            setCategorySavingId('');
+        }
+    };
+
+    const openCategoryPhotoPicker = async (category) => {
+        setCategoryPhotoPicker({ category, images: [], loading: true, error: '' });
+        try {
+            const { data } = await API.get('/admin/categories/images', {
+                params: { category: category.name }
+            });
+            setCategoryPhotoPicker({
+                category,
+                images: data.data || [],
+                loading: false,
+                error: ''
+            });
+        } catch (err) {
+            setCategoryPhotoPicker({
+                category,
+                images: [],
+                loading: false,
+                error: err.response?.data?.error || 'Product photos could not be loaded.'
+            });
+        }
+    };
+
+    const selectCategoryProductPhoto = async (image) => {
+        const category = categoryPhotoPicker.category;
+        if (!category || !image?.url || !image?.productId) return;
+        const key = String(category._id || category.name);
+        setCategorySavingId(key);
+        try {
+            const { data } = await API.post('/admin/categories/cover', {
+                categoryName: category.name,
+                sourceProductId: image.productId,
+                imageUrl: image.url,
+                altText: image.altText || `${category.name} category`
+            });
+            setCategories(prev => prev.map(item => (
+                item.name === category.name ? { ...item, ...(data.data || {}) } : item
+            )));
+            setCategoryPhotoPicker({ category: null, images: [], loading: false, error: '' });
+            toast.success(`${category.name} cover updated from a product photo.`);
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Failed to use product photo');
+        } finally {
+            setCategorySavingId('');
         }
     };
 
@@ -320,10 +528,18 @@ const CatalogTools = () => {
                         </button>
                     </section>
 
-                    <form onSubmit={createCollection} className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                        <div className="flex items-center gap-2 font-semibold text-slate-900">
-                            <Layers size={18} />
-                            Collection
+                    <form id="collection-editor" onSubmit={saveCollection} className="scroll-mt-24 bg-white border border-slate-200 rounded-lg p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 font-semibold text-slate-900">
+                                <Layers size={18} />
+                                {editingCollectionId ? 'Edit collection' : 'New collection'}
+                            </div>
+                            {editingCollectionId && (
+                                <button type="button" onClick={resetCollectionEditor} className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-500 hover:bg-slate-100">
+                                    <X size={15} />
+                                    Cancel
+                                </button>
+                            )}
                         </div>
                         <p className="text-xs text-slate-500">Collections group selected products for storefront sections or navigation links.</p>
                         <button
@@ -364,7 +580,43 @@ const CatalogTools = () => {
                         <input required value={collectionForm.title} onChange={e => setCollectionForm(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Collection title" />
                         <input value={collectionForm.slug} onChange={e => setCollectionForm(prev => ({ ...prev, slug: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Slug" />
                         <textarea value={collectionForm.description} onChange={e => setCollectionForm(prev => ({ ...prev, description: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" rows={3} placeholder="Description" />
-                        <input value={collectionForm.image} onChange={e => setCollectionForm(prev => ({ ...prev, image: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Collection image URL" />
+                        <div className="space-y-3 rounded-lg border border-slate-200 p-3">
+                            <div>
+                                <div className="text-sm font-semibold text-slate-800">Collection cover</div>
+                                <p className="text-xs text-slate-500">JPEG, PNG, or WebP up to 5 MB.</p>
+                            </div>
+                            {(collectionImagePreview && !removeCollectionImage) ? (
+                                <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-slate-100">
+                                    <img src={collectionImagePreview} alt="Collection cover preview" className="h-full w-full object-cover" />
+                                    <button
+                                        type="button"
+                                        aria-label="Remove collection cover"
+                                        onClick={() => {
+                                            releaseCollectionPreview();
+                                            setCollectionImageFile(null);
+                                            setCollectionImagePreview('');
+                                            setRemoveCollectionImage(Boolean(editingCollectionId && collectionForm.image));
+                                        }}
+                                        className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow"
+                                    >
+                                        <X size={17} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex aspect-[16/7] items-center justify-center rounded-lg bg-slate-50 text-slate-300">
+                                    <ImageIcon size={30} />
+                                </div>
+                            )}
+                            <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+                                <Upload size={16} />
+                                {collectionImagePreview ? 'Replace cover' : 'Upload cover'}
+                                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCollectionImageChange} className="hidden" />
+                            </label>
+                        </div>
+                        <label className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700">
+                            <span>Visible on storefront</span>
+                            <input type="checkbox" checked={collectionForm.isActive !== false} onChange={e => setCollectionForm(prev => ({ ...prev, isActive: e.target.checked }))} className="h-5 w-5 rounded border-slate-300" />
+                        </label>
                         <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-3">
                             <div>
                                 <div className="text-sm font-semibold text-slate-800">Collection SEO</div>
@@ -373,8 +625,9 @@ const CatalogTools = () => {
                             <input value={collectionForm.seo?.title || ''} onChange={e => updateCollectionSeo('title', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" maxLength={70} placeholder="SEO title" />
                             <textarea value={collectionForm.seo?.description || ''} onChange={e => updateCollectionSeo('description', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" maxLength={170} rows={2} placeholder="SEO description" />
                         </div>
-                        <button className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
-                            Create from selected
+                        <button disabled={collectionSaving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+                            <Check size={17} />
+                            {collectionSaving ? 'Saving...' : editingCollectionId ? 'Save collection' : 'Create from selected'}
                         </button>
                     </form>
 
@@ -383,14 +636,152 @@ const CatalogTools = () => {
                         {collections.length === 0 ? (
                             <div className="rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-500">No collections yet. Select products and create your first collection.</div>
                         ) : collections.map(collection => (
-                            <div key={collection._id} className="rounded-lg bg-slate-50 px-3 py-2">
-                                <div className="text-sm font-semibold text-slate-800">{collection.title}</div>
-                                <div className="text-xs text-slate-500">{collection.slug}</div>
+                            <div key={collection._id} className="flex items-center gap-3 rounded-lg bg-slate-50 p-2.5">
+                                <div className="flex h-12 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-200 text-slate-400">
+                                    {collection.image ? (
+                                        <img src={collection.image} alt="" loading="lazy" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <ImageIcon size={18} />
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-semibold text-slate-800">{collection.title}</div>
+                                    <div className="truncate text-xs text-slate-500">{collection.slug} / {(collection.productIds || []).length} products</div>
+                                </div>
+                                <button type="button" onClick={() => beginCollectionEdit(collection)} aria-label={`Edit ${collection.title}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-indigo-700">
+                                    <Edit3 size={16} />
+                                </button>
+                                <button type="button" onClick={() => deleteCollection(collection)} aria-label={`Delete ${collection.title}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700">
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
                         ))}
                     </section>
                 </aside>
             </div>
+
+            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                <div className="border-b border-slate-100 p-5">
+                    <h2 className="font-semibold text-slate-900">Category covers</h2>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Add one cover per product category. The image appears in category sections and on the category page.</p>
+                </div>
+                {categories.length === 0 ? (
+                    <div className="p-8 text-center text-sm text-slate-500">Categories appear here after products have a category.</div>
+                ) : (
+                    <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3 xl:grid-cols-4">
+                        {categories.map(category => {
+                            const key = String(category._id || category.name);
+                            const savingCategory = categorySavingId === key;
+                            return (
+                                <article key={category.name} className="min-w-0 p-4">
+                                    <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-slate-100 text-slate-300">
+                                        {category.image ? (
+                                            <img src={category.image} alt={category.coverImage?.altText || `${category.name} category`} loading="lazy" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center"><ImageIcon size={30} /></div>
+                                        )}
+                                        {savingCategory && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 text-xs font-bold text-slate-700">Saving...</div>
+                                        )}
+                                    </div>
+                                    <div className="mt-3 flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <h3 className="truncate text-sm font-bold text-slate-900">{category.name}</h3>
+                                            <p className="text-xs text-slate-500">{category.productCount || 0} products</p>
+                                        </div>
+                                        {category.image && category._id && (
+                                            <button type="button" onClick={() => removeCategoryCover(category)} disabled={savingCategory} aria-label={`Remove ${category.name} cover`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50">
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="mt-3 grid grid-cols-1 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => openCategoryPhotoPicker(category)}
+                                            disabled={savingCategory}
+                                            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <Images size={16} />
+                                            Choose product photo
+                                        </button>
+                                        <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+                                            <Upload size={16} />
+                                            {category.image ? 'Upload another cover' : 'Upload cover'}
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp"
+                                                disabled={savingCategory}
+                                                onChange={event => {
+                                                    const file = event.target.files?.[0];
+                                                    event.target.value = '';
+                                                    saveCategoryCover(category, file);
+                                                }}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
+
+            <Modal
+                isOpen={Boolean(categoryPhotoPicker.category)}
+                onClose={() => {
+                    if (!categorySavingId) {
+                        setCategoryPhotoPicker({ category: null, images: [], loading: false, error: '' });
+                    }
+                }}
+                title={`Choose a product photo${categoryPhotoPicker.category?.name ? ` for ${categoryPhotoPicker.category.name}` : ''}`}
+            >
+                <p className="mb-4 text-sm leading-6 text-slate-600">
+                    Select an existing photo from a product in this category. The product image itself will not be changed or deleted.
+                </p>
+                {categoryPhotoPicker.loading ? (
+                    <div className="flex min-h-40 items-center justify-center text-sm font-semibold text-slate-500">Loading product photos...</div>
+                ) : categoryPhotoPicker.error ? (
+                    <div className="space-y-3 rounded-lg border border-rose-100 bg-rose-50 p-4 text-sm text-rose-700">
+                        <p>{categoryPhotoPicker.error}</p>
+                        <button
+                            type="button"
+                            onClick={() => openCategoryPhotoPicker(categoryPhotoPicker.category)}
+                            className="min-h-11 rounded-lg bg-white px-4 font-bold text-rose-700 shadow-sm"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                ) : categoryPhotoPicker.images.length === 0 ? (
+                    <div className="rounded-lg bg-slate-50 p-6 text-center text-sm text-slate-500">
+                        No product photos are available in this category yet.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {categoryPhotoPicker.images.map(image => {
+                            const isCurrent = image.url === categoryPhotoPicker.category?.image;
+                            return (
+                                <button
+                                    type="button"
+                                    key={`${image.productId}:${image.url}`}
+                                    onClick={() => selectCategoryProductPhoto(image)}
+                                    disabled={Boolean(categorySavingId)}
+                                    aria-label={`Use photo from ${image.productTitle || 'product'}`}
+                                    className={`overflow-hidden rounded-lg border bg-white text-left transition hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-wait disabled:opacity-60 ${isCurrent ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200'}`}
+                                >
+                                    <div className="aspect-square bg-slate-100">
+                                        <img src={image.url} alt={image.altText || image.productTitle || ''} loading="lazy" className="h-full w-full object-cover" />
+                                    </div>
+                                    <div className="truncate px-2 py-2 text-xs font-semibold text-slate-700">
+                                        {isCurrent ? 'Current cover' : image.productTitle || 'Product photo'}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

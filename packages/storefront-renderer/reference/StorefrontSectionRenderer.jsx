@@ -126,6 +126,7 @@ export const HomepageSection = memo(function HomepageSection({
             else if (questions.length) questions[questions.length - 1].answer = [questions[questions.length - 1].answer, line].filter(Boolean).join(" ");
         });
         if (!questions.length && lines.length) questions.push({ question: section.title || "Common question", answer: lines.join(" ") });
+        if (!questions.length) return null;
         return frame(
             <section className={`${responsiveVisibilityClass} ${sectionLayout.className} rounded-[1.5rem] border border-slate-200 p-5 shadow-sm sm:p-7`} style={{ ...sectionLayout.style, backgroundColor: sectionColors.background || "var(--sf-section-background)" }}>
                 <h2 className="text-xl font-black sm:text-3xl" style={{ ...headingStyle, color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Frequently asked questions"}</h2>
@@ -142,7 +143,8 @@ export const HomepageSection = memo(function HomepageSection({
     }
 
     if (section.type === "TrustBadges") {
-        const badges = String(section.settings?.text || "Secure checkout · Fast delivery · Easy support").split(/\n|·|,/).map(item => item.trim()).filter(Boolean).slice(0, 8);
+        const badges = String(section.settings?.text || "").split(/\n|·|,/).map(item => item.trim()).filter(Boolean).slice(0, 8);
+        if (!badges.length) return null;
         return frame(
             <section className={`${responsiveVisibilityClass} ${sectionLayout.className}`} style={sectionLayout.style}>
                 <h2 className="text-center text-xl font-black sm:text-3xl" style={{ ...headingStyle, color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Why shop with us"}</h2>
@@ -157,14 +159,9 @@ export const HomepageSection = memo(function HomepageSection({
         <BrandStoryVariantSection section={section} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} />
     );
 
-    if (["Newsletter", "PromoBlock"].includes(section.type)) return frame(
+    if (["Newsletter", "PromoBlock", "TextBlock", "BrandShowcase"].includes(section.type)) return frame(
         <TextualVariantSection section={section} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} colors={sectionColors} />
     );
 
-    return frame(
-        <section className={`${responsiveVisibilityClass} ${sectionLayout.className} rounded-[1.5rem] border border-slate-200 p-5 text-center shadow-sm sm:p-10 md:rounded-[1.75rem]`} style={{ ...sectionLayout.style, backgroundColor: sectionColors.background || "var(--sf-section-background)" }}>
-            <h2 className="text-xl font-black sm:text-3xl" style={{ ...headingStyle, color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Store update"}</h2>
-            {section.settings?.text && <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 sm:text-base" style={{ color: sectionColors.subtitle || "var(--sf-section-subtitle)" }}>{section.settings.text}</p>}
-        </section>
-    );
+    return null;
 });

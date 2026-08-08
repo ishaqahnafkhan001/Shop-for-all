@@ -8,6 +8,7 @@ import { ArrowLeft, Filter, PackageX, Tags, X } from "lucide-react";
 import { useStorefrontProductActions } from "@/hooks/useStorefrontProductActions";
 import { normalizeTheme } from "@/lib/theme";
 import { ProductCard } from "@/components/storefront/reference/StorefrontProductCard";
+import SafeProductImage from "@/components/storefront/SafeProductImage";
 import {
     desktopGridClasses,
     productGridGapClasses,
@@ -30,7 +31,7 @@ const SORT_LABELS = {
 
 const money = (value) => `৳${Number(value || 0).toLocaleString("en-BD")}`;
 
-export default function CategoryPageClient({ shop, category, products = [], pagination = {}, filters = {} }) {
+export default function CategoryPageClient({ shop, category, categoryDetail = null, products = [], pagination = {}, filters = {} }) {
     const params = useParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -73,6 +74,8 @@ export default function CategoryPageClient({ shop, category, products = [], pagi
     const page = pagination?.page || 1;
     const totalPages = pagination?.totalPages || pagination?.pages || 1;
     const hasRatingData = normalizedProducts.some(product => Number(product.averageRating || 0) > 0 || Number(product.numReviews || 0) > 0) || Boolean(filters.rating);
+    const categoryImage = categoryDetail?.coverImage?.url || categoryDetail?.image || "";
+    const categoryImageAlt = categoryDetail?.coverImage?.altText || `${category} category`;
 
     useEffect(() => {
         if (!mobileFiltersOpen) return undefined;
@@ -223,7 +226,8 @@ export default function CategoryPageClient({ shop, category, products = [], pagi
                         <ArrowLeft size={16} />
                         Back to store
                     </Link>
-                    <div className="min-w-0">
+                    <div className={`min-w-0 ${categoryImage ? "grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_360px]" : ""}`}>
+                        <div className="min-w-0">
                         <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-slate-500 shadow-sm">
                             <Tags size={14} />
                             Category
@@ -234,6 +238,18 @@ export default function CategoryPageClient({ shop, category, products = [], pagi
                         <p className="mt-4 text-sm font-bold text-slate-500">
                             {total} product{total === 1 ? "" : "s"}
                         </p>
+                        </div>
+                        {categoryImage && (
+                            <div className="relative mt-6 aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100 shadow-sm lg:mt-0">
+                                <SafeProductImage
+                                    src={categoryImage}
+                                    alt={categoryImageAlt}
+                                    fill
+                                    sizes="(max-width: 1024px) 100vw, 360px"
+                                    className="object-cover"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>

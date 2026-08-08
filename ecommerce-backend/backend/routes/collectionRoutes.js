@@ -7,6 +7,7 @@ const { authorize } = require('../middlewares/role');
 const { requirePermission } = require('../middlewares/permission');
 const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
 const { requireShopFeature } = require('../middlewares/featureGate');
+const { catalogImageUpload } = require('../config/cloudinary');
 const {
     getCollections,
     suggestCollectionAi,
@@ -33,8 +34,8 @@ router.use(requireShopFeature('bulkProductTools'));
 
 router.get('/', getCollections);
 router.post('/ai/suggest', requirePermission('collectionsAi'), blockVerificationSuspendedShop, collectionAiLimiter, suggestCollectionAi);
-router.post('/', blockVerificationSuspendedShop, createCollection);
-router.patch('/:id', blockVerificationSuspendedShop, updateCollection);
+router.post('/', blockVerificationSuspendedShop, catalogImageUpload.single('image'), createCollection);
+router.patch('/:id', blockVerificationSuspendedShop, catalogImageUpload.single('image'), updateCollection);
 router.delete('/:id', blockVerificationSuspendedShop, deleteCollection);
 
 module.exports = router;

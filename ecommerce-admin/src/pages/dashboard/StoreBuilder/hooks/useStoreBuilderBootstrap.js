@@ -14,6 +14,7 @@ export function useStoreBuilderBootstrap() {
                 shop: legacyData.shop || legacyData,
                 products: legacyData.products || [],
                 categories: legacyData.categories || [],
+                categoryDetails: legacyData.categoryDetails || [],
                 collections: legacyData.collections || [],
                 reviews: legacyData.reviews || [],
                 seoStats: legacyData.seoStats || null,

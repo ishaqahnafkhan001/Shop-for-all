@@ -18,6 +18,7 @@ export function ReferenceStorefrontHome({
     shopName = "",
     products = [],
     categories = [],
+    categoryDetails = [],
     sectionProducts = {},
     sectionReviews = {},
     storewideDiscount = 0,
@@ -37,12 +38,14 @@ export function ReferenceStorefrontHome({
     onPriceApply = noop,
     onClearFilters = noop,
     onRatingChange = noop,
+    onStockChange = noop,
     onPageChange = noop,
     onProductAdd = noop,
     onProductBuyNow,
     onWishlistToggle,
     isProductWishlisted,
     LinkComponent = DefaultLink,
+    afterHeroContent = null,
     previewDevice,
     editor,
 }) {
@@ -73,12 +76,14 @@ export function ReferenceStorefrontHome({
                     editor={editor}
                 />
 
+                {afterHeroContent}
+
                 {enabledSections.map((section, index) => (
                     <HomepageSection
                         key={section.id || section._id || `${section.type}-${index}`}
                         section={section}
                         sectionIndex={index}
-                        categories={categories}
+                        categories={categoryDetails.length ? categoryDetails : categories}
                         sectionProducts={sectionProducts}
                         sectionReviews={sectionReviews}
                         catalogProducts={catalogProducts}
@@ -122,6 +127,7 @@ export function ReferenceStorefrontHome({
                 onWishlistToggle={onWishlistToggle}
                 isProductWishlisted={isProductWishlisted}
                 onRatingChange={onRatingChange}
+                onStockChange={onStockChange}
                 onSortChange={onSortChange}
                 pagination={pagination}
                 previewDevice={previewDevice}

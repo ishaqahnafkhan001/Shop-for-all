@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Collection = require('../models/Collection');
+const Category = require('../models/Category');
 const User = require('../models/User');
 const StaffPermission = require('../models/StaffPermission');
 const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
@@ -57,6 +58,7 @@ const {
     reserveQuota,
     releaseQuotaSafely
 } = require('../services/billing/planQuotaReservationService');
+const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -394,7 +396,7 @@ exports.getShopProducts = async (req, res) => {
             normalizedSort === 'priceDesc'
         );
 
-        const [rawProducts, total, uniqueCategories] = await Promise.all([
+        const [rawProducts, total, uniqueCategories, categoryMetadata, categoryCounts] = await Promise.all([
             Product.aggregate(needsEffectivePostFilter
                 ? [
                     { $match: query },
@@ -409,7 +411,12 @@ exports.getShopProducts = async (req, res) => {
                     { $project: summaryProjection }
                 ]),
             needsEffectivePostFilter ? Promise.resolve(0) : Product.countDocuments(query),
-            getCachedCategories(shopId, categoryQuery)
+            getCachedCategories(shopId, categoryQuery),
+            Category.find({ shop_id: shopObjectId }).select('name coverImage updatedAt').lean(),
+            Product.aggregate([
+                { $match: { ...categoryQuery, category: { $type: 'string', $ne: '' } } },
+                { $group: { _id: '$category', productCount: { $sum: 1 } } }
+            ])
         ]);
 
         let pricedProducts = isStorefrontRequest
@@ -451,6 +458,11 @@ exports.getShopProducts = async (req, res) => {
             success: true,
             data: pagedProducts,
             categories: uniqueCategories, // ✨ Send the categories back to the frontend
+            categoryDetails: mergeCategoryDetails({
+                names: uniqueCategories,
+                metadata: categoryMetadata,
+                counts: new Map(categoryCounts.map(item => [normalizeCategoryKey(item._id), Number(item.productCount || 0)]))
+            }),
             pagination: buildPagination({ total: effectiveTotal, page, limit })
         });
 

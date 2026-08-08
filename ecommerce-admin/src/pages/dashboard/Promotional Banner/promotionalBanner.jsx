@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 
 // Make sure this path correctly points to your custom Axios instance file
 import API from '../../../api/api.js';
+import { getBrowserTimeZoneLabel, localDateTimeToUtcIso } from '../../../utils/dateTime.js';
 
 const PromotionalBanner = () => {
     // State Management
@@ -27,6 +28,7 @@ const PromotionalBanner = () => {
     const [endsAt, setEndsAt] = useState('');
     const [desktopImages, setDesktopImages] = useState([]);
     const [mobileImages, setMobileImages] = useState([]);
+    const browserTimeZone = getBrowserTimeZoneLabel();
 
     // 1. Fetch Banners on Component Load
     const fetchBanners = async () => {
@@ -130,8 +132,8 @@ const PromotionalBanner = () => {
             formData.append('postLaunchBehavior', postLaunchBehavior);
             formData.append('postLaunchCtaText', postLaunchCtaText);
         }
-        if (startsAt) formData.append('startsAt', startsAt);
-        if (endsAt) formData.append('endsAt', endsAt);
+        if (startsAt) formData.append('startsAt', localDateTimeToUtcIso(startsAt));
+        if (endsAt) formData.append('endsAt', localDateTimeToUtcIso(endsAt));
 
         desktopImages.forEach((file) => {
             formData.append('desktopImages', file);
@@ -372,6 +374,7 @@ const PromotionalBanner = () => {
                             />
                         </label>
                     </div>
+                    <p className="text-xs text-gray-500">Banner visibility times use {browserTimeZone}.</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>

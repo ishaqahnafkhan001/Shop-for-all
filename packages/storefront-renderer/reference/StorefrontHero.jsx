@@ -70,7 +70,7 @@ const HeroButtons = ({ model, LinkComponent, onDark = false, align = "start" }) 
                     LinkComponent={LinkComponent}
                     href={activeHeroSlide.primaryCtaLink}
                     prefetch={false}
-                    className="inline-flex min-h-11 items-center justify-center rounded-full px-5 py-2.5 text-sm font-black shadow-lg shadow-slate-950/15 transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3"
+                    className="inline-flex min-h-11 items-center justify-center rounded-full px-5 py-2.5 text-sm font-black shadow-lg shadow-slate-950/15 transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:min-h-12 sm:px-6 sm:py-3"
                     style={{ backgroundColor: onDark ? "var(--sf-hero-primary-button-bg)" : "var(--sf-primary-button-bg)", color: onDark ? "var(--sf-hero-primary-button-text)" : "var(--sf-primary-button-text)" }}
                 >
                     {activeHeroSlide.primaryCtaText}<ChevronRight size={16} className="ml-1" />
@@ -81,7 +81,7 @@ const HeroButtons = ({ model, LinkComponent, onDark = false, align = "start" }) 
                     LinkComponent={LinkComponent}
                     href={activeHeroSlide.secondaryCtaLink || "#products"}
                     prefetch={false}
-                    className={`inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2.5 text-sm font-black transition hover:-translate-y-0.5 sm:min-h-12 sm:px-6 sm:py-3 ${onDark ? "border-white/25 shadow-lg shadow-slate-950/10 backdrop-blur" : "border-slate-300 bg-white"}`}
+                    className={`inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2.5 text-sm font-black shadow-lg shadow-slate-950/10 transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:min-h-12 sm:px-6 sm:py-3 ${onDark ? "border-white/45 backdrop-blur" : "border-slate-300 bg-white"}`}
                     style={{ backgroundColor: onDark ? "var(--sf-hero-secondary-button-bg)" : undefined, color: onDark ? "var(--sf-hero-secondary-button-text)" : "var(--sf-foreground)" }}
                 >
                     {activeHeroSlide.secondaryCtaText}<ChevronRight size={16} className="ml-1" />
@@ -108,23 +108,33 @@ const HeroCopy = ({ model, align = "left", onDark = false, compact = false }) =>
     return (
         <div className={`${centered ? "mx-auto text-center" : ""} min-w-0 max-w-4xl`}>
             {activeHeroSlide.badgeText && (
-                <p className={`inline-flex max-w-full rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] ${onDark ? "border-white/25 bg-white/10 text-white backdrop-blur" : "border-slate-200 bg-white text-[var(--sf-accent)]"}`}>
+                <p className={`inline-flex max-w-full rounded-full border px-3.5 py-2 text-[10px] font-black uppercase shadow-sm ${onDark ? "border-white/45 bg-slate-950/55 text-white backdrop-blur" : "border-slate-200 bg-white text-[var(--sf-accent)]"}`}>
                     {activeHeroSlide.badgeText}
                 </p>
             )}
             <h1
                 className={`${headingSize} ${activeHeroSlide.badgeText ? "mt-4" : ""} max-w-full break-words font-black leading-[1.02] tracking-tight`}
-                style={{ ...headingStyle, color: onDark ? "var(--sf-hero-title)" : "var(--sf-foreground)" }}
+                style={{
+                    ...headingStyle,
+                    color: onDark ? "var(--sf-hero-title)" : "var(--sf-foreground)",
+                    textShadow: onDark ? "0 2px 20px rgba(2, 6, 23, 0.35)" : undefined,
+                }}
             >
                 {activeHeroSlide.title || hero.title || shopName || "Online store"}
             </h1>
             {heroOfferText && (
-                <p className={`mt-4 inline-flex w-fit rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-wide ${onDark ? "border border-white/20 bg-slate-950/45 text-white backdrop-blur" : "bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]"}`}>
+                <p className={`mt-4 inline-flex w-fit rounded-full px-3 py-2 text-[11px] font-black uppercase ${onDark ? "border border-white/30 bg-slate-950/55 text-white backdrop-blur" : "bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]"}`}>
                     {heroOfferText}
                 </p>
             )}
             {(activeHeroSlide.subtitle || hero.subtitle) && (
-                <p className={`${centered ? "mx-auto" : ""} mt-4 max-w-2xl ${subtitleSize} font-semibold`} style={{ color: onDark ? "var(--sf-hero-subtitle)" : "#475569" }}>
+                <p
+                    className={`${centered ? "mx-auto" : ""} mt-4 max-w-2xl ${subtitleSize} font-semibold`}
+                    style={{
+                        color: onDark ? "var(--sf-hero-subtitle)" : "#475569",
+                        textShadow: onDark ? "0 1px 14px rgba(2, 6, 23, 0.4)" : undefined,
+                    }}
+                >
                     {activeHeroSlide.subtitle || hero.subtitle}
                 </p>
             )}
@@ -167,10 +177,31 @@ const FullBleedHero = ({ model, LinkComponent, centered = false }) => {
     const frameClass = previewDevice
         ? (forcedMobilePreview ? "rounded-[1.25rem] shadow-xl shadow-slate-300/50" : "rounded-[2rem] shadow-2xl shadow-slate-300/60")
         : "rounded-[1.25rem] shadow-xl shadow-slate-300/50 sm:rounded-[2rem] sm:shadow-2xl sm:shadow-slate-300/60";
+    const scrimStrength = Math.min(Math.max(Number(heroOverlayOpacity) || 0, 0.24), 0.78);
+    const scrimMidpoint = Math.max(scrimStrength * 0.58, 0.16);
+    const centeredScrim = `radial-gradient(ellipse at center, rgba(2, 6, 23, ${scrimStrength}) 0%, rgba(2, 6, 23, ${scrimMidpoint}) 46%, rgba(2, 6, 23, 0.06) 82%)`;
+    const mobileScrim = `linear-gradient(to top, rgba(2, 6, 23, ${scrimStrength}) 0%, rgba(2, 6, 23, ${scrimMidpoint}) 58%, rgba(2, 6, 23, 0.04) 100%)`;
+    const desktopScrim = `linear-gradient(90deg, rgba(2, 6, 23, ${scrimStrength}) 0%, rgba(2, 6, 23, ${scrimMidpoint}) 48%, rgba(2, 6, 23, 0.04) 84%)`;
     return (
         <section data-hero-composition={centered ? "centered" : "fullBleed"} className={`relative isolate overflow-hidden ${frameClass} ${heroHeightClass} ${activeHeroImage ? "text-white" : "border border-slate-200 bg-slate-50"}`} style={{ backgroundColor: activeHeroImage ? "var(--sf-hero-background)" : "#f8fafc" }}>
             <HeroMedia model={model} className="absolute inset-0 h-full w-full" />
-            {activeHeroImage && <div className="pointer-events-none absolute inset-0" style={{ backgroundColor: "var(--sf-hero-overlay)", opacity: heroOverlayOpacity }} aria-hidden="true" />}
+            {activeHeroImage && (
+                <>
+                    <div className="pointer-events-none absolute inset-0" style={{ backgroundColor: "var(--sf-hero-overlay)", opacity: heroOverlayOpacity * 0.12 }} aria-hidden="true" />
+                    {centered ? (
+                        <div className="pointer-events-none absolute inset-0" style={{ background: centeredScrim }} aria-hidden="true" />
+                    ) : forcedMobilePreview ? (
+                        <div className="pointer-events-none absolute inset-0" style={{ background: mobileScrim }} aria-hidden="true" />
+                    ) : previewDevice ? (
+                        <div className="pointer-events-none absolute inset-0" style={{ background: desktopScrim }} aria-hidden="true" />
+                    ) : (
+                        <>
+                            <div className="pointer-events-none absolute inset-0 sm:hidden" style={{ background: mobileScrim }} aria-hidden="true" />
+                            <div className="pointer-events-none absolute inset-0 hidden sm:block" style={{ background: desktopScrim }} aria-hidden="true" />
+                        </>
+                    )}
+                </>
+            )}
             <HeroArrows model={model} onPrevious={model.onPrevious} onNext={model.onNext} onDark={activeHeroImage} />
             <div className={`relative z-10 flex ${heroHeightClass} min-w-0 flex-col ${contentPadding} ${centered ? "items-center justify-center text-center" : forcedMobilePreview ? "justify-end" : "justify-end sm:justify-between"}`}>
                 <HeroCopy model={model} align={centered ? "center" : "left"} onDark={Boolean(activeHeroImage)} />
@@ -230,7 +261,8 @@ export function StorefrontHero({ theme, shopName, storewideDiscount = 0, LinkCom
     const activeMobileHeroImage = activeHeroSlide.mobileImage || activeHeroImage;
     const hasMultipleHeroSlides = heroSlides.length > 1;
     const forcedMobilePreview = isPreviewMobile(previewDevice);
-    const heroOfferText = activeHeroSlide.discountText || (storewideDiscount > 0 ? `${storewideDiscount}% OFF SITEWIDE` : "");
+    void storewideDiscount;
+    const heroOfferText = activeHeroSlide.discountText || "";
     const heroDesktopPosition = `${activeHeroSlide.desktopFocalPoint?.x ?? 50}% ${activeHeroSlide.desktopFocalPoint?.y ?? 50}%`;
     const heroMobilePosition = `${activeHeroSlide.mobileFocalPoint?.x ?? 50}% ${activeHeroSlide.mobileFocalPoint?.y ?? 50}%`;
     const liveHeight = hero.height === "Compact" ? "min-h-[318px] sm:min-h-[460px] lg:min-h-[500px]" : hero.height === "Tall" ? "min-h-[370px] sm:min-h-[600px] lg:min-h-[680px]" : "min-h-[338px] sm:min-h-[520px] lg:min-h-[580px]";

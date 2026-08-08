@@ -35,18 +35,16 @@ export const ProductCard = memo(function ProductCard({
 }) {
     const price = getPrice(product);
     const originalPrice = product.compareAtPrice || product.pricing?.compareAtPrice || product.sellingPrice || product.pricing?.sellingPrice || price;
-    const scheduledSaleDiscount = product.scheduledSale?.discountType === "percentage"
-        ? Number(product.scheduledSale.discountValue || 0)
-        : (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0);
-    const activeDiscount = scheduledSaleDiscount > 0
-        ? scheduledSaleDiscount
-        : (product.discount > 0 ? product.discount : (product.pricing?.discount > 0 ? product.pricing.discount : (storewideDiscount || 0)));
+    void storewideDiscount;
+    const activeDiscount = originalPrice > price
+        ? Math.round(((originalPrice - price) / originalPrice) * 100)
+        : 0;
     const hasDiscount = activeDiscount > 0;
     const stock = product.stock ?? product.totalStock ?? 0;
     const rating = Number(product.averageRating || 0);
-    const showRatingRow = productCard?.showRating !== false;
-    const showRating = showRatingRow && rating > 0;
-    const showReviews = productCard?.showReviews !== false && Number(product.numReviews || 0) > 0;
+    const reviewCount = Math.max(Number(product.numReviews || 0), 0);
+    const showReviews = productCard?.showReviews !== false && reviewCount > 0;
+    const showRating = productCard?.showRating !== false && showReviews && rating > 0;
     const wishlisted = typeof isWishlisted === "function" ? isWishlisted(product) : Boolean(isWishlisted);
     const imageUrl = getImageUrl(product);
     const [imageFailed, setImageFailed] = useState(false);
@@ -156,37 +154,40 @@ export const ProductCard = memo(function ProductCard({
                     </button>
                 )}
                 {hasDiscount && productCard?.showDiscountBadge !== false && (
-                    <span className="absolute left-2 top-2 z-20 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide shadow-sm sm:left-3 sm:top-3 sm:px-2.5 sm:text-[10px]" style={{ backgroundColor: cardColors.saleBadgeBackground, color: cardColors.saleBadgeText }}>
+                    <span
+                        className="absolute left-2 top-2 z-20 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 sm:left-3 sm:top-3 sm:px-3 sm:text-[11px]"
+                        style={{
+                            backgroundColor: cardColors.saleBadgeBackground,
+                            backgroundImage: "linear-gradient(rgba(15, 23, 42, 0.3), rgba(15, 23, 42, 0.3))",
+                        }}
+                    >
                         {activeDiscount}% off
                     </span>
                 )}
             </div>
             <div className={`flex flex-1 flex-col p-3 pt-2.5 sm:p-4 sm:pt-3 ${cardAlignment.textClass}`}>
-                {showRatingRow && (
-                    <div className={`mb-2 flex min-w-0 items-center gap-1 text-[10px] font-bold leading-none sm:text-xs ${cardAlignment.flexClass}`}>
-                        {showRating ? (
-                            <>
-                                <span className="flex shrink-0 items-center gap-0.5" style={{ color: cardColors.ratingStar }}>
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <Star
-                                            key={star}
-                                            size={11}
-                                            fill={star <= Math.round(rating) ? "currentColor" : "none"}
-                                            className={star <= Math.round(rating) ? "" : "text-slate-300"}
-                                        />
-                                    ))}
-                                </span>
-                                <span className="min-w-0 truncate" style={{ color: cardColors.ratingText }}>{rating.toFixed(1)}{showReviews ? ` (${product.numReviews})` : ""}</span>
-                            </>
-                        ) : (
-                            <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-slate-50 px-1.5 py-1 ring-1 ring-slate-900/5" style={{ color: cardColors.ratingText }}>
-                                <Star size={11} />
-                                <span className="truncate">No reviews yet</span>
-                            </span>
-                        )}
+                <h3 className={`line-clamp-2 min-h-[2.25em] leading-snug ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800, color: cardColors.title }}>{product.title}</h3>
+                <div className="mt-2 min-w-0">
+                    <p className={`${priceSizeClass} font-black`} style={{ color: cardColors.price }}>{formatPrice(price)}</p>
+                    {hasDiscount && originalPrice > price && (
+                        <p className="text-[11px] font-semibold line-through sm:text-xs" style={{ color: cardColors.compareAtPrice }}>{formatPrice(originalPrice)}</p>
+                    )}
+                </div>
+                {showRating && (
+                    <div className={`mt-2 flex min-w-0 items-center gap-1 text-[10px] font-bold leading-none sm:text-xs ${cardAlignment.flexClass}`}>
+                        <span className="flex shrink-0 items-center gap-0.5" style={{ color: cardColors.ratingStar }}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                    key={star}
+                                    size={11}
+                                    fill={star <= Math.round(rating) ? "currentColor" : "none"}
+                                    className={star <= Math.round(rating) ? "" : "text-slate-300"}
+                                />
+                            ))}
+                        </span>
+                        <span className="min-w-0 truncate" style={{ color: cardColors.ratingText }}>{rating.toFixed(1)} ({reviewCount})</span>
                     </div>
                 )}
-                <h3 className={`line-clamp-2 min-h-[2.25em] leading-snug ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800, color: cardColors.title }}>{product.title}</h3>
                 {productCard?.showCategory !== false && product.category && (
                     <p className="mt-1 line-clamp-1 text-[11px] font-semibold capitalize sm:text-xs" style={{ color: cardColors.category }}>{product.category}</p>
                 )}
@@ -207,12 +208,6 @@ export const ProductCard = memo(function ProductCard({
                     </div>
                 )}
                 <div className="mt-auto flex flex-col gap-3 pt-4">
-                    <div className="min-w-0">
-                        <p className={`${priceSizeClass} font-black`} style={{ color: cardColors.price }}>{formatPrice(price)}</p>
-                        {hasDiscount && originalPrice > price && (
-                            <p className="text-[11px] font-semibold line-through sm:text-xs" style={{ color: cardColors.compareAtPrice }}>{formatPrice(originalPrice)}</p>
-                        )}
-                    </div>
                     {productCard?.showQuickBuy !== false && (
                         <div className="relative z-20 grid w-full grid-cols-2 gap-2">
                             <button
@@ -220,7 +215,7 @@ export const ProductCard = memo(function ProductCard({
                                 disabled={isOutOfStock}
                                 onClick={handleAdd}
                                 aria-label={`${stock > 0 ? "Add" : "Unavailable"} ${product.title} to cart`}
-                                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:bg-slate-300 disabled:text-white min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
+                                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] disabled:bg-slate-300 disabled:text-white min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
                                 style={isOutOfStock
                                     ? { backgroundColor: cardColors.outOfStockBackground, borderColor: cardColors.outOfStockBackground, color: cardColors.outOfStockText }
                                     : buttonInlineStyle}
@@ -234,7 +229,7 @@ export const ProductCard = memo(function ProductCard({
                                     disabled={isOutOfStock}
                                     onClick={handleBuyNow}
                                     aria-label={`${stock > 0 ? "Buy" : "Unavailable"} ${product.title} now`}
-                                    className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black shadow-sm transition hover:-translate-y-0.5 disabled:border-slate-300 disabled:bg-slate-300 min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
+                                    className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black shadow-md shadow-slate-950/15 transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] disabled:border-slate-300 disabled:bg-slate-300 min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
                                     style={isOutOfStock
                                         ? { backgroundColor: cardColors.outOfStockBackground, borderColor: cardColors.outOfStockBackground, color: cardColors.outOfStockText }
                                         : { backgroundColor: cardColors.buyNowBackground, borderColor: cardColors.buyNowBackground, color: cardColors.buyNowText }}
