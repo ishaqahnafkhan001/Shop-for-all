@@ -16,6 +16,8 @@ const {
     applyScheduledSalesToProducts
 } = require('../services/sales/scheduledSaleService');
 const { buildPagination } = require('../utils/pagination');
+const { cloudinary } = require('../config/cloudinary');
+const cache = require('../services/cacheService');
 
 const slugify = (value = '') =>
     value
@@ -44,7 +46,62 @@ const parseProductIds = (value = []) => {
     return [...new Set(source
         .map(id => String(id || '').trim())
         .filter(id => mongoose.Types.ObjectId.isValid(id)))]
-        .slice(0, 30);
+        .slice(0, 500);
+};
+
+const parseJsonField = (value, fallback) => {
+    if (value === undefined || value === null || value === '') return fallback;
+    if (typeof value !== 'string') return value;
+    try {
+        return JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+};
+
+const parseBoolean = (value, fallback = true) => {
+    if (value === undefined || value === null || value === '') return fallback;
+    if (typeof value === 'boolean') return value;
+    return String(value).toLowerCase() === 'true';
+};
+
+const normalizeImageUrl = (value = '') => {
+    const url = String(value || '').trim().slice(0, 1000);
+    return /^https?:\/\//i.test(url) ? url : '';
+};
+
+const destroyImage = async (publicId) => {
+    if (!publicId) return;
+    try {
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+    } catch (error) {
+        console.warn('Collection cover cleanup failed:', { publicId, message: error.message });
+    }
+};
+
+const invalidateCollectionCaches = async (shopId) => {
+    await cache.delPattern(`storefront:bootstrap:${shopId}:*`);
+};
+
+const buildCollectionPayload = (body = {}, { partial = false } = {}) => {
+    const payload = {};
+    if (!partial || body.title !== undefined) payload.title = cleanText(body.title, 100);
+    if (!partial || body.slug !== undefined || body.title !== undefined) {
+        payload.slug = slugify(body.slug || body.title);
+    }
+    if (!partial || body.description !== undefined) payload.description = cleanText(body.description, 1000);
+    if (!partial || body.isActive !== undefined) payload.isActive = parseBoolean(body.isActive, true);
+    if (body.productIds !== undefined) payload.productIds = parseProductIds(parseJsonField(body.productIds, []));
+
+    if (!partial || body.seo !== undefined || body.seoTitle !== undefined || body.seoDescription !== undefined) {
+        const seo = parseJsonField(body.seo, {});
+        payload.seo = {
+            title: cleanText(seo?.title ?? body.seoTitle, 70),
+            description: cleanText(seo?.description ?? body.seoDescription, 170)
+        };
+    }
+    if (body.image !== undefined && typeof body.image === 'string') payload.image = normalizeImageUrl(body.image);
+    return payload;
 };
 
 const sanitizePublicCollection = (collection = {}, productCount = 0) => ({
@@ -58,6 +115,22 @@ const sanitizePublicCollection = (collection = {}, productCount = 0) => ({
     createdAt: collection.createdAt,
     updatedAt: collection.updatedAt
 });
+
+const serializeAdminCollection = (collection = {}) => {
+    const value = typeof collection.toObject === 'function' ? collection.toObject() : collection;
+    return {
+        _id: value._id,
+        title: value.title,
+        slug: value.slug,
+        description: value.description || '',
+        image: value.image || '',
+        productIds: value.productIds || [],
+        isActive: value.isActive !== false,
+        seo: value.seo || {},
+        createdAt: value.createdAt,
+        updatedAt: value.updatedAt
+    };
+};
 
 const getPublicProductMatch = (shopId, extra = {}) => ({
     shop_id: new mongoose.Types.ObjectId(shopId),
@@ -90,7 +163,7 @@ exports.getCollections = async (req, res) => {
             shop_id: req.tenantId
         }).sort({ createdAt: -1 });
 
-        res.status(200).json({ success: true, data: collections });
+        res.status(200).json({ success: true, data: collections.map(serializeAdminCollection) });
     } catch (err) {
         console.error('Get collections error:', err);
         res.status(500).json({ success: false, error: 'Failed to fetch collections' });
@@ -254,14 +327,24 @@ exports.getPublicCollectionBySlug = async (req, res) => {
 };
 
 exports.createCollection = async (req, res) => {
+    const uploadedPublicId = req.file?.public_id || req.file?.filename || '';
+    let collectionCreated = false;
     try {
         const payload = {
-            ...req.body,
-            slug: req.body.slug || slugify(req.body.title),
+            ...buildCollectionPayload(req.body),
             shop_id: req.tenantId
         };
+        if (!payload.title) {
+            await destroyImage(uploadedPublicId);
+            return res.status(400).json({ success: false, error: 'Collection title is required' });
+        }
+        if (req.file?.path) {
+            payload.image = req.file.path;
+            payload.imagePublicId = uploadedPublicId;
+        }
 
         const collection = await Collection.create(payload);
+        collectionCreated = true;
 
         if (Array.isArray(payload.productIds) && payload.productIds.length > 0) {
             await Product.updateMany(
@@ -270,25 +353,42 @@ exports.createCollection = async (req, res) => {
             );
         }
 
-        res.status(201).json({ success: true, data: collection });
+        await invalidateCollectionCaches(req.tenantId);
+
+        res.status(201).json({ success: true, data: serializeAdminCollection(collection) });
     } catch (err) {
+        if (!collectionCreated) await destroyImage(uploadedPublicId);
         console.error('Create collection error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to create collection' });
     }
 };
 
 exports.updateCollection = async (req, res) => {
+    const uploadedPublicId = req.file?.public_id || req.file?.filename || '';
+    let uploadedImageSaved = false;
     try {
-        const payload = { ...req.body };
-        if (payload.title && !payload.slug) payload.slug = slugify(payload.title);
+        const collection = await Collection.findOne({
+            _id: req.params.id,
+            shop_id: req.tenantId
+        }).select('+imagePublicId');
+        if (!collection) {
+            await destroyImage(uploadedPublicId);
+            return res.status(404).json({ success: false, error: 'Collection not found' });
+        }
 
-        const collection = await Collection.findOneAndUpdate(
-            { _id: req.params.id, shop_id: req.tenantId },
-            payload,
-            { new: true, runValidators: true }
-        );
-
-        if (!collection) return res.status(404).json({ success: false, error: 'Collection not found' });
+        const payload = buildCollectionPayload(req.body, { partial: true });
+        const previousPublicId = collection.imagePublicId || '';
+        const removeImage = parseBoolean(req.body?.removeImage, false);
+        Object.assign(collection, payload);
+        if (req.file?.path) {
+            collection.image = req.file.path;
+            collection.imagePublicId = uploadedPublicId;
+        } else if (removeImage) {
+            collection.image = '';
+            collection.imagePublicId = '';
+        }
+        await collection.save();
+        uploadedImageSaved = Boolean(req.file?.path);
 
         if (Array.isArray(payload.productIds)) {
             await Product.updateMany(
@@ -301,8 +401,14 @@ exports.updateCollection = async (req, res) => {
             );
         }
 
-        res.status(200).json({ success: true, data: collection });
+        if ((req.file?.path || removeImage) && previousPublicId && previousPublicId !== uploadedPublicId) {
+            await destroyImage(previousPublicId);
+        }
+        await invalidateCollectionCaches(req.tenantId);
+
+        res.status(200).json({ success: true, data: serializeAdminCollection(collection) });
     } catch (err) {
+        if (!uploadedImageSaved) await destroyImage(uploadedPublicId);
         console.error('Update collection error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update collection' });
     }
@@ -313,7 +419,7 @@ exports.deleteCollection = async (req, res) => {
         const collection = await Collection.findOneAndDelete({
             _id: req.params.id,
             shop_id: req.tenantId
-        });
+        }).select('+imagePublicId');
 
         if (!collection) return res.status(404).json({ success: false, error: 'Collection not found' });
 
@@ -321,6 +427,8 @@ exports.deleteCollection = async (req, res) => {
             { shop_id: req.tenantId, collections: collection._id },
             { $pull: { collections: collection._id } }
         );
+        await destroyImage(collection.imagePublicId);
+        await invalidateCollectionCaches(req.tenantId);
 
         res.status(200).json({ success: true, message: 'Collection deleted' });
     } catch (err) {

@@ -30,6 +30,11 @@ const collectionSchema = new Schema({
         type: String,
         default: ''
     },
+    imagePublicId: {
+        type: String,
+        default: '',
+        select: false
+    },
     productIds: [{
         type: Schema.Types.ObjectId,
         ref: 'Product'

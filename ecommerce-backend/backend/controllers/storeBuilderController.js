@@ -115,6 +115,7 @@ exports.getStoreBuilderSettings = async (req, res) => {
                 ...shop,
                 products: bootstrap.products,
                 categories: bootstrap.categories,
+                categoryDetails: bootstrap.categoryDetails,
                 collections: bootstrap.collections,
                 reviews: bootstrap.reviews,
                 seoStats: bootstrap.seoStats,

@@ -110,6 +110,7 @@ const StoreBuilderPage = () => {
     const [availableProducts, setAvailableProducts] = useState([]);
     const [productOptions, setProductOptions] = useState([]);
     const [productCategories, setProductCategories] = useState([]);
+    const [productCategoryDetails, setProductCategoryDetails] = useState([]);
     const [productPicker, setProductPicker] = useState({ search: '', category: 'All', page: 1, pages: 1, loading: false });
     const [availableReviews, setAvailableReviews] = useState([]);
     const [seoStats, setSeoStats] = useState(null);
@@ -378,6 +379,7 @@ const StoreBuilderPage = () => {
             setProductOptions(prev => append ? [...prev, ...products.filter(product => !prev.some(item => item._id === product._id))] : products);
             mergeProductCache(products);
             setProductCategories(data.categories || []);
+            setProductCategoryDetails(data.categoryDetails || []);
             setProductPicker(prev => ({
                 ...prev,
                 search,
@@ -462,6 +464,7 @@ const StoreBuilderPage = () => {
         setAvailableProducts(initialProducts);
         setProductOptions(initialProducts.slice(0, 10));
         setProductCategories(bootstrap.categories || []);
+        setProductCategoryDetails(bootstrap.categoryDetails || []);
         setAvailableReviews(initialReviews);
         setSeoStats(bootstrap.seoStats || null);
         setCustomDomain(nextDomain);
@@ -1774,6 +1777,7 @@ const StoreBuilderPage = () => {
                             shopName={shopName}
                             availableProducts={availableProducts}
                             productCategories={productCategories}
+                            productCategoryDetails={productCategoryDetails}
                             availableReviews={availableReviews}
                             activeElement={activeElement}
                             selectEditorTarget={selectEditorTarget}
@@ -1826,7 +1830,7 @@ const StoreBuilderPage = () => {
                         planAccess={planAccess}
                         shopName={shopName}
                         products={availableProducts}
-                        categories={productCategories}
+                        categories={productCategoryDetails.length ? productCategoryDetails : productCategories}
                         reviews={availableReviews}
                         onApply={applyPrebuiltTheme}
                     />
