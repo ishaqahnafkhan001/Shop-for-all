@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Banner = require('../models/Banner');
 const Review = require('../models/Review');
 const Collection = require('../models/Collection');
+const Category = require('../models/Category');
 const Subscription = require('../models/Subscription');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
@@ -28,6 +29,7 @@ const {
     resolveStoreBranding
 } = require('../services/shops/storeBrandingService');
 const { buildPagination } = require('../utils/pagination');
+const { mergeCategoryDetails } = require('../services/categories/categoryService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
@@ -260,7 +262,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 
-        const [shop, banners, products, totalProducts, categories, collections] = await Promise.all([
+        const [shop, banners, products, totalProducts, categories, categoryMetadata, collections] = await Promise.all([
             Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
             planAccess.features.scheduledBanners
                 ? Banner.find(getActiveBannerQuery(shopId))
@@ -282,6 +284,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 isActive: true,
                 status: 'Published'
             }),
+            Category.find({ shop_id: shopId }).select('name coverImage updatedAt').lean(),
             Collection.find({ shop_id: shopId, isActive: true })
                 .select('title slug updatedAt')
                 .sort({ title: 1 })
@@ -382,6 +385,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 sectionReviews,
                 products: pricedProducts,
                 categories: categories.filter(Boolean),
+                categoryDetails: mergeCategoryDetails({ names: categories, metadata: categoryMetadata }),
                 collections,
                 pagination: buildPagination({
                     total: totalProducts,

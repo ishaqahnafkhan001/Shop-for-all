@@ -13,6 +13,7 @@ const Shop = require('../../models/Shop');
 const Product = require('../../models/Product');
 const Review = require('../../models/Review');
 const Collection = require('../../models/Collection');
+const Category = require('../../models/Category');
 const StoreBuilderDraft = require('../../models/StoreBuilderDraft');
 const StoreBuilderRevision = require('../../models/StoreBuilderRevision');
 const { fillMissingPolicyDefaults } = require('../policies/defaultPolicyTemplates');
@@ -27,6 +28,7 @@ const {
     attachAssetsToDraft,
     promotePublishedAssets
 } = require('./storeBuilderAssetService');
+const { mergeCategoryDetails } = require('../categories/categoryService');
 
 const REVISION_RETENTION = 20;
 const BUILDER_SHOP_FIELDS = [
@@ -162,7 +164,7 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
     const selectedProductIds = getSelectedProductIds(shop.theme);
     const selectedReviewIds = getSelectedReviewIds(shop.theme);
     const productBaseQuery = buildPublicProductQuery(shop._id);
-    const [initialProducts, selectedProducts, categories, publicCollections, initialReviews, selectedReviews, seoStats, draft, revisions, access] = await Promise.all([
+    const [initialProducts, selectedProducts, categories, categoryMetadata, publicCollections, initialReviews, selectedReviews, seoStats, draft, revisions, access] = await Promise.all([
         Product.find(productBaseQuery)
             .select('_id title slug category tags images imageAltText pricing.sellingPrice pricing.discount averageRating numReviews variants.stock status isActive')
             .sort({ createdAt: -1 }).limit(10).lean(),
@@ -171,6 +173,7 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
                 .select('_id title slug category tags images imageAltText pricing.sellingPrice pricing.discount averageRating numReviews variants.stock status isActive').lean()
             : [],
         Product.distinct('category', productBaseQuery),
+        Category.find({ shop_id: shop._id }).select('name coverImage updatedAt').lean(),
         Collection.find({ shop_id: shop._id, isActive: true }).select('_id title slug').sort({ title: 1 }).limit(50).lean(),
         Review.find({ shop_id: shop._id, rating: 5 }).select('_id product_id name rating comment createdAt').sort({ createdAt: -1 }).limit(10).lean(),
         selectedReviewIds.length
@@ -192,6 +195,7 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
         products,
         selectedProductIds,
         categories: categories.filter(Boolean).sort((a, b) => String(a).localeCompare(String(b))),
+        categoryDetails: mergeCategoryDetails({ names: categories, metadata: categoryMetadata }),
         collections: publicCollections,
         reviews,
         selectedReviewIds,

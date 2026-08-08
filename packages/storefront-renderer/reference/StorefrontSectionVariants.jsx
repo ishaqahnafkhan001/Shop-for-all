@@ -30,7 +30,9 @@ const getCategoryModel = (category, index, products = []) => {
         id: typeof category === "object" ? (category?._id || category?.id || slug || index) : `${name}-${index}`,
         name,
         href: `/categories/${encodeURIComponent(slug)}`,
-        image: (typeof category === "object" ? getImageUrl(category) : "") || getImageUrl(representativeProduct),
+        image: (typeof category === "object"
+            ? (category?.coverImage?.url || category?.image || getImageUrl(category))
+            : "") || getImageUrl(representativeProduct),
     };
 };
 
@@ -89,8 +91,11 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
             <SectionHeading title={section.title || "Shop by category"} colors={colors} />
             <div className={`mt-4 grid ${contentGapClass} ${categoryGridClass}`}>
                 {items.map((item) => (
-                    <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
-                        {item.name}
+                    <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
+                        {item.image && (
+                            <img src={optimizeCloudinaryImage(item.image, { width: 120, crop: "fill" })} alt="" width="48" height="48" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                        )}
+                        <span className="truncate">{item.name}</span>
                     </LinkSlot>
                 ))}
             </div>

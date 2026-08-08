@@ -31,6 +31,7 @@ const normalizeBootstrapData = (bootstrapData = {}) => {
         shop: bootstrapData.shop || null,
         products: rawProducts.map(normalizeProduct),
         categories: bootstrapData.categories?.filter(Boolean) || [],
+        categoryDetails: bootstrapData.categoryDetails?.filter(category => category?.name) || [],
         banners: bootstrapData.banners || [],
         activeSalePopups: bootstrapData.activeSalePopups || [],
         sectionProducts,
@@ -46,6 +47,7 @@ const emptyShopData = {
     shop: null,
     products: [],
     categories: [],
+    categoryDetails: [],
     banners: [],
     activeSalePopups: [],
     sectionProducts: {},
@@ -123,6 +125,7 @@ export const useShopData = (subdomain, filters, initialData = null) => {
                     ...prev,
                     products: rawProducts.map(normalizeProduct),
                     categories: productData.categories?.filter(Boolean) || prev.categories,
+                    categoryDetails: productData.categoryDetails?.filter(category => category?.name) || prev.categoryDetails,
                     pagination: productData.pagination || prev.pagination,
                     loading: false,
                     error: null

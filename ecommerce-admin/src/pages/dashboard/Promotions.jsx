@@ -7,6 +7,7 @@ import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { hasFeature } from '../../utils/featureAccess.js';
 import { hasStaffPermission } from '../../utils/staffPermissions.js';
+import { getBrowserTimeZoneLabel, localDateTimeToUtcIso } from '../../utils/dateTime.js';
 
 const emptyForm = {
     name: '',
@@ -64,6 +65,7 @@ const Promotions = () => {
     const [statusNow, setStatusNow] = useState(0);
     const hasScheduledSalesPlan = hasFeature(user, 'scheduledSales');
     const canManageScheduledSales = hasScheduledSalesPlan && hasStaffPermission(user, 'salesManage');
+    const browserTimeZone = getBrowserTimeZoneLabel();
 
     const loadPromotions = useCallback(async () => {
         setLoading(true);
@@ -174,8 +176,8 @@ const Promotions = () => {
                 ...form,
                 code: form.code.toUpperCase(),
                 usageLimit: form.usageLimit === '' ? null : Number(form.usageLimit),
-                startsAt: form.startsAt || undefined,
-                expiresAt: form.expiresAt || undefined
+                startsAt: localDateTimeToUtcIso(form.startsAt),
+                expiresAt: localDateTimeToUtcIso(form.expiresAt)
             };
             await API.post('/promotions/admin', payload);
             toast.success('Promotion created. Checkout will apply it only during the active schedule.');
@@ -219,9 +221,11 @@ const Promotions = () => {
             }
             await API.post('/admin/scheduled-sales', {
                 ...saleForm,
+                startsAt: localDateTimeToUtcIso(saleForm.startsAt),
+                endsAt: localDateTimeToUtcIso(saleForm.endsAt),
                 popup: {
                     ...saleForm.popup,
-                    displayStartsAt: saleForm.popup.displayStartsAt || undefined
+                    displayStartsAt: localDateTimeToUtcIso(saleForm.popup.displayStartsAt)
                 }
             });
             toast.success('Scheduled sale created. Product prices will change automatically during the sale window.');
@@ -380,7 +384,7 @@ const Promotions = () => {
                         </label>
                     </div>
                     <p className="text-xs text-slate-500">
-                        Scheduled codes are saved now, but checkout will not apply them before the start time.
+                        Scheduled codes are saved now, but checkout will not apply them before the start time. Times use {browserTimeZone}.
                     </p>
 
                     <button className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
@@ -522,6 +526,7 @@ const Promotions = () => {
                                 />
                             </label>
                         </div>
+                        <p className="text-xs text-slate-500">Sale and popup times use {browserTimeZone}.</p>
                         {saleForm.scope === 'selected_products' && (
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                                 <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

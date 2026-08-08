@@ -15,6 +15,7 @@ export function StoreBuilderPreviewPanel({
     shopName,
     availableProducts,
     productCategories,
+    productCategoryDetails,
     availableReviews,
     activeElement,
     selectEditorTarget,
@@ -78,7 +79,7 @@ export function StoreBuilderPreviewPanel({
                 previewPage={previewPage}
                 previewZoom={previewZoom}
                 availableProducts={availableProducts}
-                availableCategories={productCategories}
+                availableCategories={productCategoryDetails?.length ? productCategoryDetails : productCategories}
                 availableReviews={availableReviews}
                 activeElement={activeElement}
                 onSelectElement={selectEditorTarget}

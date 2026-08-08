@@ -70,6 +70,10 @@ const getCategoryPageData = async (subdomain, slug, host = "", searchParams = {}
 
         const products = productData?.data || productData?.products || [];
         const categories = productData?.categories || [];
+        const categoryDetails = productData?.categoryDetails || [];
+        const categoryDetail = categoryDetails.find(item => (
+            String(item?.name || "").trim().toLowerCase() === category.toLowerCase()
+        )) || null;
         const pagination = productData?.pagination || { page: filters.page, limit: filters.limit, total: products.length, totalPages: 1, pages: 1 };
         const categoryExists = categories.some(item => String(item || "").trim().toLowerCase() === category.toLowerCase());
 
@@ -78,6 +82,7 @@ const getCategoryPageData = async (subdomain, slug, host = "", searchParams = {}
             category,
             products,
             categories,
+            categoryDetail,
             filters,
             pagination,
             exists: categoryExists || products.length > 0
@@ -110,7 +115,7 @@ export async function generateMetadata({ params }) {
         pageTitle: getCategorySeoTitle(data.category, data.shop),
         description: getCategorySeoDescription(data.category, data.shop),
         url: getCategoryCanonicalUrl({ host, subdomain, shop: data.shop, category: data.category }),
-        image: "",
+        image: data.categoryDetail?.coverImage?.url || data.categoryDetail?.image || "",
         type: "website",
         isIndexable: isShopSearchVisible(data.shop),
         googleSiteVerification: data.shop?.theme?.seo?.googleSiteVerification || ""
@@ -164,6 +169,7 @@ export default async function CategoryPage({ params, searchParams }) {
                 key={JSON.stringify(data.filters)}
                 shop={data.shop}
                 category={data.category}
+                categoryDetail={data.categoryDetail}
                 products={data.products}
                 pagination={data.pagination}
                 filters={data.filters}
