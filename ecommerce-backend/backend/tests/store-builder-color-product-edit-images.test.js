@@ -3,12 +3,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const test = require('node:test');
+const { ensureStorefrontThemeDependency } = require('./helpers/ensureStorefrontThemeDependency');
 
 const backendRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(backendRoot, '../..');
 const readBackend = (file) => fs.readFileSync(path.join(backendRoot, file), 'utf8');
 const readRepo = (file) => fs.readFileSync(path.join(repoRoot, file), 'utf8');
-const importStorefrontTheme = () => import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/theme.js')).href);
+const importStorefrontTheme = () => {
+    ensureStorefrontThemeDependency(repoRoot);
+    return import(pathToFileURL(path.join(repoRoot, 'ecommerce-storefront/src/lib/theme.js')).href);
+};
 
 test('store builder color controls are centralized in the Colors panel', () => {
     const storeBuilderPage = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
