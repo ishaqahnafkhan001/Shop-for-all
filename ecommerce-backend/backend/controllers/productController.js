@@ -312,16 +312,25 @@ exports.generateProductContent = async (req, res) => {
         }
 
         if (err?.code === 'AI_PROVIDER_FAILED') {
+            const providerMessages = {
+                AI_PROVIDER_TIMEOUT: 'AI analysis took longer than expected. Please try again.',
+                AI_PROVIDER_RATE_LIMITED: 'AI product suggestions are temporarily busy. Please try again in a few minutes.',
+                AI_PROVIDER_AUTH_FAILED: 'AI product suggestions need backend configuration attention. Please contact support.',
+                AI_MODEL_NOT_FOUND: 'The configured AI model is unavailable. Please contact support.',
+                AI_PROVIDER_UNAVAILABLE: 'AI product suggestions are temporarily unavailable. Please try again later.'
+            };
             console.warn('Product content AI provider failure:', {
                 requestId: req.id,
-                causeCode: err.causeCode
+                causeCode: err.causeCode,
+                providerStatus: err.providerStatus
             });
 
             return res.status(200).json({
                 success: false,
                 configured: true,
-                message: 'AI product suggestions could not be generated right now. Please try again later.',
-                errorCode: 'AI_PROVIDER_FAILED'
+                message: providerMessages[err.causeCode] || 'AI product suggestions could not be generated right now. Please try again later.',
+                errorCode: 'AI_PROVIDER_FAILED',
+                providerCode: err.causeCode || 'AI_PROVIDER_ERROR'
             });
         }
 

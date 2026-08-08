@@ -1,7 +1,11 @@
 const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TEXT_TIMEOUT_MS = 30000;
+const DEFAULT_IMAGE_TIMEOUT_MS = 45000;
+const MIN_TIMEOUT_MS = 15000;
+const MIN_IMAGE_TIMEOUT_MS = 30000;
+const MAX_TIMEOUT_MS = 60000;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const AI_NOT_CONFIGURED_MESSAGE =
@@ -673,6 +677,28 @@ const buildImagePart = async ({ file, imageUrl }) => {
     };
 };
 
+const getGeminiTimeoutMs = ({ hasImage = false } = {}) => {
+    const configured = Number(process.env.GEMINI_TIMEOUT_MS);
+    const fallback = hasImage ? DEFAULT_IMAGE_TIMEOUT_MS : DEFAULT_TEXT_TIMEOUT_MS;
+    const requested = Number.isFinite(configured) && configured > 0 ? configured : fallback;
+    const minimum = hasImage ? MIN_IMAGE_TIMEOUT_MS : MIN_TIMEOUT_MS;
+    return Math.max(minimum, Math.min(MAX_TIMEOUT_MS, requested));
+};
+
+const getProviderFailureCode = (error = {}) => {
+    if (error.code === 'AI_PROVIDER_TIMEOUT') return 'AI_PROVIDER_TIMEOUT';
+
+    const status = Number(error.status || error.response?.status || 0);
+    if (status === 401 || status === 403) return 'AI_PROVIDER_AUTH_FAILED';
+    if (status === 404) return 'AI_MODEL_NOT_FOUND';
+    if (status === 408 || status === 504) return 'AI_PROVIDER_TIMEOUT';
+    if (status === 429) return 'AI_PROVIDER_RATE_LIMITED';
+    if (status >= 500) return 'AI_PROVIDER_UNAVAILABLE';
+
+    if (error.name === 'GoogleGenerativeAIRequestInputError') return 'AI_PROVIDER_BAD_REQUEST';
+    return 'AI_PROVIDER_ERROR';
+};
+
 const callGemini = async ({ prompt, imagePart }) => {
     if (!process.env.GEMINI_API_KEY) {
         const error = new Error(AI_NOT_CONFIGURED_MESSAGE);
@@ -692,9 +718,10 @@ const callGemini = async ({ prompt, imagePart }) => {
         }
     });
 
-    const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
+    const timeoutMs = getGeminiTimeoutMs({ hasImage: Boolean(imagePart) });
+    let timeoutId;
     const timeout = new Promise((_, reject) => {
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
             const error = new Error('Gemini request timed out');
             error.code = 'AI_PROVIDER_TIMEOUT';
             reject(error);
@@ -702,12 +729,17 @@ const callGemini = async ({ prompt, imagePart }) => {
     });
 
     const parts = imagePart ? [{ text: prompt }, imagePart] : [{ text: prompt }];
-    const result = await Promise.race([
-        model.generateContent({
-            contents: [{ role: 'user', parts }]
-        }),
-        timeout
-    ]);
+    let result;
+    try {
+        result = await Promise.race([
+            model.generateContent({
+                contents: [{ role: 'user', parts }]
+            }),
+            timeout
+        ]);
+    } finally {
+        clearTimeout(timeoutId);
+    }
 
     const text = extractGeminiText(result);
     if (!text) {
@@ -763,7 +795,8 @@ const generateProductContentSuggestion = async ({ body = {}, file = null } = {})
 
         const providerError = new Error('AI product suggestions could not be generated right now. Please try again later.');
         providerError.code = 'AI_PROVIDER_FAILED';
-        providerError.causeCode = error.code || error.name || 'AI_PROVIDER_ERROR';
+        providerError.causeCode = getProviderFailureCode(error);
+        providerError.providerStatus = Number(error.status || error.response?.status || 0) || undefined;
         throw providerError;
     }
 
@@ -836,6 +869,8 @@ module.exports = {
         extractGeminiText,
         cleanProductContentSuggestion,
         parseGeminiJson,
-        normalizeVariants
+        normalizeVariants,
+        getGeminiTimeoutMs,
+        getProviderFailureCode
     }
 };

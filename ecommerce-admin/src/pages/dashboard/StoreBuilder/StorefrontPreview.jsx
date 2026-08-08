@@ -21,6 +21,11 @@ const deviceWidths = {
 const getPrice = (product = {}) => product.finalPrice || product.sellingPrice || product.pricing?.sellingPrice || product.price || 2190;
 const getImage = (product = {}) => product.imageUrl || product.images?.[0] || '';
 const getSectionLabel = (section = {}) => section.settings?.visualLabel || section.title || section.type || 'Section';
+const getCategoryName = (category) => (
+    typeof category === 'string'
+        ? category.trim()
+        : String(category?.name || category?.title || category?.label || category?.slug || '').trim()
+);
 
 const PreviewLink = ({ href, children, className, ...props }) => {
     const anchorProps = { ...props };
@@ -369,9 +374,11 @@ export const StorefrontPreview = ({
             imageUrl: product.imageUrl || product.images?.[0] || ''
         }))
         : REFERENCE_SAMPLE_PRODUCTS;
-    const categories = availableCategories.length
+    const previewCategories = availableCategories.length
         ? availableCategories
         : [...new Set(products.map(product => product.category).filter(Boolean))];
+    const categoryNames = [...new Set(previewCategories.map(getCategoryName).filter(Boolean))];
+    const categoryDetails = previewCategories.filter(category => category && typeof category === 'object');
     const previewSectionProducts = useMemo(() => {
         const productMap = new Map(products.map(product => [String(product._id), product]));
         return (normalizedTheme.homepageSections || []).reduce((acc, section) => {
@@ -465,7 +472,8 @@ export const StorefrontPreview = ({
                 cartCount={3}
                 storewideDiscount={storewideDiscount}
                 products={products}
-                categories={categories.length ? categories : REFERENCE_SAMPLE_CATEGORIES}
+                categories={categoryNames.length ? categoryNames : REFERENCE_SAMPLE_CATEGORIES}
+                categoryDetails={categoryDetails}
                 sectionProducts={previewSectionProducts}
                 sectionReviews={previewSectionReviews}
                 pagination={{ page: 1, pages: 1 }}

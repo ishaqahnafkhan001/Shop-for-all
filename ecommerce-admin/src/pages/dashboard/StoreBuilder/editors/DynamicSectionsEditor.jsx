@@ -18,6 +18,22 @@ import {
     sectionVariantOptions
 } from '../storeBuilderConstants.jsx';
 
+const getCategoryOption = (category, index) => {
+    const value = typeof category === 'string'
+        ? category.trim()
+        : String(category?.name || category?.title || category?.label || category?.slug || '').trim();
+
+    if (!value) return null;
+
+    return {
+        key: typeof category === 'object'
+            ? String(category?._id || category?.slug || `${value}-${index}`)
+            : `${value}-${index}`,
+        label: value,
+        value
+    };
+};
+
 export function DynamicSectionsEditor({
     theme,
     activeElement,
@@ -346,8 +362,8 @@ export function DynamicSectionsEditor({
                                                 disabled={locked}
                                             >
                                                 <option value="All">All categories</option>
-                                                {availableCategoryOptions.map(category => (
-                                                    <option key={category} value={category}>{category}</option>
+                                                {availableCategoryOptions.map(getCategoryOption).filter(Boolean).map(category => (
+                                                    <option key={category.key} value={category.value}>{category.label}</option>
                                                 ))}
                                             </select>
                                             <BuilderButton type="button" variant="secondary" onClick={() => loadProductOptions({ page: 1, search: productPicker.search, category: productPicker.category })} disabled={locked || productPicker.loading}>

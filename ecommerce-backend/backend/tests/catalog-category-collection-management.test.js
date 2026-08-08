@@ -100,9 +100,12 @@ test('storefront and Store Builder consume enriched categories without replacing
     const shopData = readRepo('ecommerce-storefront/src/hooks/useShopData.js');
     const homeClient = readRepo('ecommerce-storefront/src/app/[subdomain]/StorefrontHomeClient.jsx');
     const sharedHome = readRepo('packages/storefront-renderer/reference/StorefrontHome.jsx');
+    const sharedAllProducts = readRepo('packages/storefront-renderer/reference/StorefrontAllProducts.jsx');
     const categoryVariants = readRepo('packages/storefront-renderer/reference/StorefrontSectionVariants.jsx');
     const categoryPage = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/page.jsx');
     const builderPage = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
+    const builderPreview = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx');
+    const dynamicSectionsEditor = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/DynamicSectionsEditor.jsx');
     const storeController = readBackend('controllers/storeController.js');
     const productController = readBackend('controllers/productController.js');
     const builderService = readBackend('services/storeBuilder/storeBuilderService.js');
@@ -111,10 +114,15 @@ test('storefront and Store Builder consume enriched categories without replacing
     assert.match(homeClient, /categoryDetails=\{categoryDetails\}/);
     assert.match(sharedHome, /categories=\{categoryDetails\.length \? categoryDetails : categories\}/);
     assert.match(sharedHome, /<StorefrontAllProducts[\s\S]*categories=\{categories\}/);
+    assert.match(sharedAllProducts, /category\?\.name \|\| category\?\.title \|\| category\?\.label \|\| category\?\.slug/);
+    assert.match(sharedAllProducts, /onCategoryChange\(category\.value\)/);
     assert.match(categoryVariants, /category\?\.coverImage\?\.url \|\| category\?\.image/);
     assert.match(categoryVariants, /productCount/);
     assert.match(categoryPage, /categoryDetail/);
     assert.match(builderPage, /productCategoryDetails/);
+    assert.match(builderPreview, /categories=\{categoryNames\.length \? categoryNames : REFERENCE_SAMPLE_CATEGORIES\}/);
+    assert.match(builderPreview, /categoryDetails=\{categoryDetails\}/);
+    assert.match(dynamicSectionsEditor, /value=\{category\.value\}>\{category\.label\}/);
     assert.match(storeController, /categoryCounts[\s\S]*shop_id: shopObjectId[\s\S]*status: 'Published'/);
     assert.match(productController, /counts: new Map\(categoryCounts/);
     assert.match(builderService, /counts: new Map\(categoryCounts/);

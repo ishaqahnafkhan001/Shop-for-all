@@ -48,6 +48,32 @@ test('product content AI missing Gemini key is friendly and backend-only', async
     assert.doesNotMatch(adminAdd + adminEdit, /GEMINI_API_KEY/);
 });
 
+test('product content AI uses bounded provider timeouts and safe failure codes', () => {
+    const oldTimeout = process.env.GEMINI_TIMEOUT_MS;
+
+    try {
+        delete process.env.GEMINI_TIMEOUT_MS;
+        assert.equal(__test.getGeminiTimeoutMs({ hasImage: false }), 30000);
+        assert.equal(__test.getGeminiTimeoutMs({ hasImage: true }), 45000);
+
+        process.env.GEMINI_TIMEOUT_MS = '2000';
+        assert.equal(__test.getGeminiTimeoutMs({ hasImage: false }), 15000);
+        assert.equal(__test.getGeminiTimeoutMs({ hasImage: true }), 30000);
+
+        process.env.GEMINI_TIMEOUT_MS = '120000';
+        assert.equal(__test.getGeminiTimeoutMs({ hasImage: true }), 60000);
+    } finally {
+        if (oldTimeout === undefined) delete process.env.GEMINI_TIMEOUT_MS;
+        else process.env.GEMINI_TIMEOUT_MS = oldTimeout;
+    }
+
+    assert.equal(__test.getProviderFailureCode({ code: 'AI_PROVIDER_TIMEOUT' }), 'AI_PROVIDER_TIMEOUT');
+    assert.equal(__test.getProviderFailureCode({ status: 403 }), 'AI_PROVIDER_AUTH_FAILED');
+    assert.equal(__test.getProviderFailureCode({ status: 404 }), 'AI_MODEL_NOT_FOUND');
+    assert.equal(__test.getProviderFailureCode({ status: 429 }), 'AI_PROVIDER_RATE_LIMITED');
+    assert.equal(__test.getProviderFailureCode({ status: 503 }), 'AI_PROVIDER_UNAVAILABLE');
+});
+
 test('product content AI builds text-only and image-aware prompts without private pricing', async () => {
     const context = __test.buildContext({
         title: 'গঙ্গা যমুনা বালা',

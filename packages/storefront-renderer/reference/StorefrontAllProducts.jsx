@@ -26,6 +26,22 @@ const getVisiblePageNumbers = (currentPage, totalPages, maxVisible = 5) => {
     return Array.from({ length: visibleCount }, (_, index) => start + index);
 };
 
+const getCategoryOption = (category, index) => {
+    const value = typeof category === "string"
+        ? category.trim()
+        : String(category?.name || category?.title || category?.label || category?.slug || "").trim();
+
+    if (!value) return null;
+
+    return {
+        key: typeof category === "object"
+            ? String(category?._id || category?.slug || `${value}-${index}`)
+            : `${value}-${index}`,
+        label: value,
+        value,
+    };
+};
+
 const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange, onStockChange }) => (
     <div className="min-w-0 rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-5" style={{ backgroundColor: "var(--sf-all-products-filter-bg)", color: "var(--sf-all-products-filter-text)" }}>
         <div className="mb-5 flex items-center justify-between">
@@ -34,9 +50,9 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
         </div>
         <div className="space-y-2">
             <button type="button" onClick={() => onCategoryChange("All")} className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-50" style={filters.category === "All" ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" } : { color: "var(--sf-all-products-filter-text)" }}>All Products</button>
-            {categories?.map((category) => (
-                <button key={category} type="button" onClick={() => onCategoryChange(category)} className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-50" style={filters.category === category ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" } : { color: "var(--sf-all-products-filter-text)" }}>
-                    {category}
+            {categories?.map(getCategoryOption).filter(Boolean).map((category) => (
+                <button key={category.key} type="button" onClick={() => onCategoryChange(category.value)} className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-50" style={filters.category === category.value ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" } : { color: "var(--sf-all-products-filter-text)" }}>
+                    {category.label}
                 </button>
             ))}
         </div>
