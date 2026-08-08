@@ -58,7 +58,7 @@ const {
     reserveQuota,
     releaseQuotaSafely
 } = require('../services/billing/planQuotaReservationService');
-const { mergeCategoryDetails } = require('../services/categories/categoryService');
+const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -396,7 +396,7 @@ exports.getShopProducts = async (req, res) => {
             normalizedSort === 'priceDesc'
         );
 
-        const [rawProducts, total, uniqueCategories, categoryMetadata] = await Promise.all([
+        const [rawProducts, total, uniqueCategories, categoryMetadata, categoryCounts] = await Promise.all([
             Product.aggregate(needsEffectivePostFilter
                 ? [
                     { $match: query },
@@ -412,7 +412,11 @@ exports.getShopProducts = async (req, res) => {
                 ]),
             needsEffectivePostFilter ? Promise.resolve(0) : Product.countDocuments(query),
             getCachedCategories(shopId, categoryQuery),
-            Category.find({ shop_id: shopObjectId }).select('name coverImage updatedAt').lean()
+            Category.find({ shop_id: shopObjectId }).select('name coverImage updatedAt').lean(),
+            Product.aggregate([
+                { $match: { ...categoryQuery, category: { $type: 'string', $ne: '' } } },
+                { $group: { _id: '$category', productCount: { $sum: 1 } } }
+            ])
         ]);
 
         let pricedProducts = isStorefrontRequest
@@ -454,7 +458,11 @@ exports.getShopProducts = async (req, res) => {
             success: true,
             data: pagedProducts,
             categories: uniqueCategories, // ✨ Send the categories back to the frontend
-            categoryDetails: mergeCategoryDetails({ names: uniqueCategories, metadata: categoryMetadata }),
+            categoryDetails: mergeCategoryDetails({
+                names: uniqueCategories,
+                metadata: categoryMetadata,
+                counts: new Map(categoryCounts.map(item => [normalizeCategoryKey(item._id), Number(item.productCount || 0)]))
+            }),
             pagination: buildPagination({ total: effectiveTotal, page, limit })
         });
 
