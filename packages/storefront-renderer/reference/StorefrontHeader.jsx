@@ -29,7 +29,7 @@ const TrustedBadge = ({ badge }) => {
 
     return (
         <span
-            className="mt-0.5 inline-flex max-w-full items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100"
+            className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase text-emerald-800 ring-1 ring-emerald-200"
             title={badge.tooltip || "Verified by ScaleUp based on identity verification, sales history, store age, and customer review quality."}
             aria-label={`${badge.label || "ScaleUp Trusted"}: ${badge.tooltip || "Verified by ScaleUp"}`}
         >
@@ -44,7 +44,7 @@ const VerifiedSellerBadge = ({ verification }) => {
 
     return (
         <span
-            className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-sky-700 ring-1 ring-sky-100"
+            className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200"
             title="This seller has completed Scaleup identity and phone verification."
             aria-label="Verified seller: completed Scaleup identity and phone verification"
         >
@@ -60,19 +60,19 @@ const BrandMark = ({ theme, brandName, trustedBadge, shopVerification, compact =
             <img
                 src={optimizeCloudinaryImage(theme.logoUrl, { width: 96 })}
                 alt={brandName}
-                width="40"
-                height="40"
-                className={`${compact ? "h-8 w-8 rounded-xl" : "h-9 w-9 rounded-2xl sm:h-10 sm:w-10"} border border-slate-200 object-cover shadow-sm`}
+                width="48"
+                height="48"
+                className={`${compact ? "h-9 w-9 rounded-xl" : "h-11 w-11 rounded-2xl sm:h-12 sm:w-12"} border border-slate-200 object-cover shadow-sm`}
                 loading="eager"
                 decoding="async"
             />
         ) : (
-            <span className={`flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 ${compact ? "h-8 w-8" : "h-9 w-9 sm:h-10 sm:w-10"}`}>
+            <span className={`flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 ${compact ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12"}`}>
                 {brandName.slice(0, 1).toUpperCase()}
             </span>
         )}
         <span className="min-w-0">
-            <span className="block truncate text-sm font-black leading-tight text-[var(--sf-navbar-text)] sm:text-base">{brandName}</span>
+            <span className="block truncate text-base font-black leading-tight text-[var(--sf-navbar-text)] sm:text-lg">{brandName}</span>
             <span className="hidden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span>
             <VerifiedSellerBadge verification={shopVerification} />
             <TrustedBadge badge={trustedBadge} />
@@ -246,7 +246,7 @@ export function ReferenceStorefrontHeader({
                 LinkComponent={LinkComponent}
                 href="/cart"
                 prefetch={false}
-                className="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-slate-950 px-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800 xl:px-4"
+                className="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-[var(--sf-primary-button-bg)] px-3 text-sm font-black text-[var(--sf-primary-button-text)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sf-primary-button-hover-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] xl:px-4"
             >
                 <ShoppingBag size={17} className="shrink-0" />
                 <span className="hidden 2xl:inline">Cart</span>
@@ -335,7 +335,7 @@ export function ReferenceStorefrontHeader({
                                     LinkComponent={LinkComponent}
                                     href="/cart"
                                     prefetch={false}
-                                    className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm sm:h-11 sm:w-11"
+                                    className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-primary-button-bg)] text-[var(--sf-primary-button-text)] shadow-sm sm:h-11 sm:w-11"
                                     aria-label="Cart"
                                 >
                                     <ShoppingBag size={18} />

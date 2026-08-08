@@ -26,7 +26,7 @@ const getVisiblePageNumbers = (currentPage, totalPages, maxVisible = 5) => {
     return Array.from({ length: visibleCount }, (_, index) => start + index);
 };
 
-const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange }) => (
+const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange, onStockChange }) => (
     <div className="min-w-0 rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-5" style={{ backgroundColor: "var(--sf-all-products-filter-bg)", color: "var(--sf-all-products-filter-text)" }}>
         <div className="mb-5 flex items-center justify-between">
             <h3 className="text-base font-black" style={{ color: "var(--sf-all-products-title)" }}>Filter Products</h3>
@@ -49,7 +49,10 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
         <button type="button" onClick={onPriceApply} className="mt-3 w-full rounded-full px-4 py-3 text-sm font-black transition hover:-translate-y-0.5" style={{ backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" }}>Apply Price</button>
         <div className="my-5 h-px bg-slate-200" />
         <div className="space-y-3 text-sm font-bold text-slate-600">
-            <label className="flex items-center gap-2"><input type="checkbox" className="h-4 w-4 rounded border-slate-300" /> In stock only</label>
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-2 transition hover:bg-slate-50">
+                <input type="checkbox" checked={filters.stock === "in"} onChange={(event) => onStockChange?.(event.target.checked ? "in" : "")} className="h-4 w-4 rounded border-slate-300" />
+                In stock only
+            </label>
             <div>
                 <p className="mb-2" style={{ color: "var(--sf-all-products-title)" }}>Rating</p>
                 {[5, 4, 3].map((rating) => (
@@ -62,7 +65,7 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
                         className={`flex w-full items-center gap-2 rounded-xl px-2 py-1 text-left text-amber-400 transition ${Number(filters.minRating) === rating ? "bg-amber-50 ring-1 ring-amber-200" : "hover:bg-slate-50"}`}
                     >
                         {[1, 2, 3, 4, 5].map((star) => <Star key={star} size={13} fill="currentColor" className={star <= rating ? "" : "text-slate-200"} />)}
-                        <span className="text-xs text-slate-500">{rating}.0+</span>
+                        <span className="text-xs text-slate-500">{rating} stars &amp; up</span>
                     </button>
                 ))}
             </div>
@@ -96,6 +99,7 @@ export function StorefrontAllProducts({
     onWishlistToggle,
     isProductWishlisted,
     onRatingChange,
+    onStockChange,
     onSortChange,
     pagination,
     previewDevice,
@@ -149,6 +153,7 @@ export function StorefrontAllProducts({
     const activeFilterChips = [
         filters.category && filters.category !== "All" ? { label: filters.category, onClear: () => onCategoryChange("All") } : null,
         filters.minRating ? { label: `${filters.minRating}.0+ rating`, onClear: () => onRatingChange("") } : null,
+        filters.stock === "in" ? { label: "In stock", onClear: () => onStockChange?.("") } : null,
         filters.minPrice || filters.maxPrice ? { label: `৳${filters.minPrice || 0} - ${filters.maxPrice || "Any"}`, onClear: onClearFilters } : null,
         catalogSearch.trim() ? {
             label: `Search: ${catalogSearch.trim()}`,
@@ -240,6 +245,7 @@ export function StorefrontAllProducts({
                                         onPriceApply={onPriceApply}
                                         onClearFilters={onClearFilters}
                                         onRatingChange={onRatingChange}
+                                        onStockChange={onStockChange}
                                     />
                                 </div>
                             </aside>
@@ -345,6 +351,7 @@ export function StorefrontAllProducts({
                             onPriceApply={onPriceApply}
                             onClearFilters={onClearFilters}
                             onRatingChange={onRatingChange}
+                            onStockChange={onStockChange}
                         />
                     </div>
                 </div>

@@ -38,6 +38,7 @@ export function ReferenceStorefrontHome({
     onPriceApply = noop,
     onClearFilters = noop,
     onRatingChange = noop,
+    onStockChange = noop,
     onPageChange = noop,
     onProductAdd = noop,
     onProductBuyNow,
@@ -126,6 +127,7 @@ export function ReferenceStorefrontHome({
                 onWishlistToggle={onWishlistToggle}
                 isProductWishlisted={isProductWishlisted}
                 onRatingChange={onRatingChange}
+                onStockChange={onStockChange}
                 onSortChange={onSortChange}
                 pagination={pagination}
                 previewDevice={previewDevice}

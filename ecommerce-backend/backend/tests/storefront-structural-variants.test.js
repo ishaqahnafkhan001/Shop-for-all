@@ -94,6 +94,44 @@ test('unknown variants normalize safely and validation identifies direct invalid
     ]);
 });
 
+test('unsupported storefront sections fail closed while every registered legacy section has an explicit renderer', () => {
+    const normalized = normalizeTheme({
+        homepageSections: [
+            { type: 'PricingPlans', title: 'Platform pricing' },
+            { type: 'TextBlock', title: 'Merchant text', settings: { text: 'Keep this content' } },
+            { type: 'BrandShowcase', title: 'Merchant brand', settings: { text: 'Keep this brand content' } }
+        ]
+    });
+    const renderer = read('StorefrontSectionRenderer.jsx');
+
+    assert.deepEqual(normalized.homepageSections.map(section => section.type), ['TextBlock', 'BrandShowcase']);
+    assert.match(renderer, /"TextBlock", "BrandShowcase"/);
+    assert.match(renderer, /return null;\s*\n\}\);/);
+    assert.doesNotMatch(renderer, /section\.title \|\| "Store update"/);
+});
+
+test('customer-facing product and trust empty states do not invent factual claims', () => {
+    const card = read('StorefrontProductCard.jsx');
+    const sections = read('StorefrontSectionRenderer.jsx');
+    const variants = read('StorefrontSectionVariants.jsx');
+
+    assert.doesNotMatch(card, /No reviews yet/);
+    assert.match(card, /reviewCount > 0/);
+    assert.doesNotMatch(sections, /Secure checkout · Fast delivery · Easy support/);
+    assert.match(variants, /if \(!Number\.isFinite\(count\) \|\| count <= 0\) return null/);
+});
+
+test('storefront stock filter is interactive and reaches the existing tenant-scoped product query', () => {
+    const allProducts = read('StorefrontAllProducts.jsx');
+    const homeClient = fs.readFileSync(path.join(repoRoot, 'ecommerce-storefront/src/app/[subdomain]/StorefrontHomeClient.jsx'), 'utf8');
+    const shopData = fs.readFileSync(path.join(repoRoot, 'ecommerce-storefront/src/hooks/useShopData.js'), 'utf8');
+
+    assert.match(allProducts, /checked=\{filters\.stock === "in"\}/);
+    assert.match(allProducts, /onStockChange/);
+    assert.match(homeClient, /handleStockChange/);
+    assert.match(shopData, /\.\.\.\(stock && \{ stock \}\)/);
+});
+
 test('limited Store Builder access cannot change structural variants directly', () => {
     const currentTheme = normalizeTheme({});
     assert.throws(() => assertStoreBuilderUpdateAllowed({

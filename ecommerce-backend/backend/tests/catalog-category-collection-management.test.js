@@ -34,6 +34,14 @@ test('category metadata is tenant-scoped and public serialization excludes Cloud
     assert.equal(result.image, 'https://cdn.example.com/category.webp');
     assert.equal(result.coverImage.url, 'https://cdn.example.com/category.webp');
     assert.equal(Object.hasOwn(result.coverImage, 'publicId'), false);
+
+    const merged = service.mergeCategoryDetails({
+        names: ['Jewellery', 'Empty'],
+        metadata: [],
+        counts: new Map([['jewellery', 7], ['empty', 0]])
+    });
+    assert.equal(merged.find(category => category.name === 'Jewellery').productCount, 7);
+    assert.equal(merged.find(category => category.name === 'Empty').productCount, 0);
 });
 
 test('category cover routes reuse catalog permissions, feature gates, and validated multipart uploads', () => {
@@ -95,12 +103,19 @@ test('storefront and Store Builder consume enriched categories without replacing
     const categoryVariants = readRepo('packages/storefront-renderer/reference/StorefrontSectionVariants.jsx');
     const categoryPage = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/page.jsx');
     const builderPage = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx');
+    const storeController = readBackend('controllers/storeController.js');
+    const productController = readBackend('controllers/productController.js');
+    const builderService = readBackend('services/storeBuilder/storeBuilderService.js');
 
     assert.match(shopData, /categoryDetails:/);
     assert.match(homeClient, /categoryDetails=\{categoryDetails\}/);
     assert.match(sharedHome, /categories=\{categoryDetails\.length \? categoryDetails : categories\}/);
     assert.match(sharedHome, /<StorefrontAllProducts[\s\S]*categories=\{categories\}/);
     assert.match(categoryVariants, /category\?\.coverImage\?\.url \|\| category\?\.image/);
+    assert.match(categoryVariants, /productCount/);
     assert.match(categoryPage, /categoryDetail/);
     assert.match(builderPage, /productCategoryDetails/);
+    assert.match(storeController, /categoryCounts[\s\S]*shop_id: shopObjectId[\s\S]*status: 'Published'/);
+    assert.match(productController, /counts: new Map\(categoryCounts/);
+    assert.match(builderService, /counts: new Map\(categoryCounts/);
 });

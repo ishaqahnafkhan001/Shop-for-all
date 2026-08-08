@@ -179,7 +179,7 @@ function StorefrontLaunchBanners({ banners = [], serverNow, onCountdownBoundary 
 export default function StorefrontHomeClient({ subdomain, initialData = null }) {
     const { user } = useAuth();
     const { hydrateThemeSettings } = useStorefrontTheme();
-    const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', minRating: '', sort: 'newest', page: 1 });
+    const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', minRating: '', stock: '', sort: 'newest', page: 1 });
     const [priceInput, setPriceInput] = useState({ min: '', max: '' });
     const [catalogSearch, setCatalogSearch] = useState('');
     const [debouncedCatalogSearch, setDebouncedCatalogSearch] = useState('');
@@ -263,9 +263,13 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
         setFilters(prev => ({ ...prev, minRating, page: 1 }));
     }, []);
 
+    const handleStockChange = useCallback((stock) => {
+        setFilters(prev => ({ ...prev, stock, page: 1 }));
+    }, []);
+
     const handleClearFilters = useCallback(() => {
         setPriceInput({ min: '', max: '' });
-        setFilters({ category: 'All', minPrice: '', maxPrice: '', minRating: '', sort: 'newest', page: 1 });
+        setFilters({ category: 'All', minPrice: '', maxPrice: '', minRating: '', stock: '', sort: 'newest', page: 1 });
         setMobileFiltersOpen(false);
     }, []);
 
@@ -384,6 +388,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
                 onMaxPriceChange={event => setPriceInput(prev => ({ ...prev, max: event.target.value }))}
                 onPriceApply={handlePriceApply}
                 onRatingChange={handleRatingChange}
+                onStockChange={handleStockChange}
                 onClearFilters={handleClearFilters}
                 onPageChange={handlePageChange}
                 onProductAdd={handleProductAdd}

@@ -107,7 +107,7 @@ test('typography and product-card style normalize through safe supported values'
     assert.equal(invalid.typography.headingWeight, '800');
 });
 
-test('hero overlay opacity is bounded and consumed by an isolated overlay layer', async () => {
+test('hero overlay opacity is bounded and consumed by a localized readability layer', async () => {
     const { resolveHeroOverlayOpacity } = await loadDesignTokens();
     const homeSource = fs.readFileSync(path.join(rendererRoot, 'reference/StorefrontHero.jsx'), 'utf8');
 
@@ -115,7 +115,10 @@ test('hero overlay opacity is bounded and consumed by an isolated overlay layer'
     assert.equal(resolveHeroOverlayOpacity(35), 35);
     assert.equal(resolveHeroOverlayOpacity(120), 80);
     assert.equal(resolveHeroOverlayOpacity('invalid'), 25);
-    assert.match(homeSource, /backgroundColor: "var\(--sf-hero-overlay\)", opacity: heroOverlayOpacity/);
+    assert.match(homeSource, /backgroundColor: "var\(--sf-hero-overlay\)", opacity: heroOverlayOpacity \* 0\.12/);
+    assert.match(homeSource, /linear-gradient\(90deg/);
+    assert.match(homeSource, /linear-gradient\(to top/);
+    assert.match(homeSource, /radial-gradient\(ellipse at center/);
     assert.doesNotMatch(homeSource, /heroContentClass[^\n]*opacity/);
 });
 

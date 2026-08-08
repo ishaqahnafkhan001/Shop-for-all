@@ -28,7 +28,7 @@ const {
     attachAssetsToDraft,
     promotePublishedAssets
 } = require('./storeBuilderAssetService');
-const { mergeCategoryDetails } = require('../categories/categoryService');
+const { mergeCategoryDetails, normalizeCategoryKey } = require('../categories/categoryService');
 
 const REVISION_RETENTION = 20;
 const BUILDER_SHOP_FIELDS = [
@@ -164,7 +164,7 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
     const selectedProductIds = getSelectedProductIds(shop.theme);
     const selectedReviewIds = getSelectedReviewIds(shop.theme);
     const productBaseQuery = buildPublicProductQuery(shop._id);
-    const [initialProducts, selectedProducts, categories, categoryMetadata, publicCollections, initialReviews, selectedReviews, seoStats, draft, revisions, access] = await Promise.all([
+    const [initialProducts, selectedProducts, categories, categoryMetadata, categoryCounts, publicCollections, initialReviews, selectedReviews, seoStats, draft, revisions, access] = await Promise.all([
         Product.find(productBaseQuery)
             .select('_id title slug category tags images imageAltText pricing.sellingPrice pricing.discount averageRating numReviews variants.stock status isActive')
             .sort({ createdAt: -1 }).limit(10).lean(),
@@ -174,6 +174,10 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
             : [],
         Product.distinct('category', productBaseQuery),
         Category.find({ shop_id: shop._id }).select('name coverImage updatedAt').lean(),
+        Product.aggregate([
+            { $match: { ...productBaseQuery, category: { $type: 'string', $ne: '' } } },
+            { $group: { _id: '$category', productCount: { $sum: 1 } } }
+        ]),
         Collection.find({ shop_id: shop._id, isActive: true }).select('_id title slug').sort({ title: 1 }).limit(50).lean(),
         Review.find({ shop_id: shop._id, rating: 5 }).select('_id product_id name rating comment createdAt').sort({ createdAt: -1 }).limit(10).lean(),
         selectedReviewIds.length
@@ -195,7 +199,11 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
         products,
         selectedProductIds,
         categories: categories.filter(Boolean).sort((a, b) => String(a).localeCompare(String(b))),
-        categoryDetails: mergeCategoryDetails({ names: categories, metadata: categoryMetadata }),
+        categoryDetails: mergeCategoryDetails({
+            names: categories,
+            metadata: categoryMetadata,
+            counts: new Map(categoryCounts.map(item => [normalizeCategoryKey(item._id), Number(item.productCount || 0)]))
+        }),
         collections: publicCollections,
         reviews,
         selectedReviewIds,
