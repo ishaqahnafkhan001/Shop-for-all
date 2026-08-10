@@ -34,6 +34,20 @@ const getCategoryOption = (category, index) => {
     };
 };
 
+const getCategoryOptions = (categories = []) => {
+    const optionsByIdentity = new Map();
+    categories.map(getCategoryOption).filter(Boolean).forEach(option => {
+        const identity = option.value
+            .normalize('NFKC')
+            .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+        if (identity && !optionsByIdentity.has(identity)) optionsByIdentity.set(identity, option);
+    });
+    return [...optionsByIdentity.values()];
+};
+
 export function DynamicSectionsEditor({
     theme,
     activeElement,
@@ -154,9 +168,9 @@ export function DynamicSectionsEditor({
                             const selectedReviews = selectedReviewIds
                                 .map(reviewId => availableReviews.find(review => String(review._id) === String(reviewId)))
                                 .filter(Boolean);
-                            const availableCategoryOptions = productCategories.length
+                            const availableCategoryOptions = getCategoryOptions(productCategories.length
                                 ? productCategories
-                                : [...new Set(availableProducts.map(product => product.category).filter(Boolean))];
+                                : [...new Set(availableProducts.map(product => product.category).filter(Boolean))]);
                             const sectionSelectionId = getSectionSelectionId(section, index);
                             const isSelectedSection = activeElement === sectionSelectionId;
 
@@ -362,7 +376,7 @@ export function DynamicSectionsEditor({
                                                 disabled={locked}
                                             >
                                                 <option value="All">All categories</option>
-                                                {availableCategoryOptions.map(getCategoryOption).filter(Boolean).map(category => (
+                                                {availableCategoryOptions.map(category => (
                                                     <option key={category.key} value={category.value}>{category.label}</option>
                                                 ))}
                                             </select>

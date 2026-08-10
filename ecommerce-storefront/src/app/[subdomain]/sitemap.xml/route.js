@@ -1,116 +1,55 @@
 import {
-    fetchStorefrontCollections,
     fetchStorefrontInfo,
-    fetchStorefrontProducts,
+    fetchStorefrontSitemapData,
     getStorefrontPlanRedirectUrl
 } from "@/lib/storefrontServer";
-import {
-    getCollectionCanonicalUrl,
-    getHomepageCanonicalUrl,
-    getPolicyCanonicalUrl,
-    getProductCanonicalUrl,
-    isShopSearchVisible
-} from "@/lib/seo";
-
-const POLICY_TYPES = ["privacy", "terms", "refund", "shipping"];
-
-const escapeXml = (value = "") => String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-
-const urlNode = ({ loc, lastmod, changefreq = "weekly", priority = "0.7" }) => {
-    const lastModified = lastmod ? `<lastmod>${escapeXml(new Date(lastmod).toISOString())}</lastmod>` : "";
-    return [
-        "  <url>",
-        `    <loc>${escapeXml(loc)}</loc>`,
-        lastModified ? `    ${lastModified}` : "",
-        `    <changefreq>${changefreq}</changefreq>`,
-        `    <priority>${priority}</priority>`,
-        "  </url>"
-    ].filter(Boolean).join("\n");
-};
-
-const hasPolicyContent = (shop, type) => {
-    const policies = shop?.theme?.policies || {};
-    return Boolean(String(policies[type] || "").trim());
-};
+import { resolveStorefrontIndexability } from "@/lib/indexability";
+import { buildSitemapIndexXml, sitemapFailureResponse, xmlResponse } from "@/lib/sitemapXml";
 
 export async function GET(request, { params }) {
     const { subdomain } = await params;
     const host = request.headers.get("host") || "";
 
     try {
-        const [shop, productsResponse, collections] = await Promise.all([
+        const [shop, summary] = await Promise.all([
             fetchStorefrontInfo(subdomain, { storefrontHost: host, fresh: true }),
-            fetchStorefrontProducts(subdomain, { page: 1, limit: 2500, sort: "newest" }, { storefrontHost: host, fresh: true }),
-            fetchStorefrontCollections(subdomain, { storefrontHost: host, fresh: true })
+            fetchStorefrontSitemapData(subdomain, { type: "summary" }, { storefrontHost: host, fresh: true })
         ]);
-
-        const products = productsResponse.products || productsResponse.data || [];
-        if (!isShopSearchVisible(shop)) {
-            return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`, {
-                headers: {
-                    "content-type": "application/xml; charset=utf-8",
-                    "cache-control": "no-cache, max-age=0, must-revalidate"
-                }
-            });
+        const policy = resolveStorefrontIndexability({
+            shop,
+            resourceType: "homepage",
+            host,
+            subdomain,
+            canonicalPath: "/"
+        });
+        if (!policy.sitemapEligible) {
+            return xmlResponse(buildSitemapIndexXml([]));
         }
-        const urls = [
-            urlNode({
-                loc: getHomepageCanonicalUrl({ host, subdomain, shop }),
-                lastmod: shop?.updatedAt,
-                changefreq: "daily",
-                priority: "1.0"
-            }),
-            urlNode({
-                loc: `${getHomepageCanonicalUrl({ host, subdomain, shop }).replace(/\/$/, "")}/policies`,
-                lastmod: shop?.updatedAt,
-                changefreq: "monthly",
-                priority: "0.5"
-            }),
-            ...products
-                .filter(product => product?.slug)
-                .map(product => urlNode({
-                    loc: getProductCanonicalUrl({ host, subdomain, shop, product }),
-                    lastmod: product.updatedAt || product.createdAt,
-                    changefreq: "weekly",
-                    priority: "0.8"
-                })),
-            ...(collections || [])
-                .filter(collection => collection?.slug && Number(collection.productCount || 0) > 0)
-                .map(collection => urlNode({
-                    loc: getCollectionCanonicalUrl({ host, subdomain, shop, collection }),
-                    lastmod: collection.updatedAt || collection.createdAt,
-                    changefreq: "weekly",
-                    priority: "0.6"
-                })),
-            ...POLICY_TYPES
-                .filter(type => hasPolicyContent(shop, type))
-                .map(type => urlNode({
-                    loc: getPolicyCanonicalUrl({ host, subdomain, shop, type }),
-                    lastmod: shop?.updatedAt,
-                    changefreq: "monthly",
-                    priority: "0.4"
-                }))
+
+        const chunkSize = Math.min(Math.max(Number(summary.productChunkSize) || 1000, 1), 1000);
+        const productChunks = Math.ceil(Math.max(Number(summary.productCount) || 0, 0) / chunkSize);
+        const baseUrl = policy.canonicalOrigin;
+        const entries = [
+            { loc: `${baseUrl}/sitemaps/core.xml`, lastmod: shop?.updatedAt },
+            ...Array.from({ length: productChunks }, (_, index) => ({
+                loc: `${baseUrl}/sitemaps/products-${index + 1}.xml`
+            }))
         ];
 
-        return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`, {
-            headers: {
-                "content-type": "application/xml; charset=utf-8",
-                "cache-control": "no-cache, max-age=0, must-revalidate"
-            }
+        console.info("storefront_sitemap_index_generated", {
+            tenant: String(subdomain),
+            sitemapCount: entries.length,
+            productCount: Number(summary.productCount) || 0
         });
+        return xmlResponse(buildSitemapIndexXml(entries));
     } catch (error) {
         const redirectTo = getStorefrontPlanRedirectUrl(error, "/sitemap.xml");
         if (redirectTo) return Response.redirect(redirectTo, 307);
-        return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`, {
-            headers: {
-                "content-type": "application/xml; charset=utf-8",
-                "cache-control": "public, s-maxage=60"
-            }
+        console.error("storefront_sitemap_index_failed", {
+            tenant: String(subdomain),
+            status: error?.status || 500,
+            errorCode: error?.body?.code || "SITEMAP_INDEX_FAILED"
         });
+        return sitemapFailureResponse();
     }
 }

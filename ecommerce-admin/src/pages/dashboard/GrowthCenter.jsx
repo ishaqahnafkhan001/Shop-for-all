@@ -20,6 +20,7 @@ import Button from '../../components/ui/Button';
 import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { hasFeature } from '../../utils/featureAccess';
+import { aiRequestHeaders } from '../../utils/aiRequestId.js';
 
 const rangeOptions = [
     { label: 'Last 7 days', value: '7' },
@@ -253,7 +254,7 @@ const GrowthCenter = () => {
                 productId,
                 language,
                 campaignType: 'general'
-            });
+            }, { headers: aiRequestHeaders('growth.ad_planning') });
             setAdCopy(data.data);
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to generate ad copy');
@@ -472,6 +473,20 @@ const GrowthCenter = () => {
                             )}
                             {adCopy && (
                                 <div className="space-y-4">
+                                    <div className={`rounded-xl border px-4 py-3 text-sm ${adCopy.meta?.fallback
+                                        ? 'border-amber-200 bg-amber-50 text-amber-950'
+                                        : 'border-emerald-200 bg-emerald-50 text-emerald-950'
+                                    }`}>
+                                        <p className="font-bold">
+                                            {adCopy.meta?.fallback ? 'Basic planning draft' : 'AI-assisted planning draft'}
+                                        </p>
+                                        {adCopy.meta?.fallback && (
+                                            <p className="mt-1">Personalized AI copy was unavailable. This draft uses only published product details and application-calculated aggregates.</p>
+                                        )}
+                                        {(adCopy.meta?.limitations || []).map(item => (
+                                            <p key={item} className="mt-1 text-xs leading-5">{item}</p>
+                                        ))}
+                                    </div>
                                     <AdHelperSection
                                         icon={Megaphone}
                                         title="Ad Copy"
@@ -534,6 +549,38 @@ const GrowthCenter = () => {
                                     <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500">
                                         Audience suggestions are estimated from product type, store analytics, and order behavior. They do not use private Facebook or Instagram profile data.
                                     </p>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Confidence</p>
+                                            <p className="mt-1 text-sm font-semibold capitalize text-slate-800">{adCopy.confidence || 'limited'}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Evidence references</p>
+                                            <p className="mt-1 text-sm text-slate-700">
+                                                {(adCopy.evidenceRefs || []).length ? adCopy.evidenceRefs.join(', ') : 'Insufficient application evidence'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {(adCopy.limitations || []).length > 0 && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Limitations</p>
+                                            <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-900">
+                                                {adCopy.limitations.map(item => <li key={item}>{item}</li>)}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {adCopy.meta?.evidence?.length > 0 && (
+                                        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Evidence used</p>
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                {adCopy.meta.evidence.map(item => (
+                                                    <span key={item.id} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                                        {item.id}: {item.value}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

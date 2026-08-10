@@ -5,6 +5,14 @@ const Order = require('../models/Order');
 const Shop = require('../models/Shop');
 const ReturnRequest = require('../models/ReturnRequest');
 const { generateAdInsight } = require('../services/adInsightAIService');
+const { buildLimitError, getShopPlanAccess } = require('../services/billing/planAccessService');
+const { getWeeklyAiUsage } = require('../services/billing/planUsageService');
+const {
+    beginAiGeneration,
+    completeAiGeneration,
+    failAiGeneration,
+    getReplayResponse
+} = require('../services/ai/aiGenerationPolicyService');
 
 const validRanges = new Set(['7', '30', '90']);
 const eventTypes = {
@@ -13,6 +21,7 @@ const eventTypes = {
     checkouts: 'begin_checkout',
     orders: 'order_placed'
 };
+const MIN_AI_AGGREGATE_COHORT = Math.max(3, Number(process.env.AI_AGGREGATE_PRIVACY_THRESHOLD || 3));
 
 const asObjectId = (value) => new mongoose.Types.ObjectId(String(value));
 
@@ -65,6 +74,7 @@ const getTopBuyerLocations = async ({ shopId, productId, from }) => {
                 orders: { $sum: 1 }
             }
         },
+        { $match: { orders: { $gte: MIN_AI_AGGREGATE_COHORT } } },
         { $sort: { orders: -1, city: 1 } },
         { $limit: 5 }
     ]);
@@ -73,8 +83,9 @@ const getTopBuyerLocations = async ({ shopId, productId, from }) => {
 };
 
 const normalizeSearchText = (value) => String(value || '')
+    .normalize('NFKC')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 
 const getRelevantSearchTermsForProduct = async ({ shopId, product, from }) => {
@@ -102,6 +113,7 @@ const getRelevantSearchTermsForProduct = async ({ shopId, product, from }) => {
                 averageResults: { $avg: '$resultCount' }
             }
         },
+        { $match: { searchCount: { $gte: MIN_AI_AGGREGATE_COHORT } } },
         { $sort: { searchCount: -1, lastSearchedAt: -1 } },
         { $limit: 40 }
     ]);
@@ -641,7 +653,7 @@ exports.getGrowthRecommendations = async (req, res) => {
                 suggestedAdAngle: item.label === 'hidden_gem'
                     ? 'Show this product to more people because current buyers respond well.'
                     : item.label === 'winner'
-                        ? 'Lead with social proof, best-seller angle, and fast delivery.'
+                        ? 'Lead with the strongest application-calculated engagement signal and published product details.'
                         : 'Improve product page trust, images, price, or checkout before spending on ads.',
                 suggestedActions: item.recommendation.suggestedActions
             }));
@@ -654,6 +666,7 @@ exports.getGrowthRecommendations = async (req, res) => {
 };
 
 exports.generateAdCopy = async (req, res) => {
+    let generationState = null;
     try {
         const { productId, language = 'en', campaignType = 'general' } = req.body;
         const { from } = getRangeStart(req.body.range);
@@ -676,26 +689,55 @@ exports.generateAdCopy = async (req, res) => {
             getProductMetrics({ shopId: req.tenantId, from, productId }),
             getTopBuyerLocations({ shopId: req.tenantId, productId, from }),
             getRelevantSearchTermsForProduct({ shopId: req.tenantId, product, from }),
-            Shop.findById(req.tenantId).select('shopName subdomain businessType').lean()
+            Shop.findById(req.tenantId).select('shopName subdomain businessType theme.commerce.currency').lean()
         ]);
 
-        res.status(200).json({
-            success: true,
-            data: await generateAdInsight({
-                product,
-                shop,
-                metrics: metrics || {
-                    label: 'not_enough_data',
-                    recommendation: classifyProduct({ views: 0, addToCarts: 0, orders: 0 })
-                },
-                campaignType,
-                language,
-                cityHistory: locations,
-                searchTerms
-            })
+        generationState = await beginAiGeneration({ req, feature: 'growth.ad_planning' });
+        const insight = await generateAdInsight({
+            product,
+            shop,
+            metrics: metrics || {
+                label: 'not_enough_data',
+                recommendation: classifyProduct({ views: 0, addToCarts: 0, orders: 0 })
+            },
+            campaignType,
+            language,
+            cityHistory: locations,
+            searchTerms
         });
+        const payload = {
+            success: true,
+            data: insight
+        };
+        const usage = await completeAiGeneration({
+            req,
+            state: generationState,
+            result: payload,
+            meta: insight.meta
+        });
+        generationState = null;
+        res.status(200).json({ ...payload, usage });
     } catch (err) {
-        console.error('Generate ad copy error:', err);
-        res.status(500).json({ success: false, error: 'Failed to generate ad copy' });
+        const replay = getReplayResponse(err);
+        if (replay) return res.status(200).json({ ...replay, replayed: true });
+        await failAiGeneration({ req, state: generationState, error: err });
+        if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
+            return res.status(409).json({ success: false, code: err.code, error: err.message });
+        }
+        if (err?.code === 'PLAN_LIMIT_REACHED') {
+            const planContext = req.planAccess || await getShopPlanAccess(req.tenantId);
+            const usage = err.usage || await getWeeklyAiUsage({
+                shopId: req.tenantId,
+                limit: planContext.limits.aiProductCreationsPerWeek
+            });
+            return res.status(403).json(await buildLimitError(
+                planContext,
+                'aiProductCreationsPerWeek',
+                usage,
+                planContext.limits.aiProductCreationsPerWeek
+            ));
+        }
+        console.warn('Growth ad AI failure', { requestId: req.id, code: err.code || 'AI_PROVIDER_FAILED' });
+        res.status(502).json({ success: false, code: err.code || 'AI_PROVIDER_FAILED', error: 'Failed to generate ad planning suggestions' });
     }
 };

@@ -17,7 +17,14 @@ const {
 const {
     buildCustomDomainVerificationFields
 } = require('../services/domain/dnsVerificationService');
-const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const { getShopPlanAccess, buildLimitError } = require('../services/billing/planAccessService');
+const { getWeeklyAiUsage } = require('../services/billing/planUsageService');
+const {
+    beginAiGeneration,
+    completeAiGeneration,
+    failAiGeneration,
+    getReplayResponse
+} = require('../services/ai/aiGenerationPolicyService');
 const {
     assertStoreBuilderUpdateAllowed,
     getPublicThemeForPlan
@@ -68,17 +75,32 @@ const invalidateStoreBuilderSeoCache = async (shopId) => {
 };
 
 const safelyInvalidateStoreBuilderSeoCache = async (shopId, req) => {
-    try {
-        await invalidateStoreBuilderSeoCache(shopId);
-        return null;
-    } catch (error) {
-        console.error('Store Builder cache invalidation pending:', {
-            shopId: String(shopId),
-            requestId: req?.id,
-            message: error.message
-        });
-        return 'CACHE_INVALIDATION_PENDING';
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+            await invalidateStoreBuilderSeoCache(shopId);
+            if (attempt > 1) {
+                console.info('store_builder_cache_invalidation_recovered', {
+                    shopId: String(shopId),
+                    requestId: req?.id,
+                    attempt
+                });
+            }
+            return null;
+        } catch (error) {
+            if (attempt === maxAttempts) {
+                console.error('store_builder_cache_invalidation_failed', {
+                    shopId: String(shopId),
+                    requestId: req?.id,
+                    attempts: attempt,
+                    errorCode: error?.code || 'CACHE_INVALIDATION_FAILED'
+                });
+                return 'CACHE_INVALIDATION_PENDING';
+            }
+            await new Promise(resolve => setTimeout(resolve, attempt * 75));
+        }
     }
+    return 'CACHE_INVALIDATION_PENDING';
 };
 
 const assertCustomDomainAvailable = async (domain, shopId) => {
@@ -242,6 +264,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
 };
 
 exports.suggestStoreSeo = async (req, res) => {
+    let generationState = null;
     try {
         const shop = await Shop.findById(req.tenantId)
             .select('shopName subdomain theme')
@@ -279,6 +302,7 @@ exports.suggestStoreSeo = async (req, res) => {
                 .lean()
         ]);
 
+        generationState = await beginAiGeneration({ req, feature: 'seo.homepage' });
         const suggestion = await generateStoreSeoSuggestion({
             shop,
             theme,
@@ -303,8 +327,35 @@ exports.suggestStoreSeo = async (req, res) => {
                 fallback: Boolean(suggestion.fallback)
             }
         });
-        res.status(200).json({ success: true, data: suggestion });
+        const payload = { success: true, data: suggestion };
+        const usage = await completeAiGeneration({
+            req,
+            state: generationState,
+            result: payload,
+            meta: suggestion.meta
+        });
+        generationState = null;
+        res.status(200).json({ ...payload, usage });
     } catch (err) {
+        const replay = getReplayResponse(err);
+        if (replay) return res.status(200).json({ ...replay, replayed: true });
+        await failAiGeneration({ req, state: generationState, error: err });
+        if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
+            return res.status(409).json({ success: false, code: err.code, error: err.message });
+        }
+        if (err?.code === 'PLAN_LIMIT_REACHED') {
+            const planContext = req.planAccess || await getShopPlanAccess(req.tenantId);
+            const usage = err.usage || await getWeeklyAiUsage({
+                shopId: req.tenantId,
+                limit: planContext.limits.aiProductCreationsPerWeek
+            });
+            return res.status(403).json(await buildLimitError(
+                planContext,
+                'aiProductCreationsPerWeek',
+                usage,
+                planContext.limits.aiProductCreationsPerWeek
+            ));
+        }
         const isMissingConfig = err?.code === 'AI_NOT_CONFIGURED';
         if (!isMissingConfig) {
             console.error('Store SEO AI suggestion error:', err.message);

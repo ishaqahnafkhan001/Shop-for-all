@@ -1,5 +1,5 @@
 import { fetchStorefrontInfo, getStorefrontPlanRedirectUrl } from "@/lib/storefrontServer";
-import { getShopBaseUrl } from "@/lib/seo";
+import { resolveStorefrontIndexability } from "@/lib/indexability";
 
 const privatePaths = [
     "/cart",
@@ -22,13 +22,27 @@ export async function GET(request, { params }) {
 
     try {
         const shop = await fetchStorefrontInfo(subdomain, { storefrontHost: host, fresh: true });
-        const baseUrl = getShopBaseUrl({ host, subdomain, shop });
+        const policy = resolveStorefrontIndexability({
+            shop,
+            resourceType: "homepage",
+            host,
+            subdomain,
+            canonicalPath: "/"
+        });
+        if (!policy.indexable) {
+            return new Response("User-agent: *\nDisallow: /\n", {
+                headers: {
+                    "content-type": "text/plain; charset=utf-8",
+                    "cache-control": "no-cache, max-age=0, must-revalidate"
+                }
+            });
+        }
         const body = [
             "User-agent: *",
             "Allow: /",
             ...privatePaths.map(path => `Disallow: ${path}`),
             "",
-            `Sitemap: ${baseUrl.replace(/\/$/, "")}/sitemap.xml`,
+            `Sitemap: ${policy.canonicalOrigin}/sitemap.xml`,
             ""
         ].join("\n");
 

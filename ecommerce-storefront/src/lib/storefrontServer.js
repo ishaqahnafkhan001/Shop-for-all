@@ -142,6 +142,7 @@ export const fetchStorefrontProduct = async (subdomain, productId, options = {})
     fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/products/${encodeURIComponent(productId)}`, {
         revalidate: 30,
         storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
     })
 );
 
@@ -160,7 +161,31 @@ export const fetchStorefrontCollection = async (subdomain, slug, params = {}, op
         params,
         revalidate: 60,
         storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
     });
 
+    return response.data || null;
+};
+
+export const fetchStorefrontSitemapData = async (subdomain, params = {}, options = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/seo/sitemap`, {
+        params,
+        revalidate: 300,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    });
+
+    return response.data || {};
+};
+
+export const fetchStorefrontSlugRedirect = async (subdomain, type, slug, options = {}) => {
+    const response = await fetchPublicJson(
+        `/storefront/${encodeURIComponent(subdomain)}/seo/redirect/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`,
+        {
+            revalidate: 60,
+            storefrontHost: options.storefrontHost || options.host || '',
+            fresh: options.fresh === true
+        }
+    );
     return response.data || null;
 };

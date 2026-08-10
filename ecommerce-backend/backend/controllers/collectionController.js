@@ -18,6 +18,19 @@ const {
 const { buildPagination } = require('../utils/pagination');
 const { cloudinary } = require('../config/cloudinary');
 const cache = require('../services/cacheService');
+const { buildLimitError, getShopPlanAccess } = require('../services/billing/planAccessService');
+const { getWeeklyAiUsage } = require('../services/billing/planUsageService');
+const {
+    beginAiGeneration,
+    completeAiGeneration,
+    failAiGeneration,
+    getReplayResponse
+} = require('../services/ai/aiGenerationPolicyService');
+const {
+    assertHistoricalSlugAvailable,
+    recordSlugRedirect,
+    resolveSlugRedirect
+} = require('../services/seo/slugRedirectService');
 
 const slugify = (value = '') =>
     value
@@ -171,6 +184,7 @@ exports.getCollections = async (req, res) => {
 };
 
 exports.suggestCollectionAi = async (req, res) => {
+    let generationState = null;
     try {
         const productIds = parseProductIds(req.body?.productIds);
         const [shop, products] = await Promise.all([
@@ -203,15 +217,44 @@ exports.suggestCollectionAi = async (req, res) => {
             }))
         };
 
+        generationState = await beginAiGeneration({ req, feature: 'catalog.collection' });
         const suggestion = await generateCollectionSuggestion(context);
 
-        return res.status(200).json({
+        const payload = {
             success: true,
             fallback: Boolean(suggestion.fallback),
             ...(suggestion.errorCode ? { errorCode: suggestion.errorCode } : {}),
-            data: suggestion.data
+            data: suggestion.data,
+            meta: suggestion.meta
+        };
+        const usage = await completeAiGeneration({
+            req,
+            state: generationState,
+            result: payload,
+            meta: suggestion.meta
         });
+        generationState = null;
+        return res.status(200).json({ ...payload, usage });
     } catch (err) {
+        const replay = getReplayResponse(err);
+        if (replay) return res.status(200).json({ ...replay, replayed: true });
+        await failAiGeneration({ req, state: generationState, error: err });
+        if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
+            return res.status(409).json({ success: false, code: err.code, message: err.message });
+        }
+        if (err?.code === 'PLAN_LIMIT_REACHED') {
+            const planContext = req.planAccess || await getShopPlanAccess(req.tenantId);
+            const usage = err.usage || await getWeeklyAiUsage({
+                shopId: req.tenantId,
+                limit: planContext.limits.aiProductCreationsPerWeek
+            });
+            return res.status(403).json(await buildLimitError(
+                planContext,
+                'aiProductCreationsPerWeek',
+                usage,
+                planContext.limits.aiProductCreationsPerWeek
+            ));
+        }
         if (err?.code === 'AI_NOT_CONFIGURED') {
             return res.status(503).json({
                 success: false,
@@ -280,13 +323,28 @@ exports.getPublicCollectionBySlug = async (req, res) => {
         const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), MAX_PUBLIC_COLLECTION_PRODUCTS);
         const skip = (page - 1) * limit;
 
-        const collection = await Collection.findOne({
+        let collection = await Collection.findOne({
             shop_id: req.tenantId,
             slug,
             isActive: true
         })
             .select(PUBLIC_COLLECTION_FIELDS)
             .lean();
+
+        if (!collection) {
+            const historical = await resolveSlugRedirect({
+                shopId: req.tenantId,
+                resourceType: 'collection',
+                oldSlug: slug
+            });
+            if (historical) {
+                collection = await Collection.findOne({
+                    _id: historical.resourceId,
+                    shop_id: req.tenantId,
+                    isActive: true
+                }).select(PUBLIC_COLLECTION_FIELDS).lean();
+            }
+        }
 
         if (!collection) {
             return res.status(404).json({ success: false, error: 'Collection not found' });
@@ -334,6 +392,11 @@ exports.createCollection = async (req, res) => {
             ...buildCollectionPayload(req.body),
             shop_id: req.tenantId
         };
+        await assertHistoricalSlugAvailable({
+            shopId: req.tenantId,
+            resourceType: 'collection',
+            slug: payload.slug
+        });
         if (!payload.title) {
             await destroyImage(uploadedPublicId);
             return res.status(400).json({ success: false, error: 'Collection title is required' });
@@ -377,6 +440,15 @@ exports.updateCollection = async (req, res) => {
         }
 
         const payload = buildCollectionPayload(req.body, { partial: true });
+        const previousSlug = collection.slug;
+        if (payload.slug && payload.slug !== previousSlug) {
+            await assertHistoricalSlugAvailable({
+                shopId: req.tenantId,
+                resourceType: 'collection',
+                slug: payload.slug,
+                resourceId: collection._id
+            });
+        }
         const previousPublicId = collection.imagePublicId || '';
         const removeImage = parseBoolean(req.body?.removeImage, false);
         Object.assign(collection, payload);
@@ -388,6 +460,13 @@ exports.updateCollection = async (req, res) => {
             collection.imagePublicId = '';
         }
         await collection.save();
+        await recordSlugRedirect({
+            shopId: req.tenantId,
+            resourceType: 'collection',
+            resourceId: collection._id,
+            oldSlug: previousSlug,
+            newSlug: collection.slug
+        });
         uploadedImageSaved = Boolean(req.file?.path);
 
         if (Array.isArray(payload.productIds)) {

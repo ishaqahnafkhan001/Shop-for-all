@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { normalizeKeyValueRows, normalizeSellingPointRows } from '../../utils/productContentRows.js';
+import { aiRequestHeaders } from '../../utils/aiRequestId.js';
 
 const SECTION_LABELS = {
     all: 'All content',
@@ -400,7 +401,10 @@ const ProductAiAssistant = ({
         setActiveSection(sections.length === SECTIONS.length ? 'all' : sections[0]);
         try {
             const response = await API.post('/admin/products/ai/content-suggest', buildRequestData(sections), {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    ...aiRequestHeaders('product.content')
+                }
             });
 
             if (!response.data?.success) {

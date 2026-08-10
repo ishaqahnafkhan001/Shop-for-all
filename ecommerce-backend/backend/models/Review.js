@@ -7,17 +7,26 @@ const reviewSchema = new mongoose.Schema({
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
     rating: { type: Number, min: 1, max: 5, required: true },
-    comment: { type: String, required: true }
+    comment: { type: String, required: true },
+    // Existing reviews remain public. These fields provide one shared eligibility
+    // contract for future hide/delete workflows without introducing moderation.
+    isVisible: { type: Boolean, default: true, index: true },
+    isDeleted: { type: Boolean, default: false, index: true }
 }, { timestamps: true });
 
 // 🔍 FAST QUERYING & UNIQUE CONSTRAINTS
 reviewSchema.index({ shop_id: 1, product_id: 1, createdAt: -1 });
 reviewSchema.index({ shop_id: 1, product_id: 1, user_id: 1 }, { unique: true });
+reviewSchema.index({ shop_id: 1, product_id: 1, isDeleted: 1, isVisible: 1, createdAt: -1 });
+
+reviewSchema.statics.getEligibilityQuery = function () {
+    return { isDeleted: { $ne: true }, isVisible: { $ne: false } };
+};
 
 // 🧠 AUTO-CALCULATE RATINGS
 reviewSchema.statics.calculateAverageRating = async function (shopId, productId) {
     const stats = await this.aggregate([
-        { $match: { shop_id: shopId, product_id: productId } },
+        { $match: { shop_id: shopId, product_id: productId, ...this.getEligibilityQuery() } },
         {
             $group: {
                 _id: '$product_id',
@@ -41,13 +50,5 @@ reviewSchema.statics.calculateAverageRating = async function (shopId, productId)
         console.error('Error calculating average rating:', error);
     }
 };
-
-reviewSchema.post('save', function () {
-    this.constructor.calculateAverageRating(this.shop_id, this.product_id);
-});
-
-reviewSchema.post('remove', function () {
-    this.constructor.calculateAverageRating(this.shop_id, this.product_id);
-});
 
 module.exports = mongoose.model('Review', reviewSchema);

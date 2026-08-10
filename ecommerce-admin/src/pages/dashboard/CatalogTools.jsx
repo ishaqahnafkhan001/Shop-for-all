@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 import Modal from '../../components/ui/Modal.jsx';
 import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
+import { aiRequestHeaders } from '../../utils/aiRequestId.js';
 
 const emptyCollectionForm = {
     title: '',
@@ -57,6 +58,23 @@ const csvToProducts = (text) => {
     });
 };
 
+const dedupeCategories = (items = []) => {
+    const categoriesByIdentity = new Map();
+    items.forEach(category => {
+        const identity = String(category?.name || '')
+            .normalize('NFKC')
+            .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+        if (!identity) return;
+
+        const current = categoriesByIdentity.get(identity);
+        if (!current || (!current.image && category.image)) categoriesByIdentity.set(identity, category);
+    });
+    return [...categoriesByIdentity.values()];
+};
+
 const CatalogTools = () => {
     const [products, setProducts] = useState([]);
     const [collections, setCollections] = useState([]);
@@ -76,6 +94,13 @@ const CatalogTools = () => {
         images: [],
         loading: false,
         error: ''
+    });
+    const [categorySeoEditor, setCategorySeoEditor] = useState({
+        category: null,
+        name: '',
+        title: '',
+        description: '',
+        saving: false
     });
     const [collectionAi, setCollectionAi] = useState({
         loading: false,
@@ -110,12 +135,12 @@ const CatalogTools = () => {
 
         if (categoriesResult.status === 'fulfilled') {
             const categoriesRes = categoriesResult.value;
-            setCategories(categoriesRes.data.data || []);
+            setCategories(dedupeCategories(categoriesRes.data.data || []));
         } else if (productsResult.status === 'fulfilled') {
             const productsPayload = productsResult.value.data || {};
             const fallbackCategories = productsPayload.categoryDetails
                 || (productsPayload.categories || []).map(name => ({ name, slug: name, image: '', productCount: 0 }));
-            setCategories(fallbackCategories);
+            setCategories(dedupeCategories(fallbackCategories));
             failedSections.push('category covers');
         } else {
             failedSections.push('category covers');
@@ -367,6 +392,41 @@ const CatalogTools = () => {
         }
     };
 
+    const openCategorySeoEditor = (category) => {
+        setCategorySeoEditor({
+            category,
+            name: category.name || '',
+            title: category.seo?.title || '',
+            description: category.seo?.description || '',
+            saving: false
+        });
+    };
+
+    const saveCategorySeo = async (event) => {
+        event.preventDefault();
+        const category = categorySeoEditor.category;
+        if (!category || categorySeoEditor.saving) return;
+        setCategorySeoEditor(prev => ({ ...prev, saving: true }));
+        try {
+            const { data } = await API.put('/admin/categories/metadata', {
+                categoryName: category.name,
+                name: categorySeoEditor.name,
+                seo: {
+                    title: categorySeoEditor.title,
+                    description: categorySeoEditor.description
+                }
+            });
+            setCategories(prev => prev.map(item => (
+                item.name === category.name ? { ...item, ...(data.data || {}) } : item
+            )));
+            setCategorySeoEditor({ category: null, name: '', title: '', description: '', saving: false });
+            toast.success(`${category.name} search details updated.`);
+        } catch (err) {
+            setCategorySeoEditor(prev => ({ ...prev, saving: false }));
+            toast.error(err.response?.data?.error || 'Failed to update category search details');
+        }
+    };
+
     const updateCollectionSeo = (field, value) => {
         setCollectionForm(prev => ({
             ...prev,
@@ -391,7 +451,7 @@ const CatalogTools = () => {
                 description: collectionForm.description,
                 seo: collectionForm.seo,
                 productIds: selected
-            });
+            }, { headers: aiRequestHeaders('catalog.collection') });
 
             if (!data.success) {
                 const message = data.message || 'AI suggestions could not be generated right now.';
@@ -403,7 +463,8 @@ const CatalogTools = () => {
             setCollectionAi({
                 loading: false,
                 error: '',
-                suggestion: data.data || null
+                suggestion: data.data || null,
+                meta: data.meta || null
             });
             toast.success(data.fallback ? 'Basic collection suggestion generated.' : 'AI collection suggestion ready.');
         } catch (err) {
@@ -558,6 +619,11 @@ const CatalogTools = () => {
                         )}
                         {collectionAi.suggestion && (
                             <div className="space-y-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
+                                {collectionAi.meta?.fallback && (
+                                    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                                        Basic suggestions are shown because the AI response could not be used. Review every field before applying.
+                                    </div>
+                                )}
                                 <div>
                                     <div className="text-sm font-bold text-slate-900">{collectionAi.suggestion.name}</div>
                                     <p className="mt-1 text-xs leading-5 text-slate-600">{collectionAi.suggestion.description}</p>
@@ -689,11 +755,16 @@ const CatalogTools = () => {
                                             <h3 className="truncate text-sm font-bold text-slate-900">{category.name}</h3>
                                             <p className="text-xs text-slate-500">{category.productCount || 0} products</p>
                                         </div>
-                                        {category.image && category._id && (
-                                            <button type="button" onClick={() => removeCategoryCover(category)} disabled={savingCategory} aria-label={`Remove ${category.name} cover`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50">
-                                                <Trash2 size={16} />
+                                        <div className="flex shrink-0 items-center gap-1">
+                                            <button type="button" onClick={() => openCategorySeoEditor(category)} disabled={savingCategory} aria-label={`Edit ${category.name} search details`} className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50">
+                                                <Edit3 size={16} />
                                             </button>
-                                        )}
+                                            {category.image && category._id && (
+                                                <button type="button" onClick={() => removeCategoryCover(category)} disabled={savingCategory} aria-label={`Remove ${category.name} cover`} className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="mt-3 grid grid-cols-1 gap-2">
                                         <button
@@ -781,6 +852,57 @@ const CatalogTools = () => {
                         })}
                     </div>
                 )}
+            </Modal>
+            <Modal
+                isOpen={Boolean(categorySeoEditor.category)}
+                onClose={() => {
+                    if (!categorySeoEditor.saving) {
+                        setCategorySeoEditor({ category: null, name: '', title: '', description: '', saving: false });
+                    }
+                }}
+                title={`Search details${categorySeoEditor.category?.name ? ` for ${categorySeoEditor.category.name}` : ''}`}
+            >
+                <form onSubmit={saveCategorySeo} className="space-y-4">
+                    <p className="text-sm leading-6 text-slate-600">
+                        Optional search title and description for this public category page. Leaving a field empty uses a truthful fallback from the category and store name.
+                    </p>
+                    <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                        <span>Category name</span>
+                        <input
+                            required
+                            value={categorySeoEditor.name}
+                            onChange={event => setCategorySeoEditor(prev => ({ ...prev, name: event.target.value }))}
+                            maxLength={80}
+                            className="min-h-11 w-full rounded-lg border border-slate-200 px-3"
+                        />
+                        <span className="block text-xs font-normal text-slate-500">Renaming updates products in this category and keeps the old public URL as a permanent redirect.</span>
+                    </label>
+                    <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                        <span>SEO title</span>
+                        <input
+                            value={categorySeoEditor.title}
+                            onChange={event => setCategorySeoEditor(prev => ({ ...prev, title: event.target.value }))}
+                            maxLength={70}
+                            className="min-h-11 w-full rounded-lg border border-slate-200 px-3"
+                            placeholder={categorySeoEditor.category?.name || 'Category title'}
+                        />
+                    </label>
+                    <label className="block space-y-1.5 text-sm font-semibold text-slate-700">
+                        <span>SEO description</span>
+                        <textarea
+                            value={categorySeoEditor.description}
+                            onChange={event => setCategorySeoEditor(prev => ({ ...prev, description: event.target.value }))}
+                            maxLength={170}
+                            rows={4}
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2"
+                            placeholder="Describe this category accurately for search results."
+                        />
+                    </label>
+                    <button disabled={categorySeoEditor.saving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60">
+                        <Check size={17} />
+                        {categorySeoEditor.saving ? 'Saving...' : 'Save search details'}
+                    </button>
+                </form>
             </Modal>
         </div>
     );

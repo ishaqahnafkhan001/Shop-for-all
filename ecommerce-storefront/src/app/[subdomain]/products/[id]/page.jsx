@@ -5,7 +5,7 @@ import {
     getStorefrontPlanRedirectUrl
 } from '@/lib/storefrontServer';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, permanentRedirect, redirect } from 'next/navigation';
 import {
     buildBreadcrumbJsonLd,
     buildStorefrontMetadata,
@@ -16,34 +16,33 @@ import {
     getProductCanonicalUrl,
     getProductSeoDescription,
     getProductSeoTitle,
-    isObjectId,
-    isShopSearchVisible,
     noindexMetadata
 } from '@/lib/seo';
+import { resolveStorefrontIndexability } from '@/lib/indexability';
 
-const getInitialProduct = async (subdomain, id, host = '') => {
+const getInitialProduct = async (subdomain, id, host = '', fresh = false) => {
     try {
-        return await fetchStorefrontProduct(subdomain, id, { storefrontHost: host });
+        return await fetchStorefrontProduct(subdomain, id, { storefrontHost: host, fresh });
     } catch (error) {
         const redirectTo = getStorefrontPlanRedirectUrl(error, `/products/${encodeURIComponent(id)}`);
         if (redirectTo) return { __redirectTo: redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error('Server product detail fetch error:', error.message);
         }
-        return null;
+        return { __status: error.status || 500 };
     }
 };
 
-const getStoreInfo = async (subdomain, host = '') => {
+const getStoreInfo = async (subdomain, host = '', fresh = false) => {
     try {
-        return await fetchStorefrontInfo(subdomain, { storefrontHost: host });
+        return await fetchStorefrontInfo(subdomain, { storefrontHost: host, fresh });
     } catch (error) {
         const redirectTo = getStorefrontPlanRedirectUrl(error, '/');
         if (redirectTo) return { __redirectTo: redirectTo };
         if (![404, 423].includes(error.status)) {
             console.error('Server shop info fetch error:', error.message);
         }
-        return null;
+        return { __status: error.status || 500 };
     }
 };
 
@@ -55,15 +54,23 @@ export async function generateMetadata({ params }) {
     const host = headerStore.get('host') || '';
 
     const [product, shop] = await Promise.all([
-        getInitialProduct(subdomain, id, host),
-        getStoreInfo(subdomain, host)
+        getInitialProduct(subdomain, id, host, true),
+        getStoreInfo(subdomain, host, true)
     ]);
 
-    if (!product || product.__redirectTo || shop?.__redirectTo) {
+    if (!product || product.__status || product.__redirectTo || shop?.__status || shop?.__redirectTo) {
         return noindexMetadata('Product unavailable', 'This product is currently unavailable.');
     }
 
     const url = getProductCanonicalUrl({ host, subdomain, shop, product });
+    const indexability = resolveStorefrontIndexability({
+        shop,
+        resource: product,
+        resourceType: 'product',
+        host,
+        subdomain,
+        canonicalPath: `/products/${product.slug || product._id}`
+    });
 
     return buildStorefrontMetadata({
         shop,
@@ -72,7 +79,7 @@ export async function generateMetadata({ params }) {
         url,
         image: getOgImage(product, shop),
         type: 'website',
-        isIndexable: isShopSearchVisible(shop),
+        isIndexable: indexability.indexable,
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ''
     });
 }
@@ -88,28 +95,39 @@ export default async function Page({ params }) {
     if (initialProduct?.__redirectTo || shop?.__redirectTo) {
         redirect(initialProduct?.__redirectTo || shop.__redirectTo);
     }
+    if (initialProduct?.__status === 404 || shop?.__status === 404) notFound();
+    const publicProduct = initialProduct?.__status ? null : initialProduct;
+    const publicShop = shop?.__status ? null : shop;
 
-    if (initialProduct?.slug && isObjectId(id)) {
-        redirect(`/products/${initialProduct.slug}`);
+    if (publicProduct?.slug && String(id).toLowerCase() !== String(publicProduct.slug).toLowerCase()) {
+        permanentRedirect(`/products/${publicProduct.slug}`);
     }
 
-    const productUrl = initialProduct
-        ? getProductCanonicalUrl({ host, subdomain, shop, product: initialProduct })
+    const productUrl = publicProduct
+        ? getProductCanonicalUrl({ host, subdomain, shop: publicShop, product: publicProduct })
         : '';
-    const homepageUrl = getHomepageCanonicalUrl({ host, subdomain, shop });
-    const categoryUrl = initialProduct?.category
-        ? getCategoryCanonicalUrl({ host, subdomain, shop, category: initialProduct.category })
+    const homepageUrl = getHomepageCanonicalUrl({ host, subdomain, shop: publicShop });
+    const categoryUrl = publicProduct?.category
+        ? getCategoryCanonicalUrl({ host, subdomain, shop: publicShop, category: publicProduct.category })
         : homepageUrl;
-    const productJsonLd = initialProduct ? buildProductJsonLd({
-        product: initialProduct,
-        shop,
+    const indexability = resolveStorefrontIndexability({
+        shop: publicShop,
+        resource: publicProduct,
+        resourceType: 'product',
+        host,
+        subdomain,
+        canonicalPath: `/products/${publicProduct?.slug || publicProduct?._id || id}`
+    });
+    const productJsonLd = publicProduct && indexability.structuredDataEligible ? buildProductJsonLd({
+        product: publicProduct,
+        shop: publicShop,
         url: productUrl
     }) : null;
-    const breadcrumbJsonLd = initialProduct ? buildBreadcrumbJsonLd({
+    const breadcrumbJsonLd = publicProduct && indexability.structuredDataEligible ? buildBreadcrumbJsonLd({
         items: [
-            { name: shop?.shopName || shop?.name || 'Store', url: homepageUrl },
-            { name: initialProduct.category || 'Products', url: categoryUrl },
-            { name: initialProduct.title, url: productUrl }
+            { name: publicShop?.shopName || publicShop?.name || 'Store', url: homepageUrl },
+            { name: publicProduct.category || 'Products', url: categoryUrl },
+            { name: publicProduct.title, url: productUrl }
         ]
     }) : null;
 
@@ -127,7 +145,7 @@ export default async function Page({ params }) {
                     dangerouslySetInnerHTML={{ __html: stringifyJsonLd(breadcrumbJsonLd) }}
                 />
             )}
-            <ProductDetails subdomain={subdomain} id={initialProduct?.slug || id} initialProduct={initialProduct} />
+            <ProductDetails subdomain={subdomain} id={publicProduct?.slug || id} initialProduct={publicProduct} />
         </>
     );
 }

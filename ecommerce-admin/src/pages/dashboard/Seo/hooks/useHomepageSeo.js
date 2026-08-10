@@ -5,6 +5,7 @@ import {
     resolveHomepageSeo
 } from '@scaleup/storefront-theme';
 import API from '../../../../api/api.js';
+import { aiRequestHeaders } from '../../../../utils/aiRequestId.js';
 
 const stableValue = (value) => {
     if (Array.isArray(value)) return value.map(stableValue);
@@ -45,6 +46,7 @@ const buildLegacySeoBootstrap = (response) => {
         themeRevision: Number(shop.themeRevision || source.publication?.revision || 0),
         lastPublishedAt: shop.lastPublishedAt || source.publication?.lastPublishedAt || null,
         resolvedSeo: null,
+        previewContext: null,
         health: null,
         capabilities: responseData.planAccess?.capabilityMetadata || source.planAccess?.capabilityMetadata || {},
         domain: {
@@ -279,7 +281,7 @@ export function useHomepageSeo() {
                 currentTheme: { seo: draftSeo },
                 language: draftSeo.language || 'en-BD',
                 spellingPreference: draftSeo.spellingPreference || 'british'
-            });
+            }, { headers: aiRequestHeaders('seo.homepage') });
             setAiState({ loading: false, data: response.data?.data || response.data, error: '' });
         } catch (requestError) {
             setAiState({
@@ -349,9 +351,14 @@ export function useHomepageSeo() {
     const resolvedSeo = useMemo(() => {
         if (!bootstrap) return null;
         const canonical = bootstrap.resolvedSeo?.canonical || bootstrap.domain?.canonical;
+        const previewContext = bootstrap.previewContext || {};
+        const indexingContext = previewContext.indexing || {};
+        const legacyIndexable = bootstrap.resolvedSeo?.robots?.follow !== false;
         return resolveHomepageSeo({
+            ...previewContext,
             seo: draftSeo,
             shopIdentity: {
+                ...(previewContext.shopIdentity || {}),
                 shopName: bootstrap.shop?.shopName,
                 displayName: bootstrap.shop?.shopName,
                 subdomain: bootstrap.shop?.subdomain,
@@ -359,12 +366,16 @@ export function useHomepageSeo() {
                 primaryCategory: draftSeo.primaryCategory,
                 language: draftSeo.language || 'en-BD'
             },
-            domain: { canonicalUrl: canonical },
+            domain: {
+                ...(previewContext.domain || {}),
+                canonicalUrl: canonical
+            },
             indexing: {
+                ...indexingContext,
                 vendorVisible: draftSeo.searchEngineVisibility !== false,
-                shopPublished: bootstrap.resolvedSeo?.robots?.follow !== false,
-                platformAllowed: bootstrap.resolvedSeo?.robots?.follow !== false,
-                environmentAllowsIndexing: bootstrap.resolvedSeo?.robots?.follow !== false
+                shopPublished: indexingContext.shopPublished ?? legacyIndexable,
+                platformAllowed: indexingContext.platformAllowed ?? legacyIndexable,
+                environmentAllowsIndexing: indexingContext.environmentAllowsIndexing ?? legacyIndexable
             }
         });
     }, [bootstrap, draftAliases, draftSeo]);
@@ -374,7 +385,9 @@ export function useHomepageSeo() {
         collectionCount: bootstrap?.seoStats?.collections?.total || 0,
         imageAltCoverage: bootstrap?.seoStats?.imageAltCoverage || 0,
         googleSiteVerification: draftSeo.googleSiteVerification,
-        customDomainConnected: bootstrap?.domain?.customDomain?.status === 'Verified'
+        customDomainConnected: bootstrap?.domain?.customDomain?.status === 'Verified',
+        h1: bootstrap?.previewContext?.storefrontContent?.heroTitle || '',
+        internalLinkCount: bootstrap?.previewContext?.storefrontContent?.internalLinkCount || 0
     }) : bootstrap?.health, [bootstrap, draftSeo.googleSiteVerification, resolvedSeo]);
 
     return {

@@ -10,6 +10,7 @@ import {
     headingStyle,
     isPreviewMobile,
     LinkSlot,
+    normalizeCategoryIdentity,
     normalizeImageList,
     optimizeCloudinaryImage,
 } from "./referenceCore";
@@ -51,6 +52,30 @@ const getCategoryModel = (category, index, products = []) => {
     };
 };
 
+const getUniqueCategoryModels = (categories = [], products = [], limit = 24) => {
+    const modelsByIdentity = new Map();
+
+    categories.forEach((category, index) => {
+        const model = getCategoryModel(category, index, products);
+        const identity = normalizeCategoryIdentity(model.name);
+        if (!identity) return;
+
+        const current = modelsByIdentity.get(identity);
+        if (!current) {
+            modelsByIdentity.set(identity, model);
+            return;
+        }
+
+        modelsByIdentity.set(identity, {
+            ...current,
+            image: current.image || model.image,
+            productCount: Math.max(Number(current.productCount) || 0, Number(model.productCount) || 0) || null,
+        });
+    });
+
+    return [...modelsByIdentity.values()].slice(0, limit);
+};
+
 const CategoryCount = ({ count, onImage = false }) => {
     if (!Number.isFinite(count) || count <= 0) return null;
     return (
@@ -64,7 +89,7 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
     const settings = section.settings || {};
     const variant = settings.variant || "cards";
     const maxCategories = Math.min(Math.max(Number(settings.maxCategories) || 10, 1), 24);
-    const items = (categories || []).slice(0, maxCategories).map((category, index) => getCategoryModel(category, index, catalogProducts)).filter(item => item.name);
+    const items = getUniqueCategoryModels(categories, catalogProducts, maxCategories);
     const mobileColumns = Math.min(Math.max(Number(section.mobileSettings?.columns) || 2, 1), 4);
     const desktopColumns = Math.min(Math.max(Number(settings.columns) || 4, 1), 4);
     const categoryGridClass = previewDevice

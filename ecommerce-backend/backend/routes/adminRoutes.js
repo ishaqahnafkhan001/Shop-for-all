@@ -837,6 +837,7 @@ router.post(
     requireShopFeature('aiProductCreation'),
     blockBillingSuspendedShop,
     blockVerificationSuspendedShop,
+    productAiLimiter,
     generateDescription
 );
 

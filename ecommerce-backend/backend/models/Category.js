@@ -24,6 +24,10 @@ const categorySchema = new Schema({
         url: { type: String, trim: true, default: '' },
         publicId: { type: String, trim: true, default: '', select: false },
         altText: { type: String, trim: true, maxlength: 140, default: '' }
+    },
+    seo: {
+        title: { type: String, trim: true, maxlength: 70, default: '' },
+        description: { type: String, trim: true, maxlength: 170, default: '' }
     }
 }, { timestamps: true });
 

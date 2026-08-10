@@ -35,14 +35,17 @@ test('public product detail lookup supports tenant-safe slug and ObjectId fallba
 
 test('public review routes resolve product slugs without exposing cross-tenant reviews', () => {
     const reviewController = read('controllers/reviewController.js');
+    const reviewService = read('services/reviews/reviewService.js');
 
     assert.match(reviewController, /resolvePublicProductId/);
     assert.match(reviewController, /shop_id:\s*shopId/);
     assert.match(reviewController, /slug:\s*raw\.toLowerCase\(\)/);
     assert.match(reviewController, /mongoose\.Types\.ObjectId\.isValid\(raw\)/);
     assert.match(reviewController, /const shopId = req\.tenantId/);
-    assert.match(reviewController, /product_id:\s*productId/);
-    assert.match(reviewController, /Review\.find\(\{\s*shop_id:\s*shopId,\s*product_id:\s*productId\s*\}\)/);
+    assert.match(reviewController, /listEligibleReviews\(\{ shopId, productId/);
+    assert.match(reviewService, /shop_id:\s*shopId/);
+    assert.match(reviewService, /product_id:\s*productId/);
+    assert.match(reviewService, /eligibleReviewQuery\(\)/);
 });
 
 test('storefront SEO helpers build canonical metadata and safe product JSON-LD', () => {
@@ -542,11 +545,11 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(productPage, /buildStorefrontMetadata/);
     assert.match(productPage, /buildProductJsonLd/);
     assert.match(productPage, /buildBreadcrumbJsonLd/);
-    assert.match(productPage, /isObjectId\(id\)/);
-    assert.match(productPage, /redirect\(`\/products\/\$\{initialProduct\.slug\}`\)/);
+    assert.match(productPage, /permanentRedirect\(`\/products\/\$\{publicProduct\.slug\}`\)/);
     assert.match(productPage, /type:\s*'website'/);
     assert.doesNotMatch(productPage, /type:\s*'product'/);
-    assert.match(productPage, /isShopSearchVisible\(shop\)/);
+    assert.match(productPage, /resolveStorefrontIndexability/);
+    assert.match(productPage, /structuredDataEligible/);
     assert.match(productPage, /googleSiteVerification/);
 
     assert.match(policyIndexPage, /export async function generateMetadata/);
@@ -554,14 +557,14 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(policyIndexPage, /Store Policies/);
     assert.match(policyIndexPage, /\/policies/);
     assert.match(policyIndexPage, /getPolicyContent/);
-    assert.match(policyIndexPage, /isShopSearchVisible\(shop\)/);
+    assert.match(policyIndexPage, /resolveStorefrontIndexability/);
     assert.match(policyIndexPage, /googleSiteVerification/);
 
     assert.match(policyPage, /export async function generateMetadata/);
     assert.match(policyPage, /buildStorefrontMetadata/);
     assert.match(policyPage, /getPolicyCanonicalUrl/);
-    assert.match(policyPage, /isShopSearchVisible\(shop\)/);
-    assert.match(policyPage, /isIndexable:\s*Boolean\(POLICY_LABELS\[type\] && content && isShopSearchVisible\(shop\)\)/);
+    assert.match(policyPage, /resolveStorefrontIndexability/);
+    assert.match(policyPage, /isIndexable:\s*Boolean\(POLICY_LABELS\[type\] && indexability\.indexable\)/);
     assert.match(policyPage, /googleSiteVerification/);
 
     assert.match(pageMetadataHelper, /buildTenantPageMetadata/);
@@ -572,25 +575,28 @@ test('homepage, product, and policy routes render server metadata', () => {
 
 test('sitemap and robots expose only public SEO URLs and noindex private pages', () => {
     const sitemap = readRepo('ecommerce-storefront/src/app/[subdomain]/sitemap.xml/route.js');
+    const sitemapChunk = readRepo('ecommerce-storefront/src/app/[subdomain]/sitemaps/[name]/route.js');
+    const sitemapXml = readRepo('ecommerce-storefront/src/lib/sitemapXml.js');
     const robots = readRepo('ecommerce-storefront/src/app/[subdomain]/robots.txt/route.js');
     const publicProductSerializer = read('services/publicProductSerializer.js');
 
     assert.match(sitemap, /fetchStorefrontInfo/);
-    assert.match(sitemap, /fetchStorefrontProducts/);
-    assert.match(sitemap, /fetchStorefrontCollections/);
-    assert.match(sitemap, /\.filter\(product => product\?\.slug\)/);
-    assert.match(sitemap, /getProductCanonicalUrl/);
-    assert.match(sitemap, /getCollectionCanonicalUrl/);
-    assert.match(sitemap, /getHomepageCanonicalUrl/);
-    assert.match(sitemap, /collection\?\.slug/);
-    assert.match(sitemap, /collection\.productCount/);
-    assert.match(sitemap, /getPolicyCanonicalUrl/);
-    assert.match(sitemap, /lastmod:\s*product\.updatedAt \|\| product\.createdAt/);
+    assert.match(sitemap, /fetchStorefrontSitemapData/);
+    assert.match(sitemap, /buildSitemapIndexXml/);
+    assert.match(sitemap, /products-\$\{index \+ 1\}\.xml/);
+    assert.match(sitemapChunk, /getProductCanonicalUrl/);
+    assert.match(sitemapChunk, /getCollectionCanonicalUrl/);
+    assert.match(sitemapChunk, /getHomepageCanonicalUrl/);
+    assert.match(sitemapChunk, /getPolicyCanonicalUrl/);
+    assert.match(sitemapChunk, /lastmod:\s*product\.updatedAt \|\| product\.createdAt/);
     assert.match(publicProductSerializer, /createdAt:\s*1/);
     assert.match(publicProductSerializer, /updatedAt:\s*1/);
-    assert.match(sitemap, /\/policies/);
-    assert.match(sitemap, /isShopSearchVisible\(shop\)/);
-    assert.match(sitemap, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"><\/urlset>/);
+    assert.match(sitemapChunk, /POLICY_TYPES/);
+    assert.match(sitemap, /resolveStorefrontIndexability/);
+    assert.match(sitemapChunk, /resolveStorefrontIndexability/);
+    assert.match(sitemapXml, /escapeXml/);
+    assert.match(sitemapXml, /sitemapindex/);
+    assert.match(sitemapXml, /urlset/);
 
     assert.match(robots, /Disallow: \$\{path\}/);
     assert.match(robots, /"\/cart"/);
@@ -599,10 +605,9 @@ test('sitemap and robots expose only public SEO URLs and noindex private pages',
     assert.match(robots, /"\/search"/);
     assert.match(robots, /"\/preview"/);
     assert.doesNotMatch(robots, /"\/collections"/);
-    assert.doesNotMatch(robots, /isShopSearchVisible/);
-    assert.doesNotMatch(robots, /if \(!isShopSearchVisible/);
-    assert.match(robots, /getShopBaseUrl/);
-    assert.match(robots, /Sitemap: \$\{baseUrl\.replace\(\/\\\/\$\/,\s*""\)\}\/sitemap\.xml/);
+    assert.match(robots, /resolveStorefrontIndexability/);
+    assert.match(robots, /if \(!policy\.indexable\)/);
+    assert.match(robots, /Sitemap: \$\{policy\.canonicalOrigin\}\/sitemap\.xml/);
     assert.match(robots, /Sitemap:/);
     assert.match(robots, /catch \(error\) \{/);
     assert.match(robots, /getStorefrontPlanRedirectUrl\(error, "\/robots\.txt"\)/);
@@ -702,7 +707,8 @@ test('public collection and category SEO routes are tenant-safe', () => {
     assert.match(collectionPage, /export async function generateMetadata/);
     assert.match(collectionPage, /getCollectionCanonicalUrl/);
     assert.match(collectionPage, /buildCollectionItemListJsonLd/);
-    assert.match(collectionPage, /isShopSearchVisible\(shop\)/);
+    assert.match(collectionPage, /resolveStorefrontIndexability/);
+    assert.match(collectionPage, /structuredDataEligible/);
     assert.match(collectionPage, /googleSiteVerification/);
     assert.match(collectionClient, /ProductCard/);
     assert.match(collectionClient, /LinkComponent=\{Link\}/);
@@ -710,7 +716,7 @@ test('public collection and category SEO routes are tenant-safe', () => {
     assert.match(categoryPage, /getCategoryCanonicalUrl/);
     assert.match(
         readRepo('ecommerce-storefront/src/app/[subdomain]/products/[id]/page.jsx'),
-        /getCategoryCanonicalUrl\(\{\s*host,\s*subdomain,\s*shop,\s*category:\s*initialProduct\.category\s*\}\)/
+        /getCategoryCanonicalUrl\(\{\s*host,\s*subdomain,\s*shop:\s*publicShop,\s*category:\s*publicProduct\.category\s*\}\)/
     );
     assert.match(categoryPage, /fetchStorefrontProducts/);
     assert.match(categoryPage, /getCategoryFilters/);

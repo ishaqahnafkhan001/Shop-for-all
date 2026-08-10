@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Product = require('../../models/Product');
+const { assertHistoricalSlugAvailable } = require('../seo/slugRedirectService');
 const { PUBLIC_PRODUCT_CARD_PROJECT } = require('../publicProductSerializer');
 
 const slugify = (value = '') =>
@@ -16,11 +17,20 @@ const getUniqueSlug = async ({ shopId, requestedSlug, title, session }) => {
     let candidate = baseSlug;
     let suffix = 2;
 
-    while (await Product.findOne({
-        shop_id: shopId,
-        slug: candidate,
-        isDeleted: false
-    }).select('_id').session(session || null)) {
+    while (true) {
+        const currentCollision = await Product.findOne({
+            shop_id: shopId,
+            slug: candidate,
+            isDeleted: false
+        }).select('_id').session(session || null);
+        let historicalCollision = false;
+        try {
+            await assertHistoricalSlugAvailable({ shopId, resourceType: 'product', slug: candidate, session });
+        } catch (error) {
+            if (error.code !== 'SLUG_HISTORY_COLLISION') throw error;
+            historicalCollision = true;
+        }
+        if (!currentCollision && !historicalCollision) break;
         const suffixText = `-${suffix}`;
         candidate = `${baseSlug.slice(0, 80 - suffixText.length)}${suffixText}`;
         suffix += 1;

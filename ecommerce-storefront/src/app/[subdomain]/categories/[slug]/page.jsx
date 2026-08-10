@@ -1,10 +1,11 @@
 import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 
 import CategoryPageClient from "./CategoryPageClient";
 import {
     fetchStorefrontInfo,
     fetchStorefrontProducts,
+    fetchStorefrontSlugRedirect,
     getStorefrontPlanRedirectUrl
 } from "@/lib/storefrontServer";
 import {
@@ -15,9 +16,9 @@ import {
     getCategorySeoTitle,
     getHomepageCanonicalUrl,
     getProductCanonicalUrl,
-    isShopSearchVisible,
     noindexMetadata
 } from "@/lib/seo";
+import { resolveStorefrontIndexability } from "@/lib/indexability";
 
 const decodeCategory = (value = "") => {
     try {
@@ -47,14 +48,14 @@ const getCategoryFilters = (searchParams = {}) => {
     };
 };
 
-const getCategoryPageData = async (subdomain, slug, host = "", searchParams = {}) => {
+const getCategoryPageData = async (subdomain, slug, host = "", searchParams = {}, fresh = false) => {
     const category = decodeCategory(slug);
     if (!category) return null;
     const filters = getCategoryFilters(searchParams);
 
     try {
         const [shop, productData] = await Promise.all([
-            fetchStorefrontInfo(subdomain, { storefrontHost: host }),
+            fetchStorefrontInfo(subdomain, { storefrontHost: host, fresh }),
             fetchStorefrontProducts(subdomain, {
                 category,
                 page: filters.page,
@@ -65,7 +66,7 @@ const getCategoryPageData = async (subdomain, slug, host = "", searchParams = {}
                 stock: filters.stock === "all" ? "" : filters.stock,
                 sale: filters.sale,
                 rating: filters.rating
-            }, { storefrontHost: host })
+            }, { storefrontHost: host, fresh })
         ]);
 
         const products = productData?.data || productData?.products || [];
@@ -104,20 +105,28 @@ export async function generateMetadata({ params }) {
     const { subdomain, slug } = await params;
     const headerStore = await headers();
     const host = headerStore.get("host") || "";
-    const data = await getCategoryPageData(subdomain, slug, host);
+    const data = await getCategoryPageData(subdomain, slug, host, {}, true);
 
     if (!data?.shop || !data?.exists) {
         return noindexMetadata("Category unavailable", "This category is currently unavailable.");
     }
 
+    const indexability = resolveStorefrontIndexability({
+        shop: data.shop,
+        resource: { ...(data.categoryDetail || {}), productCount: data.pagination?.totalItems ?? data.pagination?.total ?? data.products.length },
+        resourceType: "category",
+        host,
+        subdomain,
+        canonicalPath: `/categories/${encodeURIComponent(data.category)}`
+    });
     return buildStorefrontMetadata({
         shop: data.shop,
-        pageTitle: getCategorySeoTitle(data.category, data.shop),
-        description: getCategorySeoDescription(data.category, data.shop),
+        pageTitle: getCategorySeoTitle(data.categoryDetail || data.category, data.shop),
+        description: getCategorySeoDescription(data.categoryDetail || data.category, data.shop),
         url: getCategoryCanonicalUrl({ host, subdomain, shop: data.shop, category: data.category }),
         image: data.categoryDetail?.coverImage?.url || data.categoryDetail?.image || "",
         type: "website",
-        isIndexable: isShopSearchVisible(data.shop),
+        isIndexable: indexability.indexable,
         googleSiteVerification: data.shop?.theme?.seo?.googleSiteVerification || ""
     });
 }
@@ -130,17 +139,40 @@ export default async function CategoryPage({ params, searchParams }) {
     const data = await getCategoryPageData(subdomain, slug, host, resolvedSearchParams || {});
     if (data?.redirectTo) redirect(data.redirectTo);
 
-    if (!data?.shop || !data?.exists) notFound();
+    if (!data?.shop || !data?.exists) {
+        if (data?.shop) {
+            try {
+                const historical = await fetchStorefrontSlugRedirect(subdomain, "category", slug, {
+                    storefrontHost: host,
+                    fresh: true
+                });
+                if (historical?.currentSlug) {
+                    permanentRedirect(`/categories/${encodeURIComponent(historical.currentSlug)}`);
+                }
+            } catch {
+                // A missing history record is a genuine category 404.
+            }
+        }
+        notFound();
+    }
 
     const homepageUrl = getHomepageCanonicalUrl({ host, subdomain, shop: data.shop });
     const categoryUrl = getCategoryCanonicalUrl({ host, subdomain, shop: data.shop, category: data.category });
-    const breadcrumbJsonLd = buildBreadcrumbJsonLd({
+    const indexability = resolveStorefrontIndexability({
+        shop: data.shop,
+        resource: { ...(data.categoryDetail || {}), productCount: data.pagination?.totalItems ?? data.pagination?.total ?? data.products.length },
+        resourceType: "category",
+        host,
+        subdomain,
+        canonicalPath: `/categories/${encodeURIComponent(data.category)}`
+    });
+    const breadcrumbJsonLd = indexability.structuredDataEligible ? buildBreadcrumbJsonLd({
         items: [
             { name: data.shop?.shopName || data.shop?.name || "Store", url: homepageUrl },
             { name: data.category, url: categoryUrl }
         ]
-    });
-    const itemListJsonLd = data.products.length ? {
+    }) : null;
+    const itemListJsonLd = indexability.structuredDataEligible && data.products.length ? {
         "@context": "https://schema.org",
         "@type": "ItemList",
         name: data.category,

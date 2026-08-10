@@ -1,8 +1,8 @@
-const Review = require('../models/Review');
 const Product = require('../models/Product');
 const User = require('../models/User'); // 🌟 Import the User model
 const { addReviewSchema } = require('../validations/productValidation');
 const mongoose = require('mongoose');
+const { createEligibleReview, listEligibleReviews } = require('../services/reviews/reviewService');
 
 const resolvePublicProductId = async (shopId, slugOrId) => {
     const raw = String(slugOrId || '').trim();
@@ -47,7 +47,7 @@ exports.addProductReview = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const review = await Review.create({
+        const review = await createEligibleReview({
             shop_id: shopId,
             product_id: productId,
             user_id: userId,
@@ -78,11 +78,9 @@ exports.getProductReviews = async (req, res) => {
         }
 
         // 🛡️ Always query by shop_id to maintain tenant boundaries
-        const reviews = await Review.find({ shop_id: shopId, product_id: productId })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
+        const safePage = Math.max(parseInt(page, 10) || 1, 1);
+        const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+        const reviews = await listEligibleReviews({ shopId, productId, page: safePage, limit: safeLimit });
 
         res.status(200).json({ success: true, count: reviews.length, data: reviews });
     } catch (error) {

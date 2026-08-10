@@ -33,7 +33,14 @@ router.use(requirePermission('catalogTools'));
 router.use(requireShopFeature('bulkProductTools'));
 
 router.get('/', getCollections);
-router.post('/ai/suggest', requirePermission('collectionsAi'), blockVerificationSuspendedShop, collectionAiLimiter, suggestCollectionAi);
+router.post(
+    '/ai/suggest',
+    requirePermission('collectionsAi'),
+    requireShopFeature('aiProductCreation'),
+    blockVerificationSuspendedShop,
+    collectionAiLimiter,
+    suggestCollectionAi
+);
 router.post('/', blockVerificationSuspendedShop, catalogImageUpload.single('image'), createCollection);
 router.patch('/:id', blockVerificationSuspendedShop, catalogImageUpload.single('image'), updateCollection);
 router.delete('/:id', blockVerificationSuspendedShop, deleteCollection);

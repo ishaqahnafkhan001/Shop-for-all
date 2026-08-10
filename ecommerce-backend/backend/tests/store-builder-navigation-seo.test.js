@@ -150,6 +150,7 @@ test('Homepage SEO draft and revision records include aliases and shared revisio
 test('standalone Homepage SEO page is deep-linkable and preserves local drafts on conflict', () => {
     const app = readRepo('ecommerce-admin/src/App.jsx');
     const page = readRepo('ecommerce-admin/src/pages/dashboard/Seo/HomepageSeoPage.jsx');
+    const actionCenter = readRepo('ecommerce-admin/src/components/seo/HomepageSeoActionCenter.jsx');
     const hook = readRepo('ecommerce-admin/src/pages/dashboard/Seo/hooks/useHomepageSeo.js');
     const storeBuilderBootstrap = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useStoreBuilderBootstrap.js');
 
@@ -159,7 +160,9 @@ test('standalone Homepage SEO page is deep-linkable and preserves local drafts o
     assert.match(page, /Social Sharing/);
     assert.match(page, /Indexing/);
     assert.match(page, /AI Assistant/);
-    assert.match(page, /SEO Health/);
+    assert.match(page, /SEO Action Center/);
+    assert.match(actionCenter, /Fix these first/);
+    assert.match(actionCenter, /does not guarantee a Google ranking/);
     assert.match(page, /useSearchParams/);
     assert.match(page, /searchParams\.get\('field'\)/);
     assert.match(hook, /\/store-builder\/admin\/seo\/bootstrap/);

@@ -11,6 +11,7 @@ import {
     headingStyle,
     isPreviewMobile,
     isPreviewNarrow,
+    normalizeCategoryIdentity,
     plainGridClasses,
     productGridGapClasses,
     resolveAllProductsLayout,
@@ -42,6 +43,17 @@ const getCategoryOption = (category, index) => {
     };
 };
 
+const getCategoryOptions = (categories = []) => {
+    const optionsByIdentity = new Map();
+
+    categories.map(getCategoryOption).filter(Boolean).forEach(option => {
+        const identity = normalizeCategoryIdentity(option.value);
+        if (identity && !optionsByIdentity.has(identity)) optionsByIdentity.set(identity, option);
+    });
+
+    return [...optionsByIdentity.values()];
+};
+
 const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinPriceChange, onMaxPriceChange, onPriceApply, onClearFilters, onRatingChange, onStockChange }) => (
     <div className="min-w-0 rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-5" style={{ backgroundColor: "var(--sf-all-products-filter-bg)", color: "var(--sf-all-products-filter-text)" }}>
         <div className="mb-5 flex items-center justify-between">
@@ -50,7 +62,7 @@ const FilterPanel = ({ categories, filters, priceInput, onCategoryChange, onMinP
         </div>
         <div className="space-y-2">
             <button type="button" onClick={() => onCategoryChange("All")} className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-50" style={filters.category === "All" ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" } : { color: "var(--sf-all-products-filter-text)" }}>All Products</button>
-            {categories?.map(getCategoryOption).filter(Boolean).map((category) => (
+            {getCategoryOptions(categories).map((category) => (
                 <button key={category.key} type="button" onClick={() => onCategoryChange(category.value)} className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition hover:bg-slate-50" style={filters.category === category.value ? { backgroundColor: "var(--sf-all-products-pagination-active-bg)", color: "var(--sf-all-products-pagination-active-text)" } : { color: "var(--sf-all-products-filter-text)" }}>
                     {category.label}
                 </button>

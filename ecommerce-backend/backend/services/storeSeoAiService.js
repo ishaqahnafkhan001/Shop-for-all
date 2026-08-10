@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
 const {
     buildSeoInputSnapshot,
     cleanSeoText,
@@ -8,6 +8,42 @@ const {
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const DEFAULT_TIMEOUT_MS = 15000;
 const AI_NOT_CONFIGURED_MESSAGE = 'AI SEO suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.';
+const PROMPT_ID = 'seo.homepage';
+const PROMPT_VERSION = '2.0.0';
+const stringSchema = (description = '') => ({ type: SchemaType.STRING, ...(description ? { description } : {}) });
+const SEO_RESPONSE_SCHEMA = {
+    type: SchemaType.OBJECT,
+    required: ['alternatives', 'recommendations'],
+    properties: {
+        alternatives: {
+            type: SchemaType.ARRAY,
+            minItems: 3,
+            maxItems: 3,
+            items: {
+                type: SchemaType.OBJECT,
+                required: ['id', 'title', 'description', 'explanation', 'tone', 'topics', 'limitations'],
+                properties: {
+                    id: stringSchema(),
+                    title: stringSchema(),
+                    description: stringSchema(),
+                    explanation: stringSchema(),
+                    tone: stringSchema(),
+                    topics: { type: SchemaType.ARRAY, maxItems: 12, items: stringSchema() },
+                    limitations: stringSchema()
+                }
+            }
+        },
+        recommendations: {
+            type: SchemaType.ARRAY,
+            maxItems: 8,
+            items: {
+                type: SchemaType.OBJECT,
+                required: ['type', 'priority', 'message'],
+                properties: { type: stringSchema(), priority: stringSchema(), message: stringSchema() }
+            }
+        }
+    }
+};
 
 const safeString = (value = '', max = 300) => cleanSeoText(value, max)
     .replace(/[{}\[\]`]/g, ' ')
@@ -161,7 +197,13 @@ const callGemini = async (prompt) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
         model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
-        generationConfig: { temperature: 0.45, topP: 0.85, maxOutputTokens: 1800, responseMimeType: 'application/json' }
+        generationConfig: {
+            temperature: 0.45,
+            topP: 0.85,
+            maxOutputTokens: 1800,
+            responseMimeType: 'application/json',
+            responseSchema: SEO_RESPONSE_SCHEMA
+        }
     });
     let timer;
     const timeout = new Promise((_, reject) => {
@@ -197,11 +239,13 @@ const generateStoreSeoSuggestion = async (input = {}) => {
     const generatedFromHash = computeSeoInputHash(seoInputContext);
 
     let parsed;
+    let fallbackReason = '';
     try {
         parsed = parseGeminiJson(await callGemini(buildPrompt(context)));
     } catch (error) {
         if (error.code === 'AI_NOT_CONFIGURED') throw error;
         if (error.code === 'SEO_AI_OUTPUT_INVALID') {
+            fallbackReason = 'AI_RESPONSE_PARSE_FAILED';
             parsed = { alternatives: buildFallbackAlternatives(context), recommendations: [{ type: 'content', priority: 'medium', message: 'Review the generated fallback because the AI provider response was unreadable.' }] };
         } else {
             const providerError = new Error('AI SEO suggestions could not be generated right now. Please try again later.');
@@ -213,7 +257,8 @@ const generateStoreSeoSuggestion = async (input = {}) => {
     const alternatives = (Array.isArray(parsed.alternatives) ? parsed.alternatives : [])
         .slice(0, 3)
         .map((option, index) => normalizeAlternative(option, index, context));
-    const safeAlternatives = alternatives.length === 3 ? alternatives : buildFallbackAlternatives(context);
+    if (alternatives.length !== 3 && !fallbackReason) fallbackReason = 'AI_RESPONSE_INCOMPLETE';
+    const safeAlternatives = fallbackReason ? buildFallbackAlternatives(context) : alternatives;
     const first = safeAlternatives[0];
     return {
         title: first.title,
@@ -225,7 +270,20 @@ const generateStoreSeoSuggestion = async (input = {}) => {
         generatedAt: new Date().toISOString(),
         generatedFromHash,
         inputSnapshot,
-        fallback: alternatives.length !== 3
+        fallback: Boolean(fallbackReason),
+        errorCode: fallbackReason || undefined,
+        meta: {
+            source: fallbackReason ? 'deterministic_fallback' : 'provider',
+            fallback: Boolean(fallbackReason),
+            configured: true,
+            generatedAt: new Date().toISOString(),
+            model: fallbackReason ? null : (process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL),
+            promptId: PROMPT_ID,
+            promptVersion: PROMPT_VERSION,
+            limitations: fallbackReason
+                ? ['The provider response could not be used, so alternatives were generated from the public store context.']
+                : []
+        }
     };
 };
 

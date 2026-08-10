@@ -179,9 +179,9 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
             { $group: { _id: '$category', productCount: { $sum: 1 } } }
         ]),
         Collection.find({ shop_id: shop._id, isActive: true }).select('_id title slug').sort({ title: 1 }).limit(50).lean(),
-        Review.find({ shop_id: shop._id, rating: 5 }).select('_id product_id name rating comment createdAt').sort({ createdAt: -1 }).limit(10).lean(),
+        Review.find({ shop_id: shop._id, rating: 5, ...Review.getEligibilityQuery() }).select('_id product_id name rating comment createdAt').sort({ createdAt: -1 }).limit(10).lean(),
         selectedReviewIds.length
-            ? Review.find({ shop_id: shop._id, rating: 5, _id: { $in: selectedReviewIds } }).select('_id product_id name rating comment createdAt').lean()
+            ? Review.find({ shop_id: shop._id, rating: 5, _id: { $in: selectedReviewIds }, ...Review.getEligibilityQuery() }).select('_id product_id name rating comment createdAt').lean()
             : [],
         getSeoStatistics(shop._id),
         StoreBuilderDraft.findOne({ shop_id: shop._id }).select('-__v').lean(),

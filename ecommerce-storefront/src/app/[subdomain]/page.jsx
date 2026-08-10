@@ -1,7 +1,7 @@
 import StorefrontHomeClient from './StorefrontHomeClient';
 import { fetchStorefrontBootstrap, getStorefrontPlanRedirectUrl } from '@/lib/storefrontServer';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
     buildHomepageJsonLd,
     buildNextHomepageMetadata,
@@ -9,6 +9,7 @@ import {
     noindexMetadata,
     resolveStorefrontHomepageSeo
 } from '@/lib/seo';
+import { resolveStorefrontIndexability } from '@/lib/indexability';
 
 const stringifyJsonLd = (jsonLd) => JSON.stringify(jsonLd).replace(/</g, '\\u003c');
 
@@ -28,6 +29,7 @@ const getInitialStorefrontData = async (subdomain, host = '') => {
         if ([404, 423].includes(error.status)) {
             return {
                 shop: null,
+                status: error.status,
                 error: error.body?.error || error.message || 'This storefront is currently unavailable.',
             };
         }
@@ -81,9 +83,17 @@ export default async function VendorHomePage({ params, searchParams }) {
     const host = headerStore.get('host') || '';
     const initialData = await getInitialStorefrontData(subdomain, host);
     if (initialData?.redirectTo) redirect(initialData.redirectTo);
+    if (initialData?.status === 404) notFound();
     const shop = initialData?.shop;
+    const indexability = resolveStorefrontIndexability({
+        shop,
+        resourceType: 'homepage',
+        host,
+        subdomain,
+        canonicalPath: '/'
+    });
     const homepageUrl = shop ? getHomepageCanonicalUrl({ host, subdomain, shop }) : '';
-    const homepageJsonLd = shop ? buildHomepageJsonLd({
+    const homepageJsonLd = shop && indexability.structuredDataEligible ? buildHomepageJsonLd({
         shop,
         url: homepageUrl,
         subdomain,

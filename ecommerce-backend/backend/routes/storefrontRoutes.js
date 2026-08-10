@@ -20,6 +20,8 @@ const { upload } = require('../config/cloudinary');
 const {
     getStoreInfo,
     getStorefrontBootstrap,
+    getStorefrontSitemapData,
+    getStorefrontSlugRedirect,
     getSingleProduct,
     getBatchProducts,
     getCartRecommendations
@@ -98,6 +100,18 @@ router.get(
     '/:subdomain/info',
     resolveTenant,
     getStoreInfo
+);
+
+router.get(
+    '/:subdomain/seo/sitemap',
+    resolveTenant,
+    getStorefrontSitemapData
+);
+
+router.get(
+    '/:subdomain/seo/redirect/:type/:slug',
+    resolveTenant,
+    getStorefrontSlugRedirect
 );
 
 // ======================================================

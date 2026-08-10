@@ -48,19 +48,21 @@ const {
     buildLimitError
 } = require('../services/billing/planAccessService');
 const {
-    reserveWeeklyAiUsage,
-    completeWeeklyAiUsage,
-    releaseWeeklyAiUsage,
     getWeeklyAiUsage
 } = require('../services/billing/planUsageService');
+const {
+    beginAiGeneration,
+    completeAiGeneration,
+    failAiGeneration,
+    getReplayResponse
+} = require('../services/ai/aiGenerationPolicyService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const {
     reserveQuota,
     releaseQuotaSafely
 } = require('../services/billing/planQuotaReservationService');
 const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
-
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { assertHistoricalSlugAvailable, recordSlugRedirect } = require('../services/seo/slugRedirectService');
 
 const ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];
 
@@ -173,26 +175,13 @@ const sendAiLimitError = async (req, res, error) => {
     return res.status(403).json(payload);
 };
 
-const emitAiUsageChanged = (req, context, usage) => emitSubscriptionEvent(
-    SUBSCRIPTION_EVENTS.USAGE_CHANGED,
-    {
-        req,
-        shopId: req.tenantId,
-        subscriptionId: context.subscription?._id,
-        planKey: context.planKey,
-        affectedResources: ['aiGeneration'],
-        metadata: { action: 'ai_generation', resource: 'aiGeneration', usage }
-    }
-);
-
-
 /**
  * @desc    Generate Product Description via AI (Gemini)
  * @route   POST /api/admin/products/generate-description
  * @access  Private (Admin)
  */
 exports.generateDescription = async (req, res) => {
-    let usageReservation = null;
+    let generationState = null;
     try {
         const { title, category } = req.body;
 
@@ -200,41 +189,51 @@ exports.generateDescription = async (req, res) => {
             return res.status(400).json({ success: false, error: "Product title is required." });
         }
 
-        const context = await getPlanContext(req);
-        usageReservation = await reserveWeeklyAiUsage({
-            shopId: req.tenantId,
-            limit: context.limits.aiProductCreationsPerWeek
+        generationState = await beginAiGeneration({
+            req,
+            feature: 'legacy.product_description'
         });
-
-        // Initialize Gemini (Ensure GEMINI_API_KEY is in your .env file)
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        // Prompt Engineering
-        const prompt = `
-            Act as an expert e-commerce copywriter. Write a compelling, SEO-friendly product description for the following item:
-            - Product Name: ${title}
-            - Category: ${category || 'General'}
-            
-            Format the response in 2 short paragraphs. Focus on the benefits to the user. Keep it professional yet engaging. Do not use markdown symbols like ** or ##.
-        `;
-
-        const result = await model.generateContent(prompt);
-        const description = result.response.text();
-
-        await completeWeeklyAiUsage(usageReservation);
-        usageReservation = null;
-        const usage = await getWeeklyAiUsage({
-            shopId: req.tenantId,
-            limit: context.limits.aiProductCreationsPerWeek
+        const suggestion = await generateProductContentSuggestion({
+            body: {
+                title,
+                category,
+                requestedSections: JSON.stringify(['description'])
+            }
         });
-        await emitAiUsageChanged(req, context, usage);
-        res.status(200).json({ success: true, description: description.trim(), usage });
+        const payload = {
+            success: true,
+            description: suggestion.data?.description || '',
+            fallback: Boolean(suggestion.fallback),
+            meta: suggestion.meta
+        };
+        const usage = await completeAiGeneration({
+            req,
+            state: generationState,
+            result: payload,
+            meta: suggestion.meta
+        });
+        generationState = null;
+        res.set('Deprecation', 'true');
+        res.set('Sunset', 'Wed, 31 Dec 2026 23:59:59 GMT');
+        res.status(200).json({ ...payload, usage });
 
     } catch (err) {
-        await releaseWeeklyAiUsage(usageReservation);
+        const replay = getReplayResponse(err);
+        if (replay) return res.status(200).json({ ...replay, replayed: true });
+        await failAiGeneration({ req, state: generationState, error: err });
         if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);
-        console.error("AI Generation Error:", err);
-        res.status(500).json({ success: false, error: "Failed to generate description. Please try again." });
+        if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
+            return res.status(409).json({ success: false, code: err.code, error: err.message });
+        }
+        if (err?.code === 'AI_NOT_CONFIGURED') {
+            return res.status(503).json({
+                success: false,
+                configured: false,
+                message: 'AI product suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+            });
+        }
+        console.warn('Legacy product AI failure', { requestId: req.id, code: err.code || 'AI_PROVIDER_FAILED' });
+        res.status(502).json({ success: false, code: err.code || 'AI_PROVIDER_FAILED', error: 'Failed to generate description. Please try again.' });
     }
 };
 
@@ -244,7 +243,7 @@ exports.generateDescription = async (req, res) => {
  * @access  Private (VendorAdmin/VendorStaff with products permission)
  */
 exports.generateProductContent = async (req, res) => {
-    let usageReservation = null;
+    let generationState = null;
     try {
         if (!req.body?.title?.trim()) {
             return res.status(400).json({
@@ -253,10 +252,9 @@ exports.generateProductContent = async (req, res) => {
             });
         }
 
-        const context = await getPlanContext(req);
-        usageReservation = await reserveWeeklyAiUsage({
-            shopId: req.tenantId,
-            limit: context.limits.aiProductCreationsPerWeek
+        generationState = await beginAiGeneration({
+            req,
+            feature: 'product.content'
         });
         const suggestion = await generateProductContentSuggestion({
             body: req.body,
@@ -273,15 +271,7 @@ exports.generateProductContent = async (req, res) => {
             imageSizeBytes: diagnostics.imageSizeBytes || undefined
         });
 
-        await completeWeeklyAiUsage(usageReservation);
-        usageReservation = null;
-        const usage = await getWeeklyAiUsage({
-            shopId: req.tenantId,
-            limit: context.limits.aiProductCreationsPerWeek
-        });
-        await emitAiUsageChanged(req, context, usage);
-
-        res.status(200).json({
+        const payload = {
             success: true,
             usedImage: suggestion.usedImage,
             imageSource: suggestion.imageSource || 'text_only',
@@ -289,11 +279,24 @@ exports.generateProductContent = async (req, res) => {
             fallback: Boolean(suggestion.fallback),
             ...(suggestion.errorCode && { errorCode: suggestion.errorCode }),
             data: suggestion.data,
-            usage
+            meta: suggestion.meta
+        };
+        const usage = await completeAiGeneration({
+            req,
+            state: generationState,
+            result: payload,
+            meta: suggestion.meta
         });
+        generationState = null;
+        res.status(200).json({ ...payload, usage });
     } catch (err) {
-        await releaseWeeklyAiUsage(usageReservation);
+        const replay = getReplayResponse(err);
+        if (replay) return res.status(200).json({ ...replay, replayed: true });
+        await failAiGeneration({ req, state: generationState, error: err });
         if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);
+        if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
+            return res.status(409).json({ success: false, code: err.code, message: err.message });
+        }
         if (err?.code === 'AI_NOT_CONFIGURED') {
             return res.status(503).json({
                 success: false,
@@ -730,6 +733,7 @@ exports.updateProduct = async (req, res) => {
         }).session(session);
 
         if (!product) throw new Error('Product not found');
+        const previousSlug = product.slug;
 
         if (hasImageUpdateIntent) {
             const currentImages = Array.isArray(product.images) ? product.images.map(String).filter(Boolean) : [];
@@ -787,6 +791,15 @@ exports.updateProduct = async (req, res) => {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
         normalizeProductPublicationFields(value);
+        if (value.slug && String(value.slug).toLowerCase() !== String(previousSlug || '').toLowerCase()) {
+            await assertHistoricalSlugAvailable({
+                shopId,
+                resourceType: 'product',
+                slug: value.slug,
+                resourceId: product._id,
+                session
+            });
+        }
         const schedulePlanError = await assertScheduledPublishingPlan(req, value);
         if (schedulePlanError) {
             await session.abortTransaction();
@@ -904,6 +917,14 @@ exports.updateProduct = async (req, res) => {
 
         // ── 7. Save ───────────────────────────────────────────────────────────
         await product.save({ session });
+        await recordSlugRedirect({
+            shopId,
+            resourceType: 'product',
+            resourceId: product._id,
+            oldSlug: previousSlug,
+            newSlug: product.slug,
+            session
+        });
 
         // ── 8. Batch inventory logs (single insertMany, not N awaits) ─────────
         const logsToInsert = buildStockAdjustmentLogs({

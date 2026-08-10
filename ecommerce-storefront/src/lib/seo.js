@@ -477,18 +477,28 @@ export const getCollectionSeoDescription = (collection = {}, shop = {}) => {
 };
 
 export const getCategorySeoTitle = (category = "", shop = {}) => {
-    return truncateMetaTitle(cleanTextForMeta(category) || "Products");
+    const categoryValue = typeof category === "object" ? category : { name: category };
+    return truncateMetaTitle(categoryValue?.seo?.title || cleanTextForMeta(categoryValue?.name) || "Products");
 };
 
 export const getCategorySeoDescription = (category = "", shop = {}) => {
+    const categoryValue = typeof category === "object" ? category : { name: category };
     const storeName = shop?.shopName || shop?.name || "this store";
-    return truncateMetaDescription(`Shop ${cleanTextForMeta(category) || "selected products"} from ${storeName}.`);
+    return truncateMetaDescription(
+        categoryValue?.seo?.description ||
+        `Shop ${cleanTextForMeta(categoryValue?.name) || "selected products"} from ${storeName}.`
+    );
 };
 
 const firstHeroImage = (shop = {}) => {
     const hero = shop?.theme?.hero || {};
-    const firstSlide = Array.isArray(hero.slides) ? hero.slides.find(slide => slide?.desktopImage || slide?.mobileImage) : null;
-    return hero.imageUrl || firstSlide?.desktopImage || firstSlide?.mobileImage || "";
+    const currentSlide = Array.isArray(hero.bannerSlides)
+        ? hero.bannerSlides.find(slide => slide?.enabled !== false && (slide?.desktopImage || slide?.mobileImage))
+        : null;
+    const legacySlide = Array.isArray(hero.slides)
+        ? hero.slides.find(slide => slide?.desktopImage || slide?.mobileImage)
+        : null;
+    return currentSlide?.desktopImage || currentSlide?.mobileImage || hero.imageUrl || legacySlide?.desktopImage || legacySlide?.mobileImage || "";
 };
 
 export const getOgImage = (product = null, shop = {}) => {
@@ -640,6 +650,10 @@ export const buildHomepageJsonLd = ({ shop = {}, url = "", subdomain = "", catal
 };
 
 const productPrice = (product = {}) => {
+    const authoritativeSalePrice = Number(
+        product?.pricing?.salePrice ?? product?.salePrice ?? product?.finalPrice
+    );
+    if (Number.isFinite(authoritativeSalePrice) && authoritativeSalePrice >= 0) return authoritativeSalePrice;
     const sellingPrice = Number(product?.pricing?.sellingPrice ?? product?.sellingPrice ?? product?.price ?? 0);
     const discount = Number(product?.pricing?.discount ?? product?.discount ?? 0);
     return discount > 0 ? Math.round(sellingPrice - (sellingPrice * discount / 100)) : sellingPrice;
@@ -667,6 +681,11 @@ export const buildProductJsonLd = ({ product, shop, url } = {}) => {
             "@type": "Brand",
             name: cleanTextForMeta(product.brand || shop?.shopName || "Store")
         },
+        seller: {
+            "@type": "OnlineStore",
+            name: getPreferredSiteName(shop),
+            url: url ? new URL(url).origin : undefined
+        },
         offers: {
             "@type": "Offer",
             price: productPrice(product),
@@ -675,6 +694,14 @@ export const buildProductJsonLd = ({ product, shop, url } = {}) => {
             url
         }
     };
+
+    const saleEndsAt = product?.scheduledSale?.endsAt;
+    if (saleEndsAt) {
+        const endDate = new Date(saleEndsAt);
+        if (!Number.isNaN(endDate.getTime()) && endDate.getTime() > Date.now()) {
+            jsonLd.offers.priceValidUntil = endDate.toISOString();
+        }
+    }
 
     const averageRating = Number(product.averageRating || 0);
     const reviewCount = Number(product.numReviews || 0);

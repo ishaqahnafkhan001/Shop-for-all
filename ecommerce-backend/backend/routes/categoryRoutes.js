@@ -10,6 +10,8 @@ const {
     getCategories,
     getCategoryProductImages,
     saveCategoryCover,
+    saveCategorySeo,
+    updateCategoryMetadata,
     removeCategoryCover
 } = require('../controllers/categoryController');
 
@@ -21,6 +23,8 @@ router.use(requireShopFeature('bulkProductTools'));
 router.get('/', getCategories);
 router.get('/images', getCategoryProductImages);
 router.post('/cover', blockVerificationSuspendedShop, catalogImageUpload.single('coverImage'), saveCategoryCover);
+router.put('/seo', blockVerificationSuspendedShop, saveCategorySeo);
+router.put('/metadata', blockVerificationSuspendedShop, updateCategoryMetadata);
 router.delete('/:id/cover', blockVerificationSuspendedShop, removeCategoryCover);
 
 module.exports = router;

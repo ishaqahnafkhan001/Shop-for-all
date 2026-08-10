@@ -23,7 +23,8 @@ const buildSeoContext = ({ shop, seo, searchAliases, seoStats = {}, categories =
     const heroSlide = shop.theme?.hero?.bannerSlides?.[0] || {};
     const customDomain = shop.customDomain || {};
     const shopPublished = shop.isActive !== false && shop.approvalStatus === 'Approved';
-    const resolvedSeo = resolveHomepageSeo({
+    const navigationItems = Array.isArray(shop.theme?.navigation) ? shop.theme.navigation : [];
+    const previewContext = {
         seo: seo || {},
         shopIdentity: {
             shopName: shop.shopName,
@@ -37,7 +38,8 @@ const buildSeoContext = ({ shop, seo, searchAliases, seoStats = {}, categories =
             heroTitle: heroSlide.title || shop.theme?.hero?.title,
             heroDescription: heroSlide.subtitle || shop.theme?.hero?.subtitle,
             logoUrl: shop.theme?.logoUrl,
-            fallbackSocialImage: shop.theme?.logoUrl || heroSlide.desktopImage || shop.theme?.hero?.imageUrl
+            fallbackSocialImage: shop.theme?.logoUrl || heroSlide.desktopImage || shop.theme?.hero?.imageUrl,
+            internalLinkCount: navigationItems.filter(item => item?.url && item.url !== '#').length
         },
         catalogSummary: {
             productCount: Number(seoStats.products?.total || 0),
@@ -61,7 +63,8 @@ const buildSeoContext = ({ shop, seo, searchAliases, seoStats = {}, categories =
             email: shop.theme?.footer?.contactEmail,
             phone: shop.theme?.footer?.contactPhone
         }
-    });
+    };
+    const resolvedSeo = resolveHomepageSeo(previewContext);
     const health = evaluateHomepageSeo(resolvedSeo, {
         productCount: Number(seoStats.products?.total || 0),
         collectionCount: Number(seoStats.collections?.total || 0),
@@ -69,9 +72,9 @@ const buildSeoContext = ({ shop, seo, searchAliases, seoStats = {}, categories =
         googleSiteVerification: seo?.googleSiteVerification,
         customDomainConnected: Boolean(resolvedSeo.canonical && customDomain?.status === 'Verified'),
         h1: heroSlide.title || shop.theme?.hero?.title,
-        internalLinkCount: (shop.theme?.navigation || []).filter(item => item?.url && item.url !== '#').length
+        internalLinkCount: navigationItems.filter(item => item?.url && item.url !== '#').length
     });
-    return { resolvedSeo, health };
+    return { resolvedSeo, health, previewContext };
 };
 
 const getSocialAsset = async ({ shopId, seo }) => {
@@ -115,6 +118,7 @@ const getStoreBuilderSeoBootstrap = async ({ shopId }) => {
         lastPublishedAt: shop.lastPublishedAt || null,
         lastPublishedBy: shop.lastPublishedBy || null,
         resolvedSeo: diagnostics.resolvedSeo,
+        previewContext: diagnostics.previewContext,
         health: diagnostics.health,
         capabilities: planAccess?.capabilityMetadata || {},
         domain: {

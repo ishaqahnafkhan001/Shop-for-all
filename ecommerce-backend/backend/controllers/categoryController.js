@@ -10,6 +10,10 @@ const {
     serializeCategoryDetail
 } = require('../services/categories/categoryService');
 const { normalizeSourceIdentity } = require('../services/products/productMediaService');
+const {
+    assertHistoricalSlugAvailable,
+    recordSlugRedirect
+} = require('../services/seo/slugRedirectService');
 
 const MAX_CATEGORY_PRODUCT_IMAGES = 60;
 const escapeRegex = (value = '') => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -52,6 +56,15 @@ const destroyImage = async (publicId) => {
 const invalidateCategoryCaches = async (shopId) => {
     await cache.delPattern(`storefront:bootstrap:${shopId}:*`);
 };
+
+const cleanSeoText = (value = '', max = 170) => String(value || '')
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
 
 const getCategoryCounts = async (shopId) => {
     const shopObjectId = new mongoose.Types.ObjectId(shopId);
@@ -227,5 +240,126 @@ exports.removeCategoryCover = async (req, res) => {
     } catch (error) {
         console.error('Remove category cover error:', error);
         res.status(500).json({ success: false, error: 'Failed to remove category cover' });
+    }
+};
+
+exports.saveCategorySeo = async (req, res) => {
+    try {
+        const name = cleanCategoryName(req.body?.categoryName);
+        if (!name) return res.status(400).json({ success: false, error: 'Select a category first.' });
+        const normalizedName = normalizeCategoryKey(name);
+        const productExists = await Product.exists({
+            shop_id: req.tenantId,
+            isDeleted: false,
+            category: { $regex: `^${escapeRegex(name)}$`, $options: 'i' }
+        });
+        if (!productExists) return res.status(404).json({ success: false, error: 'Category not found for this shop.' });
+
+        const category = await Category.findOneAndUpdate(
+            { shop_id: req.tenantId, normalizedName },
+            {
+                $set: {
+                    name,
+                    normalizedName,
+                    seo: {
+                        title: cleanSeoText(req.body?.seo?.title ?? req.body?.seoTitle, 70),
+                        description: cleanSeoText(req.body?.seo?.description ?? req.body?.seoDescription, 170)
+                    }
+                }
+            },
+            { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+        );
+        await invalidateCategoryCaches(req.tenantId);
+        return res.status(200).json({ success: true, data: serializeCategoryDetail(category.toObject()) });
+    } catch (error) {
+        console.error('Save category SEO error:', error);
+        return res.status(400).json({ success: false, error: error.message || 'Failed to save category SEO' });
+    }
+};
+
+exports.updateCategoryMetadata = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const currentName = cleanCategoryName(req.body?.categoryName);
+        const nextName = cleanCategoryName(req.body?.name || currentName);
+        if (!currentName || !nextName) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: 'Category name is required.' });
+        }
+        const currentKey = normalizeCategoryKey(currentName);
+        const nextKey = normalizeCategoryKey(nextName);
+        const sourceProductQuery = {
+            shop_id: req.tenantId,
+            isDeleted: false,
+            category: { $regex: `^${escapeRegex(currentName)}$`, $options: 'i' }
+        };
+        if (!(await Product.exists(sourceProductQuery).session(session))) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, error: 'Category not found for this shop.' });
+        }
+        if (nextKey !== currentKey) {
+            const targetExists = await Product.exists({
+                shop_id: req.tenantId,
+                isDeleted: false,
+                category: { $regex: `^${escapeRegex(nextName)}$`, $options: 'i' }
+            }).session(session);
+            if (targetExists) {
+                await session.abortTransaction();
+                return res.status(409).json({ success: false, error: 'A category with this name already exists.' });
+            }
+        }
+
+        let category = await Category.findOne({ shop_id: req.tenantId, normalizedName: currentKey })
+            .select('+coverImage.publicId')
+            .session(session);
+        if (!category) {
+            [category] = await Category.create([{ shop_id: req.tenantId, name: currentName, normalizedName: currentKey }], { session });
+        }
+        if (nextKey !== currentKey) {
+            await assertHistoricalSlugAvailable({
+                shopId: req.tenantId,
+                resourceType: 'category',
+                slug: nextName,
+                resourceId: category._id,
+                session
+            });
+            await assertHistoricalSlugAvailable({
+                shopId: req.tenantId,
+                resourceType: 'category',
+                slug: currentName,
+                resourceId: category._id,
+                session
+            });
+            await Product.updateMany(sourceProductQuery, { $set: { category: nextName } }, { session });
+        }
+
+        category.name = nextName;
+        category.normalizedName = nextKey;
+        category.seo = {
+            title: cleanSeoText(req.body?.seo?.title ?? req.body?.seoTitle, 70),
+            description: cleanSeoText(req.body?.seo?.description ?? req.body?.seoDescription, 170)
+        };
+        await category.save({ session });
+        await recordSlugRedirect({
+            shopId: req.tenantId,
+            resourceType: 'category',
+            resourceId: category._id,
+            oldSlug: currentName,
+            newSlug: nextName,
+            session
+        });
+        await session.commitTransaction();
+        await invalidateCategoryCaches(req.tenantId);
+        return res.status(200).json({ success: true, data: serializeCategoryDetail(category.toObject()) });
+    } catch (error) {
+        await session.abortTransaction();
+        console.error('Update category metadata error:', error);
+        return res.status(error?.code === 11000 ? 409 : 400).json({
+            success: false,
+            error: error?.code === 11000 ? 'A category with this name already exists.' : (error.message || 'Failed to update category')
+        });
+    } finally {
+        session.endSession();
     }
 };

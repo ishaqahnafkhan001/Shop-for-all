@@ -42,6 +42,24 @@ test('category metadata is tenant-scoped and public serialization excludes Cloud
     });
     assert.equal(merged.find(category => category.name === 'Jewellery').productCount, 7);
     assert.equal(merged.find(category => category.name === 'Empty').productCount, 0);
+
+    const duplicateVariants = service.mergeCategoryDetails({
+        names: ['bala', 'BALA', 'ba\u200Bla'],
+        metadata: [
+            { _id: 'empty-cover', name: 'BALA', updatedAt: '2026-01-01T00:00:00.000Z' },
+            {
+                _id: 'populated-cover',
+                name: 'ba\u200Bla',
+                coverImage: { url: 'https://cdn.example.com/bala.webp', altText: 'Bala category' },
+                updatedAt: '2026-02-01T00:00:00.000Z'
+            }
+        ],
+        counts: new Map([['bala', 7]])
+    });
+    assert.equal(duplicateVariants.length, 1);
+    assert.equal(duplicateVariants[0].name, 'bala');
+    assert.equal(duplicateVariants[0].productCount, 7);
+    assert.equal(duplicateVariants[0].image, 'https://cdn.example.com/bala.webp');
 });
 
 test('category cover routes reuse catalog permissions, feature gates, and validated multipart uploads', () => {
@@ -93,6 +111,7 @@ test('Catalog Tools exposes collection edit/delete and category cover management
     assert.match(catalogTools, /Category covers/);
     assert.match(catalogTools, /Promise\.allSettled/);
     assert.match(catalogTools, /productsPayload\.categoryDetails/);
+    assert.match(catalogTools, /dedupeCategories/);
     assert.doesNotMatch(catalogTools, /toast\.error\('Failed to load catalog tools'\)/);
 });
 
@@ -118,6 +137,8 @@ test('storefront and Store Builder consume enriched categories without replacing
     assert.match(sharedAllProducts, /onCategoryChange\(category\.value\)/);
     assert.match(categoryVariants, /category\?\.coverImage\?\.url \|\| category\?\.image/);
     assert.match(categoryVariants, /productCount/);
+    assert.match(categoryVariants, /getUniqueCategoryModels/);
+    assert.match(sharedAllProducts, /getCategoryOptions/);
     assert.match(categoryPage, /categoryDetail/);
     assert.match(builderPage, /productCategoryDetails/);
     assert.match(builderPreview, /categories=\{categoryNames\.length \? categoryNames : REFERENCE_SAMPLE_CATEGORIES\}/);

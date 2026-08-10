@@ -77,7 +77,7 @@ const scoreSnapshot = (snapshot, negativeReviewCount = 0) => {
 };
 
 const getNegativeReviewCount = async (shopId) => {
-    const reviews = await Review.find({ shop_id: shopId })
+    const reviews = await Review.find({ shop_id: shopId, ...Review.getEligibilityQuery() })
         .select('comment rating')
         .sort({ createdAt: -1 })
         .limit(250)

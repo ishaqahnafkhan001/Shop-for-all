@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { ExternalLink, RefreshCw, Save, Search, Trash2, Upload } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { HomepageSeoActionCenter } from '../../../components/seo/HomepageSeoActionCenter.jsx';
+import { SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import {
     BuilderButton,
     BuilderCard,
@@ -20,12 +21,13 @@ const tabs = [
     ['social-sharing', 'Social Sharing'],
     ['indexing', 'Indexing'],
     ['ai-assistant', 'AI Assistant'],
-    ['health', 'SEO Health']
+    ['health', 'SEO Action Center']
 ];
 
 const fieldTab = (field = '') => {
     if (/social/i.test(field)) return 'social-sharing';
     if (/visibility|googleSiteVerification|robots|canonical/i.test(field)) return 'indexing';
+    if (/aiSuggestion/i.test(field)) return 'ai-assistant';
     if (/siteName|language|spelling|primaryCategory|topics|alias/i.test(field)) return 'search-identity';
     return 'search-appearance';
 };
@@ -41,6 +43,7 @@ const statusLabel = (status, dirty, publishing) => {
 };
 
 export default function HomepageSeoPage() {
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = tabs.some(([id]) => id === searchParams.get('tab')) ? searchParams.get('tab') : 'search-appearance';
     const seo = useHomepageSeo();
@@ -50,6 +53,55 @@ export default function HomepageSeoPage() {
         ...seo.resolvedSeo,
         url: seo.resolvedSeo.canonical
     } : null, [seo.resolvedSeo]);
+    const visibility = useMemo(() => {
+        const indexing = seo.bootstrap?.previewContext?.indexing || {};
+        if (seo.draftSeo.searchEngineVisibility === false) {
+            return {
+                blocked: true,
+                title: 'Search engine visibility is turned off',
+                description: 'Turn visibility on and publish the change before Google can index the storefront.',
+                actionLabel: 'Turn on visibility',
+                action: { id: 'indexability', fieldPath: 'seo.searchEngineVisibility' }
+            };
+        }
+        if (indexing.shopPublished === false) {
+            return {
+                blocked: true,
+                title: 'The store is not published for search engines yet',
+                description: 'Store approval or publication status is preventing indexing. SEO text can still be prepared while the store status is reviewed.',
+                actionLabel: 'Review store settings',
+                action: { id: 'store-status', route: '/dashboard/settings' }
+            };
+        }
+        if (indexing.platformAllowed === false) {
+            return {
+                blocked: true,
+                title: 'Platform visibility is currently blocking indexing',
+                description: 'Your SEO settings are saved, but the store must be active and approved before search engines are allowed to index it.'
+            };
+        }
+        if (indexing.environmentAllowsIndexing === false) {
+            return {
+                blocked: true,
+                title: 'This preview environment is intentionally not indexable',
+                description: 'Local and non-production previews use noindex. The production storefront is evaluated separately after publishing.'
+            };
+        }
+        if (!preview?.robots?.index) {
+            return {
+                blocked: true,
+                title: 'The homepage is currently marked noindex',
+                description: 'Review visibility and publication settings, then publish before requesting indexing.',
+                actionLabel: 'Review indexing',
+                action: { id: 'indexability', fieldPath: 'seo.searchEngineVisibility' }
+            };
+        }
+        return {
+            blocked: false,
+            title: 'Google indexing is allowed',
+            description: 'The homepage is indexable. Continue improving content and submit the sitemap in Google Search Console when ready.'
+        };
+    }, [preview?.robots?.index, seo.bootstrap?.previewContext?.indexing, seo.draftSeo.searchEngineVisibility]);
 
     const selectTab = (tab, field = '') => {
         const next = new URLSearchParams(searchParams);
@@ -57,6 +109,24 @@ export default function HomepageSeoPage() {
         if (field) next.set('field', field);
         else next.delete('field');
         setSearchParams(next);
+    };
+
+    const openSeoAction = (issue = {}) => {
+        const routeById = {
+            'public-h1': '/dashboard/store-builder',
+            'active-collections': '/dashboard/catalog-tools',
+            'internal-links': '/dashboard/store-builder',
+            'image-alt-coverage': '/dashboard/products',
+            'social-profiles': '/dashboard/store-builder',
+            'preferred-domain': '/dashboard/domain'
+        };
+        const route = issue.route || routeById[issue.id];
+        if (route) {
+            navigate(route);
+            return;
+        }
+        const field = String(issue.fieldPath || '').replace(/^seo\./, '');
+        selectTab(fieldTab(issue.fieldPath), field);
     };
 
     useEffect(() => {
@@ -210,7 +280,7 @@ export default function HomepageSeoPage() {
                         <BuilderCard title="Social sharing" description="Control Open Graph and social preview content.">
                             <BuilderInput id="seo-socialTitle" label="Social title" value={seo.draftSeo.socialTitle || ''} onChange={event => seo.updateSeo('socialTitle', event.target.value)} placeholder={preview?.title || ''} />
                             <BuilderTextarea id="seo-socialDescription" label="Social description" value={seo.draftSeo.socialDescription || ''} onChange={event => seo.updateSeo('socialDescription', event.target.value)} placeholder={preview?.description || ''} />
-                            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500">
+                            <label id="seo-socialImage" tabIndex={-1} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none hover:bg-slate-50 focus-within:ring-2 focus-within:ring-indigo-500 focus:ring-2 focus:ring-indigo-500">
                                 <Upload size={16} /> {seo.uploading ? 'Uploading…' : 'Upload social image'}
                                 <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={seo.uploading} onChange={event => seo.uploadSocialImage(event.target.files?.[0])} />
                             </label>
@@ -253,13 +323,14 @@ export default function HomepageSeoPage() {
                 )}
 
                 {activeTab === 'health' && seo.health && (
-                    <SeoHealthCard
+                    <HomepageSeoActionCenter
                         score={seo.health.score}
                         status={seo.health.status}
                         groups={seo.health.groups}
-                        tasks={seo.health.tasks || []}
-                        onIssueClick={issue => selectTab(fieldTab(issue.fieldPath), String(issue.fieldPath || '').replace(/^seo\./, ''))}
-                        description="Health combines resolved metadata, catalog signals, social media, canonical domain, and indexing settings."
+                        checks={seo.health.checks || []}
+                        visibility={visibility}
+                        onAction={openSeoAction}
+                        onAiClick={() => selectTab('ai-assistant')}
                     />
                 )}
             </main>

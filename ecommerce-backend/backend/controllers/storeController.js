@@ -31,6 +31,7 @@ const {
 const { buildPagination } = require('../utils/pagination');
 const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
 const { normalizeSearchText } = require('../services/products/productQueryService');
+const { resolveSlugRedirect } = require('../services/seo/slugRedirectService');
 
 const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
@@ -368,7 +369,8 @@ exports.getStorefrontBootstrap = async (req, res) => {
             const reviews = await Review.find({
                 _id: { $in: allReviewIds.map(id => new mongoose.Types.ObjectId(id)) },
                 shop_id: shopObjectId,
-                rating: 5
+                rating: 5,
+                ...Review.getEligibilityQuery()
             }).select('_id product_id name rating comment createdAt').lean();
             const reviewProductIds = [...new Set(reviews.map(review => String(review.product_id)).filter(Boolean))];
             const reviewProducts = reviewProductIds.length
@@ -475,6 +477,17 @@ exports.getSingleProduct = async (req, res) => {
             });
         }
 
+        if (!product && !mongoose.Types.ObjectId.isValid(slugOrId)) {
+            const historical = await resolveSlugRedirect({
+                shopId: req.tenantId,
+                resourceType: 'product',
+                oldSlug: slugOrId
+            });
+            if (historical) {
+                product = await Product.findOne({ ...baseQuery, _id: historical.resourceId });
+            }
+        }
+
         if (!product) {
             return res.status(404).json({ error: "Product not found." });
         }
@@ -486,6 +499,170 @@ exports.getSingleProduct = async (req, res) => {
         res.status(200).json(sanitizePublicProduct(pricedProduct));
     } catch (err) {
         res.status(500).json({ error: "Error fetching product details." });
+    }
+};
+
+exports.getStorefrontSitemapData = async (req, res) => {
+    const type = String(req.query.type || 'summary').trim().toLowerCase();
+    if (!['summary', 'core', 'products'].includes(type)) {
+        return res.status(400).json({ success: false, error: 'Invalid sitemap resource type.' });
+    }
+
+    try {
+        const shopId = req.tenantId;
+        const shopObjectId = new mongoose.Types.ObjectId(shopId);
+        const productQuery = {
+            shop_id: shopObjectId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        };
+        const productCount = await Product.countDocuments(productQuery);
+
+        if (type === 'summary') {
+            return res.status(200).json({
+                success: true,
+                data: { productCount, productChunkSize: 1000, generatedAt: new Date().toISOString() }
+            });
+        }
+
+        if (type === 'products') {
+            const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 1000, 1), 1000);
+            const totalPages = Math.ceil(productCount / limit);
+            const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+            if (totalPages === 0 || page > totalPages) {
+                return res.status(404).json({ success: false, error: 'Sitemap product chunk not found.' });
+            }
+            const products = await Product.find(productQuery)
+                .select('_id slug createdAt updatedAt')
+                .sort({ _id: 1 })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .lean();
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    products,
+                    pagination: buildPagination({ total: productCount, page, limit }),
+                    generatedAt: new Date().toISOString()
+                }
+            });
+        }
+
+        const [categoryRows, categoryMetadata, collections] = await Promise.all([
+            Product.aggregate([
+                { $match: { ...productQuery, category: { $type: 'string', $ne: '' } } },
+                { $group: { _id: '$category', productCount: { $sum: 1 }, updatedAt: { $max: '$updatedAt' } } },
+                { $sort: { _id: 1 } }
+            ]),
+            Category.find({ shop_id: shopId }).select('name coverImage seo updatedAt').lean(),
+            Collection.aggregate([
+                { $match: { shop_id: shopObjectId, isActive: true } },
+                {
+                    $lookup: {
+                        from: Product.collection.name,
+                        let: { collectionId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ['$shop_id', shopObjectId] },
+                                            { $eq: ['$isDeleted', false] },
+                                            { $eq: ['$isActive', true] },
+                                            { $eq: ['$status', 'Published'] },
+                                            { $in: ['$$collectionId', { $ifNull: ['$collections', []] }] }
+                                        ]
+                                    }
+                                }
+                            },
+                            { $count: 'count' }
+                        ],
+                        as: 'productStats'
+                    }
+                },
+                { $addFields: { productCount: { $ifNull: [{ $first: '$productStats.count' }, 0] } } },
+                { $match: { productCount: { $gt: 0 } } },
+                { $project: { title: 1, slug: 1, seo: 1, image: 1, createdAt: 1, updatedAt: 1, productCount: 1 } },
+                { $sort: { slug: 1, _id: 1 } }
+            ])
+        ]);
+        const categoryCounts = new Map(categoryRows.map(row => [normalizeCategoryKey(row._id), row.productCount]));
+        const categoryUpdatedAt = new Map(categoryRows.map(row => [normalizeCategoryKey(row._id), row.updatedAt]));
+        const categories = mergeCategoryDetails({
+            names: categoryRows.map(row => row._id),
+            metadata: categoryMetadata,
+            counts: categoryCounts
+        }).map(category => ({
+            ...category,
+            updatedAt: category.updatedAt || categoryUpdatedAt.get(normalizeCategoryKey(category.name)) || null
+        })).filter(category => category.productCount > 0);
+
+        return res.status(200).json({
+            success: true,
+            data: { categories, collections, productCount, generatedAt: new Date().toISOString() }
+        });
+    } catch (error) {
+        console.error('Storefront sitemap data error:', {
+            shopId: String(req.tenantId || ''),
+            type,
+            errorCode: error?.code || 'SITEMAP_DATA_FAILED'
+        });
+        return res.status(503).json({ success: false, error: 'Storefront sitemap data is temporarily unavailable.' });
+    }
+};
+
+exports.getStorefrontSlugRedirect = async (req, res) => {
+    try {
+        const resourceType = String(req.params.type || '').trim().toLowerCase();
+        if (!['product', 'collection', 'category'].includes(resourceType)) {
+            return res.status(400).json({ success: false, error: 'Invalid redirect resource type.' });
+        }
+        const historical = await resolveSlugRedirect({
+            shopId: req.tenantId,
+            resourceType,
+            oldSlug: req.params.slug
+        });
+        if (!historical) return res.status(404).json({ success: false, error: 'Redirect not found.' });
+
+        let currentSlug = '';
+        if (resourceType === 'product') {
+            const product = await Product.findOne({
+                _id: historical.resourceId,
+                shop_id: req.tenantId,
+                isDeleted: false,
+                isActive: true,
+                status: 'Published'
+            }).select('slug').lean();
+            currentSlug = product?.slug || '';
+        } else if (resourceType === 'collection') {
+            const collection = await Collection.findOne({
+                _id: historical.resourceId,
+                shop_id: req.tenantId,
+                isActive: true
+            }).select('slug').lean();
+            currentSlug = collection?.slug || '';
+        } else {
+            const category = await Category.findOne({
+                _id: historical.resourceId,
+                shop_id: req.tenantId
+            }).select('name').lean();
+            if (category) {
+                const hasPublicProduct = await Product.exists({
+                    shop_id: req.tenantId,
+                    isDeleted: false,
+                    isActive: true,
+                    status: 'Published',
+                    category: category.name
+                });
+                if (hasPublicProduct) currentSlug = category.name;
+            }
+        }
+        if (!currentSlug) return res.status(404).json({ success: false, error: 'Redirect target not found.' });
+        return res.status(200).json({ success: true, data: { resourceType, currentSlug } });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: 'Failed to resolve storefront redirect.' });
     }
 };
 

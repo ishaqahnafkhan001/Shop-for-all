@@ -29,7 +29,8 @@
     "rollup:analytics": "node scripts/runAnalyticsRollup.js",
     "sync:plans": "node scripts/sync-subscription-plans.js",
     "cleanup:store-builder-assets": "node scripts/cleanup-store-builder-assets.js",
-    "migrate:store-builder-themes": "node scripts/migrate-store-builder-themes.js"
+    "migrate:store-builder-themes": "node scripts/migrate-store-builder-themes.js",
+    "migrate:seo-ai-hardening": "node scripts/migrate-seo-ai-hardening.js"
   },
   "dependencies": {
     "@scaleup/storefront-theme": "file:../../packages/storefront-theme",

@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import CollectionPageClient from "./CollectionPageClient";
 import {
     fetchStorefrontCollection,
@@ -15,9 +15,9 @@ import {
     getCollectionSeoDescription,
     getCollectionSeoTitle,
     getHomepageCanonicalUrl,
-    isShopSearchVisible,
     noindexMetadata
 } from "@/lib/seo";
+import { resolveStorefrontIndexability } from "@/lib/indexability";
 
 const getCollectionFilters = (searchParams = {}) => ({
     page: Math.max(Number(searchParams.page) || 1, 1),
@@ -27,13 +27,13 @@ const getCollectionFilters = (searchParams = {}) => ({
         : "newest"
 });
 
-const getCollectionPageData = async (subdomain, slug, host = "", searchParams = {}) => {
+const getCollectionPageData = async (subdomain, slug, host = "", searchParams = {}, fresh = false) => {
     const filters = getCollectionFilters(searchParams);
 
     try {
         const [shop, collectionData] = await Promise.all([
-            fetchStorefrontInfo(subdomain, { storefrontHost: host }),
-            fetchStorefrontCollection(subdomain, slug, filters, { storefrontHost: host })
+            fetchStorefrontInfo(subdomain, { storefrontHost: host, fresh }),
+            fetchStorefrontCollection(subdomain, slug, filters, { storefrontHost: host, fresh })
         ]);
 
         return {
@@ -68,13 +68,21 @@ export async function generateMetadata({ params }) {
     const { subdomain, slug } = await params;
     const headerStore = await headers();
     const host = headerStore.get("host") || "";
-    const data = await getCollectionPageData(subdomain, slug, host);
+    const data = await getCollectionPageData(subdomain, slug, host, {}, true);
 
     if (!data?.collection || !data?.shop) {
         return noindexMetadata("Collection unavailable", "This collection is currently unavailable.");
     }
 
     const { shop, collection, products } = data;
+    const indexability = resolveStorefrontIndexability({
+        shop,
+        resource: collection,
+        resourceType: "collection",
+        host,
+        subdomain,
+        canonicalPath: `/collections/${collection.slug}`
+    });
     return buildStorefrontMetadata({
         shop,
         pageTitle: getCollectionSeoTitle(collection, shop),
@@ -82,7 +90,7 @@ export async function generateMetadata({ params }) {
         url: getCollectionCanonicalUrl({ host, subdomain, shop, collection }),
         image: getCollectionOgImage(collection, products, shop),
         type: "website",
-        isIndexable: isShopSearchVisible(shop),
+        isIndexable: indexability.indexable,
         googleSiteVerification: shop?.theme?.seo?.googleSiteVerification || ""
     });
 }
@@ -96,6 +104,9 @@ export default async function CollectionPage({ params, searchParams }) {
     if (data?.redirectTo) redirect(data.redirectTo);
 
     if (!data?.collection || !data?.shop) notFound();
+    if (String(data.collection.slug || "").toLowerCase() !== String(slug || "").toLowerCase()) {
+        permanentRedirect(`/collections/${encodeURIComponent(data.collection.slug)}`);
+    }
 
     const collectionUrl = getCollectionCanonicalUrl({
         host,
@@ -104,19 +115,27 @@ export default async function CollectionPage({ params, searchParams }) {
         collection: data.collection
     });
     const homepageUrl = getHomepageCanonicalUrl({ host, subdomain, shop: data.shop });
-    const breadcrumbJsonLd = buildBreadcrumbJsonLd({
+    const indexability = resolveStorefrontIndexability({
+        shop: data.shop,
+        resource: data.collection,
+        resourceType: "collection",
+        host,
+        subdomain,
+        canonicalPath: `/collections/${data.collection.slug}`
+    });
+    const breadcrumbJsonLd = indexability.structuredDataEligible ? buildBreadcrumbJsonLd({
         items: [
             { name: data.shop?.shopName || data.shop?.name || "Store", url: homepageUrl },
             { name: data.collection.title, url: collectionUrl }
         ]
-    });
-    const itemListJsonLd = buildCollectionItemListJsonLd({
+    }) : null;
+    const itemListJsonLd = indexability.structuredDataEligible ? buildCollectionItemListJsonLd({
         collection: data.collection,
         products: data.products,
         shop: data.shop,
         host,
         subdomain
-    });
+    }) : null;
 
     return (
         <>
