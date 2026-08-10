@@ -123,6 +123,10 @@ const getPlanSlug = (plan) => String(plan?.slug || plan?.name || "starter")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "starter";
 
+const getIncludedPlanFeatures = (plan) => (Array.isArray(plan?.features) ? plan.features : [])
+    .map((feature) => String(feature || "").trim())
+    .filter((feature) => feature && !/^no\b/i.test(feature));
+
 function SectionHeading({ eyebrow, title, text, align = "center", tone = "light" }) {
     const dark = tone === "dark";
 
@@ -174,18 +178,18 @@ function TextField({ label, helper, error, suffix, status = "neutral", ...props 
 
 function CommerceSystemVisual() {
     return (
-        <div className="landing-perspective relative mx-auto w-full max-w-6xl" aria-label="Scaleup dashboard and storefront preview">
+        <div className="landing-system-visual landing-perspective relative mx-auto w-full max-w-6xl" aria-label="Scaleup dashboard and storefront preview">
             <div className="landing-float-slow relative">
-                <div className="landing-tilt relative rounded-[2rem] border border-white/16 bg-white/[0.08] p-3 shadow-[0_32px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
-                    <div className="rounded-[1.6rem] border border-white/12 bg-slate-950/92 p-4 text-white">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="landing-tilt relative rounded-[1.5rem] border border-white/16 bg-white/[0.08] p-2 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-3">
+                    <div className="rounded-[1.15rem] border border-white/12 bg-slate-950/92 p-3 text-white sm:rounded-[1.6rem] sm:p-4">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3 sm:pb-4">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-950">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-950 sm:h-10 sm:w-10 sm:rounded-2xl">
                                     <Store size={20} />
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold">Scaleup Command</p>
-                                    <p className="text-xs text-white/45">Vendor operating dashboard</p>
+                                    <p className="text-[11px] text-white/45 sm:text-xs">Store and dashboard preview</p>
                                 </div>
                             </div>
                             <div className="hidden items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200 sm:flex">
@@ -194,8 +198,8 @@ function CommerceSystemVisual() {
                             </div>
                         </div>
 
-                        <div className="grid gap-3 pt-4 lg:grid-cols-[0.72fr_1fr]">
-                            <div className="space-y-3">
+                        <div className="grid gap-3 pt-3 sm:pt-4 lg:grid-cols-[0.72fr_1fr]">
+                            <div className="landing-system-metrics hidden space-y-3 sm:block">
                                 {[
                                     ["Revenue", "BDT-ready", "Manual"],
                                     ["Orders", "Trackable", "COD flow"],
@@ -220,38 +224,38 @@ function CommerceSystemVisual() {
                                 </div>
                             </div>
 
-                            <div className="rounded-[1.4rem] bg-[#f7f9fc] p-4 text-slate-950">
+                            <div className="rounded-[1rem] bg-[#f7f9fc] p-3 text-slate-950 sm:rounded-[1.4rem] sm:p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Storefront</p>
-                                        <h3 className="mt-1 text-2xl font-semibold tracking-tight">Mobile shop preview</h3>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 sm:text-xs">Storefront</p>
+                                        <h3 className="mt-1 text-base font-semibold tracking-tight sm:text-2xl">Mobile shop preview</h3>
                                     </div>
-                                    <div className="rounded-full bg-slate-950 px-4 py-2 text-xs font-black text-white">
+                                    <div className="rounded-full bg-slate-950 px-3 py-1.5 text-[10px] font-black text-white sm:px-4 sm:py-2 sm:text-xs">
                                         Shop
                                     </div>
                                 </div>
-                                <div className="mt-5 grid grid-cols-3 gap-3">
+                                <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-5 sm:grid-cols-3 sm:gap-3">
                                     {["Panjabi", "Saree", "Sneaker"].map((name, index) => (
-                                        <div key={name} className="rounded-2xl border border-white/70 bg-white p-3 shadow-xl shadow-slate-950/10">
+                                        <div key={name} className={`rounded-xl border border-white/70 bg-white p-2 shadow-xl shadow-slate-950/10 sm:rounded-2xl sm:p-3 ${index === 2 ? "hidden sm:block" : ""}`}>
                                             <div className={`flex aspect-square items-center justify-center rounded-xl ${
                                                 index === 0 ? "bg-emerald-100 text-emerald-700" : index === 1 ? "bg-rose-100 text-rose-700" : "bg-blue-100 text-blue-700"
                                             }`}>
                                                 <Package size={24} />
                                             </div>
-                                            <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Preview</p>
-                                            <p className="mt-1 truncate text-sm font-bold text-slate-950">{name}</p>
+                                            <p className="mt-2 text-[9px] font-black uppercase tracking-[0.16em] text-slate-400 sm:mt-3 sm:text-[10px]">Preview</p>
+                                            <p className="mt-1 truncate text-xs font-bold text-slate-950 sm:text-sm">{name}</p>
                                             <p className="mt-1 text-sm font-black text-blue-700">৳</p>
                                         </div>
                                     ))}
                                 </div>
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
+                                    <div className="rounded-xl border border-slate-200 bg-white p-3 sm:rounded-2xl sm:p-4">
                                         <p className="text-xs font-bold text-slate-400">Theme</p>
-                                        <p className="mt-2 text-sm font-black text-slate-950">Brand ready</p>
+                                        <p className="mt-1 text-xs font-black text-slate-950 sm:mt-2 sm:text-sm">Brand ready</p>
                                     </div>
-                                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                    <div className="rounded-xl border border-slate-200 bg-white p-3 sm:rounded-2xl sm:p-4">
                                         <p className="text-xs font-bold text-slate-400">Catalog</p>
-                                        <p className="mt-2 text-sm font-black text-slate-950">Products live</p>
+                                        <p className="mt-1 text-xs font-black text-slate-950 sm:mt-2 sm:text-sm">Products live</p>
                                     </div>
                                 </div>
                             </div>
@@ -291,7 +295,8 @@ export default function LandingPageClient({ plans = [] }) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [selectedPlanSlug, setSelectedPlanSlug] = useState("starter");
+    const [selectedPlanSlug, setSelectedPlanSlug] = useState("beginner");
+    const [activeProofIndex, setActiveProofIndex] = useState(0);
     const [subdomainStatus, setSubdomainStatus] = useState({
         state: "idle",
         message: "Choose your store URL.",
@@ -306,6 +311,8 @@ export default function LandingPageClient({ plans = [] }) {
     const selectedPlan = useMemo(() => (
         pricingPlans.find((plan) => getPlanSlug(plan) === selectedPlanSlug) || pricingPlans[0]
     ), [pricingPlans, selectedPlanSlug]);
+    const activeProof = proofCards[activeProofIndex] || proofCards[0];
+    const ActiveProofIcon = proofIcons[activeProofIndex % proofIcons.length] || Store;
 
     const validation = useMemo(() => {
         const emailValid = /^\S+@\S+\.\S+$/.test(formData.email.trim());
@@ -527,7 +534,7 @@ export default function LandingPageClient({ plans = [] }) {
         <main id="top" className="landing-shell min-h-screen bg-white text-slate-950">
             <section className="landing-hero relative isolate overflow-hidden text-white">
                 <div className="absolute inset-0 -z-10 landing-grid opacity-45" />
-                <div className="mx-auto flex min-h-[calc(100svh-24px)] w-full max-w-7xl flex-col px-5 py-5 sm:px-8 lg:px-10">
+                <div className="mx-auto flex w-full max-w-7xl flex-col px-5 py-5 sm:px-8 lg:min-h-[calc(100svh-24px)] lg:px-10">
                     <nav className="flex flex-wrap items-center justify-between gap-3" aria-label="Main navigation">
                         <a href="#top" className="flex items-center gap-3" aria-label="Scaleup home">
                             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-2xl shadow-white/10">
@@ -600,17 +607,17 @@ export default function LandingPageClient({ plans = [] }) {
                         )}
                     </nav>
 
-                    <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[0.92fr_1.08fr] lg:py-16">
+                    <div className="grid flex-1 items-center gap-8 py-8 sm:py-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10 lg:py-16">
                         <div className="relative z-10 max-w-2xl">
                             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/18 bg-white/[0.07] px-4 py-2 text-sm font-semibold text-white/78 backdrop-blur">
                                 <Sparkles size={16} className="text-cyan-200" />
                                 Built for Bangladesh online sellers
                             </div>
 
-                            <h1 className="mt-7 text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">
+                            <h1 className="mt-6 text-[2.55rem] font-semibold leading-[1.04] tracking-tight sm:mt-7 sm:text-6xl lg:text-7xl">
                                 Launch Your Online Store Without Coding
                             </h1>
-                            <p className="mt-6 max-w-xl text-base leading-8 text-white/68 sm:text-lg">
+                            <p className="mt-5 max-w-xl text-base leading-7 text-white/68 sm:mt-6 sm:text-lg sm:leading-8">
                                 Create a professional storefront, manage products, orders, customers, themes, and growth tools from one simple dashboard.
                             </p>
                             <p className="mt-4 max-w-xl text-sm font-semibold leading-6 text-cyan-100/80">
@@ -620,7 +627,7 @@ export default function LandingPageClient({ plans = [] }) {
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                                 <button
                                     type="button"
-                                    onClick={() => selectPlanAndRegister(plan)}
+                                    onClick={() => selectPlanAndRegister(pricingPlans.find((plan) => getPlanSlug(plan) === "beginner") || pricingPlans[0])}
                                     className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-black text-slate-950 shadow-2xl shadow-cyan-200/10 transition hover:-translate-y-0.5 hover:bg-cyan-50"
                                 >
                                     Start 14-Day Free Trial
@@ -636,16 +643,16 @@ export default function LandingPageClient({ plans = [] }) {
                                 </button>
                             </div>
 
-                            <div className="mt-8 flex flex-wrap gap-2">
-                                {trustChips.map((chip) => (
-                                    <span key={chip} className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-black text-white/72 backdrop-blur">
+                            <div className="mt-7 flex flex-wrap gap-2 sm:mt-8">
+                                {trustChips.map((chip, index) => (
+                                    <span key={chip} className={`rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-black text-white/72 backdrop-blur ${index > 2 ? "hidden sm:inline-flex" : "inline-flex"}`}>
                                         {chip}
                                     </span>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="relative z-10 lg:-mr-10">
+                        <div className="relative z-10 mx-auto w-full max-w-xl lg:-mr-10 lg:max-w-none">
                             <CommerceSystemVisual />
                         </div>
                     </div>
@@ -653,19 +660,19 @@ export default function LandingPageClient({ plans = [] }) {
             </section>
 
             <section className="border-y border-slate-200 bg-white px-5 py-6 sm:px-8 lg:px-10" aria-label="Business outcomes">
-                <div className="mx-auto grid max-w-7xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mx-auto grid max-w-7xl grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
                     {businessOutcomes.map((outcome) => (
-                        <div key={outcome} className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4">
+                        <div key={outcome} className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-3 sm:gap-3 sm:px-4 sm:py-4">
                             <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                                 <Check size={15} strokeWidth={3} />
                             </span>
-                            <p className="text-sm font-semibold leading-6 text-slate-800">{outcome}</p>
+                            <p className="text-xs font-semibold leading-5 text-slate-800 sm:text-sm sm:leading-6">{outcome}</p>
                         </div>
                     ))}
                 </div>
             </section>
 
-            <section id="features" className="bg-[#f7f9fc] px-5 py-16 sm:px-8 lg:px-10">
+            <section id="features" className="bg-[#f7f9fc] px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
                 <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
                     <SectionHeading
                         align="left"
@@ -700,18 +707,18 @@ export default function LandingPageClient({ plans = [] }) {
                 </div>
             </section>
 
-            <section className="px-5 py-16 sm:px-8 lg:px-10">
+            <section className="px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
                 <div className="mx-auto max-w-7xl">
                     <SectionHeading
                         eyebrow="Local commerce"
                         title="Made for local sellers who want to sell online faster"
                         text="Scaleup is built around practical seller workflows for Bangladesh small businesses, social sellers, boutiques, and local brands."
                     />
-                    <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="scrollbar-hide -mx-5 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
                         {localSellerCards.map((card) => {
                             const Icon = iconMap[card.key] || Store;
                             return (
-                                <article key={card.title} className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+                                <article key={card.title} className="min-w-[82%] snap-center rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm sm:min-w-0">
                                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-700">
                                         <Icon size={22} />
                                     </div>
@@ -724,51 +731,127 @@ export default function LandingPageClient({ plans = [] }) {
                 </div>
             </section>
 
-            <section id="store-preview" className="bg-slate-950 px-5 py-16 text-white sm:px-8 lg:px-10">
+            <section id="store-preview" className="bg-slate-950 px-5 py-12 text-white sm:px-8 sm:py-16 lg:px-10">
                 <div className="mx-auto max-w-7xl">
                     <SectionHeading
                         tone="dark"
                         eyebrow="Product proof"
                         title="What your store can include"
-                        text="These are product interface previews based on the current Scaleup platform modules. They are shown as previews, not fake customer results."
+                        text="Switch between core storefront and dashboard workflows to see how daily selling tasks fit together."
                     />
-                    <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {proofCards.map((card, index) => {
-                            const Icon = proofIcons[index % proofIcons.length];
-                            return (
-                                <article key={card.title} className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-950">
-                                            <Icon size={22} />
-                                        </div>
-                                        <span className="rounded-full border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-xs font-black text-cyan-100">
-                                            Preview
+                    <div className="mt-9 grid gap-5 lg:grid-cols-[0.34fr_0.66fr] lg:items-stretch">
+                        <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1 lg:grid lg:content-start lg:overflow-visible lg:pb-0" role="tablist" aria-label="Interface previews">
+                            {proofCards.map((card, index) => {
+                                const Icon = proofIcons[index % proofIcons.length];
+                                const active = activeProofIndex === index;
+                                return (
+                                    <button
+                                        key={card.title}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={active}
+                                        onClick={() => setActiveProofIndex(index)}
+                                        className={`flex min-w-[10.5rem] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition lg:min-w-0 ${
+                                            active
+                                                ? "border-cyan-200/35 bg-white text-slate-950"
+                                                : "border-white/10 bg-white/[0.05] text-white/70 hover:bg-white/[0.1] hover:text-white"
+                                        }`}
+                                    >
+                                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${active ? "bg-slate-950 text-white" : "bg-white/10 text-cyan-100"}`}>
+                                            <Icon size={17} />
                                         </span>
+                                        <span className="text-sm font-bold">{card.title}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <article role="tabpanel" className="overflow-hidden rounded-[1.75rem] border border-white/12 bg-white/[0.06] p-3 sm:p-5">
+                            <div className="rounded-[1.25rem] bg-[#f7f9fc] p-3 text-slate-950 sm:p-5">
+                                <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                                        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                                     </div>
-                                    <h3 className="mt-5 text-lg font-semibold">{card.title}</h3>
-                                    <p className="mt-2 text-sm leading-6 text-white/62">{card.text}</p>
-                                </article>
-                            );
-                        })}
+                                    <span className="truncate rounded-full bg-white px-3 py-1.5 text-[10px] font-bold text-slate-500 shadow-sm sm:text-xs">
+                                        Interactive interface sample
+                                    </span>
+                                </div>
+                                <div className="grid min-h-[19rem] gap-4 pt-4 sm:min-h-[22rem] sm:grid-cols-[0.68fr_1.32fr]">
+                                    <div className="hidden rounded-2xl bg-slate-950 p-4 text-white sm:block">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-950">
+                                            <ActiveProofIcon size={19} />
+                                        </div>
+                                        <div className="mt-8 space-y-3">
+                                            {["Overview", "Products", "Orders", "Settings"].map((item, index) => (
+                                                <div key={item} className={`rounded-xl px-3 py-2 text-xs font-bold ${index === activeProofIndex % 4 ? "bg-white text-slate-950" : "bg-white/[0.06] text-white/55"}`}>
+                                                    {item}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Interface preview</p>
+                                                <h3 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{activeProof.title}</h3>
+                                            </div>
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                                                <ActiveProofIcon size={19} />
+                                            </span>
+                                        </div>
+                                        <p className="mt-3 text-sm leading-6 text-slate-600">{activeProof.text}</p>
+                                        <div className="mt-5 grid grid-cols-2 gap-3">
+                                            <div className="h-20 rounded-xl bg-slate-100" />
+                                            <div className="h-20 rounded-xl bg-blue-50" />
+                                            <div className="col-span-2 h-24 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                                <div className="h-2.5 w-2/5 rounded-full bg-slate-300" />
+                                                <div className="mt-3 h-2 w-full rounded-full bg-slate-200" />
+                                                <div className="mt-2 h-2 w-4/5 rounded-full bg-slate-200" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
                     </div>
                 </div>
             </section>
 
-            <section id="pricing" className="bg-[#f7f9fc] px-5 py-16 sm:px-8 lg:px-10">
+            <section id="pricing" className="bg-[#f7f9fc] px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
                 <div className="mx-auto max-w-7xl">
                     <SectionHeading
                         eyebrow="Pricing"
                         title="Simple pricing for growing online sellers"
-                        text="Start free, choose a plan when you are ready to run your store seriously."
+                        text="Every new store begins with Beginner access. Choose a future plan now or upgrade later when your business needs more."
                     />
                     <p className="mx-auto mt-4 max-w-xl text-center text-sm font-bold text-emerald-700">
-                        All plans start with a 14-day free trial. No card required.
+                        New vendors start with a 14-day Beginner trial. No card required.
                     </p>
-                    <div className="mt-10 grid gap-5 lg:grid-cols-3">
+                    <div className="scrollbar-hide -mx-5 mt-7 flex gap-2 overflow-x-auto px-5 pb-1 md:hidden" role="tablist" aria-label="Choose a plan to preview">
+                        {pricingPlans.map((plan) => {
+                            const slug = getPlanSlug(plan);
+                            const active = slug === selectedPlanSlug;
+                            return (
+                                <button
+                                    key={slug}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={active}
+                                    onClick={() => setSelectedPlanSlug(slug)}
+                                    className={`min-w-[7.5rem] rounded-2xl border px-4 py-3 text-sm font-black transition ${active ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-600"}`}
+                                >
+                                    {plan.name}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="mt-6 grid gap-5 md:mt-10 md:grid-cols-2 xl:grid-cols-4">
                         {pricingPlans.map((plan) => (
                             <article
                                 key={plan.name}
-                                className={`relative rounded-[2rem] border bg-white p-6 shadow-sm ${
+                                className={`relative rounded-[2rem] border bg-white p-6 shadow-sm ${getPlanSlug(plan) === selectedPlanSlug ? "block" : "hidden md:block"} ${
                                     plan.highlighted ? "border-blue-300 shadow-xl shadow-blue-100/70 ring-4 ring-blue-50" : "border-slate-200"
                                 }`}
                             >
@@ -785,7 +868,7 @@ export default function LandingPageClient({ plans = [] }) {
                                 <p className="mt-1 text-sm font-semibold text-slate-500">{plan.yearly}</p>
                                 <p className="mt-4 text-sm font-bold text-slate-700">{plan.audience}</p>
                                 <ul className="mt-6 space-y-3">
-                                    {plan.features.map((feature) => (
+                                    {getIncludedPlanFeatures(plan).slice(0, 6).map((feature) => (
                                         <li key={feature} className="flex gap-3 text-sm leading-6 text-slate-700">
                                             <Check size={18} className="mt-0.5 shrink-0 text-emerald-600" />
                                             <span>{feature}</span>
@@ -794,22 +877,25 @@ export default function LandingPageClient({ plans = [] }) {
                                 </ul>
                                 <button
                                     type="button"
-                                    onClick={() => scrollToSection("registration")}
+                                    onClick={() => selectPlanAndRegister(plan)}
                                     className={`mt-7 inline-flex h-12 w-full items-center justify-center rounded-2xl text-sm font-black transition ${
                                         plan.highlighted
                                             ? "bg-blue-600 text-white hover:bg-blue-700"
                                             : "border border-slate-200 text-slate-800 hover:bg-slate-50"
                                     }`}
                                 >
-                                {plan.cta}
-                            </button>
+                                    {getPlanSlug(plan) === "beginner" ? "Start Beginner Trial" : `Choose ${plan.name}`}
+                                </button>
                             </article>
                         ))}
                     </div>
+                    <p className="mt-6 text-center text-xs font-semibold leading-5 text-slate-500">
+                        Plan access and limits come from the current Scaleup plan configuration. You can review the full comparison before payment.
+                    </p>
                 </div>
             </section>
 
-            <section id="how-it-works" className="px-5 py-16 sm:px-8 lg:px-10">
+            <section id="how-it-works" className="px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
                 <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
                     <SectionHeading
                         align="left"
@@ -830,7 +916,7 @@ export default function LandingPageClient({ plans = [] }) {
                 </div>
             </section>
 
-            <section className="bg-slate-950 px-5 py-16 text-white sm:px-8 lg:px-10">
+            <section className="bg-slate-950 px-5 py-12 text-white sm:px-8 sm:py-16 lg:px-10">
                 <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_0.95fr] lg:items-center">
                     <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 sm:p-7">
                         <div className="grid gap-4 sm:grid-cols-3">

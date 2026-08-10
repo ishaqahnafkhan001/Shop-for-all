@@ -25,7 +25,7 @@ export const navLinks = [
 ];
 
 export const trustChips = [
-    "14 days free trial",
+    "14-day Beginner trial",
     "No coding required",
     "Mobile-ready storefront",
     "Product, order & customer tools",
@@ -33,10 +33,10 @@ export const trustChips = [
 ];
 
 export const businessOutcomes = [
-    "Launch a professional storefront without code",
-    "Manage products, orders, customers, and themes in one operating system",
-    "Start on a subdomain and connect your own brand domain later",
-    "Built for Bangladesh-friendly local commerce workflows",
+    "Launch without code",
+    "Manage daily store operations",
+    "Start on a Scaleup subdomain",
+    "Built for Bangladesh commerce",
 ];
 
 export const platformModules = [
@@ -124,7 +124,7 @@ export const pricingPlans = [
         period: "/month",
         yearly: "৳4,990/year",
         audience: "Best for launching your first store",
-        cta: "Start Free Trial",
+        cta: "Start Beginner Trial",
         features: [
             "Up to 25 products",
             "Up to 3 images per product",
@@ -143,7 +143,7 @@ export const pricingPlans = [
         period: "/month",
         yearly: "৳9,990/year",
         audience: "Best for new sellers",
-        cta: "Start Free Trial",
+        cta: "Choose Starter",
         features: [
             "Up to 100 products",
             "10 AI products per week",
@@ -236,7 +236,7 @@ export const faqItems = [
     },
     {
         question: "Is there a free trial?",
-        answer: "Yes. New vendors can start with a 14-day free trial and choose a plan when they are ready to run the store seriously.",
+        answer: "Yes. Every new vendor starts with a 14-day Beginner trial. You can choose a paid plan later when you need more capacity or tools.",
     },
     {
         question: "Can I use my own domain?",

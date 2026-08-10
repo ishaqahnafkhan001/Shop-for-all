@@ -472,6 +472,29 @@ textarea:focus-visible {
   }
 }
 
+@media (max-width: 767px) {
+  .landing-perspective {
+    perspective: none;
+  }
+
+  .landing-tilt {
+    transform: none;
+    transform-style: flat;
+    will-change: auto;
+  }
+
+  .landing-float,
+  .landing-float-slow,
+  .landing-float-delay {
+    animation: none;
+    will-change: auto;
+  }
+
+  .landing-system-visual {
+    max-width: 390px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-float,
   .landing-float-slow,
