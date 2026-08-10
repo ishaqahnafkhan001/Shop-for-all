@@ -89,7 +89,7 @@ export const HomepageSection = memo(function HomepageSection({
                 </div>
                 <div className={`grid ${featuredGridClass} ${productGridGapClasses[featuredSpacing]} ${products.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                     {products.slice(0, Math.max(4, columns.desktop)).map((product, index) => (
-                        <ProductCard key={product._id} product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} />
+                        <ProductCard key={product._id} product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
                     ))}
                 </div>
             </section>
@@ -113,7 +113,7 @@ export const HomepageSection = memo(function HomepageSection({
         const products = sectionProducts?.[stableSectionId]
             || catalogProducts.filter(product => selectedIds.map(String).includes(String(product._id)));
         return frame(
-            <CollectionVariantSection section={section} products={products} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} productCard={productCard} storewideDiscount={storewideDiscount} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isProductWishlisted={isProductWishlisted} LinkComponent={LinkComponent} />
+            <CollectionVariantSection section={section} products={products} previewDevice={previewDevice} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} productCard={productCard} storewideDiscount={storewideDiscount} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isProductWishlisted={isProductWishlisted} LinkComponent={LinkComponent} />
         );
     }
 

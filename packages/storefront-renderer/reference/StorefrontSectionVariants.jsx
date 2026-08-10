@@ -93,7 +93,7 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
     const mobileColumns = Math.min(Math.max(Number(section.mobileSettings?.columns) || 2, 1), 4);
     const desktopColumns = Math.min(Math.max(Number(settings.columns) || 4, 1), 4);
     const categoryGridClass = previewDevice
-        ? (isPreviewMobile(previewDevice) ? categoryGridClasses[mobileColumns] : categoryGridClasses[desktopColumns])
+        ? (previewDevice === "desktop" ? categoryGridClasses[desktopColumns] : categoryGridClasses[mobileColumns])
         : `${categoryGridClasses[mobileColumns]} ${categoryDesktopGridClasses[desktopColumns]}`;
     if (!items.length) return null;
 
@@ -124,9 +124,9 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
         return (
             <section data-section-variant={variant} className={`${responsiveClass} ${sectionLayout.className}`} style={sectionLayout.style}>
                 <SectionHeading title={section.title || "Shop by category"} subtitle={editorial ? "Explore the collections that define this store" : ""} colors={colors} />
-                <div className={`mt-5 grid ${contentGapClass} ${editorial ? "grid-cols-2 lg:grid-cols-4" : categoryGridClass}`}>
+                <div className={`mt-5 grid ${contentGapClass} ${editorial ? (previewDevice ? (previewDevice === "desktop" ? "grid-cols-4" : "grid-cols-2") : "grid-cols-2 lg:grid-cols-4") : categoryGridClass}`}>
                     {items.map((item, index) => (
-                        <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className={`group relative min-h-40 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${editorial && index === 0 ? "col-span-2 row-span-2 min-h-80" : ""}`}>
+                        <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className={`group relative min-h-40 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${editorial && index === 0 ? `col-span-2 row-span-2 ${previewDevice && isPreviewMobile(previewDevice) ? "min-h-64" : "min-h-64 sm:min-h-80"}` : ""}`}>
                             {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: editorial && index === 0 ? 900 : 520, crop: "fill" })} alt={`${item.name} category`} width="900" height="680" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <span className="absolute inset-0 flex items-center justify-center bg-[var(--sf-accent-bg)] text-4xl font-black text-[var(--sf-accent)]">{item.name.slice(0, 1).toUpperCase()}</span>}
                             <span className="absolute inset-x-0 bottom-0 flex flex-col bg-gradient-to-t from-slate-950/92 via-slate-950/62 to-transparent px-4 pb-4 pt-16 text-sm font-black text-white">
                                 <span>{item.name}</span>
@@ -260,18 +260,23 @@ export function BrandStoryVariantSection({ section, responsiveClass, sectionLayo
     );
 }
 
-export function CollectionVariantSection({ section, products, responsiveClass, sectionLayout, contentGapClass, colors, productCard, storewideDiscount, onProductAdd, onProductBuyNow, onWishlistToggle, isProductWishlisted, LinkComponent }) {
+export function CollectionVariantSection({ section, products, previewDevice, responsiveClass, sectionLayout, contentGapClass, colors, productCard, storewideDiscount, onProductAdd, onProductBuyNow, onWishlistToggle, isProductWishlisted, LinkComponent }) {
     const variant = section.settings?.variant || "grid";
     if (!products.length) return null;
     const mosaic = variant === "mosaic" && products.length >= 3;
-    const gridClass = mosaic ? "grid-cols-2 lg:grid-cols-4" : variant === "spacious" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3";
+    const gridClass = previewDevice
+        ? (mosaic
+            ? (previewDevice === "desktop" ? "grid-cols-4" : "grid-cols-2")
+            : variant === "spacious" ? (isPreviewMobile(previewDevice) ? "grid-cols-1" : "grid-cols-2")
+                : (previewDevice === "desktop" ? "grid-cols-3" : "grid-cols-2"))
+        : mosaic ? "grid-cols-2 lg:grid-cols-4" : variant === "spacious" ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3";
     return (
         <section data-section-variant={mosaic ? "mosaic" : variant === "mosaic" ? "grid" : variant} className={`${responsiveClass} ${sectionLayout.className}`} style={sectionLayout.style}>
             <SectionHeading title={section.title || "Collection"} subtitle={variant === "spacious" ? "A considered edit from this store" : ""} colors={colors} />
             <div className={`mt-5 grid ${contentGapClass} ${gridClass}`}>
                 {products.slice(0, variant === "spacious" ? 6 : 8).map((product, index) => (
                     <div key={product._id} className={mosaic && index === 0 ? "col-span-2 lg:row-span-2" : ""}>
-                        <ProductCard product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} />
+                        <ProductCard product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
                     </div>
                 ))}
             </div>

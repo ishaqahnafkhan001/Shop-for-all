@@ -222,8 +222,8 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                     {mobileLinks.map((item) => {
                         const Icon = item.icon;
                         return (
-                            <LinkSlot key={item.label} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="relative flex flex-col items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-[var(--sf-accent)]">
-                                <Icon size={18} />
+                            <LinkSlot key={item.label} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[11px] font-bold text-slate-500 transition hover:text-[var(--sf-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--sf-accent)]">
+                                <Icon size={20} />
                                 <span>{item.label}</span>
                                 {item.badge > 0 && <span className="absolute right-4 top-0 h-4 min-w-4 rounded-full bg-[var(--sf-accent)] px-1 text-[10px] leading-4 text-white">{item.badge}</span>}
                             </LinkSlot>

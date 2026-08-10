@@ -303,6 +303,7 @@ export function StorefrontAllProducts({
                                                 onWishlistToggle={onWishlistToggle}
                                                 isWishlisted={isProductWishlisted}
                                                 LinkComponent={LinkComponent}
+                                                previewDevice={previewDevice}
                                             />
                                         ))}
                                     </div>

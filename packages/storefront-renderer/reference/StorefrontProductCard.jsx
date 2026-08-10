@@ -15,6 +15,7 @@ import {
     getResponsiveImageSrcSet,
     imageAspectClasses,
     imageRadiusClasses,
+    isPreviewMobile,
     LinkSlot,
     optimizeCloudinaryImage,
     priceSizeClasses,
@@ -32,6 +33,7 @@ export const ProductCard = memo(function ProductCard({
     onWishlistToggle,
     isWishlisted,
     LinkComponent,
+    previewDevice,
 }) {
     const price = getPrice(product);
     const originalPrice = product.compareAtPrice || product.pricing?.compareAtPrice || product.sellingPrice || product.pricing?.sellingPrice || price;
@@ -52,8 +54,15 @@ export const ProductCard = memo(function ProductCard({
     const imageRadiusClass = imageRadiusClasses[productCard?.imageRadius || "Rounded"] || imageRadiusClasses.Rounded;
     const shadowClass = cardShadowClasses[productCard?.shadow || "Soft"] || cardShadowClasses.Soft;
     const aspectClass = imageAspectClasses[productCard?.aspectRatio || "Square"] || imageAspectClasses.Square;
-    const titleSizeClass = titleSizeClasses[productCard?.titleSize || "Medium"] || titleSizeClasses.Medium;
-    const priceSizeClass = priceSizeClasses[productCard?.priceSize || "Medium"] || priceSizeClasses.Medium;
+    const forceMobilePreview = isPreviewMobile(previewDevice);
+    const titleSize = productCard?.titleSize || "Medium";
+    const priceSize = productCard?.priceSize || "Medium";
+    const titleSizeClass = forceMobilePreview
+        ? ({ Small: "text-xs", Medium: "text-sm", Large: "text-base" }[titleSize] || "text-sm")
+        : (titleSizeClasses[titleSize] || titleSizeClasses.Medium);
+    const priceSizeClass = forceMobilePreview
+        ? ({ Small: "text-sm", Medium: "text-base", Large: "text-lg" }[priceSize] || "text-base")
+        : (priceSizeClasses[priceSize] || priceSizeClasses.Medium);
     const buttonShapeClass = buttonShapeClasses[productCard?.buttonShape || "Pill"] || buttonShapeClasses.Pill;
     const cardAlignment = resolveCardAlignment(productCard?.cardAlignment);
     const productCardColors = productCard?.colors || {};
@@ -88,7 +97,16 @@ export const ProductCard = memo(function ProductCard({
     const stockText = stock > 0 ? `${stock} in stock` : "Out of stock";
     const sku = product.sku || product.variants?.[0]?.sku || (product._id ? `ID ${String(product._id).slice(-6)}` : "");
     const isOutOfStock = stock <= 0;
-    const imageFrameSpacing = imageRadiusClass === "rounded-none" ? "" : "m-2.5 mb-0 sm:m-3 sm:mb-0";
+    const imageFrameSpacing = imageRadiusClass === "rounded-none"
+        ? ""
+        : forceMobilePreview ? "m-2.5 mb-0" : "m-2.5 mb-0 sm:m-3 sm:mb-0";
+    const cardContentClass = forceMobilePreview ? "p-3 pt-2.5" : "p-3 pt-2.5 sm:p-4 sm:pt-3";
+    const wishlistClass = forceMobilePreview
+        ? "right-2 top-2 h-10 w-10"
+        : "right-2 top-2 h-10 w-10 sm:right-3 sm:top-3 sm:h-11 sm:w-11";
+    const quickBuyButtonClass = forceMobilePreview
+        ? "h-11 px-1.5 text-[11px]"
+        : "h-11 px-1.5 text-[11px] min-[430px]:px-2 min-[430px]:text-xs sm:px-3 sm:text-sm";
 
     useEffect(() => {
         setImageFailed(false);
@@ -147,7 +165,7 @@ export const ProductCard = memo(function ProductCard({
                         onClick={handleWishlist}
                         aria-pressed={wishlisted}
                         aria-label={`${wishlisted ? "Remove" : "Save"} ${product.title} ${wishlisted ? "from" : "to"} wishlist`}
-                        className="absolute right-2 top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5 backdrop-blur transition hover:scale-105 sm:right-3 sm:top-3 sm:h-11 sm:w-11"
+                        className={`absolute z-20 flex items-center justify-center rounded-full bg-white/95 shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5 backdrop-blur transition hover:scale-105 ${wishlistClass}`}
                         style={{ color: wishlisted ? cardColors.wishlistActive : cardColors.wishlistIcon }}
                     >
                         <Heart size={16} fill={wishlisted ? "currentColor" : "none"} className="sm:h-[18px] sm:w-[18px]" />
@@ -165,7 +183,7 @@ export const ProductCard = memo(function ProductCard({
                     </span>
                 )}
             </div>
-            <div className={`flex flex-1 flex-col p-3 pt-2.5 sm:p-4 sm:pt-3 ${cardAlignment.textClass}`}>
+            <div className={`flex flex-1 flex-col ${cardContentClass} ${cardAlignment.textClass}`}>
                 <h3 className={`line-clamp-2 min-h-[2.25em] leading-snug ${titleSizeClass}`} style={{ fontWeight: productCard?.titleWeight || 800, color: cardColors.title }}>{product.title}</h3>
                 <div className="mt-2 min-w-0">
                     <p className={`${priceSizeClass} font-black`} style={{ color: cardColors.price }}>{formatPrice(price)}</p>
@@ -215,12 +233,12 @@ export const ProductCard = memo(function ProductCard({
                                 disabled={isOutOfStock}
                                 onClick={handleAdd}
                                 aria-label={`${stock > 0 ? "Add" : "Unavailable"} ${product.title} to cart`}
-                                className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] disabled:bg-slate-300 disabled:text-white min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
+                                className={`inline-flex w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border font-black transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] disabled:bg-slate-300 disabled:text-white ${quickBuyButtonClass} ${buttonShapeClass}`}
                                 style={isOutOfStock
                                     ? { backgroundColor: cardColors.outOfStockBackground, borderColor: cardColors.outOfStockBackground, color: cardColors.outOfStockText }
                                     : buttonInlineStyle}
                             >
-                                <ShoppingBag size={14} className="hidden shrink-0 sm:block" />
+                                {!forceMobilePreview && <ShoppingBag size={14} className="hidden shrink-0 sm:block" />}
                                 <span className="truncate">{isOutOfStock ? "Unavailable" : "Add"}</span>
                             </button>
                             {onProductBuyNow && (
@@ -229,14 +247,20 @@ export const ProductCard = memo(function ProductCard({
                                     disabled={isOutOfStock}
                                     onClick={handleBuyNow}
                                     aria-label={`${stock > 0 ? "Buy" : "Unavailable"} ${product.title} now`}
-                                    className={`inline-flex h-10 w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border px-1.5 text-[11px] font-black shadow-md shadow-slate-950/15 transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] disabled:border-slate-300 disabled:bg-slate-300 min-[430px]:h-11 min-[430px]:px-2 min-[430px]:text-xs sm:h-11 sm:px-3 sm:text-sm ${buttonShapeClass}`}
+                                    className={`inline-flex w-full min-w-0 items-center justify-center gap-1 whitespace-nowrap border font-black shadow-md shadow-slate-950/15 transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] disabled:border-slate-300 disabled:bg-slate-300 ${quickBuyButtonClass} ${buttonShapeClass}`}
                                     style={isOutOfStock
                                         ? { backgroundColor: cardColors.outOfStockBackground, borderColor: cardColors.outOfStockBackground, color: cardColors.outOfStockText }
                                         : { backgroundColor: cardColors.buyNowBackground, borderColor: cardColors.buyNowBackground, color: cardColors.buyNowText }}
                                 >
-                                    <Zap size={14} className="hidden shrink-0 sm:block" />
-                                    <span className="truncate max-[379px]:hidden">Buy Now</span>
-                                    <span className="hidden truncate max-[379px]:inline">Buy</span>
+                                    {!forceMobilePreview && <Zap size={14} className="hidden shrink-0 sm:block" />}
+                                    {forceMobilePreview ? (
+                                        <span className="truncate">Buy</span>
+                                    ) : (
+                                        <>
+                                            <span className="hidden truncate min-[480px]:inline">Buy Now</span>
+                                            <span className="truncate min-[480px]:hidden">Buy</span>
+                                        </>
+                                    )}
                                 </button>
                             )}
                         </div>
