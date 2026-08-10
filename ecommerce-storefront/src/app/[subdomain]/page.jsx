@@ -2,6 +2,7 @@ import StorefrontHomeClient from './StorefrontHomeClient';
 import { fetchStorefrontBootstrap, getStorefrontPlanRedirectUrl } from '@/lib/storefrontServer';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
+import { cache } from 'react';
 import {
     buildHomepageJsonLd,
     buildNextHomepageMetadata,
@@ -13,7 +14,7 @@ import { resolveStorefrontIndexability } from '@/lib/indexability';
 
 const stringifyJsonLd = (jsonLd) => JSON.stringify(jsonLd).replace(/</g, '\\u003c');
 
-const getInitialStorefrontData = async (subdomain, host = '') => {
+const getInitialStorefrontData = cache(async (subdomain, host = '') => {
     try {
         return await fetchStorefrontBootstrap(subdomain, {
             page: 1,
@@ -37,7 +38,7 @@ const getInitialStorefrontData = async (subdomain, host = '') => {
         console.error('Server storefront bootstrap error:', error.message);
         return null;
     }
-};
+});
 
 export async function generateMetadata({ params }) {
     const { subdomain } = await params;
@@ -45,14 +46,7 @@ export async function generateMetadata({ params }) {
     const host = headerStore.get('host') || '';
 
     try {
-        const initialData = await fetchStorefrontBootstrap(subdomain, {
-            page: 1,
-            limit: 9,
-            sort: 'newest',
-        }, {
-            storefrontHost: host,
-            fresh: true,
-        });
+        const initialData = await getInitialStorefrontData(subdomain, host);
         const shop = initialData?.shop;
         if (!shop) return noindexMetadata('Store unavailable', 'This storefront is currently unavailable.');
 

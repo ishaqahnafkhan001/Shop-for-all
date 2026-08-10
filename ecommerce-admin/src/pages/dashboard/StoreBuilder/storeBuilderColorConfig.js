@@ -190,24 +190,6 @@ export const buildBrandColorSet = (brandColor) => ({
 
 const flattenNestedColorFields = (groups = []) => groups.flatMap(group => group.fields.map(field => ({ ...field, groupId: group.id, groupTitle: group.title })));
 
-export const contrastRatio = (foreground, background) => {
-    const toLinear = (value) => {
-        const channel = value / 255;
-        return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-    };
-    const luminance = (hex) => {
-        const rgb = hexToRgb(hex);
-        if (!rgb) return null;
-        return (0.2126 * toLinear(rgb.r)) + (0.7152 * toLinear(rgb.g)) + (0.0722 * toLinear(rgb.b));
-    };
-    const fg = luminance(foreground);
-    const bg = luminance(background);
-    if (fg === null || bg === null) return null;
-    const lighter = Math.max(fg, bg);
-    const darker = Math.min(fg, bg);
-    return (lighter + 0.05) / (darker + 0.05);
-};
-
 export const colorSectionGroups = [
     {
         id: 'brand',

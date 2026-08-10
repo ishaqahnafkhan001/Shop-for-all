@@ -165,7 +165,7 @@ const DEFAULT_COLORS = {
         background: '#ffffff', title: '#0f172a', subtitle: '#64748b', bannerOverlay: '#020617', bannerText: '#ffffff', faqBackground: '#f8fafc', faqText: '#475569', testimonialBackground: '#f8fafc', testimonialText: '#475569', trustIcon: '#0f766e', trustText: '#475569',
     },
     footer: {
-        background: '#ffffff', heading: '#0f172a', text: '#64748b', link: '#0f172a', linkHover: '#0f766e', border: '#e2e8f0', poweredBy: '#94a3b8',
+        background: '#ffffff', heading: '#0f172a', text: '#64748b', link: '#0f172a', linkHover: '#0f766e', border: '#e2e8f0', poweredBy: '#64748b',
     },
     checkout: {
         background: '#f8fafc', cardBackground: '#ffffff', text: '#0f172a', buttonBackground: '#0f172a', buttonText: '#ffffff', accent: '#0f766e', inputBackground: '#ffffff', inputBorder: '#cbd5e1', inputFocus: '#0f766e', error: '#dc2626', success: '#047857',
@@ -247,6 +247,7 @@ const FALLBACK_THEME = Object.freeze({
 });
 
 const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
+const LEGACY_LOW_CONTRAST_FOOTER_TEXT = '#94a3b8';
 const UNSAFE_URL_PATTERN = /^(?:javascript|vbscript|data):/i;
 const URL_FIELD_PATTERN = /(?:url|href|link|image|images|logo|favicon)$/i;
 const LEGACY_DEFAULT_COLORS = {
@@ -389,6 +390,128 @@ const mergeColorGroup = (base = {}, incoming = {}) => Object.keys(base).reduce((
     return acc;
 }, {});
 
+const normalizeHexColor = (value = '') => {
+    const color = String(value || '').trim().toLowerCase();
+    if (!HEX_COLOR_REGEX.test(color)) return '';
+    if (color.length === 4) return `#${color.slice(1).split('').map(channel => `${channel}${channel}`).join('')}`;
+    return color;
+};
+
+const hexToRgb = (value = '') => {
+    const color = normalizeHexColor(value);
+    if (!color) return null;
+    return {
+        r: Number.parseInt(color.slice(1, 3), 16),
+        g: Number.parseInt(color.slice(3, 5), 16),
+        b: Number.parseInt(color.slice(5, 7), 16),
+    };
+};
+
+const rgbToHex = ({ r, g, b }) => `#${[r, g, b]
+    .map(channel => Math.min(255, Math.max(0, Math.round(channel))).toString(16).padStart(2, '0'))
+    .join('')}`;
+
+const relativeLuminance = (value = '') => {
+    const rgb = hexToRgb(value);
+    if (!rgb) return null;
+    const linear = (channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.04045
+            ? normalized / 12.92
+            : ((normalized + 0.055) / 1.055) ** 2.4;
+    };
+    return (0.2126 * linear(rgb.r)) + (0.7152 * linear(rgb.g)) + (0.0722 * linear(rgb.b));
+};
+
+const contrastRatio = (foreground = '', background = '') => {
+    const foregroundLuminance = relativeLuminance(foreground);
+    const backgroundLuminance = relativeLuminance(background);
+    if (foregroundLuminance === null || backgroundLuminance === null) return null;
+    const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+    const darker = Math.min(foregroundLuminance, backgroundLuminance);
+    return (lighter + 0.05) / (darker + 0.05);
+};
+
+const mixHexColors = (from = '', to = '', amount = 0) => {
+    const fromRgb = hexToRgb(from);
+    const toRgb = hexToRgb(to);
+    if (!fromRgb || !toRgb) return '';
+    const weight = Math.min(1, Math.max(0, Number(amount) || 0));
+    return rgbToHex({
+        r: fromRgb.r + ((toRgb.r - fromRgb.r) * weight),
+        g: fromRgb.g + ((toRgb.g - fromRgb.g) * weight),
+        b: fromRgb.b + ((toRgb.b - fromRgb.b) * weight),
+    });
+};
+
+const suggestAccessibleForeground = (foreground = '', background = '', minimumRatio = 4.5) => {
+    const normalizedForeground = normalizeHexColor(foreground);
+    const normalizedBackground = normalizeHexColor(background);
+    if (!normalizedForeground || !normalizedBackground) return '';
+    if ((contrastRatio(normalizedForeground, normalizedBackground) || 0) >= minimumRatio) return normalizedForeground;
+
+    const blackRatio = contrastRatio('#000000', normalizedBackground) || 0;
+    const whiteRatio = contrastRatio('#ffffff', normalizedBackground) || 0;
+    const target = blackRatio >= whiteRatio ? '#000000' : '#ffffff';
+    for (let step = 1; step <= 20; step += 1) {
+        const candidate = mixHexColors(normalizedForeground, target, step / 20);
+        if ((contrastRatio(candidate, normalizedBackground) || 0) >= minimumRatio) return candidate;
+    }
+    return target;
+};
+
+const THEME_CONTRAST_PAIRS = Object.freeze([
+    ['header.text', 'header.background', 'Header text'],
+    ['header.mutedText', 'header.background', 'Header subtitle'],
+    ['header.icon', 'header.background', 'Header icons'],
+    ['header.cartBadgeText', 'header.cartBadgeBackground', 'Cart badge text'],
+    ['hero.title', 'hero.background', 'Hero title'],
+    ['hero.subtitle', 'hero.background', 'Hero subtitle'],
+    ['hero.primaryButtonText', 'hero.primaryButtonBackground', 'Hero primary button'],
+    ['hero.secondaryButtonText', 'hero.secondaryButtonBackground', 'Hero secondary button'],
+    ['productCard.title', 'productCard.background', 'Product title'],
+    ['productCard.category', 'productCard.background', 'Product category'],
+    ['productCard.price', 'productCard.background', 'Product price'],
+    ['productCard.saleBadgeText', 'productCard.saleBadgeBackground', 'Sale badge'],
+    ['productCard.addToCartText', 'productCard.addToCartBackground', 'Add to Cart button'],
+    ['productCard.buyNowText', 'productCard.buyNowBackground', 'Buy Now button'],
+    ['allProducts.title', 'allProducts.background', 'Catalog title'],
+    ['allProducts.subtitle', 'allProducts.background', 'Catalog subtitle'],
+    ['sections.title', 'sections.background', 'Section title'],
+    ['sections.subtitle', 'sections.background', 'Section subtitle'],
+    ['footer.heading', 'footer.background', 'Footer headings'],
+    ['footer.text', 'footer.background', 'Footer text'],
+    ['footer.link', 'footer.background', 'Footer links'],
+    ['footer.poweredBy', 'footer.background', 'Footer powered-by text'],
+    ['checkout.text', 'checkout.cardBackground', 'Checkout text'],
+    ['checkout.buttonText', 'checkout.buttonBackground', 'Checkout button'],
+]);
+
+const getPathValue = (value = {}, path = '') => String(path || '')
+    .split('.')
+    .filter(Boolean)
+    .reduce((current, key) => current?.[key], value);
+
+const evaluateThemeContrast = (themeCandidate = {}, minimumRatio = 4.5) => {
+    const colors = normalizeTheme(themeCandidate).colors;
+    return THEME_CONTRAST_PAIRS.map(([foregroundPath, backgroundPath, label]) => {
+        const foreground = getPathValue(colors, foregroundPath);
+        const background = getPathValue(colors, backgroundPath);
+        const ratio = contrastRatio(foreground, background);
+        return {
+            label,
+            foregroundPath,
+            backgroundPath,
+            foreground,
+            background,
+            ratio,
+            minimumRatio,
+            passes: ratio !== null && ratio >= minimumRatio,
+            suggestedForeground: suggestAccessibleForeground(foreground, background, minimumRatio),
+        };
+    });
+};
+
 const normalizeThemeColors = (theme = {}) => {
     const raw = isPlainObject(theme.colors) ? theme.colors : {};
     const flat = Object.keys(DEFAULT_COLORS).reduce((acc, key) => {
@@ -443,6 +566,12 @@ const normalizeThemeColors = (theme = {}) => {
         }),
         checkout: mergeColorGroup(DEFAULT_COLORS.checkout, raw.checkout || {}),
     };
+    if (
+        normalizeHexColor(raw.footer?.poweredBy) === LEGACY_LOW_CONTRAST_FOOTER_TEXT
+        && (contrastRatio(colors.footer.poweredBy, colors.footer.background) || 0) < 4.5
+    ) {
+        colors.footer.poweredBy = DEFAULT_COLORS.footer.poweredBy;
+    }
     Object.entries(LEGACY_DEFAULT_COLORS).forEach(([key, legacyValue]) => {
         if (String(colors[key]).toLowerCase() === legacyValue) colors[key] = DEFAULT_COLORS[key];
     });
@@ -915,5 +1044,10 @@ module.exports = {
     summarizeThemeChanges,
     isSafeThemeUrl,
     sanitizeThemeUrl,
+    normalizeHexColor,
+    relativeLuminance,
+    contrastRatio,
+    suggestAccessibleForeground,
+    evaluateThemeContrast,
     ...homepageSeo,
 };

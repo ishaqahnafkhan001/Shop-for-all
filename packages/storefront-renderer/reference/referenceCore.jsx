@@ -136,7 +136,7 @@ export const formatPrice = (value) => {
 export const getImageUrl = (product) => getImageUrlFromValue(product?.coverMediaId) || getImageUrlFromValue(product?.imageUrl) || getImageUrlFromValue(product?.images?.[0]) || "";
 export const getCardImageAlt = (product) => getProductImageAlt({ product, image: product?.coverMediaId || product?.images?.[0] });
 
-export const optimizeCloudinaryImage = (src = "", { width = 900, quality = "auto:eco", crop = "limit" } = {}) => {
+export const optimizeCloudinaryImage = (src = "", { width = 900, quality = "auto:eco", crop = "limit", noUpscale = false } = {}) => {
     if (!src || typeof src !== "string" || src.startsWith("/") || src.startsWith("data:") || src.startsWith("blob:")) return src;
 
     try {
@@ -145,7 +145,7 @@ export const optimizeCloudinaryImage = (src = "", { width = 900, quality = "auto
         if (url.hostname !== "res.cloudinary.com" || !url.pathname.includes(uploadSegment)) return src;
 
         const [prefix, suffix] = url.pathname.split(uploadSegment);
-        const transformation = `f_auto,q_${quality},c_${crop},w_${width}`;
+        const transformation = `f_auto,q_${quality},c_${crop},w_${width}${noUpscale ? ",fl_no_overflow" : ""}`;
         url.pathname = `${prefix}${uploadSegment}${transformation}/${suffix}`;
         return url.toString();
     } catch {
@@ -314,7 +314,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-footer-link": footer.link || cssTheme.footerLink,
         "--sf-footer-link-hover": footer.linkHover || brand.primary || cssTheme.accent,
         "--sf-footer-border": footer.border || cssTheme.cardBorder,
-        "--sf-footer-powered-by": footer.poweredBy || "#94a3b8",
+        "--sf-footer-powered-by": footer.poweredBy || "#64748b",
         "--sf-checkout-background": checkout.background || "#f8fafc",
         "--sf-checkout-card-background": checkout.cardBackground || "#ffffff",
         "--sf-checkout-text": checkout.text || "#0f172a",

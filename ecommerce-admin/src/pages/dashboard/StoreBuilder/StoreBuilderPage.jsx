@@ -1,5 +1,11 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { extractThemeAssetUrls, summarizeThemeChanges, validateTheme } from '@scaleup/storefront-theme';
+import {
+    contrastRatio,
+    extractThemeAssetUrls,
+    suggestAccessibleForeground,
+    summarizeThemeChanges,
+    validateTheme
+} from '@scaleup/storefront-theme';
 import {
     Lock,
     X
@@ -58,7 +64,6 @@ import {
     applyCompatibleColorUpdates,
     buildBrandColorSet,
     colorSectionGroups,
-    contrastRatio,
     getColorPathValue,
     mergeColorUpdates,
     nestedColorFields,
@@ -606,7 +611,8 @@ const StoreBuilderPage = () => {
         const background = getThemeColor(field.contrastWith);
         const ratio = contrastRatio(foreground, background);
         if (ratio === null || ratio >= 4.5) return '';
-        return `Low contrast with ${field.contrastWith.replace('.', ' ')}. Try a darker or lighter color.`;
+        const suggestion = suggestAccessibleForeground(foreground, background, 4.5);
+        return `Low contrast with ${field.contrastWith.replace('.', ' ')} (${ratio.toFixed(2)}:1). Suggested text color: ${suggestion}.`;
     };
 
     const setMainBrandColor = (value) => {

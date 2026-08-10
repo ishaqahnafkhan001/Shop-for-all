@@ -7,6 +7,7 @@ import {
     categoryDesktopGridClasses,
     categoryGridClasses,
     getImageUrl,
+    getResponsiveImageSrcSet,
     headingStyle,
     isPreviewMobile,
     LinkSlot,
@@ -15,6 +16,19 @@ import {
     optimizeCloudinaryImage,
 } from "./referenceCore";
 import { ProductCard } from "./StorefrontProductCard";
+
+const CATEGORY_IMAGE_WIDTHS = Object.freeze({
+    circle: [96, 144, 240, 360],
+    card: [48, 72, 96, 120],
+    editorialPrimary: [360, 520, 720, 900, 1200],
+    editorialSecondary: [180, 260, 360, 520, 720],
+});
+
+const getCategoryImageSizes = ({ editorial = false, primary = false, mobileColumns = 2, desktopColumns = 4 } = {}) => {
+    if (editorial && primary) return "(max-width: 1023px) calc(100vw - 32px), min(50vw, 736px)";
+    if (editorial) return "(max-width: 639px) calc((100vw - 44px) / 2), (max-width: 1023px) calc((100vw - 56px) / 2), min(25vw, 360px)";
+    return `(max-width: 767px) calc((100vw - 32px) / ${mobileColumns}), min(${Math.ceil(100 / desktopColumns)}vw, ${Math.ceil(1472 / desktopColumns)}px)`;
+};
 
 const SectionHeading = ({ title, subtitle, colors, centered = false }) => (
     <div className={centered ? "text-center" : ""}>
@@ -108,7 +122,7 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
                     {items.map((item) => (
                         <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="group flex min-w-0 flex-col items-center text-center">
                             <span className="flex aspect-square w-full max-w-36 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-[var(--sf-accent-bg)] text-2xl font-black text-[var(--sf-accent)] shadow-sm transition group-hover:-translate-y-1 group-hover:border-[var(--sf-accent)]">
-                                {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: 360, crop: "fill" })} alt={`${item.name} category`} width="360" height="360" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : item.name.slice(0, 1).toUpperCase()}
+                                {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: 360, crop: "fill", noUpscale: true })} srcSet={getResponsiveImageSrcSet(item.image, CATEGORY_IMAGE_WIDTHS.circle, { crop: "fill", noUpscale: true })} sizes="144px" alt={`${item.name} category`} width="360" height="360" loading="lazy" decoding="async" className="h-full w-full object-cover" /> : item.name.slice(0, 1).toUpperCase()}
                             </span>
                             <span className="mt-3 max-w-full truncate text-sm font-black text-slate-700 group-hover:text-[var(--sf-accent)]">{item.name}</span>
                             <CategoryCount count={item.productCount} />
@@ -125,15 +139,20 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
             <section data-section-variant={variant} className={`${responsiveClass} ${sectionLayout.className}`} style={sectionLayout.style}>
                 <SectionHeading title={section.title || "Shop by category"} subtitle={editorial ? "Explore the collections that define this store" : ""} colors={colors} />
                 <div className={`mt-5 grid ${contentGapClass} ${editorial ? (previewDevice ? (previewDevice === "desktop" ? "grid-cols-4" : "grid-cols-2") : "grid-cols-2 lg:grid-cols-4") : categoryGridClass}`}>
-                    {items.map((item, index) => (
-                        <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className={`group relative min-h-40 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${editorial && index === 0 ? `col-span-2 row-span-2 ${previewDevice && isPreviewMobile(previewDevice) ? "min-h-64" : "min-h-64 sm:min-h-80"}` : ""}`}>
-                            {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: editorial && index === 0 ? 900 : 520, crop: "fill" })} alt={`${item.name} category`} width="900" height="680" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <span className="absolute inset-0 flex items-center justify-center bg-[var(--sf-accent-bg)] text-4xl font-black text-[var(--sf-accent)]">{item.name.slice(0, 1).toUpperCase()}</span>}
-                            <span className="absolute inset-x-0 bottom-0 flex flex-col bg-gradient-to-t from-slate-950/92 via-slate-950/62 to-transparent px-4 pb-4 pt-16 text-sm font-black text-white">
-                                <span>{item.name}</span>
-                                <CategoryCount count={item.productCount} onImage />
-                            </span>
-                        </LinkSlot>
-                    ))}
+                    {items.map((item, index) => {
+                        const primaryEditorialImage = editorial && index === 0;
+                        const imageWidths = primaryEditorialImage ? CATEGORY_IMAGE_WIDTHS.editorialPrimary : CATEGORY_IMAGE_WIDTHS.editorialSecondary;
+                        const imageSizes = getCategoryImageSizes({ editorial, primary: primaryEditorialImage, mobileColumns, desktopColumns });
+                        return (
+                            <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className={`group relative min-h-40 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${primaryEditorialImage ? `col-span-2 row-span-2 ${previewDevice && isPreviewMobile(previewDevice) ? "min-h-64" : "min-h-64 sm:min-h-80"}` : ""}`}>
+                                {item.image ? <img src={optimizeCloudinaryImage(item.image, { width: primaryEditorialImage ? 900 : 520, crop: "fill", noUpscale: true })} srcSet={getResponsiveImageSrcSet(item.image, imageWidths, { crop: "fill", noUpscale: true })} sizes={imageSizes} alt={`${item.name} category`} width="900" height="680" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <span className="absolute inset-0 flex items-center justify-center bg-[var(--sf-accent-bg)] text-4xl font-black text-[var(--sf-accent)]">{item.name.slice(0, 1).toUpperCase()}</span>}
+                                <span className="absolute inset-x-0 bottom-0 flex flex-col bg-gradient-to-t from-slate-950/92 via-slate-950/62 to-transparent px-4 pb-4 pt-16 text-sm font-black text-white">
+                                    <span>{item.name}</span>
+                                    <CategoryCount count={item.productCount} onImage />
+                                </span>
+                            </LinkSlot>
+                        );
+                    })}
                 </div>
             </section>
         );
@@ -146,7 +165,7 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
                 {items.map((item) => (
                     <LinkSlot key={item.id} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-600 transition hover:border-[var(--sf-accent)] hover:bg-[var(--sf-accent-bg)]">
                         {item.image && (
-                            <img src={optimizeCloudinaryImage(item.image, { width: 120, crop: "fill" })} alt={`${item.name} category`} width="48" height="48" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                            <img src={optimizeCloudinaryImage(item.image, { width: 120, crop: "fill", noUpscale: true })} srcSet={getResponsiveImageSrcSet(item.image, CATEGORY_IMAGE_WIDTHS.card, { crop: "fill", noUpscale: true })} sizes="48px" alt={`${item.name} category`} width="48" height="48" loading="lazy" decoding="async" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
                         )}
                         <span className="min-w-0">
                             <span className="block truncate">{item.name}</span>

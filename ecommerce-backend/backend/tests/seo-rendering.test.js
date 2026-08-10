@@ -119,6 +119,7 @@ test('shared storefront renderer uses responsive images and avoids eager catalog
     const productCard = readRepo('packages/storefront-renderer/reference/StorefrontProductCard.jsx');
     const storefrontHeader = readRepo('packages/storefront-renderer/reference/StorefrontHeader.jsx');
     const storefrontFooter = readRepo('packages/storefront-renderer/reference/StorefrontFooter.jsx');
+    const categoryVariants = readRepo('packages/storefront-renderer/reference/StorefrontSectionVariants.jsx');
 
     assert.match(referenceCore, /export const getResponsiveImageSrcSet/);
     assert.match(storefrontHero, /mobileHeroSrcSet/);
@@ -131,6 +132,11 @@ test('shared storefront renderer uses responsive images and avoids eager catalog
     assert.match(storefrontHeader, /headerNavLinks\.slice\(0,\s*3\)/);
     assert.match(storefrontHeader, /headerNavLinks\.slice\(3\)/);
     assert.match(storefrontFooter, /prefetch=\{false\}/);
+    assert.match(categoryVariants, /CATEGORY_IMAGE_WIDTHS/);
+    assert.match(categoryVariants, /getResponsiveImageSrcSet\(item\.image/);
+    assert.match(categoryVariants, /sizes=\{imageSizes\}/);
+    assert.match(categoryVariants, /noUpscale:\s*true/);
+    assert.match(referenceCore, /fl_no_overflow/);
 });
 
 test('storefront canonical helpers preserve verified custom-domain host exactly', async () => {
@@ -303,13 +309,78 @@ test('homepage SEO resolver preserves the exact saved title across live metadata
     const preview = buildHomepageSeoPreview({ shop, host: 'attacker.example', subdomain: 'adi-jewellery' });
 
     assert.deepEqual(metadata.title, { absolute: 'ADI Jewellery - Online Store' });
+    assert.equal(metadata.description, 'Shop elegant jewellery and accessories from ADI Jewellery.');
     assert.equal(metadata.openGraph.title, 'ADI Jewellery - Online Store');
+    assert.equal(metadata.openGraph.description, metadata.description);
     assert.equal(metadata.twitter.title, 'ADI Jewellery - Online Store');
+    assert.equal(metadata.twitter.description, metadata.description);
     assert.equal(preview.title, 'ADI Jewellery - Online Store');
+    assert.equal(preview.description, metadata.description);
     assert.equal(preview.openGraph.title, metadata.openGraph.title);
     assert.equal(preview.twitter.title, metadata.twitter.title);
     assert.equal(metadata.alternates.canonical, 'https://www.adijewellery.store/');
+    assert.equal(resolved.websiteJsonLd.description, metadata.description);
+    assert.equal(resolved.storeJsonLd.description, metadata.description);
+    assert.equal(metadata.robots.index, true);
     assert.doesNotMatch(metadata.title.absolute, /\| Scaleup$/);
+});
+
+test('homepage SEO fallback, canonical, and preview indexability remain tenant-safe', async () => {
+    const {
+        buildHomepageSeoPreview,
+        buildNextHomepageMetadata,
+        resolveStorefrontHomepageSeo
+    } = await importStorefrontSeo();
+    const shop = {
+        shopName: 'Phone Gallery',
+        subdomain: 'phone-gallery',
+        isActive: true,
+        approvalStatus: 'Approved',
+        theme: { seo: {}, hero: { title: 'Phones and accessories' } }
+    };
+    const resolved = resolveStorefrontHomepageSeo({ shop, host: 'phone-gallery.scaleup.codes', subdomain: shop.subdomain });
+    const metadata = buildNextHomepageMetadata(resolved, shop);
+    const preview = buildHomepageSeoPreview({ shop, host: 'phone-gallery.scaleup.codes', subdomain: shop.subdomain });
+
+    assert.equal(resolved.source.description, 'generated');
+    assert.match(metadata.description, /Shop products from Phone Gallery/);
+    assert.equal(metadata.description, metadata.openGraph.description);
+    assert.equal(metadata.description, metadata.twitter.description);
+    assert.equal(preview.description, metadata.description);
+    assert.equal(metadata.alternates.canonical, 'https://phone-gallery.scaleup.codes/');
+    assert.equal(metadata.robots.index, true);
+
+    const hiddenShop = {
+        ...shop,
+        theme: { ...shop.theme, seo: { searchEngineVisibility: false } }
+    };
+    const hiddenMetadata = buildNextHomepageMetadata(resolveStorefrontHomepageSeo({
+        shop: hiddenShop,
+        host: 'phone-gallery.scaleup.codes',
+        subdomain: hiddenShop.subdomain
+    }), hiddenShop);
+    assert.equal(hiddenMetadata.robots.index, false);
+    assert.equal(hiddenMetadata.robots.follow, true);
+});
+
+test('theme contrast utilities use WCAG ratios and repair the known legacy footer default', () => {
+    const {
+        contrastRatio,
+        evaluateThemeContrast,
+        normalizeTheme,
+        suggestAccessibleForeground
+    } = require('@scaleup/storefront-theme');
+
+    assert.equal(contrastRatio('#000000', '#ffffff'), 21);
+    assert.ok(contrastRatio('#94a3b8', '#ffffff') < 4.5);
+    const suggested = suggestAccessibleForeground('#94a3b8', '#ffffff');
+    assert.ok(contrastRatio(suggested, '#ffffff') >= 4.5);
+    assert.equal(normalizeTheme({ colors: { footer: { background: '#ffffff', poweredBy: '#94a3b8' } } }).colors.footer.poweredBy, '#64748b');
+
+    const darkFooter = evaluateThemeContrast({
+        colors: { footer: { background: '#020617', heading: '#ffffff', text: '#e2e8f0', link: '#ffffff', poweredBy: '#cbd5e1' } }
+    }).filter(issue => issue.foregroundPath.startsWith('footer.'));
+    assert.ok(darkFooter.every(issue => issue.passes));
 });
 
 test('shared homepage SEO distinguishes generated values, indexing blocks, and approved aliases', () => {
@@ -540,6 +611,10 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(homepage, /application\/ld\+json/);
     assert.match(homepage, /dangerouslySetInnerHTML/);
     assert.match(homepage, /catalogSummary/);
+    assert.match(homepage, /import \{ cache \} from 'react'/);
+    assert.match(homepage, /const getInitialStorefrontData = cache\(/);
+    assert.match(homepage, /generateMetadata[\s\S]*getInitialStorefrontData\(subdomain, host\)/);
+    assert.match(homepage, /VendorHomePage[\s\S]*getInitialStorefrontData\(subdomain, host\)/);
 
     assert.match(productPage, /export async function generateMetadata/);
     assert.match(productPage, /buildStorefrontMetadata/);
@@ -571,6 +646,21 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(pageMetadataHelper, /fetchStorefrontInfo/);
     assert.match(pageMetadataHelper, /buildStorefrontMetadata/);
     assert.match(pageMetadataHelper, /isIndexable:\s*indexable/);
+});
+
+test('storefront hero and response headers preserve safe production defaults', () => {
+    const hero = readRepo('packages/storefront-renderer/reference/StorefrontHero.jsx');
+    const nextConfig = readRepo('ecommerce-storefront/next.config.mjs');
+
+    assert.match(hero, /loading=\{eager \? "eager" : "lazy"\}/);
+    assert.match(hero, /fetchPriority=\{eager \? "high" : undefined\}/);
+    assert.match(hero, /<source media="\(max-width: 640px\)" srcSet=\{mobileHeroSrcSet\}/);
+    assert.doesNotMatch(hero, /rel=["']preload["']/);
+    assert.match(nextConfig, /poweredByHeader:\s*false/);
+    assert.match(nextConfig, /X-Content-Type-Options/);
+    assert.match(nextConfig, /strict-origin-when-cross-origin/);
+    assert.doesNotMatch(nextConfig, /Content-Security-Policy/);
+    assert.doesNotMatch(nextConfig, /Cross-Origin-Opener-Policy/);
 });
 
 test('sitemap and robots expose only public SEO URLs and noindex private pages', () => {
