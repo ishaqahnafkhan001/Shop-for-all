@@ -48,6 +48,7 @@ const { getSubscriptionUsage, toLegacyUsageShape } = require('../services/billin
 const { createTrialForShop, isBillingSuspension } = require('../services/billing/subscriptionService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const { buildDefaultPolicies } = require('../services/policies/defaultPolicyTemplates');
+const { enqueueRegistrationNotifications } = require('../services/registrationNotificationService');
 const {
     validateSubdomain,
     checkSubdomainAvailability
@@ -492,6 +493,13 @@ exports.registerVendor = async (req, res) => {
             session,
             selectedPlanSlug: selectedPlanSlug || 'beginner',
             intendedPlanId: selectedPlanId || null
+        });
+
+        await enqueueRegistrationNotifications({
+            shopId: newShop._id,
+            accountId: account._id,
+            otpChannel,
+            session
         });
 
         await session.commitTransaction();

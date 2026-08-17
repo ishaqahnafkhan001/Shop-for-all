@@ -41,6 +41,10 @@ const {
     assertJobEntitlementStillValid
 } = require('../services/workers/jobEntitlementService');
 const { processNextAuditIntent } = require('../services/platformAuditOutboxService');
+const {
+    REGISTRATION_NOTIFICATION_QUEUE,
+    processRegistrationNotificationJob
+} = require('../services/registrationNotificationService');
 
 initializeSubscriptionEventHandlers();
 
@@ -62,6 +66,7 @@ const handlers = {
     'customer-email': processCustomerEmailCampaignJob,
     [SCHEDULED_PRODUCT_QUEUE]: processScheduledProductJob,
     [LOW_STOCK_ALERT_QUEUE]: processLowStockAlertJob,
+    [REGISTRATION_NOTIFICATION_QUEUE]: processRegistrationNotificationJob,
     support: processSupportJob
 };
 
@@ -71,6 +76,11 @@ const QUEUE_FEATURES = Object.freeze({
     [SCHEDULED_PRODUCT_QUEUE]: 'scheduledProductPublishing',
     [LOW_STOCK_ALERT_QUEUE]: 'lowStockAlerts'
 });
+
+const ENTITLEMENT_INDEPENDENT_QUEUES = new Set([
+    'support',
+    REGISTRATION_NOTIFICATION_QUEUE
+]);
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -100,8 +110,8 @@ const processNextJob = async () => {
         await assertJobEntitlementStillValid({
             job,
             feature: requiredFeature,
-            allowInactive: job.queue === 'support',
-            expectedEntitlementVersion: job.queue === 'support'
+            allowInactive: ENTITLEMENT_INDEPENDENT_QUEUES.has(job.queue),
+            expectedEntitlementVersion: ENTITLEMENT_INDEPENDENT_QUEUES.has(job.queue)
                 ? null
                 : job.entitlementVersion
         });

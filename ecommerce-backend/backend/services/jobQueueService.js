@@ -19,12 +19,15 @@ const enqueueJob = async ({
     shop_id = null,
     runAt = new Date(),
     maxAttempts = 5,
-    idempotencyKey = ''
+    idempotencyKey = '',
+    session = null
 }) => {
     try {
-        const subscription = shop_id
-            ? await Subscription.findOne({ shopId: shop_id }).select('entitlementVersion').lean()
+        let subscriptionQuery = shop_id
+            ? Subscription.findOne({ shopId: shop_id }).select('entitlementVersion').lean()
             : null;
+        if (subscriptionQuery && session) subscriptionQuery = subscriptionQuery.session(session);
+        const subscription = subscriptionQuery ? await subscriptionQuery : null;
         const data = {
             queue,
             name,
@@ -36,11 +39,17 @@ const enqueueJob = async ({
         };
         if (idempotencyKey) data.idempotencyKey = idempotencyKey;
 
-        const job = await Job.create(data);
-        return job;
+        if (session) {
+            const [job] = await Job.create([data], { session });
+            return job;
+        }
+
+        return Job.create(data);
     } catch (error) {
         if (error?.code === 11000 && idempotencyKey) {
-            return Job.findOne({ idempotencyKey }).select('+payload +lockId');
+            const existingQuery = Job.findOne({ idempotencyKey }).select('+payload +lockId');
+            if (session) existingQuery.session(session);
+            return existingQuery;
         }
         throw error;
     }

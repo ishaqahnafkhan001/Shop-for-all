@@ -4,7 +4,9 @@
 
 - Confirm all production environment variables are present.
 - Confirm `JWT_SECRET`, `CSRF_SECRET`, `REGISTRATION_OTP_SECRET`, `SMS_OTP_SECRET`, `PASSWORD_RESET_SECRET`, `ORDER_ACCESS_TOKEN_SECRET`, `STOREFRONT_PROXY_SECRET`, Cloudinary secrets, mail provider keys, and courier credentials are present and not committed.
-- Configure `SUPER_ADMIN_EMAIL` so subscription payment submissions notify the platform owner.
+- Configure `EMAIL_USER=confirmation@scaleup.codes` with `EMAIL_PASS` (or a verified Resend sender) for registration confirmations.
+- Configure `SUPER_ADMIN_EMAIL` so new-shop registrations and subscription payment submissions notify the platform owner.
+- Confirm `ADMIN_APP_URL` and `PLATFORM_ROOT_DOMAIN` generate the correct links in vendor welcome email/SMS messages.
 - Run backend tests.
 - Run admin lint/build.
 - Run storefront lint/build.
