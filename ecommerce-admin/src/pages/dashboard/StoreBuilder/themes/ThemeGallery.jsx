@@ -1,3 +1,4 @@
+import { resolveEffectiveTheme } from '@scaleup/storefront-theme';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Eye, Layers3, Search, ShieldCheck, X } from 'lucide-react';
 import { getPrebuiltThemes, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
@@ -172,6 +173,7 @@ export default function ThemeGallery({
     onClose,
     currentTheme,
     planAccess,
+    branding,
     shopName,
     products,
     categories,
@@ -202,13 +204,13 @@ export default function ThemeGallery({
         const resolved = new Map();
         availableThemes.forEach(theme => {
             try {
-                resolved.set(theme.id, buildPreviewTheme({ currentTheme, presetId: theme.id, planAccess }));
+                resolved.set(theme.id, resolveEffectiveTheme(buildPreviewTheme({ currentTheme, presetId: theme.id, planAccess }), { planAccess, branding, shopName }));
             } catch {
                 resolved.set(theme.id, null);
             }
         });
         return resolved;
-    }, [currentTheme, planAccess]);
+    }, [currentTheme, planAccess, branding, shopName]);
 
     const previewResolution = useMemo(() => {
         if (!previewTheme) return { theme: null, error: '' };
@@ -274,6 +276,8 @@ export default function ThemeGallery({
                             <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
                                 <StorefrontPreview
                                     theme={previewResolution.theme}
+                                    planAccess={planAccess}
+                                    branding={branding}
                                     storewideDiscount={0}
                                     shopName={shopName}
                                     device={device}

@@ -11,6 +11,8 @@ export function StoreBuilderPreviewPanel({
     device,
     setDevice,
     theme,
+    planAccess,
+    branding,
     storewideDiscount,
     shopName,
     availableProducts,
@@ -73,6 +75,8 @@ export function StoreBuilderPreviewPanel({
             </div>
             <StorefrontPreview
                 theme={theme}
+                planAccess={planAccess}
+                branding={branding}
                 storewideDiscount={Number(storewideDiscount) || 0}
                 shopName={shopName}
                 device={device}

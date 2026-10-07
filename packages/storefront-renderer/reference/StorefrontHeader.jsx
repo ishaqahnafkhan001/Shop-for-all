@@ -13,7 +13,7 @@ import {
     X,
 } from "lucide-react";
 
-import { getSortedNavigation, normalizeTheme } from "@scaleup/storefront-theme";
+import { getSortedNavigation, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
 import {
     DefaultLink,
     EditorSelectionFrame,

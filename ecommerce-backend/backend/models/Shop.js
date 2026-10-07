@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const {
+    FALLBACK_THEME,
+    PRODUCT_CARD_STYLE_FIELDS,
     normalizeSearchAliases,
     normalizeSearchText,
     SECTION_TYPES,
@@ -334,6 +336,7 @@ const shopSchema = new mongoose.Schema({
     },
     branding: { type: essentialBrandingSchema, default: () => ({}) },
     theme: {
+        extensions: { type: mongoose.Schema.Types.Mixed, default: undefined },
         version: { type: Number, default: THEME_SCHEMA_VERSION, min: 1 },
         preset: { type: themePresetSchema, default: null },
         logoUrl: { type: String, default: '' },
@@ -467,6 +470,10 @@ const shopSchema = new mongoose.Schema({
             }
         },
         productCard: {
+            inheritedStyleFields: {
+                type: [{ type: String, enum: PRODUCT_CARD_STYLE_FIELDS }],
+                default: undefined
+            },
             style: {
                 type: String,
                 enum: ['Minimal', 'Modern', 'Premium'],
@@ -495,7 +502,13 @@ const shopSchema = new mongoose.Schema({
             showSku: { type: Boolean, default: false },
             showDiscountBadge: { type: Boolean, default: true },
             showQuickBuy: { type: Boolean, default: true },
-            showWishlist: { type: Boolean, default: false },
+            showWishlist: {
+                type: Boolean,
+                default: function () {
+                    // Keep historical defaults when hydrating existing sparse themes.
+                    return this?.$isNew === false ? false : FALLBACK_THEME.productCard.showWishlist;
+                }
+            },
             borderRadius: {
                 type: String,
                 enum: ['Soft', 'Rounded', 'Square'],
@@ -586,7 +599,9 @@ const shopSchema = new mongoose.Schema({
         },
         homepageSections: {
             type: [homepageSectionSchema],
-            default: [
+            default: function () {
+                if (this?.$isNew !== false) return JSON.parse(JSON.stringify(FALLBACK_THEME.homepageSections));
+                return [
                 {
                     id: 'featured-products',
                     type: 'FeaturedProducts',
@@ -595,18 +610,25 @@ const shopSchema = new mongoose.Schema({
                     isEnabled: true,
                     settings: { source: { type: 'manual', productIds: [] }, productIds: [] }
                 }
-            ]
+                ];
+            }
         },
         allProducts: {
-            title: { type: String, default: 'Shop products' },
-            subtitle: { type: String, default: '' },
+            title: {
+                type: String,
+                default: function () {
+                    // New shops inherit the contract; existing sparse themes keep their title.
+                    return this?.$isNew === false ? 'Shop products' : FALLBACK_THEME.allProducts.title;
+                }
+            },
+            subtitle: { type: String, default: function () { return this?.$isNew === false ? '' : FALLBACK_THEME.allProducts.subtitle; } },
             isEnabled: { type: Boolean, default: true },
             desktopColumns: { type: Number, default: 3, min: 2, max: 5 },
             tabletColumns: { type: Number, default: 2, min: 1, max: 4 },
             mobileColumns: { type: Number, default: 2, min: 1, max: 2 },
             spacing: {
                 type: String,
-                enum: ['Compact', 'Comfortable', 'Spacious'],
+                enum: ['Compact', 'Comfortable', 'Spacious', 'Editorial'],
                 default: 'Comfortable'
             }
         },
@@ -679,7 +701,7 @@ const shopSchema = new mongoose.Schema({
     },
     badgePlanInactive: { type: Boolean, default: false },
     badgePlanInactiveAt: Date,
-    // ✨ NEW: Storewide Discount Feature
+    // âœ¨ NEW: Storewide Discount Feature
     storewideDiscount: {
         type: Number,
         default: 0, // 0 means no sale is active
@@ -722,7 +744,7 @@ const shopSchema = new mongoose.Schema({
             default: null
         }
     },
-    // 🚚 Existing Pathao Courier Integration (kept for backward compatibility)
+    // ðŸšš Existing Pathao Courier Integration (kept for backward compatibility)
     pathaoStoreId: {
         type: Number,
         default: null // Null means the vendor hasn't set up their Pathao shipping location yet

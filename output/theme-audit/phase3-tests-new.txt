@@ -1,0 +1,95 @@
+✔ default policy templates cover refund, shipping, privacy, and terms (1.6506ms)
+✔ policy default fill only adds missing or empty policies (0.2633ms)
+✔ new shop registration seeds editable default policies (0.4307ms)
+✔ store builder and public storefront responses apply missing policy defaults without changing shape (0.5496ms)
+✔ policy backfill script supports dry-run and does not overwrite edited policies (1.3021ms)
+✔ storefront policy pages use default fallback content and reject invalid policy types (1.0011ms)
+✔ Essential Store Branding is available to every plan without unlocking Store Builder (0.8711ms)
+✔ legacy Shop and published-theme identity derives without mutating premium theme data (0.9406ms)
+✔ explicit branding is never overwritten, while unremoved legacy assets remain compatible (0.2997ms)
+✔ custom CTA validation accepts safe destinations and rejects scriptable or administrative URLs (0.5959ms)
+✔ branding update DTO rejects unknown fields before persistence (0.4211ms)
+✔ Beginner public theme receives one safe branding hero and no premium layout mutation (0.4818ms)
+✔ dedicated branding APIs are tenant-authenticated, permission checked, and independently feature gated (1.1357ms)
+✔ live renderer hides empty heroes and never inserts generic promotional claims (0.4517ms)
+✔ admin exposes a separate all-plan branding page without exposing Store Builder (0.6096ms)
+(node:15240) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/defaultPolicies.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all new-store presentation defaults equal the shared contract; historical empty values survive (24.5936ms)
+✔ canonical layers distinguish omission, explicit default values, clears, and responsive values (2.5545ms)
+✔ legacy versions resolve without rewriting inputs or reapplying a preset over merchant edits (10.9604ms)
+✔ future schema versions remain identifiable on reads and are rejected for writes (1.3352ms)
+✖ safe unknown root and nested fields survive strict schema round trips in an opaque archive (19.9367ms)
+✔ compatibility data cannot introduce prototype or Mongo operator keys (0.3627ms)
+✔ all presets preserve presentation and responsive settings across plans and repeated resolution (115.6987ms)
+✔ limited-plan canonical no-op saves pass, actual restricted changes still fail (1.4967ms)
+✔ policy fallbacks are identical across Admin, storefront, and server; merchant text wins (16.205ms)
+✔ public adapter and storefront facade resolve identically with tenant-scoped environment inputs (20.7572ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 24
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 815.0039
+
+✖ failing tests:
+
+test at tests\storefront-effective-theme.test.js:70:1
+✖ safe unknown root and nested fields survive strict schema round trips in an opaque archive (19.9367ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    {
+      schemaFields: [
+        {
+          path: [
+            'hero',
+  ...
+        },
+  +     {
+  +       path: [
+  +         'homepageSections',
+  +         '0',
+  +         '_id',
+  +         'buffer'
+  +       ],
+  +       value: {
+  +         '0': 106,
+  +         '1': 197,
+  +         '10': 242,
+  +         '11': 204,
+  +         '2': 214,
+  +         '3': 242,
+  +         '4': 24,
+  +         '5': 55,
+  +         '6': 3,
+  +         '7': 76,
+  +         '8': 13,
+  +         '9': 223
+  +       }
+  +     }
+      ],
+      unknown: {
+        futureWidget: {
+          enabled: false,
+          label: 'Keep'
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-effective-theme.test.js:81:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { unknown: { futureWidget: [Object] }, schemaFields: [ [Object], [Object], [Object] ] },
+    expected: { unknown: { futureWidget: [Object] }, schemaFields: [ [Object], [Object] ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

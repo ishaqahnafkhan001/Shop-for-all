@@ -61,8 +61,8 @@ test('store builder and public storefront responses apply missing policy default
 
     assert.match(storeBuilderService, /fillMissingPolicyDefaults/);
     assert.match(storeBuilderService, /policies:\s*policyDefaults\.policies/);
-    assert.match(storeController, /applyDefaultPoliciesToShopPayload/);
-    assert.match(storeController, /fillMissingPolicyDefaults\(shop\.theme\?\.policies/);
+    assert.match(storeController, /applyEffectiveStoreTheme/);
+    assert.match(read('services/storeBuilder/effectiveThemeService.js'), /resolveEffectiveTheme/);
 });
 
 test('policy backfill script supports dry-run and does not overwrite edited policies', () => {
@@ -86,7 +86,7 @@ test('storefront policy pages use default fallback content and reject invalid po
 
     assert.match(defaultPolicies, /DEFAULT_POLICY_TEMPLATES/);
     assert.match(defaultPolicies, /getPolicyContent/);
-    assert.match(theme, /mergePolicies/);
+    assert.match(theme, /resolveEffectiveTheme/);
     assert.match(themeContract, /ensurePolicyNavigationLink/);
     assert.match(themeContract, /label:\s*'Policies'/);
     assert.match(themeContract, /url:\s*'\/policies'/);

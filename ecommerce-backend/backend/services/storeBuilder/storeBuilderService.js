@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const {
+    assertSupportedThemeVersion,
     getThemeCapabilityMetadata,
     normalizeSearchAliases,
     normalizeSearchText,
@@ -10,6 +11,8 @@ const {
 } = require('@scaleup/storefront-theme');
 
 const Shop = require('../../models/Shop');
+const { preserveThemeExtensions } = require('./themeCompatibilityService');
+const { resolveStoreBranding } = require('../shops/storeBrandingService');
 const Product = require('../../models/Product');
 const Review = require('../../models/Review');
 const Collection = require('../../models/Collection');
@@ -32,7 +35,7 @@ const { mergeCategoryDetails, normalizeCategoryKey } = require('../categories/ca
 
 const REVISION_RETENTION = 20;
 const BUILDER_SHOP_FIELDS = [
-    'shopName', 'subdomain', 'theme', 'themeRevision', 'lastPublishedAt', 'lastPublishedBy',
+    'shopName', 'subdomain', 'branding', 'theme', 'themeRevision', 'lastPublishedAt', 'lastPublishedBy',
     'customDomain', 'plan', 'featureFlags', 'storewideDiscount', 'isActive', 'approvalStatus',
     'suspensionReason', 'searchAliases', 'searchAliasesNormalized', 'searchNameNormalized', 'updatedAt'
 ].join(' ');
@@ -71,10 +74,14 @@ const normalizeShopAliases = async ({ aliases, shop }) => {
     return result;
 };
 
-const normalizeThemeForShop = async (theme, shop) => {
-    const sanitizedTheme = sanitizeThemePayload(toJsonSafeTheme(theme));
+const normalizeThemeForShop = async (theme, shop, { readOnly = false } = {}) => {
+    if (!readOnly) {
+        assertSupportedThemeVersion(shop?.theme || {});
+        assertSupportedThemeVersion(theme || {});
+    }
+    const sanitizedTheme = preserveThemeExtensions(toJsonSafeTheme(theme), shop?.theme || {});
     const validation = validateTheme(sanitizedTheme);
-    if (!validation.valid) {
+    if (!validation.valid && !readOnly) {
         const error = new Error(validation.errors[0]?.message || 'The Store Builder theme is invalid.');
         error.statusCode = 400;
         error.code = validation.errors[0]?.code === 'UNSUPPORTED_SECTION' ? 'UNSUPPORTED_SECTION' : 'INVALID_THEME';
@@ -158,7 +165,8 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
 
     const migratedHolder = { _id: shop._id, theme: shop.theme || {} };
     await ensureThemeSectionArchitecture(migratedHolder, { persist: false });
-    shop.theme = await normalizeThemeForShop(migratedHolder.theme, shop);
+    const previewBranding = await resolveStoreBranding(shop);
+    shop.theme = await normalizeThemeForShop(migratedHolder.theme, shop, { readOnly: true });
     shop.themeRevision = Number(shop.themeRevision || 0);
 
     const selectedProductIds = getSelectedProductIds(shop.theme);
@@ -194,7 +202,7 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
     const planAccess = safePlanAccess(access);
 
     return {
-        shop: { ...shop, planAccess },
+        shop: { ...shop, planAccess, previewBranding },
         planAccess,
         products,
         selectedProductIds,

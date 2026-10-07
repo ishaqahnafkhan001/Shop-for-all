@@ -5,8 +5,7 @@ const Collection = require('../models/Collection');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { invalidateTenantCache } = require('../middlewares/tenant');
-const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
-const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
+const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
 const { generateStoreSeoSuggestion } = require('../services/storeSeoAiService');
 const { buildPublicProductQuery } = require('../services/products/publicProductQueryService');
 const {
@@ -26,8 +25,7 @@ const {
     getReplayResponse
 } = require('../services/ai/aiGenerationPolicyService');
 const {
-    assertStoreBuilderUpdateAllowed,
-    getPublicThemeForPlan
+    assertStoreBuilderUpdateAllowed
 } = require('../services/billing/storeBuilderPlanService');
 const StoreBuilderDraft = require('../models/StoreBuilderDraft');
 const StoreBuilderRevision = require('../models/StoreBuilderRevision');
@@ -709,19 +707,13 @@ exports.getPublicStorefrontSettings = async (req, res) => {
         if (cached) return res.status(200).json(cached);
 
         const shop = await Shop.findById(req.tenantId)
-            .select('shopName subdomain theme storewideDiscount')
+            .select('shopName subdomain branding theme themeRevision storewideDiscount')
             .lean();
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        await ensureThemeSectionArchitecture(shop);
         const planAccess = await getShopPlanAccess(req.tenantId);
-        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
-        const policyDefaults = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
-        shop.theme = {
-            ...(shop.theme || {}),
-            policies: policyDefaults.policies
-        };
+        await applyEffectiveStoreTheme(shop, planAccess);
 
         const response = { success: true, data: shop };
         await cache.set(cacheKey, response, 60);

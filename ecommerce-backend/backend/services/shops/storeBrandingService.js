@@ -1,3 +1,4 @@
+const { applyBrandingToPublicTheme } = require('@scaleup/storefront-theme');
 const mongoose = require('mongoose');
 
 const Collection = require('../../models/Collection');
@@ -443,66 +444,6 @@ const retireAssetIfUnreferenced = async assetId => {
     });
 };
 
-const applyBrandingToPublicTheme = ({ theme = {}, branding, storeBuilderEnabled = false }) => {
-    if (!branding) return theme;
-
-    if (storeBuilderEnabled) {
-        const hero = theme.hero || {};
-        const hasPremiumHero = Boolean(
-            hero.imageUrl ||
-            hero.title ||
-            (Array.isArray(hero.bannerSlides) && hero.bannerSlides.some(slide => (
-                slide?.desktopImage || slide?.mobileImage || slide?.title
-            )))
-        );
-        return {
-            ...theme,
-            logoUrl: theme.logoUrl || branding.logoUrl,
-            faviconUrl: theme.faviconUrl || branding.faviconUrl,
-            hero: hasPremiumHero ? hero : {
-                ...hero,
-                title: branding.heroTitle,
-                subtitle: branding.heroSubtitle,
-                imageUrl: branding.heroImageUrl,
-                ctaLabel: branding.heroCta?.label || '',
-                ctaUrl: branding.heroCta?.url || '',
-                hidden: branding.heroHidden
-            }
-        };
-    }
-
-    const ctaLabel = branding.heroCta?.label || '';
-    const ctaUrl = branding.heroCta?.url || '';
-    return {
-        ...theme,
-        logoUrl: branding.logoUrl || '',
-        faviconUrl: branding.faviconUrl || '',
-        hero: {
-            ...(theme.hero || {}),
-            title: branding.heroTitle,
-            subtitle: branding.heroSubtitle,
-            imageUrl: branding.heroImageUrl || '',
-            ctaLabel,
-            ctaUrl,
-            hidden: branding.heroHidden,
-            height: branding.heroImageUrl ? 'Medium' : 'Compact',
-            bannerSlides: [{
-                id: 'essential-branding-hero',
-                enabled: true,
-                desktopImage: branding.heroImageUrl || '',
-                mobileImage: branding.heroImageUrl || '',
-                title: branding.heroTitle,
-                subtitle: branding.heroSubtitle,
-                badgeText: '',
-                discountText: '',
-                primaryCtaText: ctaLabel,
-                primaryCtaLink: ctaUrl,
-                secondaryCtaText: '',
-                secondaryCtaLink: ''
-            }]
-        }
-    };
-};
 
 module.exports = {
     CTA_TYPES,

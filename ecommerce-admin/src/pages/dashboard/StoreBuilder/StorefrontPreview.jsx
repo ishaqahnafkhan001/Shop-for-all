@@ -8,7 +8,7 @@ import {
     ReferenceStorefrontHome,
     getReferenceThemeStyle
 } from '@scaleup/storefront-renderer';
-import { FALLBACK_THEME, normalizeTheme } from '@scaleup/storefront-theme';
+import { FALLBACK_THEME, normalizeTheme, resolveEffectiveTheme } from '@scaleup/storefront-theme';
 import { getDefaultPolicyText } from '../../../utils/storeBuilderPolicies.js';
 
 const deviceWidths = {
@@ -352,6 +352,8 @@ const PolicyPreviewPage = ({ theme, shopName }) => {
 
 export const StorefrontPreview = ({
     theme,
+    planAccess,
+    branding,
     storewideDiscount,
     shopName,
     device,
@@ -366,7 +368,7 @@ export const StorefrontPreview = ({
 }) => {
     const previewContainerRef = useRef(null);
     const [fitScale, setFitScale] = useState(1);
-    const normalizedTheme = normalizeTheme(theme || {});
+    const normalizedTheme = resolveEffectiveTheme(theme || {}, { planAccess, branding, shopName });
     const isMobilePreview = device === 'mobile' || device === 'smallMobile';
     const products = availableProducts.length > 0
         ? availableProducts.slice(0, 10).map(product => ({

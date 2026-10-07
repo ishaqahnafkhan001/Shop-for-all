@@ -7,7 +7,6 @@ const Category = require('../models/Category');
 const Subscription = require('../models/Subscription');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
-const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
 const { mirrorPathaoConfigOnShop } = require('../services/courierConfigService');
 const {
@@ -15,7 +14,6 @@ const {
     sanitizePublicProduct,
     sanitizePublicProducts
 } = require('../services/publicProductSerializer');
-const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
 const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
 const {
     applyScheduledSalesToProducts,
@@ -23,17 +21,13 @@ const {
 } = require('../services/sales/scheduledSaleService');
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
-const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
-const {
-    applyBrandingToPublicTheme,
-    resolveStoreBranding
-} = require('../services/shops/storeBrandingService');
+const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
 const { buildPagination } = require('../utils/pagination');
 const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
 const { normalizeSearchText } = require('../services/products/productQueryService');
 const { resolveSlugRedirect } = require('../services/seo/slugRedirectService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme themeRevision storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const getActiveBannerQuery = (shopId, now = new Date()) => ({
@@ -87,35 +81,6 @@ const normalizeBannerForPublic = (banner, now = new Date()) => {
             isPublic: productPublished
         } : null
     };
-};
-
-const applyDefaultPoliciesToShopPayload = (shop) => {
-    if (!shop) return shop;
-    const result = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
-    shop.theme = {
-        ...(shop.theme || {}),
-        policies: result.policies
-    };
-    return shop;
-};
-
-const applyPublicPlanSettings = (shop, planAccess) => {
-    if (!shop || !planAccess) return shop;
-    shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
-    if (!planAccess.features.coupons) shop.storewideDiscount = 0;
-    return shop;
-};
-
-const applyEssentialBranding = async (shop, planAccess) => {
-    if (!shop) return shop;
-    const branding = await resolveStoreBranding(shop);
-    shop.theme = applyBrandingToPublicTheme({
-        theme: shop.theme || {},
-        branding,
-        storeBuilderEnabled: Boolean(planAccess?.features?.storeBuilder)
-    });
-    shop.branding = branding;
-    return shop;
 };
 
 const attachPublicBranding = async (shop) => {
@@ -181,9 +146,7 @@ exports.getStoreInfo = async (req, res) => {
             return res.status(404).json({ error: "Shop details not found." });
         }
         const planAccess = await getShopPlanAccess(shop._id);
-        applyPublicPlanSettings(shop, planAccess);
-        await applyEssentialBranding(shop, planAccess);
-        applyDefaultPoliciesToShopPayload(shop);
+        await applyEffectiveStoreTheme(shop, planAccess);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop, {
             eligible: planAccess.features.publicVerifiedBadge
@@ -318,10 +281,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
             return res.status(404).json({ error: "Shop details not found." });
         }
 
-        await ensureThemeSectionArchitecture(shop);
-        applyPublicPlanSettings(shop, planAccess);
-        await applyEssentialBranding(shop, planAccess);
-        applyDefaultPoliciesToShopPayload(shop);
+        await applyEffectiveStoreTheme(shop, planAccess);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop, {
             eligible: planAccess.features.publicVerifiedBadge

@@ -2,8 +2,10 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
     contrastRatio,
     extractThemeAssetUrls,
+    mergeThemePatch,
     suggestAccessibleForeground,
     summarizeThemeChanges,
+    updateProductCardSetting,
     validateTheme
 } from '@scaleup/storefront-theme';
 import {
@@ -53,7 +55,7 @@ import {
     formatBuilderDate,
     getBuilderHeroSlides,
     isHexColor,
-    mergeTheme,
+    loadBuilderTheme,
     normalizeHeroSlideForBuilder,
     normalizeHomepageSections,
     safeParseSnapshot,
@@ -62,6 +64,7 @@ import {
 } from './storeBuilderThemeUtils.js';
 import {
     applyCompatibleColorUpdates,
+    applyColorPalette,
     buildBrandColorSet,
     colorSectionGroups,
     getColorPathValue,
@@ -453,7 +456,7 @@ const StoreBuilderPage = () => {
 
         if (sameShop && dirtyRef.current) return;
 
-        const nextTheme = mergeTheme(defaultTheme, shop.theme || {});
+        const nextTheme = loadBuilderTheme(shop.theme || {});
         const nextSearchAliases = Array.isArray(shop.searchAliases) ? shop.searchAliases : [];
         const nextDomain = shop.customDomain || { domain: '' };
         const nextDiscount = Number(shop.storewideDiscount) || 0;
@@ -486,7 +489,7 @@ const StoreBuilderPage = () => {
         const serverDraft = bootstrap.draft;
         if (serverDraft?.theme && !serverDraft.stale) {
             const draftSnapshot = stableStringify({
-                theme: mergeTheme(defaultTheme, serverDraft.theme),
+                theme: loadBuilderTheme(serverDraft.theme),
                 searchAliases: serverDraft.searchAliases || nextSearchAliases,
                 customDomain: serverDraft.customDomain || nextDomain,
                 storewideDiscount: Number(serverDraft.storewideDiscount) || 0
@@ -554,10 +557,7 @@ const StoreBuilderPage = () => {
     const applyColorSet = (colors = {}, label = 'Palette') => {
         setTheme(prev => ({
             ...prev,
-            colors: applyCompatibleColorUpdates(
-                prev.colors || {},
-                colors?.accent ? mergeColorUpdates(buildBrandColorSet(colors.accent), colors) : colors
-            )
+            colors: applyColorPalette(prev.colors || {}, colors)
         }));
         toast.success(`${label} applied`);
     };
@@ -589,10 +589,7 @@ const StoreBuilderPage = () => {
         if (!defaultGroup || typeof defaultGroup !== 'object') return;
         setTheme(prev => ({
             ...prev,
-            colors: {
-                ...(prev.colors || {}),
-                [groupId]: { ...defaultGroup }
-            }
+            colors: applyCompatibleColorUpdates(prev.colors || {}, { [groupId]: { ...defaultGroup } })
         }));
         toast.success(`${colorSectionGroups.find(group => group.id === groupId)?.title || 'Section'} colors reset`);
     };
@@ -619,7 +616,7 @@ const StoreBuilderPage = () => {
         setTheme(prev => ({
             ...prev,
             colors: isHexColor(value)
-                ? mergeColorUpdates(prev.colors || {}, buildBrandColorSet(value))
+                ? applyCompatibleColorUpdates(prev.colors || {}, buildBrandColorSet(value))
                 : mergeColorUpdates(prev.colors || {}, {
                     accent: value,
                     brand: {
@@ -632,10 +629,9 @@ const StoreBuilderPage = () => {
     };
 
     const setThemeGroup = (group, key, value) => {
-        setTheme(prev => ({
-            ...prev,
-            [group]: { ...(prev[group] || {}), [key]: value }
-        }));
+        setTheme(prev => group === 'productCard'
+            ? { ...prev, productCard: updateProductCardSetting(prev.productCard, key, value) }
+            : mergeThemePatch(prev, { [group]: { [key]: value } }));
     };
 
     const updateHeroSlides = (updater) => {
@@ -1103,7 +1099,7 @@ const StoreBuilderPage = () => {
     };
 
     const resetStyling = () => {
-        setTheme(prev => mergeTheme(defaultTheme, {
+        setTheme(prev => loadBuilderTheme({
             logoUrl: prev.logoUrl,
             faviconUrl: prev.faviconUrl,
             hero: prev.hero,
@@ -1129,7 +1125,7 @@ const StoreBuilderPage = () => {
         if (!parsed) return false;
 
         historyModeRef.current = 'skip';
-        const nextTheme = mergeTheme(defaultTheme, parsed.theme || {});
+        const nextTheme = loadBuilderTheme(parsed.theme || {});
         setTheme(nextTheme);
         setSearchAliases(Array.isArray(parsed.searchAliases) ? parsed.searchAliases : []);
         setCustomDomain(parsed.customDomain || { domain: '' });
@@ -1265,7 +1261,7 @@ const StoreBuilderPage = () => {
         try {
             const { data } = await API.post(`/store-builder/admin/revisions/${revisionId}/restore`, { expectedRevision: themeRevision });
             const savedShop = data.data;
-            const nextTheme = mergeTheme(defaultTheme, savedShop.theme || {});
+            const nextTheme = loadBuilderTheme(savedShop.theme || {});
             const nextSearchAliases = Array.isArray(savedShop.searchAliases) ? savedShop.searchAliases : [];
             const nextDomain = savedShop.customDomain || { domain: '' };
             const nextDiscount = Number(savedShop.storewideDiscount) || 0;
@@ -1427,7 +1423,7 @@ const StoreBuilderPage = () => {
             const { data } = await API.patch('/store-builder/admin', payload);
             const savedShop = data.data || {};
             const hasSavedTheme = savedShop.theme && Object.keys(savedShop.theme).length > 0;
-            const nextTheme = hasSavedTheme ? mergeTheme(defaultTheme, savedShop.theme) : theme;
+            const nextTheme = hasSavedTheme ? loadBuilderTheme(savedShop.theme) : theme;
             const nextSearchAliases = Array.isArray(savedShop.searchAliases) ? savedShop.searchAliases : searchAliases;
             const nextDomain = savedShop.customDomain || customDomain;
             const nextDiscount = Number(savedShop.storewideDiscount ?? payload.storewideDiscount) || 0;
@@ -1771,6 +1767,8 @@ const StoreBuilderPage = () => {
                 <main className="contents">
                     <Suspense fallback={<section className={`${mobileWorkspace === 'preview' ? 'block' : 'hidden'} order-1 min-h-[640px] animate-pulse rounded-lg border border-slate-200 bg-slate-100 xl:block 2xl:order-2`} aria-label="Loading storefront preview" />}>
                         <StoreBuilderPreviewPanel
+                            planAccess={planAccess}
+                            branding={bootstrap?.shop?.previewBranding}
                             mobileWorkspace={mobileWorkspace}
                             setMobileWorkspace={setMobileWorkspace}
                             previewPages={previewPages}
@@ -1830,6 +1828,7 @@ const StoreBuilderPage = () => {
             {themeGalleryOpen && (
                 <Suspense fallback={<div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-100" role="status"><div className="rounded-lg border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-700 shadow-lg">Loading themes…</div></div>}>
                     <ThemeGallery
+                        branding={bootstrap?.shop?.previewBranding}
                         open={themeGalleryOpen}
                         onClose={() => setThemeGalleryOpen(false)}
                         currentTheme={theme}

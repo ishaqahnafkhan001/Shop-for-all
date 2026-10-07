@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 
-import { getThemeCssVars } from "@scaleup/storefront-theme";
+import { getThemeCssVars, resolveHeroSlideFields } from "@scaleup/storefront-theme";
 import { getContainerClass } from "../designTokens";
 
 export {
@@ -168,32 +168,7 @@ export const getPrice = (product) => product?.finalPrice || product?.sellingPric
 export const normalizeImageList = (...lists) => [...new Set(lists.flat().filter(Boolean).map(String))];
 export const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || "Section";
 
-export const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
-    id: slide.id || `hero-slide-${index + 1}`,
-    enabled: slide.enabled !== false,
-    desktopImage: slide.desktopImage || slide.imageUrl || (index === 0 ? hero.imageUrl : "") || "",
-    mobileImage: slide.mobileImage || "",
-    title: slide.title ?? (index === 0 ? hero.title : "") ?? "",
-    subtitle: slide.subtitle ?? (index === 0 ? hero.subtitle : "") ?? "",
-    badgeText: slide.badgeText ?? (index === 0 ? hero.badgeText : "") ?? "",
-    discountText: slide.discountText ?? "",
-    primaryCtaText: slide.primaryCtaText !== undefined
-        ? slide.primaryCtaText
-        : ((index === 0 ? hero.ctaLabel : "") || "Shop Now"),
-    primaryCtaLink: slide.primaryCtaLink !== undefined
-        ? slide.primaryCtaLink
-        : ((index === 0 ? hero.ctaUrl : "") || "#products"),
-    secondaryCtaText: slide.secondaryCtaText ?? "Explore Collection",
-    secondaryCtaLink: slide.secondaryCtaLink !== undefined ? slide.secondaryCtaLink : "#products",
-    desktopFocalPoint: {
-        x: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.x) || 50)),
-        y: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.y) || 50)),
-    },
-    mobileFocalPoint: {
-        x: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.x) || 50)),
-        y: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.y) || 50)),
-    },
-});
+export const normalizeHeroSlide = resolveHeroSlideFields;
 
 const hasRenderableHeroSlide = (slide = {}) => Boolean(
     slide.desktopImage ||

@@ -1,6 +1,6 @@
 "use client";
 
-import { getEnabledHomepageSections, normalizeTheme } from "@scaleup/storefront-theme";
+import { getEnabledHomepageSections, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
 import {
     DefaultLink,
     getContainerClass,

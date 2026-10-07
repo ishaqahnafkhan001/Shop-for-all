@@ -1,4 +1,5 @@
 import { isHexColor } from './storeBuilderThemeUtils.js';
+import { applyCompatibleColorUpdates } from './storeBuilderColorState.js';
 export {
     applyCompatibleColorUpdates,
     getColorPathValue,
@@ -187,6 +188,14 @@ export const buildBrandColorSet = (brandColor) => ({
         success: '#047857'
     }
 });
+
+// Generated brand shades are a base; explicit palette choices are a later edit.
+export const applyColorPalette = (current = {}, palette = {}) => {
+    const branded = isHexColor(palette.accent)
+        ? applyCompatibleColorUpdates(current, buildBrandColorSet(palette.accent))
+        : current;
+    return applyCompatibleColorUpdates(branded, palette);
+};
 
 const flattenNestedColorFields = (groups = []) => groups.flatMap(group => group.fields.map(field => ({ ...field, groupId: group.id, groupTitle: group.title })));
 

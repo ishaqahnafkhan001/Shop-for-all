@@ -1,6 +1,8 @@
 import {
     FALLBACK_THEME,
-    normalizeTheme
+    normalizeTheme,
+    mergeThemePatch,
+    resolveHeroSlideFields
 } from '@scaleup/storefront-theme';
 import { HERO_SLIDE_LIMIT } from './storeBuilderConstants.jsx';
 
@@ -86,28 +88,7 @@ export const createHeroSlide = (overrides = {}) => ({
     ...overrides
 });
 
-export const normalizeHeroSlideForBuilder = (slide = {}, index = 0, hero = {}) => ({
-    id: slide.id || `hero-slide-${index + 1}`,
-    enabled: slide.enabled !== false,
-    desktopImage: slide.desktopImage || slide.imageUrl || (index === 0 ? hero.imageUrl : '') || '',
-    mobileImage: slide.mobileImage || '',
-    title: slide.title ?? (index === 0 ? hero.title : '') ?? '',
-    subtitle: slide.subtitle ?? (index === 0 ? hero.subtitle : '') ?? '',
-    badgeText: slide.badgeText ?? 'Limited time offer',
-    discountText: slide.discountText ?? '',
-    primaryCtaText: slide.primaryCtaText || (index === 0 ? hero.ctaLabel : '') || 'Shop Now',
-    primaryCtaLink: slide.primaryCtaLink || (index === 0 ? hero.ctaUrl : '') || '#products',
-    secondaryCtaText: slide.secondaryCtaText ?? 'Explore Collection',
-    secondaryCtaLink: slide.secondaryCtaLink || '#products',
-    desktopFocalPoint: {
-        x: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.x) || 50)),
-        y: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.y) || 50))
-    },
-    mobileFocalPoint: {
-        x: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.x) || 50)),
-        y: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.y) || 50))
-    }
-});
+export const normalizeHeroSlideForBuilder = resolveHeroSlideFields;
 
 export const getBuilderHeroSlides = (hero = {}) => {
     const slides = Array.isArray(hero.bannerSlides) ? hero.bannerSlides : [];
@@ -125,15 +106,19 @@ export const syncHeroLegacyFields = (hero = {}, slides = []) => {
         title: firstSlide.title ?? '',
         subtitle: firstSlide.subtitle ?? '',
         imageUrl: firstSlide.desktopImage || firstSlide.mobileImage || '',
-        ctaLabel: firstSlide.primaryCtaText || 'Shop Now',
-        ctaUrl: firstSlide.primaryCtaLink || '#products'
+        ctaLabel: firstSlide.primaryCtaText ?? 'Shop Now',
+        ctaUrl: firstSlide.primaryCtaLink ?? '#products'
     };
 };
 
-export const mergeTheme = (base = defaultTheme, incoming = {}) => normalizeBuilderTheme({
-    ...(base || {}),
-    ...(incoming || {})
+// Complete snapshots retain the historical root replacement behavior. Deep
+// merging fallback groups here would mask sparse style/layout inheritance.
+export const loadBuilderTheme = (snapshot = {}) => normalizeBuilderTheme({
+    ...defaultTheme,
+    ...(snapshot || {})
 });
+
+export const mergeTheme = (base = {}, incoming = {}) => normalizeBuilderTheme(mergeThemePatch(base, incoming));
 
 export const sortForSnapshot = (value) => {
     if (Array.isArray(value)) return value.map(sortForSnapshot);

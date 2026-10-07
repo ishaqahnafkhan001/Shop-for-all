@@ -58,7 +58,8 @@ const HeroMedia = ({ model, cover = true, eager = true, className = "" }) => {
 
 const HeroButtons = ({ model, LinkComponent, onDark = false, align = "start" }) => {
     const { activeHeroSlide } = model;
-    if (!activeHeroSlide.primaryCtaText && !activeHeroSlide.secondaryCtaText) return null;
+    if (!(activeHeroSlide.primaryCtaText && activeHeroSlide.primaryCtaLink)
+        && !(activeHeroSlide.secondaryCtaText && activeHeroSlide.secondaryCtaLink)) return null;
     const responsiveLayout = model.forcedMobilePreview
         ? ""
         : `min-[480px]:flex-row min-[480px]:flex-wrap ${align === "center" ? "min-[480px]:justify-center" : ""}`;
@@ -76,10 +77,10 @@ const HeroButtons = ({ model, LinkComponent, onDark = false, align = "start" }) 
                     {activeHeroSlide.primaryCtaText}<ChevronRight size={16} className="ml-1" />
                 </LinkSlot>
             )}
-            {activeHeroSlide.secondaryCtaText && (
+            {activeHeroSlide.secondaryCtaText && activeHeroSlide.secondaryCtaLink && (
                 <LinkSlot
                     LinkComponent={LinkComponent}
-                    href={activeHeroSlide.secondaryCtaLink || "#products"}
+                    href={activeHeroSlide.secondaryCtaLink}
                     prefetch={false}
                     className={`inline-flex min-h-11 items-center justify-center rounded-full border px-5 py-2.5 text-sm font-black shadow-lg shadow-slate-950/10 transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:min-h-12 sm:px-6 sm:py-3 ${onDark ? "border-white/45 backdrop-blur" : "border-slate-300 bg-white"}`}
                     style={{ backgroundColor: onDark ? "var(--sf-hero-secondary-button-bg)" : undefined, color: onDark ? "var(--sf-hero-secondary-button-text)" : "var(--sf-foreground)" }}
@@ -92,7 +93,7 @@ const HeroButtons = ({ model, LinkComponent, onDark = false, align = "start" }) 
 };
 
 const HeroCopy = ({ model, align = "left", onDark = false, compact = false }) => {
-    const { activeHeroSlide, hero, heroOfferText, shopName } = model;
+    const { activeHeroSlide, heroOfferText, shopName } = model;
     const centered = align === "center";
     const forcedTabletPreview = model.previewDevice === "tablet";
     const headingSize = model.forcedMobilePreview
@@ -112,7 +113,7 @@ const HeroCopy = ({ model, align = "left", onDark = false, compact = false }) =>
                     {activeHeroSlide.badgeText}
                 </p>
             )}
-            <h1
+            {activeHeroSlide.title ? <h1
                 className={`${headingSize} ${activeHeroSlide.badgeText ? "mt-4" : ""} max-w-full break-words font-black leading-[1.02] tracking-tight`}
                 style={{
                     ...headingStyle,
@@ -120,14 +121,14 @@ const HeroCopy = ({ model, align = "left", onDark = false, compact = false }) =>
                     textShadow: onDark ? "0 2px 20px rgba(2, 6, 23, 0.35)" : undefined,
                 }}
             >
-                {activeHeroSlide.title || hero.title || shopName || "Online store"}
-            </h1>
+                {activeHeroSlide.title}
+            </h1> : <h1 className="sr-only">{shopName || "Online store"}</h1>}
             {heroOfferText && (
                 <p className={`mt-4 inline-flex w-fit rounded-full px-3 py-2 text-[11px] font-black uppercase ${onDark ? "border border-white/30 bg-slate-950/55 text-white backdrop-blur" : "bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]"}`}>
                     {heroOfferText}
                 </p>
             )}
-            {(activeHeroSlide.subtitle || hero.subtitle) && (
+            {activeHeroSlide.subtitle && (
                 <p
                     className={`${centered ? "mx-auto" : ""} mt-4 max-w-2xl ${subtitleSize} font-semibold`}
                     style={{
@@ -135,7 +136,7 @@ const HeroCopy = ({ model, align = "left", onDark = false, compact = false }) =>
                         textShadow: onDark ? "0 1px 14px rgba(2, 6, 23, 0.4)" : undefined,
                     }}
                 >
-                    {activeHeroSlide.subtitle || hero.subtitle}
+                    {activeHeroSlide.subtitle}
                 </p>
             )}
         </div>

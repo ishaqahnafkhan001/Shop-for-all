@@ -92,6 +92,7 @@ const SECTION_REGISTRY = Object.freeze({
 const SECTION_TYPES = Object.freeze(Object.keys(SECTION_REGISTRY));
 const ALLOWED_THEME_KEYS = Object.freeze([
     'version',
+    'extensions',
     'preset',
     'logoUrl',
     'faviconUrl',
@@ -290,7 +291,7 @@ const sanitizeThemeValue = (value, key = '', depth = 0) => {
     }
     if (isPlainObject(value)) {
         return Object.entries(value).slice(0, 200).reduce((acc, [childKey, childValue]) => {
-            if (childKey.startsWith('$') || childKey.includes('.')) return acc;
+            if (['__proto__', 'constructor', 'prototype'].includes(childKey) || childKey.startsWith('$') || childKey.includes('.')) return acc;
             const sanitized = sanitizeThemeValue(childValue, childKey, depth + 1);
             if (sanitized !== undefined) acc[childKey] = sanitized;
             return acc;
@@ -317,6 +318,14 @@ const sanitizeThemePayload = (theme = {}) => {
         if (theme?.[key] !== undefined) acc[key] = sanitizeThemeValue(theme[key], key);
         return acc;
     }, {});
+    const unknown = Object.fromEntries(Object.entries(theme || {}).filter(([key]) =>
+        !ALLOWED_THEME_KEYS.includes(key) && !['__proto__', 'constructor', 'prototype'].includes(key)
+        && !key.startsWith('$') && !key.includes('.')));
+    if (Object.keys(unknown).length) {
+        picked.extensions = { ...(picked.extensions || {}), unknown: {
+            ...(picked.extensions?.unknown || {}), ...sanitizeThemeValue(unknown)
+        } };
+    }
     if (picked.colors) picked.colors = sanitizeColorObject(picked.colors);
     if (picked.preset) {
         const presetId = cleanText(picked.preset.id, 80)
@@ -649,33 +658,43 @@ const normalizeHomepageSections = (sections = []) => (Array.isArray(sections) ? 
     .slice(0, 30)
     .map((section, index) => ({ ...section, sortOrder: index }));
 
-const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
+// Resolve presence before sanitization so Builder typing keeps its whitespace
+// and explicit empty fields never revive legacy content.
+const resolveHeroSlideFields = (slide = {}, index = 0, hero = {}) => ({
     ...slide,
-    id: cleanText(slide.id || `hero-slide-${index + 1}`, 80),
+    id: slide.id || `hero-slide-${index + 1}`,
     enabled: slide.enabled !== false,
-    desktopImage: sanitizeThemeUrl(slide.desktopImage || (index === 0 ? hero.imageUrl : '')),
-    mobileImage: sanitizeThemeUrl(slide.mobileImage || ''),
-    title: cleanText(slide.title || (index === 0 ? hero.title : ''), 140),
-    subtitle: cleanText(slide.subtitle || (index === 0 ? hero.subtitle : ''), 280),
-    badgeText: cleanText(slide.badgeText, 80),
-    discountText: cleanText(slide.discountText, 80),
-    primaryCtaText: cleanText(
-        slide.primaryCtaText !== undefined ? slide.primaryCtaText : ((index === 0 ? hero.ctaLabel : '') || 'Shop Now'),
-        80
-    ),
-    primaryCtaLink: sanitizeThemeUrl(
-        slide.primaryCtaLink !== undefined ? slide.primaryCtaLink : ((index === 0 ? hero.ctaUrl : '') || '#products')
-    ),
-    secondaryCtaText: cleanText(
-        slide.secondaryCtaText !== undefined ? slide.secondaryCtaText : 'Explore Collection',
-        80
-    ),
-    secondaryCtaLink: sanitizeThemeUrl(
-        slide.secondaryCtaLink !== undefined ? slide.secondaryCtaLink : '#products'
-    ),
-    desktopFocalPoint: normalizeFocalPoint(slide.desktopFocalPoint),
-    mobileFocalPoint: normalizeFocalPoint(slide.mobileFocalPoint),
+    desktopImage: slide.desktopImage ?? slide.imageUrl ?? (index === 0 ? hero.imageUrl : '') ?? '',
+    mobileImage: slide.mobileImage ?? '',
+    title: slide.title ?? (index === 0 ? hero.title : '') ?? '',
+    subtitle: slide.subtitle ?? (index === 0 ? hero.subtitle : '') ?? '',
+    badgeText: slide.badgeText ?? (index === 0 ? hero.badgeText : '') ?? '',
+    discountText: slide.discountText ?? '',
+    primaryCtaText: slide.primaryCtaText ?? (index === 0 ? hero.ctaLabel : undefined) ?? 'Shop Now',
+    primaryCtaLink: slide.primaryCtaLink ?? (index === 0 ? hero.ctaUrl : undefined) ?? '#products',
+    secondaryCtaText: slide.secondaryCtaText ?? 'Explore Collection',
+    secondaryCtaLink: slide.secondaryCtaLink ?? '#products',
+    desktopFocalPoint: normalizeFocalPoint({ x: slide.desktopFocalPoint?.x ?? undefined, y: slide.desktopFocalPoint?.y ?? undefined }),
+    mobileFocalPoint: normalizeFocalPoint({ x: slide.mobileFocalPoint?.x ?? undefined, y: slide.mobileFocalPoint?.y ?? undefined }),
 });
+
+const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => {
+    const resolved = resolveHeroSlideFields(slide, index, hero);
+    return {
+        ...resolved,
+        id: cleanText(resolved.id, 80),
+        desktopImage: sanitizeThemeUrl(resolved.desktopImage),
+        mobileImage: sanitizeThemeUrl(resolved.mobileImage),
+        title: cleanText(resolved.title, 140),
+        subtitle: cleanText(resolved.subtitle, 280),
+        badgeText: cleanText(resolved.badgeText, 80),
+        discountText: cleanText(resolved.discountText, 80),
+        primaryCtaText: cleanText(resolved.primaryCtaText, 80),
+        primaryCtaLink: sanitizeThemeUrl(resolved.primaryCtaLink),
+        secondaryCtaText: cleanText(resolved.secondaryCtaText, 80),
+        secondaryCtaLink: sanitizeThemeUrl(resolved.secondaryCtaLink),
+    };
+};
 
 const ensurePolicyNavigationLink = (navigation = []) => {
     const links = Array.isArray(navigation) ? navigation : [];
@@ -709,6 +728,59 @@ const PRODUCT_CARD_STYLE_DEFAULTS = Object.freeze({
     Modern: {},
     Premium: { shadow: 'Elevated', titleWeight: '800' },
 });
+const PRODUCT_CARD_STYLE_FIELDS = Object.freeze(['shadow', 'titleWeight', 'buttonStyle']);
+
+// These existing nullable fields may be cleared by a partial update. Null at
+// other paths inherits the current value; arrays (including []) replace whole.
+const NULLABLE_THEME_PATCH_PATHS = new Set([
+    'preset', 'preset.appliedAt', 'seo.socialImageAssetId',
+    'seo.socialImageWidth', 'seo.socialImageHeight',
+    'seo.aiSuggestion.generatedAt', 'seo.aiSuggestion.inputSnapshot', 'seo.aiSuggestion.acceptedAt',
+]);
+const isThemePatchObject = value => value !== null && typeof value === 'object'
+    && [Object.prototype, null].includes(Object.getPrototypeOf(value));
+const isThemePatchKey = key => !['__proto__', 'constructor', 'prototype'].includes(key)
+    && !key.startsWith('$') && !key.includes('.');
+
+// Merge raw JSON before normalization so defaults cannot overwrite omitted
+// merchant values. This does not sanitize content or resolve presentation.
+const mergeThemePatch = (base = {}, patch = {}) => {
+    const checkDepth = depth => {
+        if (depth > 12) throw new RangeError('Theme patch exceeds the supported nesting depth.');
+    };
+    const copy = (value, depth) => {
+        checkDepth(depth);
+        if (Array.isArray(value)) return value.map(item => copy(item, depth + 1));
+        if (isThemePatchObject(value)) {
+            return Object.fromEntries(Object.entries(value)
+                .filter(([key, item]) => isThemePatchKey(key) && item !== undefined)
+                .map(([key, item]) => [key, copy(item, depth + 1)]));
+        }
+        if (value !== null && typeof value === 'object') throw new TypeError('Theme patches require plain JSON values.');
+        return value;
+    };
+    const apply = (current, incoming, path, depth) => {
+        checkDepth(depth);
+        const result = isThemePatchObject(current) ? current : {};
+        for (const [key, value] of Object.entries(incoming)) {
+            if (!isThemePatchKey(key) || value === undefined) continue;
+            const fieldPath = path ? `${path}.${key}` : key;
+            if (value === null && !NULLABLE_THEME_PATCH_PATHS.has(fieldPath)) continue;
+            result[key] = isThemePatchObject(value)
+                ? apply(result[key], value, fieldPath, depth + 1)
+                : copy(value, depth + 1);
+        }
+        return result;
+    };
+    const result = apply(copy(isThemePatchObject(base) ? base : {}, 0), isThemePatchObject(patch) ? patch : {}, '', 0);
+    const cardPatch = isThemePatchObject(patch?.productCard) ? patch.productCard : {};
+    if (Array.isArray(result.productCard?.inheritedStyleFields) && !Array.isArray(cardPatch.inheritedStyleFields)) {
+        result.productCard.inheritedStyleFields = result.productCard.inheritedStyleFields.filter(key => (
+            !PRODUCT_CARD_STYLE_FIELDS.includes(key) || !hasOwn(cardPatch, key) || cardPatch[key] == null
+        ));
+    }
+    return result;
+};
 
 const normalizeLayout = (theme = {}) => {
     const raw = isPlainObject(theme.layout) ? theme.layout : {};
@@ -767,14 +839,36 @@ const normalizeTypography = (theme = {}) => {
 
 const normalizeProductCard = (theme = {}) => {
     const raw = isPlainObject(theme.productCard) ? theme.productCard : {};
+    const { inheritedStyleFields, ...values } = raw;
     const style = Object.prototype.hasOwnProperty.call(PRODUCT_CARD_STYLE_DEFAULTS, raw.style)
         ? raw.style
         : FALLBACK_THEME.productCard.style;
-    return mergeObject(FALLBACK_THEME.productCard, {
+    const card = mergeObject(FALLBACK_THEME.productCard, {
         ...PRODUCT_CARD_STYLE_DEFAULTS[style],
-        ...raw,
+        ...values,
         style,
     });
+    // Missing metadata is a legacy configuration: preserve all saved values.
+    if (Array.isArray(inheritedStyleFields)) {
+        card.inheritedStyleFields = PRODUCT_CARD_STYLE_FIELDS.filter(key => inheritedStyleFields.includes(key));
+        for (const key of card.inheritedStyleFields) {
+            card[key] = PRODUCT_CARD_STYLE_DEFAULTS[style][key] ?? FALLBACK_THEME.productCard[key];
+        }
+    }
+    return card;
+};
+
+// Style selection deliberately resets its three presentation fields. Ordinary
+// field edits are explicit, even when the chosen value equals a style default.
+const updateProductCardSetting = (candidate = {}, key, value) => {
+    const card = normalizeProductCard({ productCard: candidate });
+    const next = { ...card, [key]: value };
+    if (key === 'style') {
+        next.inheritedStyleFields = [...PRODUCT_CARD_STYLE_FIELDS];
+    } else if (PRODUCT_CARD_STYLE_FIELDS.includes(key) && Array.isArray(card.inheritedStyleFields)) {
+        next.inheritedStyleFields = card.inheritedStyleFields.filter(field => field !== key);
+    }
+    return normalizeProductCard({ productCard: next });
 };
 
 const normalizeAllProducts = ({ theme, layout, legacyAllProducts }) => {
@@ -803,7 +897,7 @@ const normalizeAllProducts = ({ theme, layout, legacyAllProducts }) => {
 };
 
 const normalizeTheme = (candidate = {}) => {
-    const theme = sanitizeThemePayload(isPlainObject(candidate) ? candidate : {});
+    const theme = mergeThemePatch({}, sanitizeThemePayload(isPlainObject(candidate) ? candidate : {}));
     const legacyAllProducts = (Array.isArray(theme.homepageSections) ? theme.homepageSections : []).find(isLegacyAllProductsSection);
     const hero = mergeObject(FALLBACK_THEME.hero, theme.hero);
     hero.variant = normalizeStructuralVariant(theme.hero?.variant, STRUCTURAL_VARIANTS.hero);
@@ -813,11 +907,11 @@ const normalizeTheme = (candidate = {}) => {
         : FALLBACK_THEME.hero.height;
     const rawSlides = Array.isArray(hero.bannerSlides) ? hero.bannerSlides : [];
     hero.bannerSlides = rawSlides.slice(0, 5).map((slide, index) => normalizeHeroSlide(slide, index, hero));
-    if (!hero.bannerSlides.length && hero.imageUrl) hero.bannerSlides = [normalizeHeroSlide({}, 0, hero)];
+    if (!Array.isArray(theme.hero?.bannerSlides) && hero.imageUrl) hero.bannerSlides = [normalizeHeroSlide({}, 0, hero)];
     if (hero.bannerSlides[0]) {
-        hero.imageUrl = hero.bannerSlides[0].desktopImage || hero.imageUrl || '';
-        hero.ctaLabel = hero.bannerSlides[0].primaryCtaText || hero.ctaLabel || 'Shop Now';
-        hero.ctaUrl = hero.bannerSlides[0].primaryCtaLink || hero.ctaUrl || '/';
+        hero.imageUrl = hero.bannerSlides[0].desktopImage;
+        hero.ctaLabel = hero.bannerSlides[0].primaryCtaText;
+        hero.ctaUrl = hero.bannerSlides[0].primaryCtaLink;
     }
     const layout = normalizeLayout(theme);
     const typography = normalizeTypography(theme);
@@ -825,7 +919,7 @@ const normalizeTheme = (candidate = {}) => {
     return {
         ...cloneTheme(FALLBACK_THEME),
         ...theme,
-        version: THEME_SCHEMA_VERSION,
+        version: Math.max(THEME_SCHEMA_VERSION, Number(theme.version) || 0),
         colors: normalizeThemeColors(theme),
         header: {
             ...FALLBACK_THEME.header,
@@ -866,6 +960,14 @@ const normalizeTheme = (candidate = {}) => {
 
 const validateTheme = (candidate = {}) => {
     const errors = [];
+    if (candidate.version !== undefined && (!Number.isInteger(Number(candidate.version)) || Number(candidate.version) < 1 || Number(candidate.version) > THEME_SCHEMA_VERSION)) {
+        errors.push({ path: 'version', code: 'UNSUPPORTED_THEME_VERSION', message: 'Unsupported theme schema version.' });
+    }
+    const inheritedStyleFields = candidate?.productCard?.inheritedStyleFields;
+    if (inheritedStyleFields !== undefined && (!Array.isArray(inheritedStyleFields)
+        || inheritedStyleFields.some(key => !PRODUCT_CARD_STYLE_FIELDS.includes(key)))) {
+        errors.push({ path: 'productCard.inheritedStyleFields', code: 'INVALID_STYLE_INHERITANCE', message: 'Only shadow, titleWeight, and buttonStyle can inherit card style defaults.' });
+    }
     const validateVariant = (value, contract, path) => {
         if (value !== undefined && !contract.values.includes(value)) {
             errors.push({ path, code: 'UNSUPPORTED_VARIANT', message: `Unsupported structural variant: ${String(value || 'unknown')}.` });
@@ -1031,6 +1133,10 @@ module.exports = {
     FALLBACK_THEME,
     cloneTheme,
     normalizeTheme,
+    mergeThemePatch,
+    resolveHeroSlideFields,
+    PRODUCT_CARD_STYLE_FIELDS,
+    updateProductCardSetting,
     createDefaultSection,
     normalizeHomepageSections,
     normalizeThemeColors,
@@ -1051,3 +1157,18 @@ module.exports = {
     evaluateThemeContrast,
     ...homepageSeo,
 };
+
+const policies = require('./policies.cjs');
+const effective = require('./effective.cjs')(module.exports);
+module.exports.createThemeInput = effective.createThemeInput;
+module.exports.assertSupportedThemeVersion = effective.assertSupportedThemeVersion;
+module.exports.resolveEffectiveTheme = effective.resolveEffectiveTheme;
+module.exports.getPublicThemeForPlan = effective.getPublicThemeForPlan;
+module.exports.applyBrandingToPublicTheme = effective.applyBrandingToPublicTheme;
+module.exports.POLICY_TYPES = policies.POLICY_TYPES;
+module.exports.DEFAULT_POLICY_TEMPLATES = policies.DEFAULT_POLICY_TEMPLATES;
+module.exports.injectPolicyPlaceholders = policies.injectPolicyPlaceholders;
+module.exports.getDefaultPolicyText = policies.getDefaultPolicyText;
+module.exports.buildDefaultPolicies = policies.buildDefaultPolicies;
+module.exports.hasPolicyText = policies.hasPolicyText;
+module.exports.fillMissingPolicyDefaults = policies.fillMissingPolicyDefaults;
