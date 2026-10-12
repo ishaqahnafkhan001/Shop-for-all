@@ -1,0 +1,33 @@
+✔ actual layout editor changes reach catalog overrides after draft, publication and reload (228.5361ms)
+✔ every exposed nested color changes a resolved style after strict schema publication (1180.4282ms)
+✔ card rating and review controls render independently and honor badge/border colors (21.7002ms)
+✔ variant options consume all four configured chip tokens (1.2197ms)
+✔ actual product-card editor controls survive publication and change rendered cards (341.6611ms)
+✔ actual typography editor changes survive publication into heading and body tokens (14.841ms)
+✔ saved wide menu setting changes desktop dropdown composition without losing links (40.6497ms)
+✔ disabling the last hero slide stays disabled after publication without reviving legacy copy (17.2204ms)
+✔ manual review source overrides selected reviews while selected mode keeps its fallback (2.1445ms)
+✔ every explicitly selected featured product is rendered after publication (52.9943ms)
+✔ checkout mobile action consumes checkout colors and shape, and all page headings share typography (0.9686ms)
+✔ preview section toolbar retains original draft indices when plans filter earlier sections (33.5661ms)
+✔ responsive editor commands survive schema publication and preserve explicit section overrides (19.2292ms)
+✔ responsive defaults preserve legacy composition and derived featured tablet columns (16.3997ms)
+✔ invalid semantic responsive values are rejected and safely normalized on reads (0.3716ms)
+✔ one-column mobile grids remain one column until the tablet breakpoint (28.6692ms)
+✔ Phase 10 Modern General: publication, customization, content and five page presentations (232.838ms)
+✔ Phase 10 Minimal General: publication, customization, content and five page presentations (153.8883ms)
+✔ Phase 10 Modern Fashion: publication, customization, content and five page presentations (221.9099ms)
+✔ Phase 10 Editorial Fashion: publication, customization, content and five page presentations (204.6469ms)
+✔ Phase 10 Luxury Jewellery: publication, customization, content and five page presentations (228.7185ms)
+✔ Phase 10 Minimal Jewellery: publication, customization, content and five page presentations (111.5754ms)
+✔ Phase 10 Soft Beauty: publication, customization, content and five page presentations (88.6477ms)
+✔ Phase 10 Modern Electronics: publication, customization, content and five page presentations (93.309ms)
+✔ Phase 10 Fresh Grocery: publication, customization, content and five page presentations (87.2259ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4075.8204

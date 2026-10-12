@@ -1,0 +1,15 @@
+✔ Gallery cards render all nine real compositions with merchant hero content and catalog (494.4706ms)
+✔ all five Builder pages use live presentation for every preset, including explicit empty data (1005.1547ms)
+✔ preview product selection includes collections and products beyond the old ten-item truncation (44.7273ms)
+✔ shared product transformation preserves zero prices, variant stock and the existing sale formula (0.2268ms)
+✔ shared views forward live commerce callbacks without replacing them (1.6964ms)
+✔ presentation extraction leaves network, authentication, analytics and order creation in live adapters (2.2961ms)
+✔ shared styling contains provider aliases and local licensed fonts for both consumers (3.0635ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1669.8331

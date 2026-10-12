@@ -1,0 +1,89 @@
+.\README.md:26:                                             |               Gemini, Pathao, RedX
+.\ecommerce-backend\backend\controllers\collectionController.js:262:                message: 'AI collection suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+.\ecommerce-backend\backend\controllers\productController.js:180: * @desc    Generate Product Description via AI (Gemini)
+.\ecommerce-backend\backend\controllers\productController.js:233:                message: 'AI product suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+.\ecommerce-backend\backend\controllers\productController.js:305:                message: 'AI product suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+.\ecommerce-backend\backend\controllers\storeBuilderController.js:370:                ? 'AI SEO suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+.\ecommerce-backend\backend\controllers\superAdminOperationsController.js:692:                geminiConfigured: configured('GEMINI_API_KEY'),
+.\ecommerce-backend\backend\services\adInsightAIService.js:1:const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+.\ecommerce-backend\backend\services\adInsightAIService.js:3:const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+.\ecommerce-backend\backend\services\adInsightAIService.js:647:const parseGeminiJson = (text) => {
+.\ecommerce-backend\backend\services\adInsightAIService.js:661:        throw new Error('Gemini returned invalid JSON');
+.\ecommerce-backend\backend\services\adInsightAIService.js:665:const buildGeminiPrompt = ({ productContext, shopContext, detectedCategory, metrics, cityHistory, searchTerms, language, campaignType }) => {
+.\ecommerce-backend\backend\services\adInsightAIService.js:706:const callGemini = async (prompt) => {
+.\ecommerce-backend\backend\services\adInsightAIService.js:707:    if (!process.env.GEMINI_API_KEY) {
+.\ecommerce-backend\backend\services\adInsightAIService.js:708:        throw new Error('Gemini API key is not configured');
+.\ecommerce-backend\backend\services\adInsightAIService.js:711:    const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
+.\ecommerce-backend\backend\services\adInsightAIService.js:712:    const modelName = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+.\ecommerce-backend\backend\services\adInsightAIService.js:713:    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+.\ecommerce-backend\backend\services\adInsightAIService.js:714:    const model = genAI.getGenerativeModel({
+.\ecommerce-backend\backend\services\adInsightAIService.js:728:            const error = new Error('Gemini request timed out');
+.\ecommerce-backend\backend\services\adInsightAIService.js:735:        const result = await Promise.race([model.generateContent(prompt), timeout]);
+.\ecommerce-backend\backend\services\adInsightAIService.js:758:        const prompt = buildGeminiPrompt({
+.\ecommerce-backend\backend\services\adInsightAIService.js:768:        const text = await callGemini(prompt);
+.\ecommerce-backend\backend\services\adInsightAIService.js:769:        const parsed = parseGeminiJson(text);
+.\ecommerce-backend\backend\services\adInsightAIService.js:778:                model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+.\ecommerce-backend\backend\services\adInsightAIService.js:787:        const configured = Boolean(process.env.GEMINI_API_KEY);
+.\ecommerce-backend\backend\services\adInsightAIService.js:857:        parseGeminiJson,
+.\ecommerce-backend\backend\services\adInsightAIService.js:858:        buildGeminiPrompt,
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:1:const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:3:const DEFAULT_MODEL = 'gemini-2.5-flash';
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:9:    'AI collection suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.';
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:165:const callGemini = async (prompt) => {
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:166:    if (!process.env.GEMINI_API_KEY) {
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:172:    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:173:    const model = genAI.getGenerativeModel({
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:174:        model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:184:    const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:188:            const error = new Error('Gemini request timed out');
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:197:            model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:214:        const error = new Error('Gemini response was empty');
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:227:        rawText = await callGemini(prompt);
+.\ecommerce-backend\backend\services\collections\collectionAiService.js:244:                model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+.\ecommerce-admin\package.json:15:    "@google/generative-ai": "^0.24.1",
+.\ecommerce-backend\backend\services\storeSeoAiService.js:1:const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+.\ecommerce-backend\backend\services\storeSeoAiService.js:8:const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+.\ecommerce-backend\backend\services\storeSeoAiService.js:10:const AI_NOT_CONFIGURED_MESSAGE = 'AI SEO suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.';
+.\ecommerce-backend\backend\services\storeSeoAiService.js:122:const parseGeminiJson = (text = '') => {
+.\ecommerce-backend\backend\services\storeSeoAiService.js:191:const callGemini = async (prompt) => {
+.\ecommerce-backend\backend\services\storeSeoAiService.js:192:    if (!process.env.GEMINI_API_KEY) {
+.\ecommerce-backend\backend\services\storeSeoAiService.js:197:    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+.\ecommerce-backend\backend\services\storeSeoAiService.js:198:    const model = genAI.getGenerativeModel({
+.\ecommerce-backend\backend\services\storeSeoAiService.js:199:        model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+.\ecommerce-backend\backend\services\storeSeoAiService.js:211:            const error = new Error('Gemini request timed out');
+.\ecommerce-backend\backend\services\storeSeoAiService.js:214:        }, Number(process.env.GEMINI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS));
+.\ecommerce-backend\backend\services\storeSeoAiService.js:217:        const result = await Promise.race([model.generateContent(prompt), timeout]);
+.\ecommerce-backend\backend\services\storeSeoAiService.js:244:        parsed = parseGeminiJson(await callGemini(buildPrompt(context)));
+.\ecommerce-backend\backend\services\storeSeoAiService.js:280:            model: fallbackReason ? null : (process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL),
+.\ecommerce-backend\backend\services\storeSeoAiService.js:296:        parseGeminiJson,
+.\ecommerce-backend\backend\package.json:38:    "@google/generative-ai": "^0.24.1",
+.\ecommerce-backend\backend\services\products\productContentAiService.js:1:const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+.\ecommerce-backend\backend\services\products\productContentAiService.js:3:const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+.\ecommerce-backend\backend\services\products\productContentAiService.js:14:    'AI product suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.';
+.\ecommerce-backend\backend\services\products\productContentAiService.js:230:const parseGeminiJson = (text = '') => {
+.\ecommerce-backend\backend\services\products\productContentAiService.js:580:const fileToGeminiPart = (file) => {
+.\ecommerce-backend\backend\services\products\productContentAiService.js:653:    const filePart = fileToGeminiPart(file);
+.\ecommerce-backend\backend\services\products\productContentAiService.js:685:const getGeminiTimeoutMs = ({ hasImage = false } = {}) => {
+.\ecommerce-backend\backend\services\products\productContentAiService.js:686:    const configured = Number(process.env.GEMINI_TIMEOUT_MS);
+.\ecommerce-backend\backend\services\products\productContentAiService.js:703:    if (error.name === 'GoogleGenerativeAIRequestInputError') return 'AI_PROVIDER_BAD_REQUEST';
+.\ecommerce-backend\backend\services\products\productContentAiService.js:707:const callGemini = async ({ prompt, imagePart }) => {
+.\ecommerce-backend\backend\services\products\productContentAiService.js:708:    if (!process.env.GEMINI_API_KEY) {
+.\ecommerce-backend\backend\services\products\productContentAiService.js:714:    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+.\ecommerce-backend\backend\services\products\productContentAiService.js:715:    const model = genAI.getGenerativeModel({
+.\ecommerce-backend\backend\services\products\productContentAiService.js:716:        model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+.\ecommerce-backend\backend\services\products\productContentAiService.js:720:            maxOutputTokens: Number(process.env.GEMINI_PRODUCT_AI_MAX_OUTPUT_TOKENS || 2400),
+.\ecommerce-backend\backend\services\products\productContentAiService.js:726:    const timeoutMs = getGeminiTimeoutMs({ hasImage: Boolean(imagePart) });
+.\ecommerce-backend\backend\services\products\productContentAiService.js:730:            const error = new Error('Gemini request timed out');
+.\ecommerce-backend\backend\services\products\productContentAiService.js:740:            model.generateContent({
+.\ecommerce-backend\backend\services\products\productContentAiService.js:749:    const text = extractGeminiText(result);
+.\ecommerce-backend\backend\services\products\productContentAiService.js:751:        const error = new Error('Gemini response was empty');
+.\ecommerce-backend\backend\services\products\productContentAiService.js:766:const parseAndCleanGeminiText = (text = '') => cleanProductContentSuggestion(parseGeminiJson(text));
+.\ecommerce-backend\backend\services\products\productContentAiService.js:768:const extractGeminiText = (result = {}) => {
+.\ecommerce-backend\backend\services\products\productContentAiService.js:795:        text = await callGemini({ prompt, imagePart });
+.\ecommerce-backend\backend\services\products\productContentAiService.js:811:        cleaned = parseAndCleanGeminiText(text);
+.\ecommerce-backend\backend\services\products\productContentAiService.js:818:            const retryText = await callGemini({
+.\ecommerce-backend\backend\services\products\productContentAiService.js:822:            const retryCleaned = parseAndCleanGeminiText(retryText);
+.\ecommerce-backend\backend\services\products\productContentAiService.js:873:    model: fallback ? null : (process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL),
+.\ecommerce-backend\backend\services\products\productContentAiService.js:891:        extractGeminiText,
+.\ecommerce-backend\backend\services\products\productContentAiService.js:893:        parseGeminiJson,
+.\ecommerce-backend\backend\services\products\productContentAiService.js:895:        getGeminiTimeoutMs,

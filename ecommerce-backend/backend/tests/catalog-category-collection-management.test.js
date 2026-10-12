@@ -103,7 +103,7 @@ test('Catalog Tools exposes collection edit/delete and category cover management
     assert.match(catalogTools, /API\.post\('\/admin\/categories\/cover'/);
     assert.match(catalogTools, /API\.get\('\/admin\/categories\/images'/);
     assert.match(catalogTools, /sourceProductId: image\.productId/);
-    assert.match(catalogTools, /Choose product photo/);
+    assert.match(catalogTools, /Choose a product photo/);
     assert.match(catalogTools, /API\.delete\(`\/admin\/categories\/\$\{category\._id\}\/cover`\)/);
     assert.match(catalogTools, /API\.patch\(`\/admin\/collections\/\$\{editingCollectionId\}`/);
     assert.match(catalogTools, /API\.delete\(`\/admin\/collections\/\$\{collection\._id\}`/);
@@ -115,7 +115,7 @@ test('Catalog Tools exposes collection edit/delete and category cover management
     assert.doesNotMatch(catalogTools, /toast\.error\('Failed to load catalog tools'\)/);
 });
 
-test('storefront and Store Builder consume enriched categories without replacing legacy filter strings', () => {
+test('storefront and Store Builder consume enriched categories without replacing legacy filter strings', async () => {
     const shopData = readRepo('ecommerce-storefront/src/hooks/useShopData.js');
     const homeClient = readRepo('ecommerce-storefront/src/app/[subdomain]/StorefrontHomeClient.jsx');
     const sharedHome = readRepo('packages/storefront-renderer/reference/StorefrontHome.jsx');
@@ -141,8 +141,12 @@ test('storefront and Store Builder consume enriched categories without replacing
     assert.match(sharedAllProducts, /getCategoryOptions/);
     assert.match(categoryPage, /categoryDetail/);
     assert.match(builderPage, /productCategoryDetails/);
-    assert.match(builderPreview, /categories=\{categoryNames\.length \? categoryNames : REFERENCE_SAMPLE_CATEGORIES\}/);
-    assert.match(builderPreview, /categoryDetails=\{categoryDetails\}/);
+    const ui = await require('./helpers/aiPresentationHarness').loadAiPresentation();
+    const html = ui.render(ui.ReferenceStorefrontHome, { theme: { homepageSections: [{ id: 'categories', type: 'CategoryList', isEnabled: true }] },
+        categories: ['Shoes'], categoryDetails: [{ name: 'Shoes', slug: 'shoes', coverImage: { url: '/shoes.png' }, productCount: 2 }], products: [] });
+    assert.match(html, /Shoes/);
+    assert.match(html, /shoes.png/);
+    assert.match(html, /categories\/shoes/);
     assert.match(dynamicSectionsEditor, /value=\{category\.value\}>\{category\.label\}/);
     assert.match(storeController, /categoryCounts[\s\S]*shop_id: shopObjectId[\s\S]*status: 'Published'/);
     assert.match(productController, /counts: new Map\(categoryCounts/);

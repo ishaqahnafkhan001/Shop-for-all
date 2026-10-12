@@ -1,10 +1,11 @@
+import { getThemeCapabilities } from '@scaleup/storefront-theme';
 import { ChevronDown, ChevronUp, Image, LayoutTemplate, Plus, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { BuilderButton, BuilderCard, BuilderInput, BuilderSelect, BuilderTextarea, BuilderToggle } from '../builderUi.jsx';
 import { HERO_SLIDE_LIMIT, heroVariantOptions } from '../storeBuilderConstants.jsx';
 import { getBuilderHeroSlides } from '../storeBuilderThemeUtils.js';
 
-export function HeroEditor({ theme, uploadingThemeImage, setThemeGroup, addHeroSlide, updateHeroSlide, moveHeroSlide, removeHeroSlide, handleThemeImageUpload, advancedDesignEnabled = false }) {
+export function HeroEditor({ theme, uploadingThemeImage, setThemeGroup, addHeroSlide, updateHeroSlide, moveHeroSlide, removeHeroSlide, handleThemeImageUpload, capabilities = getThemeCapabilities(theme) }) {
     const heroSlides = getBuilderHeroSlides(theme.hero);
     const [selectedSlideId, setSelectedSlideId] = useState(heroSlides[0]?.id || 'slide-0');
     const matchedIndex = heroSlides.findIndex((item, index) => String(item.id || `slide-${index}`) === String(selectedSlideId));
@@ -29,10 +30,10 @@ export function HeroEditor({ theme, uploadingThemeImage, setThemeGroup, addHeroS
                     label="Hero layout"
                     value={theme.hero?.variant || 'fullBleed'}
                     onChange={event => setThemeGroup('hero', 'variant', event.target.value)}
-                    disabled={!advancedDesignEnabled}
-                    help={advancedDesignEnabled ? 'All layouts keep the same slides, text, and buttons.' : 'Structural layouts require full Store Builder access.'}
+                    disabled={!capabilities.hero.merchantSelectable}
+                    help={capabilities.hero.merchantSelectable ? 'All layouts keep the same slides, text, and buttons.' : capabilities.hero.reason}
                 >
-                    {heroVariantOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    {heroVariantOptions.filter(option => capabilities.hero.allowed.includes(option.value)).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </BuilderSelect>
                 <BuilderSelect label="Hero height" value={theme.hero?.height || 'Medium'} onChange={event => setThemeGroup('hero', 'height', event.target.value)}>
                     <option>Compact</option><option>Medium</option><option>Tall</option>

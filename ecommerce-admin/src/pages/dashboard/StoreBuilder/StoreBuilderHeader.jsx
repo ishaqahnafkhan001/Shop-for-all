@@ -4,6 +4,8 @@ import { BuilderButton } from './builderUi.jsx';
 
 const statusCopy = ({ saving, hasUnsavedChanges, autosaveStatus, conflict, offline }) => {
     if (conflict) return { label: 'Conflict detected', tone: 'bg-red-100 text-red-800' };
+    if (autosaveStatus === 'conflict') return { label: 'Draft changed elsewhere — reload', tone: 'bg-red-100 text-red-800' };
+    if (autosaveStatus === 'error') return { label: 'Draft not saved — keep this page open', tone: 'bg-red-100 text-red-800' };
     if (offline) return { label: 'Offline', tone: 'bg-red-100 text-red-800' };
     if (saving) return { label: 'Publishing…', tone: 'bg-blue-100 text-blue-800' };
     if (autosaveStatus === 'saving') return { label: 'Saving draft…', tone: 'bg-blue-100 text-blue-800' };
@@ -38,11 +40,13 @@ export const StoreBuilderHeader = ({
 }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
+    const menuButtonRef = useRef(null);
     const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
     const status = statusCopy({ saving, hasUnsavedChanges, autosaveStatus, conflict, offline });
 
     useEffect(() => {
         if (!menuOpen) return undefined;
+        [...(menuRef.current?.querySelectorAll('[role="menuitem"]:not([disabled])') || [])].find(item => item.getClientRects().length)?.focus();
         const close = (event) => {
             if (!menuRef.current?.contains(event.target)) setMenuOpen(false);
         };
@@ -52,11 +56,26 @@ export const StoreBuilderHeader = ({
 
     const runMenuAction = (action) => {
         setMenuOpen(false);
+        menuButtonRef.current?.focus();
         action?.();
     };
 
+    const handleMenuKey = event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            setMenuOpen(false);
+            menuButtonRef.current?.focus();
+        } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+            event.preventDefault();
+            const items = [...menuRef.current.querySelectorAll('[role="menuitem"]:not([disabled])')].filter(item => item.getClientRects().length);
+            const index = items.indexOf(document.activeElement);
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+            items[next]?.focus();
+        } else if (event.key === 'Tab') setMenuOpen(false);
+    };
+
     return (
-        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <header data-builder-header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
             <div className="mx-auto flex max-w-[1800px] flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -66,17 +85,19 @@ export const StoreBuilderHeader = ({
                     <p className="mt-1 hidden text-xs text-slate-500 sm:block">Revision {revision || 0} · Published {lastPublishedLabel || 'not yet'}</p>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                    <button type="button" onClick={onOpenThemes} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><LayoutTemplate size={16} /> Themes</button>
+                <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                    <button type="button" onClick={onOpenThemes} className="hidden min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 xl:inline-flex"><LayoutTemplate size={16} /> Themes</button>
                     <button type="button" aria-label="Undo last change" title="Undo" onClick={onUndo} disabled={!canUndo || saving} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"><Undo2 className="mx-auto" size={17} /></button>
                     <button type="button" aria-label="Redo last change" title="Redo" onClick={onRedo} disabled={!canRedo || saving} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"><Redo2 className="mx-auto" size={17} /></button>
-                    <button type="button" onClick={onOpenIssues} className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 ${validationCount ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}><AlertCircle size={16} /> Issues {validationCount || 0}</button>
-                    <BuilderButton type="button" onClick={onSave} disabled={saving || validationCount > 0}><Save size={16} /> {saving ? 'Publishing…' : 'Publish'}</BuilderButton>
+                    <button type="button" onClick={onOpenIssues} className={`hidden min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 xl:inline-flex ${validationCount ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}><AlertCircle size={16} /> Issues {validationCount || 0}</button>
+                    <BuilderButton type="button" className="flex-1 sm:flex-none" onClick={onSave} disabled={saving || validationCount > 0}><Save size={16} /> {saving ? 'Publishing…' : 'Publish'}</BuilderButton>
 
                     <div ref={menuRef} className="relative">
-                        <button type="button" aria-label="More Store Builder actions" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Ellipsis className="mx-auto" size={18} /></button>
+                        <button ref={menuButtonRef} type="button" aria-label="More Store Builder actions" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Ellipsis className="mx-auto" size={18} /></button>
                         {menuOpen && (
-                            <div role="menu" className="absolute right-0 top-12 z-50 w-64 rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+                            <div role="menu" aria-label="Store Builder actions" onKeyDown={handleMenuKey} className="absolute right-0 top-12 z-50 max-h-[60dvh] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
+                                <button role="menuitem" type="button" onClick={() => runMenuAction(onOpenThemes)} className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 xl:hidden"><LayoutTemplate size={16} /> Choose a theme</button>
+                                <button role="menuitem" type="button" onClick={() => runMenuAction(onOpenIssues)} className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 xl:hidden"><AlertCircle size={16} /> Issues {validationCount || 0}</button>
                                 <button role="menuitem" type="button" disabled={!hasUnsavedChanges || saving} onClick={() => runMenuAction(onSaveDraft)} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"><Cloud size={16} /> Save draft now</button>
                                 {liveStoreUrl && <a role="menuitem" href={liveStoreUrl} target="_blank" rel="noreferrer" className="flex min-h-10 items-center gap-3 rounded-md px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"><ExternalLink size={16} /> Open live store</a>}
                                 <button role="menuitem" type="button" disabled={saving} onClick={() => runMenuAction(onReload)} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"><RefreshCw size={16} /> Reload published version</button>
@@ -89,14 +110,14 @@ export const StoreBuilderHeader = ({
                     </div>
                 </div>
             </div>
-            {validationCount > 0 && <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-center text-xs font-bold text-red-800">Resolve {validationCount} publish-blocking issue{validationCount === 1 ? '' : 's'} before publishing.</div>}
-            <div className="mx-auto grid max-w-[1800px] grid-cols-3 gap-1 border-t border-slate-100 bg-slate-50 p-1 xl:hidden" role="tablist" aria-label="Store Builder workspace">
+            {validationCount > 0 && <button type="button" onClick={onOpenIssues} className="w-full border-t border-red-100 bg-red-50 px-4 py-2 text-center text-xs font-bold text-red-800">Review {validationCount} publish-blocking issue{validationCount === 1 ? '' : 's'}</button>}
+            <nav className="mx-auto grid max-w-[1800px] grid-cols-3 gap-1 border-t border-slate-100 bg-slate-50 p-1 xl:hidden" aria-label="Store Builder workspace">
                 {[
                     ['structure', 'Store'],
                     ['preview', 'Preview'],
                     ['edit', 'Settings']
-                ].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={mobileWorkspace === id} onClick={() => onWorkspaceChange(id)} className={`min-h-11 rounded-md px-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 ${mobileWorkspace === id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`}>{label}</button>)}
-            </div>
+                ].map(([id, label]) => <button key={id} type="button" aria-current={mobileWorkspace === id ? 'page' : undefined} aria-controls={`builder-workspace-${id}`} onClick={() => onWorkspaceChange(id)} className={`min-h-11 rounded-md px-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 ${mobileWorkspace === id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`}>{label}</button>)}
+            </nav>
         </header>
     );
 };

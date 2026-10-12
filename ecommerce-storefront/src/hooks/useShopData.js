@@ -1,23 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import API from '../api/api';
-import { getImageUrlFromValue } from '../lib/seo';
-
-const normalizeProduct = (p) => {
-    const sellingPrice = p?.pricing?.sellingPrice ?? p?.sellingPrice ?? 0;
-    const discount = p?.pricing?.discount ?? p?.discount ?? 0;
-    const finalPrice = p?.finalPrice ?? Math.round(sellingPrice - (sellingPrice * (discount / 100)));
-    return {
-        ...p,
-        sellingPrice,
-        discount,
-        salePrice: p?.salePrice ?? p?.pricing?.salePrice,
-        compareAtPrice: p?.compareAtPrice ?? p?.pricing?.compareAtPrice,
-        scheduledSale: p?.scheduledSale || null,
-        finalPrice,
-        stock: p?.totalStock ?? p?.stock ?? 0,
-        imageUrl: getImageUrlFromValue(p?.coverMediaId) || getImageUrlFromValue(p?.imageUrl) || getImageUrlFromValue(p?.images?.[0]) || '',
-    };
-};
+import { normalizeProduct } from '../utils/normalizeProduct';
 
 const normalizeBootstrapData = (bootstrapData = {}) => {
     const rawProducts = bootstrapData.products || [];

@@ -44,3 +44,26 @@ npm run worker
 
 The Dockerfile runtime working directory is already
 `/app/ecommerce-backend/backend`.
+
+## Optional Redis cache
+
+Set `REDIS_URL` in the backend API and worker service environments to the actual
+connection URL for the same Redis service. Local development reads it from
+`ecommerce-backend/backend/.env`. Do not put Redis credentials in Admin or storefront
+public environment variables. The repository does not provision a Redis server.
+
+An empty/missing value selects the backend's per-process memory cache. A configured
+but unavailable Redis server produces cache misses; it does not start Redis or switch
+to a separate local cache. The existing `/api/health` response does not check Redis.
+
+Run this command inside each service's environment, from the backend directory:
+
+```sh
+npm run check:redis
+```
+
+Exit 0 confirms a successful connection and read-only PING/PONG check. Exit 1 means
+Redis is unconfigured, unreachable, or incorrectly configured. The command does not
+print the URL/credentials and does not write or delete cache entries. Restart the API
+and workers after changing their environment variables. A local check does not prove
+that a deployed process has the same configuration.

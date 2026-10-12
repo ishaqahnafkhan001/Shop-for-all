@@ -6,7 +6,6 @@ import { PackageX, Tag, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useShopData } from '@/hooks/useShopData';
 import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
-import { normalizeTheme } from '@/lib/theme';
 import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
 import { ReferenceStorefrontHome } from '@/components/storefront/ReferenceStorefront';
 import { trackStorefrontEvent } from '@/utils/analyticsTracker';
@@ -178,7 +177,7 @@ function StorefrontLaunchBanners({ banners = [], serverNow, onCountdownBoundary 
 
 export default function StorefrontHomeClient({ subdomain, initialData = null }) {
     const { user } = useAuth();
-    const { hydrateThemeSettings } = useStorefrontTheme();
+    const { theme } = useStorefrontTheme();
     const [filters, setFilters] = useState({ category: 'All', minPrice: '', maxPrice: '', minRating: '', stock: '', sort: 'newest', page: 1 });
     const [priceInput, setPriceInput] = useState({ min: '', max: '' });
     const [catalogSearch, setCatalogSearch] = useState('');
@@ -205,7 +204,6 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
     }, initialData);
     const [dismissedSalePopupId, setDismissedSalePopupId] = useState('');
     const [salePopupClosedForPage, setSalePopupClosedForPage] = useState(false);
-    const theme = normalizeTheme(shop?.theme || initialData?.shop?.theme || {});
     const storewideDiscount = shop?.storewideDiscount || initialData?.shop?.storewideDiscount || 0;
     const customerId = user?.role === 'Customer' ? (user._id || user.id) : null;
     const productActions = useStorefrontProductActions({
@@ -227,10 +225,6 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
             });
         }
     });
-    useEffect(() => {
-        if (shop) hydrateThemeSettings(shop);
-    }, [hydrateThemeSettings, shop]);
-
     useEffect(() => {
         const timer = window.setTimeout(() => {
             setDebouncedCatalogSearch(catalogSearch.trim());

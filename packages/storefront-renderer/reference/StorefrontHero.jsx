@@ -34,7 +34,7 @@ const HeroMedia = ({ model, cover = true, eager = true, className = "" }) => {
     return (
         <picture className={className}>
             {activeMobileHeroImage && (
-                <source media="(max-width: 640px)" srcSet={mobileHeroSrcSet} sizes="calc(100vw - 24px)" />
+                <source media="(max-width: 767px)" srcSet={mobileHeroSrcSet} sizes="calc(100vw - 24px)" />
             )}
             <img
                 src={optimizeCloudinaryImage(forcedMobilePreview ? activeMobileHeroImage : activeHeroImage, { width: forcedMobilePreview ? 760 : 1600, crop: cover ? "fill" : "fit" })}
@@ -236,15 +236,15 @@ const PanelHero = ({ model, LinkComponent, variant }) => {
         ? (forcedMobilePreview ? "hidden" : "hidden sm:block")
         : "";
     return (
-        <section data-hero-composition={variant} className={`grid overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/60 sm:rounded-[2rem] ${gridClass}`}>
-            <div className={`${contentOrder} ${contentPadding} ${editorialDesktopFrame} min-w-0 flex min-h-[260px] flex-col justify-center`}>
+        <section data-hero-composition={variant} data-mobile-composition={model.mobileComposition} className={`grid overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/60 sm:rounded-[2rem] ${gridClass}`}>
+            <div data-hero-part="content" className={`${contentOrder} ${contentPadding} ${editorialDesktopFrame} min-w-0 flex min-h-[260px] flex-col justify-center`}>
                 <HeroCopy model={model} compact={isMinimal || isEditorial} />
                 <div className="mt-6 flex flex-col gap-4">
                     <HeroButtons model={model} LinkComponent={LinkComponent} />
                     <HeroDots model={model} onSelect={model.onSelect} />
                 </div>
             </div>
-            <div className={`${mediaOrder} relative min-h-[280px] overflow-hidden bg-slate-100 ${emptyMediaVisibility} ${isMinimal ? (forcedMobilePreview ? "m-4 rounded-2xl" : forcedTabletPreview ? "m-6 rounded-2xl" : "m-4 rounded-2xl sm:m-6") : ""} ${previewDevice && forcedNarrowPreview ? "order-2" : ""}`}>
+            <div data-hero-part="media" className={`${mediaOrder} relative min-h-[280px] overflow-hidden bg-slate-100 ${emptyMediaVisibility} ${isMinimal ? (forcedMobilePreview ? "m-4 rounded-2xl" : forcedTabletPreview ? "m-6 rounded-2xl" : "m-4 rounded-2xl sm:m-6") : ""} ${previewDevice && forcedNarrowPreview ? "order-2" : ""}`}>
                 <HeroMedia model={model} eager className="absolute inset-0 h-full w-full" />
                 <HeroArrows model={model} onPrevious={model.onPrevious} onNext={model.onNext} />
             </div>
@@ -299,6 +299,7 @@ export function StorefrontHero({ theme, shopName, storewideDiscount = 0, LinkCom
         heroOverlayOpacity: resolveHeroOverlayOpacity(hero.overlayOpacity) / 100,
         heroSlides,
         mobileHeroSrcSet: getResponsiveImageSrcSet(activeMobileHeroImage, [420, 640, 760], { crop: "fill" }),
+        mobileComposition: theme.mobile?.heroComposition || 'Theme',
         onNext: next,
         onPrevious: previous,
         onSelect: setActiveHeroIndex,
@@ -307,7 +308,7 @@ export function StorefrontHero({ theme, shopName, storewideDiscount = 0, LinkCom
     };
     const variant = hero.variant || "fullBleed";
 
-    if (hero.hidden) return <h1 className="sr-only">{shopName || activeHeroSlide.title || hero.title || "Online store"}</h1>;
+    if (hero.hidden || !heroSlides.length) return <h1 className="sr-only">{shopName || activeHeroSlide.title || hero.title || "Online store"}</h1>;
 
     return (
         <EditorSelectionFrame editor={editor} id="hero" label="Hero Banner" locked>

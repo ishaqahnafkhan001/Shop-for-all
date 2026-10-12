@@ -1,26 +1,25 @@
-const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+const { withBrandVoice } = require('./ai/aiPreferencesService');
+const { withProviderSession } = require('./ai/openaiProviderAdapter');
+const { getAiConfig } = require('../config/ai');
 const {
     buildSeoInputSnapshot,
     cleanSeoText,
     computeSeoInputHash
 } = require('@scaleup/storefront-theme');
 
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const DEFAULT_TIMEOUT_MS = 15000;
-const AI_NOT_CONFIGURED_MESSAGE = 'AI SEO suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.';
 const PROMPT_ID = 'seo.homepage';
-const PROMPT_VERSION = '2.0.0';
-const stringSchema = (description = '') => ({ type: SchemaType.STRING, ...(description ? { description } : {}) });
+const PROMPT_VERSION = '4.0.0';
+const stringSchema = (description = '') => ({ type: 'string', ...(description ? { description } : {}) });
 const SEO_RESPONSE_SCHEMA = {
-    type: SchemaType.OBJECT,
+    type: 'object',
     required: ['alternatives', 'recommendations'],
     properties: {
         alternatives: {
-            type: SchemaType.ARRAY,
+            type: 'array',
             minItems: 3,
             maxItems: 3,
             items: {
-                type: SchemaType.OBJECT,
+                type: 'object',
                 required: ['id', 'title', 'description', 'explanation', 'tone', 'topics', 'limitations'],
                 properties: {
                     id: stringSchema(),
@@ -28,16 +27,16 @@ const SEO_RESPONSE_SCHEMA = {
                     description: stringSchema(),
                     explanation: stringSchema(),
                     tone: stringSchema(),
-                    topics: { type: SchemaType.ARRAY, maxItems: 12, items: stringSchema() },
+                    topics: { type: 'array', maxItems: 12, items: stringSchema() },
                     limitations: stringSchema()
                 }
             }
         },
         recommendations: {
-            type: SchemaType.ARRAY,
+            type: 'array',
             maxItems: 8,
             items: {
-                type: SchemaType.OBJECT,
+                type: 'object',
                 required: ['type', 'priority', 'message'],
                 properties: { type: stringSchema(), priority: stringSchema(), message: stringSchema() }
             }
@@ -119,7 +118,7 @@ const stripMarkdownCodeFence = (text = '') => String(text || '').trim()
     .replace(/```$/i, '')
     .trim();
 
-const parseGeminiJson = (text = '') => {
+const parseProviderJson = (text = '') => {
     const cleaned = stripMarkdownCodeFence(text);
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');
@@ -188,40 +187,14 @@ const buildPrompt = (context = {}) => [
     '</store_data>'
 ].join('\n');
 
-const callGemini = async (prompt) => {
-    if (!process.env.GEMINI_API_KEY) {
-        const error = new Error(AI_NOT_CONFIGURED_MESSAGE);
-        error.code = 'AI_NOT_CONFIGURED';
-        throw error;
-    }
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
-        generationConfig: {
-            temperature: 0.45,
-            topP: 0.85,
-            maxOutputTokens: 1800,
-            responseMimeType: 'application/json',
-            responseSchema: SEO_RESPONSE_SCHEMA
-        }
-    });
-    let timer;
-    const timeout = new Promise((_, reject) => {
-        timer = setTimeout(() => {
-            const error = new Error('Gemini request timed out');
-            error.code = 'AI_PROVIDER_TIMEOUT';
-            reject(error);
-        }, Number(process.env.GEMINI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS));
-    });
-    try {
-        const result = await Promise.race([model.generateContent(prompt), timeout]);
-        return result.response.text();
-    } finally {
-        clearTimeout(timer);
-    }
-};
+const callProvider = (prompt, session) => session.generate({ prompt, schema: SEO_RESPONSE_SCHEMA, temperature: .45, topP: .85, maxOutputTokens: 1800, feature: PROMPT_ID });
 
-const generateStoreSeoSuggestion = async (input = {}) => {
+const acceptSeoAlternatives = (raw, context) => Array.isArray(raw?.alternatives) && raw.alternatives.length === 3
+    && raw.alternatives.every(option => option && typeof option === 'object'
+        && ['title', 'description'].every(key => typeof option[key] === 'string' && /[\p{L}\p{N}]/u.test(removeUnsafeClaims(option[key])))
+        && option.title.toLocaleLowerCase().includes(context.shopName.toLocaleLowerCase()));
+
+const generateStoreSeoSuggestion = async (input = {}) => withProviderSession({ ...input.providerOptions, operation: input.operation, signal: input.signal }, async session => {
     const context = buildSafeContext(input);
     const seoInputContext = {
         shopIdentity: {
@@ -241,7 +214,7 @@ const generateStoreSeoSuggestion = async (input = {}) => {
     let parsed;
     let fallbackReason = '';
     try {
-        parsed = parseGeminiJson(await callGemini(buildPrompt(context)));
+        parsed = parseProviderJson(await callProvider(withBrandVoice(buildPrompt(context), input.operation?.preferences), session));
     } catch (error) {
         if (error.code === 'AI_NOT_CONFIGURED') throw error;
         if (error.code === 'SEO_AI_OUTPUT_INVALID') {
@@ -254,7 +227,8 @@ const generateStoreSeoSuggestion = async (input = {}) => {
         }
     }
 
-    const alternatives = (Array.isArray(parsed.alternatives) ? parsed.alternatives : [])
+    if (!fallbackReason && !acceptSeoAlternatives(parsed, context)) fallbackReason = 'AI_RESPONSE_INCOMPLETE';
+    const alternatives = (!fallbackReason && Array.isArray(parsed?.alternatives) ? parsed.alternatives : [])
         .slice(0, 3)
         .map((option, index) => normalizeAlternative(option, index, context));
     if (alternatives.length !== 3 && !fallbackReason) fallbackReason = 'AI_RESPONSE_INCOMPLETE';
@@ -266,7 +240,7 @@ const generateStoreSeoSuggestion = async (input = {}) => {
         keywords: first.topics,
         topics: first.topics,
         alternatives: safeAlternatives,
-        recommendations: cleanRecommendations(parsed.recommendations),
+        recommendations: cleanRecommendations(Array.isArray(parsed?.recommendations) ? parsed.recommendations.filter(item => item && typeof item === 'object') : []),
         generatedAt: new Date().toISOString(),
         generatedFromHash,
         inputSnapshot,
@@ -277,7 +251,7 @@ const generateStoreSeoSuggestion = async (input = {}) => {
             fallback: Boolean(fallbackReason),
             configured: true,
             generatedAt: new Date().toISOString(),
-            model: fallbackReason ? null : (process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL),
+            model: fallbackReason ? null : (getAiConfig().model),
             promptId: PROMPT_ID,
             promptVersion: PROMPT_VERSION,
             limitations: fallbackReason
@@ -285,7 +259,7 @@ const generateStoreSeoSuggestion = async (input = {}) => {
                 : []
         }
     };
-};
+});
 
 module.exports = {
     generateStoreSeoSuggestion,
@@ -293,8 +267,9 @@ module.exports = {
         safeString,
         buildSafeContext,
         buildPrompt,
-        parseGeminiJson,
+        parseProviderJson,
         normalizeAlternative,
-        buildFallbackAlternatives
+        buildFallbackAlternatives,
+        acceptSeoAlternatives
     }
 };

@@ -1,7 +1,8 @@
+import AiOperationStatus, { AiFieldComparison } from '../../../components/ai/AiOperationStatus.jsx';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import { BuilderButton } from '../StoreBuilder/builderUi.jsx';
 
-export default function SeoAiPanel({ state, onGenerate, onApply }) {
+export default function SeoAiPanel({ state, onGenerate, onApply, operation, onRetry, onUndo, current }) {
     const suggestions = state.data?.alternatives?.length
         ? state.data.alternatives
         : (state.data?.title || state.data?.description ? [state.data] : []);
@@ -15,12 +16,14 @@ export default function SeoAiPanel({ state, onGenerate, onApply }) {
                         Generate alternatives from public store context. Suggestions update your draft only and never publish automatically.
                     </p>
                 </div>
-                <BuilderButton type="button" onClick={onGenerate} disabled={state.loading}>
+                <BuilderButton type="button" onClick={onGenerate} disabled={operation.loading || !operation.access.allowed}>
                     {state.loading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
                     {state.loading ? 'Generating…' : 'Generate 3 alternatives'}
                 </BuilderButton>
             </div>
+            <AiOperationStatus operation={operation} onRetry={onRetry} onUndo={onUndo} />
             {state.error && <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">{state.error}</p>}
+            {state.data?.meta && <p className="mt-3 text-xs text-slate-600">Source: {state.data.meta.source === 'provider' ? 'AI generated' : state.data.meta.source === 'mixed' ? 'AI and generated suggestions' : 'Generated from store details'}. Review before applying.</p>}
             {suggestions.length > 0 && (
                 <div className="mt-5 grid gap-4 xl:grid-cols-3">
                     {suggestions.slice(0, 3).map((suggestion, index) => (
@@ -29,10 +32,11 @@ export default function SeoAiPanel({ state, onGenerate, onApply }) {
                             <h3 className="mt-2 text-sm font-black text-slate-950">{suggestion.title || 'No title suggestion'}</h3>
                             <p className="mt-2 text-sm leading-6 text-slate-600">{suggestion.description || 'No description suggestion'}</p>
                             {suggestion.explanation && <p className="mt-3 text-xs leading-5 text-slate-500">Why: {suggestion.explanation}</p>}
+                            <AiFieldComparison current={{ title: current?.title, description: current?.description }} proposed={{ title: suggestion.title, description: suggestion.description }} />
                             <div className="mt-4 flex flex-wrap gap-2">
-                                <BuilderButton variant="subtle" className="text-xs" onClick={() => onApply(suggestion, ['title'])}>Apply title</BuilderButton>
-                                <BuilderButton variant="subtle" className="text-xs" onClick={() => onApply(suggestion, ['description'])}>Apply description</BuilderButton>
-                                <BuilderButton className="text-xs" onClick={() => onApply(suggestion, ['title', 'description'])}>Apply both</BuilderButton>
+                                <BuilderButton variant="subtle" className="text-xs" disabled={!operation.canApply()} onClick={() => onApply(suggestion, ['title'])}>Apply title</BuilderButton>
+                                <BuilderButton variant="subtle" className="text-xs" disabled={!operation.canApply()} onClick={() => onApply(suggestion, ['description'])}>Apply description</BuilderButton>
+                                <BuilderButton className="text-xs" disabled={!operation.canApply()} onClick={() => onApply(suggestion, ['title', 'description'])}>Apply both</BuilderButton>
                             </div>
                         </article>
                     ))}

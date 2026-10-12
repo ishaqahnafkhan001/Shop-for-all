@@ -1,0 +1,16 @@
+✔ all nine published presets are styled in the initial HTML and survive serialized props identically (225.6158ms)
+✔ new server revisions and tenant snapshots render immediately without carrying prior theme state (8.5555ms)
+✔ tenant providers reject missing snapshots; platform pages retain their default theme (2.1529ms)
+✔ published settings use fresh, tenant-specific public requests and forward the custom host (3.8441ms)
+✔ direct nested routes render the server settings around children before any client effects (4.0844ms)
+✔ failed and malformed public lookups never render tenant children with a fallback theme (0.7958ms)
+✔ missing or locked stores and custom-domain plan redirects retain backend access decisions (0.7179ms)
+✔ tenant rewrites preserve the public redirect path and overwrite spoofed path headers (14.7696ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 378.1065

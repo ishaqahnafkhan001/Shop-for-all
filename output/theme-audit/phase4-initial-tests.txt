@@ -1,0 +1,66 @@
+✔ new shops use the shared wishlist default (12.1083ms)
+✔ new shops use the shared catalog title default (2.3752ms)
+✔ contract-valid Editorial catalog spacing survives schema validation and hydration (25.6571ms)
+✔ legacy sparse records retain their historical persistence defaults on hydration (8.1402ms)
+✔ explicit saved wishlist and catalog title values survive construction and hydration (29.5711ms)
+✔ all prebuilt theme configurations survive schema and hydration without presentation drift (109.5496ms)
+✔ every registered Store Builder section has a complete, stable contract (7.8282ms)
+✔ theme contract migrates legacy sections and rejects unsupported section types (0.411ms)
+✔ theme sanitizer strips unsupported fields and neutralizes stored-content attacks (0.2823ms)
+✔ representative theme survives Mongoose schema and shared normalization round trip (13.7768ms)
+✔ capability metadata is backend-driven and plan aware (0.3153ms)
+✖ prebuilt registry contains nine immutable, unique, valid production themes (29.44ms)
+✔ each v2 preset exposes the curated structural signature supported by the shared renderer (0.938ms)
+✔ every preset resolves deterministically and validates through the shared contract (45.9672ms)
+✔ all full-plan presets follow their blueprints when safe merchant content is available (24.3645ms)
+✔ the nine themes no longer collapse into two effective section structures (29.1876ms)
+✔ paired industries remain distinguishable without relying on color (0.3584ms)
+✔ applying a preset preserves merchant content and selected commerce data (1.7104ms)
+✔ missing merchant content never creates fake story, review, FAQ, promotion, trust, or newsletter copy (1.8583ms)
+✔ preset-owned presentation wins while populated merchant content and unmatched sections survive (2.8516ms)
+✔ duplicate preset-controlled sections are retained but cannot alter the enabled blueprint sequence (2.5361ms)
+✔ limited plan resolution preserves restricted layout and section fields accepted by backend policy (23.4371ms)
+✔ preset application refuses unavailable access and unknown presets without mutating the draft (0.926ms)
+✔ prebuilt catalog has an isolated package export and is not imported by live storefront source (44.5489ms)
+✔ every gallery thumbnail is local, lightweight, lazy loaded, and mapped to a catalog theme (6.8543ms)
+✔ theme cards and full previews resolve the same merchant-owned hero banner (10.971ms)
+✔ legacy themes receive current-equivalent structural defaults (5.8526ms)
+✔ all supported structural variants survive normalization with merchant content (7.0339ms)
+✔ unknown variants normalize safely and validation identifies direct invalid payloads (2.3086ms)
+✔ unsupported storefront sections fail closed while every registered legacy section has an explicit renderer (0.795ms)
+✔ customer-facing product and trust empty states do not invent factual claims (1.7903ms)
+✔ storefront stock filter is interactive and reaches the existing tenant-scoped product query (2.6784ms)
+✔ limited Store Builder access cannot change structural variants directly (5.6515ms)
+✔ shared renderer consumes configuration variants without preset registry knowledge (2.2003ms)
+✔ Store Builder phone and tablet previews do not inherit outer desktop hero breakpoints (0.463ms)
+✔ Store Builder structural controls tolerate an older Vite-optimized theme contract (1.084ms)
+✔ representative stores can select different structures using configuration alone (0.5569ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 36
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1124.3636
+
+✖ failing tests:
+
+test at tests\store-builder-prebuilt-themes.test.js:215:1
+✖ prebuilt registry contains nine immutable, unique, valid production themes (29.44ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  3 !== 2
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\store-builder-prebuilt-themes.test.js:219:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

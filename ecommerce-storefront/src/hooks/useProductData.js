@@ -1,12 +1,9 @@
+import { getInitialAttributes, getProductPresentation } from '@scaleup/storefront-renderer/product-data';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import API from '@/api/api';
 import { normalizeProduct } from '@/utils/normalizeProduct';
 
-const getInitialAttributes = (product) => {
-    if (!product?.variants?.length) return {};
-    const first = product.variants.find(v => v.isActive && v.status !== 'archived') || product.variants[0];
-    return Object.fromEntries((first.attributes || []).map(a => [a.name, a.value]));
-};
+
 
 /**
  * Encapsulates all data-fetching and derived state for the product detail page.
@@ -91,63 +88,8 @@ export function useProductData(subdomain, id, initialProduct = null) {
         return () => { cancelledRef.cancelled = true; };
     }, [fetchRelatedProducts, fetchReviews, hasInitialProduct, id, normalizedInitialProduct, subdomain]);
 
-    /* ---------- derived: attribute options ---------- */
-    const availableAttributes = useMemo(() => {
-        if (product?.options?.length > 0) {
-            return Object.fromEntries(
-                product.options
-                    .slice()
-                    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                    .map(option => [
-                        option.name,
-                        (option.values || [])
-                            .slice()
-                            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
-                            .map(value => value.value)
-                    ])
-            );
-        }
-        if (!product?.variants) return {};
-        const attrs = {};
-        product.variants.forEach(variant => {
-            if (!variant.isActive || variant.status === 'archived') return;
-            variant.attributes.forEach(({ name, value }) => {
-                if (!attrs[name]) attrs[name] = new Set();
-                attrs[name].add(value);
-            });
-        });
-        return Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, [...v]]));
-    }, [product]);
-
-    /* ---------- derived: matched variant ---------- */
-    const currentVariant = useMemo(() => {
-        if (!product?.variants?.length) return null;
-        return product.variants.find(variant =>
-            variant.isActive !== false &&
-            variant.status !== 'archived' &&
-            variant.attributes.every(attr => selectedAttributes[attr.name] === attr.value)
-        ) ?? null;
-    }, [product, selectedAttributes]);
-
-    /* ---------- derived: display pricing / stock ---------- */
-    const displayStock      = currentVariant
-        ? (currentVariant.inventory?.stock ?? currentVariant.stock ?? 0)
-        : (product?.stock ?? 0);
-    const baseOriginalPrice = currentVariant?.pricing?.price ?? currentVariant?.priceOverride ?? product?.sellingPrice ?? 0;
-    const productDiscount = product?.discount ?? 0;
-    const productDiscountPrice = productDiscount > 0
-        ? Math.round(baseOriginalPrice - (baseOriginalPrice * productDiscount) / 100)
-        : baseOriginalPrice;
-    const scheduledSale = product?.scheduledSale || null;
-    const scheduledSalePrice = scheduledSale
-        ? (scheduledSale.discountType === 'fixed'
-            ? Math.max(0, Math.round(productDiscountPrice - Number(scheduledSale.discountValue || 0)))
-            : Math.max(0, Math.round(productDiscountPrice - ((productDiscountPrice * Number(scheduledSale.discountValue || 0)) / 100))))
-        : null;
-    const displayFinalPrice = scheduledSalePrice !== null ? scheduledSalePrice : productDiscountPrice;
-    const displayDiscount = scheduledSalePrice !== null && productDiscountPrice > 0
-        ? Math.round(((productDiscountPrice - scheduledSalePrice) / productDiscountPrice) * 100)
-        : productDiscount;
+    const { availableAttributes, currentVariant, displayStock, baseOriginalPrice, displayFinalPrice, displayDiscount } = useMemo(
+        () => getProductPresentation(product, selectedAttributes), [product, selectedAttributes]);
 
     /* ---------- actions ---------- */
     const handleAttributeSelect = useCallback((name, value) => {

@@ -1,3 +1,4 @@
+import { getThemeCapabilities } from '@scaleup/storefront-theme';
 import { ChevronDown, Palette, Search } from 'lucide-react';
 import {
     BuilderButton,
@@ -30,7 +31,7 @@ export function ColorEditor({
     resetColorGroup,
     setColor
 }) {
-    const fullColorControls = planAccess.storeBuilderCapabilities?.advancedDesign === true;
+    const fullColorControls = getThemeCapabilities(theme, planAccess).colors.editable;
     const activeColorMode = fullColorControls ? colorMode : 'quick';
     const mainBrandColor = getThemeColor('brand.primary', theme.colors?.accent || defaultTheme.colors.accent);
     const searchTerm = colorSearch.trim().toLowerCase();
@@ -99,7 +100,7 @@ export function ColorEditor({
 
             {!fullColorControls && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900">
-                    Starter includes quick brand colors and curated palettes. Section-by-section and advanced color controls are available on Growth and Pro.
+                    Store Builder editing is not included in the current plan.
                 </div>
             )}
 

@@ -27,6 +27,8 @@ const {
 const { processScheduledSaleStates } = require('../services/sales/scheduledSaleService');
 const { processSupportJob } = require('../services/support/supportNotificationService');
 const logger = require('../services/logger');
+const { reconcileStaleAiOperations } = require('../services/ai/aiAccountingRecoveryService');
+const { getAiConfig } = require('../config/ai');
 const { cleanupExpiredActivityLogs } = require('../services/billing/activityLogRetentionService');
 const { initializeSubscriptionEventHandlers } = require('../services/billing/subscriptionEventHandlers');
 const { cleanupExpiredStoreBuilderAssets } = require('../services/storeBuilder/storeBuilderAssetService');
@@ -58,6 +60,7 @@ let nextActivityCleanupAt = 0;
 let nextStoreBuilderAssetCleanupAt = 0;
 let nextSubscriptionReconciliationAt = 0;
 let nextBillingLifecycleAt = 0;
+let nextAiRecoveryAt = 0;
 
 const handlers = {
     notifications: processShopEventJob,
@@ -155,6 +158,15 @@ const run = async () => {
     logger.info('worker_started', { queues: Object.keys(handlers) });
 
     while (!shuttingDown) {
+        if (getAiConfig().accountingVersion === 2 && Date.now() >= nextAiRecoveryAt) {
+            nextAiRecoveryAt = Date.now() + 10000;
+            try {
+                const recovery = await reconcileStaleAiOperations({ limit: 50 });
+                if (recovery.scanned) logger.info('ai_accounting_recovery', recovery);
+            } catch (_) {
+                logger.error('ai_accounting_recovery_failed', { code: 'AI_RECOVERY_UNAVAILABLE' });
+            }
+        }
         if (Date.now() >= nextBillingLifecycleAt) {
             nextBillingLifecycleAt = Date.now() + BILLING_LIFECYCLE_INTERVAL_MS;
             try {

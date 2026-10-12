@@ -1,3 +1,4 @@
+const { blockBillingSuspendedShop } = require('../middlewares/billingGate');
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
@@ -36,6 +37,7 @@ router.get('/', getCollections);
 router.post(
     '/ai/suggest',
     requirePermission('collectionsAi'),
+    blockBillingSuspendedShop,
     requireShopFeature('aiProductCreation'),
     blockVerificationSuspendedShop,
     collectionAiLimiter,

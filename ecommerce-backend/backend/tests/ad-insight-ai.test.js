@@ -137,13 +137,13 @@ test('unknown generic product stays conservative without irrelevant niche target
     const insight = insightFor(product);
     const interests = insight.suggestedInterests.join('|').toLowerCase();
 
-    assert.match(insight.targetedCustomer, /general|unknown|published product details/i);
+    assert.match(insight.targetedCustomer, /general|unknown|product details/i);
     assert.match(interests, /online shopping|e-commerce/);
     assert.doesNotMatch(JSON.stringify(insight), /cash on delivery|trusted|reliable|premium quality/i);
     assert.doesNotMatch(interests, /android phones|mobile gaming|men fashion|skincare/);
 });
 
-test('Gemini output cleanup removes irrelevant electronics interests and normalizes shape', () => {
+test('OpenAI output cleanup removes irrelevant electronics interests and normalizes shape', () => {
     const product = {
         title: 'Samsung S23',
         category: 'Phone',
@@ -173,7 +173,7 @@ test('Gemini output cleanup removes irrelevant electronics interests and normali
     assert.doesNotMatch(JSON.stringify(cleaned), /warranty|Chattogram/i);
 });
 
-test('Gemini prompt contains privacy guardrails and safe context only', () => {
+test('OpenAI prompt contains privacy guardrails and safe context only', () => {
     const product = {
         title: 'Samsung S23',
         category: 'Phone',
@@ -182,7 +182,7 @@ test('Gemini prompt contains privacy guardrails and safe context only', () => {
     };
     const productContext = __test.sanitizeProductContext(product);
     const metrics = __test.sanitizeMetricsContext(defaultMetrics);
-    const prompt = __test.buildGeminiPrompt({
+    const prompt = __test.buildPrompt({
         productContext,
         shopContext: __test.sanitizeShopContext({ shopName: 'Demo Shop', subdomain: 'demo' }),
         detectedCategory: 'smartphone/mobile phone',

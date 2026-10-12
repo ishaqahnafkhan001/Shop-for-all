@@ -1,0 +1,405 @@
+✔ default policy templates cover refund, shipping, privacy, and terms (1.8176ms)
+✔ policy default fill only adds missing or empty policies (0.2892ms)
+✔ new shop registration seeds editable default policies (0.515ms)
+✔ store builder and public storefront responses apply missing policy defaults without changing shape (4.2613ms)
+✔ policy backfill script supports dry-run and does not overwrite edited policies (0.7125ms)
+✔ storefront policy pages use default fallback content and reject invalid policy types (1.14ms)
+✔ Essential Store Branding is available to every plan without unlocking Store Builder (1.2166ms)
+✔ legacy Shop and published-theme identity derives without mutating premium theme data (1.2055ms)
+✔ explicit branding is never overwritten, while unremoved legacy assets remain compatible (0.3186ms)
+✔ custom CTA validation accepts safe destinations and rejects scriptable or administrative URLs (0.7118ms)
+✔ branding update DTO rejects unknown fields before persistence (0.5384ms)
+✔ Beginner public theme receives one safe branding hero and no premium layout mutation (0.3893ms)
+✔ dedicated branding APIs are tenant-authenticated, permission checked, and independently feature gated (1.7902ms)
+✔ live renderer hides empty heroes and never inserts generic promotional claims (0.6228ms)
+✔ admin exposes a separate all-plan branding page without exposing Store Builder (0.7881ms)
+(node:16880) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/theme.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ store builder color controls are centralized in the Colors panel (43.518ms)
+✔ product card renderer lets Color section values override legacy product card colors (107.2785ms)
+✔ advanced legacy color edits are mirrored to authoritative storefront color groups (5.4094ms)
+✔ storefront color groups persist and apply across all storefront page wrappers (1.7283ms)
+✔ product edit image updates preserve kept images and submit new files through multipart contract (2.9659ms)
+✔ new shops use the shared wishlist default (14.7359ms)
+✔ new shops use the shared catalog title default (5.1786ms)
+✔ contract-valid Editorial catalog spacing survives schema validation and hydration (30.9177ms)
+✔ legacy sparse records retain their historical persistence defaults on hydration (20.1858ms)
+✔ explicit saved wishlist and catalog title values survive construction and hydration (39.1008ms)
+✔ all prebuilt theme configurations survive schema and hydration without presentation drift (146.3942ms)
+✔ every registered Store Builder section has a complete, stable contract (14.5641ms)
+✔ theme contract migrates legacy sections and rejects unsupported section types (0.5197ms)
+✔ theme sanitizer strips unsupported fields and neutralizes stored-content attacks (0.3762ms)
+✔ representative theme survives Mongoose schema and shared normalization round trip (17.5212ms)
+✔ capability metadata is backend-driven and plan aware (0.3532ms)
+✔ vendor dashboard navigation is registry-driven, grouped, and account scoped (2.0737ms)
+✔ store builder shell separates navigation, preview, inspector, issues, and history (4.0526ms)
+✔ custom domain is a separate plan-gated dashboard workspace (2.0838ms)
+✔ dynamic Store Builder sections use stable ids for selection and duplication (0.7505ms)
+✔ store builder polish keeps editing contextual and preview controls focused (38.8159ms)
+✔ Homepage SEO routes reuse Store Builder permission, feature, and suspension guards (0.6812ms)
+✔ Homepage SEO draft and revision records include aliases and shared revision protection (1.4937ms)
+✔ standalone Homepage SEO page is deep-linkable and preserves local drafts on conflict (1.7626ms)
+✔ prebuilt registry contains nine immutable, unique, valid production themes (65.7329ms)
+✔ each v2 preset exposes the curated structural signature supported by the shared renderer (0.4649ms)
+✔ every preset resolves deterministically and validates through the shared contract (49.9021ms)
+✔ all full-plan presets follow their blueprints when safe merchant content is available (33.0608ms)
+✔ the nine themes no longer collapse into two effective section structures (63.8386ms)
+✔ paired industries remain distinguishable without relying on color (0.87ms)
+✔ applying a preset preserves merchant content and selected commerce data (2.8604ms)
+✔ missing merchant content never creates fake story, review, FAQ, promotion, trust, or newsletter copy (1.7714ms)
+✔ preset-owned presentation wins while populated merchant content and unmatched sections survive (2.8121ms)
+✔ duplicate preset-controlled sections are retained but cannot alter the enabled blueprint sequence (3.0668ms)
+✔ limited plan resolution preserves restricted layout and section fields accepted by backend policy (31.5166ms)
+✔ preset application refuses unavailable access and unknown presets without mutating the draft (1.2566ms)
+✔ prebuilt catalog has an isolated package export and is not imported by live storefront source (15.6056ms)
+✔ every gallery thumbnail is local, lightweight, lazy loaded, and mapped to a catalog theme (4.966ms)
+✔ theme cards and full previews resolve the same merchant-owned hero banner (22.1109ms)
+✔ legacy card values remain explicit even when equal to another style default (4.7406ms)
+✔ explicit inheritance resolves style defaults over stale materialized values (2.2521ms)
+✔ style selection resets only style-owned fields and does not mutate the input (0.5707ms)
+✔ an edit equal to the current default becomes an explicit override (0.7018ms)
+✔ an empty inheritance list preserves every explicit style value (2.3855ms)
+✔ inheritance metadata survives schema validation, serialization, and hydration (45.5995ms)
+✔ invalid inheritance metadata cannot target unrelated properties (1.1362ms)
+✔ applying a preset replaces prior card inheritance with the curated presentation (43.4122ms)
+✔ foreground edits reach the authoritative text color and survive persistence (279.9924ms)
+✔ explicit nested colors win within an update regardless of key order (2.256ms)
+✔ nested text and price edits synchronize only unambiguous aliases (0.7341ms)
+✔ soft color alias precedence is deterministic and preserves the separate soft shade (1.873ms)
+✔ incomplete input is retained without propagating invalid aliases (0.8295ms)
+✔ no-op updates preserve all nine saved presets and explicit edits are localized (31.2565ms)
+✔ explicit palette choices override generated shades while nested choices remain authoritative (8.687ms)
+✔ generated brand colors retain the intentionally distinct checkout shade (0.4537ms)
+✔ all nine presets select a registered composition; three representatives select distinct structures (211.857ms)
+✔ old preset IDs and unknown composition values keep the legacy structure until explicit reapplication (9.3285ms)
+✔ composition survives strict persistence and respects existing plan boundaries (102.9923ms)
+✔ composition partition preserves every section once, original indexes and residual merchant order (0.7856ms)
+✔ actual representative home renders contain distinct hierarchy with one hero and each merchant section once (331.6539ms)
+✔ empty and hidden featured content does not reserve composition columns or create fake content (35.7794ms)
+✔ composition forwards existing commerce callbacks, data and editor selection without replacements (8.9555ms)
+(node:11908) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/defaultPolicies.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all new-store presentation defaults equal the shared contract; historical empty values survive (31.8817ms)
+✔ canonical layers distinguish omission, explicit default values, clears, and responsive values (6.2599ms)
+✔ legacy versions resolve without rewriting inputs or reapplying a preset over merchant edits (12.072ms)
+✔ future schema versions remain identifiable on reads and are rejected for writes (1.5234ms)
+✔ safe unknown root and nested fields survive strict schema round trips in an opaque archive (27.976ms)
+✔ compatibility data cannot introduce prototype or Mongo operator keys (0.4263ms)
+✔ all presets preserve presentation and responsive settings across plans and repeated resolution (146.1246ms)
+✔ limited-plan canonical no-op saves pass, actual restricted changes still fail (2.6917ms)
+✔ policy fallbacks are identical across Admin, storefront, and server; merchant text wins (22.1256ms)
+✔ public adapter and storefront facade resolve identically with tenant-scoped environment inputs (19.8987ms)
+✔ actual public settings, shop-info and bootstrap handlers return identical effective themes for two tenants (123.0463ms)
+✔ actual Builder preview passes canonical themes to every renderer across presets and plan contexts (441.6631ms)
+✔ save normalization rejects newer current/incoming themes before external work and allows safe read-only inspection (2.6422ms)
+✔ branding environment loader scopes asset and CTA lookups to each tenant (1.5881ms)
+✔ absent hero fields inherit legacy values only on the first slide (192.3707ms)
+✔ explicit empty hero strings stay cleared through repeated normalization (2.953ms)
+✔ an explicit empty slide array is not repopulated from the legacy image (1.3935ms)
+✔ Builder, shared renderer, and contract preserve zero coordinates and false flags (0.6618ms)
+✔ Builder synchronization preserves explicit image and CTA clears (0.5891ms)
+✔ null inherits nonnullable hero fields while existing nullable metadata can clear (0.6569ms)
+✔ Builder preserves typing whitespace and contract still sanitizes stored content (0.8214ms)
+✔ already normalized legacy slides retain explicit values in both consumers (0.5165ms)
+✔ all hero variants render cleared copy and links without reviving legacy values (28.808ms)
+✔ legacy themes receive current-equivalent structural defaults (4.9601ms)
+✔ all supported structural variants survive normalization with merchant content (7.7103ms)
+✔ unknown variants normalize safely and validation identifies direct invalid payloads (1.4353ms)
+✔ unsupported storefront sections fail closed while every registered legacy section has an explicit renderer (0.9479ms)
+✔ customer-facing product and trust empty states do not invent factual claims (1.1344ms)
+✔ storefront stock filter is interactive and reaches the existing tenant-scoped product query (0.6506ms)
+✔ limited Store Builder access cannot change structural variants directly (8.4156ms)
+✔ shared renderer consumes configuration variants without preset registry knowledge (1.0416ms)
+✔ Store Builder phone and tablet previews do not inherit outer desktop hero breakpoints (0.4822ms)
+✖ Store Builder structural controls tolerate an older Vite-optimized theme contract (2.465ms)
+✔ representative stores can select different structures using configuration alone (0.6065ms)
+✔ container width helpers activate supported values and preserve the legacy default (5.8518ms)
+✔ section spacing, width, padding, and margin use allowlisted design tokens (1.2964ms)
+✔ product column helpers respect section-specific settings and clamp unsafe values (1.0565ms)
+✔ typography and product-card style normalize through safe supported values (6.2095ms)
+✔ hero overlay opacity is bounded and consumed by a localized readability layer (0.6849ms)
+✔ shared renderer consumes Phase 2 controls without preset-ID conditionals (3.3474ms)
+✔ four diagnostic themes retain distinct resolved non-color design controls (3.7296ms)
+✔ partial nested Builder edits retain merchant siblings instead of reverting to defaults (139.5951ms)
+✔ raw patch distinguishes absence from explicit values without normalizing typing (1.7167ms)
+✔ arrays replace atomically including empty values and inheritance metadata (0.3164ms)
+✔ null clears only existing nullable paths and cannot reset an entire group (0.2545ms)
+✔ partial card edits become explicit unless the patch supplies inheritance metadata (5.9783ms)
+✔ patch results share no mutable objects with either input and ignore prototype keys (1.3361ms)
+✔ snapshot loads preserve the previous full-load behavior for sparse and saved themes (36.4032ms)
+✔ normalizing after the merge keeps sanitization in force (0.4469ms)
+ℹ tests 126
+ℹ suites 0
+ℹ pass 125
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2239.0932
+
+✖ failing tests:
+
+test at tests\storefront-structural-variants.test.js:185:1
+✖ Store Builder structural controls tolerate an older Vite-optimized theme contract (2.465ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /import themeContract, \{ SECTION_REGISTRY \}/. Input:
+  
+  'import {\r\n' +
+    '    CreditCard,\r\n' +
+    '    FileText,\r\n' +
+    '    LayoutTemplate,\r\n' +
+    '    Link as LinkIcon,\r\n' +
+    '    Palette,\r\n' +
+    '    Search,\r\n' +
+    '    ShoppingBag,\r\n' +
+    '    Smartphone\r\n' +
+    "} from 'lucide-react';\r\n" +
+    "import { SECTION_REGISTRY, STRUCTURAL_VARIANTS } from '@scaleup/storefront-theme';\r\n" +
+    '\r\n' +
+    'export const HISTORY_LIMIT = 30;\r\n' +
+    'export const HERO_SLIDE_LIMIT = 5;\r\n' +
+    '\r\n' +
+    'const VARIANT_LABELS = Object.freeze({\r\n' +
+    "    standard: 'Standard', minimal: 'Minimal', centered: 'Centered',\r\n" +
+    "    fullBleed: 'Full width', split: 'Split', editorial: 'Editorial',\r\n" +
+    "    cards: 'Cards', imageGrid: 'Image grid', circles: 'Circles',\r\n" +
+    "    imageLeft: 'Image left', imageRight: 'Image right', fullWidth: 'Full width',\r\n" +
+    "    grid: 'Grid', spacious: 'Spacious', mosaic: 'Mosaic', quote: 'Quote',\r\n" +
+    "    boxed: 'Boxed', overlay: 'Image overlay', strip: 'Compact strip'\r\n" +
+    '});\r\n' +
+    '\r\n' +
+    'const optionsFromContract = contract => (contract?.values || []).map(value => ({ value, label: VARIANT_LABELS[value] || value }));\r\n' +
+    '\r\n' +
+    'export const headerVariantOptions = optionsFromContract(STRUCTURAL_VARIANTS.header);\r\n' +
+    'export const heroVariantOptions = optionsFromContract(STRUCTURAL_VARIANTS.hero);\r\n' +
+    'export const sectionVariantOptions = Object.fromEntries(\r\n' +
+    '    Object.entries(STRUCTURAL_VARIANTS.sections)\r\n' +
+    '        .map(([type, contract]) => [type, optionsFromContract(contract)])\r\n' +
+    ');\r\n' +
+    '\r\n' +
+    'export const inlineSectionPresets = [\r\n' +
+    '    {\r\n' +
+    "        templateId: 'featured-products',\r\n" +
+    "        label: 'Featured Products',\r\n" +
+    "        type: 'FeaturedProducts',\r\n" +
+    "        title: 'Featured products',\r\n" +
+    "        description: 'Show a handpicked row of products.',\r\n" +
+    "        useCase: 'Best for best sellers, launches, and seasonal picks.',\r\n" +
+    "        thumbnail: 'grid',\r\n" +
+    "        settings: { visualLabel: 'Featured Products', productIds: [], source: { type: 'manual', productIds: [] } },\r\n" +
+    "        source: { type: 'manual', productIds: [] },\r\n" +
+    '        mobileSettings: { columns: 2, isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'category-showcase',\r\n" +
+    "        label: 'Category Showcase',\r\n" +
+    "        type: 'CategoryList',\r\n" +
+    "        title: 'Shop by category',\r\n" +
+    "        description: 'Help shoppers jump into popular categories.',\r\n" +
+    "        useCase: 'Best for stores with several product families.',\r\n" +
+    "        thumbnail: 'chips',\r\n" +
+    "        settings: { visualLabel: 'Category Showcase', variant: 'cards', maxCategories: 10, columns: 4 },\r\n" +
+    '        mobileSettings: { columns: 2, isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'image-banner',\r\n" +
+    "        label: 'Image Banner',\r\n" +
+    "        type: 'Banner',\r\n" +
+    "        title: 'Promotional banner',\r\n" +
+    "        description: 'Full-width campaign image with text and button.',\r\n" +
+    "        useCase: 'Best for sales, offers, and collection highlights.',\r\n" +
+    "        thumbnail: 'image',\r\n" +
+    "        settings: { visualLabel: 'Image Banner', variant: 'overlay', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: 'Limited offer', subtitle: 'Add a short campaign message.', buttonText: 'Shop now', buttonLink: '/' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'image-text',\r\n" +
+    "        label: 'Image + Text',\r\n" +
+    "        type: 'BrandStory',\r\n" +
+    "        title: 'Brand highlight',\r\n" +
+    "        description: 'Pair a story, benefit, or offer with rich copy.',\r\n" +
+    "        useCase: 'Best for explaining quality, materials, or brand values.',\r\n" +
+    "        thumbnail: 'split',\r\n" +
+    "        settings: { visualLabel: 'Image + Text', variant: 'imageLeft', text: 'Tell customers why this collection matters.' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'testimonials',\r\n" +
+    "        label: 'Testimonials',\r\n" +
+    "        type: 'Reviews',\r\n" +
+    "        title: 'Customer reviews',\r\n" +
+    "        description: 'Show selected 5-star reviews or a custom quote.',\r\n" +
+    "        useCase: 'Best for trust and social proof.',\r\n" +
+    "        thumbnail: 'quotes',\r\n" +
+    "        settings: { visualLabel: 'Testimonials', variant: 'cards', mode: 'text', reviewIds: [], text: 'Share customer quotes and social proof.' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'promo-strip',\r\n" +
+    "        label: 'Promo Strip',\r\n" +
+    "        type: 'PromoBlock',\r\n" +
+    "        title: 'Today’s offer',\r\n" +
+    "        description: 'Compact announcement for a quick promotion.',\r\n" +
+    "        useCase: 'Best for free shipping, COD, or flash deals.',\r\n" +
+    "        thumbnail: 'strip',\r\n" +
+    "        settings: { visualLabel: 'Promo Strip', variant: 'strip', text: 'Free delivery on selected products today.' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'faq',\r\n" +
+    "        label: 'FAQ',\r\n" +
+    "        type: 'FAQ',\r\n" +
+    "        title: 'Common questions',\r\n" +
+    "        description: 'Answer buying questions before checkout.',\r\n" +
+    "        useCase: 'Best for delivery, returns, sizing, and payment details.',\r\n" +
+    "        thumbnail: 'list',\r\n" +
+    "        settings: { visualLabel: 'FAQ', text: 'Q: How long does delivery take?\\nA: Add your answer here.' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'newsletter',\r\n" +
+    "        label: 'Newsletter',\r\n" +
+    "        type: 'Newsletter',\r\n" +
+    "        title: 'Join our updates',\r\n" +
+    "        description: 'Invite shoppers to follow future launches.',\r\n" +
+    "        useCase: 'Best for repeat purchase and audience building.',\r\n" +
+    "        thumbnail: 'mail',\r\n" +
+    "        settings: { visualLabel: 'Newsletter', variant: 'boxed', text: 'Get product updates, offers, and launches.' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'brand-story',\r\n" +
+    "        label: 'Brand Story',\r\n" +
+    "        type: 'BrandStory',\r\n" +
+    "        title: 'Our story',\r\n" +
+    "        description: 'Create a short credibility-building brand block.',\r\n" +
+    "        useCase: 'Best for premium, local, or handmade stores.',\r\n" +
+    "        thumbnail: 'story',\r\n" +
+    "        settings: { visualLabel: 'Brand Story', variant: 'imageLeft', text: 'Share what makes your store different.' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'trust-badges',\r\n" +
+    "        label: 'Trust Badges',\r\n" +
+    "        type: 'TrustBadges',\r\n" +
+    "        title: 'Why shop with us',\r\n" +
+    "        description: 'Highlight secure payment, fast delivery, and support.',\r\n" +
+    "        useCase: 'Best before All Products or checkout-focused content.',\r\n" +
+    "        thumbnail: 'badges',\r\n" +
+    "        settings: { visualLabel: 'Trust Badges', text: 'Secure checkout · Fast delivery · Easy support' },\r\n" +
+    '        mobileSettings: { isVisible: true }\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        templateId: 'collection-grid',\r\n" +
+    "        label: 'Collection Grid',\r\n" +
+    "        type: 'CategoryList',\r\n" +
+    "        title: 'Explore collections',\r\n" +
+    "        description: 'Use category cards as a future-ready collection grid.',\r\n" +
+    "        useCase: 'Best for stores planning collection pages later.',\r\n" +
+    "        thumbnail: 'collections',\r\n" +
+    "        settings: { visualLabel: 'Collection Grid', variant: 'imageGrid', maxCategories: 8, columns: 4 },\r\n" +
+    '        mobileSettings: { columns: 2, isVisible: true }\r\n' +
+    '    }\r\n' +
+    '];\r\n' +
+    '\r\n' +
+    'export const editorSectionOptions = Object.entries(SECTION_REGISTRY)\r\n' +
+    '    .filter(([, definition]) => definition.editorEnabled !== false)\r\n' +
+    '    .map(([value, definition]) => ({ value, label: definition.label }));\r\n' +
+    '\r\n' +
+    "export const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';\r\n" +
+    '\r\n' +
+    'export const settingsGroups = [\r\n' +
+    "    { id: 'brand', label: 'Brand', icon: Palette, description: 'Logo and store identity' },\r\n" +
+    "    { id: 'colors', label: 'Colors', icon: Palette, description: 'Brand colors and page surfaces' },\r\n" +
+    "    { id: 'typography', label: 'Typography', icon: LayoutTemplate, description: 'Fonts and heading weight' },\r\n" +
+    "    { id: 'layout', label: 'Layout', icon: LayoutTemplate, description: 'Width, spacing, and product grid' },\r\n" +
+    "    { id: 'products', label: 'Product cards', icon: ShoppingBag, description: 'Product grid appearance' },\r\n" +
+    "    { id: 'checkout', label: 'Checkout', icon: CreditCard, description: 'Checkout trust and branding' },\r\n" +
+    "    { id: 'mobile', label: 'Mobile', icon: Smartphone, description: 'Small-screen controls' },\r\n" +
+    "    { id: 'policies', label: 'Policies', icon: FileText, description: 'Refund, shipping, privacy, terms' }\r\n" +
+    '];\r\n' +
+    '\r\n' +
+    'export const structureTree = [\r\n' +
+    '    {\r\n' +
+    "        id: 'header',\r\n" +
+    "        label: 'Navbar',\r\n" +
+    "        group: 'navigation',\r\n" +
+    '        children: [\r\n' +
+    "            { id: 'logo', label: 'Logo', group: 'brand' },\r\n" +
+    "            { id: 'navigation', label: 'Navigation', group: 'navigation' }\r\n" +
+    '        ]\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        id: 'homepage',\r\n" +
+    "        label: 'Homepage',\r\n" +
+    "        group: 'sections',\r\n" +
+    '        children: [\r\n' +
+    "            { id: 'hero', label: 'Hero / Banner', group: 'hero' },\r\n" +
+    "            { id: 'sections', label: 'Dynamic sections', group: 'sections' },\r\n" +
+    "            { id: 'allProducts', label: 'All products', group: 'products' }\r\n" +
+    '        ]\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        id: 'checkout',\r\n" +
+    "        label: 'Checkout',\r\n" +
+    "        group: 'checkout',\r\n" +
+    '        children: [\r\n' +
+    "            { id: 'checkoutBranding', label: 'Branding', group: 'checkout' },\r\n" +
+    "            { id: 'policies', label: 'Policies', group: 'policies' }\r\n" +
+    '        ]\r\n' +
+    '    },\r\n' +
+    '    {\r\n' +
+    "        id: 'footer',\r\n" +
+    "        label: 'Footer',\r\n" +
+    "        group: 'footer',\r\n" +
+    '        children: [\r\n' +
+    "            { id: 'footerText', label: 'Brand story', group: 'footer' },\r\n" +
+    "            { id: 'footerSocial', label: 'Contact and social links', group: 'footer' },\r\n" +
+    "            { id: 'footerLinks', label: 'Support links', group: 'footer' }\r\n" +
+    '        ]\r\n' +
+    '    }\r\n' +
+    '];\r\n' +
+    '\r\n' +
+    'export const groupElementMap = {\r\n' +
+    "    brand: 'logo',\r\n" +
+    "    colors: 'themeColors',\r\n" +
+    "    typography: 'typography',\r\n" +
+    "    layout: 'layout',\r\n" +
+    "    navigation: 'navigation',\r\n" +
+    "    hero: 'hero',\r\n" +
+    "    seo: 'homepageSeo',\r\n" +
+    "    products: 'productCard',\r\n" +
+    "    sections: 'sections',\r\n" +
+    "    checkout: 'checkoutBranding',\r\n" +
+    "    mobile: 'mobile',\r\n" +
+    "    footer: 'footer',\r\n" +
+    "    policies: 'policies'\r\n" +
+    '};\r\n' +
+    '\r\n' +
+    'export const storeLayoutItems = [\r\n' +
+    '    {\r\n' +
+    "        id: 'navbar',\r\n" +
+    "        label: 'Navbar',\r\n" +
+    "        description: 'Logo and top menu',\r\n" +
+    "        target: 'header',\r\n" +
+    "        group: 'navigation',\r\n" +
+    '        icon: LinkIcon,\r\n' +
+    '        locked: true,\r'... 8702 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-structural-variants.test.js:188:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "import {\r\n    CreditCard,\r\n    FileText,\r\n    LayoutTemplate,\r\n    Link as LinkIcon,\r\n    Palette,\r\n    Search,\r\n    ShoppingBag,\r\n    Smartphone\r\n} from 'lucide-react';\r\nimport { SECTION_REGISTRY, STRUCTURAL_VARIANTS } from '@scaleup/storefront-theme';\r\n\r\nexport const HISTORY_LIMIT = 30;\r\nexport const HERO_SLIDE_LIMIT = 5;\r\n\r\nconst VARIANT_LABELS = Object.freeze({\r\n    standard: 'Standard', minimal: 'Minimal', centered: 'Centered',\r\n    fullBleed: 'Full width', split: 'Split', editorial: 'Editorial',\r\n    cards: 'Cards', imageGrid: 'Image grid', circles: 'Circles',\r\n    imageLeft: 'Image left', imageRight: 'Image right', fullWidth: 'Full width',\r\n    grid: 'Grid', spacious: 'Spacious', mosaic: 'Mosaic', quote: 'Quote',\r\n    boxed: 'Boxed', overlay: 'Image overlay', strip: 'Compact strip'\r\n});\r\n\r\nconst optionsFromContract = contract => (contract?.values || []).map(value => ({ value, label: VARIANT_LABELS[value] || value }));\r\n\r\nexport const headerVariantOptions = optionsFromContract(STRUCTURAL_VARIANTS.header);\r\nexport const heroVariantOptions = optionsFromContract(STRUCTURAL_VARIANTS.hero);\r\nexport const sectionVariantOptions = Object.fromEntries(\r\n    Object.entries(STRUCTURAL_VARIANTS.sections)\r\n        .map(([type, contract]) => [type, optionsFromContract(contract)])\r\n);\r\n\r\nexport const inlineSectionPresets = [\r\n    {\r\n        templateId: 'featured-products',\r\n        label: 'Featured Products',\r\n        type: 'FeaturedProducts',\r\n        title: 'Featured products',\r\n        description: 'Show a handpicked row of products.',\r\n        useCase: 'Best for best sellers, launches, and seasonal picks.',\r\n        thumbnail: 'grid',\r\n        settings: { visualLabel: 'Featured Products', productIds: [], source: { type: 'manual', productIds: [] } },\r\n        source: { type: 'manual', productIds: [] },\r\n        mobileSettings: { columns: 2, isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'category-showcase',\r\n        label: 'Category Showcase',\r\n        type: 'CategoryList',\r\n        title: 'Shop by category',\r\n        description: 'Help shoppers jump into popular categories.',\r\n        useCase: 'Best for stores with several product families.',\r\n        thumbnail: 'chips',\r\n        settings: { visualLabel: 'Category Showcase', variant: 'cards', maxCategories: 10, columns: 4 },\r\n        mobileSettings: { columns: 2, isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'image-banner',\r\n        label: 'Image Banner',\r\n        type: 'Banner',\r\n        title: 'Promotional banner',\r\n        description: 'Full-width campaign image with text and button.',\r\n        useCase: 'Best for sales, offers, and collection highlights.',\r\n        thumbnail: 'image',\r\n        settings: { visualLabel: 'Image Banner', variant: 'overlay', desktopImage: '', mobileImage: '', desktopImages: [], mobileImages: [], title: 'Limited offer', subtitle: 'Add a short campaign message.', buttonText: 'Shop now', buttonLink: '/' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'image-text',\r\n        label: 'Image + Text',\r\n        type: 'BrandStory',\r\n        title: 'Brand highlight',\r\n        description: 'Pair a story, benefit, or offer with rich copy.',\r\n        useCase: 'Best for explaining quality, materials, or brand values.',\r\n        thumbnail: 'split',\r\n        settings: { visualLabel: 'Image + Text', variant: 'imageLeft', text: 'Tell customers why this collection matters.' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'testimonials',\r\n        label: 'Testimonials',\r\n        type: 'Reviews',\r\n        title: 'Customer reviews',\r\n        description: 'Show selected 5-star reviews or a custom quote.',\r\n        useCase: 'Best for trust and social proof.',\r\n        thumbnail: 'quotes',\r\n        settings: { visualLabel: 'Testimonials', variant: 'cards', mode: 'text', reviewIds: [], text: 'Share customer quotes and social proof.' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'promo-strip',\r\n        label: 'Promo Strip',\r\n        type: 'PromoBlock',\r\n        title: 'Today’s offer',\r\n        description: 'Compact announcement for a quick promotion.',\r\n        useCase: 'Best for free shipping, COD, or flash deals.',\r\n        thumbnail: 'strip',\r\n        settings: { visualLabel: 'Promo Strip', variant: 'strip', text: 'Free delivery on selected products today.' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'faq',\r\n        label: 'FAQ',\r\n        type: 'FAQ',\r\n        title: 'Common questions',\r\n        description: 'Answer buying questions before checkout.',\r\n        useCase: 'Best for delivery, returns, sizing, and payment details.',\r\n        thumbnail: 'list',\r\n        settings: { visualLabel: 'FAQ', text: 'Q: How long does delivery take?\\nA: Add your answer here.' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'newsletter',\r\n        label: 'Newsletter',\r\n        type: 'Newsletter',\r\n        title: 'Join our updates',\r\n        description: 'Invite shoppers to follow future launches.',\r\n        useCase: 'Best for repeat purchase and audience building.',\r\n        thumbnail: 'mail',\r\n        settings: { visualLabel: 'Newsletter', variant: 'boxed', text: 'Get product updates, offers, and launches.' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'brand-story',\r\n        label: 'Brand Story',\r\n        type: 'BrandStory',\r\n        title: 'Our story',\r\n        description: 'Create a short credibility-building brand block.',\r\n        useCase: 'Best for premium, local, or handmade stores.',\r\n        thumbnail: 'story',\r\n        settings: { visualLabel: 'Brand Story', variant: 'imageLeft', text: 'Share what makes your store different.' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'trust-badges',\r\n        label: 'Trust Badges',\r\n        type: 'TrustBadges',\r\n        title: 'Why shop with us',\r\n        description: 'Highlight secure payment, fast delivery, and support.',\r\n        useCase: 'Best before All Products or checkout-focused content.',\r\n        thumbnail: 'badges',\r\n        settings: { visualLabel: 'Trust Badges', text: 'Secure checkout · Fast delivery · Easy support' },\r\n        mobileSettings: { isVisible: true }\r\n    },\r\n    {\r\n        templateId: 'collection-grid',\r\n        label: 'Collection Grid',\r\n        type: 'CategoryList',\r\n        title: 'Explore collections',\r\n        description: 'Use category cards as a future-ready collection grid.',\r\n        useCase: 'Best for stores planning collection pages later.',\r\n        thumbnail: 'collections',\r\n        settings: { visualLabel: 'Collection Grid', variant: 'imageGrid', maxCategories: 8, columns: 4 },\r\n        mobileSettings: { columns: 2, isVisible: true }\r\n    }\r\n];\r\n\r\nexport const editorSectionOptions = Object.entries(SECTION_REGISTRY)\r\n    .filter(([, definition]) => definition.editorEnabled !== false)\r\n    .map(([value, definition]) => ({ value, label: definition.label }));\r\n\r\nexport const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || 'Section';\r\n\r\nexport const settingsGroups = [\r\n    { id: 'brand', label: 'Brand', icon: Palette, description: 'Logo and store identity' },\r\n    { id: 'colors', label: 'Colors', icon: Palette, description: 'Brand colors and page surfaces' },\r\n    { id: 'typography', label: 'Typography', icon: LayoutTemplate, description: 'Fonts and heading weight' },\r\n    { id: 'layout', label: 'Layout', icon: LayoutTemplate, description: 'Width, spacing, and product grid' },\r\n    { id: 'products', label: 'Product cards', icon: ShoppingBag, description: 'Product grid appearance' },\r\n    { id: 'checkout', label: 'Checkout', icon: CreditCard, description: 'Checkout trust and branding' },\r\n    { id: 'mobile', label: 'Mobile', icon: Smartphone, description: 'Small-screen controls' },\r\n    { id: 'policies', label: 'Policies', icon: FileText, description: 'Refund, shipping, privacy, terms' }\r\n];\r\n\r\nexport const structureTree = [\r\n    {\r\n        id: 'header',\r\n        label: 'Navbar',\r\n        group: 'navigation',\r\n        children: [\r\n            { id: 'logo', label: 'Logo', group: 'brand' },\r\n            { id: 'navigation', label: 'Navigation', group: 'navigation' }\r\n        ]\r\n    },\r\n    {\r\n        id: 'homepage',\r\n        label: 'Homepage',\r\n        group: 'sections',\r\n        children: [\r\n            { id: 'hero', label: 'Hero / Banner', group: 'hero' },\r\n            { id: 'sections', label: 'Dynamic sections', group: 'sections' },\r\n            { id: 'allProducts', label: 'All products', group: 'products' }\r\n        ]\r\n    },\r\n    {\r\n        id: 'checkout',\r\n        label: 'Checkout',\r\n        group: 'checkout',\r\n        children: [\r\n            { id: 'checkoutBranding', label: 'Branding', group: 'checkout' },\r\n            { id: 'policies', label: 'Policies', group: 'policies' }\r\n        ]\r\n    },\r\n    {\r\n        id: 'footer',\r\n        label: 'Footer',\r\n        group: 'footer',\r\n        children: [\r\n            { id: 'footerText', label: 'Brand story', group: 'footer' },\r\n            { id: 'footerSocial', label: 'Contact and social links', group: 'footer' },\r\n            { id: 'footerLinks', label: 'Support links', group: 'footer' }\r\n        ]\r\n    }\r\n];\r\n\r\nexport const groupElementMap = {\r\n    brand: 'logo',\r\n    colors: 'themeColors',\r\n    typography: 'typography',\r\n    layout: 'layout',\r\n    navigation: 'navigation',\r\n    hero: 'hero',\r\n    seo: 'homepageSeo',\r\n    products: 'productCard',\r\n    sections: 'sections',\r\n    checkout: 'checkoutBranding',\r\n    mobile: 'mobile',\r\n    footer: 'footer',\r\n    policies: 'policies'\r\n};\r\n\r\nexport const storeLayoutItems = [\r\n    {\r\n        id: 'navbar',\r\n        label: 'Navbar',\r\n        description: 'Logo and top menu',\r\n        target: 'header',\r\n        group: 'navigation',\r\n        icon: LinkIcon,\r\n        locked: true,\r"... 8702 more characters,
+    expected: /import themeContract, \{ SECTION_REGISTRY \}/,
+    operator: 'match',
+    diff: 'simple'
+  }

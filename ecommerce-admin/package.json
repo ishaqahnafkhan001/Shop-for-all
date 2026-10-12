@@ -12,7 +12,6 @@
   "dependencies": {
     "@scaleup/storefront-renderer": "file:../packages/storefront-renderer",
     "@scaleup/storefront-theme": "file:../packages/storefront-theme",
-    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.15.2",
     "lucide-react": "^1.9.0",

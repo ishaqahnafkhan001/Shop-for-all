@@ -216,8 +216,8 @@ test('prebuilt registry contains nine immutable, unique, valid production themes
     const validation = validatePrebuiltThemeRegistry();
     assert.equal(validation.valid, true, JSON.stringify(validation.errors));
     assert.equal(PREBUILT_THEMES.length, 9);
-    assert.equal(PREBUILT_THEME_CATALOG_VERSION, 2);
-    assert.deepEqual(PREBUILT_THEMES.map(theme => theme.version), Array(9).fill(2));
+    assert.equal(PREBUILT_THEME_CATALOG_VERSION, 3);
+    assert.deepEqual(PREBUILT_THEMES.map(theme => theme.version), [2, 2, 2, 3, 3, 2, 2, 3, 2]);
     assert.equal(getPrebuiltThemes().length, 9);
     assert.equal(new Set(PREBUILT_THEMES.map(theme => theme.id)).size, 9);
     assert.equal(Object.isFrozen(PREBUILT_THEMES), true);
@@ -513,24 +513,6 @@ test('prebuilt catalog has an isolated package export and is not imported by liv
     assert.equal(importsCatalog, false);
 });
 
-test('every gallery thumbnail is local, lightweight, lazy loaded, and mapped to a catalog theme', () => {
-    const repositoryRoot = path.resolve(__dirname, '../../..');
-    const thumbnailRoot = path.join(repositoryRoot, 'ecommerce-admin/src/assets/theme-previews');
-    const gallerySource = fs.readFileSync(path.join(repositoryRoot, 'ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx'), 'utf8');
-
-    assert.match(gallerySource, /loading="lazy"/);
-    assert.match(gallerySource, /decoding="async"/);
-    for (const preset of PREBUILT_THEMES) {
-        const file = path.join(thumbnailRoot, `${preset.thumbnailKey}.svg`);
-        assert.equal(fs.existsSync(file), true, preset.id);
-        assert.ok(fs.statSync(file).size < 25_000, `${preset.id} thumbnail must remain lightweight`);
-        const thumbnail = fs.readFileSync(file, 'utf8');
-        assert.match(thumbnail, /data-preset-version="2"/, preset.id);
-        assert.match(thumbnail, new RegExp(`data-structure="[^"]*${preset.presentation.header.variant}[^"]*${preset.presentation.hero.variant}`), preset.id);
-        assert.match(gallerySource, new RegExp(`['"]${preset.thumbnailKey}['"]`), preset.id);
-    }
-});
-
 test('theme cards and full previews resolve the same merchant-owned hero banner', () => {
     const repositoryRoot = path.resolve(__dirname, '../../..');
     const gallerySource = fs.readFileSync(path.join(repositoryRoot, 'ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx'), 'utf8');
@@ -549,6 +531,6 @@ test('theme cards and full previews resolve the same merchant-owned hero banner'
 
     assert.match(gallerySource, /cardPreviewThemes\.get\(theme\.id\)/);
     assert.match(gallerySource, /buildPreviewTheme\(\{ currentTheme, presetId: theme\.id, planAccess \}\)/);
-    assert.match(gallerySource, /getBuilderHeroSlides\(hero\)/);
-    assert.match(gallerySource, /data-preview-banner-source="resolved-draft"/);
+    assert.match(gallerySource, /<StorefrontPreview[^>]*theme=\{resolvedTheme\}[^>]*thumbnail/);
+    assert.doesNotMatch(gallerySource, /ThemeBannerSnapshot|theme-previews\//);
 });

@@ -19,6 +19,7 @@ const { upload } = require('../config/cloudinary');
 // Store Controllers
 const {
     getStoreInfo,
+    getStorefrontThemeRevision,
     getStorefrontBootstrap,
     getStorefrontSitemapData,
     getStorefrontSlugRedirect,
@@ -95,6 +96,8 @@ router.get(
     resolveTenant,
     getStorefrontBootstrap
 );
+
+router.get('/:subdomain/theme-revision', resolveTenant, getStorefrontThemeRevision);
 
 router.get(
     '/:subdomain/info',

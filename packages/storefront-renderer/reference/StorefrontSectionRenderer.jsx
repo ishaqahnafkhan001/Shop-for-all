@@ -39,6 +39,7 @@ export const HomepageSection = memo(function HomepageSection({
     productCard,
     sectionColors = {},
     layout,
+    mobile,
     onProductAdd,
     onProductBuyNow,
     onWishlistToggle,
@@ -64,14 +65,14 @@ export const HomepageSection = memo(function HomepageSection({
     const stableSectionId = section.id || section._id;
     const editorId = stableSectionId ? `section:${stableSectionId}` : `section-${Number.isFinite(sectionIndex) ? sectionIndex : section.type}`;
     const editorLabel = getSectionDisplayLabel(section);
-    const sectionLayout = getSectionLayout(layout);
+    const sectionLayout = getSectionLayout(layout, mobile);
     const contentGapClass = getContentGapClass(section.settings?.spacing, layout?.contentSpacing, layout?.productGap);
     const frame = (content) => <EditorSelectionFrame editor={editor} id={editorId} label={editorLabel}>{content}</EditorSelectionFrame>;
 
     if (section.type === "FeaturedProducts") {
         const columns = resolveFeaturedProductColumns(section, layout);
         const products = sectionProducts?.[stableSectionId] || catalogProducts.slice(0, Math.max(4, columns.desktop));
-        const mobileGridClass = columns.mobile === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2";
+        const mobileGridClass = columns.mobile === 1 ? "grid-cols-1" : "grid-cols-2";
         const liveGridClass = `${mobileGridClass} ${tabletGridClasses[columns.tablet]} ${desktopGridClasses[columns.desktop]}`;
         const featuredGridClass = previewDevice
             ? (isPreviewMobile(previewDevice) ? plainGridClasses[columns.mobile] : previewDevice === "tablet" ? plainGridClasses[columns.tablet] : plainGridClasses[columns.desktop])
@@ -88,7 +89,7 @@ export const HomepageSection = memo(function HomepageSection({
                     <LinkSlot LinkComponent={LinkComponent} href="#products" className="hidden rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-[var(--sf-accent-soft)] hover:text-[var(--sf-accent)] sm:inline-flex">View all</LinkSlot>
                 </div>
                 <div className={`grid ${featuredGridClass} ${productGridGapClasses[featuredSpacing]} ${products.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
-                    {products.slice(0, Math.max(4, columns.desktop)).map((product, index) => (
+                    {products.map((product, index) => (
                         <ProductCard key={product._id} product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
                     ))}
                 </div>

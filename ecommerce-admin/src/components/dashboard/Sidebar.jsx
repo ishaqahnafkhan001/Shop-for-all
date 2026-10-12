@@ -20,6 +20,7 @@ import {
     PanelsTopLeft,
     ReceiptText,
     RefreshCcw,
+    Search,
     Settings,
     ShieldCheck,
     Truck,
@@ -95,14 +96,19 @@ const platformNavigation = {
             ]
         }
     ],
-    support: [{
-        label: 'Help',
-        items: [{ label: 'Support Center', path: '/support', icon: LifeBuoy }]
-    }]
+    support: [
+        {
+            label: 'Help',
+            items: [
+                { label: 'Support Center', path: '/support', icon: LifeBuoy }
+            ]
+        }
+    ]
 };
 
 const readExpandedGroups = (key, activeGroupId) => {
     if (typeof window === 'undefined') return activeGroupId ? [activeGroupId] : [];
+
     try {
         const stored = JSON.parse(window.localStorage.getItem(key) || '[]');
         const groups = Array.isArray(stored) ? stored.filter(Boolean) : [];
@@ -112,77 +118,166 @@ const readExpandedGroups = (key, activeGroupId) => {
     }
 };
 
+const navigationLinkClass = (isActive) => [
+    'group relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium',
+    'transition-colors duration-150 motion-reduce:transition-none',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
+    isActive
+        ? 'bg-indigo-50 text-indigo-800 shadow-sm ring-1 ring-inset ring-indigo-100 before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-full before:bg-indigo-600'
+        : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-950'
+].join(' ');
+
+const NavigationSearch = ({ value, onChange }) => (
+    <div className="px-3 pb-4 pt-4">
+        <div className="group relative">
+            <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-500"
+                aria-hidden="true"
+            />
+            <input
+                type="text"
+                inputMode="search"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                placeholder="Search navigation"
+                aria-label="Search navigation"
+                className="h-10 w-full rounded-xl border border-slate-200/90 bg-slate-50/80 pl-9 pr-9 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-500/10"
+            />
+            {value && (
+                <button
+                    type="button"
+                    onClick={() => onChange('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-200/70 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    aria-label="Clear navigation search"
+                >
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+            )}
+        </div>
+    </div>
+);
+
+const EmptySearchState = () => (
+    <div className="mx-4 rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center">
+        <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+            <Search className="h-4 w-4" aria-hidden="true" />
+        </div>
+        <p className="text-sm font-semibold text-slate-700">No pages found</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Try another search term.</p>
+    </div>
+);
+
 const VendorNavigationLink = ({ item, user, onNavigate }) => {
     const Icon = item.icon;
     const locked = !hasFeature(user, item.feature);
+
     if (locked) {
+        const unavailableFeature = FEATURE_LABELS[item.feature] || item.label;
+
         return (
             <div
-                title={`${FEATURE_LABELS[item.feature] || item.label} is not available on your current plan.`}
+                title={`${unavailableFeature} is not available on your current plan.`}
                 aria-disabled="true"
-                className="group flex min-h-11 cursor-not-allowed items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-400"
+                className="flex min-h-11 cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-slate-400"
             >
-                <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-300" aria-hidden="true" />
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-300">
+                    <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                </span>
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                <LockKeyhole className="ml-2 h-3.5 w-3.5 flex-shrink-0 text-slate-300" aria-hidden="true" />
+                <LockKeyhole className="h-3.5 w-3.5 flex-shrink-0 text-slate-300" aria-hidden="true" />
                 <span className="sr-only">Locked by current plan</span>
             </div>
         );
     }
+
     return (
         <NavLink
             to={item.path}
             end={item.path === '/dashboard'}
             onClick={onNavigate}
             aria-label={item.label}
-            className={({ isActive }) => `group flex min-h-11 items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                isActive
-                    ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-            }`}
+            className={({ isActive }) => navigationLinkClass(isActive)}
         >
-            <Icon className="mr-3 h-5 w-5 flex-shrink-0 text-slate-400 transition group-hover:text-slate-600" aria-hidden="true" />
-            <span>{item.label}</span>
+            {({ isActive }) => (
+                <>
+                    <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+                        isActive
+                            ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100'
+                            : 'text-slate-400 group-hover:text-slate-600'
+                    }`}>
+                        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                    {isActive && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-600" aria-hidden="true" />}
+                </>
+            )}
         </NavLink>
     );
 };
 
-const PlatformNavigation = ({ groups, onNavigate, user }) => (
-    <nav className="space-y-5 px-4" aria-label="Platform navigation">
-        {groups.map(group => {
-            const visibleItems = group.items.filter(item => (
-                !item.permission || hasPlatformPermission(user, item.permission)
-            ));
-            if (visibleItems.length === 0) return null;
-            return (
-                <section key={group.label} aria-labelledby={`platform-nav-${group.label.replace(/\s+/g, '-').toLowerCase()}`}>
-                    <h2 id={`platform-nav-${group.label.replace(/\s+/g, '-').toLowerCase()}`} className="mb-1.5 px-3 text-[11px] font-black uppercase tracking-wide text-slate-400">
-                        {group.label}
-                    </h2>
-                    <div className="space-y-1">
-                        {visibleItems.map(item => {
-                            const Icon = item.icon;
-                            return (
-                                <NavLink
-                                    key={item.path}
-                                    to={item.path}
-                                    end={item.path === '/super-admin' || item.path === '/support'}
-                                    onClick={onNavigate}
-                                    className={({ isActive }) => `group flex min-h-11 items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                        isActive ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                                    }`}
-                                >
-                                    <Icon className="mr-3 h-5 w-5 text-slate-400" aria-hidden="true" />
-                                    {item.label}
-                                </NavLink>
-                            );
-                        })}
-                    </div>
-                </section>
-            );
-        })}
-    </nav>
-);
+const PlatformNavigation = ({ groups, onNavigate, user, searchQuery }) => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const visibleGroups = groups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => {
+                const canAccess = !item.permission || hasPlatformPermission(user, item.permission);
+                const matchesSearch = !normalizedQuery || item.label.toLowerCase().includes(normalizedQuery);
+                return canAccess && matchesSearch;
+            })
+        }))
+        .filter((group) => group.items.length > 0);
+
+    if (visibleGroups.length === 0) return <EmptySearchState />;
+
+    return (
+        <nav className="space-y-6 px-3 pb-4" aria-label="Platform navigation">
+            {visibleGroups.map((group) => {
+                const headingId = `platform-nav-${group.label.replace(/\s+/g, '-').toLowerCase()}`;
+
+                return (
+                    <section key={group.label} aria-labelledby={headingId}>
+                        <h2
+                            id={headingId}
+                            className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400"
+                        >
+                            {group.label}
+                        </h2>
+                        <div className="space-y-1">
+                            {group.items.map((item) => {
+                                const Icon = item.icon;
+
+                                return (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        end={item.path === '/super-admin' || item.path === '/support'}
+                                        onClick={onNavigate}
+                                        className={({ isActive }) => navigationLinkClass(isActive)}
+                                    >
+                                        {({ isActive }) => (
+                                            <>
+                                                <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+                                                    isActive
+                                                        ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100'
+                                                        : 'text-slate-400 group-hover:text-slate-600'
+                                                }`}>
+                                                    <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                                                </span>
+                                                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                                                {isActive && <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-600" aria-hidden="true" />}
+                                            </>
+                                        )}
+                                    </NavLink>
+                                );
+                            })}
+                        </div>
+                    </section>
+                );
+            })}
+        </nav>
+    );
+};
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user } = useAuth();
@@ -194,23 +289,39 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         () => findActiveNavigation(groups, location.pathname),
         [groups, location.pathname]
     );
+    const activeGroupId = activeNavigation?.group?.id;
     const storageKey = getVendorNavigationStorageKey(user);
     const [navigationState, setNavigationState] = useState(() => ({
         key: storageKey,
-        expandedGroups: readExpandedGroups(storageKey, activeNavigation?.group?.id)
+        pathname: location.pathname,
+        expandedGroups: readExpandedGroups(storageKey, activeGroupId)
     }));
-    const expandedGroups = navigationState.key === storageKey
-        ? navigationState.expandedGroups
-        : readExpandedGroups(storageKey, activeNavigation?.group?.id);
-    const activeGroupId = activeNavigation?.group?.id;
-    const visibleExpandedGroups = useMemo(() => (
-        activeGroupId && !expandedGroups.includes(activeGroupId)
-            ? [...expandedGroups, activeGroupId]
-            : expandedGroups
-    ), [activeGroupId, expandedGroups]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    const expandedGroups = useMemo(() => {
+        const storedGroups = navigationState.key === storageKey
+            ? navigationState.expandedGroups
+            : readExpandedGroups(storageKey, activeGroupId);
+        return navigationState.pathname !== location.pathname && activeGroupId
+            ? [...new Set([...storedGroups, activeGroupId])]
+            : storedGroups;
+    }, [navigationState, storageKey, activeGroupId, location.pathname]);
+
+    const filteredVendorGroups = useMemo(() => {
+        if (!normalizedQuery) return groups;
+
+        return groups
+            .map((group) => ({
+                ...group,
+                items: group.items.filter((item) => item.label.toLowerCase().includes(normalizedQuery))
+            }))
+            .filter((group) => group.items.length > 0);
+    }, [groups, normalizedQuery]);
 
     useEffect(() => {
         if (isPlatformUser || isSupportUser || navigationState.key !== storageKey || typeof window === 'undefined') return;
+
         try {
             window.localStorage.setItem(storageKey, JSON.stringify(expandedGroups));
         } catch {
@@ -221,84 +332,147 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const toggleGroup = (groupId) => {
         setNavigationState({
             key: storageKey,
+            pathname: location.pathname,
             expandedGroups: expandedGroups.includes(groupId)
-                ? expandedGroups.filter(id => id !== groupId)
+                ? expandedGroups.filter((id) => id !== groupId)
                 : [...expandedGroups, groupId]
         });
     };
+
     const closeMobileNavigation = () => setIsOpen(false);
+    const BrandIcon = isSupportUser ? LifeBuoy : isPlatformUser ? ShieldCheck : PanelsTopLeft;
+    const brandTitle = isSupportUser ? 'Support Desk' : isPlatformUser ? 'Platform Console' : 'ScaleUp';
+    const brandSubtitle = isSupportUser ? 'CUSTOMER CARE' : isPlatformUser ? 'OPERATIONS' : 'SELLER WORKSPACE';
 
     return (
         <>
             {isOpen && (
                 <button
                     type="button"
-                    className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-sm md:hidden"
+                    className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] md:hidden"
                     onClick={closeMobileNavigation}
                     aria-label="Close navigation"
                 />
             )}
 
-            <aside className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
-                isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-            }`} aria-label="Dashboard navigation">
-                <div className="flex h-16 items-center justify-between border-b border-slate-200 px-6">
-                    <span className="text-2xl font-black tracking-tight text-slate-950">
-                        {isPlatformUser || isSupportUser ? 'Platform.' : 'ScaleUp.'}
-                    </span>
+            <aside
+                className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200/80 bg-white shadow-[8px_0_30px_-24px_rgba(15,23,42,0.25)] transition-transform duration-300 ease-out motion-reduce:transition-none md:static md:translate-x-0 md:shadow-none ${
+                    isOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
+                aria-label="Dashboard navigation"
+            >
+                <header className="flex h-[76px] flex-shrink-0 items-center justify-between border-b border-slate-100 px-5">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/20 ring-1 ring-white/20">
+                            <BrandIcon className="h-[19px] w-[19px]" strokeWidth={2.2} aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="truncate text-[15px] font-extrabold tracking-tight text-slate-950">{brandTitle}</p>
+                            <p className="mt-0.5 text-[9px] font-bold tracking-[0.16em] text-slate-400">{brandSubtitle}</p>
+                        </div>
+                    </div>
+
                     <button
                         type="button"
                         onClick={closeMobileNavigation}
-                        className="-mr-2 rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 md:hidden"
+                        className="-mr-2 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 md:hidden"
                         aria-label="Close navigation"
                     >
-                        <X className="h-5 w-5" />
+                        <X className="h-[18px] w-[18px]" aria-hidden="true" />
                     </button>
-                </div>
+                </header>
 
-                <div className="flex-1 overflow-y-auto py-5">
+                <NavigationSearch value={searchQuery} onChange={setSearchQuery} />
+
+                <div className="min-h-0 flex-1 overflow-y-auto pb-3">
                     {isSupportUser ? (
-                        <PlatformNavigation groups={platformNavigation.support} onNavigate={closeMobileNavigation} user={user} />
+                        <PlatformNavigation
+                            groups={platformNavigation.support}
+                            onNavigate={closeMobileNavigation}
+                            user={user}
+                            searchQuery={searchQuery}
+                        />
                     ) : isPlatformUser ? (
-                        <PlatformNavigation groups={platformNavigation.platform} onNavigate={closeMobileNavigation} user={user} />
+                        <PlatformNavigation
+                            groups={platformNavigation.platform}
+                            onNavigate={closeMobileNavigation}
+                            user={user}
+                            searchQuery={searchQuery}
+                        />
+                    ) : filteredVendorGroups.length === 0 ? (
+                        <EmptySearchState />
                     ) : (
-                        <nav className="space-y-2 px-3" aria-label="Vendor navigation">
-                            {groups.map(group => {
+                        <nav className="space-y-1.5 px-3 pb-4" aria-label="Vendor navigation">
+                            {filteredVendorGroups.map((group) => {
                                 if (group.standalone) {
-                                    return group.items.map(item => (
-                                        <VendorNavigationLink key={item.id} item={item} user={user} onNavigate={closeMobileNavigation} />
+                                    return group.items.map((item) => (
+                                        <VendorNavigationLink
+                                            key={item.id}
+                                            item={item}
+                                            user={user}
+                                            onNavigate={closeMobileNavigation}
+                                        />
                                     ));
                                 }
-                                const expanded = visibleExpandedGroups.includes(group.id);
+
+                                const expanded = Boolean(normalizedQuery) || expandedGroups.includes(group.id);
                                 const containsActiveRoute = activeNavigation?.group?.id === group.id;
+                                const headingId = `nav-group-${group.id}`;
+                                const itemsId = `nav-items-${group.id}`;
+
                                 return (
-                                    <section key={group.id} aria-labelledby={`nav-group-${group.id}`}>
+                                    <section key={group.id} aria-labelledby={headingId}>
                                         <button
                                             type="button"
-                                            id={`nav-group-${group.id}`}
+                                            id={headingId}
                                             onClick={() => toggleGroup(group.id)}
                                             aria-expanded={expanded}
-                                            aria-controls={`nav-items-${group.id}`}
-                                            className={`flex min-h-11 w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-black uppercase tracking-wide transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                                                containsActiveRoute ? 'text-indigo-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                                            aria-controls={itemsId}
+                                            className={`group flex min-h-10 w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[10px] font-bold uppercase tracking-[0.15em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 ${
+                                                containsActiveRoute
+                                                    ? 'text-indigo-700 hover:bg-indigo-50/70'
+                                                    : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'
                                             }`}
                                         >
-                                            <span>{group.label}</span>
-                                            <ChevronDown className={`h-4 w-4 transition-transform motion-reduce:transition-none ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+                                            <span className="truncate">{group.label}</span>
+                                            <ChevronDown
+                                                className={`ml-2 h-4 w-4 flex-shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
+                                                    expanded ? 'rotate-180' : ''
+                                                }`}
+                                                aria-hidden="true"
+                                            />
                                         </button>
-                                        {expanded && (
-                                            <div id={`nav-items-${group.id}`} className="mt-1 space-y-1 pl-1">
-                                                {group.items.map(item => (
-                                                    <VendorNavigationLink key={item.id} item={item} user={user} onNavigate={closeMobileNavigation} />
-                                                ))}
-                                            </div>
-                                        )}
+
+                                        <div
+                                            id={itemsId}
+                                            hidden={!expanded}
+                                            className="mt-1 space-y-1 pl-1"
+                                        >
+                                            {group.items.map((item) => (
+                                                <VendorNavigationLink
+                                                    key={item.id}
+                                                    item={item}
+                                                    user={user}
+                                                    onNavigate={closeMobileNavigation}
+                                                />
+                                            ))}
+                                        </div>
                                     </section>
                                 );
                             })}
                         </nav>
                     )}
                 </div>
+
+                <footer className="flex flex-shrink-0 items-center gap-2.5 border-t border-slate-100 bg-slate-50/60 px-5 py-3.5">
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/80">
+                        <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-600">Access-controlled menu</p>
+                        <p className="mt-0.5 text-[10px] text-slate-400">Based on your role and plan</p>
+                    </div>
+                </footer>
             </aside>
         </>
     );

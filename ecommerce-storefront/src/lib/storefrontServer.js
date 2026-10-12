@@ -116,7 +116,13 @@ export const fetchStorefrontBootstrap = async (subdomain, params = {}, options =
         fresh: options.fresh === true,
     });
 
-    return response.data || null;
+    const data = response.data || null;
+    if (options.expectedRevision !== undefined && Number(data?.shop?.themeRevision ?? -1) !== options.expectedRevision) {
+        const error = new Error('The store changed while this page was loading. Please reload to view the latest version.');
+        error.code = 'STOREFRONT_REVISION_CHANGED';
+        throw error;
+    }
+    return data;
 };
 
 export const fetchStorefrontInfo = async (subdomain, options = {}) => (

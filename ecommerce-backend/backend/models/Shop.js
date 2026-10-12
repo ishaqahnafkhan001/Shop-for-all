@@ -5,6 +5,7 @@ const {
     normalizeSearchAliases,
     normalizeSearchText,
     SECTION_TYPES,
+    STRUCTURAL_VARIANTS,
     THEME_SCHEMA_VERSION
 } = require('@scaleup/storefront-theme');
 
@@ -209,7 +210,16 @@ const themeColorGroups = {
     }
 };
 
+const aiPreferencesSchema = new mongoose.Schema({
+    version: { type: Number, min: 0, default: 0 },
+    language: { type: String, enum: ['auto', 'en', 'bn', 'banglish', 'mixed'], default: 'auto' },
+    tone: { type: String, enum: ['neutral', 'friendly', 'professional'], default: 'neutral' },
+    length: { type: String, enum: ['concise', 'detailed'], default: 'concise' },
+    terminology: { type: [String], default: [] }, avoidPhrases: { type: [String], default: [] },
+    brandDescription: { type: String, maxlength: 300, default: '' }, updatedAt: Date
+}, { _id: false });
 const shopSchema = new mongoose.Schema({
+    aiPreferences: { type: aiPreferencesSchema, select: false, default: undefined },
     shopName: {
         type: String,
         required: [true, 'Shop name is required'],
@@ -337,7 +347,7 @@ const shopSchema = new mongoose.Schema({
     branding: { type: essentialBrandingSchema, default: () => ({}) },
     theme: {
         extensions: { type: mongoose.Schema.Types.Mixed, default: undefined },
-        version: { type: Number, default: THEME_SCHEMA_VERSION, min: 1 },
+        version: { type: Number, default: THEME_SCHEMA_VERSION, STRUCTURAL_VARIANTS, min: 1 },
         preset: { type: themePresetSchema, default: null },
         logoUrl: { type: String, default: '' },
         faviconUrl: { type: String, default: '' },
@@ -427,6 +437,7 @@ const shopSchema = new mongoose.Schema({
             bannerSlides: { type: [heroSlideSchema], default: [] }
         },
         layout: {
+            homepageComposition: { type: String, enum: STRUCTURAL_VARIANTS.homepage.values, default: 'standard' },
             maxWidth: {
                 type: String,
                 enum: ['Contained', 'Wide', 'Full'],
@@ -457,6 +468,7 @@ const shopSchema = new mongoose.Schema({
             sectionMarginTop: { type: Number, default: 0, min: 0, max: 160 },
             sectionMarginBottom: { type: Number, default: 40, min: 0, max: 160 },
             productColumnsDesktop: { type: Number, default: 3, min: 2, max: 5 },
+            productColumnsTablet: { type: Number, default: undefined, min: 1, max: 4 },
             productColumnsMobile: { type: Number, default: 2, min: 1, max: 2 },
             productGap: {
                 type: String,
@@ -558,6 +570,8 @@ const shopSchema = new mongoose.Schema({
             trustMessage: { type: String, default: 'Secure checkout' }
         },
         mobile: {
+            heroComposition: { type: String, enum: ['Theme', 'Image first', 'Text first'], default: 'Theme' },
+            sectionSpacing: { type: String, enum: ['Theme', 'Compact', 'Comfortable', 'Spacious'], default: 'Theme' },
             stickyCheckoutButton: { type: Boolean, default: true },
             compactHeader: { type: Boolean, default: true },
             showBottomNavigation: { type: Boolean, default: false }
@@ -602,14 +616,14 @@ const shopSchema = new mongoose.Schema({
             default: function () {
                 if (this?.$isNew !== false) return JSON.parse(JSON.stringify(FALLBACK_THEME.homepageSections));
                 return [
-                {
-                    id: 'featured-products',
-                    type: 'FeaturedProducts',
-                    title: 'Featured products',
-                    sortOrder: 0,
-                    isEnabled: true,
-                    settings: { source: { type: 'manual', productIds: [] }, productIds: [] }
-                }
+                    {
+                        id: 'featured-products',
+                        type: 'FeaturedProducts',
+                        title: 'Featured products',
+                        sortOrder: 0,
+                        isEnabled: true,
+                        settings: { source: { type: 'manual', productIds: [] }, productIds: [] }
+                    }
                 ];
             }
         },
@@ -621,7 +635,12 @@ const shopSchema = new mongoose.Schema({
                     return this?.$isNew === false ? 'Shop products' : FALLBACK_THEME.allProducts.title;
                 }
             },
-            subtitle: { type: String, default: function () { return this?.$isNew === false ? '' : FALLBACK_THEME.allProducts.subtitle; } },
+            subtitle: {
+                type: String,
+                default: function () {
+                    return this?.$isNew === false ? '' : FALLBACK_THEME.allProducts.subtitle;
+                }
+            },
             isEnabled: { type: Boolean, default: true },
             desktopColumns: { type: Number, default: 3, min: 2, max: 5 },
             tabletColumns: { type: Number, default: 2, min: 1, max: 4 },

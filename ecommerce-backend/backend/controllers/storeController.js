@@ -4,7 +4,7 @@ const Banner = require('../models/Banner');
 const Review = require('../models/Review');
 const Collection = require('../models/Collection');
 const Category = require('../models/Category');
-const Subscription = require('../models/Subscription');
+const { getPublicTrustedBadge } = require('../services/verification/publicTrustedBadgeService');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
@@ -90,32 +90,11 @@ const attachPublicBranding = async (shop) => {
     return shop;
 };
 
-const getPublicTrustedBadge = async (shop) => {
-    if (!shop || shop.badgeStatus !== 'active') return null;
-    if (shop.isActive === false || shop.approvalStatus !== 'Approved') return null;
-    if (shop.verification?.status !== 'approved' || !shop.verification?.phoneVerified) return null;
-    if (shop.badgeExpiresAt && new Date(shop.badgeExpiresAt) <= new Date()) return null;
-    if (shop.badgeRevokedAt) return null;
-    if (!(await hasFeature(shop._id, 'trustSystem'))) return null;
-
-    const subscription = await Subscription.findOne({ shopId: shop._id, status: 'active' })
-        .select('_id status')
-        .lean();
-    if (!subscription) return null;
-
-    return {
-        active: true,
-        type: shop.badgeType || 'trusted_seller',
-        label: shop.badgeType === 'verified_seller' ? 'Verified Seller' : 'ScaleUp Trusted',
-        tooltip: 'Verified by ScaleUp based on identity verification, sales history, store age, and customer review quality.',
-        approvedAt: shop.badgeApprovedAt || null
-    };
-};
 
 const getManualSectionProductIds = (sections = []) => {
     const idsBySection = {};
     sections.forEach(section => {
-        if (section?.type !== 'FeaturedProducts' || section?.isEnabled === false) return;
+        if (!['FeaturedProducts', 'Collection', 'CollectionShowcase'].includes(section?.type) || section?.isEnabled === false) return;
         const source = section.settings?.source || section.source || {};
         const productIds = section.settings?.productIds || source.productIds || [];
         if ((source.type || 'manual') !== 'manual' || !Array.isArray(productIds) || productIds.length === 0) return;
@@ -135,6 +114,17 @@ const getSelectedSectionReviewIds = (sections = []) => {
     return idsBySection;
 };
 
+
+exports.getStorefrontThemeRevision = async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+        const shop = await Shop.findById(req.tenantId).select('_id themeRevision').lean();
+        if (!shop) return res.status(404).json({ error: 'Store not found.' });
+        return res.json({ shopId: String(shop._id), themeRevision: Number(shop.themeRevision || 0) });
+    } catch {
+        return res.status(503).json({ error: 'Store revision unavailable.' });
+    }
+};
 
 exports.getStoreInfo = async (req, res) => {
     try {
@@ -184,9 +174,17 @@ exports.getStorefrontBootstrap = async (req, res) => {
         const limit = 9;
         const skip = (currentPage - 1) * limit;
         const shopObjectId = new mongoose.Types.ObjectId(shopId);
-        const planAccess = await getShopPlanAccess(shopId);
+        const [shop, planAccess] = await Promise.all([
+            Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
+            getShopPlanAccess(shopId)
+        ]);
+        if (!shop) return res.status(404).json({ error: 'Shop details not found.' });
         const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
+            revision: Number(shop.themeRevision || 0),
+            updatedAt: shop.updatedAt,
             plan: planAccess.planKey,
+            access: planAccess.storeBuilderAccess,
+            features: planAccess.features,
             page: currentPage,
             sort,
             category,
@@ -235,8 +233,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 
-        const [shop, banners, products, totalProducts, categories, categoryMetadata, categoryCounts, collections] = await Promise.all([
-            Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
+        const [banners, products, totalProducts, categories, categoryMetadata, categoryCounts, collections] = await Promise.all([
             planAccess.features.scheduledBanners
                 ? Banner.find(getActiveBannerQuery(shopId))
                     .populate('scheduledProduct', 'title slug status publicationStatus publishAt isActive isDeleted')
@@ -318,7 +315,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 { $project: PUBLIC_PRODUCT_CARD_PROJECT }
             ]);
             const pricedManualProducts = await applyScheduledSalesToProducts({ shopId, products: manualProducts });
-            const productMap = new Map(pricedManualProducts.map(product => [String(product._id), product]));
+            const productMap = new Map(sanitizePublicProducts(pricedManualProducts).map(product => [String(product._id), product]));
             sectionProducts = Object.entries(manualIdsBySection).reduce((acc, [sectionId, productIds]) => {
                 acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);
                 return acc;
@@ -366,7 +363,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 activeSalePopups,
                 sectionProducts,
                 sectionReviews,
-                products: pricedProducts,
+                products: sanitizePublicProducts(pricedProducts),
                 categories: categories.filter(Boolean),
                 categoryDetails: mergeCategoryDetails({
                     names: categories,

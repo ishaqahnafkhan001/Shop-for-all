@@ -1,3 +1,5 @@
+import { cleanTextForMeta, getImageUrlFromValue, getImageAltFromValue, getProductImageAlt } from '@scaleup/storefront-renderer/media';
+export { cleanTextForMeta, getImageUrlFromValue, getImageAltFromValue, getProductImageAlt } from '@scaleup/storefront-renderer/media';
 import {
     buildNextHomepageMetadata as buildSharedNextHomepageMetadata,
     buildSeoPreviewModel as buildSharedSeoPreviewModel,
@@ -11,18 +13,7 @@ const PLATFORM_NAME = "Scaleup";
 
 export const isObjectId = (value = "") => /^[a-f\d]{24}$/i.test(String(value));
 
-export const cleanTextForMeta = (text = "") => {
-    return String(text || "")
-        .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, " ")
-        .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, " ")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/&nbsp;/gi, " ")
-        .replace(/&amp;/gi, "&")
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;/gi, "'")
-        .replace(/\s+/g, " ")
-        .trim();
-};
+
 
 const normalizeTitleText = (text = "", max = 80) => truncateAtWord(
     cleanTextForMeta(text)
@@ -513,30 +504,6 @@ export const getCollectionOgImage = (collection = {}, products = [], shop = {}) 
     if (collection?.image) return collection.image;
     const firstProductImage = products.find(product => product?.images?.[0] || product?.imageUrl);
     return getOgImage(firstProductImage || null, shop);
-};
-
-export const getImageUrlFromValue = (image) => {
-    if (!image) return "";
-    if (typeof image === "string") return image;
-    return image.url || image.src || image.secureUrl || "";
-};
-
-export const getImageAltFromValue = (image) => {
-    if (!image || typeof image === "string") return "";
-    return cleanTextForMeta(image.alt || image.altText || image.title || "");
-};
-
-export const getProductImageAlt = ({ product, image, shop } = {}) => {
-    const safeProduct = product || {};
-    const safeShop = shop || {};
-
-    return (
-        getImageAltFromValue(image) ||
-        cleanTextForMeta(safeProduct.imageAltText) ||
-        cleanTextForMeta(safeProduct.title) ||
-        cleanTextForMeta(safeShop.shopName || safeShop.name) ||
-        "Product image"
-    );
 };
 
 export const getProductImageUrls = (product = {}) => {

@@ -1,0 +1,21 @@
+✔ autosave and manual save are serialized and use the preceding returned version (3.5829ms)
+✔ publication drains an in-flight save, cancels queued saves and does not delete another draft (0.2974ms)
+✔ discard waits for writes and carries their version; closing a tenant cancels pending writes (0.2709ms)
+✔ failed saves do not advance concurrency tokens or poison the queue (0.53ms)
+✔ revision watcher ignores failures, wrong tenants and older revisions, and refreshes newer revisions (0.3245ms)
+✔ revision watcher serializes checks and ignores late results after tenant navigation (0.2257ms)
+✔ draft filters require the authenticated tenant and an exact valid concurrency token (2.2014ms)
+✔ actual draft service rejects stale writers and publications racing draft writes (564.3521ms)
+✔ tenant middleware resolves reassigned domains from the database on every request (2.4923ms)
+✔ public revision handler exposes only the authorized tenant revision with no-store caching (84.0158ms)
+✔ configured Redis outages behave as cache misses without worker-local fallback copies (1.2807ms)
+✔ SEO draft writes reject concurrent replacement of the whole Builder draft (1.0356ms)
+✔ a committed revision restore remains successful when cache invalidation fails (243.0297ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 997.283

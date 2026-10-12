@@ -2,6 +2,7 @@ import {
     FALLBACK_THEME,
     normalizeTheme,
     mergeThemePatch,
+    updateProductCardSetting,
     resolveHeroSlideFields
 } from '@scaleup/storefront-theme';
 import { HERO_SLIDE_LIMIT } from './storeBuilderConstants.jsx';
@@ -31,6 +32,19 @@ export const normalizeBuilderTheme = (theme = {}) => {
 };
 
 export const defaultTheme = normalizeBuilderTheme(FALLBACK_THEME);
+
+// Explicit editor commands synchronize the legacy/global catalog aliases. This
+// runs only on an edit; loading an existing theme never changes saved overrides.
+export const updateBuilderThemeSetting = (theme, group, key, value) => {
+    if (group === 'productCard') return { ...theme, productCard: updateProductCardSetting(theme.productCard, key, value) };
+    const patch = { [group]: { [key]: value } };
+    if (group === 'layout') {
+        const catalogKey = { productColumnsDesktop: 'desktopColumns', productColumnsTablet: 'tabletColumns', productColumnsMobile: 'mobileColumns', productGap: 'spacing' }[key];
+        if (catalogKey) patch.allProducts = { [catalogKey]: value };
+        if (key === 'productGap') patch.productGridStyle = value;
+    }
+    return mergeThemePatch(theme, patch);
+};
 
 export const createBuilderSectionId = (type = 'section') => {
     const token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;

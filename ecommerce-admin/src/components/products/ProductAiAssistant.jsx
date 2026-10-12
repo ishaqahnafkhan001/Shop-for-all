@@ -2,9 +2,15 @@ import { useState } from 'react';
 import { Loader2, Sparkles, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
-import { useAuth } from '../../context/AuthContext.jsx';
-import { normalizeKeyValueRows, normalizeSellingPointRows } from '../../utils/productContentRows.js';
-import { aiRequestHeaders } from '../../utils/aiRequestId.js';
+import { productContentIssues, scoreProductSeo } from '../../utils/seoHealth.js';
+import AiProductHistory from '../ai/AiProductHistory.jsx';
+import ProductSuggestionEditor from './ProductSuggestionEditor.jsx';
+import { applyProductContentSuggestion } from '../../utils/applyProductContentSuggestion.js';
+import { normalizeSellingPointRows } from '../../utils/productContentRows.js';
+import { useAiOperation } from '../../hooks/useAiOperation.js';
+import { useAiUndo } from '../../hooks/useAiUndo.js';
+import AiOperationStatus, { AiFieldComparison } from '../ai/AiOperationStatus.jsx';
+import { aiSourceLabel } from '../../utils/aiSourceLabel.js';
 
 const SECTION_LABELS = {
     all: 'All content',
@@ -24,39 +30,6 @@ const isFileLike = (value) => {
     return typeof Blob !== 'undefined' && value instanceof Blob;
 };
 
-const firstWords = (value = '', fallback = 'Detail') => {
-    const words = String(value || '')
-        .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 4)
-        .join(' ');
-
-    return words || fallback;
-};
-
-const pointsToRows = (points = []) => normalizeSellingPointRows(
-    points.map((point, index) => {
-        if (typeof point === 'string') {
-            return {
-                point: firstWords(point, `Benefit ${index + 1}`).slice(0, 50),
-                reason: String(point).trim()
-            };
-        }
-
-        return point;
-    })
-);
-
-const notesToRows = (notes = []) => notes
-    .filter(Boolean)
-    .slice(0, 10)
-    .map((note, index) => ({
-        title: firstWords(note, `Note ${index + 1}`).slice(0, 100),
-        value: String(note).trim()
-    }));
-
 const getSectionHasContent = (formData, section) => {
     if (section === 'seo') return Boolean(formData.seo?.title || formData.seo?.description);
     if (section === 'description') return Boolean(formData.description?.trim());
@@ -65,38 +38,6 @@ const getSectionHasContent = (formData, section) => {
     if (section === 'extraNotes') return Boolean(formData.comments?.length);
     if (section === 'imageAlt') return Boolean(formData.imageAltText?.trim());
     return false;
-};
-
-const normalizeSpecs = (specifications = []) => specifications
-    .filter(item => item?.label && item?.value)
-    .slice(0, 10)
-    .map(item => ({
-        title: String(item.label).trim(),
-        value: String(item.value).trim()
-    }));
-
-const showAiFailureToast = (payload = {}) => {
-    if (payload.configured === false) {
-        toast.error(payload.message || 'AI product suggestions are not configured yet.');
-        return;
-    }
-
-    if (payload.errorCode === 'AI_PROVIDER_FAILED') {
-        toast.error(payload.message || 'AI product suggestions could not be generated right now. Please try again later.');
-        return;
-    }
-
-    if (payload.errorCode === 'AI_RESPONSE_PARSE_FAILED') {
-        toast.error(payload.message || 'AI product suggestions could not be generated right now. Please try again.');
-        return;
-    }
-
-    if (payload.errorCode === 'INSUFFICIENT_PRODUCT_CONTEXT') {
-        toast.error(payload.message || 'Add a clearer product image or more product information to generate useful customer benefits.');
-        return;
-    }
-
-    toast.error(payload.message || payload.error || 'AI suggestions could not be generated.');
 };
 
 const formatPreviewList = (items = []) => (
@@ -167,7 +108,7 @@ const formatPreviewRows = (items = []) => (
     )
 );
 
-const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose, onApply, formData }) => {
+const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose, onApply, formData, meta, stale, sections, onEdit }) => {
     if (!suggestion) return null;
     const imageAnalysis = suggestion.imageAnalysis || {};
     const imageStatusText = usedImage
@@ -181,6 +122,7 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose,
         return (
             <button
                 type="button"
+                disabled={stale || !(sections.includes(section) || section === 'seo' && sections.some(key => ['seoTitle', 'seoDescription'].includes(key)))}
                 onClick={() => onApply([section], mode)}
                 className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-50"
             >
@@ -206,6 +148,9 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose,
                 </div>
 
                 <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+                    <p className="text-sm text-slate-600">{aiSourceLabel(meta?.source)}. {stale ? 'Inputs changed. Close this preview and generate again.' : 'Apply updates the form. Save remains your final step.'}</p>
+                    <ProductSuggestionEditor value={suggestion} sections={sections} onChange={onEdit} />
+                    <AiFieldComparison current={{ description: formData.description, seo: formData.seo, sellingPoints: formData.features, specifications: formData.specifications, extraNotes: formData.comments, imageAlt: formData.imageAltText }} proposed={suggestion} />
                     <section className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
                         <h3 className="font-black text-emerald-950">Image analysis</h3>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs font-black uppercase tracking-wide">
@@ -318,7 +263,7 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose,
                     <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
                         Keep editing
                     </button>
-                    <button type="button" onClick={() => onApply(SECTIONS)} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700">
+                    <button type="button" disabled={stale} onClick={() => onApply(sections)} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700">
                         Apply all suggestions
                     </button>
                 </div>
@@ -332,32 +277,26 @@ const ProductAiAssistant = ({
     setFormData,
     getFirstImage,
     getVariants,
-    compact = false
+    compact = false,
+    entityId = 'new-product', health, readiness = []
 }) => {
-    const { user, setUser } = useAuth();
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [requestedSections, setRequestedSections] = useState([]);
+    const [selectedIssues, setSelectedIssues] = useState([]);
+    const [edited, setEdited] = useState(false);
+    const [historyReview, setHistoryReview] = useState(null);
     const [activeSection, setActiveSection] = useState(null);
     const [suggestion, setSuggestion] = useState(null);
     const [usedImage, setUsedImage] = useState(false);
     const [imageSource, setImageSource] = useState('text_only');
-    const usage = user?.planAccess?.usage?.ai || null;
-
-    const updateUsage = (nextUsage) => {
-        if (!nextUsage) return;
-        setUser(current => current ? ({
-            ...current,
-            planAccess: {
-                ...(current.planAccess || {}),
-                usage: {
-                    ...(current.planAccess?.usage || {}),
-                    ai: nextUsage
-                }
-            }
-        }) : current);
-    };
 
     const firstImageForStatus = getFirstImage?.();
+    const operationInput = { formData, variants: getVariants?.() || [], image: firstImageForStatus };
+    const operation = useAiOperation({ feature: 'product.content', entity: entityId, input: operationInput });
+    const undo = useAiUndo(entityId, formData, setFormData);
     const hasImage = Boolean(firstImageForStatus);
+    const issues = productContentIssues({ health: health || scoreProductSeo({ product: formData, hasImage }), readiness, product: formData });
+    const selectedSections = [...new Set(issues.filter(issue => selectedIssues.includes(issue.id) && issue.aiSection).map(issue => issue.aiSection))];
+    const isGenerating = operation.loading;
     const imageStatusLabel = hasImage
         ? isFileLike(firstImageForStatus)
             ? 'Image ready for AI analysis'
@@ -379,6 +318,9 @@ const ProductAiAssistant = ({
         data.append('features', JSON.stringify(formData.features || []));
         data.append('specifications', JSON.stringify(formData.specifications || []));
         data.append('comments', JSON.stringify(formData.comments || []));
+        data.append('notesVisibility', 'public');
+        data.append('entityId', entityId);
+        data.append('entityRevision', formData.updatedAt || '');
         data.append('languageHint', 'auto');
         data.append('requestedSections', JSON.stringify(sections));
 
@@ -391,76 +333,46 @@ const ProductAiAssistant = ({
         return data;
     };
 
+    const receiveSuggestion = (response) => {
+        if (!response) return;
+        setHistoryReview(null);
+        setSuggestion(response.data.data);
+        setUsedImage(Boolean(response.data.usedImage));
+        setImageSource(response.data.imageSource || 'text_only');
+        toast.success(response.data.fallback ? 'Basic suggestions are ready to review.' : 'AI suggestions are ready to review.');
+    };
     const generate = async (sections = SECTIONS) => {
-        if (!formData.title?.trim()) {
-            toast.error('Add a product title first.');
-            return;
-        }
-
-        setIsGenerating(true);
+        if (!formData.title?.trim()) { toast.error('Add a product title first.'); return; }
+        if (!operation.access.allowed) return;
+        setRequestedSections(sections);
+        setEdited(false);
         setActiveSection(sections.length === SECTIONS.length ? 'all' : sections[0]);
+        setSuggestion(null);
+        const body = buildRequestData(sections);
         try {
-            const response = await API.post('/admin/products/ai/content-suggest', buildRequestData(sections), {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    ...aiRequestHeaders('product.content')
-                }
-            });
-
-            if (!response.data?.success) {
-                showAiFailureToast(response.data);
-                return;
-            }
-
-            updateUsage(response.data.usage);
-            setSuggestion(response.data.data);
-            setUsedImage(Boolean(response.data.usedImage));
-            setImageSource(response.data.imageSource || 'text_only');
-            if (response.data.fallback) {
-                toast.success('Basic suggestions are ready to review.');
-            } else {
-                toast.success('AI suggestions are ready to review.');
-            }
-        } catch (error) {
-            showAiFailureToast(error.response?.data);
-        } finally {
-            setIsGenerating(false);
-            setActiveSection(null);
-        }
+            receiveSuggestion(await operation.run(options => API.post('/admin/products/ai/content-suggest', body, {
+                ...options, headers: { ...options.headers, 'Content-Type': 'multipart/form-data' }
+            })));
+        } finally { setActiveSection(null); }
     };
 
-    const applySections = (sections, mode = 'replace') => {
-        if (!suggestion) return;
+    const applySections = async (sections, mode = 'replace') => {
+        if (!suggestion || !operation.canApply()) { toast.error('Inputs changed. Generate again before applying.'); return; }
+        sections = sections.flatMap(section => section === 'seo' && !requestedSections.includes('seo')
+            ? requestedSections.filter(key => ['seoTitle', 'seoDescription'].includes(key)) : [section])
+            .filter(section => requestedSections.includes(section));
+        if (!sections.length) return;
 
-        setFormData(prev => {
-            const next = { ...prev };
-            if (sections.includes('seo')) {
-                next.seo = {
-                    ...next.seo,
-                    ...(suggestion.seoTitle && { title: suggestion.seoTitle }),
-                    ...(suggestion.seoDescription && { description: suggestion.seoDescription })
-                };
-            }
-            if (sections.includes('description') && suggestion.description) {
-                next.description = suggestion.description;
-            }
-            if (sections.includes('sellingPoints') && suggestion.sellingPoints?.length) {
-                const generatedRows = pointsToRows(suggestion.sellingPoints);
-                next.features = mode === 'append'
-                    ? normalizeSellingPointRows([...(next.features || []), ...generatedRows])
-                    : generatedRows;
-            }
-            if (sections.includes('specifications') && suggestion.specifications?.length) {
-                next.specifications = normalizeKeyValueRows(normalizeSpecs(suggestion.specifications));
-            }
-            if (sections.includes('extraNotes') && suggestion.extraNotes?.length) {
-                next.comments = notesToRows(suggestion.extraNotes);
-            }
-            if (sections.includes('imageAlt') && suggestion.imageAlt) {
-                next.imageAltText = suggestion.imageAlt;
-            }
-            return next;
-        });
+        if (historyReview) {
+            const keys = sections.flatMap(section => section === 'seo' ? ['seoTitle', 'seoDescription'] : [section]).filter(key => historyReview.entry.content[key]);
+            try { await API.post(`/admin/ai/history/${historyReview.entry._id}/apply`, { currentVersion: historyReview.currentVersion, fields: keys, edited }); }
+            catch (error) { toast.error(error.response?.data?.error || 'Review the current product before applying.'); return; }
+            if (!operation.canApply(operationInput)) return;
+        }
+        const next = applyProductContentSuggestion(formData, suggestion, sections, mode);
+        undo.record(formData, next);
+        operation.rebase({ ...operationInput, formData: next });
+        setFormData(next);
 
         toast.success('AI suggestions applied. Review before saving.');
         setSuggestion(null);
@@ -470,39 +382,49 @@ const ProductAiAssistant = ({
 
     return (
         <div className={compact ? 'min-w-0 space-y-3' : 'min-w-0 overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4'}>
+            <AiProductHistory key={entityId} entityId={entityId} operationId={operation.meta?.operationId} onReview={review => {
+                setHistoryReview(review); setEdited(false); setUsedImage(false); setImageSource('text_only');
+                setSuggestion(review.entry.content);
+                setRequestedSections(Object.keys(review.entry.content));
+                operation.rebase(operationInput);
+            }} />
+            {historyReview && <p className="text-xs text-amber-800">{historyReview.stale ? 'The saved product changed since generation. Compare every field before Apply.' : 'Comparing against the current saved product.'} Current saved version: {historyReview.currentVersion}</p>}
+            <AiOperationStatus operation={operation} onRetry={async () => receiveSuggestion(await operation.retry())} onUndo={undo.undo} />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                     <p className="text-sm font-black text-slate-950">AI content helper</p>
                     <p className="mt-1 break-words text-xs leading-5 text-slate-600">
                         {imageStatusLabel}
                     </p>
-                    {usage && (
-                        <p className="mt-1 break-words text-xs font-bold text-indigo-700">
-                            {usage.unlimited
-                                ? `${usage.used} AI generations used this week - Unlimited plan`
-                                : `${usage.used} of ${usage.limit} AI generations used this week (${usage.remaining} remaining)`}
-                            {usage.resetsAt ? ` - resets ${new Date(usage.resetsAt).toLocaleString()}` : ''}
-                        </p>
-                    )}
+
                 </div>
                 <button
                     type="button"
-                    onClick={() => generate(SECTIONS)}
-                    disabled={isGenerating || !formData.title?.trim()}
+                    onClick={() => generate(selectedSections)}
+                    disabled={isGenerating || !operation.access.allowed || !selectedSections.length || !formData.title?.trim()}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-black text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                     {isGenerating && activeSection === 'all' ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                    {isGenerating && activeSection === 'all' ? 'Generating...' : 'Generate better content with AI'}
+                    {isGenerating && activeSection === 'all' ? 'Generating...' : 'Generate selected improvements'}
                 </button>
             </div>
 
+            <div className="space-y-2 text-sm">
+                <h3 className="font-bold">Product health actions</h3>
+                {issues.map(issue => <label key={issue.id} className="flex items-start gap-2">
+                    {issue.aiSection ? <input type="checkbox" checked={selectedIssues.includes(issue.id)} onChange={e => setSelectedIssues(current => e.target.checked ? [...current, issue.id] : current.filter(id => id !== issue.id))} /> : <span aria-hidden="true">•</span>}
+                    <span>{issue.label}{!issue.aiSection && ' — update in the product form'}</span>
+                </label>)}
+                {!issues.length && <p>Content basics are complete.</p>}
+            </div>
+            <details><summary className="cursor-pointer text-sm font-semibold">Generate another content section</summary>
             <div className="mt-3 flex min-w-0 flex-wrap gap-2">
                 {SECTIONS.map(section => (
                     <button
                         key={section}
                         type="button"
                         onClick={() => generate([section])}
-                        disabled={isGenerating || !formData.title?.trim()}
+                        disabled={isGenerating || !operation.access.allowed || !formData.title?.trim()}
                         className={buttonClass}
                     >
                         {isGenerating && activeSection === section ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
@@ -519,6 +441,7 @@ const ProductAiAssistant = ({
                 ))}
             </div>
 
+            </details>
             <ProductAiSuggestionModal
                 suggestion={suggestion}
                 usedImage={usedImage}
@@ -526,6 +449,10 @@ const ProductAiAssistant = ({
                 onClose={() => setSuggestion(null)}
                 onApply={applySections}
                 formData={formData}
+                meta={edited ? { ...operation.meta, source: 'manual' } : historyReview?.entry.provenance || operation.meta}
+                sections={requestedSections}
+                onEdit={value => { setSuggestion(value); setEdited(true); }}
+                stale={!operation.canApply()}
             />
         </div>
     );

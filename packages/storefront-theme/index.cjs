@@ -1,6 +1,7 @@
 'use strict';
 
 const homepageSeo = require('./homepage-seo.cjs');
+const { HOMEPAGE_COMPOSITIONS, getHomepageComposition, planHomepageComposition } = require('./composition.cjs');
 
 const THEME_SCHEMA_VERSION = 4;
 
@@ -10,6 +11,7 @@ const structuralVariant = (defaultValue, values) => Object.freeze({
 });
 
 const STRUCTURAL_VARIANTS = Object.freeze({
+    homepage: structuralVariant('standard', Object.keys(HOMEPAGE_COMPOSITIONS)),
     header: structuralVariant('standard', ['standard', 'minimal', 'centered']),
     hero: structuralVariant('fullBleed', ['fullBleed', 'split', 'centered', 'editorial', 'minimal']),
     sections: Object.freeze({
@@ -187,13 +189,14 @@ const FALLBACK_THEME = Object.freeze({
         variant: 'fullBleed', title: '', subtitle: '', imageUrl: '', ctaLabel: 'Shop Now', ctaUrl: '/', overlayOpacity: 25, height: 'Medium', bannerSlides: [],
     },
     layout: {
+        homepageComposition: 'standard',
         maxWidth: 'Wide', containerWidth: 'Wide', sectionSpacing: 'Comfortable', contentSpacing: 'Comfortable', sectionWidth: 'Full Width', sectionPaddingTop: 40, sectionPaddingBottom: 40, sectionMarginTop: 0, sectionMarginBottom: 40, productColumnsDesktop: 3, productColumnsMobile: 2, productGap: 'Comfortable', cardAlignment: 'Left',
     },
     productCard: {
         style: 'Modern', imageFit: 'Contain', aspectRatio: 'Square', imageRadius: 'Rounded', hoverZoom: true, showCategory: true, showRating: true, showReviews: true, showStock: true, showSku: false, showDiscountBadge: true, showQuickBuy: true, showWishlist: true, borderRadius: 'Rounded', shadow: 'Soft', titleSize: 'Medium', titleWeight: '800', priceSize: 'Medium', priceColor: '#0f172a', buttonStyle: 'Solid', buttonShape: 'Rounded', buttonColor: '#0f766e',
     },
     checkoutBranding: { logoUrl: '', bannerText: '', buttonStyle: 'Rounded', trustMessage: 'Secure checkout' },
-    mobile: { stickyCheckoutButton: true, compactHeader: true, showBottomNavigation: false },
+    mobile: { stickyCheckoutButton: true, compactHeader: true, showBottomNavigation: false, heroComposition: 'Theme', sectionSpacing: 'Theme' },
     paymentSettings: {
         additionalMethodsEnabled: false,
         providers: { stripe: false, sslcommerz: false, bkash: false, nagad: false, rocket: false, paypal: false },
@@ -227,6 +230,7 @@ const FALLBACK_THEME = Object.freeze({
             acceptedOptionId: '',
             acceptedFields: [],
             acceptedAt: null,
+            acceptedOrigins: {},
         },
         autoUpdate: false,
     },
@@ -384,6 +388,7 @@ const sanitizeThemePayload = (theme = {}) => {
             acceptedOptionId: cleanText(suggestion.acceptedOptionId, 40),
             acceptedFields: (Array.isArray(suggestion.acceptedFields) ? suggestion.acceptedFields : []).filter(field => ['title', 'description'].includes(field)),
             acceptedAt: suggestion.acceptedAt ? cleanText(suggestion.acceptedAt, 40) : null,
+            acceptedOrigins: homepageSeo.normalizeAcceptedSeoProvenance(picked.seo),
         };
         picked.seo.autoUpdate = false;
         picked.seo.googleSiteVerification = cleanText(picked.seo.googleSiteVerification, 500)
@@ -800,6 +805,7 @@ const normalizeLayout = (theme = {}) => {
 
     return {
         ...layout,
+        homepageComposition: getHomepageComposition(raw.homepageComposition),
         containerWidth,
         maxWidth: containerWidth === 'Narrow' ? 'Contained' : containerWidth === 'Full Width' ? 'Full' : 'Wide',
         sectionSpacing,
@@ -812,6 +818,7 @@ const normalizeLayout = (theme = {}) => {
         sectionMarginTop: clamp(raw.sectionMarginTop, 0, 160, FALLBACK_THEME.layout.sectionMarginTop),
         sectionMarginBottom: clamp(raw.sectionMarginBottom, 0, 160, FALLBACK_THEME.layout.sectionMarginBottom),
         productColumnsDesktop: Math.round(clamp(raw.productColumnsDesktop, 2, 5, FALLBACK_THEME.layout.productColumnsDesktop)),
+        ...(raw.productColumnsTablet != null ? { productColumnsTablet: Math.round(clamp(raw.productColumnsTablet, 1, 4, 2)) } : {}),
         productColumnsMobile: Math.round(clamp(raw.productColumnsMobile, 1, 2, FALLBACK_THEME.layout.productColumnsMobile)),
         productGap: ['Compact', 'Comfortable', 'Spacious', 'Editorial'].includes(raw.productGap)
             ? raw.productGap
@@ -932,7 +939,11 @@ const normalizeTheme = (candidate = {}) => {
         layout,
         productCard: normalizeProductCard(theme),
         checkoutBranding: mergeObject(FALLBACK_THEME.checkoutBranding, theme.checkoutBranding),
-        mobile: mergeObject(FALLBACK_THEME.mobile, theme.mobile),
+        mobile: {
+            ...mergeObject(FALLBACK_THEME.mobile, theme.mobile),
+            heroComposition: ['Theme', 'Image first', 'Text first'].includes(theme.mobile?.heroComposition) ? theme.mobile.heroComposition : 'Theme',
+            sectionSpacing: ['Theme', 'Compact', 'Comfortable', 'Spacious'].includes(theme.mobile?.sectionSpacing) ? theme.mobile.sectionSpacing : 'Theme',
+        },
         allProducts: normalizeAllProducts({ theme, layout, legacyAllProducts }),
         migrations: mergeObject(FALLBACK_THEME.migrations, theme.migrations),
         paymentSettings: {
@@ -973,8 +984,11 @@ const validateTheme = (candidate = {}) => {
             errors.push({ path, code: 'UNSUPPORTED_VARIANT', message: `Unsupported structural variant: ${String(value || 'unknown')}.` });
         }
     };
+    validateVariant(candidate?.layout?.homepageComposition, STRUCTURAL_VARIANTS.homepage, 'layout.homepageComposition');
     validateVariant(candidate?.header?.variant, STRUCTURAL_VARIANTS.header, 'header.variant');
     validateVariant(candidate?.hero?.variant, STRUCTURAL_VARIANTS.hero, 'hero.variant');
+    validateVariant(candidate?.mobile?.heroComposition, { values: ['Theme', 'Image first', 'Text first'] }, 'mobile.heroComposition');
+    validateVariant(candidate?.mobile?.sectionSpacing, { values: ['Theme', 'Compact', 'Comfortable', 'Spacious'] }, 'mobile.sectionSpacing');
     if (candidate?.preset !== undefined && candidate.preset !== null) {
         if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(candidate.preset?.id || ''))) {
             errors.push({ path: 'preset.id', code: 'INVALID_PRESET', message: 'Theme preset ID must be a lowercase slug.' });
@@ -1067,32 +1081,6 @@ const getThemeCssVars = (themeCandidate = {}) => {
     };
 };
 
-const getThemeCapabilityMetadata = (planAccess = {}) => {
-    const full = planAccess.storeBuilderAccess === 'full';
-    const capabilities = planAccess.storeBuilderCapabilities || {};
-    const planName = planAccess.planName || planAccess.planKey || 'your current plan';
-    return {
-        access: full ? 'full' : 'limited',
-        planName,
-        sections: {
-            enabled: full,
-            label: full ? 'Available' : `Requires a plan with advanced homepage sections (current: ${planName})`,
-        },
-        advancedDesign: {
-            enabled: full,
-            label: full ? 'Available' : `Requires full Store Builder access (current: ${planName})`,
-        },
-        customDomain: {
-            enabled: planAccess.features?.customDomain !== false,
-            label: planAccess.features?.customDomain === false ? `Custom domains are not included in ${planName}` : 'Available',
-        },
-        scheduledBanners: {
-            enabled: Boolean(capabilities.scheduledBanners),
-            label: capabilities.scheduledBanners ? 'Available' : `Scheduled banners are not included in ${planName}`,
-        },
-    };
-};
-
 const extractThemeAssetUrls = (theme = {}) => {
     const urls = new Set();
     const walk = (value, key = '', depth = 0) => {
@@ -1125,6 +1113,9 @@ const summarizeThemeChanges = (before = {}, after = {}) => {
 };
 
 module.exports = {
+    HOMEPAGE_COMPOSITIONS,
+    getHomepageComposition,
+    planHomepageComposition,
     THEME_SCHEMA_VERSION,
     STRUCTURAL_VARIANTS,
     SECTION_REGISTRY,
@@ -1145,7 +1136,6 @@ module.exports = {
     getEnabledHomepageSections,
     getSortedNavigation,
     getThemeCssVars,
-    getThemeCapabilityMetadata,
     extractThemeAssetUrls,
     summarizeThemeChanges,
     isSafeThemeUrl,
@@ -1172,3 +1162,14 @@ module.exports.getDefaultPolicyText = policies.getDefaultPolicyText;
 module.exports.buildDefaultPolicies = policies.buildDefaultPolicies;
 module.exports.hasPolicyText = policies.hasPolicyText;
 module.exports.fillMissingPolicyDefaults = policies.fillMissingPolicyDefaults;
+
+const capabilities = require('./capabilities.cjs')(module.exports);
+module.exports.THEME_CAPABILITY_RULES = capabilities.THEME_CAPABILITY_RULES;
+module.exports.LIMITED_EDITABLE_SECTION_TYPES = capabilities.LIMITED_EDITABLE_SECTION_TYPES;
+module.exports.RESTRICTED_THEME_KEYS = capabilities.RESTRICTED_THEME_KEYS;
+module.exports.RESTRICTED_VARIANT_PATHS = capabilities.RESTRICTED_VARIANT_PATHS;
+module.exports.getThemeCapabilities = capabilities.getThemeCapabilities;
+module.exports.getThemePropertyCapability = capabilities.getThemePropertyCapability;
+module.exports.getThemeEditorRestriction = capabilities.getThemeEditorRestriction;
+module.exports.getThemeCapabilityMetadata = capabilities.getThemeCapabilityMetadata;
+module.exports.assertStoreBuilderUpdateAllowed = capabilities.assertStoreBuilderUpdateAllowed;

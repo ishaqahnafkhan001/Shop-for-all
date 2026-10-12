@@ -100,9 +100,9 @@ const AddProduct = () => {
         { label: 'Selling price added', done: Number(formData.pricing.sellingPrice) > 0, helper: 'This is the price customers see.' },
         { label: 'At least one image added', done: imageFiles.length > 0, helper: 'The first image becomes the product card cover.' },
         { label: 'Image alt text added', done: Boolean(formData.imageAltText.trim()), helper: 'Describe the product image for search engines and accessibility.' },
-        { label: 'Stock added', done: Number(defaultStock) > 0 || Object.values(stockOverrides).some(value => Number(value) > 0), helper: 'Stock lets customers buy without overselling.' },
+        { id: 'stock', label: 'Stock added', done: Number(defaultStock) > 0 || Object.values(stockOverrides).some(value => Number(value) > 0), helper: 'Stock lets customers buy without overselling.' },
         { label: 'Description written', done: Boolean(formData.description.trim()), helper: 'Explain benefits, usage, and what comes in the box.' },
-        { label: 'Ready to publish', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
+        { id: 'publication', label: 'Ready to publish', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
     ];
     const productSeoPreview = useMemo(() => buildProductSeoPreview({ product: formData, shopName: 'Your Store' }), [formData]);
     const productSeoHealth = useMemo(() => scoreProductSeo({
@@ -515,6 +515,8 @@ const AddProduct = () => {
                         <SellerHint>Keep the title specific. Example: “Premium Cotton Panjabi - White” works better than “New Product”.</SellerHint>
 
                         <ProductAiAssistant
+                            health={productSeoHealth}
+                            readiness={readinessItems}
                             formData={formData}
                             setFormData={setFormData}
                             getFirstImage={() => imageFiles[coverImageIndex] || imageFiles[0] || null}
@@ -1060,7 +1062,7 @@ const AddProduct = () => {
                         <ProductFormSection
                             key={type}
                             title={type === 'features' ? '5. Why customers should buy this' : type === 'specifications' ? '6. Specifications' : '7. Extra notes'}
-                            description={type === 'features' ? 'Add short product benefits and explain why each one matters to the customer.' : type === 'specifications' ? 'Structured details such as material, size, model, or warranty.' : 'Optional notes for shoppers or internal product context.'}
+                            description={type === 'features' ? 'Add short product benefits and explain why each one matters to the customer.' : type === 'specifications' ? 'Structured details such as material, size, model, or warranty.' : 'Public notes shown to shoppers, such as care, storage, sizing, or styling guidance.'}
                             icon={type === 'features' ? ListChecks : type === 'specifications' ? FileText : Search}
                         >
                             <div className="flex justify-between items-center">

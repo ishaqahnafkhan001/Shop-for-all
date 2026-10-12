@@ -1,3 +1,4 @@
+import { getThemeCapabilities } from '@scaleup/storefront-theme';
 import { ChevronDown, ChevronUp, LayoutTemplate, Lock, Plus, Search, Trash2, Unlock, Upload, X } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -76,7 +77,7 @@ export function DynamicSectionsEditor({
     updateFeaturedProductsSelection,
     loadReviewOptions,
     updateReviewSelection,
-    advancedDesignEnabled = false
+    capabilities = getThemeCapabilities(theme)
 }) {
     const [sectionLibraryOpen, setSectionLibraryOpen] = useState(false);
     const selectedSectionIndex = getSectionIndexFromSelection(activeElement, theme);
@@ -89,10 +90,10 @@ export function DynamicSectionsEditor({
                         title="Homepage sections"
                         description="Add a section or select one from the Store Layout list to edit it."
                         icon={LayoutTemplate}
-                        actions={<BuilderButton type="button" variant="secondary" onClick={() => setSectionLibraryOpen(open => !open)}><Plus size={16} /> Add section</BuilderButton>}
+                        actions={<BuilderButton type="button" variant="secondary" disabled={!capabilities.sectionStructure.editable} onClick={() => setSectionLibraryOpen(open => !open)}><Plus size={16} /> Add section</BuilderButton>}
                     >
                         <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                            <span>Flexible sections appear between Hero and All Products.</span>
+                            <span>{capabilities.composition.orderingHelp}</span>
                             <span className="shrink-0 rounded-full bg-white px-2 py-1 font-black text-slate-500">{theme.homepageSections?.length || 0} sections</span>
                         </div>
 
@@ -107,7 +108,7 @@ export function DynamicSectionsEditor({
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-3">
-                                {inlineSectionPresets.map(preset => (
+                                {inlineSectionPresets.filter(preset => capabilities.sections[preset.type]?.addable).map(preset => (
                                     <button
                                         key={preset.templateId}
                                         type="button"
@@ -159,7 +160,9 @@ export function DynamicSectionsEditor({
                             </div>
                         )}
                         {selectedSectionEntries.map(({ section, index }) => {
-                            const locked = isHomepageSectionLocked(section);
+                            const sectionCapabilities = capabilities.sections[section.type];
+                            const locked = isHomepageSectionLocked(section) || !sectionCapabilities?.editable;
+                            const variantOptions = (sectionVariantOptions[section.type] || []).filter(option => sectionCapabilities?.variants?.allowed.includes(option.value));
                             const selectedProductIds = section.settings?.productIds || section.settings?.source?.productIds || [];
                             const selectedProducts = selectedProductIds
                                 .map(productId => availableProducts.find(product => String(product._id) === String(productId)))
@@ -212,23 +215,23 @@ export function DynamicSectionsEditor({
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <BuilderSelect label="Section type" value={section.type || 'FeaturedProducts'} onChange={e => updateHomepageSection(index, 'type', e.target.value)} disabled={locked}>
+                                    <BuilderSelect label="Section type" value={section.type || 'FeaturedProducts'} onChange={e => updateHomepageSection(index, 'type', e.target.value)} disabled={locked || !capabilities.sectionStructure.editable}>
                                         {editorSectionOptions.map(option => (
                                             <option key={option.value} value={option.value}>{option.label}</option>
                                         ))}
                                     </BuilderSelect>
                                     <BuilderInput label="Section title" value={section.title || ''} onChange={e => updateHomepageSection(index, 'title', e.target.value)} disabled={locked} />
                                 </div>
-                                {sectionVariantOptions[section.type]?.length > 0 && (
+                                {variantOptions.length > 0 && (
                                     <div className="mt-3">
                                         <BuilderSelect
                                             label="Section layout"
-                                            value={section.settings?.variant || sectionVariantOptions[section.type][0].value}
+                                            value={section.settings?.variant || variantOptions[0].value}
                                             onChange={event => updateHomepageSectionSetting(index, 'variant', event.target.value)}
-                                            disabled={locked || !advancedDesignEnabled}
-                                            help={advancedDesignEnabled ? 'Changes presentation only; section content and links stay the same.' : 'Structural layouts require full Store Builder access.'}
+                                            disabled={locked || !sectionCapabilities?.variants?.merchantSelectable}
+                                            help={sectionCapabilities?.variants?.merchantSelectable ? 'Changes presentation only; section content and links stay the same.' : sectionCapabilities?.variants?.reason}
                                         >
-                                            {sectionVariantOptions[section.type].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                            {variantOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                                         </BuilderSelect>
                                     </div>
                                 )}
@@ -541,6 +544,7 @@ export function DynamicSectionsEditor({
                                         />
                                         <BuilderSelect
                                             label="Desktop columns"
+                                            help={capabilities.composition.slots.companion?.includes('CategoryList') ? 'The first eligible category section appears beside the hero. One column suits this narrow area; all four column options remain available.' : undefined}
                                             value={section.settings?.columns || 4}
                                             onChange={e => updateHomepageSectionSetting(index, 'columns', Number(e.target.value))}
                                             disabled={locked}

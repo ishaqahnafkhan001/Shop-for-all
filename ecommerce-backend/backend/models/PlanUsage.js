@@ -15,7 +15,15 @@ const planUsageSchema = new mongoose.Schema({
     periodStart: { type: Date, required: true },
     periodEnd: { type: Date, required: true, index: true },
     used: { type: Number, default: 0, min: 0 },
-    reserved: { type: Number, default: 0, min: 0 }
+    reserved: { type: Number, default: 0, min: 0 },
+    accountingVersion: { type: Number },
+    receipts: { type: [new mongoose.Schema({
+        owner: { type: mongoose.Schema.Types.ObjectId, required: true },
+        state: { type: String, enum: ['reserved', 'consumed', 'released'], required: true },
+        fence: { type: Number, required: true },
+        deadline: { type: Date, required: true },
+        recovered: { type: Boolean, default: false }
+    }, { _id: false })], default: undefined }
 }, { timestamps: true });
 
 planUsageSchema.index(

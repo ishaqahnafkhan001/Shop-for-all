@@ -122,13 +122,14 @@ test('platform badge routes use scoped permissions, recent auth, and reason-gate
 
 test('public storefront only exposes active trusted badge after verification and active subscription checks', () => {
     const controller = read('controllers/storeController.js');
+    const badgeService = read('services/verification/publicTrustedBadgeService.js');
     const header = readRepo('packages/storefront-renderer/reference/StorefrontHeader.jsx');
     const navbar = readRepo('ecommerce-storefront/src/components/storefront/Navbar.jsx');
 
     assert.match(controller, /getPublicTrustedBadge/);
-    assert.match(controller, /shop\.badgeStatus !== 'active'/);
-    assert.match(controller, /shop\.verification\?\.status !== 'approved'/);
-    assert.match(controller, /Subscription\.findOne\(\{[\s\S]*status:\s*'active'/);
+    assert.match(badgeService, /shop\.badgeStatus !== 'active'/);
+    assert.match(badgeService, /shop\.verification\?\.status !== 'approved'/);
+    assert.match(badgeService, /Subscription\.findOne\(\{[\s\S]*status:\s*'active'/);
     assert.match(controller, /shop\.trustedBadge = await getPublicTrustedBadge\(shop\)/);
     assert.match(controller, /delete shop\.badgeStatus/);
     assert.match(controller, /delete shop\.verification/);

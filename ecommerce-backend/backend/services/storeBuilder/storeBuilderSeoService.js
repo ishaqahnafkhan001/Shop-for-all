@@ -6,6 +6,7 @@ const {
 const Shop = require('../../models/Shop');
 const StoreBuilderAsset = require('../../models/StoreBuilderAsset');
 const StoreBuilderDraft = require('../../models/StoreBuilderDraft');
+const { draftConflict, draftWriteFilter } = require('./draftConcurrency');
 const {
     getStoreBuilderBootstrap,
     normalizeShopAliases,
@@ -155,22 +156,31 @@ const saveStoreBuilderSeoDraft = async ({ shopId, req, seo, searchAliases, based
     const revision = basedOnRevision === undefined
         ? Number(existingDraft?.basedOnRevision ?? shop.themeRevision ?? 0)
         : Math.max(0, Number(basedOnRevision) || 0);
-    const draft = await StoreBuilderDraft.findOneAndUpdate(
-        { shop_id: shopId },
+    const previousUpdatedAt = existingDraft?.updatedAt ? new Date(existingDraft.updatedAt).toISOString() : null;
+    const updatedAt = new Date(Math.max(Date.now(), new Date(previousUpdatedAt || 0).getTime() + 1));
+    let draft;
+    try { draft = await StoreBuilderDraft.findOneAndUpdate(
+        draftWriteFilter(shopId, previousUpdatedAt),
         {
             $set: {
                 theme: normalizedTheme,
                 searchAliases: aliasResult.aliases,
                 basedOnRevision: revision,
-                updatedBy: getActorId(req)
+                updatedBy: getActorId(req),
+                updatedAt
             },
             $setOnInsert: {
+                createdAt: updatedAt,
                 customDomain: shop.customDomain || {},
                 storewideDiscount: Number(shop.storewideDiscount || 0)
             }
         },
-        { returnDocument: 'after', upsert: true, runValidators: true, setDefaultsOnInsert: true }
-    );
+        { returnDocument: 'after', upsert: !existingDraft, runValidators: true, setDefaultsOnInsert: true, timestamps: false }
+    ); } catch (error) {
+        if (error.code === 11000) throw draftConflict();
+        throw error;
+    }
+    if (!draft) throw draftConflict();
     await attachAssetsToDraft({ shopId, draftId: draft._id, theme: normalizedTheme });
     return {
         seo: draft.theme?.seo || {},
@@ -199,7 +209,8 @@ const deleteStoreBuilderSeoDraft = async ({ shopId, req }) => {
         || JSON.stringify(draft.customDomain || {}) !== JSON.stringify(shop.customDomain || {})
         || Number(draft.storewideDiscount || 0) !== Number(shop.storewideDiscount || 0);
     if (!hasUnrelatedDraft) {
-        await StoreBuilderDraft.deleteOne({ _id: draft._id, shop_id: shopId });
+        const deleted = await StoreBuilderDraft.deleteOne({ _id: draft._id, ...draftWriteFilter(shopId, draft.updatedAt ? new Date(draft.updatedAt).toISOString() : null) });
+        if (!deleted.deletedCount) throw draftConflict();
         return { deleted: true, rebased: false };
     }
 
@@ -207,7 +218,13 @@ const deleteStoreBuilderSeoDraft = async ({ shopId, req }) => {
     draft.searchAliases = shop.searchAliases || [];
     draft.basedOnRevision = Number(shop.themeRevision || 0);
     draft.updatedBy = getActorId(req);
-    await draft.save();
+    const result = await StoreBuilderDraft.updateOne(
+        { _id: draft._id, ...draftWriteFilter(shopId, draft.updatedAt ? new Date(draft.updatedAt).toISOString() : null) },
+        { $set: { theme: draft.theme, searchAliases: draft.searchAliases, basedOnRevision: draft.basedOnRevision,
+            updatedBy: draft.updatedBy, updatedAt: new Date(Math.max(Date.now(), new Date(draft.updatedAt || 0).getTime() + 1)) } },
+        { runValidators: true, timestamps: false }
+    );
+    if (!result.matchedCount) throw draftConflict();
     return { deleted: false, rebased: true };
 };
 

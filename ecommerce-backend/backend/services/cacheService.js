@@ -18,12 +18,14 @@ if (process.env.REDIS_URL) {
 }
 
 const get = async (key) => {
+    if (process.env.REDIS_URL && !redisClient) return null;
     if (redisClient) {
         try {
             const value = await redisClient.get(key);
             return value ? JSON.parse(value) : null;
         } catch (error) {
             console.error('Redis cache read failed:', error.message);
+            return null;
         }
     }
 
@@ -37,12 +39,14 @@ const get = async (key) => {
 };
 
 const set = async (key, value, ttlSeconds = 60) => {
+    if (process.env.REDIS_URL && !redisClient) return;
     if (redisClient) {
         try {
             await redisClient.set(key, JSON.stringify(value), 'EX', ttlSeconds);
             return;
         } catch (error) {
             console.error('Redis cache write failed:', error.message);
+            return;
         }
     }
 
@@ -53,6 +57,7 @@ const set = async (key, value, ttlSeconds = 60) => {
 };
 
 const del = async (key) => {
+    memoryCache.delete(key);
     if (redisClient) {
         try {
             await redisClient.del(key);
@@ -66,6 +71,10 @@ const del = async (key) => {
 };
 
 const delPattern = async (pattern) => {
+    const regex = new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
+    for (const key of memoryCache.keys()) {
+        if (regex.test(key)) memoryCache.delete(key);
+    }
     if (redisClient) {
         try {
             const stream = redisClient.scanStream({ match: pattern, count: 100 });
@@ -86,10 +95,6 @@ const delPattern = async (pattern) => {
         }
     }
 
-    const regex = new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
-    for (const key of memoryCache.keys()) {
-        if (regex.test(key)) memoryCache.delete(key);
-    }
 };
 
 const resetMemoryCacheForTests = () => {

@@ -1,0 +1,330 @@
+{
+  "home": [
+    {
+      "width": 320,
+      "clientWidth": 305,
+      "contentOrder": "2",
+      "grids": [
+        "281px",
+        "281px"
+      ],
+      "headingSize": "30.4px",
+      "heroColumns": "279px",
+      "mediaOrder": "1",
+      "noteVisible": false,
+      "scrollWidth": 305,
+      "sectionMargin": "24px"
+    },
+    {
+      "width": 390,
+      "clientWidth": 375,
+      "contentOrder": "2",
+      "grids": [
+        "351px",
+        "351px"
+      ],
+      "headingSize": "30.4px",
+      "heroColumns": "349px",
+      "mediaOrder": "1",
+      "noteVisible": false,
+      "scrollWidth": 375,
+      "sectionMargin": "24px"
+    },
+    {
+      "width": 640,
+      "clientWidth": 625,
+      "contentOrder": "2",
+      "grids": [
+        "593px",
+        "593px"
+      ],
+      "headingSize": "48px",
+      "heroColumns": "591px",
+      "mediaOrder": "1",
+      "noteVisible": false,
+      "scrollWidth": 625,
+      "sectionMargin": "24px"
+    },
+    {
+      "width": 767,
+      "clientWidth": 752,
+      "contentOrder": "2",
+      "grids": [
+        "720px",
+        "720px"
+      ],
+      "headingSize": "48px",
+      "heroColumns": "718px",
+      "mediaOrder": "1",
+      "noteVisible": false,
+      "scrollWidth": 752,
+      "sectionMargin": "24px"
+    },
+    {
+      "width": 768,
+      "clientWidth": 753,
+      "contentOrder": "1",
+      "grids": [
+        "224.328px 224.328px 224.328px",
+        "224.328px 224.328px 224.328px"
+      ],
+      "headingSize": "60px",
+      "heroColumns": "703px",
+      "mediaOrder": "2",
+      "noteVisible": true,
+      "scrollWidth": 753,
+      "sectionMargin": "48px"
+    },
+    {
+      "width": 1023,
+      "clientWidth": 1008,
+      "contentOrder": "1",
+      "grids": [
+        "309.328px 309.328px 309.344px",
+        "309.328px 309.328px 309.344px"
+      ],
+      "headingSize": "60px",
+      "heroColumns": "958px",
+      "mediaOrder": "2",
+      "noteVisible": true,
+      "scrollWidth": 1008,
+      "sectionMargin": "48px"
+    },
+    {
+      "width": 1024,
+      "clientWidth": 1009,
+      "contentOrder": "1",
+      "grids": [
+        "301.656px 301.672px 301.656px",
+        "213.656px 213.672px 213.672px"
+      ],
+      "headingSize": "72px",
+      "heroColumns": "471.5px 471.5px",
+      "mediaOrder": "2",
+      "noteVisible": true,
+      "scrollWidth": 1009,
+      "sectionMargin": "48px"
+    },
+    {
+      "width": 1180,
+      "clientWidth": 1165,
+      "contentOrder": "1",
+      "grids": [
+        "353.656px 353.672px 353.656px",
+        "265.656px 265.672px 265.656px"
+      ],
+      "headingSize": "72px",
+      "heroColumns": "549.5px 549.5px",
+      "mediaOrder": "2",
+      "noteVisible": true,
+      "scrollWidth": 1165,
+      "sectionMargin": "48px"
+    },
+    {
+      "width": 1536,
+      "clientWidth": 1521,
+      "contentOrder": "1",
+      "grids": [
+        "467px 467px 467px",
+        "372.328px 372.328px 372.344px"
+      ],
+      "headingSize": "72px",
+      "heroColumns": "719.5px 719.5px",
+      "mediaOrder": "2",
+      "noteVisible": true,
+      "scrollWidth": 1521,
+      "sectionMargin": "48px"
+    }
+  ],
+  "variants": [
+    {
+      "mobile": "Image first",
+      "parts": [
+        [
+          "content",
+          "2"
+        ],
+        [
+          "media",
+          "1"
+        ]
+      ],
+      "variant": "editorial"
+    },
+    {
+      "mobile": "Image first",
+      "parts": [
+        [
+          "content",
+          "2"
+        ],
+        [
+          "media",
+          "1"
+        ]
+      ],
+      "variant": "minimal"
+    },
+    {
+      "mobile": null,
+      "parts": [],
+      "variant": "fullBleed"
+    },
+    {
+      "mobile": null,
+      "parts": [],
+      "variant": "centered"
+    },
+    {
+      "mobile": "Image first",
+      "parts": [
+        [
+          "content",
+          "2"
+        ],
+        [
+          "media",
+          "1"
+        ]
+      ],
+      "variant": "split"
+    }
+  ],
+  "pages": [
+    {
+      "page": "checkout",
+      "width": 320,
+      "bar": {
+        "bottom": "64px",
+        "display": "block"
+      },
+      "clientWidth": 305,
+      "menuVisible": true,
+      "scrollWidth": 305,
+      "title": "Complete your order"
+    },
+    {
+      "page": "checkout",
+      "width": 768,
+      "bar": {
+        "bottom": "0px",
+        "display": "block"
+      },
+      "clientWidth": 753,
+      "menuVisible": true,
+      "scrollWidth": 753,
+      "title": "Complete your order"
+    },
+    {
+      "page": "checkout",
+      "width": 1180,
+      "bar": {
+        "bottom": "0px",
+        "display": "none"
+      },
+      "clientWidth": 1165,
+      "menuVisible": false,
+      "scrollWidth": 1165,
+      "title": "Complete your order"
+    },
+    {
+      "page": "product",
+      "width": 320,
+      "bar": {
+        "bottom": "64px",
+        "display": "block"
+      },
+      "clientWidth": 305,
+      "menuVisible": true,
+      "scrollWidth": 305,
+      "title": "Responsive product 1"
+    },
+    {
+      "page": "product",
+      "width": 768,
+      "bar": {
+        "bottom": "0px",
+        "display": "block"
+      },
+      "clientWidth": 753,
+      "menuVisible": true,
+      "scrollWidth": 753,
+      "title": "Responsive product 1"
+    },
+    {
+      "page": "product",
+      "width": 1180,
+      "bar": {
+        "bottom": "0px",
+        "display": "none"
+      },
+      "clientWidth": 1165,
+      "menuVisible": false,
+      "scrollWidth": 1165,
+      "title": "Responsive product 1"
+    },
+    {
+      "page": "cart",
+      "width": 320,
+      "bar": {
+        "bottom": "64px",
+        "display": "block"
+      },
+      "clientWidth": 305,
+      "menuVisible": true,
+      "scrollWidth": 305,
+      "title": "Your Cart (2)"
+    },
+    {
+      "page": "cart",
+      "width": 768,
+      "bar": {
+        "bottom": "0px",
+        "display": "block"
+      },
+      "clientWidth": 753,
+      "menuVisible": true,
+      "scrollWidth": 753,
+      "title": "Your Cart (2)"
+    },
+    {
+      "page": "cart",
+      "width": 1180,
+      "bar": {
+        "bottom": "0px",
+        "display": "none"
+      },
+      "clientWidth": 1165,
+      "menuVisible": false,
+      "scrollWidth": 1165,
+      "title": "Your Cart (2)"
+    },
+    {
+      "page": "policy",
+      "width": 320,
+      "bar": null,
+      "clientWidth": 305,
+      "menuVisible": true,
+      "scrollWidth": 305,
+      "title": "Refund Policy"
+    },
+    {
+      "page": "policy",
+      "width": 768,
+      "bar": null,
+      "clientWidth": 753,
+      "menuVisible": true,
+      "scrollWidth": 753,
+      "title": "Refund Policy"
+    },
+    {
+      "page": "policy",
+      "width": 1180,
+      "bar": null,
+      "clientWidth": 1165,
+      "menuVisible": false,
+      "scrollWidth": 1165,
+      "title": "Refund Policy"
+    }
+  ]
+}

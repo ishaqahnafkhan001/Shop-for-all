@@ -13,9 +13,12 @@ export function StoreBuilderPreviewPanel({
     theme,
     planAccess,
     branding,
+    trustedBadge,
+    shopVerification,
     storewideDiscount,
     shopName,
     availableProducts,
+    previewCatalog,
     productCategories,
     productCategoryDetails,
     availableReviews,
@@ -26,7 +29,7 @@ export function StoreBuilderPreviewPanel({
     const [previewZoom, setPreviewZoom] = useState('fit');
 
     return (
-        <section className={`${mobileWorkspace === 'preview' ? 'block' : 'hidden'} min-w-0 rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:block`}>
+        <section id="builder-workspace-preview" tabIndex={-1} aria-label="Storefront preview workspace" className={`${mobileWorkspace === 'preview' ? 'block' : 'hidden'} min-w-0 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:p-4 xl:block`}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 className="text-base font-bold text-slate-950">Live preview</h2>
@@ -34,7 +37,12 @@ export function StoreBuilderPreviewPanel({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <DeviceSwitcher value={device} onChange={setDevice} />
-                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                    <label className="flex min-h-11 items-center gap-2 text-sm font-semibold xl:hidden">Page
+                        <select aria-label="Preview page" value={previewPage} onChange={event => setPreviewPage(event.target.value)} className="min-h-11 min-w-0 rounded-lg border border-slate-200 bg-white px-2">
+                            {previewPages.map(page => <option key={page.id} value={page.id}>{page.label}</option>)}
+                        </select>
+                    </label>
+                    <div className="hidden flex-wrap rounded-lg border border-slate-200 bg-slate-50 p-1 xl:inline-flex">
                         {previewPages.map(page => (
                             <button
                                 key={page.id}
@@ -74,6 +82,9 @@ export function StoreBuilderPreviewPanel({
                 </div>
             </div>
             <StorefrontPreview
+                previewCatalog={previewCatalog}
+                trustedBadge={trustedBadge}
+                shopVerification={shopVerification}
                 theme={theme}
                 planAccess={planAccess}
                 branding={branding}

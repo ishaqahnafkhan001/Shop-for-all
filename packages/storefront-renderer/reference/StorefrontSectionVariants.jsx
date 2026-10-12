@@ -181,7 +181,8 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
 export function ReviewsVariantSection({ section, reviews, responsiveClass, sectionLayout, contentGapClass, colors }) {
     const variant = section.settings?.variant || "cards";
     const reviewText = section.settings?.text?.trim();
-    const items = reviews.length ? reviews : (reviewText ? [{ _id: "manual", comment: reviewText, name: "" }] : []);
+    const selectedReviews = section.settings?.mode === 'text' ? [] : reviews;
+    const items = selectedReviews.length ? selectedReviews : (reviewText ? [{ _id: "manual", comment: reviewText, name: "" }] : []);
     if (!items.length) return null;
     const title = section.title || "Customer Reviews";
 

@@ -66,6 +66,7 @@ const normalizeVariantForEdit = (variant = {}) => {
 };
 
 const buildProductFormState = (product = {}) => ({
+    updatedAt: product.updatedAt,
     title:          product.title          || '',
     slug:           product.slug           || '',
     description:    product.description    || '',
@@ -538,9 +539,9 @@ const EditProduct = () => {
         { label: 'Selling price is set', done: selling > 0, helper: 'A product needs a customer-facing price.' },
         { label: 'Product image is set', done: Boolean(formData.images?.length || newImageFiles.length), helper: 'The first image becomes the product card cover.' },
         { label: 'Image alt text added', done: Boolean(formData.imageAltText.trim()), helper: 'Describe the main product image for search and accessibility.' },
-        { label: 'Stock is available', done: totalStock > 0, helper: 'Keep stock updated to avoid cancelled orders.' },
+        { id: 'stock', label: 'Stock is available', done: totalStock > 0, helper: 'Keep stock updated to avoid cancelled orders.' },
         { label: 'Description helps shoppers', done: formData.description.trim().length >= 20, helper: 'Explain material, use case, or key benefit.' },
-        { label: 'Product is published', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
+        { id: 'publication', label: 'Product is published', done: formData.status === 'Published', helper: 'Draft products stay hidden from shoppers.' }
     ];
 
     const getAiVariants = () => formData.variants.map(variant => ({
@@ -665,7 +666,7 @@ const EditProduct = () => {
             const res = await API.get(`/admin/products/${id}`);
             const freshProduct = res.data.data || res.data;
 
-            setFormData(prev => ({ ...prev, variants: freshProduct.variants || [] }));
+            setFormData(prev => ({ ...prev, variants: freshProduct.variants || [], updatedAt: freshProduct.updatedAt }));
             setChangedStocks({});
 
             toast.success(formData.status === 'Draft' ? 'Product saved as draft.' : 'Product updated on your store.');
@@ -728,6 +729,8 @@ const EditProduct = () => {
                 >
                     <SellerHint>Published products are visible to shoppers. Draft products stay hidden until you are ready.</SellerHint>
                     <ProductAiAssistant
+                            health={productSeoHealth}
+                            readiness={readinessItems} entityId={id}
                         formData={formData}
                         setFormData={setFormData}
                         getFirstImage={getFirstAiImage}

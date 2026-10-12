@@ -1,0 +1,47 @@
+(node:26980) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/defaultPolicies.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all new-store presentation defaults equal the shared contract; historical empty values survive (24.7603ms)
+✔ canonical layers distinguish omission, explicit default values, clears, and responsive values (3.3288ms)
+✔ legacy versions resolve without rewriting inputs or reapplying a preset over merchant edits (9.5253ms)
+✔ future schema versions remain identifiable on reads and are rejected for writes (1.3382ms)
+✔ safe unknown root and nested fields survive strict schema round trips in an opaque archive (20.0562ms)
+✔ compatibility data cannot introduce prototype or Mongo operator keys (0.3355ms)
+✔ all presets preserve presentation and responsive settings across plans and repeated resolution (106.9724ms)
+✔ limited-plan canonical no-op saves pass, actual restricted changes still fail (1.9214ms)
+✔ policy fallbacks are identical across Admin, storefront, and server; merchant text wins (15.7605ms)
+✔ public adapter and storefront facade resolve identically with tenant-scoped environment inputs (16.6943ms)
+✔ actual public settings, shop-info and bootstrap handlers return identical effective themes for two tenants (105.7849ms)
+✔ actual Builder preview passes canonical themes to every renderer across presets and plan contexts (448.5152ms)
+✔ save normalization rejects newer current/incoming themes before external work and allows safe read-only inspection (1.9599ms)
+✔ branding environment loader scopes asset and CTA lookups to each tenant (1.56ms)
+✔ modern-general/full: Gallery full preview, Builder and live home produce identical presentation markup (426.1482ms)
+✔ modern-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (239.7572ms)
+✔ minimal-general/full: Gallery full preview, Builder and live home produce identical presentation markup (127.0989ms)
+✔ minimal-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (64.8715ms)
+✔ modern-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (79.6676ms)
+✔ modern-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (249.0914ms)
+✔ editorial-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (255.0324ms)
+✔ editorial-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (121.7207ms)
+✔ luxury-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (62.4171ms)
+✔ luxury-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (51.9324ms)
+✔ minimal-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (56.5937ms)
+✔ minimal-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (50.5104ms)
+✔ soft-beauty/full: Gallery full preview, Builder and live home produce identical presentation markup (59.9612ms)
+✔ soft-beauty/limited: Gallery full preview, Builder and live home produce identical presentation markup (53.701ms)
+✔ modern-electronics/full: Gallery full preview, Builder and live home produce identical presentation markup (61.4387ms)
+✔ modern-electronics/limited: Gallery full preview, Builder and live home produce identical presentation markup (231.504ms)
+✔ fresh-grocery/full: Gallery full preview, Builder and live home produce identical presentation markup (205.3185ms)
+✔ fresh-grocery/limited: Gallery full preview, Builder and live home produce identical presentation markup (146.5915ms)
+✔ empty stores do not acquire sample categories or an extra category composition slot in preview (11.9275ms)
+✔ mobile navigation uses live viewport anchoring and safe-area dimensions in the iframe (9.3094ms)
+✔ project viewport dimensions are explicit and stable; responsive HTML uses real CSS breakpoints (30.4504ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2732.3397

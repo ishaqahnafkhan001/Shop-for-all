@@ -8,7 +8,7 @@ import {
     ShoppingBag,
     Smartphone
 } from 'lucide-react';
-import themeContract, { SECTION_REGISTRY } from '@scaleup/storefront-theme';
+import { SECTION_REGISTRY, STRUCTURAL_VARIANTS } from '@scaleup/storefront-theme';
 
 export const HISTORY_LIMIT = 30;
 export const HERO_SLIDE_LIMIT = 5;
@@ -22,32 +22,12 @@ const VARIANT_LABELS = Object.freeze({
     boxed: 'Boxed', overlay: 'Image overlay', strip: 'Compact strip'
 });
 
-// Keep the editor usable when a long-running Vite server still has an older
-// optimized copy of the workspace theme package. Fresh builds use the shared
-// contract; this fallback only bridges that development-cache transition.
-const FALLBACK_STRUCTURAL_VARIANTS = Object.freeze({
-    header: { values: ['standard', 'minimal', 'centered'] },
-    hero: { values: ['fullBleed', 'split', 'centered', 'editorial', 'minimal'] },
-    sections: {
-        Banner: { values: ['overlay', 'split', 'minimal'] },
-        CategoryList: { values: ['cards', 'imageGrid', 'circles', 'editorial'] },
-        BrandStory: { values: ['standard', 'imageLeft', 'imageRight', 'fullWidth', 'editorial'] },
-        Collection: { values: ['grid', 'spacious', 'mosaic'] },
-        CollectionShowcase: { values: ['grid', 'spacious', 'mosaic'] },
-        Reviews: { values: ['cards', 'quote', 'minimal'] },
-        Newsletter: { values: ['boxed', 'fullWidth', 'minimal'] },
-        PromoBlock: { values: ['boxed', 'strip', 'split'] }
-    }
-});
-
-const structuralVariants = themeContract?.STRUCTURAL_VARIANTS || FALLBACK_STRUCTURAL_VARIANTS;
-
 const optionsFromContract = contract => (contract?.values || []).map(value => ({ value, label: VARIANT_LABELS[value] || value }));
 
-export const headerVariantOptions = optionsFromContract(structuralVariants.header || FALLBACK_STRUCTURAL_VARIANTS.header);
-export const heroVariantOptions = optionsFromContract(structuralVariants.hero || FALLBACK_STRUCTURAL_VARIANTS.hero);
+export const headerVariantOptions = optionsFromContract(STRUCTURAL_VARIANTS.header);
+export const heroVariantOptions = optionsFromContract(STRUCTURAL_VARIANTS.hero);
 export const sectionVariantOptions = Object.fromEntries(
-    Object.entries(structuralVariants.sections || FALLBACK_STRUCTURAL_VARIANTS.sections)
+    Object.entries(STRUCTURAL_VARIANTS.sections)
         .map(([type, contract]) => [type, optionsFromContract(contract)])
 );
 

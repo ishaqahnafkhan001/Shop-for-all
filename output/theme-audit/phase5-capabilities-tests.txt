@@ -1,0 +1,17 @@
+✔ capabilities preserve every supported variant for all presets and isolate each result (163.0482ms)
+✔ property classification covers canonical groups, identity, inheritance, and responsive controls (1.2162ms)
+✔ limited and no-builder controls agree with backend edit rules (9.6584ms)
+✔ safe edits round trip all saved preset identities and permit explicit selection/restore on full plans (196.7324ms)
+✔ snapshot validation prevents omitted restricted fields from silently resetting a saved composition (3.5477ms)
+✔ actual draft, publish and tenant-scoped restore reject restricted changes before writing (25.3972ms)
+✔ actual editor variant options equal the shared registry without a duplicate fallback (0.7638ms)
+✔ actual editor markup applies capability gates and explains composition (58.4722ms)
+✔ actual limited-plan section editor and sidebar disable structural mutations but allow featured content (17.2292ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1253.191

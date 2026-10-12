@@ -1,10 +1,11 @@
+const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
 const mongoose = require('mongoose');
 const AnalyticsEvent = require('../models/AnalyticsEvent');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Shop = require('../models/Shop');
 const ReturnRequest = require('../models/ReturnRequest');
-const { generateAdInsight } = require('../services/adInsightAIService');
+const { generateAdInsight, normalizeRequestedFields } = require('../services/adInsightAIService');
 const { buildLimitError, getShopPlanAccess } = require('../services/billing/planAccessService');
 const { getWeeklyAiUsage } = require('../services/billing/planUsageService');
 const {
@@ -14,24 +15,19 @@ const {
     getReplayResponse
 } = require('../services/ai/aiGenerationPolicyService');
 
-const validRanges = new Set(['7', '30', '90']);
+const { getGrowthInterval, productTopics, REGION_ALIASES, TOPIC_ALIASES } = require('../services/ai/growthAiContext');
+const { getAiConfig } = require('../config/ai');
 const eventTypes = {
     views: 'product_view',
     carts: 'add_to_cart',
     checkouts: 'begin_checkout',
     orders: 'order_placed'
 };
-const MIN_AI_AGGREGATE_COHORT = Math.max(3, Number(process.env.AI_AGGREGATE_PRIVACY_THRESHOLD || 3));
+const MIN_AI_AGGREGATE_COHORT = getAiConfig().aggregatePrivacyThreshold;
 
 const asObjectId = (value) => new mongoose.Types.ObjectId(String(value));
 
-const getRangeStart = (queryRange) => {
-    const range = validRanges.has(String(queryRange)) ? Number(queryRange) : 30;
-    return {
-        range,
-        from: new Date(Date.now() - range * 24 * 60 * 60 * 1000)
-    };
-};
+const getRangeStart = getGrowthInterval;
 
 const roundRate = (value) => Math.round((Number(value || 0)) * 100) / 100;
 const rate = (part, total) => total > 0 ? roundRate((part / total) * 100) : 0;
@@ -46,96 +42,34 @@ const uniqueList = (items, limit = 8) => [
     ...new Set((items || []).map(item => String(item || '').trim()).filter(Boolean))
 ].slice(0, limit);
 
-const getTopBuyerLocations = async ({ shopId, productId, from }) => {
-    const shopObjectId = asObjectId(shopId);
-    const productObjectId = asObjectId(productId);
-
-    const locations = await Order.aggregate([
-        {
-            $match: {
-                shop_id: shopObjectId,
-                isDeleted: false,
-                createdAt: { $gte: from },
-                'items.productId': productObjectId
-            }
-        },
-        { $unwind: '$items' },
-        { $match: { 'items.productId': productObjectId } },
-        {
-            $project: {
-                city: { $trim: { input: { $ifNull: ['$shipping.address.city', ''] } } }
-            }
-        },
-        { $match: { city: { $ne: '' } } },
-        {
-            $group: {
-                _id: { $toLower: '$city' },
-                city: { $first: '$city' },
-                orders: { $sum: 1 }
-            }
-        },
+const getTopBuyerLocations = async ({ shopId, productId, from, to }) => {
+    const rows = await Order.aggregate([
+        { $match: { shop_id: asObjectId(shopId), isDeleted: false, createdAt: { $gte: from, $lt: to }, 'items.productId': asObjectId(productId) } },
+        { $project: { customer: 1, region: { $toLower: { $trim: { input: { $ifNull: ['$shipping.address.city', ''] } } } } } },
+        { $match: { region: { $in: Object.keys(REGION_ALIASES) }, customer: { $ne: null } } },
+        { $group: { _id: { region: '$region', buyer: '$customer' } } },
+        { $group: { _id: '$_id.region', orders: { $sum: 1 } } },
         { $match: { orders: { $gte: MIN_AI_AGGREGATE_COHORT } } },
-        { $sort: { orders: -1, city: 1 } },
-        { $limit: 5 }
+        { $sort: { orders: -1, _id: 1 } }, { $limit: 5 }
     ]);
-
-    return uniqueList(locations.map(item => item.city), 5);
+    return uniqueList(rows.map(row => REGION_ALIASES[row._id]).filter(Boolean), 5);
 };
 
-const normalizeSearchText = (value) => String(value || '')
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim();
-
-const getRelevantSearchTermsForProduct = async ({ shopId, product, from }) => {
-    const terms = await AnalyticsEvent.aggregate([
-        {
-            $match: {
-                shop_id: asObjectId(shopId),
-                eventType: 'search',
-                createdAt: { $gte: from }
-            }
-        },
-        {
-            $project: {
-                query: { $toLower: { $ifNull: ['$metadata.query', ''] } },
-                resultCount: { $ifNull: ['$metadata.resultCount', null] },
-                createdAt: 1
-            }
-        },
-        { $match: { query: { $ne: '' } } },
-        {
-            $group: {
-                _id: '$query',
-                searchCount: { $sum: 1 },
-                lastSearchedAt: { $max: '$createdAt' },
-                averageResults: { $avg: '$resultCount' }
-            }
-        },
-        { $match: { searchCount: { $gte: MIN_AI_AGGREGATE_COHORT } } },
-        { $sort: { searchCount: -1, lastSearchedAt: -1 } },
-        { $limit: 40 }
+const getRelevantSearchTermsForProduct = async ({ shopId, product, from, to }) => {
+    const topics = productTopics(product);
+    const aliases = Object.keys(TOPIC_ALIASES).filter(alias => topics.has(TOPIC_ALIASES[alias]));
+    if (!aliases.length) return [];
+    const rows = await AnalyticsEvent.aggregate([
+        { $match: { shop_id: asObjectId(shopId), eventType: 'search', createdAt: { $gte: from, $lt: to } } },
+        { $project: { sessionId: 1, topic: { $toLower: { $trim: { input: { $ifNull: ['$metadata.query', ''] } } } } } },
+        { $match: { topic: { $in: aliases }, sessionId: { $nin: ['', null] } } },
+        { $group: { _id: { topic: '$topic', session: '$sessionId' } } },
+        { $group: { _id: '$_id.topic', sessions: { $sum: 1 } } },
+        { $match: { sessions: { $gte: MIN_AI_AGGREGATE_COHORT } } },
+        { $sort: { sessions: -1, _id: 1 } }, { $limit: 10 }
     ]);
-
-    const productText = normalizeSearchText([
-        product.title,
-        product.category,
-        product.brand,
-        ...(Array.isArray(product.tags) ? product.tags : []),
-        product.description
-    ].filter(Boolean).join(' '));
-    const productWords = new Set(productText.split(/\s+/).filter(word => word.length >= 3));
-
-    return uniqueList(
-        terms
-            .map(item => String(item._id || '').trim())
-            .filter(query => {
-                const words = normalizeSearchText(query).split(/\s+/).filter(Boolean);
-                return words.some(word => productWords.has(word));
-            }),
-        10
-    );
+    // Only predefined topics leave the application; no customer-entered query text.
+    return uniqueList(rows.map(row => TOPIC_ALIASES[row._id]).filter(Boolean), 10);
 };
 
 const classifyProduct = (metrics) => {
@@ -228,11 +162,11 @@ const classifyProduct = (metrics) => {
     };
 };
 
-const getProductMetrics = async ({ shopId, from, productId = null }) => {
+const getProductMetrics = async ({ shopId, from, to, productId = null }) => {
     const shopObjectId = asObjectId(shopId);
     const match = {
         shop_id: shopObjectId,
-        createdAt: { $gte: from },
+        createdAt: { $gte: from, $lt: to },
         product_id: { $ne: null },
         eventType: { $in: Object.values(eventTypes) }
     };
@@ -275,7 +209,7 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
                 $match: {
                     shop_id: shopObjectId,
                     isDeleted: false,
-                    createdAt: { $gte: from },
+                    createdAt: { $gte: from, $lt: to },
                     ...(productId ? { 'items.productId': asObjectId(productId) } : {})
                 }
             },
@@ -294,7 +228,7 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
         Order.aggregate([
             { $match: deliveredOrderMatch },
             { $addFields: { revenueDate: deliveredRevenueDateExpression } },
-            { $match: { revenueDate: { $gte: from } } },
+            { $match: { revenueDate: { $gte: from, $lt: to } } },
             { $unwind: '$items' },
             ...(productId ? [{ $match: { 'items.productId': asObjectId(productId) } }] : []),
             {
@@ -323,7 +257,7 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
                     }
                 }
             },
-            { $match: { revenueDate: { $gte: from } } },
+            { $match: { revenueDate: { $gte: from, $lt: to } } },
             { $unwind: '$items' },
             ...(productId ? [{ $match: { 'items.productId': asObjectId(productId) } }] : []),
             {
@@ -402,14 +336,14 @@ const getProductMetrics = async ({ shopId, from, productId = null }) => {
 
 exports.getGrowthOverview = async (req, res) => {
     try {
-        const { range, from } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query.range);
         const shopId = req.tenantId;
 
         const [summary] = await AnalyticsEvent.aggregate([
             {
                 $match: {
                     shop_id: asObjectId(shopId),
-                    createdAt: { $gte: from },
+                    createdAt: { $gte: from, $lt: to },
                     eventType: { $in: Object.values(eventTypes) }
                 }
             },
@@ -424,7 +358,7 @@ exports.getGrowthOverview = async (req, res) => {
             }
         ]);
 
-        const products = await getProductMetrics({ shopId, from });
+        const products = await getProductMetrics({ shopId, from, to });
         const bestProduct = products[0] || null;
         const needsAttention = products.find(item => ['fix_before_ads', 'checkout_problem'].includes(item.label)) || null;
         const totalDeliveredRevenue = products.reduce((sum, item) => sum + (Number(item.revenue) || 0), 0);
@@ -437,6 +371,7 @@ exports.getGrowthOverview = async (req, res) => {
             success: true,
             data: {
                 range,
+                interval: { from, to },
                 summary: {
                     ...totals,
                     addToCartRate: rate(totals.addToCarts, totals.views),
@@ -455,8 +390,8 @@ exports.getGrowthOverview = async (req, res) => {
 
 exports.getGrowthProducts = async (req, res) => {
     try {
-        const { range, from } = getRangeStart(req.query.range);
-        const products = await getProductMetrics({ shopId: req.tenantId, from });
+        const { range, from, to } = getRangeStart(req.query.range);
+        const products = await getProductMetrics({ shopId: req.tenantId, from, to });
 
         res.status(200).json({ success: true, data: { range, products } });
     } catch (err) {
@@ -471,12 +406,12 @@ exports.getGrowthProductDetail = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid product ID' });
         }
 
-        const { range, from } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query.range);
         const product = await Product.findOne({
             _id: req.params.productId,
             shop_id: req.tenantId,
             isDeleted: false
-        }).select('title slug category images pricing averageRating numReviews').lean();
+        }).select('title slug category images pricing averageRating numReviews updatedAt').lean();
 
         if (!product) {
             return res.status(404).json({ success: false, error: 'Product not found' });
@@ -484,7 +419,7 @@ exports.getGrowthProductDetail = async (req, res) => {
 
         const [metrics] = await getProductMetrics({
             shopId: req.tenantId,
-            from,
+            from, to,
             productId: req.params.productId
         });
 
@@ -493,7 +428,7 @@ exports.getGrowthProductDetail = async (req, res) => {
                 $match: {
                     shop_id: asObjectId(req.tenantId),
                     product_id: asObjectId(req.params.productId),
-                    createdAt: { $gte: from },
+                    createdAt: { $gte: from, $lt: to },
                     eventType: { $in: Object.values(eventTypes) }
                 }
             },
@@ -520,7 +455,7 @@ exports.getGrowthProductDetail = async (req, res) => {
                 }
             },
             { $addFields: { revenueDate: deliveredRevenueDateExpression } },
-            { $match: { revenueDate: { $gte: from } } },
+            { $match: { revenueDate: { $gte: from, $lt: to } } },
             { $unwind: '$items' },
             { $match: { 'items.productId': asObjectId(req.params.productId) } },
             {
@@ -562,6 +497,7 @@ exports.getGrowthProductDetail = async (req, res) => {
             success: true,
             data: {
                 range,
+                interval: { from, to },
                 product,
                 metrics: metrics || {
                     _id: String(product._id),
@@ -587,13 +523,13 @@ exports.getGrowthProductDetail = async (req, res) => {
 
 exports.getGrowthSearch = async (req, res) => {
     try {
-        const { range, from } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query.range);
         const searchTerms = await AnalyticsEvent.aggregate([
             {
                 $match: {
                     shop_id: asObjectId(req.tenantId),
                     eventType: 'search',
-                    createdAt: { $gte: from }
+                    createdAt: { $gte: from, $lt: to }
                 }
             },
             {
@@ -621,6 +557,7 @@ exports.getGrowthSearch = async (req, res) => {
             success: true,
             data: {
                 range,
+                interval: { from, to },
                 terms: searchTerms.map(item => ({
                     query: item._id,
                     searchCount: item.searchCount,
@@ -638,8 +575,8 @@ exports.getGrowthSearch = async (req, res) => {
 
 exports.getGrowthRecommendations = async (req, res) => {
     try {
-        const { range, from } = getRangeStart(req.query.range);
-        const products = await getProductMetrics({ shopId: req.tenantId, from });
+        const { range, from, to } = getRangeStart(req.query.range);
+        const products = await getProductMetrics({ shopId: req.tenantId, from, to });
         const recommendations = products
             .filter(item => ['winner', 'hidden_gem', 'fix_before_ads', 'checkout_problem'].includes(item.label))
             .slice(0, 12)
@@ -668,8 +605,9 @@ exports.getGrowthRecommendations = async (req, res) => {
 exports.generateAdCopy = async (req, res) => {
     let generationState = null;
     try {
-        const { productId, language = 'en', campaignType = 'general' } = req.body;
-        const { from } = getRangeStart(req.body.range);
+        const { productId, language = 'auto', campaignType = 'general' } = req.body;
+        const requestedFields = normalizeRequestedFields(req.body.requestedFields);
+        const { range, from, to } = getGrowthInterval(req.body.range, req.body.interval);
 
         if (!mongoose.Types.ObjectId.isValid(productId)) {
             return res.status(400).json({ success: false, error: 'Valid productId is required' });
@@ -685,15 +623,16 @@ exports.generateAdCopy = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Product not found' });
         }
 
+        generationState = await beginAiGeneration({ req, feature: 'growth.ad_planning' });
         const [[metrics], locations, searchTerms, shop] = await Promise.all([
-            getProductMetrics({ shopId: req.tenantId, from, productId }),
-            getTopBuyerLocations({ shopId: req.tenantId, productId, from }),
-            getRelevantSearchTermsForProduct({ shopId: req.tenantId, product, from }),
+            getProductMetrics({ shopId: req.tenantId, from, to, productId }),
+            getTopBuyerLocations({ shopId: req.tenantId, productId, from, to }),
+            getRelevantSearchTermsForProduct({ shopId: req.tenantId, product, from, to }),
             Shop.findById(req.tenantId).select('shopName subdomain businessType theme.commerce.currency').lean()
         ]);
 
-        generationState = await beginAiGeneration({ req, feature: 'growth.ad_planning' });
         const insight = await generateAdInsight({
+            operation: generationState, requestedFields: requestedFields || undefined,
             product,
             shop,
             metrics: metrics || {
@@ -703,7 +642,8 @@ exports.generateAdCopy = async (req, res) => {
             campaignType,
             language,
             cityHistory: locations,
-            searchTerms
+            searchTerms,
+            evidenceWindow: { range, from, to }
         });
         const payload = {
             success: true,
@@ -721,6 +661,8 @@ exports.generateAdCopy = async (req, res) => {
         const replay = getReplayResponse(err);
         if (replay) return res.status(200).json({ ...replay, replayed: true });
         await failAiGeneration({ req, state: generationState, error: err });
+        if (sendAiOperationError(res, err)) return;
+        if (err.code === 'AI_INVALID_INTERVAL') return res.status(400).json({ success: false, code: err.code, error: err.message });
         if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
             return res.status(409).json({ success: false, code: err.code, error: err.message });
         }

@@ -1,0 +1,24 @@
+✔ actual layout editor changes reach catalog overrides after draft, publication and reload (243.8823ms)
+✔ every exposed nested color changes a resolved style after strict schema publication (1217.8931ms)
+✔ card rating and review controls render independently and honor badge/border colors (21.8893ms)
+✔ variant options consume all four configured chip tokens (1.554ms)
+✔ actual product-card editor controls survive publication and change rendered cards (346.1239ms)
+✔ actual typography editor changes survive publication into heading and body tokens (14.2038ms)
+✔ saved wide menu setting changes desktop dropdown composition without losing links (40.8648ms)
+✔ disabling the last hero slide stays disabled after publication without reviving legacy copy (16.4798ms)
+✔ manual review source overrides selected reviews while selected mode keeps its fallback (1.946ms)
+✔ every explicitly selected featured product is rendered after publication (61.3473ms)
+✔ checkout mobile action consumes checkout colors and shape, and all page headings share typography (0.9624ms)
+✔ preview section toolbar retains original draft indices when plans filter earlier sections (32.5109ms)
+✔ responsive editor commands survive schema publication and preserve explicit section overrides (19.3181ms)
+✔ responsive defaults preserve legacy composition and derived featured tablet columns (16.2442ms)
+✔ invalid semantic responsive values are rejected and safely normalized on reads (0.4199ms)
+✔ one-column mobile grids remain one column until the tablet breakpoint (29.4589ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2729.7898

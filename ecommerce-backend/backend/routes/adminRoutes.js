@@ -301,7 +301,7 @@ const productAiImageUploadMiddleware = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 5 * 1024 * 1024,
-        files: 1
+        files: 1, fields: 32, fieldSize: 16 * 1024, parts: 33, headerPairs: 100
     },
     fileFilter: (req, file, cb) => {
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
@@ -318,7 +318,7 @@ const productAiImageUpload = (req, res, next) => {
                 success: false,
                 configured: true,
                 errorCode: err.code === 'LIMIT_FILE_SIZE' ? 'AI_IMAGE_TOO_LARGE' : 'AI_IMAGE_UNSUPPORTED',
-                message: err.message || 'Invalid product image.'
+                message: 'The image or form fields exceed the supported type or size limits.'
             });
         }
 
@@ -389,6 +389,18 @@ router.get(
     authorize('VendorAdmin', 'VendorStaff'),
     getVendorAnnouncements
 );
+
+const aiPreferences = require('../controllers/aiPreferencesController');
+const aiContent = require('../controllers/aiMerchantContentController');
+const historyAccess = [protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('products')];
+router.get('/ai/history', ...historyAccess, aiContent.historyList);
+router.post('/ai/history', ...historyAccess, blockBillingSuspendedShop, blockVerificationSuspendedShop, aiContent.historySave);
+router.get('/ai/history/:id/review', ...historyAccess, aiContent.historyReview);
+router.post('/ai/history/:id/apply', ...historyAccess, aiContent.historyApply);
+router.put('/ai/history/:id/feedback', ...historyAccess, aiContent.historyFeedback);
+router.delete('/ai/history/:id', ...historyAccess, aiContent.historyDelete);
+router.get('/ai/preferences', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('settings'), aiPreferences.get);
+router.put('/ai/preferences', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('settings'), blockBillingSuspendedShop, blockVerificationSuspendedShop, aiPreferences.save);
 
 router.get(
     '/basic-store-settings',

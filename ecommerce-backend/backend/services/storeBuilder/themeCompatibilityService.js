@@ -10,17 +10,23 @@ const preserveThemeExtensions = (incoming = {}, previous = {}) => {
     const extensions = mergeThemePatch(old.extensions || {}, next.extensions || {});
     const archived = Array.isArray(extensions.schemaFields) ? extensions.schemaFields : [];
     const fields = new Map(archived.filter(field => field && Array.isArray(field.path)).map(field => [JSON.stringify(field.path), field]));
-    const walk = (value, path = []) => {
+    const walk = (value, path = [], schema = Shop.schema, schemaPath = 'theme') => {
         if (path[0] === 'extensions' || value === undefined) return;
-        const schemaPath = ['theme', ...path].join('.');
-        const definition = Shop.schema.path(schemaPath);
-        if (definition && !['Array', 'DocumentArrayElement', 'Embedded'].includes(definition.instance)) return;
-        if (path.length && !definition && Shop.schema.pathType(schemaPath) !== 'nested') {
+        // Inspect declared paths directly. schema.path()/pathType() cache dynamic
+        // document-array paths, including unknown request-controlled field names.
+        const definition = schema.paths[schemaPath];
+        if (schemaPath && !definition && !schema.nested[schemaPath]) {
             fields.set(JSON.stringify(path), { path, value });
             return;
         }
+        if (definition?.schema) {
+            if (Array.isArray(value)) value.forEach((item, index) => walk(item, [...path, String(index)], definition.schema, ''));
+            else walk(value, path, definition.schema, '');
+            return;
+        }
+        if (definition) return; // Scalar, scalar-array and Mixed paths persist as declared.
         if (value && typeof value === 'object') {
-            Object.entries(value).forEach(([key, child]) => walk(child, [...path, key]));
+            Object.entries(value).forEach(([key, child]) => walk(child, [...path, key], schema, schemaPath ? `${schemaPath}.${key}` : key));
         }
     };
     walk(old);

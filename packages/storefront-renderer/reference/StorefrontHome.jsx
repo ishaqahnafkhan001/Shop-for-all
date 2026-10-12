@@ -3,7 +3,6 @@
 import { getEnabledHomepageSections, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
 import {
     DefaultLink,
-    getContainerClass,
     getReferenceThemeStyle,
     isPreviewMobile,
     isPreviewNarrow,
@@ -11,6 +10,7 @@ import {
 } from "./referenceCore";
 import { StorefrontAllProducts } from "./StorefrontAllProducts";
 import { StorefrontHero } from "./StorefrontHero";
+import { StorefrontComposition } from "./StorefrontComposition";
 import { HomepageSection } from "./StorefrontSectionRenderer";
 
 export function ReferenceStorefrontHome({
@@ -59,84 +59,107 @@ export function ReferenceStorefrontHome({
     const sectionColors = theme.colors?.sections || {};
     const allProducts = theme.allProducts || {};
     const enabledSections = getEnabledHomepageSections(theme);
-    const storefrontContainerClass = getContainerClass(layout);
     const catalogProducts = products || [];
     const forcedMobilePreview = isPreviewMobile(previewDevice);
     const forcedNarrowPreview = isPreviewNarrow(previewDevice);
 
+    const isAvailable = (section) => {
+        if (section.type === 'CategoryList') return Boolean(categoryDetails.length || categories.length || catalogProducts.some(product => product.category));
+        if (section.type === 'BrandStory') {
+            const settings = section.settings || {};
+            return Boolean(settings.text || settings.imageUrl || settings.image || settings.desktopImage);
+        }
+        if (['Collection', 'CollectionShowcase'].includes(section.type)) {
+            const id = section.id || section._id;
+            const ids = section.settings?.productIds || section.settings?.source?.productIds || [];
+            const products = sectionProducts?.[id] || catalogProducts.filter(product => ids.map(String).includes(String(product._id)));
+            return products.length > 0;
+        }
+        return true;
+    };
+    const renderSection = (section, index) => (
+        <HomepageSection
+            key={section.id || section._id || `${section.type}-${index}`}
+            section={section}
+            sectionIndex={index}
+            categories={categoryDetails.length ? categoryDetails : categories}
+            sectionProducts={sectionProducts}
+            sectionReviews={sectionReviews}
+            catalogProducts={catalogProducts}
+            storewideDiscount={storewideDiscount}
+            productCard={productCard}
+            sectionColors={sectionColors}
+            layout={layout}
+            mobile={theme.mobile}
+            onProductAdd={onProductAdd}
+            onProductBuyNow={onProductBuyNow}
+            onWishlistToggle={onWishlistToggle}
+            isProductWishlisted={isProductWishlisted}
+            LinkComponent={LinkComponent}
+            previewDevice={previewDevice}
+            editor={editor}
+        />
+    );
+    const hero = (
+        <StorefrontHero
+            theme={theme}
+            shopName={shopName}
+            storewideDiscount={storewideDiscount}
+            LinkComponent={LinkComponent}
+            previewDevice={previewDevice}
+            editor={editor}
+        />
+    );
+    const catalog = (
+        <StorefrontAllProducts
+            allProducts={allProducts}
+            catalogProducts={catalogProducts}
+            catalogSearch={catalogSearch}
+            categories={categories}
+            filters={filters}
+            forcedMobilePreview={forcedMobilePreview}
+            forcedNarrowPreview={forcedNarrowPreview}
+            layout={layout}
+            loading={loading}
+            mobileFiltersOpen={mobileFiltersOpen}
+            onCatalogSearchChange={onCatalogSearchChange}
+            onCategoryChange={onCategoryChange}
+            onClearFilters={onClearFilters}
+            onFilterClose={onFilterClose}
+            onFilterOpen={onFilterOpen}
+            onMaxPriceChange={onMaxPriceChange}
+            onMinPriceChange={onMinPriceChange}
+            onPageChange={onPageChange}
+            onPriceApply={onPriceApply}
+            onProductAdd={onProductAdd}
+            onProductBuyNow={onProductBuyNow}
+            onWishlistToggle={onWishlistToggle}
+            isProductWishlisted={isProductWishlisted}
+            onRatingChange={onRatingChange}
+            onStockChange={onStockChange}
+            onSortChange={onSortChange}
+            pagination={pagination}
+            previewDevice={previewDevice}
+            priceInput={priceInput}
+            productCard={productCard}
+            storewideDiscount={storewideDiscount}
+            editor={editor}
+            LinkComponent={LinkComponent}
+            theme={theme}
+        />
+    );
+
     return (
-        <div className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
-            <div className={`${storefrontContainerClass} py-3.5 sm:py-8`}>
-                <StorefrontHero
-                    theme={theme}
-                    shopName={shopName}
-                    storewideDiscount={storewideDiscount}
-                    LinkComponent={LinkComponent}
-                    previewDevice={previewDevice}
-                    editor={editor}
-                />
-
-                {afterHeroContent}
-
-                {enabledSections.map((section, index) => (
-                    <HomepageSection
-                        key={section.id || section._id || `${section.type}-${index}`}
-                        section={section}
-                        sectionIndex={index}
-                        categories={categoryDetails.length ? categoryDetails : categories}
-                        sectionProducts={sectionProducts}
-                        sectionReviews={sectionReviews}
-                        catalogProducts={catalogProducts}
-                        storewideDiscount={storewideDiscount}
-                        productCard={productCard}
-                        sectionColors={sectionColors}
-                        layout={layout}
-                        onProductAdd={onProductAdd}
-                        onProductBuyNow={onProductBuyNow}
-                        onWishlistToggle={onWishlistToggle}
-                        isProductWishlisted={isProductWishlisted}
-                        LinkComponent={LinkComponent}
-                        previewDevice={previewDevice}
-                        editor={editor}
-                    />
-                ))}
-            </div>
-
-            <StorefrontAllProducts
-                allProducts={allProducts}
-                catalogProducts={catalogProducts}
-                catalogSearch={catalogSearch}
-                categories={categories}
-                filters={filters}
-                forcedMobilePreview={forcedMobilePreview}
-                forcedNarrowPreview={forcedNarrowPreview}
+        <div data-homepage-composition={layout.homepageComposition} className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
+            <StorefrontComposition
                 layout={layout}
-                loading={loading}
-                mobileFiltersOpen={mobileFiltersOpen}
-                onCatalogSearchChange={onCatalogSearchChange}
-                onCategoryChange={onCategoryChange}
-                onClearFilters={onClearFilters}
-                onFilterClose={onFilterClose}
-                onFilterOpen={onFilterOpen}
-                onMaxPriceChange={onMaxPriceChange}
-                onMinPriceChange={onMinPriceChange}
-                onPageChange={onPageChange}
-                onPriceApply={onPriceApply}
-                onProductAdd={onProductAdd}
-                onProductBuyNow={onProductBuyNow}
-                onWishlistToggle={onWishlistToggle}
-                isProductWishlisted={isProductWishlisted}
-                onRatingChange={onRatingChange}
-                onStockChange={onStockChange}
-                onSortChange={onSortChange}
-                pagination={pagination}
+                sections={enabledSections}
+                isAvailable={isAvailable}
+                renderSection={renderSection}
+                hero={hero}
+                afterHeroContent={afterHeroContent}
+                catalog={catalog}
                 previewDevice={previewDevice}
-                priceInput={priceInput}
-                productCard={productCard}
-                storewideDiscount={storewideDiscount}
-                editor={editor}
-                LinkComponent={LinkComponent}
-                theme={theme}
             />
         </div>
     );

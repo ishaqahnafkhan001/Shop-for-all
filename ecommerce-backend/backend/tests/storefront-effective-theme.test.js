@@ -42,6 +42,12 @@ test('canonical layers distinguish omission, explicit default values, clears, an
     assert.equal(resolved.allProducts.mobileColumns, 1);
     assert.equal(resolved.preset, null);
     assert.equal(resolveEffectiveTheme({ hero: { title: null } }, context).hero.title, 'Default');
+    const seo = resolveEffectiveTheme({ seo: { title: 'Old title', description: 'Keep this', siteName: 'Merchant', mode: 'manual' } },
+        { overrides: { seo: { title: 'New title' } } }).seo;
+    assert.equal(seo.title, 'New title');
+    assert.equal(seo.description, 'Keep this');
+    assert.equal(seo.siteName, 'Merchant');
+    assert.equal(seo.mode, 'manual');
 });
 
 test('legacy versions resolve without rewriting inputs or reapplying a preset over merchant edits', () => {
@@ -70,7 +76,9 @@ test('future schema versions remain identifiable on reads and are rejected for w
 test('safe unknown root and nested fields survive strict schema round trips in an opaque archive', () => {
     const raw = { futureWidget: { label: 'Keep', enabled: false }, hero: { futureSpacing: 0 },
         homepageSections: [{ id: 'banner', type: 'Banner', futureField: 'retain', settings: { futureSetting: 'supported Mixed' } }] };
+    const schemaCacheBefore = Object.keys(Shop.schema.subpaths);
     const stored = normalizeTheme(preserveThemeExtensions(raw));
+    assert.deepEqual(Object.keys(Shop.schema.subpaths), schemaCacheBefore);
     const shop = new Shop({ shopName: 'Archive', subdomain: 'archive', theme: stored });
     assert.equal(shop.validateSync(), undefined);
     const loaded = Shop.hydrate(JSON.parse(JSON.stringify(shop.toObject()))).toObject().theme;
@@ -174,12 +182,14 @@ test('actual public settings, shop-info and bootstrap handlers return identical 
     });
     const cacheData = new Map();
     const ids = ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'];
+    const revisions = new Map(ids.map(id => [id, 8]));
     const chain = data => { const query = { select: () => query, sort: () => query, limit: () => query, lean: async () => structuredClone(data) }; return query; };
     const deps = {
         mongoose: require('mongoose'),
+        joi: require('joi'),
         '../models/Shop': { findById: id => {
             assert.ok(ids.includes(String(id)));
-            return chain({ _id: id, shopName: id, themeRevision: 8, theme: { hero: { title: '' }, policies: { refund: 'Keep my refund policy' } } });
+            return chain({ _id: id, shopName: id, themeRevision: revisions.get(String(id)), theme: { hero: { title: '' }, policies: { refund: 'Keep my refund policy' } } });
         } },
         '../models/Product': { aggregate: async () => [], countDocuments: async () => 0, distinct: async () => [] },
         '../models/Category': { find: () => chain([]) },
@@ -189,6 +199,7 @@ test('actual public settings, shop-info and bootstrap handlers return identical 
         '../services/billing/planAccessService': { getShopPlanAccess: async () => plan('none') },
         '../services/shops/featureAccessService': { hasFeature: async () => false },
         '../services/verification/vendorVerificationStatusService': { buildPublicShopVerification: () => ({}) },
+        '../services/verification/publicTrustedBadgeService': { getPublicTrustedBadge: async () => null },
         '../services/sales/scheduledSaleService': { applyScheduledSalesToProducts: async ({ products }) => products },
         '../services/publicProductSerializer': { sanitizePublicProducts: data => data },
         '../services/categories/categoryService': { mergeCategoryDetails: () => [] },
@@ -222,6 +233,12 @@ test('actual public settings, shop-info and bootstrap handlers return identical 
         assert.deepEqual((await invoke(settings.getPublicStorefrontSettings, id)).data.theme, a.theme);
     }
     assert.equal(cacheData.size, 4);
+    // Simulate publication on a different worker: no local invalidation is sent.
+    revisions.set(ids[0], 9);
+    assert.equal((await invoke(settings.getPublicStorefrontSettings, ids[0])).data.themeRevision, 9);
+    assert.equal((await invoke(storefront.getStorefrontBootstrap, ids[0])).data.shop.themeRevision, 9);
+    assert.equal((await invoke(settings.getPublicStorefrontSettings, ids[1])).data.themeRevision, 8);
+    assert.equal(cacheData.size, 6); // old keys may live until TTL but cannot be selected
 });
 
 test('actual Builder preview passes canonical themes to every renderer across presets and plan contexts', async () => {
@@ -255,11 +272,67 @@ test('actual Builder preview passes canonical themes to every renderer across pr
             const context = { branding, shopName: 'Tenant A', planAccess: plan(access) };
             const expected = resolveEffectiveTheme(theme, context);
             for (const device of ['desktop', 'tablet', 'mobile', 'smallMobile']) {
-                const html = renderToStaticMarkup(React.createElement(compiled.exports.StorefrontPreview, { theme, device, ...context }));
+                const html = renderToStaticMarkup(React.createElement(compiled.exports.StorefrontPreviewContent, { theme, device, ...context }));
                 const probes = [...html.matchAll(/<script[^>]*data-theme-probe="true"[^>]*>(.*?)<\/script>/g)];
                 assert.equal(probes.length, 3);
                 for (const probe of probes) assert.deepEqual(JSON.parse(probe[1]), expected, `${preset.id}/${access}/${device}`);
             }
         }
     } finally { await bundle.close(); }
+});
+
+test('save normalization rejects newer current/incoming themes before external work and allows safe read-only inspection', async () => {
+    const calls = [];
+    const filename = path.join(root, 'ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js');
+    const compiled = new Module(filename, module);
+    const deps = {
+        '@scaleup/storefront-theme': contract,
+        './themeCompatibilityService': { preserveThemeExtensions },
+        '../themeSectionService': { ensureThemeSectionArchitecture: async (shop, options) => calls.push(options.persist) },
+        '../policies/defaultPolicyTemplates': contract,
+    };
+    compiled.require = id => deps[id] || {};
+    compiled._compile(fs.readFileSync(filename, 'utf8'), filename);
+    const { normalizeThemeForShop } = compiled.exports;
+    await assert.rejects(normalizeThemeForShop({ version: 5 }, { theme: { version: 4 } }), { code: 'UNSUPPORTED_THEME_VERSION' });
+    await assert.rejects(normalizeThemeForShop({ version: 4 }, { theme: { version: 5 } }), { code: 'UNSUPPORTED_THEME_VERSION' });
+    assert.deepEqual(calls, []);
+    const future = { version: 5, hero: { title: 'Future' } };
+    const result = await normalizeThemeForShop(future, { shopName: 'Future', theme: future }, { readOnly: true });
+    assert.equal(result.version, 5);
+    assert.deepEqual(calls, [false]);
+    assert.deepEqual(future, { version: 5, hero: { title: 'Future' } });
+});
+
+test('branding environment loader scopes asset and CTA lookups to each tenant', async () => {
+    const ids = ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'];
+    const target = '507f1f77bcf86cd799439013';
+    const calls = [];
+    const chain = data => ({ select: () => ({ lean: async () => data }) });
+    const filename = path.join(root, 'ecommerce-backend/backend/services/shops/storeBrandingService.js');
+    const compiled = new Module(filename, module);
+    const deps = {
+        '@scaleup/storefront-theme': contract,
+        mongoose: require('mongoose'),
+        '../../models/StoreBuilderAsset': { find: query => {
+            calls.push(['asset', query.shop_id]);
+            assert.deepEqual(query._id.$in, [target]);
+            return chain(query.shop_id === ids[0] ? [{ _id: target, url: '/owned.png' }] : []);
+        } },
+        '../../models/Product': { findOne: query => {
+            calls.push(['product', query.shop_id]);
+            assert.equal(query._id, target);
+            return chain(query.shop_id === ids[0] ? { _id: target, slug: 'owned-product' } : null);
+        } },
+    };
+    compiled.require = id => deps[id] || {};
+    compiled._compile(fs.readFileSync(filename, 'utf8'), filename);
+    const results = [];
+    for (const id of ids) results.push(await compiled.exports.resolveStoreBranding({ _id: id, shopName: id, theme: {},
+        branding: { version: 1, source: 'explicit', logoAssetId: target, heroCtaType: 'PRODUCT', heroCtaTargetId: target, heroCtaLabel: 'Open' } }));
+    assert.equal(results[0].logoUrl, '/owned.png');
+    assert.equal(results[0].heroCta.url, '/products/owned-product');
+    assert.equal(results[1].logoUrl, '');
+    assert.equal(results[1].heroCta.url, null);
+    assert.deepEqual(calls, [['asset', ids[0]], ['product', ids[0]], ['asset', ids[1]], ['product', ids[1]]]);
 });

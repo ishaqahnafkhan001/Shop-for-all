@@ -46,7 +46,7 @@ export const ProductCard = memo(function ProductCard({
     const rating = Number(product.averageRating || 0);
     const reviewCount = Math.max(Number(product.numReviews || 0), 0);
     const showReviews = productCard?.showReviews !== false && reviewCount > 0;
-    const showRating = productCard?.showRating !== false && showReviews && rating > 0;
+    const showRating = productCard?.showRating !== false && rating > 0;
     const wishlisted = typeof isWishlisted === "function" ? isWishlisted(product) : Boolean(isWishlisted);
     const imageUrl = getImageUrl(product);
     const [imageFailed, setImageFailed] = useState(false);
@@ -132,11 +132,11 @@ export const ProductCard = memo(function ProductCard({
 
     return (
         <article
-            className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border transition duration-300 ease-out hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
+            className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border border-[var(--sf-card-border-color)] transition duration-300 ease-out hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
             style={{
                 animationDelay: `${(index % 8) * 35}ms`,
                 backgroundColor: cardColors.background,
-                borderColor: cardColors.border,
+                '--sf-card-border-color': cardColors.border,
             }}
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product.slug || product._id}`} prefetch={false} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
@@ -176,7 +176,7 @@ export const ProductCard = memo(function ProductCard({
                         className="absolute left-2 top-2 z-20 rounded-full px-2.5 py-1.5 text-[10px] font-black uppercase text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 sm:left-3 sm:top-3 sm:px-3 sm:text-[11px]"
                         style={{
                             backgroundColor: cardColors.saleBadgeBackground,
-                            backgroundImage: "linear-gradient(rgba(15, 23, 42, 0.3), rgba(15, 23, 42, 0.3))",
+                            color: cardColors.saleBadgeText,
                         }}
                     >
                         {activeDiscount}% off
@@ -191,9 +191,9 @@ export const ProductCard = memo(function ProductCard({
                         <p className="text-[11px] font-semibold line-through sm:text-xs" style={{ color: cardColors.compareAtPrice }}>{formatPrice(originalPrice)}</p>
                     )}
                 </div>
-                {showRating && (
+                {(showRating || showReviews) && (
                     <div className={`mt-2 flex min-w-0 items-center gap-1 text-[10px] font-bold leading-none sm:text-xs ${cardAlignment.flexClass}`}>
-                        <span className="flex shrink-0 items-center gap-0.5" style={{ color: cardColors.ratingStar }}>
+                        {showRating && <span className="flex shrink-0 items-center gap-0.5" style={{ color: cardColors.ratingStar }}>
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                     key={star}
@@ -202,8 +202,8 @@ export const ProductCard = memo(function ProductCard({
                                     className={star <= Math.round(rating) ? "" : "text-slate-300"}
                                 />
                             ))}
-                        </span>
-                        <span className="min-w-0 truncate" style={{ color: cardColors.ratingText }}>{rating.toFixed(1)} ({reviewCount})</span>
+                        </span>}
+                        <span className="min-w-0 truncate" style={{ color: cardColors.ratingText }}>{showRating && rating.toFixed(1)}{showRating && showReviews ? ' ' : ''}{showReviews && `(${reviewCount} reviews)`}</span>
                     </div>
                 )}
                 {productCard?.showCategory !== false && product.category && (

@@ -8,8 +8,8 @@ export const previewPages = [
     { id: 'policy', label: 'Policy' }
 ];
 
-export const usePreviewMode = (initialDevice = 'desktop', initialPage = 'home') => {
-    const [device, setDevice] = useState(initialDevice);
+export const usePreviewMode = (initialDevice, initialPage = 'home') => {
+    const [device, setDevice] = useState(() => initialDevice || (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches ? 'smallMobile' : 'desktop'));
     const [previewPage, setPreviewPage] = useState(initialPage);
 
     return {

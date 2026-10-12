@@ -123,7 +123,7 @@ test('storefront color groups persist and apply across all storefront page wrapp
     const themeProvider = readRepo('ecommerce-storefront/src/components/storefront/StorefrontThemeProvider.jsx');
     const referenceCore = readRepo('packages/storefront-renderer/reference/referenceCore.jsx');
     const footer = readRepo('packages/storefront-renderer/reference/StorefrontFooter.jsx');
-    const storefrontCss = readRepo('ecommerce-storefront/src/app/globals.css');
+    const storefrontCss = readRepo('packages/storefront-renderer/styles.css');
 
     assert.match(shopModel, /themeColorGroups/);
     assert.match(shopModel, /productCard:\s*\{[\s\S]*addToCartBackground/);
@@ -132,12 +132,12 @@ test('storefront color groups persist and apply across all storefront page wrapp
     assert.match(shopModel, /\.\.\.themeColorGroups/);
 
     assert.match(themeProvider, /getReferenceThemeStyle\(theme\)/);
-    assert.match(themeProvider, /'--sf-surface'/);
-    assert.match(themeProvider, /'--sf-border'/);
-    assert.match(themeProvider, /'--sf-success'/);
-    assert.match(themeProvider, /'--sf-danger'/);
-    assert.match(themeProvider, /brand\.secondary \|\| cssTheme\.foreground/);
-    assert.match(referenceCore, /"--sf-foreground": storefrontForeground/);
+    assert.match(referenceCore, /'--sf-surface'/);
+    assert.match(referenceCore, /'--sf-border'/);
+    assert.match(referenceCore, /'--sf-success'/);
+    assert.match(referenceCore, /'--sf-danger'/);
+    assert.match(referenceCore, /brand\.secondary \|\| cssTheme\.foreground/);
+    assert.match(referenceCore, /['"]--sf-foreground['"]: storefrontForeground/);
     assert.match(footer, /text-\[var\(--sf-footer-link\)\]/);
 
     assert.match(storefrontCss, /var\(--sf-background/);

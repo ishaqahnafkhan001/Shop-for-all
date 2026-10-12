@@ -6,6 +6,9 @@ import * as contractNamespace from './index.cjs';
 const contract = contractNamespace.default || contractNamespace;
 
 export const {
+    HOMEPAGE_COMPOSITIONS,
+    getHomepageComposition,
+    planHomepageComposition,
     createThemeInput,
     assertSupportedThemeVersion,
     resolveEffectiveTheme,
@@ -38,6 +41,14 @@ export const {
     getEnabledHomepageSections,
     getSortedNavigation,
     getThemeCssVars,
+    THEME_CAPABILITY_RULES,
+    LIMITED_EDITABLE_SECTION_TYPES,
+    RESTRICTED_THEME_KEYS,
+    RESTRICTED_VARIANT_PATHS,
+    getThemeCapabilities,
+    getThemePropertyCapability,
+    getThemeEditorRestriction,
+    assertStoreBuilderUpdateAllowed,
     getThemeCapabilityMetadata,
     extractThemeAssetUrls,
     summarizeThemeChanges,
@@ -65,6 +76,9 @@ export const {
     buildNextHomepageMetadata,
     buildSeoPreviewModel,
     evaluateHomepageSeo,
+    normalizeAcceptedSeoProvenance,
+    applySeoSuggestion,
+    editSeoField,
 } = contract;
 
 export default contract;
