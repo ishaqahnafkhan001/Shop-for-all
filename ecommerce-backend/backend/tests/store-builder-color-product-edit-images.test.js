@@ -167,7 +167,8 @@ test('product edit image updates preserve kept images and submit new files throu
     assert.match(editProduct, /body\.append\('removedImages'/);
     assert.match(editProduct, /body\.append\('coverImageIndex'/);
     assert.match(editProduct, /newImageFiles\.forEach\(file => body\.append\('images', file\)\)/);
-    assert.match(editProduct, /newImageFiles\[0\][\s\S]*formData\.images\?\.find/);
+    assert.match(editProduct, /const images = \[\.\.\.\(formData\.images \|\| \[\]\), \.\.\.newImageFiles\]/);
+    assert.match(editProduct, /const cover = images\[coverImageIndex\]/);
 
     assert.match(adminRoutes, /router\.patch\([\s\S]*'\/products\/:id'[\s\S]*productMediaUpload[\s\S]*updateProduct/);
     assert.match(productMediaService, /'existingImages'/);

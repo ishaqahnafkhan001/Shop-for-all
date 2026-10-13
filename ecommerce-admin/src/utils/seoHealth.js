@@ -172,6 +172,9 @@ export const productContentIssues = ({ health, readiness = [], product = {} }) =
         if (item.id && !issues.some(issue => issue.id === item.id)) issues.push({ ...item, aiSection: undefined });
     }
     if (!(product.features || []).some(row => row.point && row.reason)) issues.push({ id: 'benefits', label: 'Optional: explain supported buyer benefits', aiSection: 'sellingPoints', optional: true });
+    if (!product.seo?.title?.trim() || !product.seo?.description?.trim()) issues.push({ id: 'dedicatedSeo', label: 'Generate a dedicated SEO title and description', aiSection: 'seo', optional: true });
     if ((product.specifications || []).some(row => Boolean(row.title) !== Boolean(row.value))) issues.push({ id: 'specifications', label: 'Complete supported specification rows', aiSection: 'specifications' });
+    else if (!(product.specifications || []).some(row => row.title && row.value)) issues.push({ id: 'specifications', label: 'Optional: add verified specifications', aiSection: 'specifications', optional: true });
+    if (!(product.comments || []).some(row => row.title && row.value)) issues.push({ id: 'extraNotes', label: 'Optional: add supported shopper notes', aiSection: 'extraNotes', optional: true });
     return issues;
 };

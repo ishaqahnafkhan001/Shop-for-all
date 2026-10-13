@@ -59,6 +59,12 @@ const getCachedCategories = async (shopId, categoryQuery) => {
     return value;
 };
 
+const invalidateCachedCategories = (shopId) => {
+    for (const key of productCategoryCache.keys()) {
+        if (key.startsWith(`${shopId}:`)) productCategoryCache.delete(key);
+    }
+};
+
 const normalizeSearchText = (value = '') => (
     String(value || '')
         .replace(/[^\p{L}\p{N}\s._-]/gu, ' ')
@@ -84,6 +90,26 @@ const addComputedProductFields = (product) => {
             ? Math.round(sellingPrice - ((sellingPrice * discount) / 100))
             : sellingPrice
     };
+};
+
+const lowStockVariantCountExpression = {
+    $size: {
+        $filter: {
+            input: { $ifNull: ['$variants', []] },
+            as: 'variant',
+            cond: {
+                $lte: [
+                    { $ifNull: ['$$variant.stock', 0] },
+                    {
+                        $ifNull: [
+                            '$$variant.inventory.lowStockThreshold',
+                            { $ifNull: ['$lowStockThreshold', 5] }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
 };
 
 const buildProductListQuery = ({ shopId, filters, isStorefrontRequest }) => {
@@ -125,12 +151,10 @@ const buildProductListQuery = ({ shopId, filters, isStorefrontRequest }) => {
         query.$expr = { $lte: [{ $sum: '$variants.stock' }, 0] };
     }
     if (filters.lowStock === 'true') {
-        query.$expr = {
-            $lt: [
-                { $sum: '$variants.stock' },
-                '$lowStockThreshold'
-            ]
-        };
+        const lowStockExpr = { $gt: [lowStockVariantCountExpression, 0] };
+        query.$expr = query.$expr
+            ? { $and: [query.$expr, lowStockExpr] }
+            : lowStockExpr;
     }
 
     return query;
@@ -167,7 +191,8 @@ const getSummaryProjection = (isStorefrontRequest) => {
         lowStockThreshold: 1,
         createdAt: 1,
         totalStock: { $sum: '$variants.stock' },
-        variantCount: { $size: { $ifNull: ['$variants', []] } }
+        variantCount: { $size: { $ifNull: ['$variants', []] } },
+        lowStockVariantCount: lowStockVariantCountExpression
     };
 
     return isStorefrontRequest ? PUBLIC_PRODUCT_CARD_PROJECT : adminSummaryProjection;
@@ -177,6 +202,7 @@ module.exports = {
     slugify,
     getUniqueSlug,
     getCachedCategories,
+    invalidateCachedCategories,
     addComputedProductFields,
     buildProductListQuery,
     getProductSort,

@@ -12,10 +12,12 @@ import {
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
 import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
+import SellerFactsEditor from '../../../components/products/SellerFactsEditor.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import { hasFeature } from '../../../utils/featureAccess.js';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
+import { blankSellerFacts } from '../../../utils/sellerFacts.js';
 import {
     MAX_SELLING_POINTS,
     hasIncompleteKeyValueRow,
@@ -72,7 +74,8 @@ const AddProduct = () => {
         pricing:        { buyingPrice: '', sellingPrice: '', discount: 0 },
         features:       [],
         specifications: [],
-        comments:       []
+        comments:       [],
+        sellerFacts:    blankSellerFacts()
     });
 
     // ── Variant matrix state ──────────────────────────────────────────────────
@@ -472,6 +475,7 @@ const AddProduct = () => {
             data.append('features',       JSON.stringify(normalizeSellingPointRows(formData.features)));
             data.append('specifications', JSON.stringify(normalizeKeyValueRows(formData.specifications)));
             data.append('comments',       JSON.stringify(normalizeKeyValueRows(formData.comments)));
+            data.append('sellerFacts',    JSON.stringify(formData.sellerFacts));
             data.append('coverImageIndex', JSON.stringify(coverImageIndex));
 
             imageFiles.forEach(file => data.append('images', file));
@@ -519,7 +523,7 @@ const AddProduct = () => {
                             readiness={readinessItems}
                             formData={formData}
                             setFormData={setFormData}
-                            getFirstImage={() => imageFiles[coverImageIndex] || imageFiles[0] || null}
+                            getImages={() => [imageFiles[coverImageIndex], ...imageFiles.filter((_, index) => index !== coverImageIndex)].filter(Boolean)}
                             getVariants={getAiVariants}
                         />
 
@@ -650,6 +654,8 @@ const AddProduct = () => {
                                 required
                             />
                         </div>
+                        <SellerFactsEditor value={formData.sellerFacts}
+                            onChange={sellerFacts => setFormData(prev => ({ ...prev, sellerFacts }))} />
                     </ProductFormSection>
 
                     {/* ── MEDIA ─────────────────────────────────────────────── */}

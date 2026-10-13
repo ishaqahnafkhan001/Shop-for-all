@@ -301,7 +301,7 @@ const productAiImageUploadMiddleware = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 5 * 1024 * 1024,
-        files: 1, fields: 32, fieldSize: 16 * 1024, parts: 33, headerPairs: 100
+        files: 3, fields: 32, fieldSize: 16 * 1024, parts: 35, headerPairs: 100
     },
     fileFilter: (req, file, cb) => {
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
@@ -310,7 +310,7 @@ const productAiImageUploadMiddleware = multer({
 
         cb(null, true);
     }
-}).single('image');
+}).fields([{ name: 'image', maxCount: 1 }, { name: 'images', maxCount: 3 }]);
 const productAiImageUpload = (req, res, next) => {
     productAiImageUploadMiddleware(req, res, (err) => {
         if (err) {

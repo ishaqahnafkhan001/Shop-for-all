@@ -13,10 +13,12 @@ import {
     SellerHint
 } from '../../../components/products/ProductFormUX.jsx';
 import ProductAiAssistant from '../../../components/products/ProductAiAssistant.jsx';
+import SellerFactsEditor from '../../../components/products/SellerFactsEditor.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { SeoHealthCard, SeoLengthHint, SeoSnippetPreview } from '../../../components/seo/SeoPreview.jsx';
 import { hasFeature } from '../../../utils/featureAccess.js';
 import { buildProductSeoPreview, scoreProductSeo, truncateSeoText } from '../../../utils/seoHealth.js';
+import { blankSellerFacts, normalizeSellerFacts } from '../../../utils/sellerFacts.js';
 import {
     MAX_SELLING_POINTS,
     hasIncompleteKeyValueRow,
@@ -90,7 +92,8 @@ const buildProductFormState = (product = {}) => ({
     images:         product.images         || [],
     features:       normalizeSellingPointRows(product.features),
     specifications: normalizeKeyValueRows(product.specifications),
-    comments:       normalizeKeyValueRows(product.comments)
+    comments:       normalizeKeyValueRows(product.comments),
+    sellerFacts:    normalizeSellerFacts(product.sellerFacts)
 });
 
 const EditProduct = () => {
@@ -123,7 +126,8 @@ const EditProduct = () => {
         images:         [],
         features:       [],
         specifications: [],
-        comments:       []
+        comments:       [],
+        sellerFacts:    blankSellerFacts()
     });
     const [newImageFiles, setNewImageFiles] = useState([]);
     const [newImagePreviews, setNewImagePreviews] = useState([]);
@@ -550,16 +554,13 @@ const EditProduct = () => {
         priceOverride: Number(variant.pricing?.price || variant.priceOverride || formData.pricing.sellingPrice || 0)
     }));
 
-    const getFirstAiImage = () => (
-        (coverImageIndex >= formData.images.length
-            ? newImageFiles[coverImageIndex - formData.images.length]
-            : null)
-        || newImageFiles[0]
-        || formData.images?.[coverImageIndex]
-        || formData.images?.find(Boolean)
-        || formData.variants?.find(variant => variant.image)?.image
-        || null
-    );
+    const getAiImages = () => {
+        const images = [...(formData.images || []), ...newImageFiles];
+        const cover = images[coverImageIndex];
+        const ordered = [cover, ...images.filter((_, index) => index !== coverImageIndex)];
+        if (!ordered.some(Boolean)) ordered.push(formData.variants?.find(variant => variant.image)?.image);
+        return ordered.filter(Boolean);
+    };
 
     const handleGenerateSeo = () => {
         if (!formData.title.trim()) {
@@ -610,6 +611,7 @@ const EditProduct = () => {
             body.append('features', JSON.stringify(normalizeSellingPointRows(formData.features)));
             body.append('specifications', JSON.stringify(normalizeKeyValueRows(formData.specifications)));
             body.append('comments', JSON.stringify(normalizeKeyValueRows(formData.comments)));
+            body.append('sellerFacts', JSON.stringify(formData.sellerFacts));
             body.append('existingImages', JSON.stringify(formData.images || []));
             body.append('removedImages', JSON.stringify(removedImages));
             body.append('coverImageIndex', JSON.stringify(coverImageIndex));
@@ -733,7 +735,7 @@ const EditProduct = () => {
                             readiness={readinessItems} entityId={id}
                         formData={formData}
                         setFormData={setFormData}
-                        getFirstImage={getFirstAiImage}
+                        getImages={getAiImages}
                         getVariants={getAiVariants}
                     />
                     <Input id="title" label="Title" value={formData.title} onChange={handleChange} />
@@ -750,6 +752,8 @@ const EditProduct = () => {
                         rows={3}
                     />
                     <Input id="category" label="Category" value={formData.category} onChange={handleChange} />
+                    <SellerFactsEditor value={formData.sellerFacts}
+                        onChange={sellerFacts => setFormData(prev => ({ ...prev, sellerFacts }))} />
                     <label className="block text-sm font-medium text-gray-700">
                         Status
                         <select

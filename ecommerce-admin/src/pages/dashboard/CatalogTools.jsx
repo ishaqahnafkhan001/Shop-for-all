@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, CheckSquare2, Download, Edit3, Image as ImageIcon, Images, Layers, Package, RefreshCcw, Search, SlidersHorizontal, Sparkles, Trash2, Upload, Wand2, X } from 'lucide-react';
+import { AlertTriangle, Check, CheckSquare2, Download, Edit3, Image as ImageIcon, Images, Layers, Loader2, Package, RefreshCcw, Search, SlidersHorizontal, Sparkles, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 import Modal from '../../components/ui/Modal.jsx';
@@ -21,6 +21,18 @@ const emptyCollectionForm = {
     }
 };
 
+const emptyBulkForm = {
+    category: '',
+    status: '',
+    visibility: '',
+    tags: '',
+    tagsMode: 'add',
+    discount: '',
+    sellingPricePercent: '',
+    buyingPricePercent: '',
+    lowStockThreshold: ''
+};
+
 const dedupeCategories = (items = []) => {
     const categoriesByIdentity = new Map();
     items.forEach(category => {
@@ -38,6 +50,29 @@ const dedupeCategories = (items = []) => {
     return [...categoriesByIdentity.values()];
 };
 
+const lowStockVariantCount = (product) => {
+    if (product.lowStockVariantCount !== undefined) return Number(product.lowStockVariantCount) || 0;
+    return (product.variants || []).filter(variant => Number(variant.stock || 0) <= Number(
+        variant.inventory?.lowStockThreshold ?? product.lowStockThreshold ?? 5
+    )).length;
+};
+
+const fetchAllCatalogProducts = async () => {
+    const first = await API.get('/admin/products', { params: { page: 1, limit: 100 } });
+    const products = [...(first.data.data || [])];
+    const totalPages = Math.max(Number(first.data.pagination?.totalPages) || 1, 1);
+
+    for (let page = 2; page <= totalPages; page += 4) {
+        const pages = Array.from({ length: Math.min(4, totalPages - page + 1) }, (_, index) => page + index);
+        const responses = await Promise.all(pages.map(nextPage => (
+            API.get('/admin/products', { params: { page: nextPage, limit: 100 } })
+        )));
+        responses.forEach(response => products.push(...(response.data.data || [])));
+    }
+
+    return { ...first, data: { ...first.data, data: [...new Map(products.map(product => [String(product._id), product])).values()] } };
+};
+
 const CatalogTools = () => {
     const [products, setProducts] = useState([]);
     const [collections, setCollections] = useState([]);
@@ -47,7 +82,8 @@ const CatalogTools = () => {
     const [categoryFilter, setCategoryFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [stockFilter, setStockFilter] = useState('');
-    const [bulk, setBulk] = useState({ category: '', status: '', stock: '', discount: '', lowStockThreshold: '' });
+    const [bulk, setBulk] = useState(emptyBulkForm);
+    const [bulkSaving, setBulkSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [collectionForm, setCollectionForm] = useState(emptyCollectionForm);
     const [editingCollectionId, setEditingCollectionId] = useState('');
@@ -79,16 +115,17 @@ const CatalogTools = () => {
     const operation = useAiOperation({ feature: 'catalog.collection', entity: editingCollectionId || 'new-collection', input: operationInput });
     const undo = useAiUndo(editingCollectionId, collectionForm, setCollectionForm);
     const selectedCount = selected.length;
+    const hasBulkChanges = bulk.tagsMode === 'clear' || Object.entries(bulk)
+        .some(([field, value]) => field !== 'tagsMode' && String(value).trim() !== '');
 
     const productStats = useMemo(() => {
-        const lowStock = products.filter(product => {
-            const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
-            return totalStock <= (product.lowStockThreshold || 5);
-        }).length;
+        const lowStockProducts = products.filter(product => lowStockVariantCount(product) > 0).length;
+        const lowStockVariants = products.reduce((total, product) => total + lowStockVariantCount(product), 0);
 
         return {
             total: products.length,
-            lowStock,
+            lowStockProducts,
+            lowStockVariants,
             published: products.filter(product => String(product.status || '').toLowerCase() === 'published').length
         };
     }, [products]);
@@ -105,7 +142,7 @@ const CatalogTools = () => {
             const matchesCategory = !categoryFilter || product.category === categoryFilter;
             const matchesStatus = !statusFilter || String(product.status || '').toLowerCase() === statusFilter.toLowerCase();
             const matchesStock = !stockFilter
-                || (stockFilter === 'low' && totalStock <= (product.lowStockThreshold || 5))
+                || (stockFilter === 'low' && lowStockVariantCount(product) > 0)
                 || (stockFilter === 'in' && totalStock > 0)
                 || (stockFilter === 'out' && totalStock <= 0);
 
@@ -125,7 +162,7 @@ const CatalogTools = () => {
     const loadData = async () => {
         setLoading(true);
         const [productsResult, collectionsResult, categoriesResult] = await Promise.allSettled([
-            API.get('/admin/products', { params: { limit: 200 } }),
+            fetchAllCatalogProducts(),
             API.get('/admin/collections'),
             API.get('/admin/categories')
         ]);
@@ -231,23 +268,88 @@ const CatalogTools = () => {
         }
 
         const updates = {};
-        if (bulk.category) updates.category = bulk.category;
+        const changedFields = [];
+        if (bulk.category.trim()) {
+            updates.category = bulk.category.trim();
+            changedFields.push(`Category: ${updates.category}`);
+        }
         if (bulk.status) updates.status = bulk.status;
-        if (bulk.lowStockThreshold !== '') updates.lowStockThreshold = Number(bulk.lowStockThreshold);
-        if (bulk.discount !== '') updates.pricing = { discount: Number(bulk.discount) };
+        if (bulk.status) changedFields.push(`Status: ${bulk.status}`);
+        if (bulk.visibility) {
+            updates.isActive = bulk.visibility === 'show';
+            changedFields.push(`Storefront visibility: ${bulk.visibility}`);
+        }
+
+        if (bulk.tagsMode === 'clear') {
+            updates.tags = [];
+            updates.tagsMode = 'clear';
+            changedFields.push('Remove all tags');
+        } else if (bulk.tags.trim()) {
+            const tags = [...new Set(bulk.tags.split(/[,\n]/).map(tag => tag.trim().toLowerCase()).filter(Boolean))];
+            if (tags.length > 30 || tags.some(tag => tag.length > 60)) {
+                toast.error('Use up to 30 tags, with 60 characters or fewer per tag.');
+                return;
+            }
+            updates.tags = tags;
+            updates.tagsMode = bulk.tagsMode;
+            changedFields.push(`${bulk.tagsMode} ${tags.length} tag${tags.length === 1 ? '' : 's'}`);
+        }
+
+        if (bulk.lowStockThreshold !== '') {
+            const threshold = Number(bulk.lowStockThreshold);
+            if (!Number.isInteger(threshold) || threshold < 0) {
+                toast.error('Low-stock alert level must be a whole number of 0 or more.');
+                return;
+            }
+            updates.lowStockThreshold = threshold;
+            changedFields.push(`Every variant alert level: ${threshold}`);
+        }
+
+        if (bulk.discount !== '') {
+            const discount = Number(bulk.discount);
+            if (!Number.isFinite(discount) || discount < 0 || discount > 100) {
+                toast.error('Discount must be between 0 and 100%.');
+                return;
+            }
+            updates.pricing = { discount };
+            changedFields.push(`Discount: ${discount}%`);
+        }
+
+        for (const [field, label] of [
+            ['sellingPricePercent', 'Selling price'],
+            ['buyingPricePercent', 'Buying cost']
+        ]) {
+            if (bulk[field] === '') continue;
+            const percent = Number(bulk[field]);
+            if (!Number.isFinite(percent) || percent < -90 || percent > 500) {
+                toast.error(`${label} adjustment must be between -90% and +500%.`);
+                return;
+            }
+            updates[field] = percent;
+            changedFields.push(`${label}: ${percent >= 0 ? '+' : ''}${percent}%`);
+        }
 
         if (Object.keys(updates).length === 0) {
             toast.error('Choose at least one change before applying a bulk update.');
             return;
         }
 
+        const hiddenSelectionNote = selectedCount > visibleSelectedCount
+            ? `\n${selectedCount - visibleSelectedCount} selected product${selectedCount - visibleSelectedCount === 1 ? ' is' : 's are'} hidden by the current filters.`
+            : '';
+        if (!window.confirm(`Apply these changes to ${selectedCount} selected product${selectedCount === 1 ? '' : 's'}?${hiddenSelectionNote}\n\n${changedFields.join('\n')}\n\nStock quantities will stay unchanged.`)) return;
+
+        setBulkSaving(true);
         try {
-            await API.patch('/admin/products/bulk', { productIds: selected, updates });
-            toast.success('Bulk update applied to selected products. Review your storefront if prices or stock changed.');
+            const response = await API.patch('/admin/products/bulk', { productIds: selected, updates });
+            toast.success(`${response.data.count ?? selectedCount} products updated. Review storefront pricing and visibility.`);
             setSelected([]);
-            loadData();
+            setBulk(emptyBulkForm);
+            await loadData();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Bulk update failed');
+        } finally {
+            setBulkSaving(false);
         }
     };
 
@@ -559,8 +661,8 @@ const CatalogTools = () => {
                 <div className="grid grid-cols-2 border-t border-slate-100 sm:grid-cols-4">
                     {[
                         { label: 'Products', value: productStats.total, helper: 'in catalog' },
-                        { label: 'Published', value: productStats.published, helper: 'visible products' },
-                        { label: 'Low stock', value: productStats.lowStock, helper: 'need attention' },
+                        { label: 'Published', value: productStats.published, helper: 'published status' },
+                        { label: 'Low-stock variants', value: productStats.lowStockVariants, helper: `${productStats.lowStockProducts} products` },
                         { label: 'Collections', value: collections.length, helper: 'storefront groups' }
                     ].map((item, index) => (
                         <div key={item.label} className={`p-4 sm:p-5 ${index % 2 === 0 ? 'border-r border-slate-100' : ''} ${index < 2 ? 'border-b border-slate-100 sm:border-b-0' : ''} sm:border-r sm:last:border-r-0`}>
@@ -738,7 +840,8 @@ const CatalogTools = () => {
                                 {filteredProducts.map(product => {
                                     const productId = String(product._id);
                                     const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
-                                    const lowStock = totalStock <= (product.lowStockThreshold || 5);
+                                    const lowStockCount = lowStockVariantCount(product);
+                                    const lowStock = lowStockCount > 0;
                                     const isSelected = selected.includes(productId);
                                     const status = String(product.status || 'Draft');
 
@@ -790,7 +893,7 @@ const CatalogTools = () => {
                                             {lowStock && (
                                                 <span className="hidden items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 sm:inline-flex">
                                                     <AlertTriangle size={13} />
-                                                    Low stock
+                                                    {lowStockCount} low-stock variant{lowStockCount === 1 ? '' : 's'}
                                                 </span>
                                             )}
                                         </label>
@@ -801,7 +904,7 @@ const CatalogTools = () => {
                     </div>
                 </section>
 
-                <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
+                <aside className="space-y-6 xl:self-start">
                     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
                             <div>
@@ -809,7 +912,7 @@ const CatalogTools = () => {
                                     <SlidersHorizontal size={18} className="text-indigo-600" />
                                     Bulk edit
                                 </div>
-                                <p className="mt-1 text-xs leading-5 text-slate-500">Only filled fields change. Everything else stays untouched.</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">Choose the fields to change. You will review them before applying.</p>
                             </div>
                             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selectedCount ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
                                 {selectedCount}
@@ -818,8 +921,14 @@ const CatalogTools = () => {
 
                         {selectedCount === 0 && (
                             <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-                                Select one or more products from the list to activate bulk changes.
+                                Select one or more products from the list to activate bulk changes.{' '}
+                                <a href="#products" className="font-semibold text-indigo-700 underline underline-offset-2">Choose products</a>
                             </div>
+                        )}
+                        {selectedCount > visibleSelectedCount && (
+                            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                                {selectedCount - visibleSelectedCount} selected product{selectedCount - visibleSelectedCount === 1 ? ' is' : 's are'} hidden by your current filters and will still be updated.
+                            </p>
                         )}
 
                         <div className="mt-4 space-y-3">
@@ -828,9 +937,13 @@ const CatalogTools = () => {
                                 <input
                                     value={bulk.category}
                                     onChange={e => setBulk(prev => ({ ...prev, category: e.target.value }))}
+                                    list="catalog-bulk-categories"
                                     className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
                                     placeholder="Leave unchanged"
                                 />
+                                <datalist id="catalog-bulk-categories">
+                                    {categories.map(category => <option key={category.name} value={category.name} />)}
+                                </datalist>
                             </label>
                             <label className="block">
                                 <span className="mb-1.5 block text-xs font-bold text-slate-600">Status</span>
@@ -845,11 +958,84 @@ const CatalogTools = () => {
                                     <option>Archived</option>
                                 </select>
                             </label>
+                            <label className="block">
+                                <span className="mb-1.5 block text-xs font-bold text-slate-600">Storefront visibility</span>
+                                <select
+                                    value={bulk.visibility}
+                                    onChange={e => setBulk(prev => ({ ...prev, visibility: e.target.value }))}
+                                    className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                >
+                                    <option value="">Keep current visibility</option>
+                                    <option value="show">Enabled</option>
+                                    <option value="hide">Hidden</option>
+                                </select>
+                                <span className="mt-1 block text-xs text-slate-500">Products also need Published status and must have reached any scheduled publication time.</span>
+                            </label>
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                                <p className="text-xs font-bold text-slate-700">Product tags</p>
+                                <div className="mt-2 grid gap-2 sm:grid-cols-[110px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[110px_minmax(0,1fr)]">
+                                    <select
+                                        value={bulk.tagsMode}
+                                        onChange={e => setBulk(prev => ({ ...prev, tagsMode: e.target.value }))}
+                                        aria-label="Tag action"
+                                        className="min-h-11 rounded-xl border border-slate-200 bg-white px-2 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                    >
+                                        <option value="add">Add</option>
+                                        <option value="remove">Remove</option>
+                                        <option value="replace">Replace</option>
+                                        <option value="clear">Clear all</option>
+                                    </select>
+                                    <input
+                                        value={bulk.tags}
+                                        onChange={e => setBulk(prev => ({ ...prev, tags: e.target.value }))}
+                                        disabled={bulk.tagsMode === 'clear'}
+                                        aria-label="Tags separated by commas"
+                                        placeholder={bulk.tagsMode === 'clear' ? 'All tags will be removed' : 'summer, featured'}
+                                        className="min-h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 disabled:bg-slate-100"
+                                    />
+                                </div>
+                                <p className="mt-1.5 text-xs text-slate-500">Separate tags with commas. Add or remove preserves other tags.</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 p-3">
+                                <p className="text-xs font-bold text-slate-700">Pricing</p>
+                                <p className="mt-1 text-xs text-slate-500">Percent changes preserve relative prices across selected products and their variant prices.</p>
+                                <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                                    <label className="block">
+                                        <span className="mb-1.5 block text-xs font-bold text-slate-600">Selling price change %</span>
+                                        <input
+                                            type="number"
+                                            min="-90"
+                                            max="500"
+                                            step="0.01"
+                                            value={bulk.sellingPricePercent}
+                                            onChange={e => setBulk(prev => ({ ...prev, sellingPricePercent: e.target.value }))}
+                                            className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            placeholder="e.g. 10 or -5"
+                                        />
+                                    </label>
+                                    <label className="block">
+                                        <span className="mb-1.5 block text-xs font-bold text-slate-600">Buying cost change %</span>
+                                        <input
+                                            type="number"
+                                            min="-90"
+                                            max="500"
+                                            step="0.01"
+                                            value={bulk.buyingPricePercent}
+                                            onChange={e => setBulk(prev => ({ ...prev, buyingPricePercent: e.target.value }))}
+                                            className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            placeholder="e.g. 8 or -3"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <label className="block">
                                     <span className="mb-1.5 block text-xs font-bold text-slate-600">Discount %</span>
                                     <input
                                         type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
                                         value={bulk.discount}
                                         onChange={e => setBulk(prev => ({ ...prev, discount: e.target.value }))}
                                         className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
@@ -857,9 +1043,11 @@ const CatalogTools = () => {
                                     />
                                 </label>
                                 <label className="block">
-                                    <span className="mb-1.5 block text-xs font-bold text-slate-600">Low stock alert</span>
+                                    <span className="mb-1.5 block text-xs font-bold text-slate-600">Variant alert level</span>
                                     <input
                                         type="number"
+                                        min="0"
+                                        step="1"
                                         value={bulk.lowStockThreshold}
                                         onChange={e => setBulk(prev => ({ ...prev, lowStockThreshold: e.target.value }))}
                                         className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
@@ -867,6 +1055,7 @@ const CatalogTools = () => {
                                     />
                                 </label>
                             </div>
+                            <p className="text-xs leading-5 text-slate-500">Changing the alert level updates every variant of each selected product. It does not change stock quantities.</p>
                         </div>
 
                         <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">
@@ -875,13 +1064,18 @@ const CatalogTools = () => {
 
                         <button
                             onClick={applyBulkUpdate}
-                            disabled={selectedCount === 0}
+                            disabled={selectedCount === 0 || !hasBulkChanges || bulkSaving}
                             className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                             title="Apply the filled bulk fields to selected products"
                         >
-                            <Check size={17} />
-                            Apply to {selectedCount} product{selectedCount === 1 ? '' : 's'}
+                            {bulkSaving ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} />}
+                            {bulkSaving ? 'Applying changes…' : `Review and apply to ${selectedCount} product${selectedCount === 1 ? '' : 's'}`}
                         </button>
+                        {hasBulkChanges && (
+                            <button type="button" onClick={() => setBulk(emptyBulkForm)} disabled={bulkSaving} className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50">
+                                Clear bulk fields
+                            </button>
+                        )}
                     </section>
 
                     <form id="collection-editor" onSubmit={saveCollection} className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

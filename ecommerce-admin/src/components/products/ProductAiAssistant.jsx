@@ -50,7 +50,7 @@ const formatPreviewList = (items = []) => (
             ))}
         </ul>
     ) : (
-        <p className="mt-2 text-sm text-slate-400">No suggestion for this section.</p>
+        <p className="mt-2 text-sm text-slate-500">No supported shopper note found. Add verified care, sizing, package, or policy details to the product form.</p>
     )
 );
 
@@ -89,7 +89,7 @@ const formatPreviewSellingPoints = (items = []) => {
             ))}
         </div>
     ) : (
-        <p className="mt-2 text-sm text-slate-400">No suggestion for this section.</p>
+        <p className="mt-2 text-sm text-slate-500">No supported buyer benefit found. Add verified features or clearer product photos.</p>
     );
 };
 
@@ -104,17 +104,15 @@ const formatPreviewRows = (items = []) => (
             ))}
         </div>
     ) : (
-        <p className="mt-2 text-sm text-slate-400">No suggestion for this section.</p>
+        <p className="mt-2 text-sm text-slate-500">No verified specification found. Add exact material, size, model, or other factual details to the product form.</p>
     )
 );
 
-const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose, onApply, formData, meta, stale, sections, onEdit }) => {
+const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, imageCount, onClose, onApply, formData, meta, stale, sections, onEdit }) => {
     if (!suggestion) return null;
     const imageAnalysis = suggestion.imageAnalysis || {};
     const imageStatusText = usedImage
-        ? imageSource === 'existing_product_image'
-            ? 'Image analyzed from the current product cover image.'
-            : 'Image analyzed from the selected product image.'
+        ? `${imageCount} product image${imageCount === 1 ? '' : 's'} analyzed.`
         : 'Generated from product text only.';
 
     const applyButton = (section, label = SECTION_LABELS[section], mode = 'replace') => {
@@ -155,10 +153,10 @@ const ProductAiSuggestionModal = ({ suggestion, usedImage, imageSource, onClose,
                         <h3 className="font-black text-emerald-950">Image analysis</h3>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs font-black uppercase tracking-wide">
                             <span className="rounded-full bg-white/80 px-3 py-1 text-emerald-800">
-                                Image used: {usedImage ? 'Yes' : 'No'}
+                                Images used: {imageCount}
                             </span>
                             <span className="rounded-full bg-white/80 px-3 py-1 text-emerald-800">
-                                Source: {imageSource === 'local_file' ? 'Selected cover image' : imageSource === 'existing_product_image' ? 'Current product cover' : 'Text only'}
+                                Source: {imageSource === 'local_file' ? 'Selected product images' : imageSource === 'existing_product_image' ? 'Saved product images' : imageSource === 'mixed' ? 'Selected and saved images' : 'Text only'}
                             </span>
                             {imageAnalysis.confidence && (
                                 <span className="rounded-full bg-white/80 px-3 py-1 text-emerald-800">
@@ -276,6 +274,7 @@ const ProductAiAssistant = ({
     formData,
     setFormData,
     getFirstImage,
+    getImages,
     getVariants,
     compact = false,
     entityId = 'new-product', health, readiness = []
@@ -288,9 +287,11 @@ const ProductAiAssistant = ({
     const [suggestion, setSuggestion] = useState(null);
     const [usedImage, setUsedImage] = useState(false);
     const [imageSource, setImageSource] = useState('text_only');
+    const [imageCount, setImageCount] = useState(0);
 
-    const firstImageForStatus = getFirstImage?.();
-    const operationInput = { formData, variants: getVariants?.() || [], image: firstImageForStatus };
+    const imagesForStatus = [...new Set((getImages?.() || [getFirstImage?.()]).filter(Boolean))].slice(0, 3);
+    const firstImageForStatus = imagesForStatus[0];
+    const operationInput = { formData, variants: getVariants?.() || [], images: imagesForStatus };
     const operation = useAiOperation({ feature: 'product.content', entity: entityId, input: operationInput });
     const undo = useAiUndo(entityId, formData, setFormData);
     const hasImage = Boolean(firstImageForStatus);
@@ -298,14 +299,12 @@ const ProductAiAssistant = ({
     const selectedSections = [...new Set(issues.filter(issue => selectedIssues.includes(issue.id) && issue.aiSection).map(issue => issue.aiSection))];
     const isGenerating = operation.loading;
     const imageStatusLabel = hasImage
-        ? isFileLike(firstImageForStatus)
-            ? 'Image ready for AI analysis'
-            : 'Using the current product cover image'
+        ? `${imagesForStatus.length} product image${imagesForStatus.length === 1 ? '' : 's'} ready for AI analysis (cover first)`
         : 'No product image available — AI will use text only';
 
     const buildRequestData = (sections) => {
         const data = new FormData();
-        const firstImage = getFirstImage?.();
+        const images = [...new Set((getImages?.() || [getFirstImage?.()]).filter(Boolean))].slice(0, 3);
 
         data.append('title', formData.title || '');
         data.append('category', formData.category || '');
@@ -318,17 +317,26 @@ const ProductAiAssistant = ({
         data.append('features', JSON.stringify(formData.features || []));
         data.append('specifications', JSON.stringify(formData.specifications || []));
         data.append('comments', JSON.stringify(formData.comments || []));
+        data.append('sellerFacts', JSON.stringify(formData.sellerFacts || {}));
         data.append('notesVisibility', 'public');
         data.append('entityId', entityId);
         data.append('entityRevision', formData.updatedAt || '');
         data.append('languageHint', 'auto');
         data.append('requestedSections', JSON.stringify(sections));
 
-        if (isFileLike(firstImage)) {
-            data.append('image', firstImage);
-        } else if (typeof firstImage === 'string' && firstImage.trim()) {
-            data.append('imageUrl', firstImage.trim());
-        }
+        const imageOrder = [];
+        const imageUrls = [];
+        let fileIndex = 0;
+        images.forEach(image => {
+            if (isFileLike(image)) {
+                data.append('images', image);
+                imageOrder.push({ type: 'file', index: fileIndex++ });
+            } else if (typeof image === 'string' && image.trim()) {
+                imageOrder.push({ type: 'url', index: imageUrls.push(image.trim()) - 1 });
+            }
+        });
+        data.append('imageUrls', JSON.stringify(imageUrls));
+        data.append('imageOrder', JSON.stringify(imageOrder));
 
         return data;
     };
@@ -339,6 +347,7 @@ const ProductAiAssistant = ({
         setSuggestion(response.data.data);
         setUsedImage(Boolean(response.data.usedImage));
         setImageSource(response.data.imageSource || 'text_only');
+        setImageCount(Number(response.data.imageCount || (response.data.usedImage ? 1 : 0)));
         toast.success(response.data.fallback ? 'Basic suggestions are ready to review.' : 'AI suggestions are ready to review.');
     };
     const generate = async (sections = SECTIONS) => {
@@ -383,7 +392,7 @@ const ProductAiAssistant = ({
     return (
         <div className={compact ? 'min-w-0 space-y-3' : 'min-w-0 overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4'}>
             <AiProductHistory key={entityId} entityId={entityId} operationId={operation.meta?.operationId} onReview={review => {
-                setHistoryReview(review); setEdited(false); setUsedImage(false); setImageSource('text_only');
+                setHistoryReview(review); setEdited(false); setUsedImage(false); setImageSource('text_only'); setImageCount(0);
                 setSuggestion(review.entry.content);
                 setRequestedSections(Object.keys(review.entry.content));
                 operation.rebase(operationInput);
@@ -398,15 +407,17 @@ const ProductAiAssistant = ({
                     </p>
 
                 </div>
-                <button
-                    type="button"
-                    onClick={() => generate(selectedSections)}
-                    disabled={isGenerating || !operation.access.allowed || !selectedSections.length || !formData.title?.trim()}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-black text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                >
-                    {isGenerating && activeSection === 'all' ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                    {isGenerating && activeSection === 'all' ? 'Generating...' : 'Generate selected improvements'}
-                </button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <button type="button" onClick={() => generate(SECTIONS)}
+                        disabled={isGenerating || !operation.access.allowed || !formData.title?.trim()}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-black text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto">
+                        {isGenerating && activeSection === 'all' ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                        {isGenerating && activeSection === 'all' ? 'Generating...' : 'Generate all content'}
+                    </button>
+                    <button type="button" onClick={() => generate(selectedSections)}
+                        disabled={isGenerating || !operation.access.allowed || !selectedSections.length || !formData.title?.trim()}
+                        className={buttonClass}>Generate checked improvements</button>
+                </div>
             </div>
 
             <div className="space-y-2 text-sm">
@@ -446,6 +457,7 @@ const ProductAiAssistant = ({
                 suggestion={suggestion}
                 usedImage={usedImage}
                 imageSource={imageSource}
+                imageCount={imageCount}
                 onClose={() => setSuggestion(null)}
                 onApply={applySections}
                 formData={formData}

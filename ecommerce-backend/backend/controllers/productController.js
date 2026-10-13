@@ -7,6 +7,7 @@ const StaffPermission = require('../models/StaffPermission');
 const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
 const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
+const cache = require('../services/cacheService');
 const { logAudit } = require('../services/auditLogService');
 const { buildPagination } = require('../utils/pagination');
 const {
@@ -21,11 +22,13 @@ const {
     slugify,
     getUniqueSlug,
     getCachedCategories,
+    invalidateCachedCategories,
     addComputedProductFields,
     buildProductListQuery,
     getProductSort,
     getSummaryProjection
 } = require('../services/products/productQueryService');
+const { validateBulkUpdates, applyBulkProductUpdates } = require('../services/products/bulkProductUpdates');
 const {
     normalizeIncomingVariant,
     buildSimpleVariant,
@@ -67,6 +70,14 @@ const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/cate
 const { assertHistoricalSlugAvailable, recordSlugRedirect } = require('../services/seo/slugRedirectService');
 
 const ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];
+
+const invalidateProductReadCaches = async shopId => {
+    invalidateCachedCategories(shopId);
+    return Promise.all([
+        cache.delPattern(`admin:dashboard-overview:${shopId}:*`),
+        cache.delPattern(`storefront:*:${shopId}:*`)
+    ]);
+};
 
 const normalizePageLimit = (value, fallback = 25) => {
     const requested = parseInt(value, 10);
@@ -263,7 +274,8 @@ exports.generateProductContent = async (req, res) => {
         const suggestion = await generateProductContentSuggestion({
             operation: generationState,
             body: req.body,
-            file: req.file || null
+            file: req.files?.image?.[0] || req.file || null,
+            files: req.files?.images || []
         });
         const diagnostics = suggestion.imageDiagnostics || {};
 
@@ -272,6 +284,7 @@ exports.generateProductContent = async (req, res) => {
             shopId: req.tenantId,
             usedImage: Boolean(suggestion.usedImage),
             imageSource: suggestion.imageSource || 'text_only',
+            imageCount: suggestion.imageCount || 0,
             mimeType: diagnostics.mimeType || undefined,
             imageSizeBytes: diagnostics.imageSizeBytes || undefined
         });
@@ -280,6 +293,7 @@ exports.generateProductContent = async (req, res) => {
             success: true,
             usedImage: suggestion.usedImage,
             imageSource: suggestion.imageSource || 'text_only',
+            imageCount: suggestion.imageCount || 0,
             imageAnalysis: suggestion.data?.imageAnalysis || {},
             fallback: Boolean(suggestion.fallback),
             ...(suggestion.errorCode && { errorCode: suggestion.errorCode }),
@@ -652,6 +666,7 @@ exports.createProduct = async (req, res) => {
         }
 
         await session.commitTransaction();
+        await invalidateProductReadCaches(req.tenantId);
 
         await enqueueScheduledProductPublication({
             product,
@@ -882,6 +897,7 @@ exports.updateProduct = async (req, res) => {
             'publishAt',
             'publishedAt',
             'seo',
+            'sellerFacts',
             'lowStockThreshold',
             'images',
             'coverMediaId',
@@ -949,6 +965,7 @@ exports.updateProduct = async (req, res) => {
         }
 
         await session.commitTransaction();
+        await invalidateProductReadCaches(shopId);
         await require('../services/ai/aiContentHistoryService').confirmProductSave(shopId, product, req.user._id);
 
         await enqueueLowStockAlertsForLogs(logsToInsert);
@@ -1012,6 +1029,8 @@ exports.deleteProduct = async (req, res) => {
         if (!product) {
             return res.status(404).json({ success: false, error: "Product not found or already deleted" });
         }
+
+        await invalidateProductReadCaches(req.tenantId);
 
         await logAudit({
             req,
@@ -1100,16 +1119,21 @@ exports.exportProductsCsv = async (req, res) => {
 };
 
 exports.bulkUpdateProducts = async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
-        const { productIds, updates = {} } = req.body;
-        const lowStockLogs = [];
+        const { productIds, updates: requestedUpdates = {} } = req.body;
 
         if (!Array.isArray(productIds) || productIds.length === 0) {
             return res.status(400).json({ success: false, error: 'productIds are required' });
         }
+        if (productIds.some(id => !mongoose.isValidObjectId(id))) {
+            return res.status(400).json({ success: false, error: 'productIds must contain valid product IDs' });
+        }
+
+        const updates = validateBulkUpdates(requestedUpdates);
+        session = await mongoose.startSession();
+        session.startTransaction();
 
         const products = await Product.find({
             _id: { $in: productIds },
@@ -1117,54 +1141,31 @@ exports.bulkUpdateProducts = async (req, res) => {
             isDeleted: false
         }).session(session);
 
-        const allowedStatus = ['Draft', 'Published', 'Archived'];
-
         for (const product of products) {
-            if (updates.category !== undefined) product.category = updates.category;
-            if (updates.tags !== undefined) product.tags = updates.tags;
-            if (updates.status !== undefined && allowedStatus.includes(updates.status)) {
-                product.status = updates.status;
-            }
-            if (updates.lowStockThreshold !== undefined) {
-                product.lowStockThreshold = Number(updates.lowStockThreshold);
-            }
-            if (updates.seo) {
-                product.seo = { ...(product.seo?.toObject?.() || product.seo || {}), ...updates.seo };
-            }
-
-            if (updates.pricing) {
-                product.pricing = { ...product.pricing.toObject(), ...updates.pricing };
-            }
-
-            if (updates.stock !== undefined) {
-                product.variants.forEach(variant => {
-                    const beforeStock = Number(variant.stock || 0);
-                    variant.stock = Number(updates.stock);
-                    if (variant.inventory) variant.inventory.stock = variant.stock;
-                    lowStockLogs.push({
-                        shop_id: req.tenantId,
-                        productId: product._id,
-                        variantId: variant._id,
-                        change: variant.stock - beforeStock,
-                        type: 'MANUAL',
-                        referenceId: product._id,
-                        beforeStock,
-                        afterStock: variant.stock,
-                        user: req.user._id,
-                        note: 'Bulk product stock update'
-                    });
-                });
-            }
+            applyBulkProductUpdates(product, updates);
 
             await product.save({ session });
         }
 
         await session.commitTransaction();
-        await Promise.all(products.map(product =>
-            require('../services/ai/aiContentHistoryService').confirmProductSave(req.tenantId, product, req.user._id)
-        ));
-
-        await enqueueLowStockAlertsForLogs(lowStockLogs);
+        const followUps = await Promise.allSettled([
+            invalidateProductReadCaches(req.tenantId),
+            ...products.map(product =>
+                require('../services/ai/aiContentHistoryService').confirmProductSave(req.tenantId, product, req.user._id)
+            ),
+            logAudit({
+                req,
+                shop_id: req.tenantId,
+                action: 'product.bulk_updated',
+                entityType: 'Product',
+                entityLabel: `${products.length} products`,
+                after: { count: products.length, updates },
+                metadata: { productIds: products.map(product => String(product._id)) }
+            })
+        ]);
+        followUps.filter(result => result.status === 'rejected').forEach(result => {
+            console.error('Bulk product update follow-up failed:', result.reason);
+        });
 
         res.status(200).json({
             success: true,
@@ -1172,11 +1173,11 @@ exports.bulkUpdateProducts = async (req, res) => {
             count: products.length
         });
     } catch (err) {
-        await session.abortTransaction();
+        if (session?.inTransaction()) await session.abortTransaction();
         console.error('Bulk update products error:', err);
         res.status(400).json({ success: false, error: err.message || 'Bulk update failed' });
     } finally {
-        session.endSession();
+        if (session) await session.endSession();
     }
 };
 

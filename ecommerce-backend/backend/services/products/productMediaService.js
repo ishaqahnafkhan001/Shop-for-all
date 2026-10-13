@@ -10,6 +10,7 @@ const parseProductPayload = (body) => {
         'comments',
         'collections',
         'seo',
+        'sellerFacts',
         'addAttributeOption',
         'removeVariants',
         'existingImages',

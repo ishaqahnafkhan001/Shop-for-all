@@ -5,6 +5,13 @@ import { scoreProductSeo, productContentIssues } from '../src/utils/seoHealth.js
 import { applyProductContentSuggestion } from '../src/utils/applyProductContentSuggestion.js';
 import { applyCampaignSuggestion, currentCampaignProduct } from '../src/utils/applyCampaignSuggestion.js';
 import { createAiPatch, undoAiPatch } from '../src/utils/aiOperationState.js';
+import { blankSellerFacts, normalizeSellerFacts } from '../src/utils/sellerFacts.js';
+
+test('older products hydrate blank seller facts and saved facts retain the five supported fields', () => {
+    assert.deepEqual(normalizeSellerFacts(), blankSellerFacts());
+    assert.deepEqual(normalizeSellerFacts({ brand: 'Acme', internalCost: '42' }),
+        { ...blankSellerFacts(), brand: 'Acme' });
+});
 
 test('selecting one SEO improvement preserves the other field and commerce data', () => {
     const before = { seo: { title: 'Keep this title', description: '' }, stock: 5, status: 'draft', pricing: { sellingPrice: 50 } };
@@ -45,11 +52,14 @@ test('content improvements project existing health, never generate commerce fiel
     const product = { title: 'নীল শাড়ি', description: 'সুতির নীল শাড়ি। পরার আগে মাপ দেখুন।', seo: { title: 'নীল শাড়ি', description: 'শাড়ির বিস্তারিত দেখুন।' }, imageAltText: 'নীল শাড়ি', category: 'Clothing', stock: 3, pricing: { sellingPrice: 500 } };
     const health = scoreProductSeo({ product, hasImage: true });
     const issues = productContentIssues({ health, product });
-    assert.deepEqual(issues.filter(issue => issue.aiSection).map(issue => issue.aiSection), ['sellingPoints']);
+    assert.deepEqual(issues.filter(issue => issue.aiSection).map(issue => issue.aiSection), ['sellingPoints', 'specifications', 'extraNotes']);
     assert.equal(issues.find(issue => issue.id === 'benefits').optional, true);
     const empty = { title: 'Shirt', pricing: {} };
     const missing = productContentIssues({ health: scoreProductSeo({ product: empty }), product: empty, readiness: [{ id: 'stock', done: false, label: 'Add stock' }] });
     assert.equal(missing.find(issue => issue.id === 'price').aiSection, undefined);
     assert.equal(missing.find(issue => issue.id === 'stock').aiSection, undefined);
     assert.ok(missing.some(issue => issue.aiSection === 'description'));
+    assert.ok(missing.some(issue => issue.aiSection === 'seo'));
+    assert.ok(missing.some(issue => issue.aiSection === 'specifications'));
+    assert.ok(missing.some(issue => issue.aiSection === 'extraNotes'));
 });

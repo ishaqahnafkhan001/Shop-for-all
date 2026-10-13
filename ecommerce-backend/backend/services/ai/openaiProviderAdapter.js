@@ -94,12 +94,13 @@ const createProviderSession = ({ operation, signal, config = getAiConfig(), clie
         if (controller.signal.aborted) throw controller.signal.reason;
         if (deadline - Date.now() < minimumMs) throw providerError('AI_PROVIDER_TIMEOUT');
     };
-    const generate = async ({ prompt, imagePart, schema, temperature, topP, maxOutputTokens, feature }) => {
+    const generate = async ({ prompt, imagePart, imageParts, schema, temperature, topP, maxOutputTokens, feature }) => {
         check();
         if (!config.apiKey) throw providerError('AI_NOT_CONFIGURED');
         if (attempts.length >= (feature === 'product.content' ? 2 : 1)) throw providerError('AI_ATTEMPT_LIMIT');
+        const images = (Array.isArray(imageParts) ? imageParts : imagePart ? [imagePart] : []).slice(0, 3);
         const attempt = { attemptId: randomUUID(), epoch: attempts.length + 1, feature, model: config.model,
-            provider: 'openai', modality: imagePart ? 'image' : 'text', startedAt: new Date(), endedAt: null,
+            provider: 'openai', modality: images.length ? 'image' : 'text', startedAt: new Date(), endedAt: null,
             outcome: 'unknown', latencyMs: null, statusClass: null, inputTokens: null, outputTokens: null, totalTokens: null };
         attempts.push(attempt);
         const attemptController = new AbortController();
@@ -109,15 +110,15 @@ const createProviderSession = ({ operation, signal, config = getAiConfig(), clie
             Math.min(config.attemptTimeoutMs, deadline - Date.now()));
         try {
             if (attempt.epoch === 1) await awaitWithAbort(bindContext(operation, {
-                contract: 4, provider: 'openai', feature, model: config.model, prompt, image: imagePart || null,
+                contract: 5, provider: 'openai', feature, model: config.model, prompt, images,
                 schema, temperature, topP, maxOutputTokens
             }), attemptController.signal);
             await awaitWithAbort(Promise.resolve().then(() => onAttemptStarted({ ...attempt })), attemptController.signal).catch(() => {});
             const client = clientFactory(config.apiKey);
             check();
             if (attemptController.signal.aborted) throw attemptController.signal.reason;
-            const content = [{ type: 'input_text', text: prompt }, ...(imagePart ? [{ type: 'input_image',
-                image_url: `data:${imagePart.mimeType};base64,${imagePart.data}`, detail: 'auto' }] : [])];
+            const content = [{ type: 'input_text', text: prompt }, ...images.map(image => ({ type: 'input_image',
+                image_url: `data:${image.mimeType};base64,${image.data}`, detail: 'auto' }))];
             const result = await awaitWithAbort(client.responses.create({ model: config.model, store: false,
                 input: [{ role: 'user', content }],
                 max_output_tokens: Math.min(maxOutputTokens || config.outputTokens, config.outputTokens),

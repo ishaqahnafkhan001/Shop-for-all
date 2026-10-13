@@ -23,7 +23,7 @@ test('product content AI route is protected and mounted before product id route'
     assert.ok(contentRouteIndex < productIdRouteIndex);
     assert.match(adminRoutes, /'\/products\/ai\/content-suggest'[\s\S]*protect[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('products'\)[\s\S]*blockBillingSuspendedShop[\s\S]*blockVerificationSuspendedShop[\s\S]*productAiLimiter[\s\S]*productAiImageUpload[\s\S]*generateProductContent/);
     assert.match(adminRoutes, /multer\.memoryStorage\(\)/);
-    assert.match(adminRoutes, /\.single\('image'\)/);
+    assert.match(adminRoutes, /\.fields\(\[\{ name: 'image', maxCount: 1 \}, \{ name: 'images', maxCount: 3 \}\]\)/);
     assert.match(adminRoutes, /AI_IMAGE_UNSUPPORTED/);
     assert.match(adminRoutes, /AI_IMAGE_TOO_LARGE/);
 });
@@ -92,6 +92,95 @@ test('product content AI builds text-only and image-aware prompts without privat
     assert.equal(imageInput.part, null);
     assert.equal(__test.isTrustedImageUrl('https://res.cloudinary.com/demo/image/upload/product.jpg'), true);
     assert.equal(__test.isTrustedImageUrl('http://169.254.169.254/latest/meta-data'), false);
+});
+
+test('product content AI accepts one to three ordered images and does not require three benefits', async () => {
+    const sharp = require('sharp');
+    const files = await Promise.all(['red', 'green', 'blue'].map(async color => ({
+        mimetype: 'image/png', buffer: await sharp({ create: { width: 20, height: 20,
+            channels: 3, background: color } }).png().toBuffer()
+    })));
+    let request;
+    const result = await generateProductContentSuggestion({
+        body: { title: 'Cotton shirt', category: 'Clothing', requestedSections: ['seo', 'sellingPoints', 'specifications', 'extraNotes'],
+            specifications: JSON.stringify([{ title: 'Material', value: 'Cotton' }]),
+            comments: JSON.stringify([{ title: 'Care', value: 'Wash in cool water' }]), notesVisibility: 'public',
+            imageOrder: JSON.stringify([{ type: 'file', index: 2 }, { type: 'file', index: 0 }, { type: 'file', index: 1 }]) },
+        files,
+        providerOptions: { config: { apiKey: 'mock', model: 'gpt-6-luna', operationTimeoutMs: 5000,
+            attemptTimeoutMs: 5000, outputTokens: 2400 },
+            clientFactory: () => ({ responses: { create: async body => {
+                request = body;
+                return { status: 'completed', output_text: JSON.stringify({ seoTitle: '', seoDescription: '', whyBuy: [{
+                    point: 'Soft fabric', reason: 'The seller lists cotton as the material, making the fabric detail clear.'
+                }], specifications: [], extraNotes: [] }) };
+            } } }) }
+    });
+    assert.equal(request.input[0].content.filter(item => item.type === 'input_image').length, 3);
+    assert.match(request.input[0].content[0].text, /image count: 3/);
+    assert.equal(request.text.format.schema.properties.whyBuy.minItems, undefined);
+    assert.equal(result.imageCount, 3);
+    assert.equal(result.data.sellingPoints.length, 1);
+    assert.ok(result.data.seoTitle);
+    assert.deepEqual(result.data.specifications, [{ label: 'Material', value: 'Cotton' }]);
+    assert.deepEqual(result.data.extraNotes, ['Wash in cool water']);
+    assert.equal(result.fallback, false);
+});
+
+test('product content AI preserves mixed saved and uploaded image order within the three-image limit', () => {
+    const first = { buffer: Buffer.from('first') };
+    const second = { buffer: Buffer.from('second') };
+    const inputs = __test.getImageInputs({
+        files: [first, second],
+        body: { imageUrls: JSON.stringify(['https://res.cloudinary.com/demo/image/upload/saved.jpg']),
+            imageOrder: JSON.stringify([{ type: 'url', index: 0 }, { type: 'file', index: 1 },
+                { type: 'file', index: 0 }, { type: 'file', index: 0 }]) }
+    });
+    assert.deepEqual(inputs, [
+        { imageUrl: 'https://res.cloudinary.com/demo/image/upload/saved.jpg' },
+        { file: second }, { file: first }
+    ]);
+    assert.deepEqual(__test.getImageInputs({ file: first }), [{ file: first }]);
+});
+
+test('product content AI does not invent specifications or notes when no evidence exists', () => {
+    const context = __test.buildContext({ title: 'Mystery item', requestedSections: ['seo', 'specifications', 'extraNotes'] });
+    const completed = __test.fillSupportedFields(__test.cleanProductContentSuggestion({
+        seoTitle: '', seoDescription: '', specifications: [], extraNotes: []
+    }), context);
+    assert.ok(completed.seoTitle);
+    assert.deepEqual(completed.specifications, []);
+    assert.deepEqual(completed.extraNotes, []);
+    assert.equal(__test.hasUsefulSellingPoints(completed, context), true);
+});
+
+test('seller-confirmed facts pass product parsing, validation and model casting, then enrich AI privately', () => {
+    const { parseProductPayload } = require('../services/products/productMediaService');
+    const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
+    const { sanitizePublicProduct } = require('../services/publicProductSerializer');
+    const Product = require('../models/Product');
+    const facts = { brand: 'Acme', model: 'A24', material: '100% cotton',
+        dimensions: '30 × 20 × 5 cm', packageContents: '1 shirt and 1 belt' };
+    const parsed = parseProductPayload({ sellerFacts: JSON.stringify(facts) });
+    assert.deepEqual(parsed.sellerFacts, facts);
+    assert.deepEqual(createProductSchema.extract('sellerFacts').validate(facts).value, facts);
+    assert.deepEqual(updateProductSchema.validate({ sellerFacts: facts }).value.sellerFacts, facts);
+    assert.deepEqual(new Product({ sellerFacts: facts }).sellerFacts.toObject(), facts);
+    assert.ok(updateProductSchema.validate({ sellerFacts: { internalCost: '42' } }).error);
+    assert.ok(updateProductSchema.validate({ sellerFacts: { material: 'x'.repeat(161) } }).error);
+    const context = __test.buildContext({ title: 'Blue shirt', sellerFacts: JSON.stringify({ ...facts, internalCost: '42' }),
+        requestedSections: ['seo', 'specifications'] });
+    assert.deepEqual(context.sellerFacts, facts);
+    assert.equal(__test.normalizeSellerFacts({ dimensions: '30*20*5 cm' }).dimensions, '30 × 20 × 5 cm');
+    assert.doesNotMatch(JSON.stringify(context), /internalCost|42/);
+    assert.match(__test.buildPrompt(context), /product-wide seller-confirmed brand, model, material, dimensions, and package contents/);
+    const completed = __test.fillSupportedFields(__test.cleanProductContentSuggestion({
+        seoTitle: '', seoDescription: '', specifications: []
+    }), context);
+    assert.match(completed.seoTitle, /Acme Blue shirt A24/);
+    assert.ok(completed.specifications.some(row => row.label === 'Material' && row.value === '100% cotton'));
+    assert.ok(completed.specifications.some(row => row.label === 'Package contents' && row.value === facts.packageContents));
+    assert.equal(sanitizePublicProduct({ title: 'Blue shirt', sellerFacts: facts }).sellerFacts, undefined);
 });
 
 test('product content AI normalizes shapes and length limits', () => {
