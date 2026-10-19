@@ -74,6 +74,7 @@ const {
 // Store / Pathao Controllers
 const {
     setupVendorPathaoStore,
+    checkPendingPathaoStore,
     getCities,
     getZones,
     getAreas,
@@ -95,9 +96,11 @@ const {
 // Email Controllers
 const {
     sendEmailToCustomer,
-    sendOrderStatusEmail,
     createCustomerEmailCampaign,
-    createProductEmailCampaign
+    createProductEmailCampaign,
+    listCustomerEmailCampaigns,
+    getCustomerEmailCampaignRecipients,
+    setCustomerMarketingSuppression
 } = require('../controllers/emailController');
 
 // Returns / Activity / Notifications
@@ -111,6 +114,7 @@ const {
     deleteReturns
 } = require('../controllers/returnController');
 const { getAuditLogs } = require('../controllers/auditLogController');
+const { getWelcomeDeliveryStatus } = require('../controllers/registrationWelcomeController');
 const {
     getNotifications,
     getUnreadCount,
@@ -555,6 +559,9 @@ router.patch(
 // EMAIL ROUTES
 // ======================================================
 
+router.get('/registration/welcome-deliveries', protect, authorize('VendorAdmin'),
+    requirePermission('notifications'), getWelcomeDeliveryStatus);
+
 router.post(
     '/customers/send-email',
     protect,
@@ -574,6 +581,13 @@ router.post(
     createCustomerEmailCampaign
 );
 
+router.get('/customers/email-campaigns', protect, authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'), requireShopFeature('customerSection'), listCustomerEmailCampaigns);
+router.get('/customers/email-campaigns/:id/recipients', protect, authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'), requireShopFeature('customerSection'), getCustomerEmailCampaignRecipients);
+router.patch('/customers/:id/marketing-suppression', protect, authorize('VendorAdmin'),
+    requirePermission('customers'), requireShopFeature('customerSection'), setCustomerMarketingSuppression);
+
 router.post(
     '/customers/product-email-campaigns',
     protect,
@@ -582,13 +596,6 @@ router.post(
     requireShopFeature('customerSection'),
     requireShopFeature('emailCampaigns'),
     createProductEmailCampaign
-);
-
-router.post(
-    '/orders/send-email',
-    protect,
-    authorize('VendorAdmin', 'SuperAdmin'),
-    sendOrderStatusEmail
 );
 
 // ======================================================
@@ -728,6 +735,8 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
     linkExistingPathaoAccount
 );
 
@@ -736,7 +745,19 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
     setupVendorPathaoStore
+);
+
+router.post(
+    '/settings/pathao-store/check',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    checkPendingPathaoStore
 );
 
 router.get(

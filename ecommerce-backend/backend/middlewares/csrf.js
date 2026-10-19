@@ -65,6 +65,10 @@ const isExcludedRoute = (req) => {
     if (method === 'POST' && path === '/api/auth/verify-reset-otp') return true;
     if (method === 'POST' && path === '/api/auth/reset-password') return true;
     if (method === 'POST' && path === '/api/analytics/event') return true;
+    // The signed one-click marketing token is verified by this endpoint.
+    if (method === 'POST' && path === '/api/public/marketing/unsubscribe') return true;
+    if (method === 'POST' && path === '/api/public/marketing/confirm') return true;
+    if (method === 'POST' && path === '/api/webhooks/resend') return true;
 
     return false;
 };

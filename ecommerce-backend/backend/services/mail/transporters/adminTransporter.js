@@ -14,7 +14,7 @@ const adminTransporter = nodemailer.createTransport({
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 15000),
     socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 15000),
     tls: {
-        rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED === 'true',
+        rejectUnauthorized: true,
         minVersion: 'TLSv1.2'
     }
 });

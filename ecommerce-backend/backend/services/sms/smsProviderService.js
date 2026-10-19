@@ -20,6 +20,9 @@ const getSmsConfig = () => ({
 });
 
 const assertSmsConfig = (config) => {
+    if (config.mockMode && process.env.NODE_ENV === 'production') {
+        throw new SmsProviderError('SMS mock mode is unavailable in production');
+    }
     if (config.mockMode) return;
     if (!config.apiKey || !config.baseUrl) {
         throw new SmsProviderError('SMS provider is not configured');
@@ -29,8 +32,10 @@ const assertSmsConfig = (config) => {
 const pickSafeProviderFields = (providerResponse = {}) => {
     if (!providerResponse || typeof providerResponse !== 'object') return {};
     const safe = {};
-    for (const key of ['status', 'success', 'message', 'error', 'errors', 'code']) {
-        if (providerResponse[key] !== undefined) safe[key] = providerResponse[key];
+    for (const key of ['status', 'success', 'code']) {
+        const value = providerResponse[key];
+        if (typeof value === 'boolean' || typeof value === 'number') safe[key] = value;
+        else if (typeof value === 'string') safe[key] = value.slice(0, 80);
     }
     return safe;
 };
@@ -44,6 +49,22 @@ const readProviderResponse = async (response) => {
         return { message: text.slice(0, 300) };
     }
 };
+
+// HTTP acceptance is not proof of delivery. Providers can also reject a message
+// in a successful HTTP response, so honor explicit failure indicators.
+const providerRejected = (body = {}) => {
+    if (!body || typeof body !== 'object') return false;
+    if (body.success === false || body.success === 0 || body.success === 'false') return true;
+    if (body.status === false || body.status === 0 || body.data?.success === false) return true;
+    if (typeof body.error === 'string' && body.error.trim()) return true;
+    const status = String(body.status || '').toLowerCase();
+    return ['error', 'failed', 'failure', 'rejected', 'invalid', 'unauthorized'].includes(status);
+};
+
+const isSidValidationFailure = (status, body = {}) => (
+    [400, 422].includes(status) &&
+    /\b(sid|sender.?id)\b/i.test(String(body?.message || body?.error || ''))
+);
 
 const logProviderRejection = ({ status, providerResponse, maskedPhone, sidIncluded, phoneFormat }) => {
     console.warn('SMS provider rejected request', {
@@ -115,7 +136,7 @@ const sendSms = async ({ mobile, message, timeoutMs = DEFAULT_TIMEOUT_MS }) => {
             signal: controller.signal
         });
 
-        if (!response.ok && shouldIncludeSid) {
+        if (!response.ok && shouldIncludeSid && isSidValidationFailure(response.status, providerResponse)) {
             logProviderRejection({
                 status: response.status,
                 providerResponse,
@@ -131,7 +152,7 @@ const sendSms = async ({ mobile, message, timeoutMs = DEFAULT_TIMEOUT_MS }) => {
             }));
         }
 
-        if (!response.ok) {
+        if (!response.ok || providerRejected(providerResponse)) {
             logProviderRejection({
                 status: response.status,
                 providerResponse,
@@ -148,6 +169,7 @@ const sendSms = async ({ mobile, message, timeoutMs = DEFAULT_TIMEOUT_MS }) => {
 
         return {
             success: true,
+            status: 'accepted',
             providerResponse
         };
     } catch (error) {

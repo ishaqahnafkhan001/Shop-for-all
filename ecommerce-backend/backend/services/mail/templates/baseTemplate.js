@@ -1,9 +1,12 @@
+const { escapeHtml } = require('./escapeHtml');
+
 exports.baseTemplate = ({
                             senderName,
                             title,
                             recipientName,
                             content,
-                            email
+                            email,
+                            showGreeting = true
                         }) => {
     return `
     <!DOCTYPE html>
@@ -26,7 +29,7 @@ exports.baseTemplate = ({
                         <tr>
                             <td style="background:#4f46e5;padding:24px;text-align:center;">
                                 <h1 style="color:#fff;margin:0;font-size:24px;">
-                                    ${senderName}
+                                    ${escapeHtml(senderName)}
                                 </h1>
                             </td>
                         </tr>
@@ -35,17 +38,15 @@ exports.baseTemplate = ({
                         <tr>
                             <td style="padding:32px;color:#374151;">
 
-                                <h2 style="margin-top:0;">
-                                    Hello ${recipientName},
-                                </h2>
+                                ${showGreeting ? `<h2 style="margin-top:0;">Hello ${escapeHtml(recipientName || 'there')},</h2>` : ''}
 
                                 <div style="white-space:pre-wrap;line-height:1.7;">
-                                    ${content}
+                                    ${escapeHtml(content)}
                                 </div>
 
                                 <p style="margin-top:32px;">
                                     Best regards,<br/>
-                                    <strong>${senderName} Team</strong>
+                                    <strong>${escapeHtml(senderName)} Team</strong>
                                 </p>
 
                             </td>
@@ -56,12 +57,12 @@ exports.baseTemplate = ({
                             <td style="background:#f9fafb;padding:20px;text-align:center;font-size:12px;color:#6b7280;">
 
                                 This email was sent to
-                                <strong>${email}</strong>
+                                <strong>${escapeHtml(email)}</strong>
 
                                 <br/><br/>
 
                                 © ${new Date().getFullYear()}
-                                ${senderName}
+                                ${escapeHtml(senderName)}
 
                             </td>
                         </tr>

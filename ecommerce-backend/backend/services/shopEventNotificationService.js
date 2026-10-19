@@ -1,7 +1,7 @@
 const { createNotification } = require('./notificationService');
 const {
     getVendorAdminEmails,
-    sendVendorNotificationEmailSafe,
+    sendVendorNotificationEmail,
     buildVendorEventEmail
 } = require('./vendorNotificationEmailService');
 const Order = require('../models/Order');
@@ -58,8 +58,9 @@ const sendNewOrderNotificationNow = async ({ shop_id, order, customer }) => {
         ]
     });
 
-    sendVendorNotificationEmailSafe({
+    await sendVendorNotificationEmail({
         to: emails,
+        idempotencyKey: `shop.new_order:${order._id}`,
         subject: `New order ${orderCode}`,
         html,
         text: `New order ${orderCode} for ${formatCurrency(order.pricing?.total)} from ${customer?.fullName || 'a customer'}.`
@@ -96,8 +97,9 @@ const sendCustomerRegisteredNotificationNow = async ({ shop_id, customer }) => {
         ]
     });
 
-    sendVendorNotificationEmailSafe({
+    await sendVendorNotificationEmail({
         to: emails,
+        idempotencyKey: `shop.customer_registered:${customer._id}`,
         subject: 'New customer registered',
         html,
         text: `${customer.fullName || customer.email} joined your store.`
@@ -156,7 +158,7 @@ const processShopEventJob = async (job) => {
         if (!order) throw new Error('Order not found for notification job');
 
         const customer = order.customer
-            ? await User.findById(order.customer).select('fullName email').lean()
+            ? await User.findOne({ _id: order.customer, shop_id: job.shop_id }).select('fullName email').lean()
             : job.payload?.customerSnapshot || {};
 
         await assertJobEntitlementStillValid({ job });

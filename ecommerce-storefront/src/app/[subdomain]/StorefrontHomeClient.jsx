@@ -87,17 +87,17 @@ function SaleCountdown({ startsAt, endsAt, serverNow, onBoundary, className = ''
         <div className={`${compact ? 'mt-3' : 'mt-4'} ${className}`}>
             <p className={`${compact ? 'mb-1.5 text-[10px]' : 'mb-2 text-xs'} font-black uppercase tracking-[0.16em] text-white/75`} aria-live="polite">{time.label}</p>
             <div className={`grid grid-cols-4 ${compact ? 'max-w-[17rem] gap-1.5' : 'max-w-sm gap-2'}`}>
-            {[
-                ['Days', time.days],
-                ['Hours', time.hours],
-                ['Min', time.minutes],
-                ['Sec', time.seconds]
-            ].map(([label, value]) => (
-                <div key={label} className={`${compact ? 'rounded-xl px-1.5 py-1.5' : 'rounded-2xl px-3 py-2'} bg-white/90 text-center text-slate-950 shadow-sm backdrop-blur`}>
-                    <p className={`${compact ? 'text-base' : 'text-lg sm:text-2xl'} font-black tabular-nums`}>{String(value).padStart(2, '0')}</p>
-                    <p className={`${compact ? 'text-[8px]' : 'text-[10px]'} font-black uppercase tracking-wide text-slate-500`}>{label}</p>
-                </div>
-            ))}
+                {[
+                    ['Days', time.days],
+                    ['Hours', time.hours],
+                    ['Min', time.minutes],
+                    ['Sec', time.seconds]
+                ].map(([label, value]) => (
+                    <div key={label} className={`${compact ? 'rounded-xl px-1.5 py-1.5' : 'rounded-2xl px-3 py-2'} bg-white/90 text-center text-slate-950 shadow-sm backdrop-blur`}>
+                        <p className={`${compact ? 'text-base' : 'text-lg sm:text-2xl'} font-black tabular-nums`}>{String(value).padStart(2, '0')}</p>
+                        <p className={`${compact ? 'text-[8px]' : 'text-[10px]'} font-black uppercase tracking-wide text-slate-500`}>{label}</p>
+                    </div>
+                ))}
             </div>
         </div>
     );
@@ -403,55 +403,79 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
                     role="dialog"
                     aria-modal="false"
                     aria-labelledby="sale-popup-title"
-                    className="fixed bottom-20 right-3 z-50 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-2xl shadow-slate-900/20 sm:bottom-5 sm:right-5"
+                    className="fixed inset-x-3 bottom-20 z-50 mx-auto w-auto max-w-[21.5rem] max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-[1.65rem] border border-white/80 bg-white/65 shadow-[0_22px_65px_-24px_rgba(15,23,42,0.5),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-slate-900/5 backdrop-blur-2xl backdrop-saturate-150 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:mx-0 sm:w-[21.5rem] sm:max-h-[calc(100dvh-2rem)]"
                 >
+                    {/* Decorative glass reflections; no interactions or data changes. */}
+                    <div aria-hidden="true" className="pointer-events-none absolute -left-14 -top-14 h-40 w-40 rounded-full bg-emerald-200/45 blur-3xl" />
+                    <div aria-hidden="true" className="pointer-events-none absolute -right-12 top-14 h-36 w-36 rounded-full bg-sky-200/45 blur-3xl" />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[1.65rem] bg-gradient-to-br from-white/55 via-white/10 to-teal-100/25" />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400/90 via-teal-300/75 to-sky-400/80" />
+
                     <button
                         type="button"
                         onClick={dismissSalePopup}
                         aria-label="Dismiss sale announcement"
-                        className="absolute right-2.5 top-2.5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-slate-600 shadow-sm transition hover:bg-slate-100"
+                        className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/80 bg-white/60 text-slate-700 shadow-[0_4px_14px_-7px_rgba(15,23,42,0.35)] backdrop-blur-xl transition hover:bg-white/90 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
                     >
-                        <X size={16} />
+                        <X size={17} strokeWidth={2} />
                     </button>
-                    {(activeSalePopup.desktopImage || activeSalePopup.mobileImage) && (
-                        <picture>
-                            {activeSalePopup.mobileImage && activeSalePopup.mobileImage !== activeSalePopup.desktopImage && (
-                                <source media="(max-width: 640px)" srcSet={activeSalePopup.mobileImage} />
-                            )}
-                            <img
-                                src={activeSalePopup.desktopImage || activeSalePopup.mobileImage}
-                                alt=""
-                                loading="lazy"
-                                decoding="async"
-                                className="h-20 w-full object-cover"
-                            />
-                        </picture>
-                    )}
-                    <div className="flex gap-2.5 p-3 pr-12">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                            <Tag size={17} />
+
+                    <div className="relative z-10 p-3.5 sm:p-4">
+                        <div className="pr-12">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/85 bg-emerald-100/70 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-emerald-900 shadow-sm backdrop-blur-lg">
+                                <Tag size={12} strokeWidth={2} />
+                                Limited time offer
+                            </span>
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Limited time offer</p>
-                            <h3 id="sale-popup-title" className="mt-0.5 text-base font-black text-slate-950">{activeSalePopup.title}</h3>
-                            {activeSalePopup.message && (
-                                <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-slate-600">{activeSalePopup.message}</p>
+
+                        <div className="mt-3 flex items-start gap-3">
+                            <div className="min-w-0 flex-1">
+                                <h3 id="sale-popup-title" className="break-words text-[1.06rem] font-black leading-snug tracking-tight text-slate-950 drop-shadow-[0_1px_0_rgba(255,255,255,0.65)]">
+                                    {activeSalePopup.title}
+                                </h3>
+                                {activeSalePopup.message && (
+                                    <p className="mt-1.5 line-clamp-2 break-words text-[12px] font-medium leading-5 text-slate-700">
+                                        {activeSalePopup.message}
+                                    </p>
+                                )}
+                            </div>
+
+                            {(activeSalePopup.desktopImage || activeSalePopup.mobileImage) && (
+                                <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[1.15rem] border border-white/90 bg-white/50 p-0.5 shadow-[0_8px_20px_-10px_rgba(15,23,42,0.45)] backdrop-blur-sm">
+                                    <picture>
+                                        {activeSalePopup.mobileImage && activeSalePopup.mobileImage !== activeSalePopup.desktopImage && (
+                                            <source media="(max-width: 640px)" srcSet={activeSalePopup.mobileImage} />
+                                        )}
+                                        <img
+                                            src={activeSalePopup.desktopImage || activeSalePopup.mobileImage}
+                                            alt=""
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="h-full w-full rounded-[0.95rem] object-cover"
+                                        />
+                                    </picture>
+                                </div>
                             )}
+                        </div>
+
+                        <div className="mt-3 rounded-[1.15rem] border border-white/80 bg-white/45 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-xl">
                             <SaleCountdown
                                 startsAt={activeSalePopup.startsAt}
                                 endsAt={activeSalePopup.endsAt}
                                 serverNow={serverNow}
                                 onBoundary={refreshBootstrap}
-                                className="[&_p:first-child]:text-emerald-700 [&_.rounded-xl]:bg-emerald-50"
+                                className="!mt-0 [&>p]:!mb-1.5 [&>p]:!text-emerald-900 [&_.rounded-xl]:!border [&_.rounded-xl]:!border-white/90 [&_.rounded-xl]:!bg-white/65 [&_.rounded-xl]:!shadow-[0_3px_12px_-8px_rgba(15,23,42,0.35)]"
                                 compact
                             />
                             {activeSalePopup.ctaUrl && (
                                 <Link
                                     href={activeSalePopup.ctaUrl}
                                     onClick={dismissSalePopup}
-                                    className="mt-2.5 inline-flex min-h-10 items-center rounded-full bg-slate-950 px-4 text-xs font-black text-white shadow-lg shadow-slate-900/15"
+                                    className="mt-2.5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-900 px-4 py-2.5 text-center text-xs font-extrabold text-white shadow-[0_8px_20px_-8px_rgba(6,95,70,0.48)] transition-[filter,transform] hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
                                 >
-                                    {activeSalePopup.ctaLabel || 'Shop sale'}
+                                    <span>{activeSalePopup.ctaLabel || 'Shop sale'}</span>
+                                    <span aria-hidden="true" className="text-sm leading-none">↗</span>
                                 </Link>
                             )}
                         </div>

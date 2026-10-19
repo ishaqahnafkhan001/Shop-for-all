@@ -816,7 +816,9 @@ test('customer email campaigns are tenant-scoped, queued, and product-safe', () 
     assert.match(controller, /createCampaignJob/);
     assert.match(model, /CustomerEmailCampaign/);
     assert.match(service, /queue:\s*'customer-email'/);
-    assert.match(service, /sanitizePublicProduct\(product\)/);
+    assert.match(service, /sanitizePublicProduct\(source\)/);
+    assert.match(service, /marketingEmail\.consentedAt/);
+    assert.match(service, /CustomerEmailRecipient\.insertMany/);
     assert.match(service, /status:\s*'Published'/);
     assert.match(worker, /'customer-email': processCustomerEmailCampaignJob/);
     assert.match(template, /escapeHtml/);

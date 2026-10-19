@@ -8,8 +8,11 @@ const {
     failJob
 } = require('../services/jobQueueService');
 const { processShopEventJob } = require('../services/shopEventNotificationService');
+const { ORDER_RECEIPT_QUEUE, processOrderReceiptJob } = require('../services/orders/orderEmailService');
 const { processCourierJob } = require('../services/courierJobService');
-const { processCustomerEmailCampaignJob } = require('../services/customerEmailCampaignService');
+const { processCustomerEmailCampaignJob, recoverStaleCampaignQueueing } = require('../services/customerEmailCampaignService');
+const { reconcileResendCampaignRecipients, reconcileResendWelcomeDeliveries } = require('../services/mail/campaignReconciliationService');
+const { processMarketingConsentJob } = require('../services/marketing/marketingConsentJobService');
 const {
     processBadgeAnalysisJob,
     markBadgeAnalysisFailed
@@ -61,12 +64,15 @@ let nextStoreBuilderAssetCleanupAt = 0;
 let nextSubscriptionReconciliationAt = 0;
 let nextBillingLifecycleAt = 0;
 let nextAiRecoveryAt = 0;
+let nextEmailReconciliationAt = 0;
 
 const handlers = {
     notifications: processShopEventJob,
+    [ORDER_RECEIPT_QUEUE]: processOrderReceiptJob,
     courier: processCourierJob,
     badges: processBadgeAnalysisJob,
     'customer-email': processCustomerEmailCampaignJob,
+    'marketing-consent': processMarketingConsentJob,
     [SCHEDULED_PRODUCT_QUEUE]: processScheduledProductJob,
     [LOW_STOCK_ALERT_QUEUE]: processLowStockAlertJob,
     [REGISTRATION_NOTIFICATION_QUEUE]: processRegistrationNotificationJob,
@@ -82,6 +88,7 @@ const QUEUE_FEATURES = Object.freeze({
 
 const ENTITLEMENT_INDEPENDENT_QUEUES = new Set([
     'support',
+    ORDER_RECEIPT_QUEUE,
     REGISTRATION_NOTIFICATION_QUEUE
 ]);
 
@@ -158,6 +165,16 @@ const run = async () => {
     logger.info('worker_started', { queues: Object.keys(handlers) });
 
     while (!shuttingDown) {
+        if (Date.now() >= nextEmailReconciliationAt) {
+            nextEmailReconciliationAt = Date.now() + 60 * 1000;
+            try {
+                await reconcileResendCampaignRecipients({ limit: 20 });
+                await reconcileResendWelcomeDeliveries({ limit: 20 });
+                await recoverStaleCampaignQueueing({ limit: 20 });
+            } catch (_) {
+                logger.error('campaign_email_reconciliation_failed', { code: 'EMAIL_RECONCILIATION_UNAVAILABLE' });
+            }
+        }
         if (getAiConfig().accountingVersion === 2 && Date.now() >= nextAiRecoveryAt) {
             nextAiRecoveryAt = Date.now() + 10000;
             try {

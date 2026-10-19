@@ -107,6 +107,15 @@ const userSchema = new mongoose.Schema({
         default: false
     },
     emailVerifiedAt: Date,
+    marketingEmail: {
+        consentedAt: { type: Date, default: null },
+        consentSource: { type: String, trim: true, maxlength: 80, default: '' },
+        pendingAt: { type: Date, default: null },
+        pendingOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
+        unsubscribedAt: { type: Date, default: null },
+        suppressedAt: { type: Date, default: null },
+        suppressionReason: { type: String, trim: true, maxlength: 80, default: '' }
+    },
     staffTitle: {
         type: String,
         trim: true,

@@ -12,7 +12,7 @@ const COURIER_CREDENTIAL_SELECT = [
 const getPathaoConfig = (shop = {}) => {
     const pathao = shop.couriers?.pathao || {};
     const storeId = pathao.storeId || shop.pathaoStoreId || null;
-    const enabled = Boolean(pathao.enabled || storeId);
+    const enabled = Boolean(storeId && pathao.status !== 'Disabled');
 
     return {
         enabled,
@@ -21,7 +21,9 @@ const getPathaoConfig = (shop = {}) => {
         storeName: pathao.storeName || '',
         status: enabled ? (pathao.status === 'Disabled' ? 'Disabled' : 'Active') : 'NotConfigured',
         maskedCredentialsAvailable: Boolean(shop.pathaoCredentials?.client_id),
-        isLive: Boolean(shop.pathaoCredentials?.isLive)
+        isLive: Boolean(shop.pathaoCredentials?.isLive),
+        pendingApproval: Boolean(pathao.pendingStore),
+        requestedAt: pathao.pendingStore?.requestedAt || null
     };
 };
 
@@ -44,11 +46,18 @@ const getRedxConfig = (shop = {}) => {
     };
 };
 
-const getCourierSummary = (shop = {}) => ({
-    pathao: getPathaoConfig(shop),
-    redx: getRedxConfig(shop),
-    defaultCourier: shop.couriers?.defaultCourier || (getPathaoConfig(shop).configured ? 'pathao' : (getRedxConfig(shop).configured ? 'redx' : null))
-});
+const getCourierSummary = (shop = {}) => {
+    const pathao = getPathaoConfig(shop);
+    const redx = getRedxConfig(shop);
+    const selected = shop.couriers?.defaultCourier;
+    return {
+        pathao,
+        redx,
+        defaultCourier: (selected === 'pathao' && pathao.enabled) || (selected === 'redx' && redx.enabled)
+            ? selected
+            : (pathao.enabled ? 'pathao' : (redx.enabled ? 'redx' : null))
+    };
+};
 
 const applyRedxConfigToShop = (shop, config = {}) => {
     const token = String(config.token || '').trim();
@@ -76,7 +85,10 @@ const applyRedxConfigToShop = (shop, config = {}) => {
         configuredAt: currentRedx.configuredAt || new Date(),
         lastVerifiedAt: new Date()
     };
-    if (!shop.couriers.defaultCourier) shop.couriers.defaultCourier = 'redx';
+    if (!shop.couriers.redx.enabled && shop.couriers.defaultCourier === 'redx') {
+        shop.couriers.defaultCourier = getPathaoConfig(shop).enabled ? 'pathao' : null;
+    }
+    if (!shop.couriers.defaultCourier && shop.couriers.redx.enabled) shop.couriers.defaultCourier = 'redx';
 };
 
 const clearRedxConfigFromShop = (shop) => {
@@ -95,7 +107,7 @@ const clearRedxConfigFromShop = (shop) => {
         configuredAt: null
     };
     if (shop.couriers.defaultCourier === 'redx') {
-        shop.couriers.defaultCourier = getPathaoConfig(shop).configured ? 'pathao' : null;
+        shop.couriers.defaultCourier = getPathaoConfig(shop).enabled ? 'pathao' : null;
     }
 };
 

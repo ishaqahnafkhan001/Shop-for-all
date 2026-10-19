@@ -2,6 +2,7 @@ const Banner = require('../models/Banner');
 const { hasFeature } = require('../services/shops/featureAccessService');
 const Product = require('../models/Product');
 const cache = require('../services/cacheService');
+const safeStorefrontLink = require('../utils/safeStorefrontLink');
 
 const invalidateStorefrontBannerCache = async (shopId) => {
     if (shopId) await cache.delPattern(`storefront:bootstrap:${shopId}:*`);
@@ -58,7 +59,7 @@ const normalizeBannerForPublic = (banner, now = new Date()) => {
         images: banner.images || [],
         desktopImages: banner.desktopImages || banner.images || [],
         mobileImages: banner.mobileImages || [],
-        link: isUpcoming ? '' : (banner.link || buildProductUrl(product)),
+        link: isUpcoming ? '' : safeStorefrontLink(banner.link || buildProductUrl(product)),
         startsAt: banner.startsAt,
         endsAt: banner.endsAt,
         countdownEnabled: Boolean(banner.countdownEnabled && isUpcoming && launchAt),
@@ -155,6 +156,9 @@ exports.createBanner = async (req, res) => {
         if (startsAt && endsAt && endsAt <= startsAt) {
             return res.status(400).json({ success: false, message: "Banner end time must be after start time" });
         }
+        if (bannerType === 'standard' && link && !safeStorefrontLink(link)) {
+            return res.status(400).json({ success: false, message: 'Banner link must be an internal path, anchor, or HTTPS URL.' });
+        }
 
         if (bannerType === 'scheduled_product') {
             try {
@@ -181,7 +185,7 @@ exports.createBanner = async (req, res) => {
             countdownEnabled: bannerType === 'scheduled_product' ? Boolean(countdownEnabled === true || countdownEnabled === 'true') : false,
             postLaunchBehavior: bannerType === 'scheduled_product' ? postLaunchBehavior : 'convert_to_product',
             postLaunchCtaText: stripText(postLaunchCtaText || 'View product', 60),
-            link: bannerType === 'scheduled_product' ? buildProductUrl(launchProduct) : link,
+            link: bannerType === 'scheduled_product' ? buildProductUrl(launchProduct) : safeStorefrontLink(link),
             images: desktopImages,
             desktopImages,
             mobileImages,
@@ -198,7 +202,7 @@ exports.createBanner = async (req, res) => {
         });
     } catch (error) {
         console.error("Banner Upload Error:", error);
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: 'Could not create banner.' });
     }
 };
 
@@ -213,7 +217,8 @@ exports.getAllBanners = async (req, res) => {
             .sort({ createdAt: -1 });
         res.status(200).json(banners);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Fetch Banners Error:', error);
+        res.status(500).json({ message: 'Could not load banners.' });
     }
 };
 
@@ -243,7 +248,7 @@ exports.getActiveBanners = async (req, res) => {
         res.status(200).json(banners.map(banner => normalizeBannerForPublic(banner)).filter(Boolean));
     } catch (error) {
         console.error("Fetch Active Banners Error:", error);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Could not load banners.' });
     }
 };
 // @desc    Delete banner
@@ -252,6 +257,10 @@ exports.deleteBanner = async (req, res) => {
         // 🔹 4. Security Check: Find the banner by BOTH its ID and the Admin's Shop ID
         // This prevents Admin A from sending a DELETE request with Admin B's banner ID.
         const shop_id = getShopId(req);
+
+        if (!isObjectId(req.params.id)) {
+            return res.status(404).json({ success: false, message: 'Banner not found.' });
+        }
 
         const banner = await Banner.findOneAndDelete({ _id: req.params.id, shop_id });
 
@@ -262,7 +271,8 @@ exports.deleteBanner = async (req, res) => {
         await invalidateStorefrontBannerCache(shop_id);
         res.status(200).json({ success: true, message: "Banner removed successfully" });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Delete Banner Error:', error);
+        res.status(500).json({ message: 'Could not delete banner.' });
     }
 };
 
@@ -271,6 +281,10 @@ exports.toggleBannerStatus = async (req, res) => {
     try {
         // 🔹 5. Security Check: Only allow toggling if the banner belongs to the admin
         const shop_id = getShopId(req);
+
+        if (!isObjectId(req.params.id)) {
+            return res.status(404).json({ success: false, message: 'Banner not found.' });
+        }
 
         const banner = await Banner.findOne({ _id: req.params.id, shop_id });
 
@@ -291,6 +305,7 @@ exports.toggleBannerStatus = async (req, res) => {
             data: banner
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Toggle Banner Error:', error);
+        res.status(500).json({ success: false, message: 'Could not update banner.' });
     }
 };

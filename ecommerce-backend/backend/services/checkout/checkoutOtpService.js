@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-const { PURPOSES, consumeVerifiedOtpProof, createOtp, verifyOtp } = require('../otpService');
+const { PURPOSES, consumeVerifiedOtpProof, createOtp, verifyOtp, markOtpDeliveryFailed } = require('../otpService');
 const { sendSms, SmsProviderError } = require('../sms/smsProviderService');
 const { maskPhone, normalizeBDPhone } = require('../../utils/phoneUtils');
 
@@ -75,6 +75,12 @@ const sendCheckoutPhoneOtp = async ({ shop, phone, checkoutSessionId, items }) =
             message: `Your order verification code for ${shop.shopName || 'this store'} is ${result.otp}. It will expire in 5 minutes.`
         });
     } catch (error) {
+        await markOtpDeliveryFailed({
+            identifier: normalizedPhone,
+            purpose: PURPOSES.customerOrderPhone,
+            metadata: getCheckoutMetadata({ shopId: shop._id, checkoutSessionId, cartHash }),
+            otp: result.otp
+        });
         if (error instanceof SmsProviderError) {
             throw new CheckoutOtpError(
                 'Could not send verification SMS. Please check the phone number or try again shortly.',

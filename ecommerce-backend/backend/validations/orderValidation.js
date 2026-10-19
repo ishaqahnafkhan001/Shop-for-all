@@ -56,6 +56,7 @@ const paymentSchema = Joi.object({
 
 const consentSchema = Joi.object({
     checkoutPolicyAccepted: Joi.boolean().valid(true).required(),
+    marketingEmailOptIn: Joi.boolean().optional(),
     version: Joi.string().trim().max(80).allow('').optional()
 }).required().messages({
     'any.required': 'Policy consent is required before checkout'

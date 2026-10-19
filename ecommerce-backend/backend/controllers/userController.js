@@ -103,7 +103,7 @@ exports.getShopCustomers = async (req, res) => {
 
         if (!hasPaginationParams) {
             const customers = await User.find(query)
-                .select('-password')
+                .select('_id fullName email phone status createdAt emailVerified marketingEmail.consentedAt marketingEmail.pendingAt marketingEmail.unsubscribedAt marketingEmail.suppressedAt marketingEmail.suppressionReason')
                 .sort({ createdAt: -1 });
 
             return res.status(200).json(customers);
@@ -116,7 +116,7 @@ exports.getShopCustomers = async (req, res) => {
         // Find users linked to this specific shop with the 'Customer' role
         const [customers, total] = await Promise.all([
             User.find(query)
-            .select('-password') // Never send passwords to the frontend!
+            .select('_id fullName email phone status createdAt emailVerified marketingEmail.consentedAt marketingEmail.pendingAt marketingEmail.unsubscribedAt marketingEmail.suppressedAt marketingEmail.suppressionReason')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)

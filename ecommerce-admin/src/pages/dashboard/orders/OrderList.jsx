@@ -135,7 +135,8 @@ const OrderList = () => {
             }
 
             toast.success(`Order status updated to ${newStatus}`);
-            if (data?.notification?.sent) toast.success('Customer email sent');
+            if (data?.notification?.sent) toast.success('Customer email accepted by provider');
+            else if (options.notifyCustomer) toast.error('Order status changed, but the customer email was not accepted. Check your email settings.');
 
             return data?.data || true;
         } catch (error) {
@@ -593,9 +594,11 @@ const OrderList = () => {
                             onConfirmBeforeSync={() => updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true })}
                             courierSettings={courierSettings}
                             onJustConfirm={async () => {
-                                await updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true });
-                                setPathaoModalOpen(false);
-                                setOrderToSync(null);
+                                const confirmed = await updateStatusInDB(orderToSync._id, 'Confirmed', { notifyCustomer: true });
+                                if (confirmed) {
+                                    setPathaoModalOpen(false);
+                                    setOrderToSync(null);
+                                }
                             }}
                         />
                     )}

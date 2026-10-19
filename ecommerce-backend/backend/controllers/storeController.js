@@ -9,6 +9,8 @@ const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
 const { mirrorPathaoConfigOnShop } = require('../services/courierConfigService');
+const { encryptSecret } = require('../utils/secretCrypto');
+const safeStorefrontLink = require('../utils/safeStorefrontLink');
 const {
     PUBLIC_PRODUCT_CARD_PROJECT,
     sanitizePublicProduct,
@@ -64,7 +66,7 @@ const normalizeBannerForPublic = (banner, now = new Date()) => {
         images: banner.images || [],
         desktopImages: banner.desktopImages || banner.images || [],
         mobileImages: banner.mobileImages || [],
-        link: isUpcoming ? '' : (banner.link || buildProductUrl(product)),
+        link: isUpcoming ? '' : safeStorefrontLink(banner.link || buildProductUrl(product)),
         startsAt: banner.startsAt,
         endsAt: banner.endsAt,
         countdownEnabled: Boolean(banner.countdownEnabled && isUpcoming && launchAt),
@@ -783,14 +785,38 @@ const Joi = require('joi');
 
 const pathaoSetupSchema = Joi.object({
     contact_name: Joi.string().min(3).max(50).required(),
-    contact_number: Joi.string().length(11).required().messages({
-        'string.length': 'Contact number must be exactly 11 digits'
+    contact_number: Joi.string().pattern(/^01\d{9}$/).required().messages({
+        'string.pattern.base': 'Contact number must be an 11-digit Bangladesh mobile number'
     }),
     address: Joi.string().min(10).max(120).required(),
-    city_id: Joi.alternatives().try(Joi.number(), Joi.string()).required(),
-    zone_id: Joi.alternatives().try(Joi.number(), Joi.string()).required(),
-    area_id: Joi.alternatives().try(Joi.number(), Joi.string()).required()
+    city_id: Joi.number().integer().positive().required(),
+    zone_id: Joi.number().integer().positive().required(),
+    area_id: Joi.number().integer().positive().required()
 });
+
+const pathaoLinkSchema = Joi.object({
+    client_id: Joi.string().trim().min(1).max(200).required(),
+    client_secret: Joi.string().trim().min(1).max(500).required(),
+    username: Joi.string().trim().email().max(200).required(),
+    password: Joi.string().min(1).max(500).required(),
+    store_id: Joi.number().integer().positive().required(),
+    isLive: Joi.boolean().required()
+});
+
+const pathaoStoreList = response => {
+    const list = response?.data?.data || response?.data || [];
+    return Array.isArray(list) ? list : [];
+};
+
+const findApprovedPathaoStore = (stores, { name, address }) => {
+    const normalize = value => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const matches = stores.filter(store =>
+        normalize(store.store_name) === normalize(name) && normalize(store.store_address) === normalize(address) &&
+        Number.isInteger(Number(store.store_id)) && Number(store.store_id) > 0 &&
+        store.is_active !== 0 && store.is_active !== '0' && store.is_active !== false
+    );
+    return matches.length === 1 ? matches[0] : null;
+};
 
 exports.setupVendorPathaoStore = async (req, res) => {
     try {
@@ -805,11 +831,17 @@ exports.setupVendorPathaoStore = async (req, res) => {
         if (!shop) {
             return res.status(404).json({ success: false, error: 'Shop not found' });
         }
+        if (shop.couriers?.pathao?.pendingStore) {
+            return res.status(409).json({ success: false, error: 'A Pathao pickup shop is awaiting approval. Check its status before creating another.' });
+        }
+        if (shop.pathaoStoreId) {
+            return res.status(409).json({ success: false, error: 'Pathao is already connected for this shop.' });
+        }
 
         const token = await getPathaoToken();
 
         const storePayload = {
-            name: shop.shopName.substring(0, 50),
+            name: `${shop.shopName.trim().slice(0, 43)}-${String(shop._id).slice(-6)}`,
             contact_name: value.contact_name,
             contact_number: value.contact_number,
             address: value.address,
@@ -820,17 +852,29 @@ exports.setupVendorPathaoStore = async (req, res) => {
 
         await createPathaoStore(token, storePayload);
 
-        const { data: storesResponse } = await getPathaoStores(token);
-        const storesList = storesResponse?.data?.data || storesResponse?.data || [];
+        shop.couriers = shop.couriers || {};
+        shop.couriers.pathao = shop.couriers.pathao || {};
+        shop.couriers.pathao.pendingStore = {
+            name: storePayload.name,
+            address: storePayload.address,
+            requestedAt: new Date()
+        };
+        await shop.save();
 
-        const newStore = storesList.find(
-            s => s.contact_number === storePayload.contact_number && s.store_name === storePayload.name
-        );
+        // Pathao's create response has no store ID. Its store list may lag until approval.
+        let newStore = null;
+        try {
+            const storesList = pathaoStoreList(await getPathaoStores(token));
+            newStore = findApprovedPathaoStore(storesList, shop.couriers.pathao.pendingStore);
+        } catch {
+            // The request is persisted and can be checked again after Pathao approval.
+        }
 
-        if (!newStore || !newStore.store_id) {
-            return res.status(500).json({
-                success: false,
-                error: "Store was created in Pathao, but we couldn't retrieve the ID. Please contact support."
+        if (!newStore) {
+            return res.status(202).json({
+                success: true,
+                pending: true,
+                message: 'Pathao accepted the pickup shop. Check its approval status here later.'
             });
         }
 
@@ -839,6 +883,7 @@ exports.setupVendorPathaoStore = async (req, res) => {
             storeId: newStore.store_id,
             storeName: newStore.store_name || newStore.name || ''
         });
+        shop.couriers.pathao.pendingStore = null;
         await shop.save();
 
         res.status(200).json({
@@ -858,25 +903,67 @@ exports.setupVendorPathaoStore = async (req, res) => {
     }
 };
 
+exports.checkPendingPathaoStore = async (req, res) => {
+    try {
+        const shop = await Shop.findById(req.tenantId);
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+        const pendingStore = shop.couriers?.pathao?.pendingStore;
+        if (!pendingStore) return res.status(400).json({ success: false, error: 'No Pathao pickup shop is awaiting approval.' });
+
+        const token = await getPathaoToken();
+        const approvedStore = findApprovedPathaoStore(pathaoStoreList(await getPathaoStores(token)), pendingStore);
+        if (!approvedStore) {
+            return res.status(202).json({ success: true, pending: true, message: 'Pathao has not approved the pickup shop yet.' });
+        }
+        shop.pathaoStoreId = Number(approvedStore.store_id);
+        mirrorPathaoConfigOnShop(shop, {
+            storeId: shop.pathaoStoreId,
+            storeName: approvedStore.store_name || ''
+        });
+        shop.couriers.pathao.pendingStore = null;
+        await shop.save();
+        return res.json({ success: true, pending: false, message: 'Pathao pickup shop approved and connected.' });
+    } catch {
+        return res.status(502).json({ success: false, error: 'Could not check Pathao approval status. Try again later.' });
+    }
+};
+
 // Link Existing Pathao Account
 exports.linkExistingPathaoAccount = async (req, res) => {
     try {
-        const { client_id, client_secret, username, password, store_id, isLive } = req.body;
+        const { error, value } = pathaoLinkSchema.validate(req.body);
+        if (error) return res.status(400).json({ success: false, error: error.details[0].message });
+        const { client_id, client_secret, username, password, store_id, isLive } = value;
         const shopId = req.tenantId;
 
-        // 1. Test the credentials by trying to get a token
         const customCreds = { client_id, client_secret, username, password, isLive };
-        const token = await getPathaoToken(customCreds); // If this fails, it throws an error to the catch block
+        const token = await getPathaoToken(customCreds);
+        const linkedStore = pathaoStoreList(await getPathaoStores(token, isLive))
+            .find(store => Number(store.store_id) === store_id);
+        if (!linkedStore) {
+            return res.status(400).json({ success: false, error: 'This Pathao store ID was not found in the selected account and environment.' });
+        }
+        if (linkedStore.is_active === 0 || linkedStore.is_active === '0' || linkedStore.is_active === false) {
+            return res.status(400).json({ success: false, error: 'This Pathao store is not active yet. Wait for Pathao approval.' });
+        }
 
-        // 2. If token works, save everything to the database
         const shop = await Shop.findById(shopId);
-        shop.pathaoStoreId = parseInt(store_id, 10);
-        shop.pathaoCredentials = customCreds;
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+        shop.pathaoStoreId = store_id;
+        shop.pathaoCredentials = {
+            client_id,
+            client_secret: encryptSecret(client_secret, { trim: false }),
+            username,
+            password: encryptSecret(password, { trim: false }),
+            isLive
+        };
         mirrorPathaoConfigOnShop(shop, {
             storeId: shop.pathaoStoreId,
+            storeName: linkedStore.store_name || '',
             enabled: true,
             status: 'Active'
         });
+        shop.couriers.pathao.pendingStore = null;
         await shop.save();
 
         res.status(200).json({

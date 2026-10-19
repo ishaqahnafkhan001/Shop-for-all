@@ -184,9 +184,9 @@ const getRedxPickupStores = async ({ shop }) => {
     }
 };
 
-const getRedxPickupStoreInfo = async ({ shop, pickupStoreId }) => {
+const getRedxPickupStoreInfo = async ({ shop, pickupStoreId, token = '' }) => {
     try {
-        const { data } = await getClient(shop).get(`/pickup/store/info/${encodeURIComponent(pickupStoreId)}`);
+        const { data } = await getClientWithToken(shop, token).get(`/pickup/store/info/${encodeURIComponent(pickupStoreId)}`);
         return {
             pickupStore: data?.pickup_store || null
         };

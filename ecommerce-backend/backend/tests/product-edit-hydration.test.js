@@ -11,7 +11,7 @@ test('admin product edit fetches full product detail instead of list summary rou
     const editProduct = readProject('ecommerce-admin/src/pages/dashboard/products/EditProduct.jsx');
     const productList = readProject('ecommerce-admin/src/pages/dashboard/products/ProductList.jsx');
 
-    assert.match(editProduct, /API\.get\(`\/admin\/products\/\$\{id\}`\)/);
+    assert.match(editProduct, /API\.get\(`\/admin\/products\/\$\{encodeURIComponent\(id\)\}`\)/);
     assert.doesNotMatch(editProduct, /state\?\.product/);
     assert.doesNotMatch(editProduct, /useLocation/);
     assert.doesNotMatch(productList, /state:\s*\{\s*product\s*\}/);

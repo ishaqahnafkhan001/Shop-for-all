@@ -738,7 +738,15 @@ const shopSchema = new mongoose.Schema({
                 default: 'NotConfigured'
             },
             lastSyncedAt: Date,
-            configuredAt: Date
+            configuredAt: Date,
+            pendingStore: {
+                type: new mongoose.Schema({
+                    name: { type: String, trim: true, required: true },
+                    address: { type: String, trim: true, required: true },
+                    requestedAt: { type: Date, default: Date.now }
+                }, { _id: false }),
+                default: null
+            }
         },
         redx: {
             enabled: { type: Boolean, default: false },

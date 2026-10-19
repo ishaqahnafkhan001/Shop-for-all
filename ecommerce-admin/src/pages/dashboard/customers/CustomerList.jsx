@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect, useCallback, useRef } from 'react';
-import { Mail, Send, ShoppingBag, Users } from 'lucide-react';
+import { Mail, Send, ShoppingBag, Users, ShieldOff, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 import Table from '../../../components/ui/Table';
@@ -22,6 +22,7 @@ const CustomerList = () => {
 
     // --- State ---
     const [customers, setCustomers] = useState([]);
+    const [statusAsOf, setStatusAsOf] = useState(() => Date.now());
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -53,6 +54,7 @@ const CustomerList = () => {
             });
             if (!isLatest() || fetchId !== fetchIdRef.current) return;
             setCustomers(data.data || []);
+            setStatusAsOf(Date.now());
             setPagination(data.pagination || { page, totalPages: 1, pages: 1, total: data.data?.length || 0, limit: 25 });
             });
         } catch (error) {
@@ -72,6 +74,26 @@ const CustomerList = () => {
     const openMailModal = (customer) => {
         setSelectedCustomer(customer);
         setIsMailModalOpen(true);
+    };
+
+    const marketingStatus = (customer) => {
+        if (customer.marketingEmail?.suppressedAt) return 'Suppressed';
+        if (customer.marketingEmail?.unsubscribedAt) return 'Unsubscribed';
+        if (customer.marketingEmail?.consentedAt) return 'Subscribed';
+        if (customer.marketingEmail?.pendingAt) return statusAsOf - new Date(customer.marketingEmail.pendingAt).getTime() > 7 * 24 * 60 * 60 * 1000
+            ? 'Confirmation expired' : 'Awaiting confirmation';
+        return 'No consent';
+    };
+
+    const updateSuppression = async (customer) => {
+        const action = customer.marketingEmail?.suppressedAt ? 'clear' : 'suppress';
+        try {
+            await API.patch(`/admin/customers/${customer._id}/marketing-suppression`, { action });
+            toast.success(action === 'suppress' ? 'Marketing email suppressed for this customer.' : 'Manual suppression cleared.');
+            fetchCustomers(pagination.page);
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Could not update suppression.');
+        }
     };
 
     // --- Table Configuration ---
@@ -121,18 +143,33 @@ const CustomerList = () => {
                 </span>
             )
         },
+        {
+            label: 'Marketing email',
+            key: 'marketingEmail',
+            render: (row) => <span className="text-xs text-slate-600">{marketingStatus(row)}</span>
+        },
     ];
 
     const renderActions = (row) => (
         <div className="flex justify-end space-x-2">
             <button
                 onClick={() => openMailModal(row)}
-                className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                title="Email this customer about orders, offers, or support"
+                disabled={marketingStatus(row) !== 'Subscribed'}
+                className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                title={marketingStatus(row) === 'Subscribed' ? 'Send a marketing email' : 'Customer must confirm marketing consent first'}
                 aria-label={`Email ${row.fullName || 'customer'}`}
             >
                 <Mail size={18} />
             </button>
+            {user?.role === 'VendorAdmin' && (marketingStatus(row) !== 'Suppressed' ||
+                (row.marketingEmail?.suppressionReason === 'manual' && (row.emailVerified || row.marketingEmail?.consentedAt))) && (
+                <button type="button" onClick={() => updateSuppression(row)}
+                    className="rounded p-1.5 text-slate-500 hover:bg-slate-100"
+                    title={marketingStatus(row) === 'Suppressed' ? 'Clear manual suppression' : 'Suppress marketing email'}
+                    aria-label={`${marketingStatus(row) === 'Suppressed' ? 'Clear marketing suppression for' : 'Suppress marketing email for'} ${row.fullName || 'customer'}`}>
+                    {marketingStatus(row) === 'Suppressed' ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
+                </button>
+            )}
         </div>
     );
 
@@ -173,7 +210,7 @@ const CustomerList = () => {
                     onClick={() => setCampaignMode('plain')}
                     className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
                 >
-                    <Send size={16} /> Email all customers
+                    <Send size={16} /> Email subscribers & history
                 </button>
                 <button
                     type="button"
@@ -224,6 +261,7 @@ const CustomerList = () => {
                                                     {cust.fullName}
                                                 </p>
                                                 <p className="text-xs text-gray-500">{cust.email}</p>
+                                                <p className="text-xs text-slate-500">Marketing: {marketingStatus(cust)}</p>
                                             </div>
                                         </div>
                                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
@@ -264,7 +302,6 @@ const CustomerList = () => {
                             isOpen={isMailModalOpen}
                             onClose={() => setIsMailModalOpen(false)}
                             customer={selectedCustomer}
-                            shopName={user?.shopName}
                         />
                     )}
                     {campaignMode && (

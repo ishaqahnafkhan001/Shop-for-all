@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Banner = require('../models/Banner');
 const { normalizeHomepageSections } = require('@scaleup/storefront-theme');
+const safeStorefrontLink = require('../utils/safeStorefrontLink');
 
 const FIXED_SECTION_TYPES = new Set(['Hero']);
 
@@ -69,8 +70,8 @@ const createBannerSection = (banner, sortOrder) => ({
         mobileImages: (banner.mobileImages?.length ? banner.mobileImages : banner.desktopImages || banner.images || [banner.image]).filter(Boolean).slice(0, 5),
         title: banner.title || '',
         subtitle: '',
-        buttonText: banner.link ? 'Shop now' : '',
-        buttonLink: banner.link || '',
+        buttonText: safeStorefrontLink(banner.link) ? 'Shop now' : '',
+        buttonLink: safeStorefrontLink(banner.link),
         sourceBannerId: String(banner._id)
     },
     mobileSettings: {

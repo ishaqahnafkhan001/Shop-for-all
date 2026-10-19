@@ -1,6 +1,6 @@
 const crypto = require('crypto');
-const { PURPOSES, createOtp, verifyOtp } = require('../otpService');
-const { sendSms } = require('../sms/smsProviderService');
+const { PURPOSES, createOtp, verifyOtp, markOtpDeliveryFailed } = require('../otpService');
+const { sendSms, SmsProviderError } = require('../sms/smsProviderService');
 const { normalizeBDPhone, maskPhone } = require('../../utils/phoneUtils');
 
 const TOKEN_PURPOSE = 'public_order_access';
@@ -120,10 +120,25 @@ const sendPublicOrderAccessOtp = async ({ order, shop, phone, ip, userAgent }) =
 
     if (otp.success === false) return otp;
 
-    await sendSms({
-        mobile: normalizedPhone,
-        message: `Your order access code for ${shop?.shopName || 'this store'} is ${otp.otp}. It will expire in 5 minutes.`
-    });
+    try {
+        await sendSms({
+            mobile: normalizedPhone,
+            message: `Your order access code for ${shop?.shopName || 'this store'} is ${otp.otp}. It will expire in 5 minutes.`
+        });
+    } catch (error) {
+        await markOtpDeliveryFailed({
+            identifier: normalizedPhone,
+            purpose: PURPOSES.publicOrderAccess,
+            metadata: { shopId: order.shop_id || shop?._id, orderId: order._id, ip, userAgent },
+            otp: otp.otp
+        });
+        if (error instanceof SmsProviderError) {
+            const failure = new Error('Could not send order access code. Please try again shortly.');
+            failure.statusCode = 502;
+            throw failure;
+        }
+        throw error;
+    }
 
     return {
         success: true,

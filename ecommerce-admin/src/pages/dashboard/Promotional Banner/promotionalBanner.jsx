@@ -31,6 +31,19 @@ import { getBrowserTimeZoneLabel, localDateTimeToUtcIso } from '../../../utils/d
 const inputClassName =
     'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400';
 
+const isValidBannerLink = (value) => {
+    const link = value.trim();
+    if (!link) return true;
+    if (link.length > 500 || [...link].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 || char === '\\')) return false;
+    if ((link.startsWith('/') && !link.startsWith('//')) || link.startsWith('#')) return true;
+    try {
+        const url = new URL(link);
+        return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;
+    } catch {
+        return false;
+    }
+};
+
 const formatDateTime = (value) => {
     if (!value) return 'Not scheduled';
 
@@ -394,6 +407,10 @@ const PromotionalBanner = () => {
 
         if (desktopImages.length === 0) {
             toast.error('Select at least one desktop banner image before uploading.');
+            return;
+        }
+        if (!isScheduledLaunch && !isValidBannerLink(link)) {
+            toast.error('Use an internal path, anchor, or HTTPS URL for the banner link.');
             return;
         }
 

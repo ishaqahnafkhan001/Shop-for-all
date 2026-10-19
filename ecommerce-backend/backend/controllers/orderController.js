@@ -8,6 +8,7 @@ const Shop = require('../models/Shop'); // Make sure to import your Shop model
 const { logAudit } = require('../services/auditLogService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
 const ConsentLog = require('../models/ConsentLog');
+const { recordCheckoutMarketingConsent } = require('../services/marketing/marketingPreferenceService');
 const { enqueueJob, requeueJobs } = require('../services/jobQueueService');
 const {
     sanitizeOrderForCustomer,
@@ -30,7 +31,8 @@ const {
 } = require('../services/orders/orderStatusService');
 const {
     notifyOrderCreated,
-    notifyCustomerOrderStatus
+    notifyCustomerOrderStatus,
+    enqueueOrderReceipt
 } = require('../services/orders/orderEmailService');
 const {
     enqueueLowStockAlertsForLogs
@@ -403,6 +405,13 @@ exports.createOrder = async (req, res) => {
             ip: req.ip || req.headers['x-forwarded-for'] || '',
             userAgent: req.headers['user-agent'] || ''
         }], { session });
+        if (consent.marketingEmailOptIn === true) {
+            await recordCheckoutMarketingConsent({
+                shopId, customerId: userId, orderId: order._id,
+                ip: req.ip, userAgent: req.headers['user-agent'], session
+            });
+        }
+        await enqueueOrderReceipt({ shopId, order, customer, session });
 
         await incrementPromotionUsage({ shopId, promotionSnapshot, session });
 
@@ -631,8 +640,8 @@ exports.updateOrderStatus = async (req, res) => {
                     message: emailMessage
                 });
             } catch (emailError) {
-                emailResult = { sent: false, reason: emailError.message };
-                console.warn('Order status email failed:', emailError.message);
+                emailResult = { sent: false, reason: 'provider_rejected' };
+                console.warn('Order status email failed:', { code: emailError?.code || emailError?.name || 'MAIL_ERROR' });
             }
         }
 

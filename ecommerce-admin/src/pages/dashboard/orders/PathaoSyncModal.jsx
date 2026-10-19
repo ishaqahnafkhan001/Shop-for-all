@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     AlertCircle,
     CheckCircle2,
@@ -22,6 +22,7 @@ const PathaoSyncModal = ({
                              courierSettings
                          }) => {
     const [loading, setLoading] = useState(false);
+    const [orderConfirmed, setOrderConfirmed] = useState(false);
     const [provider, setProvider] = useState('pathao');
     const [formData, setFormData] = useState({
         recipient_name: '',
@@ -46,30 +47,17 @@ const PathaoSyncModal = ({
     const [redxAreaResults, setRedxAreaResults] = useState([]);
     const [redxAreaLoading, setRedxAreaLoading] = useState(false);
 
-    const pathaoConfigured = Boolean(courierSettings?.pathao?.configured);
+    const pathaoConfigured = Boolean(courierSettings?.pathao?.configured && courierSettings?.pathao?.enabled);
     const redxConfigured = Boolean(courierSettings?.redx?.configured && courierSettings?.redx?.enabled);
     const hasConfiguredCourier = pathaoConfigured || redxConfigured;
 
-    const orderCode = useMemo(
-        () => order?._id ? `#${order._id.slice(-6).toUpperCase()}` : '',
-        [order?._id]
-    );
+    const orderCode = order?._id ? `#${String(order._id).slice(-6).toUpperCase()}` : '';
 
     useEffect(() => {
         if (!order) return;
 
         queueMicrotask(() => {
-            const preferredProvider = courierSettings?.defaultCourier === 'redx' && redxConfigured
-                ? 'redx'
-                : courierSettings?.defaultCourier === 'pathao' && pathaoConfigured
-                    ? 'pathao'
-                    : pathaoConfigured
-                        ? 'pathao'
-                        : redxConfigured
-                            ? 'redx'
-                            : 'pathao';
-
-            setProvider(preferredProvider);
+            setOrderConfirmed(order.status === 'Confirmed');
             setFormData({
                 recipient_name: order.shipping?.address?.fullName || order.customer?.fullName || '',
                 recipient_phone: order.shipping?.address?.phone || '',
@@ -89,7 +77,20 @@ const PathaoSyncModal = ({
             setRedxAreaResults([]);
             setRedxAreaSearch({ districtName: '', postCode: '' });
         });
-    }, [order, courierSettings, pathaoConfigured, redxConfigured]);
+    }, [order]);
+
+    useEffect(() => {
+        const preferredProvider = courierSettings?.defaultCourier === 'redx' && redxConfigured
+            ? 'redx'
+            : courierSettings?.defaultCourier === 'pathao' && pathaoConfigured
+                ? 'pathao'
+                : pathaoConfigured
+                    ? 'pathao'
+                    : redxConfigured
+                        ? 'redx'
+                        : 'pathao';
+        queueMicrotask(() => setProvider(preferredProvider));
+    }, [courierSettings, pathaoConfigured, redxConfigured]);
 
     useEffect(() => {
         if (!isOpen) return undefined;
@@ -141,8 +142,8 @@ const PathaoSyncModal = ({
     };
 
     const handleSyncPathao = async () => {
-        if (!hasConfiguredCourier) {
-            toast.error('Configure a courier in Shipping Settings first');
+        if (!hasConfiguredCourier || (provider === 'pathao' && !pathaoConfigured) || (provider === 'redx' && !redxConfigured)) {
+            toast.error('Enable and configure the selected courier in Shipping Settings first');
             return;
         }
 
@@ -159,9 +160,10 @@ const PathaoSyncModal = ({
         setLoading(true);
 
         try {
-            if (order.status !== 'Confirmed' && typeof onConfirmBeforeSync === 'function') {
+            if (!orderConfirmed && typeof onConfirmBeforeSync === 'function') {
                 const confirmed = await onConfirmBeforeSync();
                 if (!confirmed) return;
+                setOrderConfirmed(true);
             }
 
             const { data } = provider === 'redx'
@@ -186,6 +188,16 @@ const PathaoSyncModal = ({
             onClose();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to create courier shipment');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleJustConfirm = async () => {
+        if (loading) return;
+        setLoading(true);
+        try {
+            await onJustConfirm();
         } finally {
             setLoading(false);
         }
@@ -570,11 +582,11 @@ const PathaoSyncModal = ({
                     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <button
                             type="button"
-                            onClick={onJustConfirm}
+                            onClick={handleJustConfirm}
                             disabled={loading}
                             className="inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            Confirm order only
+                            {loading ? 'Please wait…' : 'Confirm order only'}
                         </button>
 
                         <button

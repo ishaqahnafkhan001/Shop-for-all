@@ -37,9 +37,10 @@ const {
 const {
     PURPOSES,
     createOtp,
+    markOtpDeliveryFailed,
     verifyOtp
 } = require('../services/otpService');
-const { sendSms } = require('../services/sms/smsProviderService');
+const { sendSms, SmsProviderError } = require('../services/sms/smsProviderService');
 const { maskPhone, normalizeBDPhone } = require('../utils/phoneUtils');
 const { notifyCustomerRegistered } = require('../services/shopEventNotificationService');
 const { getDefaultDeadline, isVerificationSuspension } = require('../services/vendorVerificationService');
@@ -256,10 +257,19 @@ exports.sendOTP = async (req, res) => {
                 });
             }
 
-            await sendSms({
-                mobile: phone,
-                message: `Your Scaleup verification code is ${otpResult.otp}. It will expire in 5 minutes.`
-            });
+            try {
+                await sendSms({
+                    mobile: phone,
+                    message: `Your Scaleup verification code is ${otpResult.otp}. It will expire in 5 minutes.`
+                });
+            } catch (error) {
+                await markOtpDeliveryFailed({
+                    identifier: phone,
+                    purpose: PURPOSES.vendorRegistrationPhone,
+                    otp: otpResult.otp
+                });
+                throw error;
+            }
 
             return res.status(200).json({
                 success: true,
@@ -296,13 +306,14 @@ exports.sendOTP = async (req, res) => {
         }
 
 
-        await sendMail({
-            type: 'reset',
-            to: email,
-            senderName: 'ScaleUp',
-            recipientName: 'Customer',
-            subject: 'Verification Code',
-            html: `
+        try {
+            await sendMail({
+                type: 'reset',
+                to: email,
+                senderName: 'ScaleUp',
+                recipientName: 'Customer',
+                subject: 'Verification Code',
+                html: `
                 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                     <h2 style="color: #4f46e5;">Verification Code</h2>
                     <p>Use the following code to complete your registration:</p>
@@ -311,8 +322,17 @@ exports.sendOTP = async (req, res) => {
                         This code will expire in 5 minutes.
                     </p>
                 </div>
-            `
-        });
+                `
+            });
+        } catch (error) {
+            await markOtpDeliveryFailed({
+                identifier: email,
+                channel: 'email',
+                purpose: isVendorRegistration ? PURPOSES.vendorRegistrationEmail : PURPOSES.legacyRegistration,
+                otp
+            });
+            throw error;
+        }
 
         res.status(200).json({
             success: true,
@@ -321,11 +341,12 @@ exports.sendOTP = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Backend OTP Error:', error);
-
-        res.status(500).json({
+        console.error('Backend OTP Error:', { code: error?.code || error?.name || 'OTP_ERROR' });
+        res.status(error instanceof SmsProviderError ? 502 : 500).json({
             success: false,
-            message: error.message
+            message: error instanceof SmsProviderError
+                ? 'Could not send verification SMS. Please try again shortly.'
+                : 'Could not send verification code.'
         });
     }
 };
@@ -499,6 +520,8 @@ exports.registerVendor = async (req, res) => {
             shopId: newShop._id,
             accountId: account._id,
             otpChannel,
+            shop: newShop,
+            account,
             session
         });
 
@@ -516,7 +539,7 @@ exports.registerVendor = async (req, res) => {
                 trialEndsAt: newShop.plan?.trialEndsAt || null
             },
             affectedResources: ['subscription', 'trial']
-        });
+        }).catch(error => console.warn('Registration billing event failed after commit:', { code: error?.code || error?.name || 'EVENT_ERROR' }));
 
         const token = signSessionToken({ account, membership, user: newAdmin });
 
@@ -532,8 +555,8 @@ exports.registerVendor = async (req, res) => {
         });
 
     } catch (err) {
-        await session.abortTransaction();
-        console.error('Register Vendor Error:', err);
+        if (session.inTransaction()) await session.abortTransaction();
+        console.error('Register Vendor Error:', { code: err?.code || err?.name || 'REGISTRATION_ERROR' });
 
         if (err.code === 11000 && err.keyPattern?.subdomain) {
             return res.status(409).json({

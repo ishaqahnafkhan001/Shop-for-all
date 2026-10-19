@@ -10,6 +10,7 @@ const Promotion = require('../models/Promotion');
 const ReturnRequest = require('../models/ReturnRequest');
 const { evaluatePromotion } = require('../services/promotionService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
+const { enqueueOrderReceipt } = require('../services/orders/orderEmailService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
 const {
     enqueueLowStockAlertsForLogs
@@ -20,6 +21,7 @@ const {
 } = require('../services/sales/scheduledSaleService');
 const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpService');
 const ConsentLog = require('../models/ConsentLog');
+const { recordCheckoutMarketingConsent } = require('../services/marketing/marketingPreferenceService');
 const { createNotification } = require('../services/notificationService');
 const { logAudit } = require('../services/auditLogService');
 const {
@@ -657,6 +659,13 @@ exports.createPublicOrder = async (req, res) => {
             ip: req.ip || req.headers['x-forwarded-for'] || '',
             userAgent: req.headers['user-agent'] || ''
         }], { session });
+        if (consent.marketingEmailOptIn === true) {
+            await recordCheckoutMarketingConsent({
+                shopId: shop._id, customerId: orderCustomer._id, orderId: newOrder._id,
+                ip: req.ip, userAgent: req.headers['user-agent'], session
+            });
+        }
+        await enqueueOrderReceipt({ shopId: shop._id, order: newOrder, customer: orderCustomer, session });
 
         // =========================
         // PROMOTION USAGE COUNT

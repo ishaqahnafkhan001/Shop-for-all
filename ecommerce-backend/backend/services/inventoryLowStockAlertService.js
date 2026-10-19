@@ -20,12 +20,6 @@ const toNumber = (value, fallback = 0) => {
     return Number.isFinite(number) ? number : fallback;
 };
 
-const escapeHtml = (value = '') => String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 
 const buildVariantLabel = (variant = {}) => {
     const attributes = Array.isArray(variant.attributes) ? variant.attributes : [];
@@ -360,12 +354,12 @@ const processLowStockAlertJob = async (job) => {
     }
 
     const html = buildVendorEventEmail({
-        title: escapeHtml(title),
-        intro: escapeHtml(`A product variant in ${shopName} has reached its configured low-stock threshold.`),
+        title,
+        intro: `A product variant in ${shopName} has reached its configured low-stock threshold.`,
         rows: [
-            { label: 'Product', value: escapeHtml(productTitle) },
-            { label: 'Variant', value: escapeHtml(variantLabel) },
-            { label: 'SKU', value: escapeHtml(sku) },
+            { label: 'Product', value: productTitle },
+            { label: 'Variant', value: variantLabel },
+            { label: 'SKU', value: sku },
             { label: 'Previous stock', value: toNumber(beforeStock) },
             { label: 'Current stock', value: currentStock },
             { label: 'Low-stock threshold', value: effectiveThreshold }
@@ -380,6 +374,7 @@ const processLowStockAlertJob = async (job) => {
     });
     await sendVendorNotificationEmail({
         to: recipients,
+        idempotencyKey: `inventory.low_stock:${job._id}`,
         subject: `Low stock warning: ${productTitle}`,
         senderName: 'ScaleUp Inventory',
         type: 'admin',
