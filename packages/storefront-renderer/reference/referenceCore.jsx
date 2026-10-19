@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 
-import { getThemeCssVars } from "@scaleup/storefront-theme";
+import { getThemeCssVars, resolveHeroSlideFields } from "@scaleup/storefront-theme";
 import { getContainerClass } from "../designTokens";
 
 export {
@@ -19,16 +19,7 @@ export {
     resolveHeroOverlayOpacity,
 } from "../designTokens";
 
-const getImageUrlFromValue = (value) => {
-    if (typeof value === "string") return value;
-    if (!value || typeof value !== "object") return "";
-    return value.secure_url || value.url || value.src || value.imageUrl || "";
-};
-
-const getProductImageAlt = ({ product, image } = {}) => {
-    if (image && typeof image === "object" && image.alt) return String(image.alt).trim();
-    return String(product?.imageAltText || product?.title || "Product image").trim() || "Product image";
-};
+import { getImageUrlFromValue, getProductImageAlt } from '../media.js';
 
 export const REFERENCE_SAMPLE_PRODUCTS = [];
 export const REFERENCE_SAMPLE_CATEGORIES = [];
@@ -164,36 +155,11 @@ export const getResponsiveImageSrcSet = (src = "", widths = [], options = {}) =>
         .join(", ");
 };
 
-export const getPrice = (product) => product?.finalPrice || product?.sellingPrice || product?.pricing?.sellingPrice || product?.price || 0;
+export const getPrice = (product) => product?.finalPrice ?? product?.sellingPrice ?? product?.pricing?.sellingPrice ?? product?.price ?? 0;
 export const normalizeImageList = (...lists) => [...new Set(lists.flat().filter(Boolean).map(String))];
 export const getSectionDisplayLabel = (section) => section?.settings?.visualLabel || section?.title || section?.type || "Section";
 
-export const normalizeHeroSlide = (slide = {}, index = 0, hero = {}) => ({
-    id: slide.id || `hero-slide-${index + 1}`,
-    enabled: slide.enabled !== false,
-    desktopImage: slide.desktopImage || slide.imageUrl || (index === 0 ? hero.imageUrl : "") || "",
-    mobileImage: slide.mobileImage || "",
-    title: slide.title ?? (index === 0 ? hero.title : "") ?? "",
-    subtitle: slide.subtitle ?? (index === 0 ? hero.subtitle : "") ?? "",
-    badgeText: slide.badgeText ?? (index === 0 ? hero.badgeText : "") ?? "",
-    discountText: slide.discountText ?? "",
-    primaryCtaText: slide.primaryCtaText !== undefined
-        ? slide.primaryCtaText
-        : ((index === 0 ? hero.ctaLabel : "") || "Shop Now"),
-    primaryCtaLink: slide.primaryCtaLink !== undefined
-        ? slide.primaryCtaLink
-        : ((index === 0 ? hero.ctaUrl : "") || "#products"),
-    secondaryCtaText: slide.secondaryCtaText ?? "Explore Collection",
-    secondaryCtaLink: slide.secondaryCtaLink !== undefined ? slide.secondaryCtaLink : "#products",
-    desktopFocalPoint: {
-        x: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.x) || 50)),
-        y: Math.min(100, Math.max(0, Number(slide.desktopFocalPoint?.y) || 50)),
-    },
-    mobileFocalPoint: {
-        x: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.x) || 50)),
-        y: Math.min(100, Math.max(0, Number(slide.mobileFocalPoint?.y) || 50)),
-    },
-});
+export const normalizeHeroSlide = resolveHeroSlideFields;
 
 const hasRenderableHeroSlide = (slide = {}) => Boolean(
     slide.desktopImage ||
@@ -217,10 +183,12 @@ export const getHeroSlides = (hero = {}) => {
         seen.add(key);
         return true;
     });
-    return enabledSlides.length ? enabledSlides : [slides[0] || normalizeHeroSlide({}, 0, hero)];
+    return sourceSlides.length ? enabledSlides : (enabledSlides.length ? enabledSlides : [slides[0]]);
 };
 
 export const getReferenceThemeStyle = (themeCandidate = {}) => {
+    const theme = themeCandidate;
+    const mobileNavOffset = theme.mobile?.showBottomNavigation === false ? "0px" : "calc(4rem + env(safe-area-inset-bottom))";
     const cssTheme = getThemeCssVars(themeCandidate);
     const groups = cssTheme.colorGroups || {};
     const brand = groups.brand || {};
@@ -234,15 +202,13 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
     const storefrontForeground = brand.secondary || cssTheme.foreground;
 
     return {
-        "--sf-background": cssTheme.background,
-        "--sf-foreground": storefrontForeground,
+        "--sf-brand-primary": brand.primary || cssTheme.accent,
         "--sf-accent": brand.accent || cssTheme.accent,
         "--sf-accent-hover": brand.hover || cssTheme.accentHover,
         "--sf-accent-soft": brand.soft || cssTheme.accentSoft,
         "--sf-accent-bg": brand.soft || cssTheme.accentBg,
         "--sf-primary-button-bg": cssTheme.primaryButtonBg,
         "--sf-primary-button-text": cssTheme.primaryButtonText,
-        "--sf-primary-button-hover-bg": cssTheme.primaryButtonHoverBg,
         "--sf-navbar-background": header.background || cssTheme.navbarBackground,
         "--sf-navbar-text": header.text || cssTheme.navbarText,
         "--sf-navbar-muted-text": header.mutedText || cssTheme.navbarText,
@@ -265,6 +231,10 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-product-card-background": productCard.background || cssTheme.cardBackground,
         "--sf-product-card-border": productCard.border || cssTheme.cardBorder,
         "--sf-product-card-shadow": productCard.shadow || cssTheme.cardBorder,
+        "--sf-variant-chip-bg": productCard.variantChipBackground || "#ffffff",
+        "--sf-variant-chip-text": productCard.variantChipText || "#334155",
+        "--sf-variant-chip-selected-bg": productCard.variantChipSelectedBackground || cssTheme.accent,
+        "--sf-variant-chip-selected-text": productCard.variantChipSelectedText || "#ffffff",
         "--sf-product-card-title": productCard.title || storefrontForeground,
         "--sf-product-card-category": productCard.category || cssTheme.footerText,
         "--sf-product-card-price": productCard.price || cssTheme.priceColor,
@@ -327,9 +297,41 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-checkout-error": checkout.error || "#dc2626",
         "--sf-checkout-success": checkout.success || "#047857",
         "--sf-body-font": cssTheme.fontFamily,
-        "--sf-heading-font": cssTheme.headingFont,
-        "--sf-heading-weight": String(cssTheme.headingWeight),
-        "--sf-base-size": `${cssTheme.baseSize}px`,
+
+        '--background': cssTheme.background,
+        '--foreground': storefrontForeground,
+        '--sf-ink': storefrontForeground,
+        '--sf-surface': productCard.background || checkout.cardBackground || cssTheme.cardBackground,
+        '--sf-surface-subtle': allProducts.background || sections.background || checkout.background || cssTheme.accentBg,
+        '--sf-surface-raised': sections.faqBackground || allProducts.filterBackground || '#f1f5f9',
+        '--sf-border': productCard.border || header.border || cssTheme.cardBorder,
+        '--sf-border-strong': checkout.inputBorder || '#cbd5e1',
+        '--sf-text-muted': header.mutedText || allProducts.subtitle || footer.text || '#64748b',
+        '--sf-success': checkout.success || '#047857',
+        '--sf-success-bg': productCard.stockBackground || '#ecfdf5',
+        '--sf-warning': '#d97706',
+        '--sf-warning-bg': '#fffbeb',
+        '--sf-danger': checkout.error || '#dc2626',
+        '--sf-danger-bg': productCard.outOfStockBackground || '#fff1f2',
+        '--sf-accent-strong': cssTheme.accentStrong,
+        '--sf-accent-muted': cssTheme.accentMuted,
+        '--sf-accent-light': cssTheme.accentLight,
+        '--sf-accent-ring': brand.ring || cssTheme.accentRing,
+        '--sf-background': cssTheme.background,
+        '--sf-foreground': storefrontForeground,
+        '--sf-header-background': header.background || cssTheme.headerBackground,
+        '--sf-primary-button-hover-bg': cssTheme.primaryButtonHoverBg,
+        '--sf-secondary-button-bg': cssTheme.secondaryButtonBg,
+        '--sf-secondary-button-text': cssTheme.secondaryButtonText,
+        '--sf-secondary-button-hover-bg': cssTheme.secondaryButtonHoverBg,
+        '--sf-navbar-bg': header.background || cssTheme.navbarBackground,
+        '--sf-card-bg': productCard.background || cssTheme.cardBackground,
+        '--sf-footer-bg': footer.background || cssTheme.footerBackground,
+        '--sf-mobile-nav-offset': mobileNavOffset,
+        '--sf-heading-font': cssTheme.headingFont,
+        '--sf-heading-weight': cssTheme.headingWeight,
+        '--sf-base-size': `${cssTheme.baseSize}px`,
+        '--sf-checkout-radius': cssTheme.checkoutButtonRadius,
         fontFamily: "var(--sf-body-font)",
         fontSize: "var(--sf-base-size)",
         color: storefrontForeground,

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import GrowthCampaignEditor from '../../components/ai/GrowthCampaignEditor.jsx';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
     BarChart3,
@@ -20,7 +21,8 @@ import Button from '../../components/ui/Button';
 import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { hasFeature } from '../../utils/featureAccess';
-import { aiRequestHeaders } from '../../utils/aiRequestId.js';
+import { useAiOperation } from '../../hooks/useAiOperation.js';
+import AiOperationStatus from '../../components/ai/AiOperationStatus.jsx';
 
 const rangeOptions = [
     { label: 'Last 7 days', value: '7' },
@@ -96,15 +98,15 @@ const actionPriority = ['winner', 'fix_before_ads', 'checkout_problem', 'hidden_
 const buildSellerActions = (products = [], recommendations = []) => (
     actionPriority.map(label => {
         const source = products.find(item => item.label === label)
-            || recommendations.find(item => item.label === label)
-            || (label === 'winner' ? products[0] : null);
+            || recommendations.find(item => item.label === label);
+        if (!source && label !== 'not_enough_data') return null;
         const copy = sellerActionCopy[label];
         return {
             label,
             productTitle: source?.product?.title || (label === 'not_enough_data' ? 'Your catalog' : 'No matching product yet'),
             ...copy
         };
-    })
+    }).filter(Boolean)
 );
 
 const formatNumber = (value) => Number(value || 0).toLocaleString();
@@ -152,9 +154,14 @@ const GrowthCenter = () => {
     const [recommendations, setRecommendations] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
-    const [language, setLanguage] = useState('en');
+    const [language, setLanguage] = useState('auto');
     const [adCopy, setAdCopy] = useState(null);
-    const [adCopyLoading, setAdCopyLoading] = useState(false);
+    const operation = useAiOperation({ feature: 'growth.ad_planning', entity: selectedProduct?.product?._id,
+        input: { range, interval: selectedProduct?.interval, language } });
+    const detailRequest = useRef(null);
+    const detailEpoch = useRef(0);
+    useEffect(() => { setSelectedProduct(null); setAdCopy(null); detailEpoch.current++; detailRequest.current?.abort(); }, [range]);
+    useEffect(() => () => { detailEpoch.current++; detailRequest.current?.abort(); }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -225,46 +232,33 @@ const GrowthCenter = () => {
     ], []);
 
     const openProductDetail = async (row) => {
+        detailRequest.current?.abort();
+        const controller = new AbortController();
+        detailRequest.current = controller;
+        const epoch = ++detailEpoch.current;
+        setSelectedProduct(null);
         setDetailLoading(true);
         setAdCopy(null);
         try {
-            const { data } = await API.get(`/admin/growth/products/${row.product._id}`, {
-                params: { range }
-            });
-            setSelectedProduct(data.data);
+            const { data } = await API.get(`/admin/growth/products/${row.product._id}`, { params: { range }, signal: controller.signal });
+            if (epoch === detailEpoch.current) setSelectedProduct(data.data);
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to load product insight');
-        } finally {
-            setDetailLoading(false);
-        }
+            if (!controller.signal.aborted) toast.error(error.response?.data?.error || 'Failed to load product insight');
+        } finally { if (epoch === detailEpoch.current) setDetailLoading(false); }
     };
-
+    const receiveAdCopy = response => { if (response) setAdCopy(response.data.data); };
     const generateAdCopy = async () => {
-        if (!canUseAdGenerator) {
-            toast.error('The ad generator is not enabled for your store.');
-            return;
-        }
-
+        if (!canUseAdGenerator) { toast.error('The ad generator is not enabled for your store.'); return; }
         const productId = selectedProduct?.product?._id;
         if (!productId) return;
-
-        setAdCopyLoading(true);
-        try {
-            const { data } = await API.post('/admin/growth/generate-ad-copy', {
-                productId,
-                language,
-                campaignType: 'general'
-            }, { headers: aiRequestHeaders('growth.ad_planning') });
-            setAdCopy(data.data);
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to generate ad copy');
-        } finally {
-            setAdCopyLoading(false);
-        }
+        const body = { productId, language, campaignType: 'general', range: selectedProduct.range, interval: selectedProduct.interval };
+        setAdCopy(null);
+        receiveAdCopy(await operation.run(options => API.post('/admin/growth/generate-ad-copy', body, options)));
     };
 
     const copyAdText = async (label, value) => {
         if (!value) return;
+        if (!operation.canApply()) { toast.error('Inputs changed. Generate a new draft before copying.'); return; }
 
         try {
             await navigator.clipboard.writeText(value);
@@ -457,20 +451,25 @@ const GrowthCenter = () => {
                                         onChange={(event) => setLanguage(event.target.value)}
                                         className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold"
                                     >
+                                        <option value="auto">Store language preference</option>
+                                        <option value="mixed">Bangla and English</option>
                                         <option value="en">English</option>
                                         <option value="bn">Bangla</option>
                                         <option value="banglish">Banglish</option>
                                     </select>
-                                    <Button size="sm" onClick={generateAdCopy} isLoading={adCopyLoading} disabled={!canUseAdGenerator}>
+                                    <Button size="sm" onClick={generateAdCopy} isLoading={operation.loading} disabled={!canUseAdGenerator || !operation.access.allowed}>
                                         Generate
                                     </Button>
                                 </div>
                             </div>
+                            <AiOperationStatus operation={operation} onRetry={async () => receiveAdCopy(await operation.retry())} />
+                            {selectedProduct.interval && <p className="mb-3 text-xs text-slate-500">Evidence period: {new Date(selectedProduct.interval.from).toLocaleString()} – {new Date(selectedProduct.interval.to).toLocaleString()} (end excluded).</p>}
                             {!canUseAdGenerator && (
                                 <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                                     The ad generator is not available on your current plan. Growth insights remain available.
                                 </div>
                             )}
+                            <GrowthCampaignEditor key={selectedProduct.product._id} productId={selectedProduct.product._id} product={selectedProduct.product} interval={selectedProduct.interval} range={selectedProduct.range} language={language} generated={adCopy} canUseGenerated={operation.canApply} />
                             {adCopy && (
                                 <div className="space-y-4">
                                     <div className={`rounded-xl border px-4 py-3 text-sm ${adCopy.meta?.fallback
@@ -481,7 +480,7 @@ const GrowthCenter = () => {
                                             {adCopy.meta?.fallback ? 'Basic planning draft' : 'AI-assisted planning draft'}
                                         </p>
                                         {adCopy.meta?.fallback && (
-                                            <p className="mt-1">Personalized AI copy was unavailable. This draft uses only published product details and application-calculated aggregates.</p>
+                                            <p className="mt-1">Personalized AI copy was unavailable. This draft uses product details and application-calculated aggregates.</p>
                                         )}
                                         {(adCopy.meta?.limitations || []).map(item => (
                                             <p key={item} className="mt-1 text-xs leading-5">{item}</p>
@@ -551,7 +550,7 @@ const GrowthCenter = () => {
                                     </p>
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Confidence</p>
+                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Activity sufficiency</p>
                                             <p className="mt-1 text-sm font-semibold capitalize text-slate-800">{adCopy.confidence || 'limited'}</p>
                                         </div>
                                         <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">

@@ -11,12 +11,21 @@ const customerEmailCampaignSchema = new Schema({
         index: true
     },
     subject: { type: String, trim: true, required: true, maxlength: 160 },
+    message: { type: String, default: '', maxlength: 5000 },
+    storeName: { type: String, default: '', maxlength: 160 },
+    senderEmail: { type: String, default: '', maxlength: 320 },
+    storeBaseUrl: { type: String, default: '', maxlength: 500 },
+    productSnapshot: { type: Schema.Types.Mixed, default: null },
+    recipientSnapshotReady: { type: Boolean, default: false },
     recipientCount: { type: Number, min: 0, default: 0 },
     sentCount: { type: Number, min: 0, default: 0 },
+    deliveredCount: { type: Number, min: 0, default: 0 },
     failedCount: { type: Number, min: 0, default: 0 },
+    skippedCount: { type: Number, min: 0, default: 0 },
+    uncertainCount: { type: Number, min: 0, default: 0 },
     status: {
         type: String,
-        enum: ['queued', 'sending', 'completed', 'failed', 'cancelled'],
+        enum: ['preparing', 'queued', 'sending', 'completed', 'failed', 'cancelled', 'needs_attention'],
         default: 'queued',
         index: true
     },

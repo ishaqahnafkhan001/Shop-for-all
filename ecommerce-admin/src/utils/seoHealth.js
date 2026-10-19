@@ -99,16 +99,16 @@ export const scoreProductSeo = ({ product = {}, hasImage = false } = {}) => {
     const imageAltText = cleanSeoText(product.imageAltText || images.find(image => typeof image === 'object' && image?.alt)?.alt);
     const hasCategoryOrCollection = Boolean(cleanSeoText(product.category)) || (Array.isArray(product.collections) && product.collections.length > 0);
     const tasks = [
-        { label: 'Product title added', done: Boolean(cleanSeoText(product.title)), weight: 12, action: 'Add a clear product title.' },
-        { label: 'Description written', done: cleanSeoText(product.description).length >= 20, weight: 12, action: 'Write a helpful product description.' },
-        { label: 'Product image added', done: imagePresent, weight: 12, action: 'Upload at least one clear product image.' },
-        { label: 'Image alt text added', done: Boolean(imageAltText), weight: 8, action: 'Add image alt text so search engines understand the product image.' },
-        { label: 'Clean URL slug', done: Boolean(slug), weight: 10, action: 'Add a short product URL slug.' },
-        { label: 'SEO title ready', done: Boolean(seoTitle), weight: 10, action: 'Add an SEO title or use the product title fallback.' },
-        { label: 'SEO description ready', done: Boolean(seoDescription), weight: 10, action: 'Add an SEO description or use the product description fallback.' },
-        { label: 'Category or collection assigned', done: hasCategoryOrCollection, weight: 10, action: 'Choose a category or collection.' },
-        { label: 'Price exists', done: sellingPrice > 0, weight: 12, action: 'Set a selling price.' },
-        { label: 'Stock status known', done: stockKnown, weight: 12, action: 'Set stock or variants.' }
+        { id: 'title', label: 'Product title added', done: Boolean(cleanSeoText(product.title)), weight: 12, action: 'Add a clear product title.' },
+        { id: 'description', aiSection: 'description', label: 'Description written', done: cleanSeoText(product.description).length >= 20, weight: 12, action: 'Write a helpful product description.' },
+        { id: 'image', label: 'Product image added', done: imagePresent, weight: 12, action: 'Upload at least one clear product image.' },
+        { id: 'imageAlt', aiSection: 'imageAlt', label: 'Image alt text added', done: Boolean(imageAltText), weight: 8, action: 'Add image alt text so search engines understand the product image.' },
+        { id: 'slug', label: 'Clean URL slug', done: Boolean(slug), weight: 10, action: 'Add a short product URL slug.' },
+        { id: 'seoTitle', aiSection: 'seoTitle', label: 'SEO title ready', done: Boolean(seoTitle), weight: 10, action: 'Add an SEO title or use the product title fallback.' },
+        { id: 'seoDescription', aiSection: 'seoDescription', label: 'SEO description ready', done: Boolean(seoDescription), weight: 10, action: 'Add an SEO description or use the product description fallback.' },
+        { id: 'category', label: 'Category or collection assigned', done: hasCategoryOrCollection, weight: 10, action: 'Choose a category or collection.' },
+        { id: 'price', label: 'Price exists', done: sellingPrice > 0, weight: 12, action: 'Set a selling price.' },
+        { id: 'stock', label: 'Stock status known', done: stockKnown, weight: 12, action: 'Set stock or variants.' }
     ];
 
     return {
@@ -163,4 +163,18 @@ export const scoreStoreSeo = ({ theme = {}, shopName = '', searchAliases = [], p
         internalLinkCount: (theme.navigation || []).filter(item => item?.url && item.url !== '#').length
     });
     return health;
+};
+
+// A projection of the existing health/readiness results; it introduces no second score.
+export const productContentIssues = ({ health, readiness = [], product = {} }) => {
+    const issues = (health?.missing || []).map(item => ({ ...item, label: item.action || item.label }));
+    for (const item of readiness.filter(item => !item.done)) {
+        if (item.id && !issues.some(issue => issue.id === item.id)) issues.push({ ...item, aiSection: undefined });
+    }
+    if (!(product.features || []).some(row => row.point && row.reason)) issues.push({ id: 'benefits', label: 'Optional: explain supported buyer benefits', aiSection: 'sellingPoints', optional: true });
+    if (!product.seo?.title?.trim() || !product.seo?.description?.trim()) issues.push({ id: 'dedicatedSeo', label: 'Generate a dedicated SEO title and description', aiSection: 'seo', optional: true });
+    if ((product.specifications || []).some(row => Boolean(row.title) !== Boolean(row.value))) issues.push({ id: 'specifications', label: 'Complete supported specification rows', aiSection: 'specifications' });
+    else if (!(product.specifications || []).some(row => row.title && row.value)) issues.push({ id: 'specifications', label: 'Optional: add verified specifications', aiSection: 'specifications', optional: true });
+    if (!(product.comments || []).some(row => row.title && row.value)) issues.push({ id: 'extraNotes', label: 'Optional: add supported shopper notes', aiSection: 'extraNotes', optional: true });
+    return issues;
 };

@@ -1,0 +1,726 @@
+{
+  "note": "Resolved token pairs, not computed pixels or a full accessibility audit. Outline/ghost buttons use different effective backgrounds. Threshold matches the existing Builder contrast checks.",
+  "themes": [
+    {
+      "id": "modern-general",
+      "name": "Modern General",
+      "version": 2,
+      "composition": "standard",
+      "header": "standard",
+      "hero": "split",
+      "headingFont": "Inter",
+      "cardStyle": "Modern",
+      "buttonStyle": "Solid",
+      "contrast": {
+        "body": {
+          "foreground": "#0f172a",
+          "background": "#f8fafc",
+          "ratio": 17.06
+        },
+        "header": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "productTitle": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "productCategory": {
+          "foreground": "#64748b",
+          "background": "#ffffff",
+          "ratio": 4.76
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#0f766e",
+          "ratio": 5.47
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#0f766e",
+          "ratio": 5.47
+        },
+        "footerText": {
+          "foreground": "#cbd5e1",
+          "background": "#0f172a",
+          "ratio": 12.02
+        },
+        "sectionTitle": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "variantText": {
+          "foreground": "#64748b",
+          "background": "#f8fafc",
+          "ratio": 4.55
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#0f766e",
+          "ratio": 5.47
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#0f766e",
+          "ratio": 5.47
+        }
+      },
+      "below45": []
+    },
+    {
+      "id": "minimal-general",
+      "name": "Minimal General",
+      "version": 2,
+      "composition": "standard",
+      "header": "minimal",
+      "hero": "minimal",
+      "headingFont": "Arial",
+      "cardStyle": "Minimal",
+      "buttonStyle": "Outline",
+      "contrast": {
+        "body": {
+          "foreground": "#111827",
+          "background": "#ffffff",
+          "ratio": 17.74
+        },
+        "header": {
+          "foreground": "#111827",
+          "background": "#ffffff",
+          "ratio": 17.74
+        },
+        "productTitle": {
+          "foreground": "#111827",
+          "background": "#ffffff",
+          "ratio": 17.74
+        },
+        "productCategory": {
+          "foreground": "#6b7280",
+          "background": "#ffffff",
+          "ratio": 4.83
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#111827",
+          "ratio": 17.74
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#111827",
+          "background": "#ffffff",
+          "ratio": 17.74
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#111827",
+          "ratio": 17.74
+        },
+        "footerText": {
+          "foreground": "#6b7280",
+          "background": "#f9fafb",
+          "ratio": 4.63
+        },
+        "sectionTitle": {
+          "foreground": "#111827",
+          "background": "#ffffff",
+          "ratio": 17.74
+        },
+        "variantText": {
+          "foreground": "#6b7280",
+          "background": "#ffffff",
+          "ratio": 4.83
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#111827",
+          "ratio": 17.74
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#111827",
+          "ratio": 17.74
+        }
+      },
+      "below45": []
+    },
+    {
+      "id": "modern-fashion",
+      "name": "Modern Fashion",
+      "version": 2,
+      "composition": "standard",
+      "header": "centered",
+      "hero": "fullBleed",
+      "headingFont": "Georgia",
+      "cardStyle": "Premium",
+      "buttonStyle": "Solid",
+      "contrast": {
+        "body": {
+          "foreground": "#18181b",
+          "background": "#fffafb",
+          "ratio": 17.14
+        },
+        "header": {
+          "foreground": "#18181b",
+          "background": "#ffffff",
+          "ratio": 17.72
+        },
+        "productTitle": {
+          "foreground": "#18181b",
+          "background": "#ffffff",
+          "ratio": 17.72
+        },
+        "productCategory": {
+          "foreground": "#71717a",
+          "background": "#ffffff",
+          "ratio": 4.83
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#be123c",
+          "ratio": 6.29
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#18181b",
+          "background": "#ffffff",
+          "ratio": 17.72
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#be123c",
+          "ratio": 6.29
+        },
+        "footerText": {
+          "foreground": "#cbd5e1",
+          "background": "#18181b",
+          "ratio": 11.93
+        },
+        "sectionTitle": {
+          "foreground": "#18181b",
+          "background": "#ffffff",
+          "ratio": 17.72
+        },
+        "variantText": {
+          "foreground": "#71717a",
+          "background": "#fffafb",
+          "ratio": 4.68
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#be123c",
+          "ratio": 6.29
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#be123c",
+          "ratio": 6.29
+        }
+      },
+      "below45": []
+    },
+    {
+      "id": "editorial-fashion",
+      "name": "Editorial Fashion",
+      "version": 3,
+      "composition": "editorial",
+      "header": "minimal",
+      "hero": "editorial",
+      "headingFont": "Georgia",
+      "cardStyle": "Minimal",
+      "buttonStyle": "Outline",
+      "contrast": {
+        "body": {
+          "foreground": "#241c18",
+          "background": "#fffdf8",
+          "ratio": 16.47
+        },
+        "header": {
+          "foreground": "#241c18",
+          "background": "#ffffff",
+          "ratio": 16.74
+        },
+        "productTitle": {
+          "foreground": "#241c18",
+          "background": "#ffffff",
+          "ratio": 16.74
+        },
+        "productCategory": {
+          "foreground": "#786b61",
+          "background": "#ffffff",
+          "ratio": 5.15
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#7f1d1d",
+          "ratio": 10.02
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#241c18",
+          "background": "#ffffff",
+          "ratio": 16.74
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#7f1d1d",
+          "ratio": 10.02
+        },
+        "footerText": {
+          "foreground": "#cbd5e1",
+          "background": "#1c1917",
+          "ratio": 11.78
+        },
+        "sectionTitle": {
+          "foreground": "#241c18",
+          "background": "#ffffff",
+          "ratio": 16.74
+        },
+        "variantText": {
+          "foreground": "#786b61",
+          "background": "#fffdf8",
+          "ratio": 5.07
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#7f1d1d",
+          "ratio": 10.02
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#7f1d1d",
+          "ratio": 10.02
+        }
+      },
+      "below45": []
+    },
+    {
+      "id": "luxury-jewellery",
+      "name": "Luxury Jewellery",
+      "version": 3,
+      "composition": "boutique",
+      "header": "centered",
+      "hero": "centered",
+      "headingFont": "Georgia",
+      "cardStyle": "Premium",
+      "buttonStyle": "Solid",
+      "contrast": {
+        "body": {
+          "foreground": "#09090b",
+          "background": "#0f0f12",
+          "ratio": 1.04
+        },
+        "header": {
+          "foreground": "#f8fafc",
+          "background": "#18181b",
+          "ratio": 16.93
+        },
+        "productTitle": {
+          "foreground": "#f8fafc",
+          "background": "#18181b",
+          "ratio": 16.93
+        },
+        "productCategory": {
+          "foreground": "#a1a1aa",
+          "background": "#18181b",
+          "ratio": 6.91
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#b7791f",
+          "ratio": 3.64
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#f8fafc",
+          "background": "#18181b",
+          "ratio": 16.93
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#b7791f",
+          "ratio": 3.64
+        },
+        "footerText": {
+          "foreground": "#a1a1aa",
+          "background": "#09090b",
+          "ratio": 7.76
+        },
+        "sectionTitle": {
+          "foreground": "#f8fafc",
+          "background": "#18181b",
+          "ratio": 16.93
+        },
+        "variantText": {
+          "foreground": "#a1a1aa",
+          "background": "#0f0f12",
+          "ratio": 7.47
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#b7791f",
+          "ratio": 3.64
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#b7791f",
+          "ratio": 3.64
+        }
+      },
+      "below45": [
+        "body",
+        "addButton",
+        "checkoutButton",
+        "selectedVariant",
+        "heroButton"
+      ]
+    },
+    {
+      "id": "minimal-jewellery",
+      "name": "Minimal Jewellery",
+      "version": 2,
+      "composition": "standard",
+      "header": "minimal",
+      "hero": "minimal",
+      "headingFont": "Georgia",
+      "cardStyle": "Minimal",
+      "buttonStyle": "Outline",
+      "contrast": {
+        "body": {
+          "foreground": "#171717",
+          "background": "#fafafa",
+          "ratio": 17.18
+        },
+        "header": {
+          "foreground": "#171717",
+          "background": "#ffffff",
+          "ratio": 17.93
+        },
+        "productTitle": {
+          "foreground": "#171717",
+          "background": "#ffffff",
+          "ratio": 17.93
+        },
+        "productCategory": {
+          "foreground": "#737373",
+          "background": "#ffffff",
+          "ratio": 4.74
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#047857",
+          "ratio": 5.48
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#171717",
+          "background": "#ffffff",
+          "ratio": 17.93
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#047857",
+          "ratio": 5.48
+        },
+        "footerText": {
+          "foreground": "#737373",
+          "background": "#f5f5f5",
+          "ratio": 4.35
+        },
+        "sectionTitle": {
+          "foreground": "#171717",
+          "background": "#ffffff",
+          "ratio": 17.93
+        },
+        "variantText": {
+          "foreground": "#737373",
+          "background": "#fafafa",
+          "ratio": 4.54
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#047857",
+          "ratio": 5.48
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#047857",
+          "ratio": 5.48
+        }
+      },
+      "below45": [
+        "footerText"
+      ]
+    },
+    {
+      "id": "soft-beauty",
+      "name": "Soft Beauty",
+      "version": 2,
+      "composition": "standard",
+      "header": "centered",
+      "hero": "split",
+      "headingFont": "Georgia",
+      "cardStyle": "Modern",
+      "buttonStyle": "Solid",
+      "contrast": {
+        "body": {
+          "foreground": "#3f2733",
+          "background": "#fffafb",
+          "ratio": 13.11
+        },
+        "header": {
+          "foreground": "#3f2733",
+          "background": "#ffffff",
+          "ratio": 13.55
+        },
+        "productTitle": {
+          "foreground": "#3f2733",
+          "background": "#ffffff",
+          "ratio": 13.55
+        },
+        "productCategory": {
+          "foreground": "#8a6074",
+          "background": "#ffffff",
+          "ratio": 5.24
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#c0266d",
+          "ratio": 5.62
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#3f2733",
+          "background": "#ffffff",
+          "ratio": 13.55
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#c0266d",
+          "ratio": 5.62
+        },
+        "footerText": {
+          "foreground": "#f3dce7",
+          "background": "#3f2733",
+          "ratio": 10.46
+        },
+        "sectionTitle": {
+          "foreground": "#3f2733",
+          "background": "#ffffff",
+          "ratio": 13.55
+        },
+        "variantText": {
+          "foreground": "#8a6074",
+          "background": "#fffafb",
+          "ratio": 5.07
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#c0266d",
+          "ratio": 5.62
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#c0266d",
+          "ratio": 5.62
+        }
+      },
+      "below45": []
+    },
+    {
+      "id": "modern-electronics",
+      "name": "Modern Electronics",
+      "version": 3,
+      "composition": "discovery",
+      "header": "standard",
+      "hero": "split",
+      "headingFont": "Inter",
+      "cardStyle": "Modern",
+      "buttonStyle": "Solid",
+      "contrast": {
+        "body": {
+          "foreground": "#0f172a",
+          "background": "#f8fafc",
+          "ratio": 17.06
+        },
+        "header": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "productTitle": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "productCategory": {
+          "foreground": "#64748b",
+          "background": "#ffffff",
+          "ratio": 4.76
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#2563eb",
+          "ratio": 5.17
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#dc2626",
+          "ratio": 4.83
+        },
+        "checkoutText": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#2563eb",
+          "ratio": 5.17
+        },
+        "footerText": {
+          "foreground": "#cbd5e1",
+          "background": "#0f172a",
+          "ratio": 12.02
+        },
+        "sectionTitle": {
+          "foreground": "#0f172a",
+          "background": "#ffffff",
+          "ratio": 17.85
+        },
+        "variantText": {
+          "foreground": "#64748b",
+          "background": "#f8fafc",
+          "ratio": 4.55
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#2563eb",
+          "ratio": 5.17
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#2563eb",
+          "ratio": 5.17
+        }
+      },
+      "below45": []
+    },
+    {
+      "id": "fresh-grocery",
+      "name": "Fresh Grocery",
+      "version": 2,
+      "composition": "standard",
+      "header": "standard",
+      "hero": "centered",
+      "headingFont": "Arial",
+      "cardStyle": "Modern",
+      "buttonStyle": "Solid",
+      "contrast": {
+        "body": {
+          "foreground": "#15351f",
+          "background": "#f7fee7",
+          "ratio": 13
+        },
+        "header": {
+          "foreground": "#1a2e1f",
+          "background": "#ffffff",
+          "ratio": 14.44
+        },
+        "productTitle": {
+          "foreground": "#1a2e1f",
+          "background": "#ffffff",
+          "ratio": 14.44
+        },
+        "productCategory": {
+          "foreground": "#5f735f",
+          "background": "#ffffff",
+          "ratio": 5.12
+        },
+        "addButton": {
+          "foreground": "#ffffff",
+          "background": "#15803d",
+          "ratio": 5.02
+        },
+        "saleBadge": {
+          "foreground": "#ffffff",
+          "background": "#ea580c",
+          "ratio": 3.56
+        },
+        "checkoutText": {
+          "foreground": "#1a2e1f",
+          "background": "#ffffff",
+          "ratio": 14.44
+        },
+        "checkoutButton": {
+          "foreground": "#ffffff",
+          "background": "#15803d",
+          "ratio": 5.02
+        },
+        "footerText": {
+          "foreground": "#d8eadb",
+          "background": "#15351f",
+          "ratio": 10.71
+        },
+        "sectionTitle": {
+          "foreground": "#1a2e1f",
+          "background": "#ffffff",
+          "ratio": 14.44
+        },
+        "variantText": {
+          "foreground": "#5f735f",
+          "background": "#f7fee7",
+          "ratio": 4.94
+        },
+        "selectedVariant": {
+          "foreground": "#ffffff",
+          "background": "#15803d",
+          "ratio": 5.02
+        },
+        "heroButton": {
+          "foreground": "#ffffff",
+          "background": "#15803d",
+          "ratio": 5.02
+        }
+      },
+      "below45": [
+        "saleBadge"
+      ]
+    }
+  ]
+}

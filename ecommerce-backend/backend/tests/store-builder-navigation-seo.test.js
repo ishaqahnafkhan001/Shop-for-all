@@ -24,7 +24,7 @@ test('vendor dashboard navigation is registry-driven, grouped, and account scope
     assert.match(registry, /vendor-nav:\$\{VENDOR_NAVIGATION_VERSION\}:\$\{userId\}:\$\{role\}/);
     assert.match(sidebar, /filterVendorNavigation/);
     assert.match(sidebar, /aria-expanded/);
-    assert.match(sidebar, /visibleExpandedGroups/);
+    assert.match(sidebar, /navigationState\.pathname !== location\.pathname && activeGroupId/);
     assert.match(sidebar, /localStorage\.setItem\(storageKey/);
 });
 
@@ -37,7 +37,7 @@ test('store builder shell separates navigation, preview, inspector, issues, and 
 
     assert.match(page, /StoreBuilderShell/);
     assert.match(sidebar, /Store layout/);
-    assert.match(sidebar, /Brand and design/);
+    assert.match(sidebar, /Brand & design/);
     assert.match(sidebar, /Store experience/);
     assert.match(sidebar, /More tools/);
     assert.doesNotMatch(sidebar, /Theme settings/);
@@ -102,10 +102,11 @@ test('store builder polish keeps editing contextual and preview controls focused
     assert.doesNotMatch(sidebar, /navigationMode/);
     assert.match(previewPanel, /DeviceSwitcher/);
     assert.match(previewPanel, /option value="fit">Fit/);
-    assert.match(preview, /ResizeObserver/);
-    assert.match(preview, /previewZoom === 'fit'/);
+    const frame = readRepo('ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreviewFrame.jsx');
+    assert.match(frame, /ResizeObserver/);
+    assert.match(frame, /zoom === 'fit'/);
     assert.match(preview, /data-preview-device=\{device\}/);
-    assert.match(preview, /Math\.max\(0\.25/);
+    assert.match(frame, /data-preview-viewport/);
     assert.match(page, /xl:pr-\[396px\] 2xl:pr-4/);
     assert.match(storefrontHero, /previewHeight/);
     assert.match(storefrontHero, /HeroButtons/);

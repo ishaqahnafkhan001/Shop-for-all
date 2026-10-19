@@ -66,7 +66,7 @@ const processPathaoSyncJob = async (job) => {
         await assertJobEntitlementStillValid({ job });
         const customCreds = shop.pathaoCredentials && shop.pathaoCredentials.client_id ? shop.pathaoCredentials : null;
         const token = await getPathaoToken(customCreds);
-        const isLive = customCreds ? customCreds.isLive : false;
+        const isLive = customCreds ? Boolean(customCreds.isLive) : null;
         const pathaoPayload = buildPathaoPayload({ order, shop, payload: job.payload?.request || {} });
         const pathaoRes = await createPathaoOrder(token, pathaoPayload, isLive);
 

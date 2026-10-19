@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const InventoryLog = require('../models/InventoryLog');
 const InventoryMutation = require('../models/InventoryMutation');
 const Product = require('../models/Product');
+const cache = require('../services/cacheService');
 const Order = require('../models/Order');
 const { enqueueLowStockAlertFromStockChange } = require('../services/inventoryLowStockAlertService');
 
@@ -234,6 +235,11 @@ exports.updateStock = async (req, res) => {
             source: 'MANUAL',
             referenceId: cleanIdempotencyKey || `${productId}:${variantId}:${beforeStock}:${afterStock}`
         });
+
+        await Promise.all([
+            cache.delPattern(`admin:dashboard-overview:${shopId}:*`),
+            cache.delPattern(`storefront:*:${shopId}:*`)
+        ]);
 
         res.status(200).json({
             success: true,

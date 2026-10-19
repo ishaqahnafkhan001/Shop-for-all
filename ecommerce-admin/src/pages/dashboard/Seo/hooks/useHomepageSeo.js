@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
     evaluateHomepageSeo,
+    applySeoSuggestion,
+    editSeoField,
     resolveHomepageSeo
 } from '@scaleup/storefront-theme';
 import API from '../../../../api/api.js';
-import { aiRequestHeaders } from '../../../../utils/aiRequestId.js';
+import { useAiOperation } from '../../../../hooks/useAiOperation.js';
+import { useAiUndo } from '../../../../hooks/useAiUndo.js';
 
 const stableValue = (value) => {
     if (Array.isArray(value)) return value.map(stableValue);
@@ -80,6 +83,9 @@ export function useHomepageSeo() {
     const [conflict, setConflict] = useState(null);
     const [aiState, setAiState] = useState({ loading: false, data: null, error: '' });
     const [uploading, setUploading] = useState(false);
+    const operationInput = { seo: draftSeo, aliases: draftAliases, revision: themeRevision };
+    const aiOperation = useAiOperation({ feature: 'seo.homepage', entity: 'homepage', input: operationInput });
+    const aiUndo = useAiUndo('homepage', draftSeo, setDraftSeo);
     const autosaveTimer = useRef(null);
     const saveRequest = useRef(null);
 
@@ -190,7 +196,7 @@ export function useHomepageSeo() {
     }, [isDirty]);
 
     const updateSeo = useCallback((key, value) => {
-        setDraftSeo(previous => ({ ...previous, [key]: value }));
+        setDraftSeo(previous => editSeoField(previous, key, value));
     }, []);
 
     const publish = useCallback(async () => {
@@ -274,43 +280,24 @@ export function useHomepageSeo() {
         toast.success('Latest revision loaded. Your local SEO draft is still here for review.');
     }, [load]);
 
-    const requestAiSuggestions = useCallback(async () => {
+    const receiveAi = response => {
+        if (response) setAiState({ loading: false, data: response.data?.data || response.data, error: '' });
+    };
+    const requestAiSuggestions = async () => {
         setAiState({ loading: true, data: null, error: '' });
-        try {
-            const response = await API.post('/store-builder/admin/seo/ai-suggest', {
-                currentTheme: { seo: draftSeo },
-                language: draftSeo.language || 'en-BD',
-                spellingPreference: draftSeo.spellingPreference || 'british'
-            }, { headers: aiRequestHeaders('seo.homepage') });
-            setAiState({ loading: false, data: response.data?.data || response.data, error: '' });
-        } catch (requestError) {
-            setAiState({
-                loading: false,
-                data: null,
-                error: requestError.response?.data?.error || 'AI SEO suggestions are unavailable right now.'
-            });
-        }
-    }, [draftSeo]);
-
-    const applyAiSuggestion = useCallback((suggestion, fields = ['title', 'description']) => {
-        if (!suggestion) return;
-        setDraftSeo(previous => ({
-            ...previous,
-            ...fields.reduce((updates, field) => {
-                if (suggestion[field]) updates[field] = suggestion[field];
-                return updates;
-            }, {}),
-            aiSuggestion: {
-                alternatives: aiState.data?.alternatives || [],
-                generatedAt: aiState.data?.generatedAt || new Date().toISOString(),
-                generatedFromHash: aiState.data?.generatedFromHash || '',
-                inputSnapshot: aiState.data?.inputSnapshot || null,
-                acceptedOptionId: suggestion.id || '',
-                acceptedFields: fields,
-                acceptedAt: new Date().toISOString()
-            }
-        }));
-    }, [aiState.data]);
+        const body = { currentTheme: { seo: draftSeo }, entityRevision: themeRevision,
+            language: 'auto', spellingPreference: draftSeo.spellingPreference || 'british' };
+        receiveAi(await aiOperation.run(options => API.post('/store-builder/admin/seo/ai-suggest', body, options)));
+        setAiState(previous => ({ ...previous, loading: false }));
+    };
+    const retryAiSuggestions = async () => receiveAi(await aiOperation.retry());
+    const applyAiSuggestion = (suggestion, fields = ['title', 'description']) => {
+        if (!suggestion || !aiOperation.canApply()) { toast.error('Inputs changed. Generate again before applying.'); return; }
+        const next = applySeoSuggestion(draftSeo, aiState.data, suggestion, fields);
+        aiUndo.record(draftSeo, next);
+        aiOperation.rebase({ ...operationInput, seo: next });
+        setDraftSeo(next);
+    };
 
     const removeSocialImage = useCallback(() => {
         setDraftSeo(previous => ({
@@ -364,7 +351,7 @@ export function useHomepageSeo() {
                 subdomain: bootstrap.shop?.subdomain,
                 searchAliases: draftAliases,
                 primaryCategory: draftSeo.primaryCategory,
-                language: draftSeo.language || 'en-BD'
+                language: 'auto'
             },
             domain: {
                 ...(previewContext.domain || {}),
@@ -403,7 +390,7 @@ export function useHomepageSeo() {
         draftStatus,
         publishing,
         conflict,
-        aiState,
+        aiState, aiOperation, retryAiSuggestions, undoAi: aiUndo.undo,
         uploading,
         resolvedSeo,
         health,

@@ -318,7 +318,7 @@ export default function HomepageSeoPage() {
 
                 {activeTab === 'ai-assistant' && (
                     <Suspense fallback={<div className="h-56 animate-pulse rounded-lg bg-slate-100" />}>
-                        <SeoAiPanel state={seo.aiState} onGenerate={seo.requestAiSuggestions} onApply={seo.applyAiSuggestion} />
+                        <SeoAiPanel state={seo.aiState} operation={seo.aiOperation} onRetry={seo.retryAiSuggestions} onUndo={seo.undoAi} current={seo.draftSeo} onGenerate={seo.requestAiSuggestions} onApply={seo.applyAiSuggestion} />
                     </Suspense>
                 )}
 

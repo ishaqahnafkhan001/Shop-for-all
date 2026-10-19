@@ -3,13 +3,14 @@
 const {
     FALLBACK_THEME,
     SECTION_REGISTRY,
+    HOMEPAGE_COMPOSITIONS,
     cloneTheme,
     createDefaultSection,
     normalizeTheme,
     validateTheme
 } = require('./index.cjs');
 
-const PREBUILT_THEME_CATALOG_VERSION = 2;
+const PREBUILT_THEME_CATALOG_VERSION = 3;
 const SUPPORTED_INDUSTRIES = new Set(['General', 'Fashion', 'Jewellery', 'Beauty', 'Electronics', 'Grocery']);
 const SUPPORTED_STYLES = new Set(['Modern', 'Minimal', 'Editorial', 'Luxury', 'Soft', 'Fresh']);
 const SUPPORTED_FONTS = new Set(['Inter', 'Arial', 'Georgia', 'Roboto']);
@@ -182,6 +183,7 @@ const palette = ({
 });
 
 const layout = ({
+    composition = 'standard',
     containerWidth = 'Wide',
     spacing = 'Comfortable',
     width = 'Full Width',
@@ -192,6 +194,7 @@ const layout = ({
     padding = 40,
     margin = 40
 } = {}) => ({
+    homepageComposition: composition,
     maxWidth: containerWidth === 'Narrow' ? 'Contained' : containerWidth === 'Full Width' ? 'Full' : 'Wide',
     containerWidth,
     sectionSpacing: spacing,
@@ -341,13 +344,13 @@ const themes = [
         )
     }),
     defineTheme({
-        id: 'editorial-fashion', version: 2, name: 'Editorial Fashion', industry: 'Fashion', style: 'Editorial', thumbnailKey: 'editorial-fashion',
+        id: 'editorial-fashion', version: 3, name: 'Editorial Fashion', industry: 'Fashion', style: 'Editorial', thumbnailKey: 'editorial-fashion',
         description: 'An asymmetrical editorial composition with serif type, mosaic collections, and generous whitespace.',
         tags: ['editorial hero', 'mosaic', 'asymmetric'],
         presentation: {
             colors: palette({ accent: '#7f1d1d', accentHover: '#651515', accentSoft: '#e7c3b8', accentBg: '#fff7ed', accentStrong: '#450a0a', accentMuted: '#b45309', accentLight: '#fdba74', accentRing: '#ffedd5', background: '#fffdf8', foreground: '#241c18', surface: '#ffffff', border: '#e7e0d7', muted: '#786b61', dark: '#241c18', heroBackground: '#1c1917', footerBackground: '#1c1917' }),
             typography: { headingFont: 'Georgia', bodyFont: 'Georgia', baseSize: 17, headingWeight: '700' },
-            layout: layout({ containerWidth: 'Full Width', spacing: 'Spacious', width: 'Full Width', desktopColumns: 3, gap: 'Editorial', alignment: 'Center', padding: 64, margin: 64 }), productGridStyle: 'Editorial',
+            layout: layout({ composition: 'editorial', containerWidth: 'Full Width', spacing: 'Spacious', width: 'Full Width', desktopColumns: 3, gap: 'Editorial', alignment: 'Center', padding: 64, margin: 64 }), productGridStyle: 'Editorial',
             productCard: productCard({ style: 'Minimal', imageFit: 'Cover', aspectRatio: 'Portrait', imageRadius: 'Square', shadow: 'None', buttonShape: 'Square', showStock: false }),
             header: { variant: 'minimal', menuStyle: 'Mega' }, hero: { variant: 'editorial', overlayOpacity: 10, height: 'Tall' },
             mobile: { stickyCheckoutButton: true, compactHeader: false, showBottomNavigation: false },
@@ -363,13 +366,13 @@ const themes = [
         )
     }),
     defineTheme({
-        id: 'luxury-jewellery', version: 2, name: 'Luxury Jewellery', industry: 'Jewellery', style: 'Luxury', thumbnailKey: 'luxury-jewellery',
+        id: 'luxury-jewellery', version: 3, name: 'Luxury Jewellery', industry: 'Jewellery', style: 'Luxury', thumbnailKey: 'luxury-jewellery',
         description: 'A centered luxury composition with restrained gold accents, curated collections, and spacious product cards.',
         tags: ['centered', 'curated', 'premium'],
         presentation: {
             colors: palette({ accent: '#b7791f', accentHover: '#8f5f17', accentSoft: '#f4d58d', accentBg: '#fff8e7', accentStrong: '#6b3f0b', accentMuted: '#d69e2e', accentLight: '#f6e05e', accentRing: '#fef3c7', background: '#0f0f12', foreground: '#f8fafc', surface: '#18181b', border: '#3f3f46', muted: '#a1a1aa', dark: '#09090b', heroBackground: '#09090b', footerBackground: '#09090b', footerText: '#a1a1aa', footerHeading: '#f8fafc', rating: '#f4d58d' }),
             typography: { headingFont: 'Georgia', bodyFont: 'Inter', baseSize: 16, headingWeight: '700' },
-            layout: layout({ containerWidth: 'Narrow', spacing: 'Spacious', desktopColumns: 3, gap: 'Spacious', alignment: 'Center', padding: 64, margin: 64 }), productGridStyle: 'Spacious',
+            layout: layout({ composition: 'boutique', containerWidth: 'Narrow', spacing: 'Spacious', desktopColumns: 3, gap: 'Spacious', alignment: 'Center', padding: 64, margin: 64 }), productGridStyle: 'Spacious',
             productCard: productCard({ style: 'Premium', imageFit: 'Contain', aspectRatio: 'Square', imageRadius: 'Soft', shadow: 'Elevated', buttonShape: 'Pill', showStock: false }),
             header: { variant: 'centered', menuStyle: 'Simple' }, hero: { variant: 'centered', overlayOpacity: 18, height: 'Tall' },
             mobile: { stickyCheckoutButton: true, compactHeader: true, showBottomNavigation: true },
@@ -429,20 +432,20 @@ const themes = [
         )
     }),
     defineTheme({
-        id: 'modern-electronics', version: 2, name: 'Modern Electronics', industry: 'Electronics', style: 'Modern', thumbnailKey: 'modern-electronics',
+        id: 'modern-electronics', version: 3, name: 'Modern Electronics', industry: 'Electronics', style: 'Modern', thumbnailKey: 'modern-electronics',
         description: 'A compact split hero and dense four-column catalogue built for quick technical comparison.',
         tags: ['split hero', 'technical', 'dense'],
         presentation: {
             colors: palette({ accent: '#2563eb', accentHover: '#1d4ed8', accentSoft: '#bfdbfe', accentBg: '#eff6ff', accentStrong: '#1e3a8a', accentMuted: '#60a5fa', accentLight: '#93c5fd', accentRing: '#dbeafe', background: '#f8fafc', foreground: '#0f172a', surface: '#ffffff', border: '#cbd5e1', muted: '#64748b', dark: '#0f172a', heroBackground: '#0f172a', footerBackground: '#0f172a' }),
             typography: { headingFont: 'Inter', bodyFont: 'Roboto', baseSize: 15, headingWeight: '800' },
-            layout: layout({ containerWidth: 'Wide', spacing: 'Compact', desktopColumns: 4, gap: 'Compact', padding: 32, margin: 32 }), productGridStyle: 'Compact',
+            layout: layout({ composition: 'discovery', containerWidth: 'Wide', spacing: 'Compact', desktopColumns: 4, gap: 'Compact', padding: 32, margin: 32 }), productGridStyle: 'Compact',
             productCard: productCard({ style: 'Modern', imageFit: 'Contain', imageRadius: 'Soft', shadow: 'Soft', buttonShape: 'Soft', titleSize: 'Small', showStock: true }),
             header: { variant: 'standard', menuStyle: 'Mega' }, hero: { variant: 'split', overlayOpacity: 12, height: 'Compact' },
             mobile: { stickyCheckoutButton: true, compactHeader: true, showBottomNavigation: true },
             allProducts: { desktopColumns: 4, tabletColumns: 3, mobileColumns: 2, spacing: 'Compact' }
         },
         homepageBlueprint: blueprint(
-            { type: 'CategoryList', variant: 'cards' },
+            { type: 'CategoryList', variant: 'cards', presentationSettings: { columns: 1, maxCategories: 8 } },
             'FeaturedProducts',
             { type: 'PromoBlock', variant: 'strip' },
             { type: 'CollectionShowcase', variant: 'grid' },
@@ -717,6 +720,7 @@ const validatePrebuiltThemeRegistry = () => {
         if (!SUPPORTED_INDUSTRIES.has(theme.industry)) errors.push({ path: `${path}.industry`, message: `Unsupported theme industry: ${theme.industry}` });
         if (!SUPPORTED_STYLES.has(theme.style)) errors.push({ path: `${path}.style`, message: `Unsupported theme style: ${theme.style}` });
         if (!SUPPORTED_FONTS.has(theme.presentation.typography?.headingFont) || !SUPPORTED_FONTS.has(theme.presentation.typography?.bodyFont)) errors.push({ path: `${path}.presentation.typography`, message: 'Theme typography uses an unsupported font.' });
+        if (!Object.hasOwn(HOMEPAGE_COMPOSITIONS, theme.presentation.layout?.homepageComposition)) errors.push({ path: `${path}.presentation.layout.homepageComposition`, message: 'Theme composition is unregistered.' });
         if (!SUPPORTED_CARD_STYLES.has(theme.presentation.productCard?.style)) errors.push({ path: `${path}.presentation.productCard.style`, message: 'Theme product card style is unsupported.' });
         Object.keys(theme.presentation).forEach(key => {
             if (!SUPPORTED_PRESENTATION_KEYS.has(key)) errors.push({ path: `${path}.presentation.${key}`, message: `Unsupported presentation group: ${key}` });

@@ -1,5 +1,6 @@
 import { ShoppingBag } from 'lucide-react';
-import { BuilderCard, BuilderInput, BuilderSelect, BuilderToggle } from '../builderUi.jsx';
+import { PRODUCT_CARD_STYLE_FIELDS } from '@scaleup/storefront-theme';
+import { BuilderButton, BuilderCard, BuilderInput, BuilderSelect, BuilderToggle } from '../builderUi.jsx';
 
 export function ProductCardsEditor({ theme, setThemeGroup, toggleThemeGroup }) {
     return (
@@ -17,6 +18,8 @@ export function ProductCardsEditor({ theme, setThemeGroup, toggleThemeGroup }) {
             </BuilderCard>
             <BuilderCard title="Product cards" description="Control how products appear in grids across desktop and mobile." icon={ShoppingBag}>
                 <BuilderSelect label="Product card style" value={theme.productCard?.style || 'Modern'} onChange={event => setThemeGroup('productCard', 'style', event.target.value)}><option>Minimal</option><option>Modern</option><option>Premium</option></BuilderSelect>
+                <p className="text-sm text-slate-600">Choosing a style resets its shadow, title weight, and button style. You can customize these below.</p>
+                <BuilderButton onClick={() => setThemeGroup('productCard', 'inheritedStyleFields', [...PRODUCT_CARD_STYLE_FIELDS])}>Apply style defaults</BuilderButton>
                 <BuilderSelect label="Product image fit" value={theme.productCard?.imageFit || 'Contain'} onChange={event => setThemeGroup('productCard', 'imageFit', event.target.value)}><option>Contain</option><option>Cover</option></BuilderSelect>
                 <BuilderSelect label="Image aspect ratio" value={theme.productCard?.aspectRatio || 'Square'} onChange={event => setThemeGroup('productCard', 'aspectRatio', event.target.value)}><option>Square</option><option>Portrait</option><option>Landscape</option></BuilderSelect>
                 <BuilderSelect label="Product card corner roundness" value={theme.productCard?.borderRadius || 'Rounded'} onChange={event => setThemeGroup('productCard', 'borderRadius', event.target.value)}><option>Soft</option><option>Rounded</option><option>Square</option></BuilderSelect>

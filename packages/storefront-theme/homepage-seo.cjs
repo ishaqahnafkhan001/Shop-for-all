@@ -198,18 +198,65 @@ const normalizeSocialImage = (seo = {}, fallbackImage = {}) => {
     };
 };
 
+const SEO_ORIGINS = ['provider', 'deterministic_fallback', 'mixed', 'manual', 'unknown_legacy'];
+const normalizeAcceptedSeoProvenance = (seo = {}) => Object.fromEntries(['title', 'description'].map(field => {
+    const max = field === 'title' ? TITLE_MAX : DESCRIPTION_MAX;
+    const current = cleanSeoText(seo[field], max);
+    const origin = seo.aiSuggestion?.acceptedOrigins?.[field];
+    if (!origin || typeof origin !== 'object') return [field, null];
+    const acceptedValue = cleanSeoText(origin.value, max);
+    const matches = acceptedValue === current && origin.valueHash === hashText(acceptedValue);
+    return [field, { source: matches && SEO_ORIGINS.includes(origin.source) ? origin.source : 'manual',
+        value: current, valueHash: hashText(current),
+        operationId: matches ? cleanSeoText(origin.operationId, 120) : '',
+        promptVersion: matches ? cleanSeoText(origin.promptVersion, 30) : '',
+        acceptedAt: matches ? cleanSeoText(origin.acceptedAt, 40) : '' }];
+}));
+
+const applySeoSuggestion = (seo, result, option, fields = ['title', 'description'], now = new Date().toISOString()) => {
+    const selected = fields.filter(field => ['title', 'description'].includes(field) && typeof option?.[field] === 'string');
+    const source = SEO_ORIGINS.includes(result?.meta?.source) ? result.meta.source : 'unknown_legacy';
+    const origins = { ...normalizeAcceptedSeoProvenance(seo) };
+    const values = {};
+    for (const field of selected) {
+        values[field] = cleanSeoText(option[field], field === 'title' ? TITLE_MAX : DESCRIPTION_MAX);
+        origins[field] = { source, value: values[field], valueHash: hashText(values[field]),
+            operationId: cleanSeoText(result.meta?.operationId, 120), promptVersion: cleanSeoText(result.meta?.promptVersion, 30), acceptedAt: now };
+    }
+    return { ...seo, ...values, aiSuggestion: { alternatives: result.alternatives || [],
+        generatedAt: result.generatedAt || now, generatedFromHash: result.generatedFromHash || '',
+        inputSnapshot: result.inputSnapshot || null, acceptedOptionId: option.id || '',
+        acceptedFields: [...new Set([...(seo.aiSuggestion?.acceptedFields || []), ...selected])],
+        acceptedAt: now, acceptedOrigins: origins } };
+};
+
+const editSeoField = (seo, field, value) => {
+    const next = { ...seo, [field]: value };
+    if (['title', 'description'].includes(field) && value !== seo[field]) {
+        const current = cleanSeoText(value, field === 'title' ? TITLE_MAX : DESCRIPTION_MAX);
+        next.aiSuggestion = { ...seo.aiSuggestion, acceptedOrigins: { ...normalizeAcceptedSeoProvenance(seo),
+            [field]: { source: 'manual', value: current, valueHash: hashText(current) } } };
+    }
+    return next;
+};
+
 const findAcceptedAiSource = (seo = {}, field, value) => {
     const suggestion = seo.aiSuggestion || {};
+    const origin = normalizeAcceptedSeoProvenance(seo)[field];
+    if (origin) return origin.source;
     const acceptedFields = Array.isArray(suggestion.acceptedFields) ? suggestion.acceptedFields : [];
-    if (!suggestion.acceptedAt || !acceptedFields.includes(field)) return false;
+    if (!suggestion.acceptedAt || !acceptedFields.includes(field)) return 'manual';
     const acceptedOption = (suggestion.alternatives || []).find(option => String(option?.id) === String(suggestion.acceptedOptionId));
-    return cleanSeoText(acceptedOption?.[field], field === 'title' ? TITLE_MAX : DESCRIPTION_MAX) === value;
+    return cleanSeoText(acceptedOption?.[field], field === 'title' ? TITLE_MAX : DESCRIPTION_MAX) === value ? 'unknown_legacy' : 'manual';
 };
 
 const resolveTextField = ({ seo = {}, field, generated = '', fallback = '' }) => {
     const max = ['title', 'socialTitle'].includes(field) ? TITLE_MAX : DESCRIPTION_MAX;
     const manual = truncateSeoText(seo[field], max);
-    if (manual) return { value: manual, source: findAcceptedAiSource(seo, field, manual) ? 'ai' : 'manual' };
+    if (manual) {
+        const origin = findAcceptedAiSource(seo, field, manual);
+        return { value: manual, origin, source: origin === 'provider' ? 'ai' : origin === 'deterministic_fallback' ? 'fallback' : origin };
+    }
     const generatedValue = truncateSeoText(generated, max);
     if (generatedValue) return { value: generatedValue, source: 'generated' };
     const fallbackValue = truncateSeoText(fallback, max);
@@ -358,6 +405,7 @@ const resolveHomepageSeo = ({
             socialDescription: socialDescription.source,
             socialImage: socialImageSource
         },
+        origin: { title: title.origin || 'deterministic_fallback', description: description.origin || 'deterministic_fallback' },
         freshness: { status: freshnessStatus, generatedFromHash, currentInputHash, changedAreas }
     });
 };
@@ -407,7 +455,7 @@ const statusForResolvedSource = (source = '', valid = true) => {
 };
 
 const evaluateHomepageSeo = (resolvedSeo = {}, context = {}) => {
-    const sourceScore = { manual: 1, ai: 0.9, generated: 0.75, fallback: 0.45, missing: 0 };
+    const sourceScore = { manual: 1, ai: 0.9, mixed: 0.8, unknown_legacy: 0.8, generated: 0.75, fallback: 0.45, missing: 0 };
     const checks = [];
     const add = (check) => checks.push({ fieldPath: '', severity: 'medium', weight: 5, ...check });
     const titleLength = cleanSeoText(resolvedSeo.title).length;
@@ -486,6 +534,9 @@ const evaluateHomepageSeo = (resolvedSeo = {}, context = {}) => {
 };
 
 module.exports = {
+    normalizeAcceptedSeoProvenance,
+    applySeoSuggestion,
+    editSeoField,
     TITLE_MAX,
     DESCRIPTION_MAX,
     SPELLING_GROUPS,

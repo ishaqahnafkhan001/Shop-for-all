@@ -143,7 +143,7 @@ export function StorefrontAllProducts({
     const filteredProducts = catalogProducts;
     const resolvedLayout = resolveAllProductsLayout(allProducts, layout, theme.productGridStyle);
     const { desktop: desktopColumns, tablet: tabletColumns, mobile: mobileColumns } = resolvedLayout;
-    const mobileGridClass = mobileColumns === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2";
+    const mobileGridClass = mobileColumns === 1 ? "grid-cols-1" : "grid-cols-2";
     const liveGridClass = `${mobileGridClass} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
     const gridClass = previewDevice
         ? (isPreviewMobile(previewDevice)

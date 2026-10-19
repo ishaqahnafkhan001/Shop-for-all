@@ -1,25 +1,25 @@
-const { GoogleGenerativeAI, SchemaType } = require('@google/generative-ai');
+const { withBrandVoice } = require('./ai/aiPreferencesService');
+const { withProviderSession } = require('./ai/openaiProviderAdapter');
+const { getAiConfig } = require('../config/ai');
 
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const DEFAULT_TIMEOUT_MS = 7000;
 const PRACTICAL_CTAS = new Set(['Shop Now', 'Order Now', 'Learn More', 'Send Message']);
 const PROMPT_ID = 'growth.ad_planning';
-const PROMPT_VERSION = '2.0.0';
+const PROMPT_VERSION = '4.0.0';
 const UNSUPPORTED_COMMERCE_CLAIM = /\b(?:cash\s*on\s*delivery|cod|free\s*shipping|fast\s*delivery|easy\s*delivery|nationwide\s*delivery|delivery\s*(?:estimate|time|charge|fee|option|support|area)|limited\s*stock|stock\s*(?:limited|ready)|selling\s*out|warrant(?:y|ies)|returns?|authentic(?:ity)?|guaranteed|discount(?:ed|s)?|best[-\s]?seller|popular\s+product|premium(?:\s+quality|\s+feel)?|product\s+quality|durab(?:le|ility)|performance\s+trend|trusted|reliable|freshness)\b/i;
 
 const stringSchema = (description = '') => ({
-    type: SchemaType.STRING,
+    type: 'string',
     ...(description ? { description } : {})
 });
 
 const stringListSchema = (maxItems, description = '') => ({
-    type: SchemaType.ARRAY,
+    type: 'array',
     maxItems,
     items: stringSchema(description)
 });
 
 const GROWTH_AI_RESPONSE_SCHEMA = {
-    type: SchemaType.OBJECT,
+    type: 'object',
     required: [
         'primaryText',
         'headline',
@@ -271,14 +271,14 @@ const CATEGORY_DEFINITIONS = [
     {
         type: 'general/unknown',
         keywords: [],
-        targetedCustomer: 'Online shoppers interested in the product category and the published product details.',
+        targetedCustomer: 'Online shoppers interested in the product category and the product details.',
         targetedAgeRange: '18-45',
         interests: ['Online Shopping', 'E-commerce', 'Product Discovery', 'New Arrivals'],
         adAngle: 'Clear product discovery',
         audienceReason: 'The product category is not specific enough, so the recommendation stays conservative and focuses on general e-commerce intent.',
         improvementSuggestions: [
             'Add a clearer category, tags, and short product benefits.',
-            'Use real product photos and complete the published product details.',
+            'Use real product photos and complete the product details.',
             'Test with a small budget before scaling.'
         ]
     }
@@ -482,7 +482,7 @@ const getMetricStrategy = (label) => {
         winner: {
             adAngleSuffix: 'with proven customer interest',
             reasonSuffix: 'The product already shows engagement or orders, so it is safer to test with a focused buyer audience.',
-            suggestions: ['Use the strongest published product details in the first line.', 'Send traffic directly to the product page.', 'Run a measured campaign test before increasing spend.']
+            suggestions: ['Use the strongest product details in the first line.', 'Send traffic directly to the product page.', 'Run a measured campaign test before increasing spend.']
         },
         hidden_gem: {
             adAngleSuffix: 'that needs more reach',
@@ -530,7 +530,7 @@ const buildFallbackAdInsight = ({ product = {}, shop = {}, metrics = {}, cityHis
         : 'No location recommendation is included because there is not enough privacy-safe aggregate buyer history.';
 
     const englishCopy = {
-        primaryText: `Explore ${productContext.title || 'this product'}${priceText}. Review the published product details and available options before ordering.`,
+        primaryText: `Explore ${productContext.title || 'this product'}${priceText}. Review the product details and available options before ordering.`,
         headline: productContext.title || 'Shop This Product',
         description: `A planning draft for a ${campaign} campaign based on published product information.`,
         callToAction: 'Shop Now'
@@ -613,7 +613,7 @@ function cleanAdInsightResponse(raw = {}, { product = {}, metrics = {}, cityHist
             .map(item => truncate(item, 160)),
         5
     );
-    const neutralAudience = `People interested in ${detected.type.replace('/', ' or ')} products and the published product details.`;
+    const neutralAudience = `People interested in ${detected.type.replace('/', ' or ')} products and the product details.`;
     const neutralAngle = `${safeString(product.title, 70) || detected.type.replace('/', ' or ')} product discovery`;
     const neutralReason = 'The suggested audience category matches the published product category and application-calculated activity.';
 
@@ -630,7 +630,7 @@ function cleanAdInsightResponse(raw = {}, { product = {}, metrics = {}, cityHist
         audienceReason: safeGroundedText(raw.audienceReason, neutralReason, 360),
         improvementSuggestions: suggestions.length
             ? suggestions
-            : ['Review missing published product details.', 'Use a clear first image.', 'Collect more activity before increasing campaign spend.'],
+            : ['Review missing product details.', 'Use a clear first image.', 'Collect more activity before increasing campaign spend.'],
         evidenceRefs: buildEvidenceRefs(metrics, locations),
         confidence: getEvidenceConfidence(metrics),
         limitations: buildLimitations(metrics, locations)
@@ -640,11 +640,11 @@ function cleanAdInsightResponse(raw = {}, { product = {}, metrics = {}, cityHist
 const buildFallbackAdInsightWithoutClean = ({ product = {} } = {}) => {
     const productContext = sanitizeProductContext(product);
     return {
-        primaryText: `Explore ${productContext.title || 'this product'} today. Review the published product details and available options before ordering.`
+        primaryText: `Explore ${productContext.title || 'this product'} today. Review the product details and available options before ordering.`
     };
 };
 
-const parseGeminiJson = (text) => {
+const parseProviderJson = (text) => {
     const clean = String(text || '')
         .replace(/^```(?:json)?/i, '')
         .replace(/```$/i, '')
@@ -658,11 +658,11 @@ const parseGeminiJson = (text) => {
         if (firstBrace >= 0 && lastBrace > firstBrace) {
             return JSON.parse(clean.slice(firstBrace, lastBrace + 1));
         }
-        throw new Error('Gemini returned invalid JSON');
+        throw new Error('OpenAI returned invalid JSON');
     }
 };
 
-const buildGeminiPrompt = ({ productContext, shopContext, detectedCategory, metrics, cityHistory, searchTerms, language, campaignType }) => {
+const buildPrompt = ({ productContext, shopContext, detectedCategory, metrics, cityHistory, searchTerms, language, campaignType, evidenceWindow }) => {
     const safePayload = {
         shop: shopContext,
         product: {
@@ -678,6 +678,7 @@ const buildGeminiPrompt = ({ productContext, shopContext, detectedCategory, metr
             attributes: productContext.attributes
         },
         campaignType: safeString(campaignType, 80),
+        evidenceWindow,
         language: safeString(language, 40),
         growthCenterLabel: metrics.label,
         performanceSummary: metrics,
@@ -703,41 +704,19 @@ const buildGeminiPrompt = ({ productContext, shopContext, detectedCategory, metr
     ].join('\n');
 };
 
-const callGemini = async (prompt) => {
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error('Gemini API key is not configured');
-    }
-
-    const timeoutMs = Number(process.env.GEMINI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
-    const modelName = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: {
-            temperature: 0.35,
-            topP: 0.9,
-            maxOutputTokens: 900,
-            responseMimeType: 'application/json',
-            responseSchema: GROWTH_AI_RESPONSE_SCHEMA
-        }
-    });
-
-    let timeoutId;
-    const timeout = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => {
-            const error = new Error('Gemini request timed out');
-            error.code = 'AI_PROVIDER_TIMEOUT';
-            reject(error);
-        }, timeoutMs);
-    });
-
-    try {
-        const result = await Promise.race([model.generateContent(prompt), timeout]);
-        return result.response.text();
-    } finally {
-        clearTimeout(timeoutId);
-    }
+const COPY_FIELDS = ['primaryText', 'headline', 'description', 'callToAction'];
+const normalizeRequestedFields = fields => {
+    if (fields === undefined) return null;
+    if (!Array.isArray(fields) || !fields.length || fields.length > 4 || fields.some(key => !COPY_FIELDS.includes(key))) throw Object.assign(new Error('Select supported campaign copy fields.'), { code: 'AI_INVALID_INPUT', statusCode: 400 });
+    return [...new Set(fields)].sort();
 };
+const callProvider = (prompt, session, fields) => session.generate({ prompt, schema: fields ? { type: 'object', required: fields, properties: Object.fromEntries(fields.map(key => [key, GROWTH_AI_RESPONSE_SCHEMA.properties[key]])) } : GROWTH_AI_RESPONSE_SCHEMA, temperature: .35, topP: .9, maxOutputTokens: 900, feature: PROMPT_ID });
+
+const acceptAdCopy = (raw) => raw && typeof raw === 'object' && !Array.isArray(raw)
+    && ['primaryText', 'headline', 'description'].every(key => typeof raw[key] === 'string'
+        && /[\p{L}\p{N}]/u.test(withoutUnsupportedCommerceClaims(raw[key])))
+    && ['Shop Now', 'Learn More', 'Send Message', 'Order Now'].includes(raw.callToAction)
+    && (raw.targetedAgeRange === undefined || /^(?:18|21|25|30|35|40|45|50|55|60|65)(?:\+|-(?:24|25|30|34|35|40|44|45|50|54|55|60|64|65)\+?)$/.test(raw.targetedAgeRange) && (() => { const [start, end] = raw.targetedAgeRange.replace(/\+/g, '').split('-').map(Number); return end === undefined || end >= start; })());
 
 const generateAdInsight = async ({
     product,
@@ -746,8 +725,10 @@ const generateAdInsight = async ({
     cityHistory = [],
     searchTerms = [],
     language = 'en',
-    campaignType = 'general'
-}) => {
+    campaignType = 'general', evidenceWindow, requestedFields, operation, signal, providerOptions = {}
+}) => withProviderSession({ ...providerOptions, operation, signal }, async session => {
+    const fields = normalizeRequestedFields(requestedFields);
+    language = operation?.preferences?.language || language;
     const startedAt = Date.now();
     const productContext = sanitizeProductContext(product);
     const shopContext = sanitizeShopContext(shop);
@@ -755,7 +736,7 @@ const generateAdInsight = async ({
     const metricsContext = sanitizeMetricsContext(metrics);
 
     try {
-        const prompt = buildGeminiPrompt({
+        const prompt = buildPrompt({
             productContext,
             shopContext,
             detectedCategory: detected.type,
@@ -763,19 +744,24 @@ const generateAdInsight = async ({
             cityHistory,
             searchTerms,
             language,
-            campaignType
+            campaignType, evidenceWindow
         });
-        const text = await callGemini(prompt);
-        const parsed = parseGeminiJson(text);
-        const normalized = cleanAdInsightResponse(parsed, { product, metrics: metricsContext, cityHistory });
+        const text = await callProvider(withBrandVoice(prompt, operation?.preferences) + (fields ? '\nReturn ONLY these requested text fields: ' + fields.join(', ') : ''), session, fields);
+        const parsed = parseProviderJson(text);
+        if (!(fields ? fields.every(key => typeof parsed?.[key] === 'string' && (key === 'callToAction' ? PRACTICAL_CTAS.has(parsed[key]) : /[\p{L}\p{N}]/u.test(withoutUnsupportedCommerceClaims(parsed[key])))) : acceptAdCopy(parsed))) throw Object.assign(new Error('Incomplete campaign copy.'), { code: 'AI_RESPONSE_INCOMPLETE' });
+        const normalized = fields ? Object.fromEntries(fields.map(key => [key, key === 'callToAction' ? parsed[key] : withoutUnsupportedCommerceClaims(parsed[key], key === 'primaryText' ? 2500 : 500)])) : cleanAdInsightResponse(parsed, { product, metrics: metricsContext, cityHistory });
         return {
             ...normalized,
             meta: {
-                source: 'provider',
+                source: fields ? 'provider' : 'mixed',
+                requestedFields: fields || COPY_FIELDS,
+                fieldOrigins: { primaryText: 'provider', headline: 'provider', description: 'provider', callToAction: 'provider',
+                    suggestedInterests: 'mixed', improvementSuggestions: 'mixed', evidence: 'deterministic_fallback' },
                 fallback: false,
                 configured: true,
                 generatedAt: new Date().toISOString(),
-                model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+                evidenceWindow, productSnapshot: { title: product.title, sellingPrice: Number(product.pricing?.sellingPrice || 0), version: operation?.entityVersion },
+                model: getAiConfig().model,
                 promptId: PROMPT_ID,
                 promptVersion: PROMPT_VERSION,
                 latencyMs: Math.max(0, Date.now() - startedAt),
@@ -784,17 +770,20 @@ const generateAdInsight = async ({
             }
         };
     } catch (err) {
-        const configured = Boolean(process.env.GEMINI_API_KEY);
+        const configured = Boolean(getAiConfig().apiKey);
         console.warn('[GrowthAdAI] Deterministic fallback used', {
             code: configured ? (err.code || 'AI_PROVIDER_FAILED') : 'AI_NOT_CONFIGURED'
         });
+        const fallback = buildFallbackAdInsight({ product, shop, metrics: metricsContext, cityHistory, language, campaignType });
         return {
-            ...buildFallbackAdInsight({ product, shop, metrics: metricsContext, cityHistory, language, campaignType }),
+            ...(fields ? Object.fromEntries(fields.map(key => [key, fallback[key]])) : fallback),
             meta: {
                 source: 'deterministic_fallback',
+                requestedFields: fields || COPY_FIELDS,
                 fallback: true,
                 configured,
                 generatedAt: new Date().toISOString(),
+                evidenceWindow, productSnapshot: { title: product.title, sellingPrice: Number(product.pricing?.sellingPrice || 0), version: operation?.entityVersion },
                 model: null,
                 promptId: PROMPT_ID,
                 promptVersion: PROMPT_VERSION,
@@ -802,14 +791,14 @@ const generateAdInsight = async ({
                 latencyMs: Math.max(0, Date.now() - startedAt),
                 limitations: [
                     'Personalized AI copy is temporarily unavailable.',
-                    'This planning draft uses only published product details and application-calculated aggregate metrics.',
+                    'This planning draft uses only product details and application-calculated aggregate metrics.',
                     ...(!cityHistory.length ? ['Location targeting was omitted because there was not enough privacy-safe aggregate data.'] : [])
                 ],
                 evidence: buildEvidence(metricsContext, cityHistory)
             }
         };
     }
-};
+});
 
 function buildEvidence(metrics = {}, cityHistory = []) {
     const evidence = [
@@ -839,12 +828,13 @@ function getEvidenceConfidence(metrics = {}) {
 
 function buildLimitations(metrics = {}, cityHistory = []) {
     const limitations = [];
-    if (getEvidenceConfidence(metrics) === 'low') limitations.push('There is not enough activity for a high-confidence recommendation.');
+    if (getEvidenceConfidence(metrics) === 'low') limitations.push('There is not enough activity for a recommendation supported by substantial activity.');
     if (!cityHistory.length) limitations.push('No location suggestion is shown because the privacy-safe aggregate threshold was not met.');
     return limitations;
 }
 
 module.exports = {
+    normalizeRequestedFields,
     generateAdInsight,
     detectProductCategory,
     buildFallbackAdInsight,
@@ -854,12 +844,13 @@ module.exports = {
         sanitizeShopContext,
         sanitizeMetricsContext,
         removeIrrelevantInterests,
-        parseGeminiJson,
-        buildGeminiPrompt,
+        parseProviderJson,
+        buildPrompt,
         withoutUnsupportedCommerceClaims,
         buildEvidence,
         buildEvidenceRefs,
         getEvidenceConfidence,
-        GROWTH_AI_RESPONSE_SCHEMA
+        GROWTH_AI_RESPONSE_SCHEMA,
+        acceptAdCopy
     }
 };

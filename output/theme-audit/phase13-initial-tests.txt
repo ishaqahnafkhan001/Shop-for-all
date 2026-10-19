@@ -1,0 +1,498 @@
+virtual:parity (9:51) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-renderer/viewports' in virtual:parity
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m virtual:parity:9:52 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m9 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249me[0m[38;5;249mx[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249mS[0m[38;5;249mT[0m[38;5;249mO[0m[38;5;249mR[0m[38;5;249mE[0m[38;5;249mF[0m[38;5;249mR[0m[38;5;249mO[0m[38;5;249mN[0m[38;5;249mT[0m[38;5;249m_[0m[38;5;249mV[0m[38;5;249mI[0m[38;5;249mE[0m[38;5;249mW[0m[38;5;249mP[0m[38;5;249mO[0m[38;5;249mR[0m[38;5;249mT[0m[38;5;249mS[0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m'@scaleup/storefront-renderer/viewports'[38;5;249m;[0m
+ [38;5;240m  │[0m                                                    ────────────────────┬───────────────────  
+ [38;5;240m  │[0m                                                                        ╰───────────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+✖ modern-general/full: Gallery full preview, Builder and live home produce identical presentation markup (437.9883ms)
+✖ modern-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (261.2129ms)
+✖ modern-general/none: Gallery full preview, Builder and live home produce identical presentation markup (0.119ms)
+✖ minimal-general/full: Gallery full preview, Builder and live home produce identical presentation markup (136.7885ms)
+✖ minimal-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (61.1363ms)
+✖ minimal-general/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0977ms)
+✖ modern-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (139.6362ms)
+✖ modern-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (264.0591ms)
+✖ modern-fashion/none: Gallery full preview, Builder and live home produce identical presentation markup (0.1424ms)
+✖ editorial-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (239.4003ms)
+✖ editorial-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (59.2315ms)
+✖ editorial-fashion/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0823ms)
+✖ luxury-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (57.1451ms)
+✖ luxury-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (51.0299ms)
+✖ luxury-jewellery/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0813ms)
+✖ minimal-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (57.2978ms)
+✖ minimal-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (50.4098ms)
+✖ minimal-jewellery/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0835ms)
+✖ soft-beauty/full: Gallery full preview, Builder and live home produce identical presentation markup (59.2595ms)
+✖ soft-beauty/limited: Gallery full preview, Builder and live home produce identical presentation markup (53.3143ms)
+✖ soft-beauty/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0732ms)
+✖ modern-electronics/full: Gallery full preview, Builder and live home produce identical presentation markup (190.1079ms)
+✖ modern-electronics/limited: Gallery full preview, Builder and live home produce identical presentation markup (244.0713ms)
+✖ modern-electronics/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0676ms)
+✖ fresh-grocery/full: Gallery full preview, Builder and live home produce identical presentation markup (168.9718ms)
+✖ fresh-grocery/limited: Gallery full preview, Builder and live home produce identical presentation markup (41.3734ms)
+✖ fresh-grocery/none: Gallery full preview, Builder and live home produce identical presentation markup (0.068ms)
+✔ empty stores do not acquire sample categories or an extra category composition slot in preview (11.1296ms)
+✖ mobile navigation uses live viewport anchoring and safe-area dimensions in the iframe (7.2297ms)
+✔ project viewport dimensions are explicit and stable; responsive HTML uses real CSS breakpoints (29.0051ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 2
+ℹ fail 28
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2761.9926
+
+✖ failing tests:
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-general/full: Gallery full preview, Builder and live home produce identical presentation markup (437.9883ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5225
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (261.2129ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5225
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-general/none: Gallery full preview, Builder and live home produce identical presentation markup (0.119ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ minimal-general/full: Gallery full preview, Builder and live home produce identical presentation markup (136.7885ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5161
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><nav class="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1"><a href="/policies" class="inline-flex m
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ minimal-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (61.1363ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5188
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ minimal-general/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0977ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (139.6362ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5151
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(240px,0.8fr)_minmax(0,1fr)] items-center gap-4 border-t pt-3" style="border-color:var(--sf-header-border)"><div class="min-w-0 justify-self-sta
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (264.0591ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5227
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-fashion/none: Gallery full preview, Builder and live home produce identical presentation markup (0.1424ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ editorial-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (239.4003ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5166
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><nav class="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1"><a href="/policies" class="inline-flex m
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ editorial-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (59.2315ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5192
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ editorial-fashion/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0823ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ luxury-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (57.1451ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5144
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(240px,0.8fr)_minmax(0,1fr)] items-center gap-4 border-t pt-3" style="border-color:var(--sf-header-border)"><div class="min-w-0 justify-self-sta
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ luxury-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (51.0299ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5227
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ luxury-jewellery/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0813ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ minimal-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (57.2978ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5163
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><nav class="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1"><a href="/policies" class="inline-flex m
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ minimal-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (50.4098ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5190
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ minimal-jewellery/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0835ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ soft-beauty/full: Gallery full preview, Builder and live home produce identical presentation markup (59.2595ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5144
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(240px,0.8fr)_minmax(0,1fr)] items-center gap-4 border-t pt-3" style="border-color:var(--sf-header-border)"><div class="min-w-0 justify-self-sta
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ soft-beauty/limited: Gallery full preview, Builder and live home produce identical presentation markup (53.3143ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5227
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ soft-beauty/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0732ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-electronics/full: Gallery full preview, Builder and live home produce identical presentation markup (190.1079ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5226
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-electronics/limited: Gallery full preview, Builder and live home produce identical presentation markup (244.0713ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5226
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ modern-electronics/none: Gallery full preview, Builder and live home produce identical presentation markup (0.0676ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ fresh-grocery/full: Gallery full preview, Builder and live home produce identical presentation markup (168.9718ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5225
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ fresh-grocery/limited: Gallery full preview, Builder and live home produce identical presentation markup (41.3734ms)
+  AssertionError [ERR_ASSERTION]: Builder: first mismatch at 5225
+  preview: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border
+  live: idden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span><span class="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200" title="This seller has completed Scaleup identity and pho
+      at equalMarkup (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:108:12)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:137:48)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }
+
+test at tests\storefront-preview-parity.test.js:112:5
+✖ fresh-grocery/none: Gallery full preview, Builder and live home produce identical presentation markup (0.068ms)
+  Error: Prebuilt storefront themes are not available on the current plan.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10436:34)
+      at Module.buildPreviewTheme (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-admin\parity-test.cjs:10626:9)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:114:26)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    code: 'PREBUILT_THEME_NOT_AVAILABLE'
+  }
+
+test at tests\storefront-preview-parity.test.js:148:1
+✖ mobile navigation uses live viewport anchoring and safe-area dimensions in the iframe (7.2297ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /fixed inset-x-0 bottom-0/. Input:
+  
+  '<div class="sf-presentation" style="--sf-brand-primary:#0f766e;--sf-accent:#0f766e;--sf-accent-hover:#115e59;--sf-accent-soft:#ecfdf5;--sf-accent-bg:#ecfdf5;--sf-primary-button-bg:#0f766e;--sf-primary-button-text:#ffffff;--sf-navbar-background:#ffffff;--sf-navbar-text:#0f172a;--sf-navbar-muted-text:#64748b;--sf-navbar-hover:#0f766e;--sf-header-icon:#0f172a;--sf-header-border:#e2e8f0;--sf-header-cart-badge-bg:#0f766e;--sf-header-cart-badge-text:#ffffff;--sf-hero-background:#020617;--sf-hero-title:#ffffff;--sf-hero-subtitle:#e2e8f0;--sf-hero-overlay:#020617;--sf-hero-primary-button-bg:#ffffff;--sf-hero-primary-button-text:#0f172a;--sf-hero-secondary-button-bg:#ffffff;--sf-hero-secondary-button-text:#0f172a;--sf-card-background:#ffffff;--sf-card-border:#e2e8f0;--sf-card-hover-border:#99f6e4;--sf-product-card-background:#ffffff;--sf-product-card-border:#e2e8f0;--sf-product-card-shadow:#e2e8f0;--sf-variant-chip-bg:#f8fafc;--sf-variant-chip-text:#475569;--sf-variant-chip-selected-bg:#0f766e;--sf-variant-chip-selected-text:#ffffff;--sf-product-card-title:#0f172a;--sf-product-card-category:#64748b;--sf-product-card-price:#0f172a;--sf-product-card-compare-at-price:#94a3b8;--sf-product-card-sale-badge-bg:#dc2626;--sf-product-card-sale-badge-text:#ffffff;--sf-product-card-rating-star:#f59e0b;--sf-product-card-rating-text:#94a3b8;--sf-product-card-wishlist-icon:#64748b;--sf-product-card-wishlist-active:#e11d48;--sf-product-card-add-to-cart-bg:#0f766e;--sf-product-card-add-to-cart-text:#ffffff;--sf-product-card-buy-now-bg:#0f172a;--sf-product-card-buy-now-text:#ffffff;--sf-product-card-out-of-stock-bg:#fff1f2;--sf-product-card-out-of-stock-text:#e11d48;--sf-product-card-stock-bg:#ecfdf5;--sf-product-card-stock-text:#047857;--sf-sale-badge-bg:#dc2626;--sf-sale-badge-text:#ffffff;--sf-price-color:#0f172a;--sf-rating-color:#f59e0b;--sf-all-products-background:#f8fafc;--sf-all-products-title:#0f172a;--sf-all-products-subtitle:#64748b;--sf-all-products-filter-bg:#ffffff;--sf-all-products-filter-text:#475569;--sf-all-products-dropdown-bg:#ffffff;--sf-all-products-pagination-bg:#ffffff;--sf-all-products-pagination-text:#475569;--sf-all-products-pagination-active-bg:#0f766e;--sf-all-products-pagination-active-text:#ffffff;--sf-section-background:#ffffff;--sf-section-title:#0f172a;--sf-section-subtitle:#64748b;--sf-section-banner-overlay:#020617;--sf-section-banner-text:#ffffff;--sf-section-faq-bg:#f8fafc;--sf-section-faq-text:#475569;--sf-section-testimonial-bg:#f8fafc;--sf-section-testimonial-text:#475569;--sf-section-trust-icon:#0f766e;--sf-section-trust-text:#475569;--sf-footer-background:#ffffff;--sf-footer-heading:#0f172a;--sf-footer-text:#64748b;--sf-footer-link:#0f172a;--sf-footer-link-hover:#0f766e;--sf-footer-border:#e2e8f0;--sf-footer-powered-by:#64748b;--sf-checkout-background:#f8fafc;--sf-checkout-card-background:#ffffff;--sf-checkout-text:#0f172a;--sf-checkout-button-background:#0f172a;--sf-checkout-button-text:#ffffff;--sf-checkout-accent:#0f766e;--sf-checkout-input-background:#ffffff;--sf-checkout-input-border:#cbd5e1;--sf-checkout-input-focus:#0f766e;--sf-checkout-error:#dc2626;--sf-checkout-success:#047857;--sf-body-font:Inter;--background:#ffffff;--foreground:#0f172a;--sf-ink:#0f172a;--sf-surface:#ffffff;--sf-surface-subtle:#f8fafc;--sf-surface-raised:#f8fafc;--sf-border:#e2e8f0;--sf-border-strong:#cbd5e1;--sf-text-muted:#64748b;--sf-success:#047857;--sf-success-bg:#ecfdf5;--sf-warning:#d97706;--sf-warning-bg:#fffbeb;--sf-danger:#dc2626;--sf-danger-bg:#fff1f2;--sf-accent-strong:#042f2e;--sf-accent-muted:#14b8a6;--sf-accent-light:#5eead4;--sf-accent-ring:#ccfbf1;--sf-background:#ffffff;--sf-foreground:#0f172a;--sf-header-background:#ffffff;--sf-primary-button-hover-bg:#115e59;--sf-secondary-button-bg:#ffffff;--sf-secondary-button-text:#0f172a;--sf-secondary-button-hover-bg:#f8fafc;--sf-navbar-bg:#ffffff;--sf-card-bg:#ffffff;--sf-footer-bg:#ffffff;--sf-mobile-nav-offset:0px;--sf-heading-font:Inter;--sf-heading-weight:800;--sf-base-size:16px;--sf-checkout-radius:16px;font-family:var(--sf-body-font);font-size:var(--sf-base-size);color:#0f172a;background-color:#ffffff;min-height:100vh"><header data-structural-variant="standard" class="sticky top-0 z-50 border-b bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl" style="border-color:var(--sf-header-border)"><div class="mx-auto w-full px-3 sm:px-4 md:px-6 lg:px-8 2xl:px-10 max-w-screen-2xl"><div class="hidden h-[76px] items-center gap-6 lg:flex"><div class="grid w-full min-w-0 items-center gap-6 lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]"><div class="min-w-0"><a href="/" class="min-w-0"><span class="flex min-w-0 items-center gap-2.5 sm:gap-3"><span class="flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 h-11 w-11 sm:h-12 sm:w-12">S</span><span class="min-w-0"><span class="block truncate text-base font-black leading-tight text-[var(--sf-navbar-text)] sm:text-lg">Store preview</span><span class="hidden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-slate-900 xl:px-5"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search shrink-0" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg><span class="truncate">Search products</span></button></div></div><div class="min-w-0"><div class="flex min-w-0 items-center justify-end gap-1 xl:gap-2"><div class="mr-1 hidden min-w-0 xl:block 2xl:mr-2"><nav class="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1"><a href="/policies" class="inline-flex max-w-32 items-center rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]" title="Policies"><span class="truncate whitespace-nowrap">Policies</span></a></nav></div><div class="flex shrink-0 items-center justify-end gap-1 xl:gap-2"><a href="/track" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck shrink-0" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg><span class="hidden 2xl:inline">Track Order</span></a><a href="/account" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user shrink-0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="hidden 2xl:inline">Account</span></a><a href="/cart" class="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-[var(--sf-primary-button-bg)] px-3 text-sm font-black text-[var(--sf-primary-button-text)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sf-primary-button-hover-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] xl:px-4"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag shrink-0" aria-hidden="true"><path d="M16 10a4 4 0 0 1-8 0"></path><path d="M3.103 6.034h17.794"></path><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"></path></svg><span class="hidden 2xl:inline">Cart</span><span class="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style="background-color:var(--sf-header-cart-badge-bg);color:var(--sf-header-cart-badge-text)">3</span></a></div></div></div></div></div><div class="flex items-center justify-between gap-2.5 lg:hidden h-[58px] sm:h-[64px]"><button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11" aria-label="Open menu"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu" aria-hidden="true"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg></button><a href="/" class="min-w-0 flex-1 "><span class="flex min-w-0 items-center gap-2"><span class="flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 h-9 w-9">S</span><span clas'... 35680 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-preview-parity.test.js:150:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '<div class="sf-presentation" style="--sf-brand-primary:#0f766e;--sf-accent:#0f766e;--sf-accent-hover:#115e59;--sf-accent-soft:#ecfdf5;--sf-accent-bg:#ecfdf5;--sf-primary-button-bg:#0f766e;--sf-primary-button-text:#ffffff;--sf-navbar-background:#ffffff;--sf-navbar-text:#0f172a;--sf-navbar-muted-text:#64748b;--sf-navbar-hover:#0f766e;--sf-header-icon:#0f172a;--sf-header-border:#e2e8f0;--sf-header-cart-badge-bg:#0f766e;--sf-header-cart-badge-text:#ffffff;--sf-hero-background:#020617;--sf-hero-title:#ffffff;--sf-hero-subtitle:#e2e8f0;--sf-hero-overlay:#020617;--sf-hero-primary-button-bg:#ffffff;--sf-hero-primary-button-text:#0f172a;--sf-hero-secondary-button-bg:#ffffff;--sf-hero-secondary-button-text:#0f172a;--sf-card-background:#ffffff;--sf-card-border:#e2e8f0;--sf-card-hover-border:#99f6e4;--sf-product-card-background:#ffffff;--sf-product-card-border:#e2e8f0;--sf-product-card-shadow:#e2e8f0;--sf-variant-chip-bg:#f8fafc;--sf-variant-chip-text:#475569;--sf-variant-chip-selected-bg:#0f766e;--sf-variant-chip-selected-text:#ffffff;--sf-product-card-title:#0f172a;--sf-product-card-category:#64748b;--sf-product-card-price:#0f172a;--sf-product-card-compare-at-price:#94a3b8;--sf-product-card-sale-badge-bg:#dc2626;--sf-product-card-sale-badge-text:#ffffff;--sf-product-card-rating-star:#f59e0b;--sf-product-card-rating-text:#94a3b8;--sf-product-card-wishlist-icon:#64748b;--sf-product-card-wishlist-active:#e11d48;--sf-product-card-add-to-cart-bg:#0f766e;--sf-product-card-add-to-cart-text:#ffffff;--sf-product-card-buy-now-bg:#0f172a;--sf-product-card-buy-now-text:#ffffff;--sf-product-card-out-of-stock-bg:#fff1f2;--sf-product-card-out-of-stock-text:#e11d48;--sf-product-card-stock-bg:#ecfdf5;--sf-product-card-stock-text:#047857;--sf-sale-badge-bg:#dc2626;--sf-sale-badge-text:#ffffff;--sf-price-color:#0f172a;--sf-rating-color:#f59e0b;--sf-all-products-background:#f8fafc;--sf-all-products-title:#0f172a;--sf-all-products-subtitle:#64748b;--sf-all-products-filter-bg:#ffffff;--sf-all-products-filter-text:#475569;--sf-all-products-dropdown-bg:#ffffff;--sf-all-products-pagination-bg:#ffffff;--sf-all-products-pagination-text:#475569;--sf-all-products-pagination-active-bg:#0f766e;--sf-all-products-pagination-active-text:#ffffff;--sf-section-background:#ffffff;--sf-section-title:#0f172a;--sf-section-subtitle:#64748b;--sf-section-banner-overlay:#020617;--sf-section-banner-text:#ffffff;--sf-section-faq-bg:#f8fafc;--sf-section-faq-text:#475569;--sf-section-testimonial-bg:#f8fafc;--sf-section-testimonial-text:#475569;--sf-section-trust-icon:#0f766e;--sf-section-trust-text:#475569;--sf-footer-background:#ffffff;--sf-footer-heading:#0f172a;--sf-footer-text:#64748b;--sf-footer-link:#0f172a;--sf-footer-link-hover:#0f766e;--sf-footer-border:#e2e8f0;--sf-footer-powered-by:#64748b;--sf-checkout-background:#f8fafc;--sf-checkout-card-background:#ffffff;--sf-checkout-text:#0f172a;--sf-checkout-button-background:#0f172a;--sf-checkout-button-text:#ffffff;--sf-checkout-accent:#0f766e;--sf-checkout-input-background:#ffffff;--sf-checkout-input-border:#cbd5e1;--sf-checkout-input-focus:#0f766e;--sf-checkout-error:#dc2626;--sf-checkout-success:#047857;--sf-body-font:Inter;--background:#ffffff;--foreground:#0f172a;--sf-ink:#0f172a;--sf-surface:#ffffff;--sf-surface-subtle:#f8fafc;--sf-surface-raised:#f8fafc;--sf-border:#e2e8f0;--sf-border-strong:#cbd5e1;--sf-text-muted:#64748b;--sf-success:#047857;--sf-success-bg:#ecfdf5;--sf-warning:#d97706;--sf-warning-bg:#fffbeb;--sf-danger:#dc2626;--sf-danger-bg:#fff1f2;--sf-accent-strong:#042f2e;--sf-accent-muted:#14b8a6;--sf-accent-light:#5eead4;--sf-accent-ring:#ccfbf1;--sf-background:#ffffff;--sf-foreground:#0f172a;--sf-header-background:#ffffff;--sf-primary-button-hover-bg:#115e59;--sf-secondary-button-bg:#ffffff;--sf-secondary-button-text:#0f172a;--sf-secondary-button-hover-bg:#f8fafc;--sf-navbar-bg:#ffffff;--sf-card-bg:#ffffff;--sf-footer-bg:#ffffff;--sf-mobile-nav-offset:0px;--sf-heading-font:Inter;--sf-heading-weight:800;--sf-base-size:16px;--sf-checkout-radius:16px;font-family:var(--sf-body-font);font-size:var(--sf-base-size);color:#0f172a;background-color:#ffffff;min-height:100vh"><header data-structural-variant="standard" class="sticky top-0 z-50 border-b bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl" style="border-color:var(--sf-header-border)"><div class="mx-auto w-full px-3 sm:px-4 md:px-6 lg:px-8 2xl:px-10 max-w-screen-2xl"><div class="hidden h-[76px] items-center gap-6 lg:flex"><div class="grid w-full min-w-0 items-center gap-6 lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]"><div class="min-w-0"><a href="/" class="min-w-0"><span class="flex min-w-0 items-center gap-2.5 sm:gap-3"><span class="flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 h-11 w-11 sm:h-12 sm:w-12">S</span><span class="min-w-0"><span class="block truncate text-base font-black leading-tight text-[var(--sf-navbar-text)] sm:text-lg">Store preview</span><span class="hidden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span></span></span></a></div><div class="min-w-0"><div class="flex min-w-0 justify-center"><button type="button" aria-label="Search products" class="flex h-11 w-full max-w-[420px] min-w-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-500 transition hover:border-[var(--sf-accent-soft)] hover:bg-white hover:text-slate-900 xl:px-5"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search shrink-0" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg><span class="truncate">Search products</span></button></div></div><div class="min-w-0"><div class="flex min-w-0 items-center justify-end gap-1 xl:gap-2"><div class="mr-1 hidden min-w-0 xl:block 2xl:mr-2"><nav class="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1"><a href="/policies" class="inline-flex max-w-32 items-center rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]" title="Policies"><span class="truncate whitespace-nowrap">Policies</span></a></nav></div><div class="flex shrink-0 items-center justify-end gap-1 xl:gap-2"><a href="/track" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck shrink-0" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg><span class="hidden 2xl:inline">Track Order</span></a><a href="/account" class="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user shrink-0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span class="hidden 2xl:inline">Account</span></a><a href="/cart" class="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-[var(--sf-primary-button-bg)] px-3 text-sm font-black text-[var(--sf-primary-button-text)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sf-primary-button-hover-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] xl:px-4"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag shrink-0" aria-hidden="true"><path d="M16 10a4 4 0 0 1-8 0"></path><path d="M3.103 6.034h17.794"></path><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"></path></svg><span class="hidden 2xl:inline">Cart</span><span class="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style="background-color:var(--sf-header-cart-badge-bg);color:var(--sf-header-cart-badge-text)">3</span></a></div></div></div></div></div><div class="flex items-center justify-between gap-2.5 lg:hidden h-[58px] sm:h-[64px]"><button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11" aria-label="Open menu"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu" aria-hidden="true"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg></button><a href="/" class="min-w-0 flex-1 "><span class="flex min-w-0 items-center gap-2"><span class="flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 h-9 w-9">S</span><span clas'... 35680 more characters,
+    expected: /fixed inset-x-0 bottom-0/,
+    operator: 'match',
+    diff: 'simple'
+  }

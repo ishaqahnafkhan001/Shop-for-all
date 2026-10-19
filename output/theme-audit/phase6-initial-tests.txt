@@ -1,0 +1,852 @@
+✔ default policy templates cover refund, shipping, privacy, and terms (1.8742ms)
+✔ policy default fill only adds missing or empty policies (0.5731ms)
+✔ new shop registration seeds editable default policies (0.6326ms)
+✔ store builder and public storefront responses apply missing policy defaults without changing shape (1.5936ms)
+✔ policy backfill script supports dry-run and does not overwrite edited policies (10.8798ms)
+✔ storefront policy pages use default fallback content and reject invalid policy types (1.2541ms)
+✔ Essential Store Branding is available to every plan without unlocking Store Builder (1.2071ms)
+✔ legacy Shop and published-theme identity derives without mutating premium theme data (1.2314ms)
+✔ explicit branding is never overwritten, while unremoved legacy assets remain compatible (0.291ms)
+✔ custom CTA validation accepts safe destinations and rejects scriptable or administrative URLs (0.6886ms)
+✔ branding update DTO rejects unknown fields before persistence (0.4718ms)
+✔ Beginner public theme receives one safe branding hero and no premium layout mutation (0.2696ms)
+✔ dedicated branding APIs are tenant-authenticated, permission checked, and independently feature gated (1.4689ms)
+✔ live renderer hides empty heroes and never inserts generic promotional claims (0.6818ms)
+✔ admin exposes a separate all-plan branding page without exposing Store Builder (1.1248ms)
+(node:14276) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/theme.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ store builder color controls are centralized in the Colors panel (2.6104ms)
+✔ product card renderer lets Color section values override legacy product card colors (40.7047ms)
+✔ advanced legacy color edits are mirrored to authoritative storefront color groups (37.9272ms)
+✖ storefront color groups persist and apply across all storefront page wrappers (3.2826ms)
+✔ product edit image updates preserve kept images and submit new files through multipart contract (2.0784ms)
+✔ new shops use the shared wishlist default (14.9197ms)
+✔ new shops use the shared catalog title default (5.0654ms)
+✔ contract-valid Editorial catalog spacing survives schema validation and hydration (32.2993ms)
+✔ legacy sparse records retain their historical persistence defaults on hydration (12.5127ms)
+✔ explicit saved wishlist and catalog title values survive construction and hydration (39.6139ms)
+✔ all prebuilt theme configurations survive schema and hydration without presentation drift (150.0517ms)
+✔ every registered Store Builder section has a complete, stable contract (15.696ms)
+✔ theme contract migrates legacy sections and rejects unsupported section types (0.584ms)
+✔ theme sanitizer strips unsupported fields and neutralizes stored-content attacks (0.3452ms)
+✔ representative theme survives Mongoose schema and shared normalization round trip (21.4605ms)
+✔ capability metadata is backend-driven and plan aware (0.3471ms)
+✔ vendor dashboard navigation is registry-driven, grouped, and account scoped (1.5325ms)
+✔ store builder shell separates navigation, preview, inspector, issues, and history (2.4022ms)
+✔ custom domain is a separate plan-gated dashboard workspace (1.3726ms)
+✔ dynamic Store Builder sections use stable ids for selection and duplication (0.7853ms)
+✖ store builder polish keeps editing contextual and preview controls focused (39.19ms)
+✔ Homepage SEO routes reuse Store Builder permission, feature, and suspension guards (10.6476ms)
+✔ Homepage SEO draft and revision records include aliases and shared revision protection (1.1794ms)
+✔ standalone Homepage SEO page is deep-linkable and preserves local drafts on conflict (1.0285ms)
+✔ prebuilt registry contains nine immutable, unique, valid production themes (57.2683ms)
+✔ each v2 preset exposes the curated structural signature supported by the shared renderer (0.4672ms)
+✔ every preset resolves deterministically and validates through the shared contract (77.4411ms)
+✔ all full-plan presets follow their blueprints when safe merchant content is available (40.1664ms)
+✔ the nine themes no longer collapse into two effective section structures (40.6293ms)
+✔ paired industries remain distinguishable without relying on color (0.3683ms)
+✔ applying a preset preserves merchant content and selected commerce data (2.3523ms)
+✔ missing merchant content never creates fake story, review, FAQ, promotion, trust, or newsletter copy (2.1889ms)
+✔ preset-owned presentation wins while populated merchant content and unmatched sections survive (4.4179ms)
+✔ duplicate preset-controlled sections are retained but cannot alter the enabled blueprint sequence (3.8598ms)
+✔ limited plan resolution preserves restricted layout and section fields accepted by backend policy (34.3048ms)
+✔ preset application refuses unavailable access and unknown presets without mutating the draft (1.2084ms)
+✔ prebuilt catalog has an isolated package export and is not imported by live storefront source (48.9723ms)
+✖ every gallery thumbnail is local, lightweight, lazy loaded, and mapped to a catalog theme (2.0722ms)
+✖ theme cards and full previews resolve the same merchant-owned hero banner (14.639ms)
+✔ capabilities preserve every supported variant for all presets and isolate each result (290.7152ms)
+✔ property classification covers canonical groups, identity, inheritance, and responsive controls (1.3802ms)
+✔ limited and no-builder controls agree with backend edit rules (12.8195ms)
+✔ safe edits round trip all saved preset identities and permit explicit selection/restore on full plans (288.0322ms)
+✔ snapshot validation prevents omitted restricted fields from silently resetting a saved composition (3.3412ms)
+✔ actual draft, publish and tenant-scoped restore reject restricted changes before writing (18.9761ms)
+✔ actual editor variant options equal the shared registry without a duplicate fallback (0.3262ms)
+✔ actual editor markup applies capability gates and explains composition (61.2324ms)
+✔ actual limited-plan section editor and sidebar disable structural mutations but allow featured content (23.5604ms)
+✔ legacy card values remain explicit even when equal to another style default (5.5022ms)
+✔ explicit inheritance resolves style defaults over stale materialized values (2.4176ms)
+✔ style selection resets only style-owned fields and does not mutate the input (0.9453ms)
+✔ an edit equal to the current default becomes an explicit override (0.8994ms)
+✔ an empty inheritance list preserves every explicit style value (1.178ms)
+✔ inheritance metadata survives schema validation, serialization, and hydration (44.6455ms)
+✔ invalid inheritance metadata cannot target unrelated properties (1.4566ms)
+✔ applying a preset replaces prior card inheritance with the curated presentation (50.2395ms)
+✔ foreground edits reach the authoritative text color and survive persistence (240.2772ms)
+✔ explicit nested colors win within an update regardless of key order (2.3714ms)
+✔ nested text and price edits synchronize only unambiguous aliases (0.7433ms)
+✔ soft color alias precedence is deterministic and preserves the separate soft shade (2.1126ms)
+✔ incomplete input is retained without propagating invalid aliases (0.9534ms)
+✔ no-op updates preserve all nine saved presets and explicit edits are localized (49.1446ms)
+✔ explicit palette choices override generated shades while nested choices remain authoritative (18.3634ms)
+✔ generated brand colors retain the intentionally distinct checkout shade (0.5824ms)
+✔ all nine presets select a registered composition; three representatives select distinct structures (216.8686ms)
+✔ old preset IDs and unknown composition values keep the legacy structure until explicit reapplication (10.0587ms)
+✔ composition survives strict persistence and respects existing plan boundaries (134.8607ms)
+✔ composition partition preserves every section once, original indexes and residual merchant order (0.8627ms)
+✔ actual representative home renders contain distinct hierarchy with one hero and each merchant section once (410.3174ms)
+✔ empty and hidden featured content does not reserve composition columns or create fake content (41.4667ms)
+✔ composition forwards existing commerce callbacks, data and editor selection without replacements (12.1489ms)
+(node:17080) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/defaultPolicies.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all new-store presentation defaults equal the shared contract; historical empty values survive (33.5129ms)
+✔ canonical layers distinguish omission, explicit default values, clears, and responsive values (16.2602ms)
+✔ legacy versions resolve without rewriting inputs or reapplying a preset over merchant edits (13.7645ms)
+✔ future schema versions remain identifiable on reads and are rejected for writes (1.7599ms)
+✔ safe unknown root and nested fields survive strict schema round trips in an opaque archive (27.5851ms)
+✔ compatibility data cannot introduce prototype or Mongo operator keys (0.8371ms)
+✔ all presets preserve presentation and responsive settings across plans and repeated resolution (230.2311ms)
+✔ limited-plan canonical no-op saves pass, actual restricted changes still fail (2.7201ms)
+✔ policy fallbacks are identical across Admin, storefront, and server; merchant text wins (22.6416ms)
+✔ public adapter and storefront facade resolve identically with tenant-scoped environment inputs (20.8559ms)
+✔ actual public settings, shop-info and bootstrap handlers return identical effective themes for two tenants (124.4427ms)
+✔ actual Builder preview passes canonical themes to every renderer across presets and plan contexts (554.8791ms)
+✔ save normalization rejects newer current/incoming themes before external work and allows safe read-only inspection (2.0684ms)
+✔ branding environment loader scopes asset and CTA lookups to each tenant (2.0438ms)
+✔ absent hero fields inherit legacy values only on the first slide (303.2342ms)
+✔ explicit empty hero strings stay cleared through repeated normalization (3.0083ms)
+✔ an explicit empty slide array is not repopulated from the legacy image (4.4076ms)
+✔ Builder, shared renderer, and contract preserve zero coordinates and false flags (0.7867ms)
+✔ Builder synchronization preserves explicit image and CTA clears (0.5903ms)
+✔ null inherits nonnullable hero fields while existing nullable metadata can clear (0.5781ms)
+✔ Builder preserves typing whitespace and contract still sanitizes stored content (0.5306ms)
+✔ already normalized legacy slides retain explicit values in both consumers (0.4461ms)
+✔ all hero variants render cleared copy and links without reviving legacy values (29.8367ms)
+✔ legacy themes receive current-equivalent structural defaults (5.7229ms)
+✔ all supported structural variants survive normalization with merchant content (12.9846ms)
+✔ unknown variants normalize safely and validation identifies direct invalid payloads (1.6636ms)
+✔ unsupported storefront sections fail closed while every registered legacy section has an explicit renderer (0.9067ms)
+✔ customer-facing product and trust empty states do not invent factual claims (1.0337ms)
+✔ storefront stock filter is interactive and reaches the existing tenant-scoped product query (1.1494ms)
+✔ limited Store Builder access cannot change structural variants directly (7.493ms)
+✔ shared renderer consumes configuration variants without preset registry knowledge (2.3598ms)
+✔ Store Builder phone and tablet previews do not inherit outer desktop hero breakpoints (0.9806ms)
+✔ representative stores can select different structures using configuration alone (4.9016ms)
+✔ container width helpers activate supported values and preserve the legacy default (8.1114ms)
+✔ section spacing, width, padding, and margin use allowlisted design tokens (1.1454ms)
+✔ product column helpers respect section-specific settings and clamp unsafe values (0.4757ms)
+✔ typography and product-card style normalize through safe supported values (9.682ms)
+✔ hero overlay opacity is bounded and consumed by a localized readability layer (0.9757ms)
+✔ shared renderer consumes Phase 2 controls without preset-ID conditionals (3.308ms)
+✔ four diagnostic themes retain distinct resolved non-color design controls (24.4184ms)
+✔ partial nested Builder edits retain merchant siblings instead of reverting to defaults (167.1499ms)
+✔ raw patch distinguishes absence from explicit values without normalizing typing (1.691ms)
+✔ arrays replace atomically including empty values and inheritance metadata (0.3262ms)
+✔ null clears only existing nullable paths and cannot reset an entire group (0.2945ms)
+✔ partial card edits become explicit unless the patch supplies inheritance metadata (10.2692ms)
+✔ patch results share no mutable objects with either input and ignore prototype keys (1.6357ms)
+✔ snapshot loads preserve the previous full-load behavior for sparse and saved themes (41.4253ms)
+✔ normalizing after the merge keeps sanitization in force (0.6515ms)
+ℹ tests 134
+ℹ suites 0
+ℹ pass 130
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2712.6865
+
+✖ failing tests:
+
+test at tests\store-builder-color-product-edit-images.test.js:121:1
+✖ storefront color groups persist and apply across all storefront page wrappers (3.2826ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /'--sf-surface'/. Input:
+  
+  '"use client";\r\n' +
+    '\r\n' +
+    "import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';\r\n" +
+    "import { usePathname } from 'next/navigation';\r\n" +
+    "import API from '@/api/api';\r\n" +
+    "import { getReferenceThemeStyle } from '@/components/storefront/ReferenceStorefront';\r\n" +
+    "import { FALLBACK_THEME, getThemeCssVars, normalizeTheme } from '@/lib/theme';\r\n" +
+    '\r\n' +
+    'const StorefrontThemeContext = createContext({\r\n' +
+    '    settings: null,\r\n' +
+    '    theme: FALLBACK_THEME,\r\n' +
+    '    cssTheme: getThemeCssVars(FALLBACK_THEME),\r\n' +
+    '    hydrateThemeSettings: () => {},\r\n' +
+    '});\r\n' +
+    '\r\n' +
+    'export const useStorefrontTheme = () => useContext(StorefrontThemeContext);\r\n' +
+    '\r\n' +
+    'export default function StorefrontThemeProvider({ subdomain, children }) {\r\n' +
+    '    const pathname = usePathname();\r\n' +
+    '    const [settings, setSettings] = useState(null);\r\n' +
+    "    const isTenantHomepage = Boolean(subdomain) && (pathname === '/' || pathname === '');\r\n" +
+    '\r\n' +
+    '    const hydrateThemeSettings = useCallback((nextSettings) => {\r\n' +
+    '        if (!nextSettings) return;\r\n' +
+    '        setSettings(nextSettings);\r\n' +
+    '    }, []);\r\n' +
+    '\r\n' +
+    '    useEffect(() => {\r\n' +
+    '        let isMounted = true;\r\n' +
+    '\r\n' +
+    '        const loadTheme = async () => {\r\n' +
+    '            if (!subdomain) {\r\n' +
+    '                setSettings(null);\r\n' +
+    '                return;\r\n' +
+    '            }\r\n' +
+    '\r\n' +
+    '            if (isTenantHomepage) return;\r\n' +
+    '\r\n' +
+    '            try {\r\n' +
+    '                const response = await API.get(`/store-builder/storefront/${subdomain}`);\r\n' +
+    '                if (isMounted) setSettings(response.data?.data || null);\r\n' +
+    '            } catch (error) {\r\n' +
+    '                if (isMounted) setSettings(null);\r\n' +
+    '            }\r\n' +
+    '        };\r\n' +
+    '\r\n' +
+    '        loadTheme();\r\n' +
+    '\r\n' +
+    '        return () => {\r\n' +
+    '            isMounted = false;\r\n' +
+    '        };\r\n' +
+    '    }, [isTenantHomepage, subdomain]);\r\n' +
+    '\r\n' +
+    '    const theme = useMemo(() => normalizeTheme(settings?.theme || {}), [settings?.theme]);\r\n' +
+    '    const cssTheme = useMemo(() => getThemeCssVars(theme), [theme]);\r\n' +
+    '\r\n' +
+    "    const style = useMemo(() => ({ ...getReferenceThemeStyle(theme), minHeight: '100vh' }), [theme]);\r\n" +
+    '\r\n' +
+    '    const contextValue = useMemo(() => ({\r\n' +
+    '        settings,\r\n' +
+    '        theme,\r\n' +
+    '        cssTheme,\r\n' +
+    '        hydrateThemeSettings,\r\n' +
+    '    }), [settings, theme, cssTheme, hydrateThemeSettings]);\r\n' +
+    '\r\n' +
+    '    return (\r\n' +
+    '        <StorefrontThemeContext.Provider value={contextValue}>\r\n' +
+    '            <div className="sf-presentation" style={style}>{children}</div>\r\n' +
+    '        </StorefrontThemeContext.Provider>\r\n' +
+    '    );\r\n' +
+    '}\r\n'
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\store-builder-color-product-edit-images.test.js:135:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '"use client";\r\n\r\nimport React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from \'react\';\r\nimport { usePathname } from \'next/navigation\';\r\nimport API from \'@/api/api\';\r\nimport { getReferenceThemeStyle } from \'@/components/storefront/ReferenceStorefront\';\r\nimport { FALLBACK_THEME, getThemeCssVars, normalizeTheme } from \'@/lib/theme\';\r\n\r\nconst StorefrontThemeContext = createContext({\r\n    settings: null,\r\n    theme: FALLBACK_THEME,\r\n    cssTheme: getThemeCssVars(FALLBACK_THEME),\r\n    hydrateThemeSettings: () => {},\r\n});\r\n\r\nexport const useStorefrontTheme = () => useContext(StorefrontThemeContext);\r\n\r\nexport default function StorefrontThemeProvider({ subdomain, children }) {\r\n    const pathname = usePathname();\r\n    const [settings, setSettings] = useState(null);\r\n    const isTenantHomepage = Boolean(subdomain) && (pathname === \'/\' || pathname === \'\');\r\n\r\n    const hydrateThemeSettings = useCallback((nextSettings) => {\r\n        if (!nextSettings) return;\r\n        setSettings(nextSettings);\r\n    }, []);\r\n\r\n    useEffect(() => {\r\n        let isMounted = true;\r\n\r\n        const loadTheme = async () => {\r\n            if (!subdomain) {\r\n                setSettings(null);\r\n                return;\r\n            }\r\n\r\n            if (isTenantHomepage) return;\r\n\r\n            try {\r\n                const response = await API.get(`/store-builder/storefront/${subdomain}`);\r\n                if (isMounted) setSettings(response.data?.data || null);\r\n            } catch (error) {\r\n                if (isMounted) setSettings(null);\r\n            }\r\n        };\r\n\r\n        loadTheme();\r\n\r\n        return () => {\r\n            isMounted = false;\r\n        };\r\n    }, [isTenantHomepage, subdomain]);\r\n\r\n    const theme = useMemo(() => normalizeTheme(settings?.theme || {}), [settings?.theme]);\r\n    const cssTheme = useMemo(() => getThemeCssVars(theme), [theme]);\r\n\r\n    const style = useMemo(() => ({ ...getReferenceThemeStyle(theme), minHeight: \'100vh\' }), [theme]);\r\n\r\n    const contextValue = useMemo(() => ({\r\n        settings,\r\n        theme,\r\n        cssTheme,\r\n        hydrateThemeSettings,\r\n    }), [settings, theme, cssTheme, hydrateThemeSettings]);\r\n\r\n    return (\r\n        <StorefrontThemeContext.Provider value={contextValue}>\r\n            <div className="sf-presentation" style={style}>{children}</div>\r\n        </StorefrontThemeContext.Provider>\r\n    );\r\n}\r\n',
+    expected: /'--sf-surface'/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\store-builder-navigation-seo.test.js:91:1
+✖ store builder polish keeps editing contextual and preview controls focused (39.19ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /ResizeObserver/. Input:
+  
+  "import { useMemo } from 'react';\r\n" +
+    "import { StorefrontPreviewFrame } from './StorefrontPreviewFrame.jsx';\r\n" +
+    "import { PreviewCommercePage } from './PreviewCommercePages.jsx';\r\n" +
+    "import { normalizeProduct } from '@scaleup/storefront-renderer/product-data';\r\n" +
+    "import { PresentationRuntime, NativeImage } from '@scaleup/storefront-renderer/presentation/Runtime';\r\n" +
+    "import { Eye, EyeOff, Lock, Pencil } from 'lucide-react';\r\n" +
+    'import {\r\n' +
+    '    REFERENCE_SAMPLE_CATEGORIES,\r\n' +
+    '    REFERENCE_SAMPLE_PRODUCTS,\r\n' +
+    '    ReferenceStorefrontFooter,\r\n' +
+    '    ReferenceStorefrontHeader,\r\n' +
+    '    ReferenceStorefrontHome,\r\n' +
+    '    getReferenceThemeStyle\r\n' +
+    "} from '@scaleup/storefront-renderer';\r\n" +
+    "import { resolveEffectiveTheme } from '@scaleup/storefront-theme';\r\n" +
+    '\r\n' +
+    'const deviceWidths = {\r\n' +
+    '    desktop: 1180,\r\n' +
+    '    tablet: 768,\r\n' +
+    '    mobile: 390,\r\n' +
+    '    smallMobile: 320\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    "const getSectionLabel = (section = {}) => section.settings?.visualLabel || section.title || section.type || 'Section';\r\n" +
+    'const getCategoryName = (category) => (\r\n' +
+    "    typeof category === 'string'\r\n" +
+    '        ? category.trim()\r\n' +
+    "        : String(category?.name || category?.title || category?.label || category?.slug || '').trim()\r\n" +
+    ');\r\n' +
+    '\r\n' +
+    'const PreviewLink = ({ href, children, className, ...props }) => {\r\n' +
+    '    const anchorProps = { ...props };\r\n' +
+    '    delete anchorProps.prefetch;\r\n' +
+    '    return (\r\n' +
+    "        <a href={href || '#'} className={className} onClick={event => event.preventDefault()} {...anchorProps}>\r\n" +
+    '            {children}\r\n' +
+    '        </a>\r\n' +
+    '    );\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'const PreviewSectionToolbar = ({\r\n' +
+    '    id,\r\n' +
+    '    label,\r\n' +
+    '    locked,\r\n' +
+    '    section,\r\n' +
+    '    sectionIndex,\r\n' +
+    '    onSelectElement,\r\n' +
+    '    onToggleSectionVisibility\r\n' +
+    '}) => {\r\n' +
+    "    const isDynamicSection = (id?.startsWith('section:') || id?.startsWith('section-')) && Number.isInteger(sectionIndex) && sectionIndex >= 0;\r\n" +
+    '    const isVisible = section?.isEnabled !== false;\r\n' +
+    '    const stop = (event) => {\r\n' +
+    '        event.preventDefault();\r\n' +
+    '        event.stopPropagation();\r\n' +
+    '    };\r\n' +
+    '    const handleAction = (event, action) => {\r\n' +
+    '        stop(event);\r\n' +
+    '        action?.();\r\n' +
+    '    };\r\n' +
+    "    const buttonClass = 'inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40';\r\n" +
+    '\r\n' +
+    '    return (\r\n' +
+    '        <div\r\n' +
+    '            className="absolute right-3 top-3 z-[90] flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-xl shadow-slate-950/15 backdrop-blur"\r\n' +
+    '            onMouseDown={stop}\r\n' +
+    '            onClick={stop}\r\n' +
+    '        >\r\n' +
+    '            <span className="max-w-[160px] truncate rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-black text-white">\r\n' +
+    "                {label || 'Section'}\r\n" +
+    '            </span>\r\n' +
+    '            {locked && (\r\n' +
+    '                <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-50 px-2 text-[11px] font-black text-amber-800">\r\n' +
+    '                    <Lock size={12} />\r\n' +
+    '                    Locked layout\r\n' +
+    '                </span>\r\n' +
+    '            )}\r\n' +
+    '            <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onSelectElement?.(id))} aria-label={`Edit ${label || \'section\'}`}>\r\n' +
+    '                <Pencil size={13} />\r\n' +
+    '                Edit\r\n' +
+    '            </button>\r\n' +
+    '            {isDynamicSection && (\r\n' +
+    '                <>\r\n' +
+    '                    <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onToggleSectionVisibility?.(sectionIndex, !isVisible))} aria-label={`${isVisible ? \'Hide\' : \'Show\'} ${label || \'section\'}`}>\r\n' +
+    '                        {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}\r\n' +
+    "                        {isVisible ? 'Hide' : 'Show'}\r\n" +
+    '                    </button>\r\n' +
+    '                </>\r\n' +
+    '            )}\r\n' +
+    '        </div>\r\n' +
+    '    );\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'export const CheckoutBrandingPreview = ({ theme, shopName }) => <StorefrontPreview theme={theme} shopName={shopName} device="desktop" previewPage="checkout" />;\r\n' +
+    '\r\n' +
+    'export const StorefrontPreviewContent = ({\r\n' +
+    '    theme,\r\n' +
+    '    planAccess,\r\n' +
+    '    branding,\r\n' +
+    '    storewideDiscount,\r\n' +
+    '    shopName,\r\n' +
+    '    device,\r\n' +
+    "    previewZoom = 'fit',\r\n" +
+    "    previewPage = 'home',\r\n" +
+    '    availableProducts = [],\r\n' +
+    '    availableCategories = [],\r\n' +
+    '    availableReviews = [],\r\n' +
+    '    activeElement,\r\n' +
+    '    onSelectElement,\r\n' +
+    '    onToggleSectionVisibility\r\n' +
+    '}) => {\r\n' +
+    '    const normalizedTheme = resolveEffectiveTheme(theme || {}, { planAccess, branding, shopName });\r\n' +
+    '    const products = availableProducts.map(normalizeProduct).filter(Boolean);\r\n' +
+    '    const previewCategories = availableCategories.length\r\n' +
+    '        ? availableCategories\r\n' +
+    '        : [...new Set(products.map(product => product.category).filter(Boolean))];\r\n' +
+    '    const categoryNames = [...new Set(previewCategories.map(getCategoryName).filter(Boolean))];\r\n' +
+    "    const categoryDetails = previewCategories.filter(category => category && typeof category === 'object');\r\n" +
+    '    const previewSectionProducts = useMemo(() => {\r\n' +
+    '        const productMap = new Map(products.map(product => [String(product._id), product]));\r\n' +
+    '        return (normalizedTheme.homepageSections || []).reduce((acc, section) => {\r\n' +
+    "            if (!['FeaturedProducts', 'Collection', 'CollectionShowcase'].includes(section.type)) return acc;\r\n" +
+    '            const sectionId = section.id || section._id;\r\n' +
+    '            const productIds = section.settings?.productIds || section.settings?.source?.productIds || section.source?.productIds || [];\r\n' +
+    '            if (!sectionId || !Array.isArray(productIds) || productIds.length === 0) return acc;\r\n' +
+    '            acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);\r\n' +
+    '            return acc;\r\n' +
+    '        }, {});\r\n' +
+    '    }, [products, normalizedTheme.homepageSections]);\r\n' +
+    '    const previewSectionReviews = useMemo(() => {\r\n' +
+    '        const reviewMap = new Map(availableReviews.map(review => [String(review._id), review]));\r\n' +
+    '        return (normalizedTheme.homepageSections || []).reduce((acc, section) => {\r\n' +
+    "            if (section.type !== 'Reviews') return acc;\r\n" +
+    '            const sectionId = section.id || section._id;\r\n' +
+    '            const reviewIds = section.settings?.reviewIds || [];\r\n' +
+    '            if (!sectionId || !Array.isArray(reviewIds) || reviewIds.length === 0) return acc;\r\n' +
+    '            acc[sectionId] = reviewIds.map(id => reviewMap.get(String(id))).filter(Boolean);\r\n' +
+    '            return acc;\r\n' +
+    '        }, {});\r\n' +
+    '    }, [availableReviews, normalizedTheme.homepageSections]);\r\n' +
+    '    const editor = useMemo(() => {\r\n' +
+    '        if (!onSelectElement) return null;\r\n' +
+    '        const sections = normalizedTheme.homepageSections || [];\r\n' +
+    '\r\n' +
+    '        return {\r\n' +
+    '            selectedId: activeElement,\r\n' +
+    '            onSelect: onSelectElement,\r\n' +
+    '            renderToolbar: (id, meta = {}) => {\r\n' +
+    "                const sectionIndex = id?.startsWith('section:')\r\n" +
+    "                    ? sections.findIndex(section => String(section?.id || section?._id) === id.slice('section:'.length))\r\n" +
+    "                    : (id?.startsWith('section-') ? Number(id.replace('section-', '')) : -1);\r\n" +
+    '                const section = sectionIndex >= 0 ? sections[sectionIndex] : null;\r\n' +
+    '\r\n' +
+    '                return (\r\n' +
+    '                    <PreviewSectionToolbar\r\n' +
+    '                        id={id}\r\n' +
+    '                        label={section ? getSectionLabel(section) : meta.label}\r\n' +
+    '                        locked={Boolean(meta.locked)}\r\n' +
+    '                        section={section}\r\n' +
+    '                        sectionIndex={sectionIndex}\r\n' +
+    '                        onSelectElement={onSelectElement}\r\n' +
+    '                        onToggleSectionVisibility={onToggleSectionVisibility}\r\n' +
+    '                    />\r\n' +
+    '                );\r\n' +
+    '            }\r\n' +
+    '        };\r\n' +
+    '    }, [activeElement, normalizedTheme.homepageSections, onSelectElement, onToggleSectionVisibility]);\r\n' +
+    '    const renderPreviewPage = () => {\r\n' +
+    "        if (previewPage !== 'home') return <PreviewCommercePage key={`${previewPage}-${products[0]?._id || 'empty'}`} page={previewPage} theme={normalizedTheme} shopName={shopName} products={products} reviews={availableReviews} />;\r\n" +
+    '\r\n' +
+    '        return (\r\n' +
+    '            <ReferenceStorefrontHome\r\n' +
+    '                theme={normalizedTheme}\r\n' +
+    "                shopName={shopName || 'Store preview'}\r\n" +
+    '                subdomain="preview"\r\n' +
+    '                cartCount={3}\r\n' +
+    '                storewideDiscount={storewideDiscount}\r\n' +
+    '                products={products}\r\n' +
+    '                categories={categoryNames.length ? categoryNames : REFERENCE_SAMPLE_CATEGORIES}\r\n' +
+    '                categoryDetails={categoryDetails}\r\n' +
+    '                sectionProducts={previewSectionProducts}\r\n' +
+    '                sectionReviews={previewSectionReviews}\r\n' +
+    '                pagination={{ page: 1, pages: 1 }}\r\n' +
+    "                filters={{ category: 'All', sort: 'newest', page: 1 }}\r\n" +
+    "                priceInput={{ min: '', max: '' }}\r\n" +
+    '                catalogSearch=""\r\n' +
+    '                preview\r\n' +
+    '                previewDevice={undefined}\r\n' +
+    '                editor={editor}\r\n' +
+    '                LinkComponent={PreviewLink}\r\n' +
+    '            />\r\n' +
+    '        );\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    return <PresentationRuntime value={{ Link: PreviewLink, Image: NativeImage }}>\r\n' +
+    '        <div className="sf-presentation" style={getReferenceThemeStyle(normalizedTheme)}>\r\n' +
+    `            <ReferenceStorefrontHeader theme={normalizedTheme} shopName={shopName || 'Store preview'} subdomain="preview" cartCount={3} preview editor={editor} LinkComponent={PreviewLink} />\r\n` +
+    '            {renderPreviewPage()}\r\n' +
+    `            <ReferenceStorefrontFooter theme={normalizedTheme} shopName={shopName || 'Store preview'} subdomain="preview" cartCount={3} preview editor={editor} LinkComponent={PreviewLink} />\r\n` +
+    '        </div>\r\n' +
+    '    </PresentationRuntime>;\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    "export function StorefrontPreview({ device = 'desktop', previewZoom = 'fit', thumbnail = false, ...props }) {\r\n" +
+    "    return <div data-preview-device={device} className={thumbnail ? '' : 'rounded-lg border border-slate-200 bg-slate-100 p-3'}>\r\n" +
+    '        <StorefrontPreviewFrame width={deviceWidths[de'... 316 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\store-builder-navigation-seo.test.js:105:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { useMemo } from \'react\';\r\nimport { StorefrontPreviewFrame } from \'./StorefrontPreviewFrame.jsx\';\r\nimport { PreviewCommercePage } from \'./PreviewCommercePages.jsx\';\r\nimport { normalizeProduct } from \'@scaleup/storefront-renderer/product-data\';\r\nimport { PresentationRuntime, NativeImage } from \'@scaleup/storefront-renderer/presentation/Runtime\';\r\nimport { Eye, EyeOff, Lock, Pencil } from \'lucide-react\';\r\nimport {\r\n    REFERENCE_SAMPLE_CATEGORIES,\r\n    REFERENCE_SAMPLE_PRODUCTS,\r\n    ReferenceStorefrontFooter,\r\n    ReferenceStorefrontHeader,\r\n    ReferenceStorefrontHome,\r\n    getReferenceThemeStyle\r\n} from \'@scaleup/storefront-renderer\';\r\nimport { resolveEffectiveTheme } from \'@scaleup/storefront-theme\';\r\n\r\nconst deviceWidths = {\r\n    desktop: 1180,\r\n    tablet: 768,\r\n    mobile: 390,\r\n    smallMobile: 320\r\n};\r\n\r\nconst getSectionLabel = (section = {}) => section.settings?.visualLabel || section.title || section.type || \'Section\';\r\nconst getCategoryName = (category) => (\r\n    typeof category === \'string\'\r\n        ? category.trim()\r\n        : String(category?.name || category?.title || category?.label || category?.slug || \'\').trim()\r\n);\r\n\r\nconst PreviewLink = ({ href, children, className, ...props }) => {\r\n    const anchorProps = { ...props };\r\n    delete anchorProps.prefetch;\r\n    return (\r\n        <a href={href || \'#\'} className={className} onClick={event => event.preventDefault()} {...anchorProps}>\r\n            {children}\r\n        </a>\r\n    );\r\n};\r\n\r\nconst PreviewSectionToolbar = ({\r\n    id,\r\n    label,\r\n    locked,\r\n    section,\r\n    sectionIndex,\r\n    onSelectElement,\r\n    onToggleSectionVisibility\r\n}) => {\r\n    const isDynamicSection = (id?.startsWith(\'section:\') || id?.startsWith(\'section-\')) && Number.isInteger(sectionIndex) && sectionIndex >= 0;\r\n    const isVisible = section?.isEnabled !== false;\r\n    const stop = (event) => {\r\n        event.preventDefault();\r\n        event.stopPropagation();\r\n    };\r\n    const handleAction = (event, action) => {\r\n        stop(event);\r\n        action?.();\r\n    };\r\n    const buttonClass = \'inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40\';\r\n\r\n    return (\r\n        <div\r\n            className="absolute right-3 top-3 z-[90] flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-xl shadow-slate-950/15 backdrop-blur"\r\n            onMouseDown={stop}\r\n            onClick={stop}\r\n        >\r\n            <span className="max-w-[160px] truncate rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-black text-white">\r\n                {label || \'Section\'}\r\n            </span>\r\n            {locked && (\r\n                <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-50 px-2 text-[11px] font-black text-amber-800">\r\n                    <Lock size={12} />\r\n                    Locked layout\r\n                </span>\r\n            )}\r\n            <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onSelectElement?.(id))} aria-label={`Edit ${label || \'section\'}`}>\r\n                <Pencil size={13} />\r\n                Edit\r\n            </button>\r\n            {isDynamicSection && (\r\n                <>\r\n                    <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onToggleSectionVisibility?.(sectionIndex, !isVisible))} aria-label={`${isVisible ? \'Hide\' : \'Show\'} ${label || \'section\'}`}>\r\n                        {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}\r\n                        {isVisible ? \'Hide\' : \'Show\'}\r\n                    </button>\r\n                </>\r\n            )}\r\n        </div>\r\n    );\r\n};\r\n\r\nexport const CheckoutBrandingPreview = ({ theme, shopName }) => <StorefrontPreview theme={theme} shopName={shopName} device="desktop" previewPage="checkout" />;\r\n\r\nexport const StorefrontPreviewContent = ({\r\n    theme,\r\n    planAccess,\r\n    branding,\r\n    storewideDiscount,\r\n    shopName,\r\n    device,\r\n    previewZoom = \'fit\',\r\n    previewPage = \'home\',\r\n    availableProducts = [],\r\n    availableCategories = [],\r\n    availableReviews = [],\r\n    activeElement,\r\n    onSelectElement,\r\n    onToggleSectionVisibility\r\n}) => {\r\n    const normalizedTheme = resolveEffectiveTheme(theme || {}, { planAccess, branding, shopName });\r\n    const products = availableProducts.map(normalizeProduct).filter(Boolean);\r\n    const previewCategories = availableCategories.length\r\n        ? availableCategories\r\n        : [...new Set(products.map(product => product.category).filter(Boolean))];\r\n    const categoryNames = [...new Set(previewCategories.map(getCategoryName).filter(Boolean))];\r\n    const categoryDetails = previewCategories.filter(category => category && typeof category === \'object\');\r\n    const previewSectionProducts = useMemo(() => {\r\n        const productMap = new Map(products.map(product => [String(product._id), product]));\r\n        return (normalizedTheme.homepageSections || []).reduce((acc, section) => {\r\n            if (![\'FeaturedProducts\', \'Collection\', \'CollectionShowcase\'].includes(section.type)) return acc;\r\n            const sectionId = section.id || section._id;\r\n            const productIds = section.settings?.productIds || section.settings?.source?.productIds || section.source?.productIds || [];\r\n            if (!sectionId || !Array.isArray(productIds) || productIds.length === 0) return acc;\r\n            acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);\r\n            return acc;\r\n        }, {});\r\n    }, [products, normalizedTheme.homepageSections]);\r\n    const previewSectionReviews = useMemo(() => {\r\n        const reviewMap = new Map(availableReviews.map(review => [String(review._id), review]));\r\n        return (normalizedTheme.homepageSections || []).reduce((acc, section) => {\r\n            if (section.type !== \'Reviews\') return acc;\r\n            const sectionId = section.id || section._id;\r\n            const reviewIds = section.settings?.reviewIds || [];\r\n            if (!sectionId || !Array.isArray(reviewIds) || reviewIds.length === 0) return acc;\r\n            acc[sectionId] = reviewIds.map(id => reviewMap.get(String(id))).filter(Boolean);\r\n            return acc;\r\n        }, {});\r\n    }, [availableReviews, normalizedTheme.homepageSections]);\r\n    const editor = useMemo(() => {\r\n        if (!onSelectElement) return null;\r\n        const sections = normalizedTheme.homepageSections || [];\r\n\r\n        return {\r\n            selectedId: activeElement,\r\n            onSelect: onSelectElement,\r\n            renderToolbar: (id, meta = {}) => {\r\n                const sectionIndex = id?.startsWith(\'section:\')\r\n                    ? sections.findIndex(section => String(section?.id || section?._id) === id.slice(\'section:\'.length))\r\n                    : (id?.startsWith(\'section-\') ? Number(id.replace(\'section-\', \'\')) : -1);\r\n                const section = sectionIndex >= 0 ? sections[sectionIndex] : null;\r\n\r\n                return (\r\n                    <PreviewSectionToolbar\r\n                        id={id}\r\n                        label={section ? getSectionLabel(section) : meta.label}\r\n                        locked={Boolean(meta.locked)}\r\n                        section={section}\r\n                        sectionIndex={sectionIndex}\r\n                        onSelectElement={onSelectElement}\r\n                        onToggleSectionVisibility={onToggleSectionVisibility}\r\n                    />\r\n                );\r\n            }\r\n        };\r\n    }, [activeElement, normalizedTheme.homepageSections, onSelectElement, onToggleSectionVisibility]);\r\n    const renderPreviewPage = () => {\r\n        if (previewPage !== \'home\') return <PreviewCommercePage key={`${previewPage}-${products[0]?._id || \'empty\'}`} page={previewPage} theme={normalizedTheme} shopName={shopName} products={products} reviews={availableReviews} />;\r\n\r\n        return (\r\n            <ReferenceStorefrontHome\r\n                theme={normalizedTheme}\r\n                shopName={shopName || \'Store preview\'}\r\n                subdomain="preview"\r\n                cartCount={3}\r\n                storewideDiscount={storewideDiscount}\r\n                products={products}\r\n                categories={categoryNames.length ? categoryNames : REFERENCE_SAMPLE_CATEGORIES}\r\n                categoryDetails={categoryDetails}\r\n                sectionProducts={previewSectionProducts}\r\n                sectionReviews={previewSectionReviews}\r\n                pagination={{ page: 1, pages: 1 }}\r\n                filters={{ category: \'All\', sort: \'newest\', page: 1 }}\r\n                priceInput={{ min: \'\', max: \'\' }}\r\n                catalogSearch=""\r\n                preview\r\n                previewDevice={undefined}\r\n                editor={editor}\r\n                LinkComponent={PreviewLink}\r\n            />\r\n        );\r\n    };\r\n\r\n    return <PresentationRuntime value={{ Link: PreviewLink, Image: NativeImage }}>\r\n        <div className="sf-presentation" style={getReferenceThemeStyle(normalizedTheme)}>\r\n            <ReferenceStorefrontHeader theme={normalizedTheme} shopName={shopName || \'Store preview\'} subdomain="preview" cartCount={3} preview editor={editor} LinkComponent={PreviewLink} />\r\n            {renderPreviewPage()}\r\n            <ReferenceStorefrontFooter theme={normalizedTheme} shopName={shopName || \'Store preview\'} subdomain="preview" cartCount={3} preview editor={editor} LinkComponent={PreviewLink} />\r\n        </div>\r\n    </PresentationRuntime>;\r\n};\r\n\r\nexport function StorefrontPreview({ device = \'desktop\', previewZoom = \'fit\', thumbnail = false, ...props }) {\r\n    return <div data-preview-device={device} className={thumbnail ? \'\' : \'rounded-lg border border-slate-200 bg-slate-100 p-3\'}>\r\n        <StorefrontPreviewFrame width={deviceWidths[de'... 316 more characters,
+    expected: /ResizeObserver/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\store-builder-prebuilt-themes.test.js:516:1
+✖ every gallery thumbnail is local, lightweight, lazy loaded, and mapped to a catalog theme (2.0722ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /loading="lazy"/. Input:
+  
+  "import { useEffect, useMemo, useRef, useState } from 'react';\r\n" +
+    "import { Check, Eye, Layers3, Search, ShieldCheck, X } from 'lucide-react';\r\n" +
+    "import { getPrebuiltThemes, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';\r\n" +
+    "import { BuilderButton, DeviceSwitcher } from '../builderUi.jsx';\r\n" +
+    "import { StorefrontPreview } from '../StorefrontPreview.jsx';\r\n" +
+    'const availableThemes = getPrebuiltThemes();\r\n' +
+    "const industryFilters = ['All', ...new Set(availableThemes.map(theme => theme.industry))];\r\n" +
+    "const styleFilters = ['All styles', ...new Set(availableThemes.map(theme => theme.style))];\r\n" +
+    '\r\n' +
+    'const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {\r\n' +
+    '    let sectionIndex = 0;\r\n' +
+    '    return resolvePrebuiltTheme({\r\n' +
+    '        currentTheme,\r\n' +
+    '        presetId,\r\n' +
+    '        planAccess,\r\n' +
+    "        appliedAt: '2026-01-01T00:00:00.000Z',\r\n" +
+    '        createSectionId: type => `preview-${presetId}-${String(type).toLowerCase()}-${sectionIndex += 1}`\r\n' +
+    '    });\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'const ThemeCard = ({ theme, resolvedTheme, previewProps, current, updateAvailable, onPreview, onUse }) => (\r\n' +
+    "    <article className={`overflow-hidden rounded-lg border bg-white transition ${current ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-slate-300 hover:shadow-md'}`}>\r\n" +
+    '        <div className="relative aspect-[8/5] overflow-hidden border-b border-slate-200 bg-slate-100">\r\n' +
+    '            {resolvedTheme ? <StorefrontPreview {...previewProps} theme={resolvedTheme} device="desktop" thumbnail /> : <p className="p-4 text-sm text-slate-500">Preview unavailable. Open Preview for details.</p>}\r\n' +
+    '            {current && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-black text-white shadow"><Check size={13} /> Current theme</span>}\r\n' +
+    '        </div>\r\n' +
+    '        <div className="p-4">\r\n' +
+    '            <div className="flex items-start justify-between gap-3">\r\n' +
+    '                <div>\r\n' +
+    '                    <h3 className="text-base font-black text-slate-950">{theme.name}</h3>\r\n' +
+    '                    <p className="mt-1 text-xs font-bold uppercase tracking-wide text-indigo-600">{theme.industry} · {theme.style}</p>\r\n' +
+    '                </div>\r\n' +
+    '                <span className="rounded bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">v{theme.version}</span>\r\n' +
+    '            </div>\r\n' +
+    '            <p className="mt-3 min-h-12 text-sm leading-6 text-slate-600">{theme.description}</p>\r\n' +
+    '            <div className="mt-3 flex flex-wrap gap-1.5">\r\n' +
+    '                {theme.tags.map(tag => <span key={tag} className="rounded bg-slate-50 px-2 py-1 text-xs font-bold text-slate-500">{tag}</span>)}\r\n' +
+    '            </div>\r\n' +
+    '            <div className="mt-4 grid grid-cols-2 gap-2">\r\n' +
+    '                <BuilderButton type="button" variant="secondary" onClick={() => onPreview(theme)}><Eye size={15} /> Preview</BuilderButton>\r\n' +
+    `                <BuilderButton type="button" onClick={() => onUse(theme)} disabled={current}>{current ? 'Applied' : updateAvailable ? 'Apply update' : 'Use theme'}</BuilderButton>\r\n` +
+    '            </div>\r\n' +
+    '        </div>\r\n' +
+    '    </article>\r\n' +
+    ');\r\n' +
+    '\r\n' +
+    'const ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm }) => {\r\n' +
+    '    return (\r\n' +
+    '        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/55 p-0 sm:items-center sm:p-4" onMouseDown={event => {\r\n' +
+    '            if (event.target === event.currentTarget) onCancel();\r\n' +
+    '        }}>\r\n' +
+    '            <section role="alertdialog" aria-modal="true" aria-labelledby="apply-theme-title" aria-describedby="apply-theme-description" className="w-full rounded-t-xl bg-white p-5 shadow-2xl sm:max-w-lg sm:rounded-lg sm:p-6">\r\n' +
+    '                <div className="flex items-start gap-4">\r\n' +
+    '                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700"><Layers3 size={21} /></span>\r\n' +
+    '                    <div>\r\n' +
+    '                        <h2 id="apply-theme-title" className="text-xl font-black text-slate-950">Use {theme.name}?</h2>\r\n' +
+    '                        <p id="apply-theme-description" className="mt-2 text-sm leading-6 text-slate-600">\r\n' +
+    '                            This updates your current draft only. Your logo, hero media and copy, navigation, footer details, policies, SEO, products, payment settings, and domain remain unchanged.\r\n' +
+    '                        </p>\r\n' +
+    '                    </div>\r\n' +
+    '                </div>\r\n' +
+    '                {limited && (\r\n' +
+    '                    <div className="mt-4 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">\r\n' +
+    '                        <ShieldCheck className="mt-0.5 shrink-0" size={18} />\r\n' +
+    '                        <p>Your plan keeps advanced layout and section structure unchanged. The theme will apply only the design controls available to you.</p>\r\n' +
+    '                    </div>\r\n' +
+    '                )}\r\n' +
+    '                <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">You can undo this change or continue editing before you publish.</p>\r\n' +
+    '                <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">\r\n' +
+    '                    <BuilderButton type="button" variant="secondary" onClick={onCancel}>Keep current draft</BuilderButton>\r\n' +
+    '                    <BuilderButton type="button" onClick={onConfirm} autoFocus>Apply to draft</BuilderButton>\r\n' +
+    '                </div>\r\n' +
+    '            </section>\r\n' +
+    '        </div>\r\n' +
+    '    );\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'export default function ThemeGallery({\r\n' +
+    '    open,\r\n' +
+    '    onClose,\r\n' +
+    '    currentTheme,\r\n' +
+    '    planAccess,\r\n' +
+    '    branding,\r\n' +
+    '    shopName,\r\n' +
+    '    products,\r\n' +
+    '    categories,\r\n' +
+    '    reviews,\r\n' +
+    '    onApply\r\n' +
+    '}) {\r\n' +
+    "    const [industry, setIndustry] = useState('All');\r\n" +
+    "    const [style, setStyle] = useState('All styles');\r\n" +
+    "    const [search, setSearch] = useState('');\r\n" +
+    '    const [previewTheme, setPreviewTheme] = useState(null);\r\n' +
+    '    const [pendingTheme, setPendingTheme] = useState(null);\r\n' +
+    "    const [device, setDevice] = useState('desktop');\r\n" +
+    '    const closeRef = useRef(null);\r\n' +
+    "    const currentPresetId = currentTheme?.preset?.id || '';\r\n" +
+    '    const currentPreset = availableThemes.find(theme => theme.id === currentPresetId) || null;\r\n' +
+    "    const limited = planAccess?.storeBuilderAccess !== 'full';\r\n" +
+    '\r\n' +
+    '    const filteredThemes = useMemo(() => {\r\n' +
+    '        const query = search.trim().toLowerCase();\r\n' +
+    '        return availableThemes.filter(theme => (\r\n' +
+    "            (industry === 'All' || theme.industry === industry) &&\r\n" +
+    "            (style === 'All styles' || theme.style === style) &&\r\n" +
+    "            (!query || [theme.name, theme.description, theme.industry, theme.style, ...theme.tags].join(' ').toLowerCase().includes(query))\r\n" +
+    '        ));\r\n' +
+    '    }, [industry, search, style]);\r\n' +
+    '\r\n' +
+    '    const cardPreviewThemes = useMemo(() => {\r\n' +
+    '        const resolved = new Map();\r\n' +
+    '        availableThemes.forEach(theme => {\r\n' +
+    '            try {\r\n' +
+    '                resolved.set(theme.id, buildPreviewTheme({ currentTheme, presetId: theme.id, planAccess }));\r\n' +
+    '            } catch {\r\n' +
+    '                resolved.set(theme.id, null);\r\n' +
+    '            }\r\n' +
+    '        });\r\n' +
+    '        return resolved;\r\n' +
+    '    }, [currentTheme, planAccess, branding, shopName]);\r\n' +
+    '\r\n' +
+    '    const previewResolution = useMemo(() => {\r\n' +
+    "        if (!previewTheme) return { theme: null, error: '' };\r\n" +
+    '        try {\r\n' +
+    "            return { theme: buildPreviewTheme({ currentTheme, presetId: previewTheme.id, planAccess }), error: '' };\r\n" +
+    '        } catch (error) {\r\n' +
+    "            return { theme: null, error: error?.message || 'This theme could not be previewed.' };\r\n" +
+    '        }\r\n' +
+    '    }, [currentTheme, planAccess, previewTheme]);\r\n' +
+    '\r\n' +
+    '    useEffect(() => {\r\n' +
+    '        if (!open) return undefined;\r\n' +
+    '        const previousOverflow = document.body.style.overflow;\r\n' +
+    "        document.body.style.overflow = 'hidden';\r\n" +
+    '        closeRef.current?.focus();\r\n' +
+    '        const onKeyDown = event => {\r\n' +
+    "            if (event.key !== 'Escape') return;\r\n" +
+    '            if (pendingTheme) setPendingTheme(null);\r\n' +
+    '            else if (previewTheme) setPreviewTheme(null);\r\n' +
+    '            else onClose();\r\n' +
+    '        };\r\n' +
+    "        document.addEventListener('keydown', onKeyDown);\r\n" +
+    '        return () => {\r\n' +
+    '            document.body.style.overflow = previousOverflow;\r\n' +
+    "            document.removeEventListener('keydown', onKeyDown);\r\n" +
+    '        };\r\n' +
+    '    }, [onClose, open, pendingTheme, previewTheme]);\r\n' +
+    '\r\n' +
+    '    if (!open) return null;\r\n' +
+    '\r\n' +
+    '    const applyPendingTheme = () => {\r\n' +
+    '        onApply(pendingTheme);\r\n' +
+    '        setPendingTheme(null);\r\n' +
+    '        setPreviewTheme(null);\r\n' +
+    '        onClose();\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    return (\r\n' +
+    '        <div className="fixed inset-0 z-[95] bg-slate-100" role="dialog" aria-modal="true" aria-labelledby="theme-gallery-title">\r\n' +
+    '            <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">\r\n' +
+    '                <div className="min-w-0">\r\n' +
+    '                    <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Store Builder</p>\r\n' +
+    '                    <h2 id="theme-gallery-title" className="truncate text-xl font-black text-slate-950">{previewTheme ? `Preview: ${previewTheme.name}` : \'Prebuilt themes\'}</h2>\r\n' +
+    '                </div>\r\n' +
+    '                <div className="flex max-w-full flex-wrap items-center justify-end gap-2">\r\n' +
+    '                    {previewTheme && (\r\n' +
+    '                        <>\r\n' +
+    '                            <DeviceSwitcher value={device} onChange={setDevice} />\r\n' +
+    `                            <BuilderButton type="button" onClick={() => setPendingTheme(previewTheme)} disabled={previewTheme.id === currentPresetId}>{previewTheme.id === currentPresetId ? 'Current theme' : 'Use theme'}</BuilderButton>\r\n` +
+    '                        </>\r\n' +
+    '                    )}\r\n' +
+    '                    <button ref={closeRef} type="button" aria-label="Close theme gallery" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><X size={20} /></button>'... 6510 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\store-builder-prebuilt-themes.test.js:521:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { useEffect, useMemo, useRef, useState } from \'react\';\r\nimport { Check, Eye, Layers3, Search, ShieldCheck, X } from \'lucide-react\';\r\nimport { getPrebuiltThemes, resolvePrebuiltTheme } from \'@scaleup/storefront-theme/prebuilt\';\r\nimport { BuilderButton, DeviceSwitcher } from \'../builderUi.jsx\';\r\nimport { StorefrontPreview } from \'../StorefrontPreview.jsx\';\r\nconst availableThemes = getPrebuiltThemes();\r\nconst industryFilters = [\'All\', ...new Set(availableThemes.map(theme => theme.industry))];\r\nconst styleFilters = [\'All styles\', ...new Set(availableThemes.map(theme => theme.style))];\r\n\r\nconst buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {\r\n    let sectionIndex = 0;\r\n    return resolvePrebuiltTheme({\r\n        currentTheme,\r\n        presetId,\r\n        planAccess,\r\n        appliedAt: \'2026-01-01T00:00:00.000Z\',\r\n        createSectionId: type => `preview-${presetId}-${String(type).toLowerCase()}-${sectionIndex += 1}`\r\n    });\r\n};\r\n\r\nconst ThemeCard = ({ theme, resolvedTheme, previewProps, current, updateAvailable, onPreview, onUse }) => (\r\n    <article className={`overflow-hidden rounded-lg border bg-white transition ${current ? \'border-indigo-500 ring-2 ring-indigo-100\' : \'border-slate-200 hover:border-slate-300 hover:shadow-md\'}`}>\r\n        <div className="relative aspect-[8/5] overflow-hidden border-b border-slate-200 bg-slate-100">\r\n            {resolvedTheme ? <StorefrontPreview {...previewProps} theme={resolvedTheme} device="desktop" thumbnail /> : <p className="p-4 text-sm text-slate-500">Preview unavailable. Open Preview for details.</p>}\r\n            {current && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-black text-white shadow"><Check size={13} /> Current theme</span>}\r\n        </div>\r\n        <div className="p-4">\r\n            <div className="flex items-start justify-between gap-3">\r\n                <div>\r\n                    <h3 className="text-base font-black text-slate-950">{theme.name}</h3>\r\n                    <p className="mt-1 text-xs font-bold uppercase tracking-wide text-indigo-600">{theme.industry} · {theme.style}</p>\r\n                </div>\r\n                <span className="rounded bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">v{theme.version}</span>\r\n            </div>\r\n            <p className="mt-3 min-h-12 text-sm leading-6 text-slate-600">{theme.description}</p>\r\n            <div className="mt-3 flex flex-wrap gap-1.5">\r\n                {theme.tags.map(tag => <span key={tag} className="rounded bg-slate-50 px-2 py-1 text-xs font-bold text-slate-500">{tag}</span>)}\r\n            </div>\r\n            <div className="mt-4 grid grid-cols-2 gap-2">\r\n                <BuilderButton type="button" variant="secondary" onClick={() => onPreview(theme)}><Eye size={15} /> Preview</BuilderButton>\r\n                <BuilderButton type="button" onClick={() => onUse(theme)} disabled={current}>{current ? \'Applied\' : updateAvailable ? \'Apply update\' : \'Use theme\'}</BuilderButton>\r\n            </div>\r\n        </div>\r\n    </article>\r\n);\r\n\r\nconst ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm }) => {\r\n    return (\r\n        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/55 p-0 sm:items-center sm:p-4" onMouseDown={event => {\r\n            if (event.target === event.currentTarget) onCancel();\r\n        }}>\r\n            <section role="alertdialog" aria-modal="true" aria-labelledby="apply-theme-title" aria-describedby="apply-theme-description" className="w-full rounded-t-xl bg-white p-5 shadow-2xl sm:max-w-lg sm:rounded-lg sm:p-6">\r\n                <div className="flex items-start gap-4">\r\n                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700"><Layers3 size={21} /></span>\r\n                    <div>\r\n                        <h2 id="apply-theme-title" className="text-xl font-black text-slate-950">Use {theme.name}?</h2>\r\n                        <p id="apply-theme-description" className="mt-2 text-sm leading-6 text-slate-600">\r\n                            This updates your current draft only. Your logo, hero media and copy, navigation, footer details, policies, SEO, products, payment settings, and domain remain unchanged.\r\n                        </p>\r\n                    </div>\r\n                </div>\r\n                {limited && (\r\n                    <div className="mt-4 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">\r\n                        <ShieldCheck className="mt-0.5 shrink-0" size={18} />\r\n                        <p>Your plan keeps advanced layout and section structure unchanged. The theme will apply only the design controls available to you.</p>\r\n                    </div>\r\n                )}\r\n                <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">You can undo this change or continue editing before you publish.</p>\r\n                <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">\r\n                    <BuilderButton type="button" variant="secondary" onClick={onCancel}>Keep current draft</BuilderButton>\r\n                    <BuilderButton type="button" onClick={onConfirm} autoFocus>Apply to draft</BuilderButton>\r\n                </div>\r\n            </section>\r\n        </div>\r\n    );\r\n};\r\n\r\nexport default function ThemeGallery({\r\n    open,\r\n    onClose,\r\n    currentTheme,\r\n    planAccess,\r\n    branding,\r\n    shopName,\r\n    products,\r\n    categories,\r\n    reviews,\r\n    onApply\r\n}) {\r\n    const [industry, setIndustry] = useState(\'All\');\r\n    const [style, setStyle] = useState(\'All styles\');\r\n    const [search, setSearch] = useState(\'\');\r\n    const [previewTheme, setPreviewTheme] = useState(null);\r\n    const [pendingTheme, setPendingTheme] = useState(null);\r\n    const [device, setDevice] = useState(\'desktop\');\r\n    const closeRef = useRef(null);\r\n    const currentPresetId = currentTheme?.preset?.id || \'\';\r\n    const currentPreset = availableThemes.find(theme => theme.id === currentPresetId) || null;\r\n    const limited = planAccess?.storeBuilderAccess !== \'full\';\r\n\r\n    const filteredThemes = useMemo(() => {\r\n        const query = search.trim().toLowerCase();\r\n        return availableThemes.filter(theme => (\r\n            (industry === \'All\' || theme.industry === industry) &&\r\n            (style === \'All styles\' || theme.style === style) &&\r\n            (!query || [theme.name, theme.description, theme.industry, theme.style, ...theme.tags].join(\' \').toLowerCase().includes(query))\r\n        ));\r\n    }, [industry, search, style]);\r\n\r\n    const cardPreviewThemes = useMemo(() => {\r\n        const resolved = new Map();\r\n        availableThemes.forEach(theme => {\r\n            try {\r\n                resolved.set(theme.id, buildPreviewTheme({ currentTheme, presetId: theme.id, planAccess }));\r\n            } catch {\r\n                resolved.set(theme.id, null);\r\n            }\r\n        });\r\n        return resolved;\r\n    }, [currentTheme, planAccess, branding, shopName]);\r\n\r\n    const previewResolution = useMemo(() => {\r\n        if (!previewTheme) return { theme: null, error: \'\' };\r\n        try {\r\n            return { theme: buildPreviewTheme({ currentTheme, presetId: previewTheme.id, planAccess }), error: \'\' };\r\n        } catch (error) {\r\n            return { theme: null, error: error?.message || \'This theme could not be previewed.\' };\r\n        }\r\n    }, [currentTheme, planAccess, previewTheme]);\r\n\r\n    useEffect(() => {\r\n        if (!open) return undefined;\r\n        const previousOverflow = document.body.style.overflow;\r\n        document.body.style.overflow = \'hidden\';\r\n        closeRef.current?.focus();\r\n        const onKeyDown = event => {\r\n            if (event.key !== \'Escape\') return;\r\n            if (pendingTheme) setPendingTheme(null);\r\n            else if (previewTheme) setPreviewTheme(null);\r\n            else onClose();\r\n        };\r\n        document.addEventListener(\'keydown\', onKeyDown);\r\n        return () => {\r\n            document.body.style.overflow = previousOverflow;\r\n            document.removeEventListener(\'keydown\', onKeyDown);\r\n        };\r\n    }, [onClose, open, pendingTheme, previewTheme]);\r\n\r\n    if (!open) return null;\r\n\r\n    const applyPendingTheme = () => {\r\n        onApply(pendingTheme);\r\n        setPendingTheme(null);\r\n        setPreviewTheme(null);\r\n        onClose();\r\n    };\r\n\r\n    return (\r\n        <div className="fixed inset-0 z-[95] bg-slate-100" role="dialog" aria-modal="true" aria-labelledby="theme-gallery-title">\r\n            <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">\r\n                <div className="min-w-0">\r\n                    <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Store Builder</p>\r\n                    <h2 id="theme-gallery-title" className="truncate text-xl font-black text-slate-950">{previewTheme ? `Preview: ${previewTheme.name}` : \'Prebuilt themes\'}</h2>\r\n                </div>\r\n                <div className="flex max-w-full flex-wrap items-center justify-end gap-2">\r\n                    {previewTheme && (\r\n                        <>\r\n                            <DeviceSwitcher value={device} onChange={setDevice} />\r\n                            <BuilderButton type="button" onClick={() => setPendingTheme(previewTheme)} disabled={previewTheme.id === currentPresetId}>{previewTheme.id === currentPresetId ? \'Current theme\' : \'Use theme\'}</BuilderButton>\r\n                        </>\r\n                    )}\r\n                    <button ref={closeRef} type="button" aria-label="Close theme gallery" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><X size={20} /></button>'... 6510 more characters,
+    expected: /loading="lazy"/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\store-builder-prebuilt-themes.test.js:534:1
+✖ theme cards and full previews resolve the same merchant-owned hero banner (14.639ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /getBuilderHeroSlides\(hero\)/. Input:
+  
+  "import { useEffect, useMemo, useRef, useState } from 'react';\r\n" +
+    "import { Check, Eye, Layers3, Search, ShieldCheck, X } from 'lucide-react';\r\n" +
+    "import { getPrebuiltThemes, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';\r\n" +
+    "import { BuilderButton, DeviceSwitcher } from '../builderUi.jsx';\r\n" +
+    "import { StorefrontPreview } from '../StorefrontPreview.jsx';\r\n" +
+    'const availableThemes = getPrebuiltThemes();\r\n' +
+    "const industryFilters = ['All', ...new Set(availableThemes.map(theme => theme.industry))];\r\n" +
+    "const styleFilters = ['All styles', ...new Set(availableThemes.map(theme => theme.style))];\r\n" +
+    '\r\n' +
+    'const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {\r\n' +
+    '    let sectionIndex = 0;\r\n' +
+    '    return resolvePrebuiltTheme({\r\n' +
+    '        currentTheme,\r\n' +
+    '        presetId,\r\n' +
+    '        planAccess,\r\n' +
+    "        appliedAt: '2026-01-01T00:00:00.000Z',\r\n" +
+    '        createSectionId: type => `preview-${presetId}-${String(type).toLowerCase()}-${sectionIndex += 1}`\r\n' +
+    '    });\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'const ThemeCard = ({ theme, resolvedTheme, previewProps, current, updateAvailable, onPreview, onUse }) => (\r\n' +
+    "    <article className={`overflow-hidden rounded-lg border bg-white transition ${current ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-slate-300 hover:shadow-md'}`}>\r\n" +
+    '        <div className="relative aspect-[8/5] overflow-hidden border-b border-slate-200 bg-slate-100">\r\n' +
+    '            {resolvedTheme ? <StorefrontPreview {...previewProps} theme={resolvedTheme} device="desktop" thumbnail /> : <p className="p-4 text-sm text-slate-500">Preview unavailable. Open Preview for details.</p>}\r\n' +
+    '            {current && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-black text-white shadow"><Check size={13} /> Current theme</span>}\r\n' +
+    '        </div>\r\n' +
+    '        <div className="p-4">\r\n' +
+    '            <div className="flex items-start justify-between gap-3">\r\n' +
+    '                <div>\r\n' +
+    '                    <h3 className="text-base font-black text-slate-950">{theme.name}</h3>\r\n' +
+    '                    <p className="mt-1 text-xs font-bold uppercase tracking-wide text-indigo-600">{theme.industry} · {theme.style}</p>\r\n' +
+    '                </div>\r\n' +
+    '                <span className="rounded bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">v{theme.version}</span>\r\n' +
+    '            </div>\r\n' +
+    '            <p className="mt-3 min-h-12 text-sm leading-6 text-slate-600">{theme.description}</p>\r\n' +
+    '            <div className="mt-3 flex flex-wrap gap-1.5">\r\n' +
+    '                {theme.tags.map(tag => <span key={tag} className="rounded bg-slate-50 px-2 py-1 text-xs font-bold text-slate-500">{tag}</span>)}\r\n' +
+    '            </div>\r\n' +
+    '            <div className="mt-4 grid grid-cols-2 gap-2">\r\n' +
+    '                <BuilderButton type="button" variant="secondary" onClick={() => onPreview(theme)}><Eye size={15} /> Preview</BuilderButton>\r\n' +
+    `                <BuilderButton type="button" onClick={() => onUse(theme)} disabled={current}>{current ? 'Applied' : updateAvailable ? 'Apply update' : 'Use theme'}</BuilderButton>\r\n` +
+    '            </div>\r\n' +
+    '        </div>\r\n' +
+    '    </article>\r\n' +
+    ');\r\n' +
+    '\r\n' +
+    'const ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm }) => {\r\n' +
+    '    return (\r\n' +
+    '        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/55 p-0 sm:items-center sm:p-4" onMouseDown={event => {\r\n' +
+    '            if (event.target === event.currentTarget) onCancel();\r\n' +
+    '        }}>\r\n' +
+    '            <section role="alertdialog" aria-modal="true" aria-labelledby="apply-theme-title" aria-describedby="apply-theme-description" className="w-full rounded-t-xl bg-white p-5 shadow-2xl sm:max-w-lg sm:rounded-lg sm:p-6">\r\n' +
+    '                <div className="flex items-start gap-4">\r\n' +
+    '                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700"><Layers3 size={21} /></span>\r\n' +
+    '                    <div>\r\n' +
+    '                        <h2 id="apply-theme-title" className="text-xl font-black text-slate-950">Use {theme.name}?</h2>\r\n' +
+    '                        <p id="apply-theme-description" className="mt-2 text-sm leading-6 text-slate-600">\r\n' +
+    '                            This updates your current draft only. Your logo, hero media and copy, navigation, footer details, policies, SEO, products, payment settings, and domain remain unchanged.\r\n' +
+    '                        </p>\r\n' +
+    '                    </div>\r\n' +
+    '                </div>\r\n' +
+    '                {limited && (\r\n' +
+    '                    <div className="mt-4 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">\r\n' +
+    '                        <ShieldCheck className="mt-0.5 shrink-0" size={18} />\r\n' +
+    '                        <p>Your plan keeps advanced layout and section structure unchanged. The theme will apply only the design controls available to you.</p>\r\n' +
+    '                    </div>\r\n' +
+    '                )}\r\n' +
+    '                <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">You can undo this change or continue editing before you publish.</p>\r\n' +
+    '                <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">\r\n' +
+    '                    <BuilderButton type="button" variant="secondary" onClick={onCancel}>Keep current draft</BuilderButton>\r\n' +
+    '                    <BuilderButton type="button" onClick={onConfirm} autoFocus>Apply to draft</BuilderButton>\r\n' +
+    '                </div>\r\n' +
+    '            </section>\r\n' +
+    '        </div>\r\n' +
+    '    );\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'export default function ThemeGallery({\r\n' +
+    '    open,\r\n' +
+    '    onClose,\r\n' +
+    '    currentTheme,\r\n' +
+    '    planAccess,\r\n' +
+    '    branding,\r\n' +
+    '    shopName,\r\n' +
+    '    products,\r\n' +
+    '    categories,\r\n' +
+    '    reviews,\r\n' +
+    '    onApply\r\n' +
+    '}) {\r\n' +
+    "    const [industry, setIndustry] = useState('All');\r\n" +
+    "    const [style, setStyle] = useState('All styles');\r\n" +
+    "    const [search, setSearch] = useState('');\r\n" +
+    '    const [previewTheme, setPreviewTheme] = useState(null);\r\n' +
+    '    const [pendingTheme, setPendingTheme] = useState(null);\r\n' +
+    "    const [device, setDevice] = useState('desktop');\r\n" +
+    '    const closeRef = useRef(null);\r\n' +
+    "    const currentPresetId = currentTheme?.preset?.id || '';\r\n" +
+    '    const currentPreset = availableThemes.find(theme => theme.id === currentPresetId) || null;\r\n' +
+    "    const limited = planAccess?.storeBuilderAccess !== 'full';\r\n" +
+    '\r\n' +
+    '    const filteredThemes = useMemo(() => {\r\n' +
+    '        const query = search.trim().toLowerCase();\r\n' +
+    '        return availableThemes.filter(theme => (\r\n' +
+    "            (industry === 'All' || theme.industry === industry) &&\r\n" +
+    "            (style === 'All styles' || theme.style === style) &&\r\n" +
+    "            (!query || [theme.name, theme.description, theme.industry, theme.style, ...theme.tags].join(' ').toLowerCase().includes(query))\r\n" +
+    '        ));\r\n' +
+    '    }, [industry, search, style]);\r\n' +
+    '\r\n' +
+    '    const cardPreviewThemes = useMemo(() => {\r\n' +
+    '        const resolved = new Map();\r\n' +
+    '        availableThemes.forEach(theme => {\r\n' +
+    '            try {\r\n' +
+    '                resolved.set(theme.id, buildPreviewTheme({ currentTheme, presetId: theme.id, planAccess }));\r\n' +
+    '            } catch {\r\n' +
+    '                resolved.set(theme.id, null);\r\n' +
+    '            }\r\n' +
+    '        });\r\n' +
+    '        return resolved;\r\n' +
+    '    }, [currentTheme, planAccess, branding, shopName]);\r\n' +
+    '\r\n' +
+    '    const previewResolution = useMemo(() => {\r\n' +
+    "        if (!previewTheme) return { theme: null, error: '' };\r\n" +
+    '        try {\r\n' +
+    "            return { theme: buildPreviewTheme({ currentTheme, presetId: previewTheme.id, planAccess }), error: '' };\r\n" +
+    '        } catch (error) {\r\n' +
+    "            return { theme: null, error: error?.message || 'This theme could not be previewed.' };\r\n" +
+    '        }\r\n' +
+    '    }, [currentTheme, planAccess, previewTheme]);\r\n' +
+    '\r\n' +
+    '    useEffect(() => {\r\n' +
+    '        if (!open) return undefined;\r\n' +
+    '        const previousOverflow = document.body.style.overflow;\r\n' +
+    "        document.body.style.overflow = 'hidden';\r\n" +
+    '        closeRef.current?.focus();\r\n' +
+    '        const onKeyDown = event => {\r\n' +
+    "            if (event.key !== 'Escape') return;\r\n" +
+    '            if (pendingTheme) setPendingTheme(null);\r\n' +
+    '            else if (previewTheme) setPreviewTheme(null);\r\n' +
+    '            else onClose();\r\n' +
+    '        };\r\n' +
+    "        document.addEventListener('keydown', onKeyDown);\r\n" +
+    '        return () => {\r\n' +
+    '            document.body.style.overflow = previousOverflow;\r\n' +
+    "            document.removeEventListener('keydown', onKeyDown);\r\n" +
+    '        };\r\n' +
+    '    }, [onClose, open, pendingTheme, previewTheme]);\r\n' +
+    '\r\n' +
+    '    if (!open) return null;\r\n' +
+    '\r\n' +
+    '    const applyPendingTheme = () => {\r\n' +
+    '        onApply(pendingTheme);\r\n' +
+    '        setPendingTheme(null);\r\n' +
+    '        setPreviewTheme(null);\r\n' +
+    '        onClose();\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    return (\r\n' +
+    '        <div className="fixed inset-0 z-[95] bg-slate-100" role="dialog" aria-modal="true" aria-labelledby="theme-gallery-title">\r\n' +
+    '            <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">\r\n' +
+    '                <div className="min-w-0">\r\n' +
+    '                    <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Store Builder</p>\r\n' +
+    '                    <h2 id="theme-gallery-title" className="truncate text-xl font-black text-slate-950">{previewTheme ? `Preview: ${previewTheme.name}` : \'Prebuilt themes\'}</h2>\r\n' +
+    '                </div>\r\n' +
+    '                <div className="flex max-w-full flex-wrap items-center justify-end gap-2">\r\n' +
+    '                    {previewTheme && (\r\n' +
+    '                        <>\r\n' +
+    '                            <DeviceSwitcher value={device} onChange={setDevice} />\r\n' +
+    `                            <BuilderButton type="button" onClick={() => setPendingTheme(previewTheme)} disabled={previewTheme.id === currentPresetId}>{previewTheme.id === currentPresetId ? 'Current theme' : 'Use theme'}</BuilderButton>\r\n` +
+    '                        </>\r\n' +
+    '                    )}\r\n' +
+    '                    <button ref={closeRef} type="button" aria-label="Close theme gallery" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><X size={20} /></button>'... 6510 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\store-builder-prebuilt-themes.test.js:552:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { useEffect, useMemo, useRef, useState } from \'react\';\r\nimport { Check, Eye, Layers3, Search, ShieldCheck, X } from \'lucide-react\';\r\nimport { getPrebuiltThemes, resolvePrebuiltTheme } from \'@scaleup/storefront-theme/prebuilt\';\r\nimport { BuilderButton, DeviceSwitcher } from \'../builderUi.jsx\';\r\nimport { StorefrontPreview } from \'../StorefrontPreview.jsx\';\r\nconst availableThemes = getPrebuiltThemes();\r\nconst industryFilters = [\'All\', ...new Set(availableThemes.map(theme => theme.industry))];\r\nconst styleFilters = [\'All styles\', ...new Set(availableThemes.map(theme => theme.style))];\r\n\r\nconst buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {\r\n    let sectionIndex = 0;\r\n    return resolvePrebuiltTheme({\r\n        currentTheme,\r\n        presetId,\r\n        planAccess,\r\n        appliedAt: \'2026-01-01T00:00:00.000Z\',\r\n        createSectionId: type => `preview-${presetId}-${String(type).toLowerCase()}-${sectionIndex += 1}`\r\n    });\r\n};\r\n\r\nconst ThemeCard = ({ theme, resolvedTheme, previewProps, current, updateAvailable, onPreview, onUse }) => (\r\n    <article className={`overflow-hidden rounded-lg border bg-white transition ${current ? \'border-indigo-500 ring-2 ring-indigo-100\' : \'border-slate-200 hover:border-slate-300 hover:shadow-md\'}`}>\r\n        <div className="relative aspect-[8/5] overflow-hidden border-b border-slate-200 bg-slate-100">\r\n            {resolvedTheme ? <StorefrontPreview {...previewProps} theme={resolvedTheme} device="desktop" thumbnail /> : <p className="p-4 text-sm text-slate-500">Preview unavailable. Open Preview for details.</p>}\r\n            {current && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-black text-white shadow"><Check size={13} /> Current theme</span>}\r\n        </div>\r\n        <div className="p-4">\r\n            <div className="flex items-start justify-between gap-3">\r\n                <div>\r\n                    <h3 className="text-base font-black text-slate-950">{theme.name}</h3>\r\n                    <p className="mt-1 text-xs font-bold uppercase tracking-wide text-indigo-600">{theme.industry} · {theme.style}</p>\r\n                </div>\r\n                <span className="rounded bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">v{theme.version}</span>\r\n            </div>\r\n            <p className="mt-3 min-h-12 text-sm leading-6 text-slate-600">{theme.description}</p>\r\n            <div className="mt-3 flex flex-wrap gap-1.5">\r\n                {theme.tags.map(tag => <span key={tag} className="rounded bg-slate-50 px-2 py-1 text-xs font-bold text-slate-500">{tag}</span>)}\r\n            </div>\r\n            <div className="mt-4 grid grid-cols-2 gap-2">\r\n                <BuilderButton type="button" variant="secondary" onClick={() => onPreview(theme)}><Eye size={15} /> Preview</BuilderButton>\r\n                <BuilderButton type="button" onClick={() => onUse(theme)} disabled={current}>{current ? \'Applied\' : updateAvailable ? \'Apply update\' : \'Use theme\'}</BuilderButton>\r\n            </div>\r\n        </div>\r\n    </article>\r\n);\r\n\r\nconst ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm }) => {\r\n    return (\r\n        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/55 p-0 sm:items-center sm:p-4" onMouseDown={event => {\r\n            if (event.target === event.currentTarget) onCancel();\r\n        }}>\r\n            <section role="alertdialog" aria-modal="true" aria-labelledby="apply-theme-title" aria-describedby="apply-theme-description" className="w-full rounded-t-xl bg-white p-5 shadow-2xl sm:max-w-lg sm:rounded-lg sm:p-6">\r\n                <div className="flex items-start gap-4">\r\n                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700"><Layers3 size={21} /></span>\r\n                    <div>\r\n                        <h2 id="apply-theme-title" className="text-xl font-black text-slate-950">Use {theme.name}?</h2>\r\n                        <p id="apply-theme-description" className="mt-2 text-sm leading-6 text-slate-600">\r\n                            This updates your current draft only. Your logo, hero media and copy, navigation, footer details, policies, SEO, products, payment settings, and domain remain unchanged.\r\n                        </p>\r\n                    </div>\r\n                </div>\r\n                {limited && (\r\n                    <div className="mt-4 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">\r\n                        <ShieldCheck className="mt-0.5 shrink-0" size={18} />\r\n                        <p>Your plan keeps advanced layout and section structure unchanged. The theme will apply only the design controls available to you.</p>\r\n                    </div>\r\n                )}\r\n                <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">You can undo this change or continue editing before you publish.</p>\r\n                <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">\r\n                    <BuilderButton type="button" variant="secondary" onClick={onCancel}>Keep current draft</BuilderButton>\r\n                    <BuilderButton type="button" onClick={onConfirm} autoFocus>Apply to draft</BuilderButton>\r\n                </div>\r\n            </section>\r\n        </div>\r\n    );\r\n};\r\n\r\nexport default function ThemeGallery({\r\n    open,\r\n    onClose,\r\n    currentTheme,\r\n    planAccess,\r\n    branding,\r\n    shopName,\r\n    products,\r\n    categories,\r\n    reviews,\r\n    onApply\r\n}) {\r\n    const [industry, setIndustry] = useState(\'All\');\r\n    const [style, setStyle] = useState(\'All styles\');\r\n    const [search, setSearch] = useState(\'\');\r\n    const [previewTheme, setPreviewTheme] = useState(null);\r\n    const [pendingTheme, setPendingTheme] = useState(null);\r\n    const [device, setDevice] = useState(\'desktop\');\r\n    const closeRef = useRef(null);\r\n    const currentPresetId = currentTheme?.preset?.id || \'\';\r\n    const currentPreset = availableThemes.find(theme => theme.id === currentPresetId) || null;\r\n    const limited = planAccess?.storeBuilderAccess !== \'full\';\r\n\r\n    const filteredThemes = useMemo(() => {\r\n        const query = search.trim().toLowerCase();\r\n        return availableThemes.filter(theme => (\r\n            (industry === \'All\' || theme.industry === industry) &&\r\n            (style === \'All styles\' || theme.style === style) &&\r\n            (!query || [theme.name, theme.description, theme.industry, theme.style, ...theme.tags].join(\' \').toLowerCase().includes(query))\r\n        ));\r\n    }, [industry, search, style]);\r\n\r\n    const cardPreviewThemes = useMemo(() => {\r\n        const resolved = new Map();\r\n        availableThemes.forEach(theme => {\r\n            try {\r\n                resolved.set(theme.id, buildPreviewTheme({ currentTheme, presetId: theme.id, planAccess }));\r\n            } catch {\r\n                resolved.set(theme.id, null);\r\n            }\r\n        });\r\n        return resolved;\r\n    }, [currentTheme, planAccess, branding, shopName]);\r\n\r\n    const previewResolution = useMemo(() => {\r\n        if (!previewTheme) return { theme: null, error: \'\' };\r\n        try {\r\n            return { theme: buildPreviewTheme({ currentTheme, presetId: previewTheme.id, planAccess }), error: \'\' };\r\n        } catch (error) {\r\n            return { theme: null, error: error?.message || \'This theme could not be previewed.\' };\r\n        }\r\n    }, [currentTheme, planAccess, previewTheme]);\r\n\r\n    useEffect(() => {\r\n        if (!open) return undefined;\r\n        const previousOverflow = document.body.style.overflow;\r\n        document.body.style.overflow = \'hidden\';\r\n        closeRef.current?.focus();\r\n        const onKeyDown = event => {\r\n            if (event.key !== \'Escape\') return;\r\n            if (pendingTheme) setPendingTheme(null);\r\n            else if (previewTheme) setPreviewTheme(null);\r\n            else onClose();\r\n        };\r\n        document.addEventListener(\'keydown\', onKeyDown);\r\n        return () => {\r\n            document.body.style.overflow = previousOverflow;\r\n            document.removeEventListener(\'keydown\', onKeyDown);\r\n        };\r\n    }, [onClose, open, pendingTheme, previewTheme]);\r\n\r\n    if (!open) return null;\r\n\r\n    const applyPendingTheme = () => {\r\n        onApply(pendingTheme);\r\n        setPendingTheme(null);\r\n        setPreviewTheme(null);\r\n        onClose();\r\n    };\r\n\r\n    return (\r\n        <div className="fixed inset-0 z-[95] bg-slate-100" role="dialog" aria-modal="true" aria-labelledby="theme-gallery-title">\r\n            <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">\r\n                <div className="min-w-0">\r\n                    <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Store Builder</p>\r\n                    <h2 id="theme-gallery-title" className="truncate text-xl font-black text-slate-950">{previewTheme ? `Preview: ${previewTheme.name}` : \'Prebuilt themes\'}</h2>\r\n                </div>\r\n                <div className="flex max-w-full flex-wrap items-center justify-end gap-2">\r\n                    {previewTheme && (\r\n                        <>\r\n                            <DeviceSwitcher value={device} onChange={setDevice} />\r\n                            <BuilderButton type="button" onClick={() => setPendingTheme(previewTheme)} disabled={previewTheme.id === currentPresetId}>{previewTheme.id === currentPresetId ? \'Current theme\' : \'Use theme\'}</BuilderButton>\r\n                        </>\r\n                    )}\r\n                    <button ref={closeRef} type="button" aria-label="Close theme gallery" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><X size={20} /></button>'... 6510 more characters,
+    expected: /getBuilderHeroSlides\(hero\)/,
+    operator: 'match',
+    diff: 'simple'
+  }

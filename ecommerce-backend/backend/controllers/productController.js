@@ -1,3 +1,4 @@
+const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
 const Product = require('../models/Product');
 const Collection = require('../models/Collection');
 const Category = require('../models/Category');
@@ -6,6 +7,7 @@ const StaffPermission = require('../models/StaffPermission');
 const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
 const InventoryLog = require('../models/InventoryLog');
 const mongoose = require('mongoose');
+const cache = require('../services/cacheService');
 const { logAudit } = require('../services/auditLogService');
 const { buildPagination } = require('../utils/pagination');
 const {
@@ -20,11 +22,13 @@ const {
     slugify,
     getUniqueSlug,
     getCachedCategories,
+    invalidateCachedCategories,
     addComputedProductFields,
     buildProductListQuery,
     getProductSort,
     getSummaryProjection
 } = require('../services/products/productQueryService');
+const { validateBulkUpdates, applyBulkProductUpdates } = require('../services/products/bulkProductUpdates');
 const {
     normalizeIncomingVariant,
     buildSimpleVariant,
@@ -42,6 +46,7 @@ const {
     enqueueLowStockAlertsForLogs
 } = require('../services/inventoryLowStockAlertService');
 const { applyScheduledSalesToProducts } = require('../services/sales/scheduledSaleService');
+const { getStorefrontPreviewCards } = require('../services/products/storefrontPreviewDataService');
 const {
     getShopPlanAccess,
     buildFeatureError,
@@ -65,6 +70,14 @@ const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/cate
 const { assertHistoricalSlugAvailable, recordSlugRedirect } = require('../services/seo/slugRedirectService');
 
 const ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];
+
+const invalidateProductReadCaches = async shopId => {
+    invalidateCachedCategories(shopId);
+    return Promise.all([
+        cache.delPattern(`admin:dashboard-overview:${shopId}:*`),
+        cache.delPattern(`storefront:*:${shopId}:*`)
+    ]);
+};
 
 const normalizePageLimit = (value, fallback = 25) => {
     const requested = parseInt(value, 10);
@@ -176,7 +189,7 @@ const sendAiLimitError = async (req, res, error) => {
 };
 
 /**
- * @desc    Generate Product Description via AI (Gemini)
+ * @desc    Generate Product Description via AI (OpenAI)
  * @route   POST /api/admin/products/generate-description
  * @access  Private (Admin)
  */
@@ -194,6 +207,7 @@ exports.generateDescription = async (req, res) => {
             feature: 'legacy.product_description'
         });
         const suggestion = await generateProductContentSuggestion({
+            operation: generationState,
             body: {
                 title,
                 category,
@@ -221,6 +235,7 @@ exports.generateDescription = async (req, res) => {
         const replay = getReplayResponse(err);
         if (replay) return res.status(200).json({ ...replay, replayed: true });
         await failAiGeneration({ req, state: generationState, error: err });
+        if (sendAiOperationError(res, err)) return;
         if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);
         if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
             return res.status(409).json({ success: false, code: err.code, error: err.message });
@@ -229,7 +244,7 @@ exports.generateDescription = async (req, res) => {
             return res.status(503).json({
                 success: false,
                 configured: false,
-                message: 'AI product suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+                message: 'AI product suggestions are temporarily unavailable. Please contact support.'
             });
         }
         console.warn('Legacy product AI failure', { requestId: req.id, code: err.code || 'AI_PROVIDER_FAILED' });
@@ -257,8 +272,10 @@ exports.generateProductContent = async (req, res) => {
             feature: 'product.content'
         });
         const suggestion = await generateProductContentSuggestion({
+            operation: generationState,
             body: req.body,
-            file: req.file || null
+            file: req.files?.image?.[0] || req.file || null,
+            files: req.files?.images || []
         });
         const diagnostics = suggestion.imageDiagnostics || {};
 
@@ -267,6 +284,7 @@ exports.generateProductContent = async (req, res) => {
             shopId: req.tenantId,
             usedImage: Boolean(suggestion.usedImage),
             imageSource: suggestion.imageSource || 'text_only',
+            imageCount: suggestion.imageCount || 0,
             mimeType: diagnostics.mimeType || undefined,
             imageSizeBytes: diagnostics.imageSizeBytes || undefined
         });
@@ -275,6 +293,7 @@ exports.generateProductContent = async (req, res) => {
             success: true,
             usedImage: suggestion.usedImage,
             imageSource: suggestion.imageSource || 'text_only',
+            imageCount: suggestion.imageCount || 0,
             imageAnalysis: suggestion.data?.imageAnalysis || {},
             fallback: Boolean(suggestion.fallback),
             ...(suggestion.errorCode && { errorCode: suggestion.errorCode }),
@@ -293,6 +312,7 @@ exports.generateProductContent = async (req, res) => {
         const replay = getReplayResponse(err);
         if (replay) return res.status(200).json({ ...replay, replayed: true });
         await failAiGeneration({ req, state: generationState, error: err });
+        if (sendAiOperationError(res, err)) return;
         if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);
         if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
             return res.status(409).json({ success: false, code: err.code, message: err.message });
@@ -301,7 +321,7 @@ exports.generateProductContent = async (req, res) => {
             return res.status(503).json({
                 success: false,
                 configured: false,
-                message: 'AI product suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+                message: 'AI product suggestions are temporarily unavailable. Please contact support.'
             });
         }
 
@@ -465,10 +485,14 @@ exports.getShopProducts = async (req, res) => {
         const pagedProducts = needsEffectivePostFilter
             ? filteredProducts.slice(skip, skip + limit)
             : filteredProducts;
+        const previewProducts = !isStorefrontRequest && req.query.storefrontPreview === 'true'
+            ? await getStorefrontPreviewCards({ shopId, productIds: pagedProducts.map(product => product._id) })
+            : undefined;
 
         res.status(200).json({
             success: true,
             data: pagedProducts,
+            ...(previewProducts ? { previewProducts } : {}),
             categories: uniqueCategories, // ✨ Send the categories back to the frontend
             categoryDetails: mergeCategoryDetails({
                 names: uniqueCategories,
@@ -642,6 +666,7 @@ exports.createProduct = async (req, res) => {
         }
 
         await session.commitTransaction();
+        await invalidateProductReadCaches(req.tenantId);
 
         await enqueueScheduledProductPublication({
             product,
@@ -872,6 +897,7 @@ exports.updateProduct = async (req, res) => {
             'publishAt',
             'publishedAt',
             'seo',
+            'sellerFacts',
             'lowStockThreshold',
             'images',
             'coverMediaId',
@@ -939,6 +965,8 @@ exports.updateProduct = async (req, res) => {
         }
 
         await session.commitTransaction();
+        await invalidateProductReadCaches(shopId);
+        await require('../services/ai/aiContentHistoryService').confirmProductSave(shopId, product, req.user._id);
 
         await enqueueLowStockAlertsForLogs(logsToInsert);
 
@@ -1001,6 +1029,8 @@ exports.deleteProduct = async (req, res) => {
         if (!product) {
             return res.status(404).json({ success: false, error: "Product not found or already deleted" });
         }
+
+        await invalidateProductReadCaches(req.tenantId);
 
         await logAudit({
             req,
@@ -1089,16 +1119,21 @@ exports.exportProductsCsv = async (req, res) => {
 };
 
 exports.bulkUpdateProducts = async (req, res) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
-        const { productIds, updates = {} } = req.body;
-        const lowStockLogs = [];
+        const { productIds, updates: requestedUpdates = {} } = req.body;
 
         if (!Array.isArray(productIds) || productIds.length === 0) {
             return res.status(400).json({ success: false, error: 'productIds are required' });
         }
+        if (productIds.some(id => !mongoose.isValidObjectId(id))) {
+            return res.status(400).json({ success: false, error: 'productIds must contain valid product IDs' });
+        }
+
+        const updates = validateBulkUpdates(requestedUpdates);
+        session = await mongoose.startSession();
+        session.startTransaction();
 
         const products = await Product.find({
             _id: { $in: productIds },
@@ -1106,51 +1141,31 @@ exports.bulkUpdateProducts = async (req, res) => {
             isDeleted: false
         }).session(session);
 
-        const allowedStatus = ['Draft', 'Published', 'Archived'];
-
         for (const product of products) {
-            if (updates.category !== undefined) product.category = updates.category;
-            if (updates.tags !== undefined) product.tags = updates.tags;
-            if (updates.status !== undefined && allowedStatus.includes(updates.status)) {
-                product.status = updates.status;
-            }
-            if (updates.lowStockThreshold !== undefined) {
-                product.lowStockThreshold = Number(updates.lowStockThreshold);
-            }
-            if (updates.seo) {
-                product.seo = { ...(product.seo?.toObject?.() || product.seo || {}), ...updates.seo };
-            }
-
-            if (updates.pricing) {
-                product.pricing = { ...product.pricing.toObject(), ...updates.pricing };
-            }
-
-            if (updates.stock !== undefined) {
-                product.variants.forEach(variant => {
-                    const beforeStock = Number(variant.stock || 0);
-                    variant.stock = Number(updates.stock);
-                    if (variant.inventory) variant.inventory.stock = variant.stock;
-                    lowStockLogs.push({
-                        shop_id: req.tenantId,
-                        productId: product._id,
-                        variantId: variant._id,
-                        change: variant.stock - beforeStock,
-                        type: 'MANUAL',
-                        referenceId: product._id,
-                        beforeStock,
-                        afterStock: variant.stock,
-                        user: req.user._id,
-                        note: 'Bulk product stock update'
-                    });
-                });
-            }
+            applyBulkProductUpdates(product, updates);
 
             await product.save({ session });
         }
 
         await session.commitTransaction();
-
-        await enqueueLowStockAlertsForLogs(lowStockLogs);
+        const followUps = await Promise.allSettled([
+            invalidateProductReadCaches(req.tenantId),
+            ...products.map(product =>
+                require('../services/ai/aiContentHistoryService').confirmProductSave(req.tenantId, product, req.user._id)
+            ),
+            logAudit({
+                req,
+                shop_id: req.tenantId,
+                action: 'product.bulk_updated',
+                entityType: 'Product',
+                entityLabel: `${products.length} products`,
+                after: { count: products.length, updates },
+                metadata: { productIds: products.map(product => String(product._id)) }
+            })
+        ]);
+        followUps.filter(result => result.status === 'rejected').forEach(result => {
+            console.error('Bulk product update follow-up failed:', result.reason);
+        });
 
         res.status(200).json({
             success: true,
@@ -1158,11 +1173,11 @@ exports.bulkUpdateProducts = async (req, res) => {
             count: products.length
         });
     } catch (err) {
-        await session.abortTransaction();
+        if (session?.inTransaction()) await session.abortTransaction();
         console.error('Bulk update products error:', err);
         res.status(400).json({ success: false, error: err.message || 'Bulk update failed' });
     } finally {
-        session.endSession();
+        if (session) await session.endSession();
     }
 };
 

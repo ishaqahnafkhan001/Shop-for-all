@@ -78,27 +78,19 @@ const createOtp = async ({
     const cleanIdentifier = normalizeIdentifier(identifier);
     const key = buildOtpKey({ purpose, channel, identifier: cleanIdentifier, metadata });
     const now = new Date();
-    const existing = await OTP.findOne({ key }).session(session || null);
-
-    if (
-        enforceCooldown &&
-        existing &&
-        !existing.consumedAt &&
-        !existing.usedAt &&
-        existing.resendAvailableAt &&
-        existing.resendAvailableAt > now
-    ) {
-        return {
-            success: false,
-            code: 'OTP_RESEND_COOLDOWN',
-            error: 'Please wait before requesting another verification code.',
-            retryAfterSeconds: secondsUntil(existing.resendAvailableAt)
-        };
-    }
-
     const otp = generateOtp();
-    await OTP.findOneAndUpdate(
-        { key },
+    const eligible = enforceCooldown ? {
+        key,
+        $or: [
+            { resendAvailableAt: { $lte: now } },
+            { resendAvailableAt: null },
+            { consumedAt: { $ne: null } },
+            { usedAt: { $ne: null } }
+        ]
+    } : { key };
+    try {
+        await OTP.findOneAndUpdate(
+        eligible,
         {
             $set: {
                 key,
@@ -112,6 +104,7 @@ const createOtp = async ({
                 usedAt: null,
                 consumedAt: null,
                 verifiedAt: null,
+                deliveryFailedAt: null,
                 resendAvailableAt: new Date(now.getTime() + OTP_LIMITS.resendCooldownMs),
                 expiresAt: new Date(now.getTime() + OTP_LIMITS.expiresMs),
                 metadata,
@@ -124,7 +117,18 @@ const createOtp = async ({
             }
         },
         { upsert: true, new: true, session }
-    );
+        );
+    } catch (error) {
+        if (!enforceCooldown || error?.code !== 11000) throw error;
+        const existing = await OTP.findOne({ key }).session(session || null);
+        if (!existing?.resendAvailableAt || existing.resendAvailableAt <= now) throw error;
+        return {
+            success: false,
+            code: 'OTP_RESEND_COOLDOWN',
+            error: 'Please wait before requesting another verification code.',
+            retryAfterSeconds: secondsUntil(existing.resendAvailableAt)
+        };
+    }
 
     return {
         success: true,
@@ -132,6 +136,25 @@ const createOtp = async ({
         expiresAt: new Date(now.getTime() + OTP_LIMITS.expiresMs),
         resendAvailableAt: new Date(now.getTime() + OTP_LIMITS.resendCooldownMs)
     };
+};
+
+// Invalidate only the code from the failed send. A newer request must never be
+// cleared by an older provider timeout. Keep a short retry delay and the route's
+// rate limit so an unavailable provider cannot create an unbounded send loop.
+const markOtpDeliveryFailed = async ({ identifier, channel = 'sms', purpose, metadata = {}, otp }) => {
+    const key = buildOtpKey({ purpose, channel, identifier, metadata });
+    const now = new Date();
+    await OTP.updateOne(
+        { key, otpHash: hashValue(key, otp), consumedAt: null },
+        {
+            $set: {
+                otpHash: hashValue(key, crypto.randomBytes(32).toString('hex')),
+                expiresAt: new Date(now.getTime() + OTP_LIMITS.resendCooldownMs),
+                resendAvailableAt: new Date(now.getTime() + Math.min(OTP_LIMITS.resendCooldownMs, 10000)),
+                deliveryFailedAt: now
+            }
+        }
+    );
 };
 
 const metadataMatches = (stored = {}, expected = {}) => Object.entries(expected || {}).every(([key, value]) => (
@@ -167,8 +190,14 @@ const verifyOtp = async ({
     }
 
     if (!timingSafeEqualHex(hashValue(record.key || key, otp), record.otpHash)) {
-        record.attempts += 1;
-        await record.save({ session });
+        await OTP.updateOne(
+            {
+                _id: record._id, key, consumedAt: null, usedAt: null,
+                expiresAt: { $gt: now }, attempts: { $lt: record.maxAttempts || OTP_LIMITS.maxAttempts }
+            },
+            { $inc: { attempts: 1 } },
+            { session }
+        );
         return { success: false, error: INVALID_OTP_RESPONSE, code: 'INVALID_OTP' };
     }
 
@@ -193,8 +222,16 @@ const verifyOtp = async ({
         result.expiresAt = update.verificationTokenExpiresAt;
     }
 
-    Object.assign(record, update);
-    await record.save({ session });
+    const updated = await OTP.findOneAndUpdate(
+        {
+            _id: record._id, key, otpHash: record.otpHash,
+            consumedAt: null, usedAt: null, expiresAt: { $gt: now },
+            attempts: { $lt: record.maxAttempts || OTP_LIMITS.maxAttempts }
+        },
+        { $set: update },
+        { new: true, session }
+    );
+    if (!updated) return { success: false, error: INVALID_OTP_RESPONSE, code: 'INVALID_OTP' };
     return result;
 };
 
@@ -228,9 +265,16 @@ const consumeVerifiedOtpProof = async ({
         return { success: false, error: INVALID_OTP_RESPONSE, code: 'INVALID_OTP' };
     }
 
-    record.consumedAt = now;
-    record.usedAt = now;
-    await record.save({ session });
+    const consumed = await OTP.updateOne(
+        {
+            _id: record._id, key, consumedAt: null, usedAt: null,
+            verificationTokenHash: record.verificationTokenHash,
+            verificationTokenExpiresAt: { $gt: now }
+        },
+        { $set: { consumedAt: now, usedAt: now } },
+        { session }
+    );
+    if (!consumed.modifiedCount) return { success: false, error: INVALID_OTP_RESPONSE, code: 'INVALID_OTP' };
     return { success: true };
 };
 
@@ -243,5 +287,6 @@ module.exports = {
     createOtp,
     generateOtp,
     hashValue,
+    markOtpDeliveryFailed,
     verifyOtp
 };

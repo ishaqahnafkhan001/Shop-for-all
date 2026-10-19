@@ -23,21 +23,14 @@ test('product content AI route is protected and mounted before product id route'
     assert.ok(contentRouteIndex < productIdRouteIndex);
     assert.match(adminRoutes, /'\/products\/ai\/content-suggest'[\s\S]*protect[\s\S]*authorize\('VendorAdmin', 'VendorStaff'\)[\s\S]*requirePermission\('products'\)[\s\S]*blockBillingSuspendedShop[\s\S]*blockVerificationSuspendedShop[\s\S]*productAiLimiter[\s\S]*productAiImageUpload[\s\S]*generateProductContent/);
     assert.match(adminRoutes, /multer\.memoryStorage\(\)/);
-    assert.match(adminRoutes, /\.single\('image'\)/);
+    assert.match(adminRoutes, /\.fields\(\[\{ name: 'image', maxCount: 1 \}, \{ name: 'images', maxCount: 3 \}\]\)/);
     assert.match(adminRoutes, /AI_IMAGE_UNSUPPORTED/);
     assert.match(adminRoutes, /AI_IMAGE_TOO_LARGE/);
 });
 
-test('product content AI missing Gemini key is friendly and backend-only', async () => {
-    const oldKey = process.env.GEMINI_API_KEY;
-    delete process.env.GEMINI_API_KEY;
-
-    await assert.rejects(
-        generateProductContentSuggestion({ body: { title: 'Test Product' } }),
-        /AI product suggestions are not configured/
-    );
-
-    if (oldKey) process.env.GEMINI_API_KEY = oldKey;
+test('product content AI missing OpenAI key is friendly and backend-only', async () => {
+    await assert.rejects(generateProductContentSuggestion({ body: { title: 'Test Product' },
+        providerOptions: { config: require('../config/ai').readAiConfig({}) } }), { code: 'AI_NOT_CONFIGURED' });
 
     const controller = read('controllers/productController.js');
     const adminAdd = readProject('ecommerce-admin/src/pages/dashboard/products/AddProduct.jsx');
@@ -45,27 +38,14 @@ test('product content AI missing Gemini key is friendly and backend-only', async
 
     assert.match(controller, /configured:\s*false/);
     assert.match(controller, /configured:\s*false/);
-    assert.doesNotMatch(adminAdd + adminEdit, /GEMINI_API_KEY/);
+    assert.doesNotMatch(adminAdd + adminEdit, /OPENAI_API_KEY/);
 });
 
 test('product content AI uses bounded provider timeouts and safe failure codes', () => {
-    const oldTimeout = process.env.GEMINI_TIMEOUT_MS;
-
-    try {
-        delete process.env.GEMINI_TIMEOUT_MS;
-        assert.equal(__test.getGeminiTimeoutMs({ hasImage: false }), 30000);
-        assert.equal(__test.getGeminiTimeoutMs({ hasImage: true }), 45000);
-
-        process.env.GEMINI_TIMEOUT_MS = '2000';
-        assert.equal(__test.getGeminiTimeoutMs({ hasImage: false }), 15000);
-        assert.equal(__test.getGeminiTimeoutMs({ hasImage: true }), 30000);
-
-        process.env.GEMINI_TIMEOUT_MS = '120000';
-        assert.equal(__test.getGeminiTimeoutMs({ hasImage: true }), 60000);
-    } finally {
-        if (oldTimeout === undefined) delete process.env.GEMINI_TIMEOUT_MS;
-        else process.env.GEMINI_TIMEOUT_MS = oldTimeout;
-    }
+    const { readAiConfig } = require('../config/ai');
+    assert.equal(readAiConfig({}).attemptTimeoutMs, 45000);
+    assert.equal(readAiConfig({ OPENAI_TIMEOUT_MS: '2000' }).attemptTimeoutMs, 2000);
+    assert.throws(() => readAiConfig({ OPENAI_TIMEOUT_MS: 'Infinity' }));
 
     assert.equal(__test.getProviderFailureCode({ code: 'AI_PROVIDER_TIMEOUT' }), 'AI_PROVIDER_TIMEOUT');
     assert.equal(__test.getProviderFailureCode({ status: 403 }), 'AI_PROVIDER_AUTH_FAILED');
@@ -107,12 +87,100 @@ test('product content AI builds text-only and image-aware prompts without privat
         }
     });
 
-    assert.equal(imageInput.usedImage, true);
-    assert.equal(imageInput.imageSource, 'local_file');
-    assert.equal(imageInput.part.inlineData.mimeType, 'image/png');
-    assert.equal(imageInput.part.inlineData.data, Buffer.from('fake-image').toString('base64'));
+    assert.equal(imageInput.usedImage, false);
+    assert.equal(imageInput.imageSource, 'text_only');
+    assert.equal(imageInput.part, null);
     assert.equal(__test.isTrustedImageUrl('https://res.cloudinary.com/demo/image/upload/product.jpg'), true);
     assert.equal(__test.isTrustedImageUrl('http://169.254.169.254/latest/meta-data'), false);
+});
+
+test('product content AI accepts one to three ordered images and does not require three benefits', async () => {
+    const sharp = require('sharp');
+    const files = await Promise.all(['red', 'green', 'blue'].map(async color => ({
+        mimetype: 'image/png', buffer: await sharp({ create: { width: 20, height: 20,
+            channels: 3, background: color } }).png().toBuffer()
+    })));
+    let request;
+    const result = await generateProductContentSuggestion({
+        body: { title: 'Cotton shirt', category: 'Clothing', requestedSections: ['seo', 'sellingPoints', 'specifications', 'extraNotes'],
+            specifications: JSON.stringify([{ title: 'Material', value: 'Cotton' }]),
+            comments: JSON.stringify([{ title: 'Care', value: 'Wash in cool water' }]), notesVisibility: 'public',
+            imageOrder: JSON.stringify([{ type: 'file', index: 2 }, { type: 'file', index: 0 }, { type: 'file', index: 1 }]) },
+        files,
+        providerOptions: { config: { apiKey: 'mock', model: 'gpt-6-luna', operationTimeoutMs: 5000,
+            attemptTimeoutMs: 5000, outputTokens: 2400 },
+            clientFactory: () => ({ responses: { create: async body => {
+                request = body;
+                return { status: 'completed', output_text: JSON.stringify({ seoTitle: '', seoDescription: '', whyBuy: [{
+                    point: 'Soft fabric', reason: 'The seller lists cotton as the material, making the fabric detail clear.'
+                }], specifications: [], extraNotes: [] }) };
+            } } }) }
+    });
+    assert.equal(request.input[0].content.filter(item => item.type === 'input_image').length, 3);
+    assert.match(request.input[0].content[0].text, /image count: 3/);
+    assert.equal(request.text.format.schema.properties.whyBuy.minItems, undefined);
+    assert.equal(result.imageCount, 3);
+    assert.equal(result.data.sellingPoints.length, 1);
+    assert.ok(result.data.seoTitle);
+    assert.deepEqual(result.data.specifications, [{ label: 'Material', value: 'Cotton' }]);
+    assert.deepEqual(result.data.extraNotes, ['Wash in cool water']);
+    assert.equal(result.fallback, false);
+});
+
+test('product content AI preserves mixed saved and uploaded image order within the three-image limit', () => {
+    const first = { buffer: Buffer.from('first') };
+    const second = { buffer: Buffer.from('second') };
+    const inputs = __test.getImageInputs({
+        files: [first, second],
+        body: { imageUrls: JSON.stringify(['https://res.cloudinary.com/demo/image/upload/saved.jpg']),
+            imageOrder: JSON.stringify([{ type: 'url', index: 0 }, { type: 'file', index: 1 },
+                { type: 'file', index: 0 }, { type: 'file', index: 0 }]) }
+    });
+    assert.deepEqual(inputs, [
+        { imageUrl: 'https://res.cloudinary.com/demo/image/upload/saved.jpg' },
+        { file: second }, { file: first }
+    ]);
+    assert.deepEqual(__test.getImageInputs({ file: first }), [{ file: first }]);
+});
+
+test('product content AI does not invent specifications or notes when no evidence exists', () => {
+    const context = __test.buildContext({ title: 'Mystery item', requestedSections: ['seo', 'specifications', 'extraNotes'] });
+    const completed = __test.fillSupportedFields(__test.cleanProductContentSuggestion({
+        seoTitle: '', seoDescription: '', specifications: [], extraNotes: []
+    }), context);
+    assert.ok(completed.seoTitle);
+    assert.deepEqual(completed.specifications, []);
+    assert.deepEqual(completed.extraNotes, []);
+    assert.equal(__test.hasUsefulSellingPoints(completed, context), true);
+});
+
+test('seller-confirmed facts pass product parsing, validation and model casting, then enrich AI privately', () => {
+    const { parseProductPayload } = require('../services/products/productMediaService');
+    const { createProductSchema, updateProductSchema } = require('../validations/productValidation');
+    const { sanitizePublicProduct } = require('../services/publicProductSerializer');
+    const Product = require('../models/Product');
+    const facts = { brand: 'Acme', model: 'A24', material: '100% cotton',
+        dimensions: '30 × 20 × 5 cm', packageContents: '1 shirt and 1 belt' };
+    const parsed = parseProductPayload({ sellerFacts: JSON.stringify(facts) });
+    assert.deepEqual(parsed.sellerFacts, facts);
+    assert.deepEqual(createProductSchema.extract('sellerFacts').validate(facts).value, facts);
+    assert.deepEqual(updateProductSchema.validate({ sellerFacts: facts }).value.sellerFacts, facts);
+    assert.deepEqual(new Product({ sellerFacts: facts }).sellerFacts.toObject(), facts);
+    assert.ok(updateProductSchema.validate({ sellerFacts: { internalCost: '42' } }).error);
+    assert.ok(updateProductSchema.validate({ sellerFacts: { material: 'x'.repeat(161) } }).error);
+    const context = __test.buildContext({ title: 'Blue shirt', sellerFacts: JSON.stringify({ ...facts, internalCost: '42' }),
+        requestedSections: ['seo', 'specifications'] });
+    assert.deepEqual(context.sellerFacts, facts);
+    assert.equal(__test.normalizeSellerFacts({ dimensions: '30*20*5 cm' }).dimensions, '30 × 20 × 5 cm');
+    assert.doesNotMatch(JSON.stringify(context), /internalCost|42/);
+    assert.match(__test.buildPrompt(context), /product-wide seller-confirmed brand, model, material, dimensions, and package contents/);
+    const completed = __test.fillSupportedFields(__test.cleanProductContentSuggestion({
+        seoTitle: '', seoDescription: '', specifications: []
+    }), context);
+    assert.match(completed.seoTitle, /Acme Blue shirt A24/);
+    assert.ok(completed.specifications.some(row => row.label === 'Material' && row.value === '100% cotton'));
+    assert.ok(completed.specifications.some(row => row.label === 'Package contents' && row.value === facts.packageContents));
+    assert.equal(sanitizePublicProduct({ title: 'Blue shirt', sellerFacts: facts }).sellerFacts, undefined);
 });
 
 test('product content AI normalizes shapes and length limits', () => {
@@ -178,7 +246,7 @@ test('product content AI malformed JSON path falls back only to evidence-based c
         variants: [{ attributes: [{ name: 'color', value: 'Gold' }] }]
     }, { usedImage: true, reason: 'parse' });
 
-    assert.throws(() => __test.parseGeminiJson('not json'), /JSON object/);
+    assert.throws(() => __test.parseProviderJson('not json'), /JSON object/);
     assert.match(controller, /fallback:\s*Boolean\(suggestion\.fallback\)/);
     assert.match(controller, /imageSource:\s*suggestion\.imageSource/);
     assert.match(controller, /imageAnalysis:\s*suggestion\.data\?\.imageAnalysis/);
@@ -196,7 +264,7 @@ test('product content AI malformed JSON path falls back only to evidence-based c
     assert.doesNotMatch(JSON.stringify(fallback), /unreadable response|safe basic suggestion/i);
 });
 
-test('product content AI wraps Gemini provider failures as safe response codes', () => {
+test('product content AI wraps OpenAI provider failures as safe response codes', () => {
     const service = read('services/products/productContentAiService.js');
     const controller = read('controllers/productController.js');
 
@@ -207,80 +275,41 @@ test('product content AI wraps Gemini provider failures as safe response codes',
     assert.match(controller, /message:\s*'AI product suggestions could not be generated right now\. Please try again later\.'/);
 });
 
-test('product content AI asks Gemini for schema-bound JSON and extracts candidate text defensively', () => {
-    const service = read('services/products/productContentAiService.js');
-
-    assert.match(service, /SchemaType/);
-    assert.match(service, /responseSchema:\s*PRODUCT_CONTENT_RESPONSE_SCHEMA/);
-    assert.match(service, /"whyBuy": \[\{ "point": "string", "reason": "string", "visualEvidence": "string", "confidence": "low\|medium\|high" \}\]/);
-    assert.match(service, /imageAnalysis/);
-    assert.match(service, /strictRetry/);
-    assert.match(service, /INSUFFICIENT_PRODUCT_CONTEXT/);
-    assert.match(service, /contents:\s*\[\{\s*role:\s*'user',\s*parts\s*\}\]/);
-    assert.match(service, /extractGeminiText/);
-
-    assert.equal(
-        __test.extractGeminiText({
-            response: {
-                text: () => '{"seoTitle":"Direct"}'
-            }
-        }),
-        '{"seoTitle":"Direct"}'
-    );
-
-    assert.equal(
-        __test.extractGeminiText({
-            response: {
-                text: () => '',
-                candidates: [
-                    { content: { parts: [{ text: '{"seoTitle":"Candidate"}' }] } }
-                ]
-            }
-        }),
-        '{"seoTitle":"Candidate"}'
-    );
+test('product content AI sends selected sections through OpenAI Responses strict JSON', async () => {
+    let request, requestOptions;
+    const result = await generateProductContentSuggestion({ body: { title: 'Blue shirt', requestedSections: ['description'] },
+        providerOptions: { config: { apiKey: 'mock', model: 'gpt-4.1-mini', operationTimeoutMs: 1000, attemptTimeoutMs: 1000, outputTokens: 2400 },
+            clientFactory: () => ({ responses: { create: async (body, extra) => {
+                request = body; requestOptions = extra; return { status: 'completed', output_text: '{"description":"Blue shirt."}' };
+            } } }) } });
+    assert.equal(request.text.format.type, 'json_schema');
+    assert.equal(request.text.format.strict, true);
+    assert.ok(request.text.format.schema.properties.description);
+    assert.equal(request.text.format.schema.properties.seoTitle, undefined);
+    assert.equal(request.input[0].role, 'user');
+    assert.ok(requestOptions.signal instanceof AbortSignal);
+    assert.equal(requestOptions.maxRetries, 0);
+    assert.equal(result.meta.provider, 'openai');
+    assert.equal(result.fallback, false);
 });
 
-test('admin product AI preview flow maps suggestions without silent overwrite', () => {
-    const assistant = readProject('ecommerce-admin/src/components/products/ProductAiAssistant.jsx');
-    const addProduct = readProject('ecommerce-admin/src/pages/dashboard/products/AddProduct.jsx');
-    const editProduct = readProject('ecommerce-admin/src/pages/dashboard/products/EditProduct.jsx');
-
-    assert.match(assistant, /\/admin\/products\/ai\/content-suggest/);
-    assert.match(assistant, /showAiFailureToast/);
-    assert.match(assistant, /AI_PROVIDER_FAILED/);
-    assert.match(assistant, /AI_RESPONSE_PARSE_FAILED/);
-    assert.match(assistant, /configured === false/);
-    assert.match(assistant, /response\.data\.fallback/);
-    assert.match(assistant, /Basic suggestions are ready to review/);
-    assert.match(assistant, /Apply all suggestions/);
-    assert.match(assistant, /Replace \$\{label\}/);
-    assert.match(assistant, /Append \$\{label\}/);
-    assert.match(assistant, /visualEvidence/);
-    assert.match(assistant, /Confidence:/);
-    assert.match(assistant, /generatedRows = pointsToRows\(suggestion\.sellingPoints/);
-    assert.match(assistant, /Image analysis/);
-    assert.match(assistant, /imageSource/);
-    assert.match(assistant, /Why customers should buy this/);
-    assert.match(assistant, /Suggest buyer benefits/);
-    assert.match(assistant, /next\.specifications = normalizeKeyValueRows\(normalizeSpecs\(suggestion\.specifications\)\)/);
-    assert.match(assistant, /next\.comments = notesToRows\(suggestion\.extraNotes\)/);
-    assert.match(assistant, /data\.append\('image', firstImage\)/);
-    assert.match(assistant, /data\.append\('imageUrl', firstImage\.trim\(\)\)/);
-    assert.match(addProduct, /getFirstImage=\{\(\) => imageFiles\[coverImageIndex\]/);
-    assert.match(addProduct, /Why customers should buy this/);
-    assert.match(addProduct, /Why it matters/);
-    assert.match(editProduct, /getFirstImage=\{getFirstAiImage\}/);
-    assert.match(editProduct, /newImageFiles\[coverImageIndex - formData\.images\.length\]/);
-    assert.match(editProduct, /Why customers should buy this/);
-    assert.match(editProduct, /Why it matters/);
+test('selective Product Apply maps public content without changing commerce or unselected fields', async () => {
+    const { applyProductContentSuggestion } = await import('../../../ecommerce-admin/src/utils/applyProductContentSuggestion.js');
+    const before = { title: 'Merchant title', pricing: { sellingPrice: 50 }, stock: 3, status: 'Draft', description: 'Original', seo: { title: 'Saved SEO' } };
+    const suggestion = { description: 'Suggested', seoTitle: 'Other', pricing: { sellingPrice: 0 }, stock: 999, status: 'Published', specifications: [{ label: 'Material', value: 'Cotton' }] };
+    const next = applyProductContentSuggestion(before, suggestion, ['description', 'specifications']);
+    assert.equal(next.description, 'Suggested');
+    assert.deepEqual(next.specifications, [{ title: 'Material', value: 'Cotton' }]);
+    assert.deepEqual(next.pricing, before.pricing); assert.equal(next.stock, 3); assert.equal(next.status, 'Draft');
+    assert.equal(next.title, 'Merchant title'); assert.equal(next.seo.title, 'Saved SEO'); assert.equal(before.description, 'Original');
 });
 
-test('selling point point-reason format remains compatible with legacy rows', () => {
+test('selling point point-reason format remains compatible with legacy rows', async () => {
     const model = read('models/Product.js');
     const validation = read('validations/productValidation.js');
     const serializer = read('services/publicProductSerializer.js');
-    const storefrontExtras = readProject('ecommerce-storefront/src/components/product/ProductExtras.jsx');
+    const ui = await require('./helpers/aiPresentationHarness').loadAiPresentation();
+    const html = ui.render(ui.ProductFeatures, { features: [{ point: 'Current point', reason: 'Current reason' }, { title: 'Legacy title', value: 'Legacy value' }, 'Text row'] });
     const adminRows = readProject('ecommerce-admin/src/utils/productContentRows.js');
 
     assert.match(model, /point:\s*\{\s*type:\s*String/);
@@ -290,8 +319,7 @@ test('selling point point-reason format remains compatible with legacy rows', ()
     assert.match(validation, /reason:\s*Joi\.string/);
     assert.match(serializer, /sanitizePublicSellingPoints/);
     assert.match(serializer, /point:\s*'Product benefit'/);
-    assert.match(storefrontExtras, /feature\?\.point \|\| feature\?\.title/);
-    assert.match(storefrontExtras, /feature\?\.reason \|\| feature\?\.value/);
+    for (const text of ['Current point', 'Current reason', 'Legacy title', 'Legacy value', 'Text row']) assert.ok(html.includes(text));
     assert.match(adminRows, /normalizeSellingPointRows/);
     assert.match(adminRows, /MAX_SELLING_POINTS\s*=\s*6/);
 });

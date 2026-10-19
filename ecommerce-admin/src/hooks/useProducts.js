@@ -88,10 +88,8 @@ export const useProducts = (initialLimit = 10) => {
   };
 
   const deleteProduct = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-
     try {
-      await API.delete(`/admin/products/${id}`);
+      await API.delete(`/admin/products/${encodeURIComponent(id)}`);
       toast.success("Product deleted");
       setProducts((prev) =>
           Array.isArray(prev) ? prev.filter(p => p._id !== id) : []
@@ -99,6 +97,7 @@ export const useProducts = (initialLimit = 10) => {
 
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to delete product");
+      throw err;
     }
   };
 

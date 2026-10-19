@@ -23,7 +23,7 @@ Customer or vendor
         +-- Storefront (Next.js) ------------+--> Express API --> MongoDB
                                              |          |
                                              |          +--> Cloudinary, email, SMS,
-                                             |               Gemini, Pathao, RedX
+                                             |               OpenAI, Pathao, RedX
                                              |
                                              +--> Worker --> durable Mongo-backed jobs
 

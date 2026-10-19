@@ -1,3 +1,4 @@
+const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
 const Collection = require('../models/Collection');
 const Product = require('../models/Product');
 const Shop = require('../models/Shop');
@@ -32,14 +33,7 @@ const {
     resolveSlugRedirect
 } = require('../services/seo/slugRedirectService');
 
-const slugify = (value = '') =>
-    value
-        .toString()
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 80);
+const { collectionSlug: slugify } = require('../utils/collectionSlug');
 
 const PUBLIC_COLLECTION_FIELDS = '_id title slug description image seo productIds isActive createdAt updatedAt';
 const MAX_PUBLIC_COLLECTION_PRODUCTS = 48;
@@ -51,15 +45,17 @@ const cleanText = (value = '', max = 300) => String(value || '')
     .trim()
     .slice(0, max);
 
+const invalidProducts = () => Object.assign(new Error('Select only existing products from this store.'), { code: 'AI_INVALID_INPUT', statusCode: 400 });
 const parseProductIds = (value = []) => {
-    const source = Array.isArray(value)
-        ? value
-        : String(value || '').split(',');
-
-    return [...new Set(source
-        .map(id => String(id || '').trim())
-        .filter(id => mongoose.Types.ObjectId.isValid(id)))]
-        .slice(0, 500);
+    let source = value;
+    if (typeof value === 'string') {
+        try { source = JSON.parse(value); } catch { source = value.split(',').filter(Boolean); }
+    }
+    if (!Array.isArray(source) || source.length > 500 || source.some(id => !mongoose.Types.ObjectId.isValid(id))) throw invalidProducts();
+    return [...new Set(source.map(id => String(id).trim()))];
+};
+const assertCollectionProductsOwned = async (shopId, ids = []) => {
+    if (ids.length && await Product.countDocuments({ _id: { $in: ids }, shop_id: shopId, isDeleted: false }) !== ids.length) throw invalidProducts();
 };
 
 const parseJsonField = (value, fallback) => {
@@ -104,7 +100,7 @@ const buildCollectionPayload = (body = {}, { partial = false } = {}) => {
     }
     if (!partial || body.description !== undefined) payload.description = cleanText(body.description, 1000);
     if (!partial || body.isActive !== undefined) payload.isActive = parseBoolean(body.isActive, true);
-    if (body.productIds !== undefined) payload.productIds = parseProductIds(parseJsonField(body.productIds, []));
+    if (body.productIds !== undefined) payload.productIds = parseProductIds(body.productIds);
 
     if (!partial || body.seo !== undefined || body.seoTitle !== undefined || body.seoDescription !== undefined) {
         const seo = parseJsonField(body.seo, {});
@@ -187,6 +183,8 @@ exports.suggestCollectionAi = async (req, res) => {
     let generationState = null;
     try {
         const productIds = parseProductIds(req.body?.productIds);
+        await assertCollectionProductsOwned(req.tenantId, productIds);
+        generationState = await beginAiGeneration({ req, feature: 'catalog.collection' });
         const [shop, products] = await Promise.all([
             Shop.findById(req.tenantId).select('shopName businessType theme.header.storeName theme.seo.siteName').lean(),
             productIds.length
@@ -217,8 +215,7 @@ exports.suggestCollectionAi = async (req, res) => {
             }))
         };
 
-        generationState = await beginAiGeneration({ req, feature: 'catalog.collection' });
-        const suggestion = await generateCollectionSuggestion(context);
+        const suggestion = await generateCollectionSuggestion(context, { operation: generationState });
 
         const payload = {
             success: true,
@@ -239,6 +236,8 @@ exports.suggestCollectionAi = async (req, res) => {
         const replay = getReplayResponse(err);
         if (replay) return res.status(200).json({ ...replay, replayed: true });
         await failAiGeneration({ req, state: generationState, error: err });
+        if (sendAiOperationError(res, err)) return;
+        if (err.code === 'AI_INVALID_INPUT') return res.status(400).json({ success: false, code: err.code, error: err.message });
         if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
             return res.status(409).json({ success: false, code: err.code, message: err.message });
         }
@@ -259,7 +258,7 @@ exports.suggestCollectionAi = async (req, res) => {
             return res.status(503).json({
                 success: false,
                 configured: false,
-                message: 'AI collection suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+                message: 'AI collection suggestions are temporarily unavailable. Please contact support.'
             });
         }
 
@@ -392,6 +391,7 @@ exports.createCollection = async (req, res) => {
             ...buildCollectionPayload(req.body),
             shop_id: req.tenantId
         };
+        await assertCollectionProductsOwned(req.tenantId, payload.productIds);
         await assertHistoricalSlugAvailable({
             shopId: req.tenantId,
             resourceType: 'collection',
@@ -440,6 +440,7 @@ exports.updateCollection = async (req, res) => {
         }
 
         const payload = buildCollectionPayload(req.body, { partial: true });
+        await assertCollectionProductsOwned(req.tenantId, payload.productIds);
         const previousSlug = collection.slug;
         if (payload.slug && payload.slug !== previousSlug) {
             await assertHistoricalSlugAvailable({

@@ -1,0 +1,269 @@
+{
+  "date": "2026-10-07",
+  "method": "In-memory rolldown bundle, React server markup rendering, synthetic merchant fixture, JSON/Mongoose in-memory roundtrip. No database or authenticated browser publication.",
+  "presetCount": 9,
+  "renderCount": 99,
+  "headerMegaVsSimpleIdentical": true,
+  "results": [
+    {
+      "id": "modern-general",
+      "name": "Modern General",
+      "version": 2,
+      "header": "standard",
+      "hero": "split",
+      "container": "Wide",
+      "columns": [
+        4,
+        3,
+        2
+      ],
+      "card": "Modern",
+      "cardAspect": "Square",
+      "bottomNavigation": true,
+      "compactHeader": true,
+      "blueprint": [
+        "CategoryList:cards",
+        "FeaturedProducts:default",
+        "PromoBlock:strip",
+        "CollectionShowcase:grid",
+        "Reviews:cards",
+        "Newsletter:boxed"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "minimal-general",
+      "name": "Minimal General",
+      "version": 2,
+      "header": "minimal",
+      "hero": "minimal",
+      "container": "Standard",
+      "columns": [
+        3,
+        2,
+        2
+      ],
+      "card": "Minimal",
+      "cardAspect": "Square",
+      "bottomNavigation": false,
+      "compactHeader": true,
+      "blueprint": [
+        "FeaturedProducts:default",
+        "CategoryList:cards",
+        "BrandStory:standard",
+        "Newsletter:minimal"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "modern-fashion",
+      "name": "Modern Fashion",
+      "version": 2,
+      "header": "centered",
+      "hero": "fullBleed",
+      "container": "Wide",
+      "columns": [
+        4,
+        3,
+        2
+      ],
+      "card": "Premium",
+      "cardAspect": "Portrait",
+      "bottomNavigation": true,
+      "compactHeader": true,
+      "blueprint": [
+        "CategoryList:imageGrid",
+        "FeaturedProducts:default",
+        "Banner:overlay",
+        "BrandStory:imageRight",
+        "CollectionShowcase:grid",
+        "Reviews:quote",
+        "Newsletter:fullWidth"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "editorial-fashion",
+      "name": "Editorial Fashion",
+      "version": 2,
+      "header": "minimal",
+      "hero": "editorial",
+      "container": "Full Width",
+      "columns": [
+        3,
+        2,
+        2
+      ],
+      "card": "Minimal",
+      "cardAspect": "Portrait",
+      "bottomNavigation": false,
+      "compactHeader": false,
+      "blueprint": [
+        "BrandStory:editorial",
+        "CategoryList:editorial",
+        "CollectionShowcase:mosaic",
+        "FeaturedProducts:default",
+        "Reviews:minimal",
+        "Newsletter:minimal"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "luxury-jewellery",
+      "name": "Luxury Jewellery",
+      "version": 2,
+      "header": "centered",
+      "hero": "centered",
+      "container": "Narrow",
+      "columns": [
+        3,
+        2,
+        2
+      ],
+      "card": "Premium",
+      "cardAspect": "Square",
+      "bottomNavigation": true,
+      "compactHeader": true,
+      "blueprint": [
+        "CollectionShowcase:spacious",
+        "CategoryList:imageGrid",
+        "FeaturedProducts:default",
+        "BrandStory:fullWidth",
+        "Reviews:quote",
+        "TrustBadges:default",
+        "Newsletter:boxed"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "minimal-jewellery",
+      "name": "Minimal Jewellery",
+      "version": 2,
+      "header": "minimal",
+      "hero": "minimal",
+      "container": "Narrow",
+      "columns": [
+        3,
+        2,
+        2
+      ],
+      "card": "Minimal",
+      "cardAspect": "Square",
+      "bottomNavigation": false,
+      "compactHeader": true,
+      "blueprint": [
+        "FeaturedProducts:default",
+        "CategoryList:circles",
+        "BrandStory:standard",
+        "Reviews:minimal"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "soft-beauty",
+      "name": "Soft Beauty",
+      "version": 2,
+      "header": "centered",
+      "hero": "split",
+      "container": "Standard",
+      "columns": [
+        3,
+        2,
+        2
+      ],
+      "card": "Modern",
+      "cardAspect": "Portrait",
+      "bottomNavigation": true,
+      "compactHeader": true,
+      "blueprint": [
+        "CategoryList:circles",
+        "FeaturedProducts:default",
+        "Banner:split",
+        "BrandStory:imageRight",
+        "Reviews:cards",
+        "FAQ:default",
+        "Newsletter:boxed"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "modern-electronics",
+      "name": "Modern Electronics",
+      "version": 2,
+      "header": "standard",
+      "hero": "split",
+      "container": "Wide",
+      "columns": [
+        4,
+        3,
+        2
+      ],
+      "card": "Modern",
+      "cardAspect": "Square",
+      "bottomNavigation": true,
+      "compactHeader": true,
+      "blueprint": [
+        "CategoryList:cards",
+        "FeaturedProducts:default",
+        "PromoBlock:strip",
+        "CollectionShowcase:grid",
+        "TrustBadges:default",
+        "FAQ:default"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    },
+    {
+      "id": "fresh-grocery",
+      "name": "Fresh Grocery",
+      "version": 2,
+      "header": "standard",
+      "hero": "centered",
+      "container": "Wide",
+      "columns": [
+        4,
+        3,
+        2
+      ],
+      "card": "Modern",
+      "cardAspect": "Square",
+      "bottomNavigation": true,
+      "compactHeader": true,
+      "blueprint": [
+        "CategoryList:circles",
+        "FeaturedProducts:default",
+        "PromoBlock:split",
+        "CollectionShowcase:spacious",
+        "TrustBadges:default",
+        "Newsletter:fullWidth"
+      ],
+      "schemaRoundtrip": "pass",
+      "renderSmoke": "pass",
+      "previewPageSmoke": "pass",
+      "customizationSmoke": "pass"
+    }
+  ]
+}

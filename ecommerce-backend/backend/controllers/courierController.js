@@ -13,13 +13,14 @@ const {
     createRedxPickupStore,
     getRedxAreas,
     getRedxParcelInfo,
+    getRedxPickupStoreInfo,
     getRedxPickupStores,
     trackRedxParcel
 } = require('../services/redx/redxService');
 
 const redxConfigSchema = Joi.object({
     token: Joi.string().trim().min(10).max(5000).allow('').optional(),
-    pickupStoreId: Joi.string().trim().min(1).max(120).required(),
+    pickupStoreId: Joi.alternatives().try(Joi.number().integer().positive(), Joi.string().trim().pattern(/^[1-9]\d*$/)).required(),
     pickupStoreName: Joi.string().trim().max(160).allow('').optional(),
     pickupAddress: Joi.string().trim().max(300).allow('').optional(),
     pickupAreaName: Joi.string().trim().max(120).allow('').optional(),
@@ -85,7 +86,22 @@ exports.configureRedxCourier = async (req, res) => {
         if (error) return res.status(400).json({ success: false, error: error.details[0].message });
 
         const shop = await getShop(req.tenantId);
-        applyRedxConfigToShop(shop, value);
+        const { pickupStore } = await getRedxPickupStoreInfo({
+            shop,
+            pickupStoreId: value.pickupStoreId,
+            token: value.token
+        });
+        if (!pickupStore || String(pickupStore.id) !== String(value.pickupStoreId)) {
+            return res.status(400).json({ success: false, error: 'RedX did not confirm this pickup store ID for the supplied token.' });
+        }
+        applyRedxConfigToShop(shop, {
+            ...value,
+            pickupStoreId: String(pickupStore.id),
+            pickupStoreName: pickupStore.name || '',
+            pickupAddress: pickupStore.address || '',
+            pickupAreaName: pickupStore.area_name || '',
+            pickupAreaId: String(pickupStore.area_id || '')
+        });
         await shop.save();
 
         return res.json({
@@ -191,11 +207,11 @@ exports.setDefaultCourier = async (req, res) => {
 
         const shop = await getShop(req.tenantId);
         const summary = getCourierSummary(shop);
-        if (value.provider === 'pathao' && !summary.pathao.configured) {
-            return res.status(400).json({ success: false, error: 'Pathao is not configured for this shop.' });
+        if (value.provider === 'pathao' && !summary.pathao.enabled) {
+            return res.status(400).json({ success: false, error: 'Pathao is not active for this shop.' });
         }
-        if (value.provider === 'redx' && !summary.redx.configured) {
-            return res.status(400).json({ success: false, error: 'RedX is not configured for this shop.' });
+        if (value.provider === 'redx' && !summary.redx.enabled) {
+            return res.status(400).json({ success: false, error: 'RedX is not active for this shop.' });
         }
 
         shop.couriers = shop.couriers || {};

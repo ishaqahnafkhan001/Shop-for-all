@@ -1,0 +1,54 @@
+✔ actual layout editor changes reach catalog overrides after draft, publication and reload (243.9164ms)
+✔ every exposed nested color changes a resolved style after strict schema publication (1195.7489ms)
+✔ card rating and review controls render independently and honor badge/border colors (22.0261ms)
+✔ variant options consume all four configured chip tokens (1.4214ms)
+✔ actual product-card editor controls survive publication and change rendered cards (341.8911ms)
+✔ actual typography editor changes survive publication into heading and body tokens (14.0224ms)
+✔ saved wide menu setting changes desktop dropdown composition without losing links (38.1521ms)
+✔ disabling the last hero slide stays disabled after publication without reviving legacy copy (16.0634ms)
+✔ manual review source overrides selected reviews while selected mode keeps its fallback (1.8048ms)
+✔ every explicitly selected featured product is rendered after publication (58.8916ms)
+✔ checkout mobile action consumes checkout colors and shape, and all page headings share typography (1.2248ms)
+✔ preview section toolbar retains original draft indices when plans filter earlier sections (33.4315ms)
+✔ responsive editor commands survive schema publication and preserve explicit section overrides (26.8449ms)
+✔ responsive defaults preserve legacy composition and derived featured tablet columns (24.2948ms)
+✔ invalid semantic responsive values are rejected and safely normalized on reads (0.3646ms)
+✔ one-column mobile grids remain one column until the tablet breakpoint (28.433ms)
+✔ Phase 10 Modern General: publication, customization, content and five page presentations (248.828ms)
+✔ Phase 10 Minimal General: publication, customization, content and five page presentations (151.5891ms)
+✔ Phase 10 Modern Fashion: publication, customization, content and five page presentations (224.799ms)
+✔ Phase 10 Editorial Fashion: publication, customization, content and five page presentations (203.0037ms)
+✔ Phase 10 Luxury Jewellery: publication, customization, content and five page presentations (227.0373ms)
+✔ Phase 10 Minimal Jewellery: publication, customization, content and five page presentations (106.0915ms)
+✔ Phase 10 Soft Beauty: publication, customization, content and five page presentations (90.4481ms)
+✔ Phase 10 Modern Electronics: publication, customization, content and five page presentations (91.6646ms)
+✔ Phase 10 Fresh Grocery: publication, customization, content and five page presentations (89.9077ms)
+✔ variant-only inventory and initial attributes exclude disabled and archived variants (0.4424ms)
+✖ all nine published presets are styled in the initial HTML and survive serialized props identically (143.4485ms)
+✔ new server revisions and tenant snapshots render immediately without carrying prior theme state (21.4052ms)
+✔ tenant providers reject missing snapshots; platform pages retain their default theme (3.6924ms)
+✔ published settings use fresh, tenant-specific public requests and the signed custom host (5.1973ms)
+✔ direct nested routes render the server settings around children before any client effects (4.8563ms)
+✔ failed and malformed public lookups never render tenant children with a fallback theme (0.9625ms)
+✔ missing or locked stores and custom-domain plan redirects retain backend access decisions (0.6753ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 32
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4268.0052
+
+✖ failing tests:
+
+test at tests\storefront-first-render.test.js:73:1
+✖ all nine published presets are styled in the initial HTML and survive serialized props identically (143.4485ms)
+  Error: Unknown prebuilt storefront theme.
+      at resolvePrebuiltTheme (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\prebuilt.cjs:678:23)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-first-render.test.js:75:79)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    code: 'PREBUILT_THEME_NOT_FOUND'
+  }

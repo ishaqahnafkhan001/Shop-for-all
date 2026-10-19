@@ -3,6 +3,7 @@ const { createNotification } = require('../notificationService');
 const { createPlatformNotification } = require('../platformNotificationService');
 const { getVendorAdminEmails } = require('../vendorNotificationEmailService');
 const { sendMail } = require('../mail/mailService');
+const { escapeHtml, safeHttpUrl } = require('../mail/templates/escapeHtml');
 const User = require('../../models/User');
 const SupportTicket = require('../../models/SupportTicket');
 const { assertJobEntitlementStillValid } = require('../workers/jobEntitlementService');
@@ -77,7 +78,8 @@ const notifyStaffAssigned = async ({ ticket, staffUserId }) => {
 
 const processSupportJob = async (job) => {
     if (job.name === 'support.vendor_email') {
-        const ticket = await SupportTicket.findById(job.payload?.ticketId).select('shop_id ticketNumber').lean();
+        const ticket = await SupportTicket.findOne({ _id: job.payload?.ticketId, shop_id: job.shop_id })
+            .select('shop_id ticketNumber').lean();
         if (!ticket) throw new Error('Support ticket not found for vendor email');
         const recipients = await getVendorAdminEmails(ticket.shop_id);
         if (recipients.length === 0) return;
@@ -94,9 +96,9 @@ const processSupportJob = async (job) => {
             text: `${job.payload?.message || 'Your support ticket was updated.'}\n\n${job.payload?.url || ''}`,
             html: `
                 <div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6;">
-                    <h2>${job.payload?.subject || 'Support update'}</h2>
-                    <p>${job.payload?.message || 'Your support ticket was updated.'}</p>
-                    <p><a href="${job.payload?.url || '#'}">Open ticket</a></p>
+                    <h2>${escapeHtml(job.payload?.subject || 'Support update')}</h2>
+                    <p style="white-space:pre-wrap">${escapeHtml(job.payload?.message || 'Your support ticket was updated.')}</p>
+                    ${safeHttpUrl(job.payload?.url) ? `<p><a href="${safeHttpUrl(job.payload.url)}">Open ticket</a></p>` : ''}
                 </div>
             `
         });
@@ -119,9 +121,9 @@ const processSupportJob = async (job) => {
             text: `${job.payload?.message || 'A support ticket needs your attention.'}\n\n${job.payload?.url || ''}`,
             html: `
                 <div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6;">
-                    <h2>${job.payload?.subject || 'Support ticket update'}</h2>
-                    <p>${String(job.payload?.message || '').replace(/\n/g, '<br>')}</p>
-                    <p><a href="${job.payload?.url || '#'}">Open support workspace</a></p>
+                    <h2>${escapeHtml(job.payload?.subject || 'Support ticket update')}</h2>
+                    <p style="white-space:pre-wrap">${escapeHtml(job.payload?.message || '')}</p>
+                    ${safeHttpUrl(job.payload?.url) ? `<p><a href="${safeHttpUrl(job.payload.url)}">Open support workspace</a></p>` : ''}
                 </div>
             `
         });
@@ -143,8 +145,8 @@ const processSupportJob = async (job) => {
             html: `
                 <div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6;">
                     <h2>ScaleUp Support invitation</h2>
-                    <p>You have been invited as ${job.payload?.supportRole || 'support staff'}.</p>
-                    <p><a href="${job.payload?.url}">Activate support account</a></p>
+                    <p>You have been invited as ${escapeHtml(job.payload?.supportRole || 'support staff')}.</p>
+                    ${safeHttpUrl(job.payload?.url) ? `<p><a href="${safeHttpUrl(job.payload.url)}">Activate support account</a></p>` : ''}
                     <p>This one-time link expires soon.</p>
                 </div>
             `

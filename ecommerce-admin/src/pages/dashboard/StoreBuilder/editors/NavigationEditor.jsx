@@ -1,3 +1,4 @@
+import { getThemeCapabilities } from '@scaleup/storefront-theme';
 import { ChevronDown, ChevronUp, GripVertical, Link, Plus, Trash2, Upload } from 'lucide-react';
 import { BuilderButton, BuilderCard, BuilderInput, BuilderSelect, BuilderToggle, inputClass } from '../builderUi.jsx';
 import { headerVariantOptions } from '../storeBuilderConstants.jsx';
@@ -15,7 +16,7 @@ export function NavigationEditor({
     addNavigationChild,
     updateNavigationChild,
     removeNavigationChild,
-    advancedDesignEnabled = false
+    capabilities = getThemeCapabilities(theme)
 }) {
     return (
         <BuilderCard
@@ -28,10 +29,10 @@ export function NavigationEditor({
                 label="Header layout"
                 value={theme.header?.variant || 'standard'}
                 onChange={event => setTheme(previous => ({ ...previous, header: { ...(previous.header || {}), variant: event.target.value } }))}
-                disabled={!advancedDesignEnabled}
-                help={advancedDesignEnabled ? 'Changes the desktop composition while keeping the same navigation and mobile drawer.' : 'Structural layouts require full Store Builder access.'}
+                disabled={!capabilities.header.merchantSelectable}
+                help={capabilities.header.merchantSelectable ? 'Changes the desktop composition while keeping the same navigation and mobile drawer.' : capabilities.header.reason}
             >
-                {headerVariantOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                {headerVariantOptions.filter(option => capabilities.header.allowed.includes(option.value)).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </BuilderSelect>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="mb-3 text-xs font-black uppercase tracking-wide text-slate-400">Store logo</p>
@@ -54,11 +55,11 @@ export function NavigationEditor({
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <BuilderInput label="Label" value={item.label || ''} onChange={event => updateNavigation(index, 'label', event.target.value)} placeholder="Shop" error={item.url && !item.label ? 'Add a label for this link.' : ''} />
                         <BuilderInput label="URL" value={item.url || ''} onChange={event => updateNavigation(index, 'url', event.target.value)} placeholder="/products" help="Use an internal path like /track or a full external URL." />
-                        <BuilderToggle label="Mega menu ready" checked={Boolean(item.megaMenu)} onChange={() => updateNavigation(index, 'megaMenu', !item.megaMenu)} />
+                        <BuilderToggle label="Wide desktop menu" checked={Boolean(item.megaMenu)} onChange={() => updateNavigation(index, 'megaMenu', !item.megaMenu)} />
                     </div>
                     <div className="mt-3 rounded-lg bg-slate-50 p-3">
                         <div className="mb-3 flex items-center justify-between gap-3">
-                            <div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Nested menu links</p><p className="text-xs text-slate-500">Prepared for dropdown and mega menu expansion.</p></div>
+                            <div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Nested menu links</p><p className="text-xs text-slate-500">Wide menus arrange sub links in columns on desktop. Mobile uses the navigation drawer.</p></div>
                             <BuilderButton type="button" variant="subtle" onClick={() => addNavigationChild(index)}><Plus size={14} /> Add sub link</BuilderButton>
                         </div>
                         {(item.children || []).length === 0 ? <p className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-xs text-slate-500">No sub links yet.</p> : (

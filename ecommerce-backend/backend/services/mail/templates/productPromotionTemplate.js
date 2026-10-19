@@ -1,9 +1,4 @@
-const escapeHtml = (value = '') => String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+const { escapeHtml, safeHttpUrl } = require('./escapeHtml');
 
 const nl2br = (value = '') => escapeHtml(value).replace(/\n/g, '<br/>');
 
@@ -18,7 +13,8 @@ const productPromotionTemplate = ({
     const price = Number(product?.pricing?.sellingPrice || 0);
     const discount = Number(product?.pricing?.discount || 0);
     const finalPrice = discount > 0 ? Math.round(price - (price * discount / 100)) : price;
-    const image = Array.isArray(product?.images) ? product.images[0] : '';
+    const image = Array.isArray(product?.images) ? safeHttpUrl(product.images[0]) : '';
+    const safeProductUrl = safeHttpUrl(productUrl);
 
     return `
 <!doctype html>
@@ -39,7 +35,7 @@ const productPromotionTemplate = ({
               <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#334155;">Hi ${escapeHtml(customerName || 'there')},</p>
               ${message ? `<p style="margin:0 0 22px;font-size:16px;line-height:1.6;color:#334155;">${nl2br(message)}</p>` : ''}
               <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-                ${image ? `<tr><td><img src="${escapeHtml(image)}" alt="${escapeHtml(product?.title || 'Product')}" style="width:100%;max-height:320px;object-fit:cover;display:block;"/></td></tr>` : ''}
+                ${image ? `<tr><td><img src="${image}" alt="${escapeHtml(product?.title || 'Product')}" style="width:100%;max-height:320px;object-fit:cover;display:block;"/></td></tr>` : ''}
                 <tr>
                   <td style="padding:22px;">
                     <h2 style="margin:0 0 10px;font-size:22px;line-height:1.25;color:#111827;">${escapeHtml(product?.title || 'Featured product')}</h2>
@@ -48,7 +44,7 @@ const productPromotionTemplate = ({
                       <span style="font-size:22px;font-weight:800;color:#111827;">৳${finalPrice.toLocaleString('en-BD')}</span>
                       ${discount > 0 ? `<span style="margin-left:8px;font-size:14px;color:#94a3b8;text-decoration:line-through;">৳${price.toLocaleString('en-BD')}</span><span style="margin-left:8px;font-size:12px;font-weight:800;color:#047857;background:#ecfdf5;border-radius:999px;padding:4px 8px;">${discount}% OFF</span>` : ''}
                     </div>
-                    <a href="${escapeHtml(productUrl)}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;border-radius:999px;padding:12px 20px;font-weight:800;">View Product</a>
+                    ${safeProductUrl ? `<a href="${safeProductUrl}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;border-radius:999px;padding:12px 20px;font-weight:800;">View Product</a>` : ''}
                   </td>
                 </tr>
               </table>

@@ -1,3 +1,4 @@
+import { getThemeCapabilities, getThemePropertyCapability } from '@scaleup/storefront-theme';
 import { FileText, LayoutTemplate, Palette, Search, Smartphone, Upload } from 'lucide-react';
 import { BuilderButton, BuilderCard, BuilderInput, BuilderSelect, BuilderTextarea, BuilderToggle } from '../builderUi.jsx';
 import { POLICY_LABELS, getDefaultPolicyText } from '../../../../utils/storeBuilderPolicies.js';
@@ -59,9 +60,14 @@ export function TypographyEditor({ theme, setThemeGroup }) {
     );
 }
 
-export function LayoutEditor({ theme, setTheme, setThemeGroup }) {
+export function LayoutEditor({ theme, setTheme, setThemeGroup, capabilities = getThemeCapabilities(theme) }) {
     return (
         <BuilderCard title="Layout" description="Control page width, section rhythm, and product grid density." icon={LayoutTemplate}>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                <p className="font-bold">{capabilities.composition.label} composition</p>
+                <p className="mt-1">Change the composition by applying a theme from the theme gallery. Colors, content, and the controls below keep this composition.</p>
+                <p className="mt-1">{capabilities.composition.orderingHelp}</p>
+            </div>
             <BuilderSelect label="Container width" value={theme.layout?.containerWidth || theme.layout?.maxWidth || 'Wide'} onChange={event => {
                 setThemeGroup('layout', 'containerWidth', event.target.value);
                 setThemeGroup('layout', 'maxWidth', event.target.value === 'Full Width' ? 'Full' : event.target.value === 'Narrow' ? 'Contained' : 'Wide');
@@ -74,7 +80,7 @@ export function LayoutEditor({ theme, setTheme, setThemeGroup }) {
             }} help="Sets the vertical rhythm between major sections.">
                 <option>Compact</option><option>Comfortable</option><option>Spacious</option>
             </BuilderSelect>
-            <BuilderSelect label="Section width" value={theme.layout?.sectionWidth || 'Full Width'} onChange={event => setThemeGroup('layout', 'sectionWidth', event.target.value)} help="Prepared for per-section width control and applied to preview rhythm.">
+            <BuilderSelect label="Section width" value={theme.layout?.sectionWidth || 'Full Width'} onChange={event => setThemeGroup('layout', 'sectionWidth', event.target.value)} help="Controls flexible homepage sections within the page container.">
                 <option>Narrow</option><option>Standard</option><option>Wide</option><option>Full Width</option>
             </BuilderSelect>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -83,16 +89,17 @@ export function LayoutEditor({ theme, setTheme, setThemeGroup }) {
                 <BuilderInput label="Top margin" type="number" min="0" max="160" value={theme.layout?.sectionMarginTop ?? 0} onChange={event => setThemeGroup('layout', 'sectionMarginTop', Number(event.target.value))} />
                 <BuilderInput label="Bottom margin" type="number" min="0" max="160" value={theme.layout?.sectionMarginBottom ?? 40} onChange={event => setThemeGroup('layout', 'sectionMarginBottom', Number(event.target.value))} />
             </div>
-            <BuilderSelect label="Desktop product columns" value={theme.layout?.productColumnsDesktop || 3} onChange={event => setThemeGroup('layout', 'productColumnsDesktop', Number(event.target.value))}>
+            <p className="text-xs text-slate-500">Padding 40/40 and margins 0/40 restore the theme's automatic spacing. Changing either value in a pair applies both values as pixel overrides.</p>
+            <BuilderSelect label="Desktop product columns" value={theme.layout?.productColumnsDesktop || 3} onChange={event => setThemeGroup('layout', 'productColumnsDesktop', Number(event.target.value))} help="Updates All Products and the default for sections without their own column setting.">
                 <option value={2}>2 columns</option><option value={3}>3 columns</option><option value={4}>4 columns</option><option value={5}>5 columns</option>
             </BuilderSelect>
-            <BuilderSelect label="Mobile product columns" value={theme.layout?.productColumnsMobile || 2} onChange={event => setThemeGroup('layout', 'productColumnsMobile', Number(event.target.value))}>
+            <BuilderSelect label="Tablet product columns" value={theme.layout?.productColumnsTablet ?? ''} onChange={event => setThemeGroup('layout', 'productColumnsTablet', Number(event.target.value))} help="768–1023px. Sets the catalog and featured-section default; section overrides still win.">
+                <option value="" disabled>Theme defaults</option><option value={1}>1 column</option><option value={2}>2 columns</option><option value={3}>3 columns</option><option value={4}>4 columns</option>
+            </BuilderSelect>
+            <BuilderSelect label="Mobile product columns" value={theme.layout?.productColumnsMobile || 2} onChange={event => setThemeGroup('layout', 'productColumnsMobile', Number(event.target.value))} help="Below 768px, including landscape phones. Section overrides still win.">
                 <option value={1}>1 column</option><option value={2}>2 columns</option>
             </BuilderSelect>
-            <BuilderSelect label="Product gap" value={theme.layout?.productGap || theme.productGridStyle || 'Comfortable'} onChange={event => {
-                setThemeGroup('layout', 'productGap', event.target.value);
-                setTheme(previous => ({ ...previous, productGridStyle: event.target.value }));
-            }}>
+            <BuilderSelect label="Product gap" value={theme.layout?.productGap || theme.productGridStyle || 'Comfortable'} onChange={event => setThemeGroup('layout', 'productGap', event.target.value)} help="Updates All Products spacing and the default gap for product sections.">
                 <option>Compact</option><option>Comfortable</option><option>Spacious</option><option>Editorial</option>
             </BuilderSelect>
             <BuilderSelect label="Card alignment" value={theme.layout?.cardAlignment || 'Left'} onChange={event => setThemeGroup('layout', 'cardAlignment', event.target.value)}>
@@ -115,10 +122,19 @@ export function SeoStatusEditor({ health }) {
     );
 }
 
-export function MobileEditor({ theme, toggleThemeGroup }) {
+export function MobileEditor({ theme, setThemeGroup, toggleThemeGroup, planAccess }) {
+    const panelHero = ['split', 'editorial', 'minimal'].includes(theme.hero?.variant);
     return (
         <BuilderCard title="Mobile" description="Tune storefront controls for small screens." icon={Smartphone}>
-            <BuilderToggle label="Sticky checkout button" checked={Boolean(theme.mobile?.stickyCheckoutButton)} onChange={() => toggleThemeGroup('mobile', 'stickyCheckoutButton')} />
+            <BuilderSelect label="Mobile hero composition" value={theme.mobile?.heroComposition || 'Theme'} disabled={!panelHero} onChange={event => setThemeGroup('mobile', 'heroComposition', event.target.value)} help={panelHero ? 'Below 768px, choose image then text and CTA, or text and CTA then image. Tablet and desktop keep the theme composition.' : 'Applies to Split, Editorial and Minimal heroes. Overlay heroes retain their image and text composition.'}>
+                <option>Theme</option><option>Image first</option><option>Text first</option>
+            </BuilderSelect>
+            <BuilderSelect label="Mobile section spacing" value={theme.mobile?.sectionSpacing || 'Theme'} onChange={event => setThemeGroup('mobile', 'sectionSpacing', event.target.value)} help="Gap above flexible homepage sections below 768px: Compact 24px, Comfortable 32px, Spacious 40px. Explicit layout margins take priority. Theme keeps existing responsive spacing.">
+                <option>Theme</option><option>Compact</option><option>Comfortable</option><option>Spacious</option>
+            </BuilderSelect>
+            {getThemePropertyCapability('mobile.stickyCheckoutButton', { theme, planAccess }).merchantEditable && (
+                <BuilderToggle label="Sticky checkout button" checked={Boolean(theme.mobile?.stickyCheckoutButton)} onChange={() => toggleThemeGroup('mobile', 'stickyCheckoutButton')} />
+            )}
             <BuilderToggle label="Compact header" checked={Boolean(theme.mobile?.compactHeader)} onChange={() => toggleThemeGroup('mobile', 'compactHeader')} />
             <BuilderToggle label="Bottom navigation" checked={Boolean(theme.mobile?.showBottomNavigation)} onChange={() => toggleThemeGroup('mobile', 'showBottomNavigation')} />
         </BuilderCard>

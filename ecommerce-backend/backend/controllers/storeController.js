@@ -4,18 +4,18 @@ const Banner = require('../models/Banner');
 const Review = require('../models/Review');
 const Collection = require('../models/Collection');
 const Category = require('../models/Category');
-const Subscription = require('../models/Subscription');
+const { getPublicTrustedBadge } = require('../services/verification/publicTrustedBadgeService');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
-const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
 const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
 const { mirrorPathaoConfigOnShop } = require('../services/courierConfigService');
+const { encryptSecret } = require('../utils/secretCrypto');
+const safeStorefrontLink = require('../utils/safeStorefrontLink');
 const {
     PUBLIC_PRODUCT_CARD_PROJECT,
     sanitizePublicProduct,
     sanitizePublicProducts
 } = require('../services/publicProductSerializer');
-const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
 const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
 const {
     applyScheduledSalesToProducts,
@@ -23,17 +23,13 @@ const {
 } = require('../services/sales/scheduledSaleService');
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
-const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
-const {
-    applyBrandingToPublicTheme,
-    resolveStoreBranding
-} = require('../services/shops/storeBrandingService');
+const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
 const { buildPagination } = require('../utils/pagination');
 const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
 const { normalizeSearchText } = require('../services/products/productQueryService');
 const { resolveSlugRedirect } = require('../services/seo/slugRedirectService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme themeRevision storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
 const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 const getActiveBannerQuery = (shopId, now = new Date()) => ({
@@ -70,7 +66,7 @@ const normalizeBannerForPublic = (banner, now = new Date()) => {
         images: banner.images || [],
         desktopImages: banner.desktopImages || banner.images || [],
         mobileImages: banner.mobileImages || [],
-        link: isUpcoming ? '' : (banner.link || buildProductUrl(product)),
+        link: isUpcoming ? '' : safeStorefrontLink(banner.link || buildProductUrl(product)),
         startsAt: banner.startsAt,
         endsAt: banner.endsAt,
         countdownEnabled: Boolean(banner.countdownEnabled && isUpcoming && launchAt),
@@ -89,35 +85,6 @@ const normalizeBannerForPublic = (banner, now = new Date()) => {
     };
 };
 
-const applyDefaultPoliciesToShopPayload = (shop) => {
-    if (!shop) return shop;
-    const result = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
-    shop.theme = {
-        ...(shop.theme || {}),
-        policies: result.policies
-    };
-    return shop;
-};
-
-const applyPublicPlanSettings = (shop, planAccess) => {
-    if (!shop || !planAccess) return shop;
-    shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
-    if (!planAccess.features.coupons) shop.storewideDiscount = 0;
-    return shop;
-};
-
-const applyEssentialBranding = async (shop, planAccess) => {
-    if (!shop) return shop;
-    const branding = await resolveStoreBranding(shop);
-    shop.theme = applyBrandingToPublicTheme({
-        theme: shop.theme || {},
-        branding,
-        storeBuilderEnabled: Boolean(planAccess?.features?.storeBuilder)
-    });
-    shop.branding = branding;
-    return shop;
-};
-
 const attachPublicBranding = async (shop) => {
     if (!shop) return shop;
     shop.showPlatformBranding = !(await hasFeature(shop._id, 'platformBrandingRemoval'));
@@ -125,32 +92,11 @@ const attachPublicBranding = async (shop) => {
     return shop;
 };
 
-const getPublicTrustedBadge = async (shop) => {
-    if (!shop || shop.badgeStatus !== 'active') return null;
-    if (shop.isActive === false || shop.approvalStatus !== 'Approved') return null;
-    if (shop.verification?.status !== 'approved' || !shop.verification?.phoneVerified) return null;
-    if (shop.badgeExpiresAt && new Date(shop.badgeExpiresAt) <= new Date()) return null;
-    if (shop.badgeRevokedAt) return null;
-    if (!(await hasFeature(shop._id, 'trustSystem'))) return null;
-
-    const subscription = await Subscription.findOne({ shopId: shop._id, status: 'active' })
-        .select('_id status')
-        .lean();
-    if (!subscription) return null;
-
-    return {
-        active: true,
-        type: shop.badgeType || 'trusted_seller',
-        label: shop.badgeType === 'verified_seller' ? 'Verified Seller' : 'ScaleUp Trusted',
-        tooltip: 'Verified by ScaleUp based on identity verification, sales history, store age, and customer review quality.',
-        approvedAt: shop.badgeApprovedAt || null
-    };
-};
 
 const getManualSectionProductIds = (sections = []) => {
     const idsBySection = {};
     sections.forEach(section => {
-        if (section?.type !== 'FeaturedProducts' || section?.isEnabled === false) return;
+        if (!['FeaturedProducts', 'Collection', 'CollectionShowcase'].includes(section?.type) || section?.isEnabled === false) return;
         const source = section.settings?.source || section.source || {};
         const productIds = section.settings?.productIds || source.productIds || [];
         if ((source.type || 'manual') !== 'manual' || !Array.isArray(productIds) || productIds.length === 0) return;
@@ -171,6 +117,17 @@ const getSelectedSectionReviewIds = (sections = []) => {
 };
 
 
+exports.getStorefrontThemeRevision = async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+        const shop = await Shop.findById(req.tenantId).select('_id themeRevision').lean();
+        if (!shop) return res.status(404).json({ error: 'Store not found.' });
+        return res.json({ shopId: String(shop._id), themeRevision: Number(shop.themeRevision || 0) });
+    } catch {
+        return res.status(503).json({ error: 'Store revision unavailable.' });
+    }
+};
+
 exports.getStoreInfo = async (req, res) => {
     try {
         const shop = await Shop.findById(req.tenantId)
@@ -181,9 +138,7 @@ exports.getStoreInfo = async (req, res) => {
             return res.status(404).json({ error: "Shop details not found." });
         }
         const planAccess = await getShopPlanAccess(shop._id);
-        applyPublicPlanSettings(shop, planAccess);
-        await applyEssentialBranding(shop, planAccess);
-        applyDefaultPoliciesToShopPayload(shop);
+        await applyEffectiveStoreTheme(shop, planAccess);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop, {
             eligible: planAccess.features.publicVerifiedBadge
@@ -221,9 +176,17 @@ exports.getStorefrontBootstrap = async (req, res) => {
         const limit = 9;
         const skip = (currentPage - 1) * limit;
         const shopObjectId = new mongoose.Types.ObjectId(shopId);
-        const planAccess = await getShopPlanAccess(shopId);
+        const [shop, planAccess] = await Promise.all([
+            Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
+            getShopPlanAccess(shopId)
+        ]);
+        if (!shop) return res.status(404).json({ error: 'Shop details not found.' });
         const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
+            revision: Number(shop.themeRevision || 0),
+            updatedAt: shop.updatedAt,
             plan: planAccess.planKey,
+            access: planAccess.storeBuilderAccess,
+            features: planAccess.features,
             page: currentPage,
             sort,
             category,
@@ -272,8 +235,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
         else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
         else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
 
-        const [shop, banners, products, totalProducts, categories, categoryMetadata, categoryCounts, collections] = await Promise.all([
-            Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
+        const [banners, products, totalProducts, categories, categoryMetadata, categoryCounts, collections] = await Promise.all([
             planAccess.features.scheduledBanners
                 ? Banner.find(getActiveBannerQuery(shopId))
                     .populate('scheduledProduct', 'title slug status publicationStatus publishAt isActive isDeleted')
@@ -318,10 +280,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
             return res.status(404).json({ error: "Shop details not found." });
         }
 
-        await ensureThemeSectionArchitecture(shop);
-        applyPublicPlanSettings(shop, planAccess);
-        await applyEssentialBranding(shop, planAccess);
-        applyDefaultPoliciesToShopPayload(shop);
+        await applyEffectiveStoreTheme(shop, planAccess);
         shop.trustedBadge = await getPublicTrustedBadge(shop);
         shop.shopVerification = buildPublicShopVerification(shop, {
             eligible: planAccess.features.publicVerifiedBadge
@@ -358,7 +317,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 { $project: PUBLIC_PRODUCT_CARD_PROJECT }
             ]);
             const pricedManualProducts = await applyScheduledSalesToProducts({ shopId, products: manualProducts });
-            const productMap = new Map(pricedManualProducts.map(product => [String(product._id), product]));
+            const productMap = new Map(sanitizePublicProducts(pricedManualProducts).map(product => [String(product._id), product]));
             sectionProducts = Object.entries(manualIdsBySection).reduce((acc, [sectionId, productIds]) => {
                 acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);
                 return acc;
@@ -406,7 +365,7 @@ exports.getStorefrontBootstrap = async (req, res) => {
                 activeSalePopups,
                 sectionProducts,
                 sectionReviews,
-                products: pricedProducts,
+                products: sanitizePublicProducts(pricedProducts),
                 categories: categories.filter(Boolean),
                 categoryDetails: mergeCategoryDetails({
                     names: categories,
@@ -826,14 +785,38 @@ const Joi = require('joi');
 
 const pathaoSetupSchema = Joi.object({
     contact_name: Joi.string().min(3).max(50).required(),
-    contact_number: Joi.string().length(11).required().messages({
-        'string.length': 'Contact number must be exactly 11 digits'
+    contact_number: Joi.string().pattern(/^01\d{9}$/).required().messages({
+        'string.pattern.base': 'Contact number must be an 11-digit Bangladesh mobile number'
     }),
     address: Joi.string().min(10).max(120).required(),
-    city_id: Joi.alternatives().try(Joi.number(), Joi.string()).required(),
-    zone_id: Joi.alternatives().try(Joi.number(), Joi.string()).required(),
-    area_id: Joi.alternatives().try(Joi.number(), Joi.string()).required()
+    city_id: Joi.number().integer().positive().required(),
+    zone_id: Joi.number().integer().positive().required(),
+    area_id: Joi.number().integer().positive().required()
 });
+
+const pathaoLinkSchema = Joi.object({
+    client_id: Joi.string().trim().min(1).max(200).required(),
+    client_secret: Joi.string().trim().min(1).max(500).required(),
+    username: Joi.string().trim().email().max(200).required(),
+    password: Joi.string().min(1).max(500).required(),
+    store_id: Joi.number().integer().positive().required(),
+    isLive: Joi.boolean().required()
+});
+
+const pathaoStoreList = response => {
+    const list = response?.data?.data || response?.data || [];
+    return Array.isArray(list) ? list : [];
+};
+
+const findApprovedPathaoStore = (stores, { name, address }) => {
+    const normalize = value => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const matches = stores.filter(store =>
+        normalize(store.store_name) === normalize(name) && normalize(store.store_address) === normalize(address) &&
+        Number.isInteger(Number(store.store_id)) && Number(store.store_id) > 0 &&
+        store.is_active !== 0 && store.is_active !== '0' && store.is_active !== false
+    );
+    return matches.length === 1 ? matches[0] : null;
+};
 
 exports.setupVendorPathaoStore = async (req, res) => {
     try {
@@ -848,11 +831,17 @@ exports.setupVendorPathaoStore = async (req, res) => {
         if (!shop) {
             return res.status(404).json({ success: false, error: 'Shop not found' });
         }
+        if (shop.couriers?.pathao?.pendingStore) {
+            return res.status(409).json({ success: false, error: 'A Pathao pickup shop is awaiting approval. Check its status before creating another.' });
+        }
+        if (shop.pathaoStoreId) {
+            return res.status(409).json({ success: false, error: 'Pathao is already connected for this shop.' });
+        }
 
         const token = await getPathaoToken();
 
         const storePayload = {
-            name: shop.shopName.substring(0, 50),
+            name: `${shop.shopName.trim().slice(0, 43)}-${String(shop._id).slice(-6)}`,
             contact_name: value.contact_name,
             contact_number: value.contact_number,
             address: value.address,
@@ -863,17 +852,29 @@ exports.setupVendorPathaoStore = async (req, res) => {
 
         await createPathaoStore(token, storePayload);
 
-        const { data: storesResponse } = await getPathaoStores(token);
-        const storesList = storesResponse?.data?.data || storesResponse?.data || [];
+        shop.couriers = shop.couriers || {};
+        shop.couriers.pathao = shop.couriers.pathao || {};
+        shop.couriers.pathao.pendingStore = {
+            name: storePayload.name,
+            address: storePayload.address,
+            requestedAt: new Date()
+        };
+        await shop.save();
 
-        const newStore = storesList.find(
-            s => s.contact_number === storePayload.contact_number && s.store_name === storePayload.name
-        );
+        // Pathao's create response has no store ID. Its store list may lag until approval.
+        let newStore = null;
+        try {
+            const storesList = pathaoStoreList(await getPathaoStores(token));
+            newStore = findApprovedPathaoStore(storesList, shop.couriers.pathao.pendingStore);
+        } catch {
+            // The request is persisted and can be checked again after Pathao approval.
+        }
 
-        if (!newStore || !newStore.store_id) {
-            return res.status(500).json({
-                success: false,
-                error: "Store was created in Pathao, but we couldn't retrieve the ID. Please contact support."
+        if (!newStore) {
+            return res.status(202).json({
+                success: true,
+                pending: true,
+                message: 'Pathao accepted the pickup shop. Check its approval status here later.'
             });
         }
 
@@ -882,6 +883,7 @@ exports.setupVendorPathaoStore = async (req, res) => {
             storeId: newStore.store_id,
             storeName: newStore.store_name || newStore.name || ''
         });
+        shop.couriers.pathao.pendingStore = null;
         await shop.save();
 
         res.status(200).json({
@@ -901,25 +903,67 @@ exports.setupVendorPathaoStore = async (req, res) => {
     }
 };
 
+exports.checkPendingPathaoStore = async (req, res) => {
+    try {
+        const shop = await Shop.findById(req.tenantId);
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+        const pendingStore = shop.couriers?.pathao?.pendingStore;
+        if (!pendingStore) return res.status(400).json({ success: false, error: 'No Pathao pickup shop is awaiting approval.' });
+
+        const token = await getPathaoToken();
+        const approvedStore = findApprovedPathaoStore(pathaoStoreList(await getPathaoStores(token)), pendingStore);
+        if (!approvedStore) {
+            return res.status(202).json({ success: true, pending: true, message: 'Pathao has not approved the pickup shop yet.' });
+        }
+        shop.pathaoStoreId = Number(approvedStore.store_id);
+        mirrorPathaoConfigOnShop(shop, {
+            storeId: shop.pathaoStoreId,
+            storeName: approvedStore.store_name || ''
+        });
+        shop.couriers.pathao.pendingStore = null;
+        await shop.save();
+        return res.json({ success: true, pending: false, message: 'Pathao pickup shop approved and connected.' });
+    } catch {
+        return res.status(502).json({ success: false, error: 'Could not check Pathao approval status. Try again later.' });
+    }
+};
+
 // Link Existing Pathao Account
 exports.linkExistingPathaoAccount = async (req, res) => {
     try {
-        const { client_id, client_secret, username, password, store_id, isLive } = req.body;
+        const { error, value } = pathaoLinkSchema.validate(req.body);
+        if (error) return res.status(400).json({ success: false, error: error.details[0].message });
+        const { client_id, client_secret, username, password, store_id, isLive } = value;
         const shopId = req.tenantId;
 
-        // 1. Test the credentials by trying to get a token
         const customCreds = { client_id, client_secret, username, password, isLive };
-        const token = await getPathaoToken(customCreds); // If this fails, it throws an error to the catch block
+        const token = await getPathaoToken(customCreds);
+        const linkedStore = pathaoStoreList(await getPathaoStores(token, isLive))
+            .find(store => Number(store.store_id) === store_id);
+        if (!linkedStore) {
+            return res.status(400).json({ success: false, error: 'This Pathao store ID was not found in the selected account and environment.' });
+        }
+        if (linkedStore.is_active === 0 || linkedStore.is_active === '0' || linkedStore.is_active === false) {
+            return res.status(400).json({ success: false, error: 'This Pathao store is not active yet. Wait for Pathao approval.' });
+        }
 
-        // 2. If token works, save everything to the database
         const shop = await Shop.findById(shopId);
-        shop.pathaoStoreId = parseInt(store_id, 10);
-        shop.pathaoCredentials = customCreds;
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+        shop.pathaoStoreId = store_id;
+        shop.pathaoCredentials = {
+            client_id,
+            client_secret: encryptSecret(client_secret, { trim: false }),
+            username,
+            password: encryptSecret(password, { trim: false }),
+            isLive
+        };
         mirrorPathaoConfigOnShop(shop, {
             storeId: shop.pathaoStoreId,
+            storeName: linkedStore.store_name || '',
             enabled: true,
             status: 'Active'
         });
+        shop.couriers.pathao.pendingStore = null;
         await shop.save();
 
         res.status(200).json({

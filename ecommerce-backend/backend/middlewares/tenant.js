@@ -12,8 +12,6 @@ const {
     buildKnownCustomDomainQuery,
     PLATFORM_ROOT_DOMAIN
 } = require('../utils/domainUtils');
-const tenantCache = new Map();
-const TENANT_CACHE_TTL = 5 * 60 * 1000;
 const TENANT_AVAILABILITY_CHECK_TTL = 30 * 1000;
 
 const unavailableResponse = (res, extra = {}) => res.status(423).json({
@@ -133,7 +131,6 @@ const attachActiveTenant = async ({ req, res, shop, tenantKey, cacheKey, tenantT
             !(await hasFeature(currentShop?._id, 'customDomain'))
         ) {
             await cache.del(cacheKey);
-            tenantCache.delete(tenantKey);
             return unavailableResponse(res, {
                 code: 'CUSTOM_DOMAIN_PLAN_INACTIVE',
                 platformHost: currentShop?.subdomain
@@ -145,17 +142,11 @@ const attachActiveTenant = async ({ req, res, shop, tenantKey, cacheKey, tenantT
 
     if (!currentShop || currentShop.isActive === false || currentShop.approvalStatus === 'Suspended') {
         await cache.del(cacheKey);
-        tenantCache.delete(tenantKey);
         return unavailableResponse(res);
     }
 
     const tenant = buildCachedTenant(currentShop);
 
-    await cache.set(cacheKey, tenant, TENANT_CACHE_TTL / 1000);
-    tenantCache.set(tenantKey, {
-        shop: tenant,
-        expiresAt: Date.now() + TENANT_CACHE_TTL
-    });
 
     req.tenantId = tenant._id;
     req.tenantName = tenant.shopName;
@@ -177,20 +168,8 @@ exports.resolveTenant = async (req, res, next) => {
 
         const { key: tenantKey, query, tenantType } = requestedTenant;
         const cacheKey = `tenant:${tenantKey}`;
-        const sharedCachedTenant = await cache.get(cacheKey);
-        if (sharedCachedTenant) {
-            const blocked = await attachActiveTenant({ req, res, shop: sharedCachedTenant, tenantKey, cacheKey, tenantType });
-            if (blocked) return blocked;
-            return next();
-        }
-
-        const cachedTenant = tenantCache.get(tenantKey);
-        if (cachedTenant && cachedTenant.expiresAt > Date.now()) {
-            const blocked = await attachActiveTenant({ req, res, shop: cachedTenant.shop, tenantKey, cacheKey, tenantType });
-            if (blocked) return blocked;
-            return next();
-        }
-
+        // Domain ownership and store availability are authorization inputs. Resolve
+        // them from the database, never a worker-local or recovered Redis snapshot.
         const shop = await Shop.findOne(query)
             .select('_id shopName subdomain customDomain isActive approvalStatus suspensionReason verification createdAt');
 
@@ -211,7 +190,6 @@ exports.resolveTenant = async (req, res, next) => {
 exports.invalidateTenantCache = async (subdomain) => {
     const normalized = normalizeCustomDomain(subdomain) || normalizeSubdomain(subdomain);
     if (!normalized) return;
-    tenantCache.delete(normalized);
     await cache.del(`tenant:${normalized}`);
 };
 
@@ -219,5 +197,5 @@ exports.resetTenantCacheForTests = () => {
     if (process.env.NODE_ENV !== 'test') {
         throw new Error('Tenant cache reset is only available in tests.');
     }
-    tenantCache.clear();
+    // Kept for existing test harnesses; tenant authorization is no longer cached.
 };

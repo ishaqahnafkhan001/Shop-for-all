@@ -48,7 +48,7 @@ test('public review routes resolve product slugs without exposing cross-tenant r
     assert.match(reviewService, /eligibleReviewQuery\(\)/);
 });
 
-test('storefront SEO helpers build canonical metadata and safe product JSON-LD', () => {
+test('storefront SEO helpers build canonical metadata and safe product JSON-LD', async () => {
     const seo = readRepo('ecommerce-storefront/src/lib/seo.js');
 
     assert.match(seo, /export const buildMetadata/);
@@ -76,7 +76,8 @@ test('storefront SEO helpers build canonical metadata and safe product JSON-LD',
     assert.match(seo, /follow:\s*Boolean\(isFollowable\)/);
     assert.match(seo, /verification = \{ google: googleSiteVerification \}/);
     assert.match(seo, /getProductImageAlt/);
-    assert.match(seo, /imageAltText/);
+    const { getProductImageAlt } = await importStorefrontSeo();
+    assert.equal(getProductImageAlt({ product: { title: 'Shirt', imageAltText: 'Blue cotton shirt' } }), 'Blue cotton shirt');
 });
 
 test('storefront product image SEO helpers tolerate null product values', async () => {
@@ -479,7 +480,8 @@ test('homepage SEO provenance, social metadata, and freshness are deterministic'
     const health = evaluateHomepageSeo(resolved, { h1: input.storefrontContent.heroTitle, collectionCount: 2, imageAltCoverage: 80 });
     const legacy = normalizeTheme({ seo: { keywords: ['gold jewellery'] } });
 
-    assert.equal(resolved.source.title, 'ai');
+    assert.equal(resolved.source.title, 'unknown_legacy');
+    assert.equal(resolved.origin.title, 'unknown_legacy');
     assert.equal(resolved.freshness.status, 'fresh');
     assert.deepEqual(resolved.socialImage, {
         url: 'https://cdn.example.com/social.webp',
@@ -648,14 +650,13 @@ test('homepage, product, and policy routes render server metadata', () => {
     assert.match(pageMetadataHelper, /isIndexable:\s*indexable/);
 });
 
-test('storefront hero and response headers preserve safe production defaults', () => {
-    const hero = readRepo('packages/storefront-renderer/reference/StorefrontHero.jsx');
+test('storefront hero and response headers preserve safe production defaults', async () => {
+    const ui = await require('./helpers/aiPresentationHarness').loadAiPresentation();
+    const html = ui.render(ui.StorefrontHero, { theme: { hero: { title: 'Hero', bannerSlides: [{ title: 'Hero', desktopImage: '/desktop.webp', mobileImage: '/mobile.webp' }] } }, shopName: 'Store' });
+    assert.match(html, /loading="eager"/);
+    assert.match(html, /fetchPriority="high"/);
+    assert.match(html, /<source media="\(max-width: 767px\)"[^>]*mobile.webp/);
     const nextConfig = readRepo('ecommerce-storefront/next.config.mjs');
-
-    assert.match(hero, /loading=\{eager \? "eager" : "lazy"\}/);
-    assert.match(hero, /fetchPriority=\{eager \? "high" : undefined\}/);
-    assert.match(hero, /<source media="\(max-width: 640px\)" srcSet=\{mobileHeroSrcSet\}/);
-    assert.doesNotMatch(hero, /rel=["']preload["']/);
     assert.match(nextConfig, /poweredByHeader:\s*false/);
     assert.match(nextConfig, /X-Content-Type-Options/);
     assert.match(nextConfig, /strict-origin-when-cross-origin/);
@@ -855,7 +856,7 @@ test('store builder UX pass keeps preview and live renderer aligned', () => {
     assert.match(storefrontHero, /heroPaused/);
 
     assert.match(storeBuilderSidebar, /Store layout/);
-    assert.match(storeBuilderSidebar, /Brand and design/);
+    assert.match(storeBuilderSidebar, /Brand & design/);
     assert.match(storeBuilderSidebar, /Find Store Builder settings/);
     assert.doesNotMatch(storeBuilderSidebar, /Customize your store/);
     assert.doesNotMatch(storeBuilderSidebar, /Theme settings/);
@@ -881,16 +882,18 @@ test('store builder UX pass keeps preview and live renderer aligned', () => {
     assert.match(storefrontTheme, /keywords:\s*\[\]/);
 });
 
-test('storefront product links prefer slugs and product slug backfill is dry-run safe', () => {
+test('storefront product links prefer slugs and product slug backfill is dry-run safe', async () => {
     const productCard = readRepo('packages/storefront-renderer/reference/StorefrontProductCard.jsx');
     const searchModal = readRepo('ecommerce-storefront/src/components/search/SearchModal.jsx');
-    const relatedProducts = readRepo('ecommerce-storefront/src/components/product/RelatedProducts.jsx');
+    const ui = await require('./helpers/aiPresentationHarness').loadAiPresentation();
+    const relatedProducts = ui.render(ui.RelatedProducts, { products: [{ _id: 'one', slug: 'blue-shirt', title: 'Blue' }, { _id: 'two', title: 'Other' }] });
     const accountTabs = readRepo('ecommerce-storefront/src/components/account/CustomerTabs.jsx');
     const backfillScript = read('scripts/backfillProductSlugs.js');
 
     assert.match(productCard, /product\.slug \|\| product\._id/);
     assert.match(searchModal, /product\.slug \|\| product\._id/);
-    assert.match(relatedProducts, /item\.slug \|\| item\._id/);
+    assert.match(relatedProducts, /href="\/products\/blue-shirt"/);
+    assert.match(relatedProducts, /href="\/products\/two"/);
     assert.match(accountTabs, /item\.slug \|\| item\.product\?\.slug/);
 
     assert.match(backfillScript, /--dry-run/);

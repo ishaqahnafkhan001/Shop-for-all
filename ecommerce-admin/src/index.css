@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@scaleup/storefront-renderer/styles.css";
 @source "../../packages/storefront-renderer";
 
 :root {
@@ -138,4 +139,23 @@ textarea:focus-visible {
     color: var(--admin-muted);
     font-size: 0.75rem;
     line-height: 1.125rem;
+}
+
+/* Builder-only ergonomics; the storefront preview has its own document. */
+body:has(.store-builder-shell) { min-width: 0; }
+@media (max-width: 1279px) {
+    .store-builder-shell [id^="builder-workspace-"] {
+        scroll-margin-top: var(--builder-header-height, 190px);
+    }
+    .store-builder-shell button:not([role="presentation"]) {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .store-builder-shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]), select, textarea) {
+        min-height: 44px;
+        font-size: 16px;
+    }
+    .store-builder-shell [data-store-builder-editor] {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
 }

@@ -20,6 +20,8 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { AdminErrorState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';
 
+import AiPreferencesCard from '../../../components/ai/AiPreferencesCard.jsx';
+
 const EMPTY_BRANDING = {
     logoUrl: '',
     faviconUrl: '',
@@ -609,6 +611,7 @@ const StoreBranding = () => {
                 </aside>
             </div>
 
+            <AiPreferencesCard />
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:left-[var(--sidebar-width,0px)]">
                 <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-xs font-semibold text-slate-500" aria-live="polite">

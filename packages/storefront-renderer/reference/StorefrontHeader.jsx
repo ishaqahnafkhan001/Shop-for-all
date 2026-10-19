@@ -13,7 +13,7 @@ import {
     X,
 } from "lucide-react";
 
-import { getSortedNavigation, normalizeTheme } from "@scaleup/storefront-theme";
+import { getSortedNavigation, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
 import {
     DefaultLink,
     EditorSelectionFrame,
@@ -100,7 +100,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
     }
 
     return (
-        <div className="group relative">
+        <div className={item.megaMenu ? 'group' : 'group relative'} data-navigation-layout={item.megaMenu ? 'mega' : 'dropdown'}>
             <LinkSlot
                 LinkComponent={LinkComponent}
                 href={item.url || "#"}
@@ -112,7 +112,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                 <span className="truncate whitespace-nowrap">{item.label}</span>
                 <ChevronDown size={14} className="shrink-0 transition group-hover:rotate-180" />
             </LinkSlot>
-            <div className="invisible absolute left-0 top-full z-40 min-w-56 translate-y-2 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            <div className={`invisible absolute top-full z-40 translate-y-2 rounded-2xl border p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${item.megaMenu ? 'inset-x-4 grid grid-cols-2 gap-2 lg:grid-cols-3' : 'left-0 min-w-56'}`} style={{ backgroundColor: 'var(--sf-header-background)', borderColor: 'var(--sf-header-border)' }}>
                 {children.map((child, index) => (
                     <LinkSlot
                         key={`${child.label}-${index}`}

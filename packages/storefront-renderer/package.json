@@ -7,7 +7,13 @@
     ".": "./index.jsx",
     "./design-tokens": "./designTokens.js",
     "./product-card": "./reference/StorefrontProductCard.jsx",
-    "./reference-core": "./reference/referenceCore.jsx"
+    "./reference-core": "./reference/referenceCore.jsx",
+    "./presentation/*": "./presentation/*.jsx",
+    "./product-data": "./normalizeProduct.js",
+    "./image-domains": "./imageDomains.js",
+    "./media": "./media.js",
+    "./viewports": "./viewports.js",
+    "./styles.css": "./styles.css"
   },
   "peerDependencies": {
     "@scaleup/storefront-theme": "1.0.0",

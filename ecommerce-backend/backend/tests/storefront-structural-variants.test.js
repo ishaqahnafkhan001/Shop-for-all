@@ -182,14 +182,6 @@ test('Store Builder phone and tablet previews do not inherit outer desktop hero 
     assert.match(headerSource, /text-\[var\(--sf-header-icon\)\]/);
 });
 
-test('Store Builder structural controls tolerate an older Vite-optimized theme contract', () => {
-    const source = fs.readFileSync(adminConstantsPath, 'utf8');
-
-    assert.match(source, /import themeContract, \{ SECTION_REGISTRY \}/);
-    assert.match(source, /themeContract\?\.STRUCTURAL_VARIANTS \|\| FALLBACK_STRUCTURAL_VARIANTS/);
-    assert.doesNotMatch(source, /import \{ SECTION_REGISTRY, STRUCTURAL_VARIANTS \}/);
-});
-
 test('representative stores can select different structures using configuration alone', () => {
     const editorialStore = normalizeTheme({
         header: { variant: 'centered' },

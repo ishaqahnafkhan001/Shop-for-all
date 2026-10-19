@@ -19,6 +19,8 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const storefrontRoutes = require('./routes/storefrontRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const marketingRoutes = require('./routes/marketingRoutes');
+const resendWebhookRoutes = require('./routes/resendWebhookRoutes');
 const inventoryRoutes = require('./routes/inventory');
 const bannerRoutes = require('./routes/bannerRoutes');
 const storeBuilderRoutes = require('./routes/storeBuilderRoutes');
@@ -98,7 +100,12 @@ const sanitizeRequest = (req, res, next) => {
 
 app.use(requestContext);
 app.use(helmet());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({
+    limit: '1mb',
+    verify: (req, res, body) => {
+        if (req.path === '/api/webhooks/resend') req.rawBody = Buffer.from(body);
+    }
+}));
 app.use(cookieParser());
 app.use(sanitizeRequest);
 
@@ -150,6 +157,8 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/storefront', storefrontRoutes);
 app.use('/api/public', publicWriteLimiter, publicRoutes);
+app.use('/api/public/marketing', publicWriteLimiter, marketingRoutes);
+app.use('/api/webhooks/resend', resendWebhookRoutes);
 app.use('/api/analytics', publicWriteLimiter, analyticsEventRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 app.use('/api/banners', bannerRoutes);

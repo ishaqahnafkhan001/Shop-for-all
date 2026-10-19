@@ -672,6 +672,7 @@ exports.getPlatformReports = async (req, res) => {
 
 exports.getPlatformSettings = async (_req, res) => {
     const configured = name => Boolean(String(process.env[name] || '').trim());
+    const aiHealth = await require('../services/ai/aiHealthService').getAiHealth();
     res.json({
         success: true,
         data: {
@@ -689,10 +690,11 @@ exports.getPlatformSettings = async (_req, res) => {
                 cloudinaryConfigured: configured('CLOUDINARY_CLOUD_NAME') &&
                     configured('CLOUDINARY_API_KEY') &&
                     configured('CLOUDINARY_API_SECRET'),
-                geminiConfigured: configured('GEMINI_API_KEY'),
+                openaiConfigured: configured('OPENAI_API_KEY'),
                 smsConfigured: configured('SMS_API_KEY') || configured('SMS_PROVIDER_TOKEN')
             },
-            valuesExposed: false
+            valuesExposed: false,
+            aiHealth
         }
     });
 };

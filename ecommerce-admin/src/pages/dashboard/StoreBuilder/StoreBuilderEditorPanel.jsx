@@ -12,11 +12,14 @@ export function StoreBuilderEditorPanel({
 }) {
     return (
         <aside
+            id="builder-workspace-edit"
+            tabIndex={-1}
             data-store-builder-editor
             aria-label="Storefront settings inspector"
             className={`${mobileWorkspace === 'edit' ? 'block' : 'hidden'} min-w-0 space-y-4 xl:fixed xl:bottom-0 xl:right-0 xl:top-16 xl:z-40 xl:w-[380px] xl:overflow-y-auto xl:border-l xl:border-slate-200 xl:bg-slate-50 xl:p-4 xl:shadow-2xl ${inspectorOpen ? 'xl:block' : 'xl:hidden'} 2xl:static 2xl:z-auto 2xl:block 2xl:w-auto 2xl:overflow-visible 2xl:border-0 2xl:bg-transparent 2xl:p-0 2xl:shadow-none`}
         >
             <div className="z-20 rounded-lg border border-slate-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur xl:sticky xl:top-0">
+                <button type="button" onClick={() => setMobileWorkspace('structure')} className="mb-2 min-h-11 rounded-lg px-2 text-sm font-semibold text-indigo-700 xl:hidden">← Back to Store</button>
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                         <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Editing</p>

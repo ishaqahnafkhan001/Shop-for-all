@@ -3,34 +3,11 @@ import { Check, Eye, Layers3, Search, ShieldCheck, X } from 'lucide-react';
 import { getPrebuiltThemes, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
 import { BuilderButton, DeviceSwitcher } from '../builderUi.jsx';
 import { StorefrontPreview } from '../StorefrontPreview.jsx';
-import { getBuilderHeroSlides } from '../storeBuilderThemeUtils.js';
-import modernGeneralThumbnail from '../../../../assets/theme-previews/modern-general.svg';
-import minimalGeneralThumbnail from '../../../../assets/theme-previews/minimal-general.svg';
-import modernFashionThumbnail from '../../../../assets/theme-previews/modern-fashion.svg';
-import editorialFashionThumbnail from '../../../../assets/theme-previews/editorial-fashion.svg';
-import luxuryJewelleryThumbnail from '../../../../assets/theme-previews/luxury-jewellery.svg';
-import minimalJewelleryThumbnail from '../../../../assets/theme-previews/minimal-jewellery.svg';
-import softBeautyThumbnail from '../../../../assets/theme-previews/soft-beauty.svg';
-import modernElectronicsThumbnail from '../../../../assets/theme-previews/modern-electronics.svg';
-import freshGroceryThumbnail from '../../../../assets/theme-previews/fresh-grocery.svg';
-
-const thumbnails = {
-    'modern-general': modernGeneralThumbnail,
-    'minimal-general': minimalGeneralThumbnail,
-    'modern-fashion': modernFashionThumbnail,
-    'editorial-fashion': editorialFashionThumbnail,
-    'luxury-jewellery': luxuryJewelleryThumbnail,
-    'minimal-jewellery': minimalJewelleryThumbnail,
-    'soft-beauty': softBeautyThumbnail,
-    'modern-electronics': modernElectronicsThumbnail,
-    'fresh-grocery': freshGroceryThumbnail
-};
-
 const availableThemes = getPrebuiltThemes();
 const industryFilters = ['All', ...new Set(availableThemes.map(theme => theme.industry))];
 const styleFilters = ['All styles', ...new Set(availableThemes.map(theme => theme.style))];
 
-const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {
+export const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {
     let sectionIndex = 0;
     return resolvePrebuiltTheme({
         currentTheme,
@@ -41,79 +18,19 @@ const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {
     });
 };
 
-const ThemeBannerSnapshot = ({ preset, resolvedTheme }) => {
-    if (!resolvedTheme) {
-        return <img src={thumbnails[preset.thumbnailKey]} alt={`${preset.name} storefront layout`} loading="lazy" decoding="async" className="h-full w-full object-cover" />;
-    }
+// The full Gallery preview consumes the resolved candidate that Apply uses.
+// Keep its input forwarding in one place for Gallery/Builder/live comparisons.
+export function ThemeGalleryPreview({ theme, planAccess, branding, storewideDiscount, shopName, trustedBadge, shopVerification, device, products, previewCatalog, categories, reviews }) {
+    return <StorefrontPreview theme={theme} planAccess={planAccess} branding={branding}
+        storewideDiscount={storewideDiscount} shopName={shopName} trustedBadge={trustedBadge} shopVerification={shopVerification}
+        device={device} previewPage="home" previewZoom="fit"
+        availableProducts={products} previewCatalog={previewCatalog} availableCategories={categories} availableReviews={reviews} activeElement="" />;
+}
 
-    const hero = resolvedTheme.hero || {};
-    const slides = getBuilderHeroSlides(hero);
-    const activeSlide = slides.find(slide => slide.enabled !== false) || slides[0] || {};
-    const imageUrl = activeSlide.desktopImage || activeSlide.mobileImage || hero.imageUrl || '';
-    const variant = hero.variant || preset.presentation?.hero?.variant || 'fullBleed';
-    const isOverlayHero = variant === 'fullBleed' || variant === 'centered';
-    const isEditorial = variant === 'editorial';
-    const colors = resolvedTheme.colors || {};
-    const heroColors = colors.hero || {};
-    const background = colors.background || '#f8fafc';
-    const surface = colors.header?.background || colors.headerBackground || '#ffffff';
-    const foreground = colors.foreground || '#0f172a';
-    const muted = colors.header?.mutedText || '#64748b';
-    const accent = colors.accent || '#4f46e5';
-    const overlayOpacity = Math.min(100, Math.max(0, Number(hero.overlayOpacity) || 0)) / 100;
-    const objectPosition = `${activeSlide.desktopFocalPoint?.x ?? 50}% ${activeSlide.desktopFocalPoint?.y ?? 50}%`;
-    const title = activeSlide.title || hero.title || 'Online store';
-    const subtitle = activeSlide.subtitle || hero.subtitle || '';
-    const image = imageUrl ? (
-        <img
-            src={imageUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onError={event => { event.currentTarget.style.visibility = 'hidden'; }}
-            className="absolute inset-0 h-full w-full object-cover"
-            style={{ objectPosition }}
-        />
-    ) : null;
-    const copy = (
-        <div className={`min-w-0 ${variant === 'centered' ? 'text-center' : ''}`}>
-            {activeSlide.badgeText && <span className="inline-flex max-w-full truncate rounded-full border border-current/20 px-2 py-0.5 text-[7px] font-black uppercase tracking-wide opacity-80">{activeSlide.badgeText}</span>}
-            <p className="mt-1.5 max-h-10 overflow-hidden text-sm font-black leading-tight" style={{ fontFamily: resolvedTheme.typography?.headingFont || 'Inter' }}>{title}</p>
-            {subtitle && <p className="mt-1 max-h-6 overflow-hidden text-[8px] font-semibold leading-3 opacity-70">{subtitle}</p>}
-            {activeSlide.primaryCtaText && <span className="mt-2 inline-flex rounded-full px-2.5 py-1 text-[8px] font-black" style={{ backgroundColor: accent, color: '#ffffff' }}>{activeSlide.primaryCtaText}</span>}
-        </div>
-    );
-
-    return (
-        <div className="flex h-full flex-col" style={{ backgroundColor: background }} data-preview-banner-source="resolved-draft" data-hero-variant={variant}>
-            <div className="flex h-8 shrink-0 items-center justify-between border-b px-3" style={{ backgroundColor: surface, borderColor: colors.header?.border || '#e2e8f0' }}>
-                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full" style={{ backgroundColor: accent }} /><span className="h-1.5 w-12 rounded-full" style={{ backgroundColor: foreground }} /></span>
-                <span className="text-[7px] font-black uppercase tracking-wide" style={{ color: muted }}>{variant} hero</span>
-            </div>
-            <div className="min-h-0 flex-1 p-2.5">
-                {isOverlayHero ? (
-                    <div className="relative flex h-full overflow-hidden rounded-lg" style={{ backgroundColor: imageUrl ? (heroColors.background || '#0f172a') : '#f1f5f9' }}>
-                        {image}
-                        {imageUrl && <span className="absolute inset-0" style={{ backgroundColor: heroColors.overlay || heroColors.background || '#0f172a', opacity: overlayOpacity }} aria-hidden="true" />}
-                        <div className={`relative z-10 flex h-full w-full flex-col justify-end p-4 ${variant === 'centered' ? 'items-center' : 'items-start'}`} style={{ color: imageUrl ? (heroColors.title || '#ffffff') : foreground }}>
-                            {copy}
-                        </div>
-                    </div>
-                ) : (
-                    <div className={`grid h-full overflow-hidden rounded-lg border ${isEditorial ? 'grid-cols-[1.25fr_0.75fr]' : variant === 'minimal' ? 'grid-cols-[0.9fr_1.1fr]' : 'grid-cols-2'}`} style={{ backgroundColor: surface, borderColor: colors.header?.border || '#e2e8f0', color: foreground }}>
-                        <div className={`${isEditorial ? 'order-2' : 'order-1'} flex min-w-0 items-center p-3`}>{copy}</div>
-                        <div className={`${isEditorial ? 'order-1' : 'order-2'} relative min-w-0 overflow-hidden bg-slate-100`}>{image}</div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-const ThemeCard = ({ theme, resolvedTheme, current, onPreview, onUse }) => (
+const ThemeCard = ({ theme, resolvedTheme, previewProps, current, updateAvailable, onPreview, onUse }) => (
     <article className={`overflow-hidden rounded-lg border bg-white transition ${current ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-slate-300 hover:shadow-md'}`}>
         <div className="relative aspect-[8/5] overflow-hidden border-b border-slate-200 bg-slate-100">
-            <ThemeBannerSnapshot preset={theme} resolvedTheme={resolvedTheme} />
+            {resolvedTheme ? <StorefrontPreview {...previewProps} theme={resolvedTheme} device="desktop" thumbnail /> : <p className="p-4 text-sm text-slate-500">Preview unavailable. Open Preview for details.</p>}
             {current && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-black text-white shadow"><Check size={13} /> Current theme</span>}
         </div>
         <div className="p-4">
@@ -130,7 +47,7 @@ const ThemeCard = ({ theme, resolvedTheme, current, onPreview, onUse }) => (
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
                 <BuilderButton type="button" variant="secondary" onClick={() => onPreview(theme)}><Eye size={15} /> Preview</BuilderButton>
-                <BuilderButton type="button" onClick={() => onUse(theme)} disabled={current}>{current ? 'Applied' : 'Use theme'}</BuilderButton>
+                <BuilderButton type="button" onClick={() => onUse(theme)} disabled={current}>{current ? 'Applied' : updateAvailable ? 'Apply update' : 'Use theme'}</BuilderButton>
             </div>
         </div>
     </article>
@@ -172,8 +89,13 @@ export default function ThemeGallery({
     onClose,
     currentTheme,
     planAccess,
+    branding,
+    storewideDiscount,
+    trustedBadge,
+    shopVerification,
     shopName,
     products,
+    previewCatalog,
     categories,
     reviews,
     onApply
@@ -208,7 +130,7 @@ export default function ThemeGallery({
             }
         });
         return resolved;
-    }, [currentTheme, planAccess]);
+    }, [currentTheme, planAccess, branding, shopName]);
 
     const previewResolution = useMemo(() => {
         if (!previewTheme) return { theme: null, error: '' };
@@ -257,7 +179,7 @@ export default function ThemeGallery({
                     {previewTheme && (
                         <>
                             <DeviceSwitcher value={device} onChange={setDevice} />
-                            <BuilderButton type="button" onClick={() => setPendingTheme(previewTheme)} disabled={previewTheme.id === currentPresetId}>{previewTheme.id === currentPresetId ? 'Current theme' : 'Use theme'}</BuilderButton>
+                            <BuilderButton type="button" onClick={() => setPendingTheme(previewTheme)} disabled={previewTheme.id === currentPresetId && Number(currentTheme?.preset?.version) === previewTheme.version}>{previewTheme.id === currentPresetId && Number(currentTheme?.preset?.version) === previewTheme.version ? 'Current theme' : 'Use theme'}</BuilderButton>
                         </>
                     )}
                     <button ref={closeRef} type="button" aria-label="Close theme gallery" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><X size={20} /></button>
@@ -272,19 +194,19 @@ export default function ThemeGallery({
                             <div className="rounded-lg border border-red-200 bg-white p-8 text-center"><p className="font-black text-red-800">Theme preview unavailable</p><p className="mt-2 text-sm text-red-700">{previewResolution.error}</p></div>
                         ) : (
                             <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-                                <StorefrontPreview
+                                <ThemeGalleryPreview
                                     theme={previewResolution.theme}
-                                    storewideDiscount={0}
+                                    planAccess={planAccess}
+                                    branding={branding}
+                                    storewideDiscount={storewideDiscount}
+                                    trustedBadge={trustedBadge}
+                                    shopVerification={shopVerification}
                                     shopName={shopName}
                                     device={device}
-                                    previewPage="home"
-                                    previewZoom="fit"
-                                    availableProducts={products}
-                                    availableCategories={categories}
-                                    availableReviews={reviews}
-                                    activeElement=""
-                                    onSelectElement={() => {}}
-                                    onToggleSectionVisibility={() => {}}
+                                    products={products}
+                                    previewCatalog={previewCatalog}
+                                    categories={categories}
+                                    reviews={reviews}
                                 />
                             </div>
                         )}
@@ -320,7 +242,7 @@ export default function ThemeGallery({
                         {filteredThemes.length ? (
                             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                                 {filteredThemes.map(theme => (
-                                    <ThemeCard key={theme.id} theme={theme} resolvedTheme={cardPreviewThemes.get(theme.id)} current={theme.id === currentPresetId} onPreview={setPreviewTheme} onUse={setPendingTheme} />
+                                    <ThemeCard key={theme.id} theme={theme} resolvedTheme={cardPreviewThemes.get(theme.id)} previewProps={{ planAccess, branding, storewideDiscount, trustedBadge, shopVerification, shopName, availableProducts: products, previewCatalog, availableCategories: categories, availableReviews: reviews }} current={theme.id === currentPresetId && Number(currentTheme?.preset?.version) === theme.version} updateAvailable={theme.id === currentPresetId && Number(currentTheme?.preset?.version) < theme.version} onPreview={setPreviewTheme} onUse={setPendingTheme} />
                                 ))}
                             </div>
                         ) : (

@@ -198,6 +198,14 @@ const contentFields = {
     comments:       Joi.array().items(keyValueSchema).max(20).optional()
 };
 
+const sellerFactsSchema = Joi.object({
+    brand: Joi.string().trim().max(100).allow(''),
+    model: Joi.string().trim().max(100).allow(''),
+    material: Joi.string().trim().max(160).allow(''),
+    dimensions: Joi.string().trim().max(120).allow(''),
+    packageContents: Joi.string().trim().max(300).allow('')
+}).optional();
+
 const seoSchema = Joi.object({
     title: Joi.string().trim().max(70).allow('').optional(),
     description: Joi.string().trim().max(170).allow('').optional()
@@ -221,6 +229,7 @@ const createProductSchema = Joi.object({
     status:      Joi.string().valid('Draft', 'Published', 'Archived').default('Published'),
     ...publicationFields,
     seo:         seoSchema.optional(),
+    sellerFacts: sellerFactsSchema,
     lowStockThreshold: Joi.number().integer().min(0).default(5),
     images:      Joi.array().items(Joi.string().uri()).min(1).max(15).required(),
     coverMediaId: Joi.string().trim().max(1000).allow('').optional(),
@@ -253,6 +262,7 @@ const updateProductSchema = Joi.object({
     status:      Joi.string().valid('Draft', 'Published', 'Archived').optional(),
     ...publicationFields,
     seo:         seoSchema.optional(),
+    sellerFacts: sellerFactsSchema,
     lowStockThreshold: Joi.number().integer().min(0).optional(),
     images:      Joi.array().items(Joi.string().uri()).max(15).optional(),
     coverMediaId: Joi.string().trim().max(1000).allow('').optional(),

@@ -62,6 +62,7 @@ export default function CheckoutPage({ params }) {
     const [isSuccess, setIsSuccess] = useState(false);
     const [orderId, setOrderId] = useState(null);
     const [policyAccepted, setPolicyAccepted] = useState(false);
+    const [marketingEmailOptIn, setMarketingEmailOptIn] = useState(false);
     const [otpModalOpen, setOtpModalOpen] = useState(false);
     const [otpModalState, setOtpModalState] = useState("idle_confirm_send");
     const [otpModalError, setOtpModalError] = useState("");
@@ -256,6 +257,7 @@ export default function CheckoutPage({ params }) {
                     source: "storefront",
                     consent: {
                         checkoutPolicyAccepted: true,
+                        marketingEmailOptIn,
                         version: "checkout_policy_v1",
                     },
                     checkoutSessionId: phoneOtp.checkoutSessionId,
@@ -299,6 +301,7 @@ export default function CheckoutPage({ params }) {
                     source: "storefront",
                     consent: {
                         checkoutPolicyAccepted: true,
+                        marketingEmailOptIn,
                         version: "checkout_policy_v1",
                     },
                     checkoutSessionId: phoneOtp.checkoutSessionId,
@@ -435,6 +438,10 @@ export default function CheckoutPage({ params }) {
                     onInputChange={handleInputChange}
                 />
 
+                <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+                    <input type="checkbox" checked={marketingEmailOptIn} onChange={(event) => setMarketingEmailOptIn(event.target.checked)} className="mt-1" />
+                    <span>Send me a confirmation email to subscribe to this store&apos;s offers and product updates. Optional; unsubscribe anytime.</span>
+                </label>
                 <CheckoutOrderSummary
                     cartItems={cartItems}
                     checkoutBranding={checkoutBranding}

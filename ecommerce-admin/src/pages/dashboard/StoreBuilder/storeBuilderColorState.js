@@ -11,7 +11,7 @@ export const mergeColorUpdates = (current = {}, updates = {}) => Object.entries(
 
 export const getColorPathValue = (colors = {}, path = '') => path.split('.').reduce((acc, key) => acc?.[key], colors);
 
-export const setColorPathValue = (colors = {}, path = '', value) => {
+const writeColorPath = (colors = {}, path = '', value) => {
     const [group, key] = path.split('.');
     if (!group || !key) return { ...(colors || {}), [path]: value };
     return {
@@ -27,6 +27,7 @@ export const setColorPathValue = (colors = {}, path = '', value) => {
 // keys for compatibility, but mirror edits into the nested groups consumed by
 // the shared storefront renderer.
 export const legacyColorPathMap = Object.freeze({
+    foreground: ['brand.secondary'],
     accent: ['brand.primary', 'brand.accent'],
     accentHover: ['brand.hover'],
     accentSoft: ['brand.soft'],
@@ -51,12 +52,28 @@ export const legacyColorPathMap = Object.freeze({
 export const applyCompatibleColorUpdates = (current = {}, updates = {}) => {
     let nextColors = mergeColorUpdates(current, updates);
 
-    Object.entries(updates || {}).forEach(([key, value]) => {
+    // Fixed alias order makes overlapping aliases deterministic. Explicit
+    // nested input (even an unfinished hex value) takes precedence over aliases.
+    Object.entries(legacyColorPathMap).forEach(([key, paths]) => {
+        const value = updates?.[key];
         if (!HEX_COLOR_PATTERN.test(String(value || ''))) return;
-        (legacyColorPathMap[key] || []).forEach((path) => {
-            nextColors = setColorPathValue(nextColors, path, value);
+        paths.forEach((path) => {
+            if (getColorPathValue(updates, path) !== undefined) return;
+            nextColors = writeColorPath(nextColors, path, value);
         });
+    });
+
+    // Only invert one-target aliases. A section edit must not fan out to other
+    // sections. accentSoft remains a separate shade from the accentBg panel fill.
+    Object.entries(legacyColorPathMap).forEach(([key, paths]) => {
+        if (paths.length !== 1 || key === 'accentSoft') return;
+        const value = getColorPathValue(updates, paths[0]);
+        if (HEX_COLOR_PATTERN.test(String(value || ''))) nextColors[key] = value;
     });
 
     return nextColors;
 };
+
+export const setColorPathValue = (colors = {}, path = '', value) => (
+    applyCompatibleColorUpdates(colors, writeColorPath({}, path, value))
+);

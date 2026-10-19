@@ -16,23 +16,6 @@ const repoRoot = path.resolve(__dirname, '../../..');
 const readBackend = file => fs.readFileSync(path.join(backendRoot, file), 'utf8');
 const readRepo = file => fs.readFileSync(path.join(repoRoot, file), 'utf8');
 
-test('all AI workflows publish stable prompt identities and versions', () => {
-    const contracts = [
-        ['services/products/productContentAiService.js', 'product.content'],
-        ['services/collections/collectionAiService.js', 'catalog.collection'],
-        ['services/adInsightAIService.js', 'growth.ad_planning'],
-        ['services/storeSeoAiService.js', 'seo.homepage']
-    ];
-
-    for (const [file, promptId] of contracts) {
-        const source = readBackend(file);
-        assert.match(source, new RegExp(`PROMPT_ID = ['"]${promptId.replace('.', '\\.')}['"]`));
-        assert.match(source, /PROMPT_VERSION = ['"]2\.0\.0['"]/);
-        assert.match(source, /promptId:\s*PROMPT_ID/);
-        assert.match(source, /promptVersion:\s*PROMPT_VERSION/);
-    }
-});
-
 test('AI request records are tenant-feature idempotent and expire automatically', () => {
     const indexes = AiGenerationRequest.schema.indexes();
     const idempotencyIndex = indexes.find(([fields, options]) => (

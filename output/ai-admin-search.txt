@@ -1,0 +1,83 @@
+ecommerce-admin/src\utils\staffPermissions.js:46:    collectionsAi: 'Collection AI',
+ecommerce-admin/src\utils\aiRequestId.js:1:export const createAiRequestId = (feature = 'ai') => {
+ecommerce-admin/src\utils\aiRequestId.js:7:export const aiRequestHeaders = (feature) => ({
+ecommerce-admin/src\utils\aiRequestId.js:8:    'x-ai-request-id': createAiRequestId(feature)
+ecommerce-admin/src\utils\featureAccess.js:25:    aiProductCreation: 'AI product creation',
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:7:import { aiRequestHeaders } from '../../utils/aiRequestId.js';
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:442:            toast.error('Add a collection title or select products before using AI.');
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:449:            const { data } = await API.post('/admin/collections/ai/suggest', {
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:454:            }, { headers: aiRequestHeaders('catalog.collection') });
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:457:                const message = data.message || 'AI suggestions could not be generated right now.';
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:469:            toast.success(data.fallback ? 'Basic collection suggestion generated.' : 'AI collection suggestion ready.');
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:471:            const message = err.response?.data?.message || err.response?.data?.error || 'AI suggestions could not be generated right now.';
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:613:                            {collectionAi.loading ? 'Generating suggestion...' : 'Generate with AI'}
+ecommerce-admin/src\pages\dashboard\CatalogTools.jsx:624:                                        Basic suggestions are shown because the AI response could not be used. Review every field before applying.
+ecommerce-admin/src\pages\dashboard\Billing.jsx:34:            ? `${formatPlanLimit(limits.aiProductCreationsPerWeek)} AI products weekly`
+ecommerce-admin/src\pages\dashboard\Billing.jsx:534:                        <p className="text-xs font-bold uppercase text-slate-400">AI this week</p>
+ecommerce-admin/src\pages\dashboard\Billing.jsx:535:                        <p className="mt-1 font-black text-slate-950">{formatUsage(usage.ai?.used, usage.ai?.limit)}</p>
+ecommerce-admin/src\pages\dashboard\Billing.jsx:536:                        {usage.ai?.resetsAt && <p className="mt-1 text-xs text-slate-500">Resets {formatDate(usage.ai.resetsAt)} UTC</p>}
+ecommerce-admin/src\components\seo\SeoPreview.jsx:26:const sourceLabel = (value = '') => ({ manual: 'Manual', ai: 'AI approved', generated: 'Generated', fallback: 'Fallback', missing: 'Missing' }[value] || value);
+ecommerce-admin/src\pages\superadmin\SuperAdminPlans.jsx:192:                                ['aiProductCreationsPerWeek', 'Weekly AI limit'],
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:7:import { aiRequestHeaders } from '../../utils/aiRequestId.js';
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:80:        toast.error(payload.message || 'AI product suggestions are not configured yet.');
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:85:        toast.error(payload.message || 'AI product suggestions could not be generated right now. Please try again later.');
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:90:        toast.error(payload.message || 'AI product suggestions could not be generated right now. Please try again.');
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:99:    toast.error(payload.message || payload.error || 'AI suggestions could not be generated.');
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:197:                        <p className="text-xs font-black uppercase tracking-wide text-indigo-600">AI suggestions</p>
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:203:                    <button type="button" onClick={onClose} aria-label="Close AI suggestions" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:225:                            {imageAnalysis.summary || (usedImage ? 'AI analyzed the image, but did not return a detailed visual summary.' : 'No image was used for this generation.')}
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:309:                            <h3 className="font-black text-amber-950">Notes from AI</h3>
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:343:    const usage = user?.planAccess?.usage?.ai || null;
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:353:                    ai: nextUsage
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:363:            ? 'Image ready for AI analysis'
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:365:        : 'No product image available — AI will use text only';
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:403:            const response = await API.post('/admin/products/ai/content-suggest', buildRequestData(sections), {
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:406:                    ...aiRequestHeaders('product.content')
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:422:                toast.success('AI suggestions are ready to review.');
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:465:        toast.success('AI suggestions applied. Review before saving.');
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:475:                    <p className="text-sm font-black text-slate-950">AI content helper</p>
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:482:                                ? `${usage.used} AI generations used this week - Unlimited plan`
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:483:                                : `${usage.used} of ${usage.limit} AI generations used this week (${usage.remaining} remaining)`}
+ecommerce-admin/src\components\products\ProductAiAssistant.jsx:495:                    {isGenerating && activeSection === 'all' ? 'Generating...' : 'Generate better content with AI'}
+ecommerce-admin/src\components\seo\HomepageSeoActionCenter.jsx:97:        actionLabel: 'Open AI assistant',
+ecommerce-admin/src\components\seo\HomepageSeoActionCenter.jsx:179:                        <Sparkles size={16} /> Use AI
+ecommerce-admin/src\pages\dashboard\products\EditProduct.jsx:341:        const rawQuantity = window.prompt(
+ecommerce-admin/src\pages\dashboard\products\AddProduct.jsx:1203:                                    {formData.description || 'Start typing a description or use the AI tool to auto-generate one...'}
+ecommerce-admin/src\pages\dashboard\Seo\HomepageSeoPage.jsx:23:    ['ai-assistant', 'AI Assistant'],
+ecommerce-admin/src\pages\dashboard\Seo\HomepageSeoPage.jsx:30:    if (/aiSuggestion/i.test(field)) return 'ai-assistant';
+ecommerce-admin/src\pages\dashboard\Seo\HomepageSeoPage.jsx:319:                {activeTab === 'ai-assistant' && (
+ecommerce-admin/src\pages\dashboard\Seo\HomepageSeoPage.jsx:333:                        onAiClick={() => selectTab('ai-assistant')}
+ecommerce-admin/src\pages\dashboard\Seo\hooks\useHomepageSeo.js:8:import { aiRequestHeaders } from '../../../../utils/aiRequestId.js';
+ecommerce-admin/src\pages\dashboard\Seo\hooks\useHomepageSeo.js:280:            const response = await API.post('/store-builder/admin/seo/ai-suggest', {
+ecommerce-admin/src\pages\dashboard\Seo\hooks\useHomepageSeo.js:284:            }, { headers: aiRequestHeaders('seo.homepage') });
+ecommerce-admin/src\pages\dashboard\Seo\hooks\useHomepageSeo.js:290:                error: requestError.response?.data?.error || 'AI SEO suggestions are unavailable right now.'
+ecommerce-admin/src\pages\dashboard\StoreBuilder\editors\BasicEditors.jsx:114:        <BuilderCard title="Homepage SEO" description="Search appearance, identity, social sharing, indexing, AI suggestions, and health now live in a focused workspace." icon={Search}>
+ecommerce-admin/src\pages\dashboard\GrowthCenter.jsx:23:import { aiRequestHeaders } from '../../utils/aiRequestId.js';
+ecommerce-admin/src\pages\dashboard\GrowthCenter.jsx:257:            }, { headers: aiRequestHeaders('growth.ad_planning') });
+ecommerce-admin/src\pages\dashboard\GrowthCenter.jsx:481:                                            {adCopy.meta?.fallback ? 'Basic planning draft' : 'AI-assisted planning draft'}
+ecommerce-admin/src\pages\dashboard\GrowthCenter.jsx:484:                                            <p className="mt-1">Personalized AI copy was unavailable. This draft uses only published product details and application-calculated aggregates.</p>
+ecommerce-admin/src\pages\dashboard\Seo\SeoAiPanel.jsx:12:                    <p className="text-xs font-black uppercase tracking-wide text-indigo-600">AI assistant</p>
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:8:    const [prompt, setPrompt] = useState(null);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:9:    const [promptLoaded, setPromptLoaded] = useState(false);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:15:        API.get('/admin/billing/conversion/prompt', { params: { surface: 'overview' } })
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:17:                if (active) setPrompt(response.data?.data?.prompt || null);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:20:                if (active) setPrompt(null);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:23:                if (active) setPromptLoaded(true);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:41:    const recommendation = prompt?.message || fallbackRecommendation;
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:42:    const title = prompt?.title || 'Store growth';
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:43:    const canDismiss = Boolean(prompt?.category && !prompt?.blocking);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:45:    const dismissPrompt = async () => {
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:50:                `/admin/billing/conversion/prompts/${encodeURIComponent(prompt.category)}/dismiss`,
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:51:                { milestoneKey: prompt.milestoneKey || '' }
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:53:            setPrompt(null);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:61:        if (prompt?.actionPath) {
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:62:            navigate(prompt.actionPath);
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:65:        if (!prompt?.upgrade) {
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:73:                capability: prompt.upgrade.capability || '',
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:74:                limitKey: prompt.upgrade.limitKey || '',
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:100:                            onClick={dismissPrompt}
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:108:                    {(prompt?.actionPath || prompt?.upgrade || !promptLoaded) && (
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:112:                            disabled={actionPending || !promptLoaded}
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:115:                            {actionPending || !promptLoaded
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:118:                            {prompt?.actionLabel || (prompt?.upgrade?.recommendedPlan
+ecommerce-admin/src\components\dashboard\BeginnerGrowthCard.jsx:119:                                ? `View ${prompt.upgrade.recommendedPlan} plan`

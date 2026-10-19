@@ -1,0 +1,26 @@
+(node:11704) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/defaultPolicies.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all new-store presentation defaults equal the shared contract; historical empty values survive (23.8005ms)
+✔ canonical layers distinguish omission, explicit default values, clears, and responsive values (3.1826ms)
+✔ legacy versions resolve without rewriting inputs or reapplying a preset over merchant edits (9.743ms)
+✔ future schema versions remain identifiable on reads and are rejected for writes (1.3379ms)
+✔ safe unknown root and nested fields survive strict schema round trips in an opaque archive (18.9359ms)
+✔ compatibility data cannot introduce prototype or Mongo operator keys (0.3212ms)
+✔ all presets preserve presentation and responsive settings across plans and repeated resolution (106.8349ms)
+✔ limited-plan canonical no-op saves pass, actual restricted changes still fail (1.5772ms)
+✔ policy fallbacks are identical across Admin, storefront, and server; merchant text wins (15.7539ms)
+✔ public adapter and storefront facade resolve identically with tenant-scoped environment inputs (17.125ms)
+✔ actual public settings, shop-info and bootstrap handlers return identical effective themes for two tenants (97.7517ms)
+✔ actual Builder preview passes canonical themes to every renderer across presets and plan contexts (424.5148ms)
+✔ save normalization rejects newer current/incoming themes before external work and allows safe read-only inspection (1.7649ms)
+✔ branding environment loader scopes asset and CTA lookups to each tenant (1.5138ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1294.8145

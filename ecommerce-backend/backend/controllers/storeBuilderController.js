@@ -1,3 +1,4 @@
+const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
 const Shop = require('../models/Shop');
 const Review = require('../models/Review');
 const Product = require('../models/Product');
@@ -5,8 +6,7 @@ const Collection = require('../models/Collection');
 const mongoose = require('mongoose');
 const cache = require('../services/cacheService');
 const { invalidateTenantCache } = require('../middlewares/tenant');
-const { ensureThemeSectionArchitecture } = require('../services/themeSectionService');
-const { fillMissingPolicyDefaults } = require('../services/policies/defaultPolicyTemplates');
+const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
 const { generateStoreSeoSuggestion } = require('../services/storeSeoAiService');
 const { buildPublicProductQuery } = require('../services/products/publicProductQueryService');
 const {
@@ -26,8 +26,7 @@ const {
     getReplayResponse
 } = require('../services/ai/aiGenerationPolicyService');
 const {
-    assertStoreBuilderUpdateAllowed,
-    getPublicThemeForPlan
+    assertStoreBuilderUpdateAllowed
 } = require('../services/billing/storeBuilderPlanService');
 const StoreBuilderDraft = require('../models/StoreBuilderDraft');
 const StoreBuilderRevision = require('../models/StoreBuilderRevision');
@@ -68,6 +67,7 @@ const invalidateStoreBuilderSeoCache = async (shopId) => {
     const shop = await Shop.findById(shopId).select('subdomain customDomain.domain').lean();
     await Promise.all([
         cache.del(`storefront:settings:${shopId}`),
+        cache.delPattern(`storefront:settings:${shopId}:*`),
         cache.delPattern(`storefront:bootstrap:${shopId}:*`),
         shop?.subdomain ? invalidateTenantCache(shop.subdomain) : Promise.resolve(),
         shop?.customDomain?.domain ? invalidateTenantCache(shop.customDomain.domain) : Promise.resolve()
@@ -156,6 +156,7 @@ exports.getStoreBuilderSettings = async (req, res) => {
 
 exports.updateStoreBuilderSettings = async (req, res) => {
     try {
+        assertDraftTenant(req);
         const { theme: requestedTheme, searchAliases, customDomain, storewideDiscount, expectedRevision } = req.body;
         let domainCacheKeys = [];
         const currentShopForPlan = await Shop.findById(req.tenantId).select('theme customDomain themeRevision').lean();
@@ -235,9 +236,12 @@ exports.updateStoreBuilderSettings = async (req, res) => {
 
         await Promise.all([
             cache.del(`storefront:settings:${req.tenantId}`),
+            cache.delPattern(`storefront:settings:${req.tenantId}:*`),
             cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`),
             ...domainCacheKeys.map(domain => invalidateTenantCache(domain))
-        ]);
+        ]).catch(() => {
+            responseShop.warnings = [...(responseShop.warnings || []), 'CACHE_INVALIDATION_PENDING'];
+        });
         res.status(200).json({
             success: true,
             message: 'Store settings updated',
@@ -289,6 +293,7 @@ exports.suggestStoreSeo = async (req, res) => {
                 : (shop.theme?.navigation || [])
         };
 
+        generationState = await beginAiGeneration({ req, feature: 'seo.homepage' });
         const [products, collections] = await Promise.all([
             Product.find(buildPublicProductQuery(req.tenantId))
                 .select('title category tags')
@@ -302,8 +307,8 @@ exports.suggestStoreSeo = async (req, res) => {
                 .lean()
         ]);
 
-        generationState = await beginAiGeneration({ req, feature: 'seo.homepage' });
         const suggestion = await generateStoreSeoSuggestion({
+            operation: generationState,
             shop,
             theme,
             products,
@@ -340,6 +345,7 @@ exports.suggestStoreSeo = async (req, res) => {
         const replay = getReplayResponse(err);
         if (replay) return res.status(200).json({ ...replay, replayed: true });
         await failAiGeneration({ req, state: generationState, error: err });
+        if (sendAiOperationError(res, err)) return;
         if (err?.code === 'AI_REQUEST_IN_PROGRESS') {
             return res.status(409).json({ success: false, code: err.code, error: err.message });
         }
@@ -364,7 +370,7 @@ exports.suggestStoreSeo = async (req, res) => {
             success: false,
             code: isMissingConfig ? 'SEO_AI_CONTEXT_UNAVAILABLE' : (err.code || 'AI_PROVIDER_FAILED'),
             error: isMissingConfig
-                ? 'AI SEO suggestions are not configured yet. Please add GEMINI_API_KEY on the backend server.'
+                ? 'AI SEO suggestions are temporarily unavailable. Please contact support.'
                 : 'AI SEO suggestions could not be generated right now. Please try again later.'
         });
     }
@@ -600,8 +606,11 @@ exports.getStoreBuilderDraft = async (req, res) => {
     }
 };
 
+const { draftConflict, draftWriteFilter, assertDraftTenant } = require('../services/storeBuilder/draftConcurrency');
+
 exports.saveStoreBuilderDraft = async (req, res) => {
     try {
+        assertDraftTenant(req);
         const draft = await saveStoreBuilderDraft({
             shopId: req.tenantId,
             req,
@@ -610,6 +619,7 @@ exports.saveStoreBuilderDraft = async (req, res) => {
             customDomain: req.body?.customDomain || {},
             storewideDiscount: req.body?.storewideDiscount,
             basedOnRevision: req.body?.basedOnRevision,
+            expectedDraftUpdatedAt: req.body?.expectedDraftUpdatedAt,
             planAccess: req.planAccess
         });
         if (!draft) return res.status(404).json({ success: false, error: 'Shop not found' });
@@ -628,10 +638,13 @@ exports.saveStoreBuilderDraft = async (req, res) => {
 
 exports.deleteStoreBuilderDraft = async (req, res) => {
     try {
-        await StoreBuilderDraft.deleteOne({ shop_id: req.tenantId });
+        assertDraftTenant(req);
+        const result = await StoreBuilderDraft.deleteOne(draftWriteFilter(req.tenantId, req.body?.expectedDraftUpdatedAt));
+        if (req.body?.expectedDraftUpdatedAt !== undefined && !result.deletedCount
+            && await StoreBuilderDraft.findOne({ shop_id: req.tenantId }).select('_id').lean()) throw draftConflict();
         res.status(200).json({ success: true, message: 'Draft discarded' });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Failed to discard Store Builder draft' });
+        res.status(err.statusCode || 500).json({ success: false, code: err.code, error: err.statusCode ? err.message : 'Failed to discard Store Builder draft' });
     }
 };
 
@@ -667,6 +680,7 @@ exports.getStoreBuilderRevision = async (req, res) => {
 
 exports.restoreStoreBuilderRevision = async (req, res) => {
     try {
+        assertDraftTenant(req);
         const restored = await restoreStoreBuilderRevision({
             shopId: req.tenantId,
             revisionId: req.params.id,
@@ -674,10 +688,8 @@ exports.restoreStoreBuilderRevision = async (req, res) => {
             req
         });
         if (!restored) return res.status(404).json({ success: false, error: 'Store Builder revision not found' });
-        await Promise.all([
-            cache.del(`storefront:settings:${req.tenantId}`),
-            cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`)
-        ]);
+        const cacheWarning = await safelyInvalidateStoreBuilderSeoCache(req.tenantId, req);
+        if (cacheWarning) restored.warnings = [...(restored.warnings || []), cacheWarning];
         res.status(200).json({ success: true, message: 'Revision restored as a new published revision', data: restored });
     } catch (err) {
         const message = err.message || 'Failed to restore Store Builder revision';
@@ -704,24 +716,18 @@ exports.deleteStoreBuilderAsset = async (req, res) => {
 
 exports.getPublicStorefrontSettings = async (req, res) => {
     try {
-        const cacheKey = `storefront:settings:${req.tenantId}`;
-        const cached = await cache.get(cacheKey);
-        if (cached) return res.status(200).json(cached);
-
         const shop = await Shop.findById(req.tenantId)
-            .select('shopName subdomain theme storewideDiscount')
+            .select('shopName subdomain branding theme themeRevision storewideDiscount updatedAt')
             .lean();
 
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
-        await ensureThemeSectionArchitecture(shop);
         const planAccess = await getShopPlanAccess(req.tenantId);
-        shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
-        const policyDefaults = fillMissingPolicyDefaults(shop.theme?.policies || {}, { storeName: shop.shopName });
-        shop.theme = {
-            ...(shop.theme || {}),
-            policies: policyDefaults.policies
-        };
+        const cacheKey = `storefront:settings:${req.tenantId}:${JSON.stringify({ revision: Number(shop.themeRevision || 0),
+            updatedAt: shop.updatedAt, plan: planAccess.planKey, access: planAccess.storeBuilderAccess, features: planAccess.features })}`;
+        const cached = await cache.get(cacheKey);
+        if (cached) return res.status(200).json(cached);
+        await applyEffectiveStoreTheme(shop, planAccess);
 
         const response = { success: true, data: shop };
         await cache.set(cacheKey, response, 60);

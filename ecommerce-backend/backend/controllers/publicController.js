@@ -10,6 +10,7 @@ const Promotion = require('../models/Promotion');
 const ReturnRequest = require('../models/ReturnRequest');
 const { evaluatePromotion } = require('../services/promotionService');
 const { notifyNewOrder } = require('../services/shopEventNotificationService');
+const { enqueueOrderReceipt } = require('../services/orders/orderEmailService');
 const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
 const {
     enqueueLowStockAlertsForLogs
@@ -20,6 +21,7 @@ const {
 } = require('../services/sales/scheduledSaleService');
 const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpService');
 const ConsentLog = require('../models/ConsentLog');
+const { recordCheckoutMarketingConsent } = require('../services/marketing/marketingPreferenceService');
 const { createNotification } = require('../services/notificationService');
 const { logAudit } = require('../services/auditLogService');
 const {
@@ -48,16 +50,10 @@ const {
 const { getShippingCostForZone } = require('../services/orders/orderPricingService');
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
-const { getPublicThemeForPlan } = require('../services/billing/storeBuilderPlanService');
+const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
 
-const PUBLIC_SHOP_FIELDS = 'shopName subdomain theme storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain branding theme themeRevision storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
 
-const applyPublicPlanSettings = (shop, planAccess) => {
-    if (!shop || !planAccess) return shop;
-    shop.theme = getPublicThemeForPlan(shop.theme || {}, planAccess);
-    if (!planAccess.features.coupons) shop.storewideDiscount = 0;
-    return shop;
-};
 const RETURN_WINDOW_HOURS = 24;
 const RETURN_WINDOW_MS = RETURN_WINDOW_HOURS * 60 * 60 * 1000;
 const ACTIVE_RETURN_STATUSES = ['Requested', 'Approved', 'Received'];
@@ -663,6 +659,13 @@ exports.createPublicOrder = async (req, res) => {
             ip: req.ip || req.headers['x-forwarded-for'] || '',
             userAgent: req.headers['user-agent'] || ''
         }], { session });
+        if (consent.marketingEmailOptIn === true) {
+            await recordCheckoutMarketingConsent({
+                shopId: shop._id, customerId: orderCustomer._id, orderId: newOrder._id,
+                ip: req.ip, userAgent: req.headers['user-agent'], session
+            });
+        }
+        await enqueueOrderReceipt({ shopId: shop._id, order: newOrder, customer: orderCustomer, session });
 
         // =========================
         // PROMOTION USAGE COUNT
@@ -747,7 +750,7 @@ exports.getPublicShopDetails = async (req, res) => {
             .lean();
         if (!shop) return res.status(404).json({ error: "Shop not found" });
         const planAccess = await getShopPlanAccess(shop._id);
-        applyPublicPlanSettings(shop, planAccess);
+        await applyEffectiveStoreTheme(shop, planAccess);
         shop.shopVerification = buildPublicShopVerification(shop, {
             eligible: planAccess.features.publicVerifiedBadge
         });

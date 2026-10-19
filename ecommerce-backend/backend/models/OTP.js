@@ -60,6 +60,10 @@ const otpSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    deliveryFailedAt: {
+        type: Date,
+        default: null
+    },
     verificationTokenHash: {
         type: String,
         default: '',

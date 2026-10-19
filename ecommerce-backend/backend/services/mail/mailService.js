@@ -18,6 +18,7 @@ const getFromEmail = (type) => {
 
     return process.env.ADMIN_EMAIL_USER || process.env.RESEND_FROM;
 };
+exports.getFromEmail = getFromEmail;
 
 const formatFrom = (senderName, fromEmail) => {
     if (!fromEmail) {
@@ -52,7 +53,10 @@ exports.sendMail = async ({
                               content,
                               html,
                               text,
-                              replyTo
+                              showGreeting = true,
+                              replyTo,
+                              idempotencyKey,
+                              tags
                           }) => {
     try {
         const fromEmail = getFromEmail(type);
@@ -64,7 +68,8 @@ exports.sendMail = async ({
             title: subject,          // Passes the subject to the template title
             recipientName: recipientName,
             content: content,        // The template uses ${content}, so we pass content
-            email: to
+            email: to,
+            showGreeting
         });
 
         if (isResendEnabled()) {
@@ -74,7 +79,9 @@ exports.sendMail = async ({
                 subject,
                 html: finalHtml,
                 text,
-                replyTo
+                replyTo,
+                idempotencyKey,
+                tags
             });
         }
 
@@ -90,8 +97,10 @@ exports.sendMail = async ({
         });
     } catch (error) {
         const provider = isResendEnabled() ? 'resend' : 'smtp';
-        const response = error.response?.data ? ` Response: ${JSON.stringify(error.response.data)}` : '';
-        console.error(`[EmailService] Failed to send ${type} email via ${provider} to ${to}: ${error.message}.${response}`);
+        console.error('[EmailService] Provider request failed', {
+            type, provider, status: error.response?.status || null,
+            code: error.response?.data?.name || error.code || null
+        });
         throw error;
     }
 };

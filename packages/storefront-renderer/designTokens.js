@@ -96,7 +96,7 @@ export const getAllProductsPaddingClass = (...values) => (
     ALL_PRODUCTS_PADDING_CLASSES[resolveGridSpacing(...values)]
 );
 
-export const getSectionLayout = (layout = {}) => {
+export const getSectionLayout = (layout = {}, mobile = {}) => {
     const paddingTop = clampNumber(layout.sectionPaddingTop, 0, 160, DEFAULT_SECTION_BOX.sectionPaddingTop);
     const paddingBottom = clampNumber(layout.sectionPaddingBottom, 0, 160, DEFAULT_SECTION_BOX.sectionPaddingBottom);
     const marginTop = clampNumber(layout.sectionMarginTop, 0, 160, DEFAULT_SECTION_BOX.sectionMarginTop);
@@ -105,10 +105,12 @@ export const getSectionLayout = (layout = {}) => {
         || paddingBottom !== DEFAULT_SECTION_BOX.sectionPaddingBottom;
     const hasCustomMargins = marginTop !== DEFAULT_SECTION_BOX.sectionMarginTop
         || marginBottom !== DEFAULT_SECTION_BOX.sectionMarginBottom;
+    const mobileMargin = { Compact: '24px', Comfortable: '32px', Spacious: '40px' }[mobile.sectionSpacing];
 
     return {
-        className: `${getSectionWidthClass(layout)} ${hasCustomMargins ? "" : SECTION_SPACING_CLASSES[resolveSectionSpacing(layout)]}`.trim(),
+        className: `${getSectionWidthClass(layout)} ${hasCustomMargins ? "" : SECTION_SPACING_CLASSES[resolveSectionSpacing(layout)]} ${!hasCustomMargins && mobileMargin ? 'sf-mobile-section-spacing' : ''}`.trim(),
         style: {
+            ...(!hasCustomMargins && mobileMargin ? { '--sf-mobile-section-margin': mobileMargin } : {}),
             ...(hasCustomPadding ? { paddingTop: `${paddingTop}px`, paddingBottom: `${paddingBottom}px` } : {}),
             ...(hasCustomMargins ? { marginTop: `${marginTop}px`, marginBottom: `${marginBottom}px` } : {}),
         },
@@ -127,7 +129,7 @@ export const resolveProductColumns = ({ desktop, tablet, mobile } = {}) => {
 
 export const resolveFeaturedProductColumns = (section = {}, layout = {}) => resolveProductColumns({
     desktop: section.desktopSettings?.columns ?? layout.productColumnsDesktop,
-    tablet: section.desktopSettings?.tabletColumns,
+    tablet: section.desktopSettings?.tabletColumns ?? layout.productColumnsTablet,
     mobile: section.mobileSettings?.columns ?? layout.productColumnsMobile,
 });
 

@@ -74,6 +74,7 @@ const {
 // Store / Pathao Controllers
 const {
     setupVendorPathaoStore,
+    checkPendingPathaoStore,
     getCities,
     getZones,
     getAreas,
@@ -95,9 +96,11 @@ const {
 // Email Controllers
 const {
     sendEmailToCustomer,
-    sendOrderStatusEmail,
     createCustomerEmailCampaign,
-    createProductEmailCampaign
+    createProductEmailCampaign,
+    listCustomerEmailCampaigns,
+    getCustomerEmailCampaignRecipients,
+    setCustomerMarketingSuppression
 } = require('../controllers/emailController');
 
 // Returns / Activity / Notifications
@@ -111,6 +114,7 @@ const {
     deleteReturns
 } = require('../controllers/returnController');
 const { getAuditLogs } = require('../controllers/auditLogController');
+const { getWelcomeDeliveryStatus } = require('../controllers/registrationWelcomeController');
 const {
     getNotifications,
     getUnreadCount,
@@ -301,7 +305,7 @@ const productAiImageUploadMiddleware = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 5 * 1024 * 1024,
-        files: 1
+        files: 3, fields: 32, fieldSize: 16 * 1024, parts: 35, headerPairs: 100
     },
     fileFilter: (req, file, cb) => {
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
@@ -310,7 +314,7 @@ const productAiImageUploadMiddleware = multer({
 
         cb(null, true);
     }
-}).single('image');
+}).fields([{ name: 'image', maxCount: 1 }, { name: 'images', maxCount: 3 }]);
 const productAiImageUpload = (req, res, next) => {
     productAiImageUploadMiddleware(req, res, (err) => {
         if (err) {
@@ -318,7 +322,7 @@ const productAiImageUpload = (req, res, next) => {
                 success: false,
                 configured: true,
                 errorCode: err.code === 'LIMIT_FILE_SIZE' ? 'AI_IMAGE_TOO_LARGE' : 'AI_IMAGE_UNSUPPORTED',
-                message: err.message || 'Invalid product image.'
+                message: 'The image or form fields exceed the supported type or size limits.'
             });
         }
 
@@ -389,6 +393,18 @@ router.get(
     authorize('VendorAdmin', 'VendorStaff'),
     getVendorAnnouncements
 );
+
+const aiPreferences = require('../controllers/aiPreferencesController');
+const aiContent = require('../controllers/aiMerchantContentController');
+const historyAccess = [protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('products')];
+router.get('/ai/history', ...historyAccess, aiContent.historyList);
+router.post('/ai/history', ...historyAccess, blockBillingSuspendedShop, blockVerificationSuspendedShop, aiContent.historySave);
+router.get('/ai/history/:id/review', ...historyAccess, aiContent.historyReview);
+router.post('/ai/history/:id/apply', ...historyAccess, aiContent.historyApply);
+router.put('/ai/history/:id/feedback', ...historyAccess, aiContent.historyFeedback);
+router.delete('/ai/history/:id', ...historyAccess, aiContent.historyDelete);
+router.get('/ai/preferences', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('settings'), aiPreferences.get);
+router.put('/ai/preferences', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('settings'), blockBillingSuspendedShop, blockVerificationSuspendedShop, aiPreferences.save);
 
 router.get(
     '/basic-store-settings',
@@ -543,6 +559,9 @@ router.patch(
 // EMAIL ROUTES
 // ======================================================
 
+router.get('/registration/welcome-deliveries', protect, authorize('VendorAdmin'),
+    requirePermission('notifications'), getWelcomeDeliveryStatus);
+
 router.post(
     '/customers/send-email',
     protect,
@@ -562,6 +581,13 @@ router.post(
     createCustomerEmailCampaign
 );
 
+router.get('/customers/email-campaigns', protect, authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'), requireShopFeature('customerSection'), listCustomerEmailCampaigns);
+router.get('/customers/email-campaigns/:id/recipients', protect, authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('customers'), requireShopFeature('customerSection'), getCustomerEmailCampaignRecipients);
+router.patch('/customers/:id/marketing-suppression', protect, authorize('VendorAdmin'),
+    requirePermission('customers'), requireShopFeature('customerSection'), setCustomerMarketingSuppression);
+
 router.post(
     '/customers/product-email-campaigns',
     protect,
@@ -570,13 +596,6 @@ router.post(
     requireShopFeature('customerSection'),
     requireShopFeature('emailCampaigns'),
     createProductEmailCampaign
-);
-
-router.post(
-    '/orders/send-email',
-    protect,
-    authorize('VendorAdmin', 'SuperAdmin'),
-    sendOrderStatusEmail
 );
 
 // ======================================================
@@ -716,6 +735,8 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
     linkExistingPathaoAccount
 );
 
@@ -724,7 +745,19 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
     setupVendorPathaoStore
+);
+
+router.post(
+    '/settings/pathao-store/check',
+    protect,
+    authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('shipping'),
+    blockBillingSuspendedShop,
+    blockVerificationSuspendedShop,
+    checkPendingPathaoStore
 );
 
 router.get(

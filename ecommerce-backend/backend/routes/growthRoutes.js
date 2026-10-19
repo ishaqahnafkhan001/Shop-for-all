@@ -1,3 +1,5 @@
+const { blockVerificationSuspendedShop } = require('../middlewares/vendorVerificationGuard');
+const { blockBillingSuspendedShop } = require('../middlewares/billingGate');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
@@ -33,11 +35,17 @@ router.use(authorize('VendorAdmin', 'VendorStaff'));
 router.use(requirePermission('growthCenter'));
 router.use(requireShopFeature('growthCenter'));
 
+const aiContent = require('../controllers/aiMerchantContentController');
+router.get('/campaign-drafts', aiContent.campaignList);
+router.post('/campaign-drafts', blockBillingSuspendedShop, blockVerificationSuspendedShop, aiContent.campaignSave);
+router.put('/campaign-drafts/:id', blockBillingSuspendedShop, blockVerificationSuspendedShop, aiContent.campaignSave);
+router.post('/campaign-drafts/:id/duplicate', blockBillingSuspendedShop, blockVerificationSuspendedShop, aiContent.campaignDuplicate);
+router.delete('/campaign-drafts/:id', aiContent.campaignDelete);
 router.get('/overview', getGrowthOverview);
 router.get('/products', getGrowthProducts);
 router.get('/products/:productId', getGrowthProductDetail);
 router.get('/search', getGrowthSearch);
 router.get('/recommendations', getGrowthRecommendations);
-router.post('/generate-ad-copy', requireShopFeature('aiAdGenerator'), growthAiLimiter, generateAdCopy);
+router.post('/generate-ad-copy', requireShopFeature('aiAdGenerator'), blockBillingSuspendedShop, blockVerificationSuspendedShop, growthAiLimiter, generateAdCopy);
 
 module.exports = router;

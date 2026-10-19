@@ -8,6 +8,14 @@ const keyValueSchema = new Schema({
     reason: { type: String, trim: true, default: '' }
 }, { _id: false });
 
+const sellerFactsSchema = new Schema({
+    brand: { type: String, trim: true, maxlength: 100, default: '' },
+    model: { type: String, trim: true, maxlength: 100, default: '' },
+    material: { type: String, trim: true, maxlength: 160, default: '' },
+    dimensions: { type: String, trim: true, maxlength: 120, default: '' },
+    packageContents: { type: String, trim: true, maxlength: 300, default: '' }
+}, { _id: false });
+
 const normalizeContentRows = (rows = [], { sellingPoints = false } = {}) => (
     Array.isArray(rows)
         ? rows
@@ -151,6 +159,7 @@ const productSchema = new Schema({
     features: [keyValueSchema],
     specifications: [keyValueSchema],
     comments: [keyValueSchema], // Customer-facing extra notes
+    sellerFacts: { type: sellerFactsSchema, default: () => ({}) },
 
     // 🌟 FAST REVIEW METADATA
     averageRating: { type: Number, default: 0 },

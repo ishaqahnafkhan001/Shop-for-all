@@ -7,6 +7,7 @@ import PaginationBar from '../../components/ui/PaginationBar.jsx';
 import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
 import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';
 import { isAbortError, useAbortableRequest } from '../../hooks/useAbortableRequest.js';
+import { useAuth } from '../../context/AuthContext';
 
 const typeStyles = {
     order: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -17,7 +18,10 @@ const typeStyles = {
 };
 
 const Notifications = () => {
+    const { user } = useAuth();
     const [items, setItems] = useState([]);
+    const [welcomeDeliveries, setWelcomeDeliveries] = useState([]);
+    const [welcomeError, setWelcomeError] = useState('');
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
     const runAbortable = useAbortableRequest();
@@ -42,10 +46,26 @@ const Notifications = () => {
         }
     }, [runAbortable]);
 
+    const fetchWelcomeDeliveries = useCallback(async () => {
+        if (user?.role !== 'VendorAdmin') return;
+        try {
+            const { data } = await API.get('/admin/registration/welcome-deliveries');
+            setWelcomeDeliveries(data.data || []);
+            setWelcomeError('');
+        } catch {
+            setWelcomeError('Welcome delivery history is temporarily unavailable.');
+        }
+    }, [user?.role]);
+
     useEffect(() => {
         const timer = window.setTimeout(() => fetchNotifications(1), 0);
         return () => window.clearTimeout(timer);
     }, [fetchNotifications]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(fetchWelcomeDeliveries, 0);
+        return () => window.clearTimeout(timer);
+    }, [fetchWelcomeDeliveries]);
 
     const markRead = async (id) => {
         try {
@@ -87,7 +107,7 @@ const Notifications = () => {
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
                     <PageRefreshButton
-                        onClick={() => fetchNotifications(pagination.page)}
+                        onClick={() => { fetchNotifications(pagination.page); fetchWelcomeDeliveries(); }}
                         loading={loading && items.length > 0}
                         label="Refresh notifications"
                     />
@@ -96,6 +116,21 @@ const Notifications = () => {
                     </Button>
                 </div>
             </div>
+
+            {user?.role === 'VendorAdmin' && <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Shop welcome delivery">
+                <h2 className="text-base font-bold text-slate-950">Shop welcome delivery</h2>
+                <p className="mt-1 text-sm text-slate-500">Provider acceptance is not final delivery. SMS delivery is not confirmed by this gateway.</p>
+                {welcomeError && <p className="mt-3 text-sm text-rose-700">{welcomeError}</p>}
+                {!welcomeError && welcomeDeliveries.length === 0 && <p className="mt-3 text-sm text-slate-500">No welcome delivery records yet.</p>}
+                <div className="mt-3 divide-y divide-slate-100">
+                    {welcomeDeliveries.map(row => <div key={row._id} className="flex flex-col justify-between gap-1 py-3 text-sm sm:flex-row sm:items-center" aria-live="polite">
+                        <span className="font-semibold capitalize text-slate-900">{row.channel}</span>
+                        <span className="capitalize text-slate-700">{row.status} · {row.attempts} attempt{row.attempts === 1 ? '' : 's'}</span>
+                        {row.lastError && <span className="text-amber-800">{row.lastError}</span>}
+                        {row.providerMessageId && <span className="break-all text-xs text-slate-500">Provider ID: {row.providerMessageId}</span>}
+                    </div>)}
+                </div>
+            </section>}
 
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 {loading && items.length === 0 ? (

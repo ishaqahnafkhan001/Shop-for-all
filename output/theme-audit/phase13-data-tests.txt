@@ -1,0 +1,12 @@
+✔ Builder bootstrap prepares public cards and draft-only selections with tenant-scoped queries and real public sanitization (10.0698ms)
+✔ live bootstrap fetches Collection and CollectionShowcase selections outside the catalog page (96.9398ms)
+✔ private picker requests opt into public cards without altering ordinary Admin responses (2.1437ms)
+✔ shared trusted badge keeps verification, expiry, plan and subscription gates (0.6018ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 809.2541

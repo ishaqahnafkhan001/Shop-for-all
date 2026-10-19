@@ -20,8 +20,7 @@ const getSubscriptionUsage = async (shopOrId, options = {}) => {
         products: buildUsageValue({ used: productCount, limit: access.limits.productCount }),
         staff: buildUsageValue({ used: staffCount, limit: access.limits.staffAccounts }),
         aiGeneration: {
-            ...buildUsageValue({ used: aiGeneration.used, limit: aiGeneration.limit }),
-            resetsAt: aiGeneration.resetsAt
+            ...aiGeneration
         },
         imagesPerProduct: access.limits.imagesPerProduct
     };
@@ -58,6 +57,8 @@ const toLegacyUsageShape = (usagePayload) => ({
     staff: usagePayload.usage.staff.used,
     ai: {
         used: usagePayload.usage.aiGeneration.used,
+        pending: usagePayload.usage.aiGeneration.pending,
+        available: usagePayload.usage.aiGeneration.available,
         limit: usagePayload.usage.aiGeneration.limit,
         remaining: usagePayload.usage.aiGeneration.remaining,
         unlimited: usagePayload.usage.aiGeneration.unlimited,

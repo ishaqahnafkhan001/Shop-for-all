@@ -1,15 +1,17 @@
 const mongoose = require('mongoose');
 const {
+    assertSupportedThemeVersion,
     getThemeCapabilityMetadata,
     normalizeSearchAliases,
     normalizeSearchText,
     normalizeTheme,
-    sanitizeThemePayload,
     summarizeThemeChanges,
     validateTheme
 } = require('@scaleup/storefront-theme');
 
 const Shop = require('../../models/Shop');
+const { preserveThemeExtensions } = require('./themeCompatibilityService');
+const { resolveStoreBranding } = require('../shops/storeBrandingService');
 const Product = require('../../models/Product');
 const Review = require('../../models/Review');
 const Collection = require('../../models/Collection');
@@ -29,13 +31,22 @@ const {
     promotePublishedAssets
 } = require('./storeBuilderAssetService');
 const { mergeCategoryDetails, normalizeCategoryKey } = require('../categories/categoryService');
+const { sanitizePublicProducts } = require('../publicProductSerializer');
+const { getStorefrontPreviewCards } = require('../products/storefrontPreviewDataService');
+const { applyScheduledSalesToProducts } = require('../sales/scheduledSaleService');
+const { getPublicTrustedBadge } = require('../verification/publicTrustedBadgeService');
+const { buildPublicShopVerification } = require('../verification/vendorVerificationStatusService');
+const { buildPagination } = require('../../utils/pagination');
 
 const REVISION_RETENTION = 20;
 const BUILDER_SHOP_FIELDS = [
-    'shopName', 'subdomain', 'theme', 'themeRevision', 'lastPublishedAt', 'lastPublishedBy',
+    'shopName', 'subdomain', 'branding', 'theme', 'themeRevision', 'lastPublishedAt', 'lastPublishedBy',
     'customDomain', 'plan', 'featureFlags', 'storewideDiscount', 'isActive', 'approvalStatus',
-    'suspensionReason', 'searchAliases', 'searchAliasesNormalized', 'searchNameNormalized', 'updatedAt'
+    'suspensionReason', 'searchAliases', 'searchAliasesNormalized', 'searchNameNormalized', 'updatedAt',
+    'badgeStatus', 'badgeType', 'badgeApprovedAt', 'badgeExpiresAt', 'badgeRevokedAt',
+    'verification.status', 'verification.phoneVerified', 'verification.phoneVerifiedAt', 'verification.isVendorVerified', 'verification.verifiedAt'
 ].join(' ');
+const PREVIEW_PRODUCT_FIELDS = '_id title slug category tags images imageAltText coverMediaId entitlementMedia pricing.sellingPrice pricing.discount pricing.salePrice pricing.compareAtPrice averageRating numReviews variants._id variants.stock variants.priceOverride variants.pricing.price variants.attributes variants.image variants.isActive variants.status options features specifications comments status isActive';
 
 const getActorId = (req) => req?.user?._id || req?.user?.id || null;
 const getActorName = (req) => String(req?.user?.fullName || req?.user?.email || req?.user?.role || 'Vendor').slice(0, 120);
@@ -71,10 +82,14 @@ const normalizeShopAliases = async ({ aliases, shop }) => {
     return result;
 };
 
-const normalizeThemeForShop = async (theme, shop) => {
-    const sanitizedTheme = sanitizeThemePayload(toJsonSafeTheme(theme));
+const normalizeThemeForShop = async (theme, shop, { readOnly = false } = {}) => {
+    if (!readOnly) {
+        assertSupportedThemeVersion(shop?.theme || {});
+        assertSupportedThemeVersion(theme || {});
+    }
+    const sanitizedTheme = preserveThemeExtensions(toJsonSafeTheme(theme), shop?.theme || {});
     const validation = validateTheme(sanitizedTheme);
-    if (!validation.valid) {
+    if (!validation.valid && !readOnly) {
         const error = new Error(validation.errors[0]?.message || 'The Store Builder theme is invalid.');
         error.statusCode = 400;
         error.code = validation.errors[0]?.code === 'UNSUPPORTED_SECTION' ? 'UNSUPPORTED_SECTION' : 'INVALID_THEME';
@@ -158,19 +173,21 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
 
     const migratedHolder = { _id: shop._id, theme: shop.theme || {} };
     await ensureThemeSectionArchitecture(migratedHolder, { persist: false });
-    shop.theme = await normalizeThemeForShop(migratedHolder.theme, shop);
+    const previewBranding = await resolveStoreBranding(shop);
+    shop.theme = await normalizeThemeForShop(migratedHolder.theme, shop, { readOnly: true });
     shop.themeRevision = Number(shop.themeRevision || 0);
 
-    const selectedProductIds = getSelectedProductIds(shop.theme);
-    const selectedReviewIds = getSelectedReviewIds(shop.theme);
+    const draft = await StoreBuilderDraft.findOne({ shop_id: shop._id }).select('-__v').lean();
+    const selectedProductIds = [...new Set([...getSelectedProductIds(shop.theme), ...getSelectedProductIds(draft?.theme)])];
+    const selectedReviewIds = [...new Set([...getSelectedReviewIds(shop.theme), ...getSelectedReviewIds(draft?.theme)])];
     const productBaseQuery = buildPublicProductQuery(shop._id);
-    const [initialProducts, selectedProducts, categories, categoryMetadata, categoryCounts, publicCollections, initialReviews, selectedReviews, seoStats, draft, revisions, access] = await Promise.all([
+    const [initialProducts, selectedProducts, categories, categoryMetadata, categoryCounts, publicCollections, initialReviews, selectedReviews, seoStats, revisions, access] = await Promise.all([
         Product.find(productBaseQuery)
-            .select('_id title slug category tags images imageAltText pricing.sellingPrice pricing.discount averageRating numReviews variants.stock status isActive')
-            .sort({ createdAt: -1 }).limit(10).lean(),
+            .select(PREVIEW_PRODUCT_FIELDS)
+            .sort({ createdAt: -1, _id: 1 }).limit(9).lean(),
         selectedProductIds.length
             ? Product.find({ ...productBaseQuery, _id: { $in: selectedProductIds } })
-                .select('_id title slug category tags images imageAltText pricing.sellingPrice pricing.discount averageRating numReviews variants.stock status isActive').lean()
+                .select(PREVIEW_PRODUCT_FIELDS).lean()
             : [],
         Product.distinct('category', productBaseQuery),
         Category.find({ shop_id: shop._id }).select('name coverImage updatedAt').lean(),
@@ -184,19 +201,36 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
             ? Review.find({ shop_id: shop._id, rating: 5, _id: { $in: selectedReviewIds }, ...Review.getEligibilityQuery() }).select('_id product_id name rating comment createdAt').lean()
             : [],
         getSeoStatistics(shop._id),
-        StoreBuilderDraft.findOne({ shop_id: shop._id }).select('-__v').lean(),
         StoreBuilderRevision.find({ shop_id: shop._id }).select('revision publishedByName source restoredFromRevision changeSummary createdAt').sort({ revision: -1 }).limit(10).lean(),
         getShopPlanAccess(shop)
     ]);
 
-    const products = Array.from(new Map([...initialProducts, ...selectedProducts].map(product => [String(product._id), product])).values());
-    const reviews = Array.from(new Map([...initialReviews, ...selectedReviews].map(review => [String(review._id), review])).values());
+    const rawProducts = Array.from(new Map([...initialProducts, ...selectedProducts].map(product => [String(product._id), product])).values());
+    // Product-detail previews retain variants. Home cards use exactly the public
+    // projection and sale preparation, independent of selected-product lookup limits.
+    const [pricedDetails, pricedCards, trustedBadge] = await Promise.all([
+        applyScheduledSalesToProducts({ shopId: shop._id, products: rawProducts }),
+        getStorefrontPreviewCards({ shopId: shop._id, productIds: rawProducts.map(product => product._id) }),
+        getPublicTrustedBadge(shop),
+    ]);
+    const products = sanitizePublicProducts(pricedDetails);
+    const cardsById = Object.fromEntries(pricedCards.map(product => [String(product._id), product]));
+    const rawReviews = Array.from(new Map([...initialReviews, ...selectedReviews].map(review => [String(review._id), review])).values());
+    const reviewProductIds = [...new Set(rawReviews.map(review => String(review.product_id)).filter(id => mongoose.Types.ObjectId.isValid(id)))];
+    const reviewProducts = reviewProductIds.length ? await Product.find({ shop_id: shop._id, isDeleted: false, _id: { $in: reviewProductIds } }).select('title').lean() : [];
+    const reviewProductMap = new Map(reviewProducts.map(product => [String(product._id), product]));
+    const reviews = rawReviews.map(review => ({ ...review, product: reviewProductMap.get(String(review.product_id)) || null }));
     const planAccess = safePlanAccess(access);
 
     return {
-        shop: { ...shop, planAccess },
+        shop: { ...shop, planAccess, previewBranding, trustedBadge, shopVerification: buildPublicShopVerification(shop, { eligible: access.features?.publicVerifiedBadge }) },
         planAccess,
         products,
+        previewCatalog: {
+            products: initialProducts.map(product => cardsById[String(product._id)]).filter(Boolean),
+            productsById: cardsById,
+            pagination: buildPagination({ total: seoStats.products.total, page: 1, limit: 9 }),
+        },
         selectedProductIds,
         categories: categories.filter(Boolean).sort((a, b) => String(a).localeCompare(String(b))),
         categoryDetails: mergeCategoryDetails({
@@ -218,9 +252,13 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
     };
 };
 
-const saveStoreBuilderDraft = async ({ shopId, req, theme, searchAliases, customDomain, storewideDiscount, basedOnRevision, planAccess }) => {
+const { draftConflict, draftWriteFilter } = require('./draftConcurrency');
+
+const saveStoreBuilderDraft = async ({ shopId, req, theme, searchAliases, customDomain, storewideDiscount, basedOnRevision, planAccess, expectedDraftUpdatedAt }) => {
     const shop = await Shop.findById(shopId).select('_id shopName searchAliases theme themeRevision').lean();
     if (!shop) return null;
+    if (expectedDraftUpdatedAt !== undefined && Number(basedOnRevision) !== Number(shop.themeRevision || 0)) throw draftConflict();
+    const draftFilter = draftWriteFilter(shopId, expectedDraftUpdatedAt);
     const effectivePlanAccess = planAccess || await getShopPlanAccess(shopId);
     assertStoreBuilderUpdateAllowed({
         currentTheme: shop.theme || {},
@@ -228,10 +266,14 @@ const saveStoreBuilderDraft = async ({ shopId, req, theme, searchAliases, custom
         planAccess: effectivePlanAccess
     });
     const normalizedTheme = await normalizeThemeForShop(theme, shop);
+    assertStoreBuilderUpdateAllowed({ currentTheme: shop.theme || {}, incomingTheme: normalizedTheme,
+        planAccess: effectivePlanAccess, completeSnapshot: true });
     const aliasResult = await normalizeShopAliases({ aliases: searchAliases === undefined ? shop.searchAliases : searchAliases, shop });
     await assertThemeAssetOwnership({ shopId, theme: normalizedTheme });
-    const draft = await StoreBuilderDraft.findOneAndUpdate(
-        { shop_id: shopId },
+    const nextUpdatedAt = new Date(Math.max(Date.now(), new Date(expectedDraftUpdatedAt || 0).getTime() + 1));
+    let draft;
+    try { draft = await StoreBuilderDraft.findOneAndUpdate(
+        draftFilter,
         {
             $set: {
                 theme: normalizedTheme,
@@ -239,11 +281,24 @@ const saveStoreBuilderDraft = async ({ shopId, req, theme, searchAliases, custom
                 customDomain: customDomain || {},
                 storewideDiscount: Math.max(0, Math.min(100, Number(storewideDiscount) || 0)),
                 basedOnRevision: Math.max(0, Number(basedOnRevision) || 0),
-                updatedBy: getActorId(req)
-            }
+                updatedBy: getActorId(req),
+                updatedAt: nextUpdatedAt
+            },
+            $setOnInsert: { createdAt: nextUpdatedAt }
         },
-        { returnDocument: 'after', upsert: true, runValidators: true, setDefaultsOnInsert: true }
-    );
+        { returnDocument: 'after', upsert: expectedDraftUpdatedAt == null, runValidators: true, setDefaultsOnInsert: true, timestamps: false }
+    ); } catch (error) {
+        if (error.code === 11000) throw draftConflict();
+        throw error;
+    }
+    if (!draft) throw draftConflict();
+    if (expectedDraftUpdatedAt !== undefined) {
+        const latest = await Shop.findById(shopId).select('themeRevision').lean();
+        if (Number(latest?.themeRevision || 0) !== Number(basedOnRevision)) {
+            await StoreBuilderDraft.deleteOne({ shop_id: shopId, _id: draft._id, updatedAt: nextUpdatedAt });
+            throw draftConflict();
+        }
+    }
     await attachAssetsToDraft({ shopId, draftId: draft._id, theme: normalizedTheme });
     return { ...draft.toObject(), stale: Number(draft.basedOnRevision) !== Number(shop.themeRevision || 0) };
 };
@@ -305,6 +360,13 @@ const publishStoreBuilder = async ({
     }
 
     const normalizedTheme = await normalizeThemeForShop(theme, current);
+    // Validate the actual snapshot at the persistence boundary, including restore
+    // and direct service callers. Homepage SEO has its own independently gated flow.
+    if (changeScope !== 'homepage-seo') {
+        const planAccess = await getShopPlanAccess(shopId);
+        assertStoreBuilderUpdateAllowed({ currentTheme: current.theme || {}, incomingTheme: normalizedTheme,
+            planAccess, completeSnapshot: true });
+    }
     const aliasResult = await normalizeShopAliases({ aliases: searchAliases === undefined ? current.searchAliases : searchAliases, shop: current });
     await assertThemeAssetOwnership({ shopId, theme: normalizedTheme });
     const revision = currentRevision + 1;

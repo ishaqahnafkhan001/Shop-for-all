@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const Shop = require('../models/Shop');
 const {
+    FALLBACK_THEME,
     SECTION_REGISTRY,
     SECTION_TYPES,
     THEME_SCHEMA_VERSION,
@@ -12,6 +13,65 @@ const {
     sanitizeThemePayload,
     validateTheme
 } = require('@scaleup/storefront-theme');
+const { PREBUILT_THEMES, resolvePrebuiltTheme } = require('@scaleup/storefront-theme/prebuilt');
+
+test('new shops use the shared wishlist default', () => {
+    const shop = new Shop({ shopName: 'New Shop', subdomain: 'new-shop' });
+    assert.equal(shop.theme.productCard.showWishlist, FALLBACK_THEME.productCard.showWishlist);
+});
+
+test('new shops use the shared catalog title default', () => {
+    const shop = new Shop({ shopName: 'New Shop', subdomain: 'new-shop' });
+    assert.equal(shop.theme.allProducts.title, FALLBACK_THEME.allProducts.title);
+});
+
+test('contract-valid Editorial catalog spacing survives schema validation and hydration', () => {
+    const theme = normalizeTheme({ allProducts: { spacing: 'Editorial' } });
+    assert.equal(validateTheme(theme).valid, true);
+    const shop = new Shop({ shopName: 'Editorial Shop', subdomain: 'editorial-shop', theme });
+    assert.equal(shop.validateSync(), undefined);
+    const reloaded = Shop.hydrate(JSON.parse(JSON.stringify(shop.toObject())));
+    assert.equal(normalizeTheme(reloaded.toObject().theme).allProducts.spacing, 'Editorial');
+});
+
+test('legacy sparse records retain their historical persistence defaults on hydration', () => {
+    for (const fields of [{}, { theme: {} }, { theme: { productCard: {}, allProducts: {} } }]) {
+        const shop = Shop.hydrate({ shopName: 'Legacy Shop', subdomain: 'legacy-shop', ...fields });
+        const theme = normalizeTheme(shop.toObject().theme);
+        assert.equal(theme.productCard.showWishlist, false);
+        assert.equal(theme.allProducts.title, 'Shop products');
+        assert.equal(shop.isDirectModified('theme.productCard.showWishlist'), false);
+        assert.equal(shop.isDirectModified('theme.allProducts.title'), false);
+    }
+});
+
+test('explicit saved wishlist and catalog title values survive construction and hydration', () => {
+    for (const showWishlist of [false, true]) {
+        for (const title of ['', 'Merchant catalog']) {
+            const shop = new Shop({
+                shopName: 'Custom Shop', subdomain: 'custom-shop',
+                theme: { productCard: { showWishlist }, allProducts: { title } }
+            });
+            assert.equal(shop.validateSync(), undefined);
+            const reloaded = Shop.hydrate(JSON.parse(JSON.stringify(shop.toObject())));
+            for (const document of [shop, reloaded]) {
+                const theme = normalizeTheme(document.toObject().theme);
+                assert.equal(theme.productCard.showWishlist, showWishlist);
+                assert.equal(theme.allProducts.title, title);
+            }
+        }
+    }
+});
+
+test('all prebuilt theme configurations survive schema and hydration without presentation drift', () => {
+    for (const preset of PREBUILT_THEMES) {
+        const theme = resolvePrebuiltTheme({ presetId: preset.id, appliedAt: '2026-10-07T00:00:00.000Z' });
+        const shop = new Shop({ shopName: 'Preset Shop', subdomain: 'preset-shop', theme });
+        assert.equal(shop.validateSync(), undefined, preset.id);
+        const reloaded = Shop.hydrate(JSON.parse(JSON.stringify(shop.toObject())));
+        assert.deepEqual(normalizeTheme(reloaded.toObject().theme), theme, preset.id);
+    }
+});
 
 test('every registered Store Builder section has a complete, stable contract', () => {
     for (const type of SECTION_TYPES) {

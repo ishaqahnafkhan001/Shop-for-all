@@ -12,8 +12,9 @@ const getSecret = () => {
 
 const getKey = () => crypto.createHash('sha256').update(getSecret()).digest();
 
-const encryptSecret = (value = '') => {
-    const text = String(value || '').trim();
+const encryptSecret = (value = '', { trim = true } = {}) => {
+    const raw = String(value || '');
+    const text = trim ? raw.trim() : raw;
     if (!text) return '';
 
     const iv = crypto.randomBytes(12);

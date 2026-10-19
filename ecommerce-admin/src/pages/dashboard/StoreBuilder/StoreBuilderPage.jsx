@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
     contrastRatio,
+    getThemeCapabilities,
+    getThemeEditorRestriction,
     extractThemeAssetUrls,
     suggestAccessibleForeground,
     summarizeThemeChanges,
@@ -30,6 +32,7 @@ import {
     usePreviewMode
 } from './hooks/usePreviewMode.js';
 import { useStoreBuilderDirtyState } from './hooks/useStoreBuilderDirtyState.js';
+import { useMobileWorkspace } from './hooks/useMobileWorkspace.js';
 import { useStoreBuilderBootstrap } from './hooks/useStoreBuilderBootstrap.js';
 import { useAutosaveRecovery } from './hooks/useAutosaveRecovery.js';
 import { useThemeMedia } from './hooks/useThemeMedia.js';
@@ -53,15 +56,17 @@ import {
     formatBuilderDate,
     getBuilderHeroSlides,
     isHexColor,
-    mergeTheme,
+    loadBuilderTheme,
     normalizeHeroSlideForBuilder,
     normalizeHomepageSections,
     safeParseSnapshot,
     stableStringify,
-    syncHeroLegacyFields
+    syncHeroLegacyFields,
+    updateBuilderThemeSetting
 } from './storeBuilderThemeUtils.js';
 import {
     applyCompatibleColorUpdates,
+    applyColorPalette,
     buildBrandColorSet,
     colorSectionGroups,
     getColorPathValue,
@@ -125,7 +130,7 @@ const StoreBuilderPage = () => {
     const [activeGroup, setActiveGroup] = useState('brand');
     const [activeElement, setActiveElement] = useState('logo');
     const { device, setDevice, previewPage, setPreviewPage } = usePreviewMode();
-    const [mobileWorkspace, setMobileWorkspace] = useState('structure');
+    const [mobileWorkspace, setMobileWorkspace] = useMobileWorkspace();
     const [initialSnapshot, setInitialSnapshot] = useState('');
     const [editorHistory, setEditorHistory] = useState({ past: [], future: [] });
     const [lastSavedAt, setLastSavedAt] = useState('');
@@ -173,7 +178,8 @@ const StoreBuilderPage = () => {
         searchAliases,
         customDomain,
         storewideDiscount,
-        basedOnRevision: themeRevision
+        basedOnRevision: themeRevision,
+        initialDraftVersion: bootstrap?.draft?.updatedAt ?? null
     });
     useEffect(() => {
         dirtyRef.current = hasUnsavedChanges;
@@ -181,11 +187,13 @@ const StoreBuilderPage = () => {
 
     useEffect(() => {
         let checking = false;
+        let active = true;
         const refreshSeoStatus = async () => {
             if (checking) return;
             checking = true;
             try {
                 const response = await API.get('/store-builder/admin/seo/bootstrap');
+                if (!active) return;
                 const seoBootstrap = response.data?.data;
                 if (seoBootstrap?.seoStats) setSeoStats(seoBootstrap.seoStats);
                 const latestRevision = Number(seoBootstrap?.themeRevision || 0);
@@ -207,7 +215,7 @@ const StoreBuilderPage = () => {
             }
         };
         window.addEventListener('focus', refreshSeoStatus);
-        return () => window.removeEventListener('focus', refreshSeoStatus);
+        return () => { active = false; window.removeEventListener('focus', refreshSeoStatus); };
     }, [reloadBootstrap, themeRevision]);
 
     useEffect(() => {
@@ -230,18 +238,10 @@ const StoreBuilderPage = () => {
         const sectionIndex = getSectionIndexFromSelection(activeElement, theme);
         return isHomepageSectionLocked(theme.homepageSections?.[sectionIndex]);
     }, [activeElement, theme]);
-    const selectedPlanRestriction = useMemo(() => {
-        if (planAccess.storeBuilderAccess === 'full') return '';
-        if (['layout', 'mobile'].includes(activeGroup)) {
-            return planAccess.capabilityMetadata?.advancedDesign?.label || 'Advanced design controls are not included in your current plan.';
-        }
-        if (activeGroup !== 'sections') return '';
-        if (activeElement?.startsWith('section-') || activeElement?.startsWith('section:')) {
-            const index = getSectionIndexFromSelection(activeElement, theme);
-            if (theme.homepageSections?.[index]?.type === 'FeaturedProducts') return '';
-        }
-        return planAccess.capabilityMetadata?.sections?.label || 'Advanced homepage sections are not included in your current plan.';
-    }, [activeElement, activeGroup, planAccess, theme]);
+    const themeCapabilities = useMemo(() => getThemeCapabilities(theme, planAccess), [theme, planAccess]);
+    const selectedPlanRestriction = useMemo(() => getThemeEditorRestriction(activeGroup, {
+        theme, planAccess, sectionIndex: getSectionIndexFromSelection(activeElement, theme),
+    }), [activeElement, activeGroup, planAccess, theme]);
     const storeSeoSignals = useMemo(() => {
         if (seoStats) {
             return {
@@ -362,7 +362,7 @@ const StoreBuilderPage = () => {
         setAvailableProducts(prev => {
             const map = new Map(prev.map(product => [String(product._id), product]));
             products.forEach(product => {
-                if (product?._id) map.set(String(product._id), product);
+                if (product?._id) map.set(String(product._id), { ...map.get(String(product._id)), ...product });
             });
             return Array.from(map.values());
         });
@@ -376,15 +376,19 @@ const StoreBuilderPage = () => {
                     limit: 10,
                     page,
                     status: 'Published',
+                    storefrontPreview: 'true',
                     ...(search ? { search } : {}),
                     ...(category && category !== 'All' ? { category } : {})
                 }
             });
             const products = data.data || [];
             setProductOptions(prev => append ? [...prev, ...products.filter(product => !prev.some(item => item._id === product._id))] : products);
-            mergeProductCache(products);
-            setProductCategories(data.categories || []);
-            setProductCategoryDetails(data.categoryDetails || []);
+            const previewCards = new Map((data.previewProducts || []).map(product => [String(product._id), product]));
+            mergeProductCache(products.map(product => ({ ...product,
+                ...(Array.isArray(data.previewProducts) ? { previewCard: previewCards.get(String(product._id)) || null } : {})
+            })));
+            // Keep public categories from bootstrap; the private picker response
+            // can contain categories belonging only to unpublished products.
             setProductPicker(prev => ({
                 ...prev,
                 search,
@@ -453,7 +457,7 @@ const StoreBuilderPage = () => {
 
         if (sameShop && dirtyRef.current) return;
 
-        const nextTheme = mergeTheme(defaultTheme, shop.theme || {});
+        const nextTheme = loadBuilderTheme(shop.theme || {});
         const nextSearchAliases = Array.isArray(shop.searchAliases) ? shop.searchAliases : [];
         const nextDomain = shop.customDomain || { domain: '' };
         const nextDiscount = Number(shop.storewideDiscount) || 0;
@@ -484,9 +488,10 @@ const StoreBuilderPage = () => {
         setEditorHistory({ past: [], future: [] });
 
         const serverDraft = bootstrap.draft;
+        autosave.resetVersion(serverDraft?.updatedAt ?? null);
         if (serverDraft?.theme && !serverDraft.stale) {
             const draftSnapshot = stableStringify({
-                theme: mergeTheme(defaultTheme, serverDraft.theme),
+                theme: loadBuilderTheme(serverDraft.theme),
                 searchAliases: serverDraft.searchAliases || nextSearchAliases,
                 customDomain: serverDraft.customDomain || nextDomain,
                 storewideDiscount: Number(serverDraft.storewideDiscount) || 0
@@ -554,10 +559,7 @@ const StoreBuilderPage = () => {
     const applyColorSet = (colors = {}, label = 'Palette') => {
         setTheme(prev => ({
             ...prev,
-            colors: applyCompatibleColorUpdates(
-                prev.colors || {},
-                colors?.accent ? mergeColorUpdates(buildBrandColorSet(colors.accent), colors) : colors
-            )
+            colors: applyColorPalette(prev.colors || {}, colors)
         }));
         toast.success(`${label} applied`);
     };
@@ -589,10 +591,7 @@ const StoreBuilderPage = () => {
         if (!defaultGroup || typeof defaultGroup !== 'object') return;
         setTheme(prev => ({
             ...prev,
-            colors: {
-                ...(prev.colors || {}),
-                [groupId]: { ...defaultGroup }
-            }
+            colors: applyCompatibleColorUpdates(prev.colors || {}, { [groupId]: { ...defaultGroup } })
         }));
         toast.success(`${colorSectionGroups.find(group => group.id === groupId)?.title || 'Section'} colors reset`);
     };
@@ -619,7 +618,7 @@ const StoreBuilderPage = () => {
         setTheme(prev => ({
             ...prev,
             colors: isHexColor(value)
-                ? mergeColorUpdates(prev.colors || {}, buildBrandColorSet(value))
+                ? applyCompatibleColorUpdates(prev.colors || {}, buildBrandColorSet(value))
                 : mergeColorUpdates(prev.colors || {}, {
                     accent: value,
                     brand: {
@@ -632,10 +631,7 @@ const StoreBuilderPage = () => {
     };
 
     const setThemeGroup = (group, key, value) => {
-        setTheme(prev => ({
-            ...prev,
-            [group]: { ...(prev[group] || {}), [key]: value }
-        }));
+        setTheme(prev => updateBuilderThemeSetting(prev, group, key, value));
     };
 
     const updateHeroSlides = (updater) => {
@@ -699,6 +695,8 @@ const StoreBuilderPage = () => {
     };
 
     const updateHomepageSection = (index, field, value) => {
+        if (['type', 'sortOrder'].includes(field) && !themeCapabilities.sectionStructure.editable) return;
+        if (!themeCapabilities.sections[theme.homepageSections?.[index]?.type]?.editable) return;
         setTheme(prev => ({
             ...prev,
             homepageSections: (prev.homepageSections || []).map((section, i) => (
@@ -708,6 +706,7 @@ const StoreBuilderPage = () => {
     };
 
     const updateHomepageSectionSetting = (index, key, value) => {
+        if (!themeCapabilities.sections[theme.homepageSections?.[index]?.type]?.editable) return;
         setTheme(prev => ({
             ...prev,
             homepageSections: (prev.homepageSections || []).map((section, i) => (
@@ -719,6 +718,7 @@ const StoreBuilderPage = () => {
     };
 
     const updateHomepageSectionMobileSetting = (index, key, value) => {
+        if (!themeCapabilities.sections[theme.homepageSections?.[index]?.type]?.editable) return;
         setTheme(prev => ({
             ...prev,
             homepageSections: (prev.homepageSections || []).map((section, i) => (
@@ -730,6 +730,7 @@ const StoreBuilderPage = () => {
     };
 
     const updateHomepageSectionDesktopSetting = (index, key, value) => {
+        if (!themeCapabilities.sections[theme.homepageSections?.[index]?.type]?.editable) return;
         setTheme(prev => ({
             ...prev,
             homepageSections: (prev.homepageSections || []).map((section, i) => (
@@ -848,6 +849,7 @@ const StoreBuilderPage = () => {
     const normalizeSectionOrder = (sections) => normalizeHomepageSections(sections).map((section, index) => ({ ...section, sortOrder: index }));
 
     const moveHomepageSection = (index, direction) => {
+        if (!themeCapabilities.sectionStructure.editable) return;
         setTheme(prev => {
             const sections = [...(prev.homepageSections || [])];
             const targetIndex = index + direction;
@@ -859,6 +861,7 @@ const StoreBuilderPage = () => {
     };
 
     const duplicateHomepageSection = (index) => {
+        if (!themeCapabilities.sectionStructure.editable) return;
         const duplicateId = createBuilderSectionId(theme.homepageSections?.[index]?.type);
         setTheme(prev => {
             const sections = [...(prev.homepageSections || [])];
@@ -882,6 +885,7 @@ const StoreBuilderPage = () => {
     };
 
     const removeHomepageSection = (index) => {
+        if (!themeCapabilities.sectionStructure.editable) return;
         const section = theme.homepageSections?.[index];
         if (section && !isHomepageSectionLocked(section)) {
             extractThemeAssetUrls({ homepageSections: [section] }).forEach(url => discardTemporaryAsset(url));
@@ -901,6 +905,7 @@ const StoreBuilderPage = () => {
     };
 
     const toggleHomepageSectionLock = (index) => {
+        if (!themeCapabilities.sections[theme.homepageSections?.[index]?.type]?.editable) return;
         setTheme(prev => ({
             ...prev,
             homepageSections: (prev.homepageSections || []).map((section, i) => (
@@ -912,6 +917,7 @@ const StoreBuilderPage = () => {
     };
 
     const addHomepageSection = (preset = inlineSectionPresets[2], insertIndex = null) => {
+        if (!themeCapabilities.sectionStructure.editable) return;
         const safePreset = preset || inlineSectionPresets[2];
         const sectionId = createBuilderSectionId(safePreset.type);
         setTheme(prev => {
@@ -1103,7 +1109,7 @@ const StoreBuilderPage = () => {
     };
 
     const resetStyling = () => {
-        setTheme(prev => mergeTheme(defaultTheme, {
+        setTheme(prev => loadBuilderTheme({
             logoUrl: prev.logoUrl,
             faviconUrl: prev.faviconUrl,
             hero: prev.hero,
@@ -1129,7 +1135,7 @@ const StoreBuilderPage = () => {
         if (!parsed) return false;
 
         historyModeRef.current = 'skip';
-        const nextTheme = mergeTheme(defaultTheme, parsed.theme || {});
+        const nextTheme = loadBuilderTheme(parsed.theme || {});
         setTheme(nextTheme);
         setSearchAliases(Array.isArray(parsed.searchAliases) ? parsed.searchAliases : []);
         setCustomDomain(parsed.customDomain || { domain: '' });
@@ -1187,31 +1193,35 @@ const StoreBuilderPage = () => {
     };
 
     const discardRecoveryVersion = async () => {
-        setRecoveryDraft(null);
-        await autosave.clearRecovery();
-        toast.success('Recovered draft discarded.');
+        try {
+            await autosave.clearRecovery();
+            setRecoveryDraft(null);
+            toast.success('Recovered draft discarded.');
+        } catch (error) { toast.error(error.response?.data?.error || 'Could not discard the draft.'); }
     };
 
     const saveDraftNow = async () => {
         if (!hasUnsavedChanges || saving) return;
         try {
-            await API.put('/store-builder/admin/draft', {
-                theme,
-                searchAliases,
-                customDomain,
-                storewideDiscount,
-                basedOnRevision: themeRevision
-            });
+            const saved = await autosave.saveNow();
+            if (!saved) return;
             setLastSavedAt(new Date().toISOString());
             toast.success('Draft saved. Your live store is unchanged.');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Draft could not be saved. A local recovery copy is still kept.');
+            toast.error(err.response?.data?.error || 'Draft could not be saved. Keep this page open and retry.');
         }
     };
 
     const reloadPublishedVersion = async () => {
         if (hasUnsavedChanges && !window.confirm('Discard your unsaved Store Builder draft and reload the published version?')) return;
-        await autosave.clearRecovery();
+        try { await autosave.clearRecovery(); }
+        catch (error) {
+            if (error.response?.status !== 409) {
+                toast.error(error.response?.data?.error || 'Could not discard the draft.'); return;
+            }
+            // A newer shared draft belongs to the other session. Reload without deleting it.
+            await autosave.clearRecovery({ clearServer: false });
+        }
         setRecoveryDraft(null);
         setThemeConflict(null);
         clearTemporaryAssets();
@@ -1260,12 +1270,14 @@ const StoreBuilderPage = () => {
     };
 
     const restoreRevision = async (revisionId) => {
+        if (saving) return;
         if (!window.confirm('Publish this historical revision as a new storefront revision?')) return;
         setSaving(true);
         try {
-            const { data } = await API.post(`/store-builder/admin/revisions/${revisionId}/restore`, { expectedRevision: themeRevision });
+            await autosave.pause();
+            const { data } = await API.post(`/store-builder/admin/revisions/${revisionId}/restore`, { expectedRevision: themeRevision, expectedShopId: hydratedShopKey });
             const savedShop = data.data;
-            const nextTheme = mergeTheme(defaultTheme, savedShop.theme || {});
+            const nextTheme = loadBuilderTheme(savedShop.theme || {});
             const nextSearchAliases = Array.isArray(savedShop.searchAliases) ? savedShop.searchAliases : [];
             const nextDomain = savedShop.customDomain || { domain: '' };
             const nextDiscount = Number(savedShop.storewideDiscount) || 0;
@@ -1281,7 +1293,7 @@ const StoreBuilderPage = () => {
             clearTemporaryAssets();
             lastHistorySnapshotRef.current = snapshot;
             setEditorHistory({ past: [], future: [] });
-            await autosave.clearRecovery();
+            await autosave.clearRecovery({ clearServer: false });
             const refreshed = await reloadBootstrap({ keepCurrent: true }).catch(() => null);
             if (refreshed?.revisions) setRevisions(refreshed.revisions);
             toast.success('Historical revision restored and published as a new revision.');
@@ -1293,6 +1305,7 @@ const StoreBuilderPage = () => {
                 toast.error(err.response?.data?.error || 'Could not restore this revision.');
             }
         } finally {
+            autosave.resume();
             setSaving(false);
         }
     };
@@ -1416,18 +1429,21 @@ const StoreBuilderPage = () => {
     };
 
     const publishChanges = async () => {
+        if (saving) return;
         setSaving(true);
         try {
             const payload = {
                 theme,
                 searchAliases,
                 storewideDiscount: Math.max(0, Math.min(100, Number(storewideDiscount) || 0)),
-                expectedRevision: themeRevision
+                expectedRevision: themeRevision,
+                expectedShopId: hydratedShopKey
             };
+            await autosave.pause();
             const { data } = await API.patch('/store-builder/admin', payload);
             const savedShop = data.data || {};
             const hasSavedTheme = savedShop.theme && Object.keys(savedShop.theme).length > 0;
-            const nextTheme = hasSavedTheme ? mergeTheme(defaultTheme, savedShop.theme) : theme;
+            const nextTheme = hasSavedTheme ? loadBuilderTheme(savedShop.theme) : theme;
             const nextSearchAliases = Array.isArray(savedShop.searchAliases) ? savedShop.searchAliases : searchAliases;
             const nextDomain = savedShop.customDomain || customDomain;
             const nextDiscount = Number(savedShop.storewideDiscount ?? payload.storewideDiscount) || 0;
@@ -1458,7 +1474,7 @@ const StoreBuilderPage = () => {
             setPublishReviewOpen(false);
             setThemeConflict(null);
             clearTemporaryAssets();
-            await autosave.clearRecovery();
+            await autosave.clearRecovery({ clearServer: false });
             if (!hasSavedTheme) {
                 toast('Store design published, but the server did not return the full theme. Keeping your current preview visible.');
             } else {
@@ -1477,12 +1493,14 @@ const StoreBuilderPage = () => {
             }
             toast.error(err.response?.data?.error || 'Failed to save store builder');
         } finally {
+            autosave.resume();
             setSaving(false);
         }
     };
 
     useEffect(() => {
         const handleShortcuts = (event) => {
+            if (saving) return;
             const target = event.target;
             const isEditable = target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName);
             const commandKey = event.metaKey || event.ctrlKey;
@@ -1563,7 +1581,7 @@ const StoreBuilderPage = () => {
                 );
             case 'layout':
                 return (
-                    <LayoutEditor theme={theme} setTheme={setTheme} setThemeGroup={setThemeGroup} />
+                    <LayoutEditor theme={theme} setTheme={setTheme} setThemeGroup={setThemeGroup} capabilities={themeCapabilities} />
                 );
             case 'navigation':
                 return (
@@ -1580,7 +1598,7 @@ const StoreBuilderPage = () => {
                         addNavigationChild={addNavigationChild}
                         updateNavigationChild={updateNavigationChild}
                         removeNavigationChild={removeNavigationChild}
-                        advancedDesignEnabled={planAccess.storeBuilderAccess === 'full'}
+                        capabilities={themeCapabilities}
                     />
                 );
             case 'hero':
@@ -1594,7 +1612,7 @@ const StoreBuilderPage = () => {
                         moveHeroSlide={moveHeroSlide}
                         removeHeroSlide={removeHeroSlide}
                         handleThemeImageUpload={handleThemeImageUpload}
-                        advancedDesignEnabled={planAccess.storeBuilderAccess === 'full'}
+                        capabilities={themeCapabilities}
                     />
                 );
             case 'seo':
@@ -1639,7 +1657,7 @@ const StoreBuilderPage = () => {
                         updateFeaturedProductsSelection={updateFeaturedProductsSelection}
                         loadReviewOptions={loadReviewOptions}
                         updateReviewSelection={updateReviewSelection}
-                        advancedDesignEnabled={planAccess.storeBuilderAccess === 'full'}
+                        capabilities={themeCapabilities}
                     />
                 );
             case 'checkout':
@@ -1648,7 +1666,7 @@ const StoreBuilderPage = () => {
                 );
             case 'mobile':
                 return (
-                    <MobileEditor theme={theme} toggleThemeGroup={toggleThemeGroup} />
+                    <MobileEditor planAccess={planAccess} theme={theme} setThemeGroup={setThemeGroup} toggleThemeGroup={toggleThemeGroup} />
                 );
             case 'footer':
                 return (
@@ -1687,7 +1705,7 @@ const StoreBuilderPage = () => {
     }
 
     return (
-        <StoreBuilderShell>
+        <StoreBuilderShell busy={saving}>
             <StoreBuilderHeader
                 hasUnsavedChanges={hasUnsavedChanges}
                 statusLabel={hasUnsavedChanges ? 'Unsaved changes' : 'Published'}
@@ -1771,6 +1789,11 @@ const StoreBuilderPage = () => {
                 <main className="contents">
                     <Suspense fallback={<section className={`${mobileWorkspace === 'preview' ? 'block' : 'hidden'} order-1 min-h-[640px] animate-pulse rounded-lg border border-slate-200 bg-slate-100 xl:block 2xl:order-2`} aria-label="Loading storefront preview" />}>
                         <StoreBuilderPreviewPanel
+                            previewCatalog={bootstrap?.previewCatalog}
+                            trustedBadge={bootstrap?.shop?.trustedBadge}
+                            shopVerification={bootstrap?.shop?.shopVerification}
+                            planAccess={planAccess}
+                            branding={bootstrap?.shop?.previewBranding}
                             mobileWorkspace={mobileWorkspace}
                             setMobileWorkspace={setMobileWorkspace}
                             previewPages={previewPages}
@@ -1830,6 +1853,11 @@ const StoreBuilderPage = () => {
             {themeGalleryOpen && (
                 <Suspense fallback={<div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-100" role="status"><div className="rounded-lg border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-700 shadow-lg">Loading themes…</div></div>}>
                     <ThemeGallery
+                        previewCatalog={bootstrap?.previewCatalog}
+                        branding={bootstrap?.shop?.previewBranding}
+                        storewideDiscount={storewideDiscount}
+                        trustedBadge={bootstrap?.shop?.trustedBadge}
+                        shopVerification={bootstrap?.shop?.shopVerification}
                         open={themeGalleryOpen}
                         onClose={() => setThemeGalleryOpen(false)}
                         currentTheme={theme}

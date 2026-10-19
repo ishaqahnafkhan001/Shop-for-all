@@ -6,22 +6,34 @@ const focusableSelector = 'button:not([disabled]), [href], input:not([disabled])
 export function BuilderDrawer({ open, title, description, onClose, children }) {
     const panelRef = useRef(null);
     const returnFocusRef = useRef(null);
+    const closeRef = useRef(onClose);
+    useEffect(() => { closeRef.current = onClose; }, [onClose]);
 
     useEffect(() => {
         if (!open) return undefined;
         returnFocusRef.current = document.activeElement;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
         const panel = panelRef.current;
+        // Dashboard pages scroll inside a main element, not always the body.
+        const scrollParents = [];
+        for (let parent = panel?.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+            if (/auto|scroll/.test(getComputedStyle(parent).overflowY)) {
+                scrollParents.push([parent, parent.style.overflowY]);
+                parent.style.overflowY = 'hidden';
+            }
+        }
         const first = panel?.querySelector(focusableSelector);
         first?.focus();
 
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
                 event.preventDefault();
-                onClose();
+                closeRef.current();
                 return;
             }
             if (event.key !== 'Tab' || !panel) return;
-            const controls = [...panel.querySelectorAll(focusableSelector)];
+            const controls = [...panel.querySelectorAll(focusableSelector)].filter(control => control.getClientRects().length);
             if (!controls.length) return;
             const firstControl = controls[0];
             const lastControl = controls[controls.length - 1];
@@ -36,15 +48,17 @@ export function BuilderDrawer({ open, title, description, onClose, children }) {
         document.addEventListener('keydown', handleKeyDown);
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = previousOverflow;
+            scrollParents.forEach(([parent, overflowY]) => { parent.style.overflowY = overflowY; });
             returnFocusRef.current?.focus?.();
         };
-    }, [onClose, open]);
+    }, [open]);
 
     if (!open) return null;
     return (
         <div className="fixed inset-0 z-[90]" role="presentation">
             <button type="button" className="absolute inset-0 bg-slate-950/45" onClick={onClose} aria-label={`Close ${title}`} />
-            <aside ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="builder-drawer-title" className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl">
+            <aside ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="builder-drawer-title" className="absolute inset-x-0 bottom-0 flex max-h-[90dvh] w-full flex-col rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:max-h-none sm:max-w-md sm:rounded-none">
                 <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
                     <div>
                         <h2 id="builder-drawer-title" className="text-lg font-black text-slate-950">{title}</h2>

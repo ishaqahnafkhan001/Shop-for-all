@@ -2,7 +2,7 @@
 
 import { BarChart3, ChevronDown, CircleCheck, Home, Lock, Mail, Search, ShoppingBag, Truck, User } from "lucide-react";
 
-import { getSortedNavigation, normalizeTheme } from "@scaleup/storefront-theme";
+import { getSortedNavigation, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
 import {
     DefaultLink,
     EditorSelectionFrame,

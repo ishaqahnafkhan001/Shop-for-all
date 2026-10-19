@@ -3,12 +3,10 @@ import { X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api';
 
-// Add shopName to your props
-const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
+const SendMailModal = ({ isOpen, onClose, customer }) => {
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
-    // console.log("name",shopName)
 
     useEffect(() => {
         if (isOpen) {
@@ -35,11 +33,10 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
                 customerId: customer._id,
                 email: customer.email,
                 subject: subject,
-                message: message,
-                shopName: shopName || "Store Administration" // Send shopName to backend
+                message: message
             });
 
-            toast.success(`Email sent successfully to ${customer.fullName}`);
+            toast.success(`Email accepted by provider for ${customer.fullName}. Delivery is not yet confirmed.`);
             onClose();
         } catch (err) {
             toast.error(err.response?.data?.error || "Failed to send email.");
@@ -52,7 +49,7 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
         <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-gray-900 bg-opacity-50 p-0 backdrop-blur-sm sm:items-center sm:p-4">
             <div className="flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-xl sm:h-auto sm:max-h-[92vh] sm:rounded-xl">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-900">Send Email to Customer</h3>
+                    <h3 className="text-lg font-bold text-gray-900">Send marketing email</h3>
                     <button onClick={onClose} aria-label="Close email modal" className="text-gray-400 hover:text-gray-600 transition-colors" disabled={isSending}>
                         <X size={20} />
                     </button>
@@ -77,6 +74,7 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
                             value={subject}
                             onChange={(e) => setSubject(e.target.value)}
                             disabled={isSending}
+                            maxLength={160}
                             required
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -90,6 +88,7 @@ const SendMailModal = ({ isOpen, onClose, customer, shopName }) => {
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             disabled={isSending}
+                            maxLength={5000}
                             required
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                         ></textarea>

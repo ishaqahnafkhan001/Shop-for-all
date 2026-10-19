@@ -3,7 +3,8 @@ exports.customerMessageTemplate = ({
                                        name,
                                        email,
                                        subject,
-                                       message
+                                       message,
+                                       year = new Date().getFullYear()
                                    }) => {
     const escapeHtml = (value = '') => String(value)
         .replace(/&/g, '&amp;')
@@ -91,7 +92,7 @@ exports.customerMessageTemplate = ({
                                 </p>
                                 
                                 <p style="margin: 0; font-size: 12px; color: #9ca3af;">
-                                    &copy; ${new Date().getFullYear()} ${safeSenderName}. All rights reserved.
+                                    &copy; ${year} ${safeSenderName}. All rights reserved.
                                 </p>
                                 
                             </td>

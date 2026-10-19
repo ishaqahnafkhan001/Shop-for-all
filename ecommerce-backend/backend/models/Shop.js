@@ -1,8 +1,11 @@
 const mongoose = require('mongoose');
 const {
+    FALLBACK_THEME,
+    PRODUCT_CARD_STYLE_FIELDS,
     normalizeSearchAliases,
     normalizeSearchText,
     SECTION_TYPES,
+    STRUCTURAL_VARIANTS,
     THEME_SCHEMA_VERSION
 } = require('@scaleup/storefront-theme');
 
@@ -207,7 +210,16 @@ const themeColorGroups = {
     }
 };
 
+const aiPreferencesSchema = new mongoose.Schema({
+    version: { type: Number, min: 0, default: 0 },
+    language: { type: String, enum: ['auto', 'en', 'bn', 'banglish', 'mixed'], default: 'auto' },
+    tone: { type: String, enum: ['neutral', 'friendly', 'professional'], default: 'neutral' },
+    length: { type: String, enum: ['concise', 'detailed'], default: 'concise' },
+    terminology: { type: [String], default: [] }, avoidPhrases: { type: [String], default: [] },
+    brandDescription: { type: String, maxlength: 300, default: '' }, updatedAt: Date
+}, { _id: false });
 const shopSchema = new mongoose.Schema({
+    aiPreferences: { type: aiPreferencesSchema, select: false, default: undefined },
     shopName: {
         type: String,
         required: [true, 'Shop name is required'],
@@ -334,7 +346,8 @@ const shopSchema = new mongoose.Schema({
     },
     branding: { type: essentialBrandingSchema, default: () => ({}) },
     theme: {
-        version: { type: Number, default: THEME_SCHEMA_VERSION, min: 1 },
+        extensions: { type: mongoose.Schema.Types.Mixed, default: undefined },
+        version: { type: Number, default: THEME_SCHEMA_VERSION, STRUCTURAL_VARIANTS, min: 1 },
         preset: { type: themePresetSchema, default: null },
         logoUrl: { type: String, default: '' },
         faviconUrl: { type: String, default: '' },
@@ -424,6 +437,7 @@ const shopSchema = new mongoose.Schema({
             bannerSlides: { type: [heroSlideSchema], default: [] }
         },
         layout: {
+            homepageComposition: { type: String, enum: STRUCTURAL_VARIANTS.homepage.values, default: 'standard' },
             maxWidth: {
                 type: String,
                 enum: ['Contained', 'Wide', 'Full'],
@@ -454,6 +468,7 @@ const shopSchema = new mongoose.Schema({
             sectionMarginTop: { type: Number, default: 0, min: 0, max: 160 },
             sectionMarginBottom: { type: Number, default: 40, min: 0, max: 160 },
             productColumnsDesktop: { type: Number, default: 3, min: 2, max: 5 },
+            productColumnsTablet: { type: Number, default: undefined, min: 1, max: 4 },
             productColumnsMobile: { type: Number, default: 2, min: 1, max: 2 },
             productGap: {
                 type: String,
@@ -467,6 +482,10 @@ const shopSchema = new mongoose.Schema({
             }
         },
         productCard: {
+            inheritedStyleFields: {
+                type: [{ type: String, enum: PRODUCT_CARD_STYLE_FIELDS }],
+                default: undefined
+            },
             style: {
                 type: String,
                 enum: ['Minimal', 'Modern', 'Premium'],
@@ -495,7 +514,13 @@ const shopSchema = new mongoose.Schema({
             showSku: { type: Boolean, default: false },
             showDiscountBadge: { type: Boolean, default: true },
             showQuickBuy: { type: Boolean, default: true },
-            showWishlist: { type: Boolean, default: false },
+            showWishlist: {
+                type: Boolean,
+                default: function () {
+                    // Keep historical defaults when hydrating existing sparse themes.
+                    return this?.$isNew === false ? false : FALLBACK_THEME.productCard.showWishlist;
+                }
+            },
             borderRadius: {
                 type: String,
                 enum: ['Soft', 'Rounded', 'Square'],
@@ -545,6 +570,8 @@ const shopSchema = new mongoose.Schema({
             trustMessage: { type: String, default: 'Secure checkout' }
         },
         mobile: {
+            heroComposition: { type: String, enum: ['Theme', 'Image first', 'Text first'], default: 'Theme' },
+            sectionSpacing: { type: String, enum: ['Theme', 'Compact', 'Comfortable', 'Spacious'], default: 'Theme' },
             stickyCheckoutButton: { type: Boolean, default: true },
             compactHeader: { type: Boolean, default: true },
             showBottomNavigation: { type: Boolean, default: false }
@@ -586,27 +613,41 @@ const shopSchema = new mongoose.Schema({
         },
         homepageSections: {
             type: [homepageSectionSchema],
-            default: [
-                {
-                    id: 'featured-products',
-                    type: 'FeaturedProducts',
-                    title: 'Featured products',
-                    sortOrder: 0,
-                    isEnabled: true,
-                    settings: { source: { type: 'manual', productIds: [] }, productIds: [] }
-                }
-            ]
+            default: function () {
+                if (this?.$isNew !== false) return JSON.parse(JSON.stringify(FALLBACK_THEME.homepageSections));
+                return [
+                    {
+                        id: 'featured-products',
+                        type: 'FeaturedProducts',
+                        title: 'Featured products',
+                        sortOrder: 0,
+                        isEnabled: true,
+                        settings: { source: { type: 'manual', productIds: [] }, productIds: [] }
+                    }
+                ];
+            }
         },
         allProducts: {
-            title: { type: String, default: 'Shop products' },
-            subtitle: { type: String, default: '' },
+            title: {
+                type: String,
+                default: function () {
+                    // New shops inherit the contract; existing sparse themes keep their title.
+                    return this?.$isNew === false ? 'Shop products' : FALLBACK_THEME.allProducts.title;
+                }
+            },
+            subtitle: {
+                type: String,
+                default: function () {
+                    return this?.$isNew === false ? '' : FALLBACK_THEME.allProducts.subtitle;
+                }
+            },
             isEnabled: { type: Boolean, default: true },
             desktopColumns: { type: Number, default: 3, min: 2, max: 5 },
             tabletColumns: { type: Number, default: 2, min: 1, max: 4 },
             mobileColumns: { type: Number, default: 2, min: 1, max: 2 },
             spacing: {
                 type: String,
-                enum: ['Compact', 'Comfortable', 'Spacious'],
+                enum: ['Compact', 'Comfortable', 'Spacious', 'Editorial'],
                 default: 'Comfortable'
             }
         },
@@ -679,7 +720,7 @@ const shopSchema = new mongoose.Schema({
     },
     badgePlanInactive: { type: Boolean, default: false },
     badgePlanInactiveAt: Date,
-    // ✨ NEW: Storewide Discount Feature
+    // âœ¨ NEW: Storewide Discount Feature
     storewideDiscount: {
         type: Number,
         default: 0, // 0 means no sale is active
@@ -697,7 +738,15 @@ const shopSchema = new mongoose.Schema({
                 default: 'NotConfigured'
             },
             lastSyncedAt: Date,
-            configuredAt: Date
+            configuredAt: Date,
+            pendingStore: {
+                type: new mongoose.Schema({
+                    name: { type: String, trim: true, required: true },
+                    address: { type: String, trim: true, required: true },
+                    requestedAt: { type: Date, default: Date.now }
+                }, { _id: false }),
+                default: null
+            }
         },
         redx: {
             enabled: { type: Boolean, default: false },
@@ -722,7 +771,7 @@ const shopSchema = new mongoose.Schema({
             default: null
         }
     },
-    // 🚚 Existing Pathao Courier Integration (kept for backward compatibility)
+    // ðŸšš Existing Pathao Courier Integration (kept for backward compatibility)
     pathaoStoreId: {
         type: Number,
         default: null // Null means the vendor hasn't set up their Pathao shipping location yet

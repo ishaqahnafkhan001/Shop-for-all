@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import API from '../../../../api/api.js';
 
 export function useStoreBuilderBootstrap() {
     const [state, setState] = useState({ loading: true, data: null, error: '' });
+    const requestId = useRef(0);
 
     const reload = useCallback(async ({ keepCurrent = false } = {}) => {
+        const currentRequest = ++requestId.current;
         setState(prev => ({ ...prev, loading: !keepCurrent, error: '' }));
         try {
             const response = await API.get('/store-builder/admin');
+            if (currentRequest !== requestId.current) return null;
             const legacyData = response.data?.data || null;
             const payload = response.data?.bootstrap || (legacyData ? {
                 shop: legacyData.shop || legacyData,
@@ -28,6 +31,7 @@ export function useStoreBuilderBootstrap() {
             setState({ loading: false, data: payload, error: '' });
             return payload;
         } catch (error) {
+            if (currentRequest !== requestId.current) return null;
             setState(prev => ({
                 loading: false,
                 data: keepCurrent ? prev.data : null,
@@ -39,6 +43,7 @@ export function useStoreBuilderBootstrap() {
 
     useEffect(() => {
         reload().catch(() => {});
+        return () => { requestId.current += 1; };
     }, [reload]);
 
     return { ...state, reload };

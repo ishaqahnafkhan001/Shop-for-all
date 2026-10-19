@@ -21,9 +21,10 @@ const {
 const {
     PURPOSES,
     createOtp,
+    markOtpDeliveryFailed,
     verifyOtp
 } = require('../services/otpService');
-const { sendSms } = require('../services/sms/smsProviderService');
+const { sendSms, SmsProviderError } = require('../services/sms/smsProviderService');
 const { maskPhone, normalizeBDPhone } = require('../utils/phoneUtils');
 const { syncShopVendorVerifiedFlag } = require('../services/verification/vendorVerificationStatusService');
 const {
@@ -312,10 +313,23 @@ exports.sendVendorPhoneOtp = async (req, res) => {
             });
         }
 
-        await sendSms({
-            mobile: phone,
-            message: `Your Scaleup phone verification code is ${result.otp}. It will expire in 5 minutes.`
-        });
+        try {
+            await sendSms({
+                mobile: phone,
+                message: `Your Scaleup phone verification code is ${result.otp}. It will expire in 5 minutes.`
+            });
+        } catch (error) {
+            await markOtpDeliveryFailed({
+                identifier: phone,
+                purpose: PURPOSES.vendorPhoneVerification,
+                metadata: {
+                    shopId: String(shop._id),
+                    userId: String(req.user?._id || req.user?.id || '')
+                },
+                otp: result.otp
+            });
+            throw error;
+        }
 
         const phoneChanged = (account?.phone && account.phone !== phone) || (user?.phone && user.phone !== phone);
 
@@ -361,8 +375,10 @@ exports.sendVendorPhoneOtp = async (req, res) => {
             resendAvailableAt: result.resendAvailableAt
         });
     } catch (err) {
-        console.error('Send vendor phone OTP error:', err);
-        return res.status(400).json({ success: false, error: err.message || 'Failed to send phone verification code' });
+        console.error('Send vendor phone OTP error:', { code: err?.code || err?.name || 'OTP_ERROR' });
+        return res.status(err instanceof SmsProviderError ? 502 : 500).json({
+            success: false, error: 'Could not send phone verification code. Please try again shortly.'
+        });
     }
 };
 

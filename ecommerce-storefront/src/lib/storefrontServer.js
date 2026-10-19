@@ -41,7 +41,8 @@ const buildRequestHeaders = ({ storefrontHost = '' } = {}) => {
 const getServerFetchTimeoutMs = () => {
     const configured = Number(process.env.STOREFRONT_SERVER_FETCH_TIMEOUT_MS || 0);
     if (Number.isFinite(configured) && configured > 0) return configured;
-    return process.env.NODE_ENV === 'production' ? 8000 : 4000;
+    // A cold storefront bootstrap can include several remote database reads.
+    return 12000;
 };
 
 const isCustomDomainHost = (host = '') => {
@@ -70,7 +71,8 @@ export const getStorefrontPlanRedirectUrl = (error, pathname = '/') => {
 
 const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontHost = '', fresh = false } = {}) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), getServerFetchTimeoutMs());
+    const timeoutMs = getServerFetchTimeoutMs();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     const fetchOptions = {
         headers: buildRequestHeaders({ storefrontHost }),
         signal: controller.signal,
@@ -87,7 +89,7 @@ const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontH
         response = await fetch(buildUrl(path, params), fetchOptions);
     } catch (error) {
         if (error?.name === 'AbortError') {
-            const timeoutError = new Error('Storefront backend request timed out');
+            const timeoutError = new Error(`Storefront backend request timed out after ${timeoutMs} ms`);
             timeoutError.status = 504;
             timeoutError.body = { error: timeoutError.message };
             throw timeoutError;
@@ -116,7 +118,13 @@ export const fetchStorefrontBootstrap = async (subdomain, params = {}, options =
         fresh: options.fresh === true,
     });
 
-    return response.data || null;
+    const data = response.data || null;
+    if (options.expectedRevision !== undefined && Number(data?.shop?.themeRevision ?? -1) !== options.expectedRevision) {
+        const error = new Error('The store changed while this page was loading. Please reload to view the latest version.');
+        error.code = 'STOREFRONT_REVISION_CHANGED';
+        throw error;
+    }
+    return data;
 };
 
 export const fetchStorefrontInfo = async (subdomain, options = {}) => (

@@ -16,6 +16,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "check:redis": "node scripts/check-redis.js",
+    "check:notifications": "node scripts/check-notification-config.js",
     "test": "node --test tests/*.test.js",
     "test:integration": "node --test --test-concurrency=1 tests/integration/*.test.js",
     "test:launch": "npm test && npm run test:integration",
@@ -34,7 +36,6 @@
   },
   "dependencies": {
     "@scaleup/storefront-theme": "file:../../packages/storefront-theme",
-    "@google/generative-ai": "^0.24.1",
     "axios": "^1.15.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
@@ -53,6 +54,8 @@
     "multer": "^2.1.1",
     "nodemailer": "^9.0.3",
     "nodemon": "^3.1.14",
+    "openai": "7.32.0",
+    "sharp": "0.35.5",
     "uuid": "^14.0.0",
     "zod": "^4.3.6"
   }

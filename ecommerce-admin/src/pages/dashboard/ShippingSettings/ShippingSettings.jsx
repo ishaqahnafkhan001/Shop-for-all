@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle, Info, Link as LinkIcon, MapPin, ShieldCheck, Trash2, Truck } from 'lucide-react';
+import { CheckCircle, Info, Link as LinkIcon, MapPin, RefreshCw, ShieldCheck, Trash2, Truck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../../api/api.js';
 import { AdminLoadingState } from '../../../components/ui/AdminState.jsx';
@@ -63,6 +63,9 @@ const ProviderCard = ({ icon: Icon, name, description, configured, enabled, isDe
 const ShippingSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [loadError, setLoadError] = useState(false);
+    const [locationError, setLocationError] = useState(false);
+    const [pathaoPending, setPathaoPending] = useState(false);
     const [couriers, setCouriers] = useState(emptyCouriers);
     const [pathaoTab, setPathaoTab] = useState('create');
     const [redxMode, setRedxMode] = useState('existing');
@@ -117,8 +120,10 @@ const ShippingSettings = () => {
         setLoading(true);
         try {
             const { data } = await API.get('/admin/shipping/couriers');
+            setLoadError(false);
             const next = data.data || emptyCouriers;
             setCouriers(next);
+            setPathaoPending(Boolean(next.pathao?.pendingApproval));
             setShowPathaoSetup(!next.pathao?.configured);
             setShowRedxForm(!next.redx?.configured);
             setRedxData(prev => ({
@@ -132,6 +137,7 @@ const ShippingSettings = () => {
                 enabled: next.redx?.enabled !== false
             }));
         } catch {
+            setLoadError(true);
             toast.error('Failed to load courier settings');
         } finally {
             setLoading(false);
@@ -142,8 +148,8 @@ const ShippingSettings = () => {
         queueMicrotask(() => {
             loadCouriers();
             API.get('/admin/pathao/cities')
-                .then(({ data }) => setCities(data.data || []))
-                .catch(() => {});
+                .then(({ data }) => { setCities(data.data || []); setLocationError(false); })
+                .catch(() => setLocationError(true));
         });
     }, []);
 
@@ -190,10 +196,30 @@ const ShippingSettings = () => {
         setSaving(true);
         try {
             const { data } = await API.post('/admin/settings/pathao-store', createData);
-            toast.success(data.message || 'Pathao shop connected');
-            await loadCouriers();
+            if (data.pending) {
+                setPathaoPending(true);
+                toast(data.message, { duration: 8000 });
+                await loadCouriers();
+            } else {
+                toast.success(data.message || 'Pathao shop connected');
+                await loadCouriers();
+            }
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to connect Pathao');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCheckPathao = async () => {
+        setSaving(true);
+        try {
+            const { data } = await API.post('/admin/settings/pathao-store/check');
+            if (data.pending) toast(data.message || 'Pathao approval is still pending');
+            else toast.success(data.message || 'Pathao shop connected');
+            await loadCouriers();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Could not check Pathao approval');
         } finally {
             setSaving(false);
         }
@@ -204,6 +230,8 @@ const ShippingSettings = () => {
         setSaving(true);
         try {
             const { data } = await API.post('/admin/settings/pathao-link', linkData);
+            setLinkData(prev => ({ ...prev, client_secret: '', password: '' }));
+            setPathaoPending(false);
             toast.success(data.message || 'Pathao account linked');
             await loadCouriers();
         } catch (error) {
@@ -298,11 +326,26 @@ const ShippingSettings = () => {
         return <AdminLoadingState title="Loading courier settings" description="Checking connected Pathao and RedX courier accounts." />;
     }
 
+    if (loadError) {
+        return (
+            <div role="alert" className="mx-auto max-w-2xl rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">
+                <h1 className="text-lg font-bold">Courier settings could not be loaded</h1>
+                <p className="mt-2 text-sm">Check your connection, then try again before changing shipping setup.</p>
+                <button type="button" onClick={loadCouriers} className="mt-4 rounded-xl bg-red-700 px-4 py-2 text-sm font-bold text-white">Retry</button>
+            </div>
+        );
+    }
+
     return (
         <div className="mx-auto max-w-5xl space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Shipping Settings</h1>
-                <p className="mt-1 text-sm text-gray-500">Connect Pathao, RedX, or both. Choose a default courier for faster order processing.</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Shipping Settings</h1>
+                    <p className="mt-1 text-sm text-gray-500">Connect Pathao, RedX, or both. Choose a default courier for faster order processing.</p>
+                </div>
+                <button type="button" onClick={loadCouriers} disabled={saving} className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                    <RefreshCw size={16} /> Refresh
+                </button>
             </div>
 
             {configuredCount === 0 && (
@@ -324,7 +367,7 @@ const ShippingSettings = () => {
                     { label: 'Mode', value: couriers.pathao?.isLive ? 'Live' : 'Sandbox / Platform default' }
                 ]}
                 actions={[
-                    couriers.pathao?.configured && couriers.defaultCourier !== 'pathao' ? (
+                    couriers.pathao?.enabled && couriers.defaultCourier !== 'pathao' ? (
                         <button key="default" onClick={() => setDefaultCourier('pathao')} disabled={saving} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">Set default</button>
                     ) : null,
                     <button key="toggle" onClick={() => setShowPathaoSetup(prev => !prev)} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50">
@@ -332,6 +375,12 @@ const ShippingSettings = () => {
                     </button>
                 ]}
             >
+                {pathaoPending && (
+                    <div role="status" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                        <span>Pickup shop approval is pending with Pathao. Requested {couriers.pathao?.requestedAt ? new Date(couriers.pathao.requestedAt).toLocaleDateString() : 'recently'}.</span>
+                        <button type="button" onClick={handleCheckPathao} disabled={saving} className="rounded-lg bg-amber-800 px-3 py-2 font-bold text-white disabled:opacity-50">Check approval</button>
+                    </div>
+                )}
                 {showPathaoSetup && (
                     <div className="mt-5 overflow-hidden rounded-2xl border border-gray-100">
                         <div className="flex border-b border-gray-100 bg-gray-50">
@@ -348,6 +397,9 @@ const ShippingSettings = () => {
                                 <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-800">
                                     <Info size={16} className="mr-2 inline" /> Use this if you want Scaleup to create a Pathao pickup shop for this store.
                                 </div>
+                                <p className="text-sm text-gray-600">Pathao may take up to an hour to approve a new shop. Use “Check approval” here after Pathao activates it.</p>
+                                {locationError && <p role="alert" className="text-sm text-red-700">Pathao locations could not be loaded. Check the platform Pathao configuration and refresh this page.</p>}
+                                {pathaoPending && <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Shop creation was accepted. Wait for Pathao approval, then check its status above. Do not create the shop again.</p>}
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <input required name="contact_name" value={createData.contact_name} onChange={e => setCreateData({ ...createData, contact_name: e.target.value })} className={inputClass} placeholder="Contact person name" />
                                     <input required name="contact_number" value={createData.contact_number} onChange={e => setCreateData({ ...createData, contact_number: e.target.value })} className={inputClass} placeholder="017XXXXXXXX" minLength="11" maxLength="11" />
@@ -367,13 +419,14 @@ const ShippingSettings = () => {
                                         {areas.map(area => <option key={area.area_id} value={area.area_id}>{area.area_name}</option>)}
                                     </select>
                                 </div>
-                                <button type="submit" disabled={saving} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">Create Pathao Shop</button>
+                                <button type="submit" disabled={saving || pathaoPending || locationError} className="rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-50">Create Pathao Shop</button>
                             </form>
                         ) : (
                             <form onSubmit={handleLinkPathao} className="space-y-4 p-5">
                                 <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-800">
-                                    <ShieldCheck size={16} className="mr-2 inline" /> Credentials are stored server-side and are never shown back in the admin panel.
+                                    <ShieldCheck size={16} className="mr-2 inline" /> Your secret and password are encrypted on the server and are never shown back here.
                                 </div>
+                                <p className="text-sm text-gray-600">Use credentials and a store ID from the same Pathao environment. The store must be active before it can be linked.</p>
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <input required name="client_id" value={linkData.client_id} onChange={e => setLinkData({ ...linkData, client_id: e.target.value })} className={inputClass} placeholder="Client ID" />
                                     <input required type="password" name="client_secret" value={linkData.client_secret} onChange={e => setLinkData({ ...linkData, client_secret: e.target.value })} className={inputClass} placeholder="Client Secret" />
@@ -407,7 +460,7 @@ const ShippingSettings = () => {
                     { label: 'Token', value: couriers.redx?.maskedToken }
                 ]}
                 actions={[
-                    couriers.redx?.configured && couriers.defaultCourier !== 'redx' ? (
+                    couriers.redx?.enabled && couriers.defaultCourier !== 'redx' ? (
                         <button key="default" onClick={() => setDefaultCourier('redx')} disabled={saving} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50">Set default</button>
                     ) : null,
                     <button key="edit" onClick={() => setShowRedxForm(prev => !prev)} className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50">
@@ -424,7 +477,7 @@ const ShippingSettings = () => {
                     <div className="mt-5 space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
                         <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
                             <Info size={16} className="mr-2 inline" />
-                            RedX area lookup is available through their OpenAPI. Search by district or post code to find area IDs.
+                            RedX area lookup is available through their OpenAPI. Search by district or post code to find area IDs. Your pickup store ID and token are checked with RedX when you save.
                         </div>
 
                         {!couriers.redx?.configured && (

@@ -5,13 +5,15 @@ import { useMemo } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Layers3, PackageX } from "lucide-react";
 import { useStorefrontProductActions } from "@/hooks/useStorefrontProductActions";
-import { normalizeTheme } from "@/lib/theme";
+import { useStorefrontTheme } from "@/components/storefront/StorefrontThemeProvider";
+import { normalizeProduct } from "@/utils/normalizeProduct";
 import SafeProductImage from "@/components/storefront/SafeProductImage";
 import { ProductCard } from "@/components/storefront/reference/StorefrontProductCard";
 import {
     desktopGridClasses,
     optimizeCloudinaryImage,
     productGridGapClasses,
+    resolveAllProductsLayout,
     tabletGridClasses
 } from "@/components/storefront/reference/referenceCore";
 
@@ -21,30 +23,17 @@ export default function CollectionPageClient({ shop, collection, products = [], 
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const productActions = useStorefrontProductActions({ subdomain: params?.subdomain || shop?.subdomain });
-    const theme = normalizeTheme(shop?.theme || {});
+    const { theme } = useStorefrontTheme();
     const productCardColors = theme.colors?.productCard;
-    const normalizedProducts = useMemo(() => products.map(product => {
-        const sellingPrice = product?.pricing?.sellingPrice ?? product?.sellingPrice ?? 0;
-        const discount = product?.pricing?.discount ?? product?.discount ?? 0;
-        const finalPrice = product?.finalPrice ?? Math.round(sellingPrice - (sellingPrice * (discount / 100)));
-
-        return {
-            ...product,
-            sellingPrice,
-            discount,
-            finalPrice,
-            stock: product?.totalStock ?? product?.stock ?? 0
-        };
-    }), [products]);
-    const desktopColumns = Math.min(Math.max(theme.allProducts?.desktopColumns || theme.layout?.productColumnsDesktop || 3, 2), 5);
-    const tabletColumns = Math.min(Math.max(theme.allProducts?.tabletColumns || 2, 1), 4);
-    const mobileColumns = Math.min(Math.max(theme.allProducts?.mobileColumns || theme.layout?.productColumnsMobile || 2, 1), 2);
-    const gridClass = `${mobileColumns === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2"} ${tabletGridClasses[tabletColumns] || tabletGridClasses[2]} ${desktopGridClasses[desktopColumns] || desktopGridClasses[3]}`;
-    const gridGapClass = productGridGapClasses[theme.layout?.productGap || theme.productGridStyle] || productGridGapClasses.Comfortable;
+    const normalizedProducts = useMemo(() => products.map(normalizeProduct).filter(Boolean), [products]);
+    const { desktop: desktopColumns, tablet: tabletColumns, mobile: mobileColumns, spacing } = resolveAllProductsLayout(theme.allProducts, theme.layout, theme.productGridStyle);
+    const gridClass = `${mobileColumns === 1 ? "grid-cols-1" : "grid-cols-2"} ${tabletGridClasses[tabletColumns]} ${desktopGridClasses[desktopColumns]}`;
+    const gridGapClass = productGridGapClasses[spacing];
     const themedProductCard = useMemo(() => ({
         ...(theme.productCard || {}),
+        cardAlignment: theme.layout?.cardAlignment,
         colors: productCardColors || {},
-    }), [theme.productCard, productCardColors]);
+    }), [theme.productCard, theme.layout?.cardAlignment, productCardColors]);
     const total = Number(pagination?.totalItems ?? pagination?.total) || normalizedProducts.length;
     const page = Math.max(Number(pagination?.page ?? filters.page) || 1, 1);
     const totalPages = Math.max(Number(pagination?.totalPages ?? pagination?.pages) || 1, 1);

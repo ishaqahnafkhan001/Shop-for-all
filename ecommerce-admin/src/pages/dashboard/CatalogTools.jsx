@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Check, Download, Edit3, Image as ImageIcon, Images, Layers, Trash2, Upload, Wand2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Check, CheckSquare2, Download, Edit3, Image as ImageIcon, Images, Layers, Loader2, Package, RefreshCcw, Search, SlidersHorizontal, Sparkles, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
 import Modal from '../../components/ui/Modal.jsx';
 import PageRefreshButton from '../../components/ui/PageRefreshButton.jsx';
-import { aiRequestHeaders } from '../../utils/aiRequestId.js';
+import { useAiOperation } from '../../hooks/useAiOperation.js';
+import { useAiUndo } from '../../hooks/useAiUndo.js';
+import AiOperationStatus, { AiFieldComparison } from '../../components/ai/AiOperationStatus.jsx';
+import { csvToProducts, MAX_CATALOG_IMPORT_ROWS } from '../../utils/catalogCsv.js';
 
 const emptyCollectionForm = {
     title: '',
@@ -18,44 +21,16 @@ const emptyCollectionForm = {
     }
 };
 
-const parseCsvLine = (line) => {
-    const cells = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i += 1) {
-        const char = line[i];
-        const next = line[i + 1];
-
-        if (char === '"' && inQuotes && next === '"') {
-            current += '"';
-            i += 1;
-        } else if (char === '"') {
-            inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-            cells.push(current);
-            current = '';
-        } else {
-            current += char;
-        }
-    }
-
-    cells.push(current);
-    return cells;
-};
-
-const csvToProducts = (text) => {
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    if (lines.length < 2) return [];
-
-    const headers = parseCsvLine(lines[0]).map(header => header.trim());
-    return lines.slice(1).map(line => {
-        const values = parseCsvLine(line);
-        return headers.reduce((acc, header, index) => {
-            acc[header] = values[index];
-            return acc;
-        }, {});
-    });
+const emptyBulkForm = {
+    category: '',
+    status: '',
+    visibility: '',
+    tags: '',
+    tagsMode: 'add',
+    discount: '',
+    sellingPricePercent: '',
+    buyingPricePercent: '',
+    lowStockThreshold: ''
 };
 
 const dedupeCategories = (items = []) => {
@@ -75,12 +50,40 @@ const dedupeCategories = (items = []) => {
     return [...categoriesByIdentity.values()];
 };
 
+const lowStockVariantCount = (product) => {
+    if (product.lowStockVariantCount !== undefined) return Number(product.lowStockVariantCount) || 0;
+    return (product.variants || []).filter(variant => Number(variant.stock || 0) <= Number(
+        variant.inventory?.lowStockThreshold ?? product.lowStockThreshold ?? 5
+    )).length;
+};
+
+const fetchAllCatalogProducts = async () => {
+    const first = await API.get('/admin/products', { params: { page: 1, limit: 100 } });
+    const products = [...(first.data.data || [])];
+    const totalPages = Math.max(Number(first.data.pagination?.totalPages) || 1, 1);
+
+    for (let page = 2; page <= totalPages; page += 4) {
+        const pages = Array.from({ length: Math.min(4, totalPages - page + 1) }, (_, index) => page + index);
+        const responses = await Promise.all(pages.map(nextPage => (
+            API.get('/admin/products', { params: { page: nextPage, limit: 100 } })
+        )));
+        responses.forEach(response => products.push(...(response.data.data || [])));
+    }
+
+    return { ...first, data: { ...first.data, data: [...new Map(products.map(product => [String(product._id), product])).values()] } };
+};
+
 const CatalogTools = () => {
     const [products, setProducts] = useState([]);
     const [collections, setCollections] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selected, setSelected] = useState([]);
-    const [bulk, setBulk] = useState({ category: '', status: '', stock: '', discount: '', lowStockThreshold: '' });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
+    const [stockFilter, setStockFilter] = useState('');
+    const [bulk, setBulk] = useState(emptyBulkForm);
+    const [bulkSaving, setBulkSaving] = useState(false);
     const [loading, setLoading] = useState(true);
     const [collectionForm, setCollectionForm] = useState(emptyCollectionForm);
     const [editingCollectionId, setEditingCollectionId] = useState('');
@@ -108,12 +111,58 @@ const CatalogTools = () => {
         suggestion: null
     });
 
+    const operationInput = { form: collectionForm, products: [...selected].sort() };
+    const operation = useAiOperation({ feature: 'catalog.collection', entity: editingCollectionId || 'new-collection', input: operationInput });
+    const undo = useAiUndo(editingCollectionId, collectionForm, setCollectionForm);
     const selectedCount = selected.length;
+    const hasBulkChanges = bulk.tagsMode === 'clear' || Object.entries(bulk)
+        .some(([field, value]) => field !== 'tagsMode' && String(value).trim() !== '');
+
+    const productStats = useMemo(() => {
+        const lowStockProducts = products.filter(product => lowStockVariantCount(product) > 0).length;
+        const lowStockVariants = products.reduce((total, product) => total + lowStockVariantCount(product), 0);
+
+        return {
+            total: products.length,
+            lowStockProducts,
+            lowStockVariants,
+            published: products.filter(product => String(product.status || '').toLowerCase() === 'published').length
+        };
+    }, [products]);
+
+    const filteredProducts = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        return products.filter(product => {
+            const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
+            const matchesSearch = !query || [
+                product.title,
+                product.category,
+                product.status
+            ].some(value => String(value || '').toLowerCase().includes(query));
+            const matchesCategory = !categoryFilter || product.category === categoryFilter;
+            const matchesStatus = !statusFilter || String(product.status || '').toLowerCase() === statusFilter.toLowerCase();
+            const matchesStock = !stockFilter
+                || (stockFilter === 'low' && lowStockVariantCount(product) > 0)
+                || (stockFilter === 'in' && totalStock > 0)
+                || (stockFilter === 'out' && totalStock <= 0);
+
+            return matchesSearch && matchesCategory && matchesStatus && matchesStock;
+        });
+    }, [products, searchQuery, categoryFilter, statusFilter, stockFilter]);
+
+    const visibleProductIds = useMemo(
+        () => filteredProducts.map(product => String(product._id)),
+        [filteredProducts]
+    );
+
+    const visibleSelectedCount = visibleProductIds.filter(id => selected.includes(id)).length;
+    const allVisibleSelected = visibleProductIds.length > 0 && visibleSelectedCount === visibleProductIds.length;
+    const hasProductFilters = Boolean(searchQuery || categoryFilter || statusFilter || stockFilter);
 
     const loadData = async () => {
         setLoading(true);
         const [productsResult, collectionsResult, categoriesResult] = await Promise.allSettled([
-            API.get('/admin/products', { params: { limit: 200 } }),
+            fetchAllCatalogProducts(),
             API.get('/admin/collections'),
             API.get('/admin/categories')
         ]);
@@ -158,9 +207,29 @@ const CatalogTools = () => {
     }, []);
 
     const toggleProduct = (id) => {
+        const normalizedId = String(id);
         setSelected(prev => (
-            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+            prev.includes(normalizedId) ? prev.filter(item => item !== normalizedId) : [...prev, normalizedId]
         ));
+    };
+
+    const toggleAllVisible = () => {
+        setSelected(prev => {
+            if (allVisibleSelected) {
+                return prev.filter(id => !visibleProductIds.includes(String(id)));
+            }
+
+            return [...new Set([...prev.map(String), ...visibleProductIds])];
+        });
+    };
+
+    const clearSelection = () => setSelected([]);
+
+    const resetProductFilters = () => {
+        setSearchQuery('');
+        setCategoryFilter('');
+        setStatusFilter('');
+        setStockFilter('');
     };
 
     const exportCsv = () => {
@@ -178,11 +247,15 @@ const CatalogTools = () => {
                 toast.error('CSV file has no products');
                 return;
             }
+            if (imported.length > MAX_CATALOG_IMPORT_ROWS) {
+                toast.error(`Import up to ${MAX_CATALOG_IMPORT_ROWS} products per CSV file. Split this file and try again.`);
+                return;
+            }
             await API.post('/admin/products/bulk-import', { products: imported });
             toast.success(`${imported.length} products imported. Review them before publishing changes.`);
             loadData();
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Import failed');
+            toast.error(err.response?.data?.error || err.message || 'Import failed');
         } finally {
             event.target.value = '';
         }
@@ -195,18 +268,88 @@ const CatalogTools = () => {
         }
 
         const updates = {};
-        if (bulk.category) updates.category = bulk.category;
+        const changedFields = [];
+        if (bulk.category.trim()) {
+            updates.category = bulk.category.trim();
+            changedFields.push(`Category: ${updates.category}`);
+        }
         if (bulk.status) updates.status = bulk.status;
-        if (bulk.lowStockThreshold !== '') updates.lowStockThreshold = Number(bulk.lowStockThreshold);
-        if (bulk.discount !== '') updates.pricing = { discount: Number(bulk.discount) };
+        if (bulk.status) changedFields.push(`Status: ${bulk.status}`);
+        if (bulk.visibility) {
+            updates.isActive = bulk.visibility === 'show';
+            changedFields.push(`Storefront visibility: ${bulk.visibility}`);
+        }
 
+        if (bulk.tagsMode === 'clear') {
+            updates.tags = [];
+            updates.tagsMode = 'clear';
+            changedFields.push('Remove all tags');
+        } else if (bulk.tags.trim()) {
+            const tags = [...new Set(bulk.tags.split(/[,\n]/).map(tag => tag.trim().toLowerCase()).filter(Boolean))];
+            if (tags.length > 30 || tags.some(tag => tag.length > 60)) {
+                toast.error('Use up to 30 tags, with 60 characters or fewer per tag.');
+                return;
+            }
+            updates.tags = tags;
+            updates.tagsMode = bulk.tagsMode;
+            changedFields.push(`${bulk.tagsMode} ${tags.length} tag${tags.length === 1 ? '' : 's'}`);
+        }
+
+        if (bulk.lowStockThreshold !== '') {
+            const threshold = Number(bulk.lowStockThreshold);
+            if (!Number.isInteger(threshold) || threshold < 0) {
+                toast.error('Low-stock alert level must be a whole number of 0 or more.');
+                return;
+            }
+            updates.lowStockThreshold = threshold;
+            changedFields.push(`Every variant alert level: ${threshold}`);
+        }
+
+        if (bulk.discount !== '') {
+            const discount = Number(bulk.discount);
+            if (!Number.isFinite(discount) || discount < 0 || discount > 100) {
+                toast.error('Discount must be between 0 and 100%.');
+                return;
+            }
+            updates.pricing = { discount };
+            changedFields.push(`Discount: ${discount}%`);
+        }
+
+        for (const [field, label] of [
+            ['sellingPricePercent', 'Selling price'],
+            ['buyingPricePercent', 'Buying cost']
+        ]) {
+            if (bulk[field] === '') continue;
+            const percent = Number(bulk[field]);
+            if (!Number.isFinite(percent) || percent < -90 || percent > 500) {
+                toast.error(`${label} adjustment must be between -90% and +500%.`);
+                return;
+            }
+            updates[field] = percent;
+            changedFields.push(`${label}: ${percent >= 0 ? '+' : ''}${percent}%`);
+        }
+
+        if (Object.keys(updates).length === 0) {
+            toast.error('Choose at least one change before applying a bulk update.');
+            return;
+        }
+
+        const hiddenSelectionNote = selectedCount > visibleSelectedCount
+            ? `\n${selectedCount - visibleSelectedCount} selected product${selectedCount - visibleSelectedCount === 1 ? ' is' : 's are'} hidden by the current filters.`
+            : '';
+        if (!window.confirm(`Apply these changes to ${selectedCount} selected product${selectedCount === 1 ? '' : 's'}?${hiddenSelectionNote}\n\n${changedFields.join('\n')}\n\nStock quantities will stay unchanged.`)) return;
+
+        setBulkSaving(true);
         try {
-            await API.patch('/admin/products/bulk', { productIds: selected, updates });
-            toast.success('Bulk update applied to selected products. Review your storefront if prices or stock changed.');
+            const response = await API.patch('/admin/products/bulk', { productIds: selected, updates });
+            toast.success(`${response.data.count ?? selectedCount} products updated. Review storefront pricing and visibility.`);
             setSelected([]);
-            loadData();
+            setBulk(emptyBulkForm);
+            await loadData();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Bulk update failed');
+        } finally {
+            setBulkSaving(false);
         }
     };
 
@@ -215,6 +358,8 @@ const CatalogTools = () => {
     };
 
     const resetCollectionEditor = () => {
+        undo.clear();
+        operation.cancel();
         releaseCollectionPreview();
         setCollectionForm(emptyCollectionForm);
         setEditingCollectionId('');
@@ -437,49 +582,27 @@ const CatalogTools = () => {
         }));
     };
 
+    const receiveCollection = response => {
+        if (!response) return;
+        const { data } = response;
+        setCollectionAi({ loading: false, error: '', suggestion: data.data || null, meta: data.meta || null });
+        toast.success(data.fallback ? 'Basic collection suggestion generated.' : 'AI collection suggestion ready.');
+    };
     const generateCollectionAi = async () => {
-        if (!collectionForm.title.trim() && selectedCount === 0) {
-            toast.error('Add a collection title or select products before using AI.');
-            return;
-        }
-
+        if (!collectionForm.title.trim() && selectedCount === 0) { toast.error('Add a collection title or select products before using AI.'); return; }
         setCollectionAi({ loading: true, error: '', suggestion: null });
-
-        try {
-            const { data } = await API.post('/admin/collections/ai/suggest', {
-                title: collectionForm.title,
-                description: collectionForm.description,
-                seo: collectionForm.seo,
-                productIds: selected
-            }, { headers: aiRequestHeaders('catalog.collection') });
-
-            if (!data.success) {
-                const message = data.message || 'AI suggestions could not be generated right now.';
-                setCollectionAi({ loading: false, error: message, suggestion: null });
-                toast.error(message);
-                return;
-            }
-
-            setCollectionAi({
-                loading: false,
-                error: '',
-                suggestion: data.data || null,
-                meta: data.meta || null
-            });
-            toast.success(data.fallback ? 'Basic collection suggestion generated.' : 'AI collection suggestion ready.');
-        } catch (err) {
-            const message = err.response?.data?.message || err.response?.data?.error || 'AI suggestions could not be generated right now.';
-            setCollectionAi({ loading: false, error: message, suggestion: null });
-            toast.error(message);
-        }
+        const body = { title: collectionForm.title, description: collectionForm.description, seo: collectionForm.seo, productIds: selected, entityId: editingCollectionId || 'new-collection' };
+        receiveCollection(await operation.run(options => API.post('/admin/collections/ai/suggest', body, options)));
+        setCollectionAi(previous => ({ ...previous, loading: false }));
     };
 
     const applyCollectionAi = (fields = []) => {
         const suggestion = collectionAi.suggestion;
-        if (!suggestion) return;
+        if (!suggestion || !operation.canApply()) { toast.error('Inputs changed. Generate again before applying.'); return; }
         const shouldApply = (field) => fields.includes(field) || fields.includes('all');
 
-        setCollectionForm(prev => ({
+        const prev = collectionForm;
+        const next = {
             ...prev,
             ...(shouldApply('name') ? { title: suggestion.name || prev.title } : {}),
             ...(shouldApply('description') ? { description: suggestion.description || prev.description } : {}),
@@ -489,138 +612,538 @@ const CatalogTools = () => {
                 ...(shouldApply('seo') || shouldApply('seoTitle') ? { title: suggestion.seoTitle || prev.seo?.title || '' } : {}),
                 ...(shouldApply('seo') || shouldApply('seoDescription') ? { description: suggestion.seoDescription || prev.seo?.description || '' } : {})
             }
-        }));
+        };
+        undo.record(collectionForm, next);
+        operation.rebase({ ...operationInput, form: next });
+        setCollectionForm(next);
         toast.success('Suggestion applied. Review before saving.');
     };
 
     return (
-        <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Catalog Tools</h1>
-                    <p className="text-sm text-slate-500 mt-1">Use bulk tools when you need to update many products at once. Review selections before applying changes.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <PageRefreshButton
-                        onClick={loadData}
-                        loading={loading && (products.length > 0 || collections.length > 0)}
-                        label="Refresh catalog tools"
-                    />
-                    <button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" title="Download your current catalog as a CSV backup">
-                        <Download size={17} />
-                        Export CSV
-                    </button>
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700" title="Upload a CSV to create or update products in bulk">
-                        <Upload size={17} />
-                        Import CSV
-                        <input type="file" accept=".csv" onChange={importCsv} className="hidden" />
-                    </label>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <section className="xl:col-span-2 bg-white border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                        <div>
-                            <div className="font-semibold text-slate-900">Products</div>
-                            <p className="text-xs text-slate-500 mt-1">Select products first, then apply bulk edits or create a collection.</p>
+        <div className="mx-auto max-w-[1500px] space-y-6 px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8">
+            <header className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-6 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="max-w-3xl">
+                        <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-indigo-700">
+                            <Sparkles size={14} />
+                            Catalog workspace
                         </div>
-                        <div className="text-sm text-slate-500">{selectedCount} selected</div>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Manage your catalog without losing context</h1>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                            Find products quickly, make safe bulk changes, build collections, and keep category presentation polished from one workspace.
+                        </p>
                     </div>
-                    <div className="divide-y divide-slate-100 max-h-[620px] overflow-auto">
+                    <div className="flex flex-wrap gap-2">
+                        <PageRefreshButton
+                            onClick={loadData}
+                            loading={loading && (products.length > 0 || collections.length > 0)}
+                            label="Refresh catalog tools"
+                        />
+                        <button
+                            onClick={exportCsv}
+                            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow"
+                            title="Download your current catalog as a CSV backup"
+                        >
+                            <Download size={17} />
+                            Export CSV
+                        </button>
+                        <label
+                            className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow"
+                            title="Upload a CSV to create or update products in bulk"
+                        >
+                            <Upload size={17} />
+                            Import CSV
+                            <input type="file" accept=".csv" onChange={importCsv} className="hidden" />
+                        </label>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 border-t border-slate-100 sm:grid-cols-4">
+                    {[
+                        { label: 'Products', value: productStats.total, helper: 'in catalog' },
+                        { label: 'Published', value: productStats.published, helper: 'published status' },
+                        { label: 'Low-stock variants', value: productStats.lowStockVariants, helper: `${productStats.lowStockProducts} products` },
+                        { label: 'Collections', value: collections.length, helper: 'storefront groups' }
+                    ].map((item, index) => (
+                        <div key={item.label} className={`p-4 sm:p-5 ${index % 2 === 0 ? 'border-r border-slate-100' : ''} ${index < 2 ? 'border-b border-slate-100 sm:border-b-0' : ''} sm:border-r sm:last:border-r-0`}>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.label}</div>
+                            <div className="mt-1 flex items-end gap-2">
+                                <div className="text-2xl font-bold text-slate-950">{item.value}</div>
+                                <div className="pb-1 text-xs text-slate-500">{item.helper}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </header>
+
+            <nav className="flex gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                <a href="#products" className="whitespace-nowrap rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white">Products</a>
+                <a href="#collection-editor" className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">Collections</a>
+                <a href="#category-covers" className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">Category covers</a>
+            </nav>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+                <section id="products" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-100 p-5 sm:p-6">
+                        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Package size={19} className="text-indigo-600" />
+                                    <h2 className="text-lg font-bold text-slate-950">Products</h2>
+                                </div>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Search and filter first, then select only the products you want to change.
+                                </p>
+                            </div>
+                            <div className="text-sm font-semibold text-slate-500">
+                                Showing <span className="text-slate-900">{filteredProducts.length}</span> of {products.length}
+                            </div>
+                        </div>
+
+                        <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_160px_150px]">
+                            <label className="relative block">
+                                <Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    value={searchQuery}
+                                    onChange={event => setSearchQuery(event.target.value)}
+                                    className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                                    placeholder="Search products..."
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        aria-label="Clear product search"
+                                        className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                    >
+                                        <X size={15} />
+                                    </button>
+                                )}
+                            </label>
+                            <select
+                                value={categoryFilter}
+                                onChange={event => setCategoryFilter(event.target.value)}
+                                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                            >
+                                <option value="">All categories</option>
+                                {categories.map(category => (
+                                    <option key={category.name} value={category.name}>{category.name}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={statusFilter}
+                                onChange={event => setStatusFilter(event.target.value)}
+                                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                            >
+                                <option value="">Any status</option>
+                                <option value="published">Published</option>
+                                <option value="draft">Draft</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                            <select
+                                value={stockFilter}
+                                onChange={event => setStockFilter(event.target.value)}
+                                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                            >
+                                <option value="">Any stock</option>
+                                <option value="low">Low stock</option>
+                                <option value="in">In stock</option>
+                                <option value="out">Out of stock</option>
+                            </select>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={toggleAllVisible}
+                                    disabled={filteredProducts.length === 0}
+                                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <CheckSquare2 size={16} />
+                                    {allVisibleSelected ? 'Unselect visible' : 'Select visible'}
+                                </button>
+                                {selectedCount > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={clearSelection}
+                                        className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                                    >
+                                        <X size={15} />
+                                        Clear selection
+                                    </button>
+                                )}
+                                {hasProductFilters && (
+                                    <button
+                                        type="button"
+                                        onClick={resetProductFilters}
+                                        className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-indigo-600 transition hover:bg-indigo-50"
+                                    >
+                                        <RefreshCcw size={15} />
+                                        Reset filters
+                                    </button>
+                                )}
+                            </div>
+                            <div className="rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700">
+                                {selectedCount} selected
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-h-[760px] overflow-auto">
                         {loading && products.length > 0 && (
-                            <div className="bg-indigo-50 px-5 py-2 text-sm text-indigo-700">
-                                Refreshing catalog...
+                            <div className="sticky top-0 z-10 border-b border-indigo-100 bg-indigo-50/95 px-5 py-2 text-sm font-semibold text-indigo-700 backdrop-blur">
+                                Refreshing your catalog…
                             </div>
                         )}
+
                         {loading && products.length === 0 ? (
-                            <div className="p-8 text-center text-sm text-slate-500">Loading catalog products...</div>
+                            <div className="grid gap-3 p-5">
+                                {[1, 2, 3, 4, 5].map(item => (
+                                    <div key={item} className="flex animate-pulse items-center gap-4 rounded-xl border border-slate-100 p-4">
+                                        <div className="h-5 w-5 rounded bg-slate-200" />
+                                        <div className="h-14 w-14 rounded-xl bg-slate-200" />
+                                        <div className="flex-1 space-y-2">
+                                            <div className="h-4 w-1/3 rounded bg-slate-200" />
+                                            <div className="h-3 w-1/2 rounded bg-slate-100" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         ) : products.length === 0 ? (
-                            <div className="p-8 text-center text-sm text-slate-500">No products available for bulk actions yet. Add products before using catalog tools.</div>
-                        ) : products.map(product => {
-                            const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
-                            return (
-                                <label key={product._id} className="flex items-center gap-4 p-4 hover:bg-slate-50">
-                                    <input
-                                        type="checkbox"
-                                        checked={selected.includes(product._id)}
-                                        onChange={() => toggleProduct(product._id)}
-                                        className="h-4 w-4 rounded border-slate-300"
-                                    />
-                                    <div className="h-12 w-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
-                                        {(product.coverMediaId || product.images?.[0]) && (
-                                            <img src={product.coverMediaId || product.images[0]} alt="" className="h-full w-full object-cover" />
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="font-semibold text-slate-900 truncate">{product.title}</div>
-                                        <div className="text-xs text-slate-500">{product.status} / {product.category || 'General'} / Stock {totalStock}</div>
-                                    </div>
-                                    {totalStock <= (product.lowStockThreshold || 5) && (
-                                        <span className="text-xs rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-700">Low stock</span>
-                                    )}
-                                </label>
-                            );
-                        })}
+                            <div className="px-6 py-16 text-center">
+                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                                    <Package size={24} />
+                                </div>
+                                <h3 className="mt-4 font-bold text-slate-900">No products yet</h3>
+                                <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">
+                                    Add products to your catalog before using bulk actions or creating product collections.
+                                </p>
+                            </div>
+                        ) : filteredProducts.length === 0 ? (
+                            <div className="px-6 py-16 text-center">
+                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                                    <Search size={24} />
+                                </div>
+                                <h3 className="mt-4 font-bold text-slate-900">No matching products</h3>
+                                <p className="mt-1 text-sm text-slate-500">Try another search or clear one of your filters.</p>
+                                <button
+                                    type="button"
+                                    onClick={resetProductFilters}
+                                    className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
+                                >
+                                    Clear filters
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-slate-100">
+                                {filteredProducts.map(product => {
+                                    const productId = String(product._id);
+                                    const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
+                                    const lowStockCount = lowStockVariantCount(product);
+                                    const lowStock = lowStockCount > 0;
+                                    const isSelected = selected.includes(productId);
+                                    const status = String(product.status || 'Draft');
+
+                                    return (
+                                        <label
+                                            key={product._id}
+                                            className={`group flex cursor-pointer items-center gap-4 px-4 py-4 transition sm:px-5 ${isSelected ? 'bg-indigo-50/70' : 'hover:bg-slate-50'}`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleProduct(productId)}
+                                                className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                            />
+                                            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-100">
+                                                {(product.coverMediaId || product.images?.[0]) ? (
+                                                    <img src={product.coverMediaId || product.images[0]} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                                                ) : (
+                                                    <div className="flex h-full items-center justify-center text-slate-300">
+                                                        <ImageIcon size={20} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <div className="truncate font-bold text-slate-900">{product.title}</div>
+                                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                                                        status.toLowerCase() === 'published'
+                                                            ? 'bg-emerald-50 text-emerald-700'
+                                                            : status.toLowerCase() === 'archived'
+                                                                ? 'bg-slate-100 text-slate-500'
+                                                                : 'bg-amber-50 text-amber-700'
+                                                    }`}>
+                                                        {status}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                                                    <span>{product.category || 'General'}</span>
+                                                    <span className="hidden text-slate-300 sm:inline">•</span>
+                                                    <span className={lowStock ? 'font-semibold text-amber-700' : ''}>Stock {totalStock}</span>
+                                                    {product.pricing?.discount > 0 && (
+                                                        <>
+                                                            <span className="hidden text-slate-300 sm:inline">•</span>
+                                                            <span>{product.pricing.discount}% discount</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {lowStock && (
+                                                <span className="hidden items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 sm:inline-flex">
+                                                    <AlertTriangle size={13} />
+                                                    {lowStockCount} low-stock variant{lowStockCount === 1 ? '' : 's'}
+                                                </span>
+                                            )}
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </section>
 
-                <aside className="space-y-6">
-                    <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                        <div className="flex items-center gap-2 font-semibold text-slate-900">
-                            <Wand2 size={18} />
-                            Bulk Edit
+                <aside className="space-y-6 xl:self-start">
+                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="flex items-center gap-2 font-bold text-slate-950">
+                                    <SlidersHorizontal size={18} className="text-indigo-600" />
+                                    Bulk edit
+                                </div>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">Choose the fields to change. You will review them before applying.</p>
+                            </div>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selectedCount ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                                {selectedCount}
+                            </span>
                         </div>
-                        <p className="text-xs text-slate-500">Only filled fields are changed. Blank fields keep current product values.</p>
-                        <input value={bulk.category} onChange={e => setBulk(prev => ({ ...prev, category: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Category" />
-                        <select value={bulk.status} onChange={e => setBulk(prev => ({ ...prev, status: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2">
-                            <option value="">Keep status</option>
-                            <option>Draft</option>
-                            <option>Published</option>
-                            <option>Archived</option>
-                        </select>
-                        <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-                            Stock changes are handled from Inventory so every adjustment creates a movement record and low-stock alert state.
+
+                        {selectedCount === 0 && (
+                            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+                                Select one or more products from the list to activate bulk changes.{' '}
+                                <a href="#products" className="font-semibold text-indigo-700 underline underline-offset-2">Choose products</a>
+                            </div>
+                        )}
+                        {selectedCount > visibleSelectedCount && (
+                            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                                {selectedCount - visibleSelectedCount} selected product{selectedCount - visibleSelectedCount === 1 ? ' is' : 's are'} hidden by your current filters and will still be updated.
+                            </p>
+                        )}
+
+                        <div className="mt-4 space-y-3">
+                            <label className="block">
+                                <span className="mb-1.5 block text-xs font-bold text-slate-600">Move to category</span>
+                                <input
+                                    value={bulk.category}
+                                    onChange={e => setBulk(prev => ({ ...prev, category: e.target.value }))}
+                                    list="catalog-bulk-categories"
+                                    className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                    placeholder="Leave unchanged"
+                                />
+                                <datalist id="catalog-bulk-categories">
+                                    {categories.map(category => <option key={category.name} value={category.name} />)}
+                                </datalist>
+                            </label>
+                            <label className="block">
+                                <span className="mb-1.5 block text-xs font-bold text-slate-600">Status</span>
+                                <select
+                                    value={bulk.status}
+                                    onChange={e => setBulk(prev => ({ ...prev, status: e.target.value }))}
+                                    className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                >
+                                    <option value="">Keep current status</option>
+                                    <option>Draft</option>
+                                    <option>Published</option>
+                                    <option>Archived</option>
+                                </select>
+                            </label>
+                            <label className="block">
+                                <span className="mb-1.5 block text-xs font-bold text-slate-600">Storefront visibility</span>
+                                <select
+                                    value={bulk.visibility}
+                                    onChange={e => setBulk(prev => ({ ...prev, visibility: e.target.value }))}
+                                    className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                >
+                                    <option value="">Keep current visibility</option>
+                                    <option value="show">Enabled</option>
+                                    <option value="hide">Hidden</option>
+                                </select>
+                                <span className="mt-1 block text-xs text-slate-500">Products also need Published status and must have reached any scheduled publication time.</span>
+                            </label>
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                                <p className="text-xs font-bold text-slate-700">Product tags</p>
+                                <div className="mt-2 grid gap-2 sm:grid-cols-[110px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[110px_minmax(0,1fr)]">
+                                    <select
+                                        value={bulk.tagsMode}
+                                        onChange={e => setBulk(prev => ({ ...prev, tagsMode: e.target.value }))}
+                                        aria-label="Tag action"
+                                        className="min-h-11 rounded-xl border border-slate-200 bg-white px-2 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                    >
+                                        <option value="add">Add</option>
+                                        <option value="remove">Remove</option>
+                                        <option value="replace">Replace</option>
+                                        <option value="clear">Clear all</option>
+                                    </select>
+                                    <input
+                                        value={bulk.tags}
+                                        onChange={e => setBulk(prev => ({ ...prev, tags: e.target.value }))}
+                                        disabled={bulk.tagsMode === 'clear'}
+                                        aria-label="Tags separated by commas"
+                                        placeholder={bulk.tagsMode === 'clear' ? 'All tags will be removed' : 'summer, featured'}
+                                        className="min-h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 disabled:bg-slate-100"
+                                    />
+                                </div>
+                                <p className="mt-1.5 text-xs text-slate-500">Separate tags with commas. Add or remove preserves other tags.</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 p-3">
+                                <p className="text-xs font-bold text-slate-700">Pricing</p>
+                                <p className="mt-1 text-xs text-slate-500">Percent changes preserve relative prices across selected products and their variant prices.</p>
+                                <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                                    <label className="block">
+                                        <span className="mb-1.5 block text-xs font-bold text-slate-600">Selling price change %</span>
+                                        <input
+                                            type="number"
+                                            min="-90"
+                                            max="500"
+                                            step="0.01"
+                                            value={bulk.sellingPricePercent}
+                                            onChange={e => setBulk(prev => ({ ...prev, sellingPricePercent: e.target.value }))}
+                                            className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            placeholder="e.g. 10 or -5"
+                                        />
+                                    </label>
+                                    <label className="block">
+                                        <span className="mb-1.5 block text-xs font-bold text-slate-600">Buying cost change %</span>
+                                        <input
+                                            type="number"
+                                            min="-90"
+                                            max="500"
+                                            step="0.01"
+                                            value={bulk.buyingPricePercent}
+                                            onChange={e => setBulk(prev => ({ ...prev, buyingPricePercent: e.target.value }))}
+                                            className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            placeholder="e.g. 8 or -3"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className="block">
+                                    <span className="mb-1.5 block text-xs font-bold text-slate-600">Discount %</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        value={bulk.discount}
+                                        onChange={e => setBulk(prev => ({ ...prev, discount: e.target.value }))}
+                                        className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                        placeholder="—"
+                                    />
+                                </label>
+                                <label className="block">
+                                    <span className="mb-1.5 block text-xs font-bold text-slate-600">Variant alert level</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="1"
+                                        value={bulk.lowStockThreshold}
+                                        onChange={e => setBulk(prev => ({ ...prev, lowStockThreshold: e.target.value }))}
+                                        className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                        placeholder="—"
+                                    />
+                                </label>
+                            </div>
+                            <p className="text-xs leading-5 text-slate-500">Changing the alert level updates every variant of each selected product. It does not change stock quantities.</p>
                         </div>
-                        <input type="number" value={bulk.discount} onChange={e => setBulk(prev => ({ ...prev, discount: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Discount percent" />
-                        <input type="number" value={bulk.lowStockThreshold} onChange={e => setBulk(prev => ({ ...prev, lowStockThreshold: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Low stock threshold" />
-                        <button onClick={applyBulkUpdate} className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800" title="Apply the filled bulk fields to selected products">
-                            Apply to {selectedCount} products
+
+                        <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">
+                            Stock quantity is managed from Inventory so every adjustment keeps its movement history and alerts.
+                        </div>
+
+                        <button
+                            onClick={applyBulkUpdate}
+                            disabled={selectedCount === 0 || !hasBulkChanges || bulkSaving}
+                            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                            title="Apply the filled bulk fields to selected products"
+                        >
+                            {bulkSaving ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} />}
+                            {bulkSaving ? 'Applying changes…' : `Review and apply to ${selectedCount} product${selectedCount === 1 ? '' : 's'}`}
                         </button>
+                        {hasBulkChanges && (
+                            <button type="button" onClick={() => setBulk(emptyBulkForm)} disabled={bulkSaving} className="mt-2 w-full rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50">
+                                Clear bulk fields
+                            </button>
+                        )}
                     </section>
 
-                    <form id="collection-editor" onSubmit={saveCollection} className="scroll-mt-24 bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 font-semibold text-slate-900">
-                                <Layers size={18} />
-                                {editingCollectionId ? 'Edit collection' : 'New collection'}
+                    <form id="collection-editor" onSubmit={saveCollection} className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="flex items-center gap-2 font-bold text-slate-950">
+                                    <Layers size={18} className="text-indigo-600" />
+                                    {editingCollectionId ? 'Edit collection' : 'Create collection'}
+                                </div>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">
+                                    {selectedCount > 0
+                                        ? `${selectedCount} selected product${selectedCount === 1 ? '' : 's'} will be included.`
+                                        : 'Select products first, or build an empty collection and add items later.'}
+                                </p>
                             </div>
                             {editingCollectionId && (
-                                <button type="button" onClick={resetCollectionEditor} className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-500 hover:bg-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={resetCollectionEditor}
+                                    className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                                >
                                     <X size={15} />
                                     Cancel
                                 </button>
                             )}
                         </div>
-                        <p className="text-xs text-slate-500">Collections group selected products for storefront sections or navigation links.</p>
-                        <button
-                            type="button"
-                            onClick={generateCollectionAi}
-                            disabled={collectionAi.loading}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            <Wand2 size={16} />
-                            {collectionAi.loading ? 'Generating suggestion...' : 'Generate with AI'}
-                        </button>
+
+                        <div className="mt-4 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-3">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white">
+                                    <Wand2 size={16} />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-sm font-bold text-slate-900">AI collection assistant</div>
+                                    <p className="mt-0.5 text-xs leading-5 text-slate-500">Generate a name, description, slug, and SEO copy from the title or selected products.</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={generateCollectionAi}
+                                disabled={operation.loading || !operation.access.allowed}
+                                className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <Sparkles size={15} />
+                                {collectionAi.loading ? 'Generating…' : 'Generate suggestion'}
+                            </button>
+                        </div>
+
+                        <div className="mt-4">
+                            <AiOperationStatus operation={operation} onRetry={async () => receiveCollection(await operation.retry())} onUndo={undo.undo} />
+                        </div>
+                        {collectionAi.suggestion && (
+                            <div className="mt-4">
+                                <AiFieldComparison
+                                    current={{ title: collectionForm.title, slug: collectionForm.slug, description: collectionForm.description, seo: collectionForm.seo }}
+                                    proposed={collectionAi.suggestion}
+                                />
+                            </div>
+                        )}
                         {collectionAi.error && (
-                            <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                            <div className="mt-4 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
                                 {collectionAi.error}
                             </div>
                         )}
                         {collectionAi.suggestion && (
-                            <div className="space-y-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
+                            <div className="mt-4 space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
                                 {collectionAi.meta?.fallback && (
-                                    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
                                         Basic suggestions are shown because the AI response could not be used. Review every field before applying.
                                     </div>
                                 )}
@@ -628,11 +1151,21 @@ const CatalogTools = () => {
                                     <div className="text-sm font-bold text-slate-900">{collectionAi.suggestion.name}</div>
                                     <p className="mt-1 text-xs leading-5 text-slate-600">{collectionAi.suggestion.description}</p>
                                 </div>
-                                <div className="rounded-md bg-white p-2 text-xs text-slate-600">
+                                <div className="rounded-lg bg-white p-2.5 text-xs text-slate-600">
                                     <div><span className="font-bold text-slate-800">SEO:</span> {collectionAi.suggestion.seoTitle}</div>
                                     <div className="mt-1">{collectionAi.suggestion.seoDescription}</div>
                                     {collectionAi.suggestion.keywords?.length > 0 && (
-                                        <div className="mt-2 text-slate-500">Keywords: {collectionAi.suggestion.keywords.join(', ')}</div>
+                                        <div className="mt-2 text-slate-500">
+                                            Keywords: {collectionAi.suggestion.keywords.join(', ')}
+                                            {' '}
+                                            <button
+                                                type="button"
+                                                className="font-bold text-indigo-600 underline"
+                                                onClick={() => navigator.clipboard.writeText(collectionAi.suggestion.keywords.join(', ')).then(() => toast.success('Keywords copied')).catch(() => toast.error('Could not copy keywords'))}
+                                            >
+                                                Copy
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
@@ -643,161 +1176,323 @@ const CatalogTools = () => {
                                 </div>
                             </div>
                         )}
-                        <input required value={collectionForm.title} onChange={e => setCollectionForm(prev => ({ ...prev, title: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Collection title" />
-                        <input value={collectionForm.slug} onChange={e => setCollectionForm(prev => ({ ...prev, slug: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" placeholder="Slug" />
-                        <textarea value={collectionForm.description} onChange={e => setCollectionForm(prev => ({ ...prev, description: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2" rows={3} placeholder="Description" />
-                        <div className="space-y-3 rounded-lg border border-slate-200 p-3">
+
+                        <div className="mt-5 space-y-4">
                             <div>
-                                <div className="text-sm font-semibold text-slate-800">Collection cover</div>
-                                <p className="text-xs text-slate-500">JPEG, PNG, or WebP up to 5 MB.</p>
-                            </div>
-                            {(collectionImagePreview && !removeCollectionImage) ? (
-                                <div className="relative aspect-[16/9] overflow-hidden rounded-lg bg-slate-100">
-                                    <img src={collectionImagePreview} alt="Collection cover preview" className="h-full w-full object-cover" />
-                                    <button
-                                        type="button"
-                                        aria-label="Remove collection cover"
-                                        onClick={() => {
-                                            releaseCollectionPreview();
-                                            setCollectionImageFile(null);
-                                            setCollectionImagePreview('');
-                                            setRemoveCollectionImage(Boolean(editingCollectionId && collectionForm.image));
-                                        }}
-                                        className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow"
-                                    >
-                                        <X size={17} />
-                                    </button>
+                                <div className="mb-3 flex items-center gap-2">
+                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">1</span>
+                                    <span className="text-sm font-bold text-slate-800">Collection details</span>
                                 </div>
-                            ) : (
-                                <div className="flex aspect-[16/7] items-center justify-center rounded-lg bg-slate-50 text-slate-300">
-                                    <ImageIcon size={30} />
+                                <div className="space-y-3">
+                                    <label className="block">
+                                        <span className="mb-1.5 block text-xs font-bold text-slate-600">Title</span>
+                                        <input
+                                            required
+                                            value={collectionForm.title}
+                                            onChange={e => setCollectionForm(prev => ({ ...prev, title: e.target.value }))}
+                                            className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            placeholder="Summer essentials"
+                                        />
+                                    </label>
+                                    <label className="block">
+                                        <span className="mb-1.5 block text-xs font-bold text-slate-600">Slug</span>
+                                        <input
+                                            value={collectionForm.slug}
+                                            onChange={e => setCollectionForm(prev => ({ ...prev, slug: e.target.value }))}
+                                            className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            placeholder="summer-essentials"
+                                        />
+                                    </label>
+                                    <label className="block">
+                                        <span className="mb-1.5 flex items-center justify-between text-xs font-bold text-slate-600">
+                                            <span>Description</span>
+                                            <span className="font-medium text-slate-400">{collectionForm.description.length} chars</span>
+                                        </span>
+                                        <textarea
+                                            value={collectionForm.description}
+                                            onChange={e => setCollectionForm(prev => ({ ...prev, description: e.target.value }))}
+                                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            rows={3}
+                                            placeholder="Tell shoppers what this collection is about."
+                                        />
+                                    </label>
                                 </div>
-                            )}
-                            <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
-                                <Upload size={16} />
-                                {collectionImagePreview ? 'Replace cover' : 'Upload cover'}
-                                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCollectionImageChange} className="hidden" />
-                            </label>
-                        </div>
-                        <label className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700">
-                            <span>Visible on storefront</span>
-                            <input type="checkbox" checked={collectionForm.isActive !== false} onChange={e => setCollectionForm(prev => ({ ...prev, isActive: e.target.checked }))} className="h-5 w-5 rounded border-slate-300" />
-                        </label>
-                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-3">
-                            <div>
-                                <div className="text-sm font-semibold text-slate-800">Collection SEO</div>
-                                <p className="text-xs text-slate-500">Optional. These improve the public collection page title and search preview.</p>
                             </div>
-                            <input value={collectionForm.seo?.title || ''} onChange={e => updateCollectionSeo('title', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" maxLength={70} placeholder="SEO title" />
-                            <textarea value={collectionForm.seo?.description || ''} onChange={e => updateCollectionSeo('description', e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2" maxLength={170} rows={2} placeholder="SEO description" />
+
+                            <div className="border-t border-slate-100 pt-4">
+                                <div className="mb-3 flex items-center gap-2">
+                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">2</span>
+                                    <span className="text-sm font-bold text-slate-800">Cover image</span>
+                                </div>
+                                {(collectionImagePreview && !removeCollectionImage) ? (
+                                    <div className="group relative aspect-[16/9] overflow-hidden rounded-xl bg-slate-100">
+                                        <img src={collectionImagePreview} alt="Collection cover preview" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+                                        <button
+                                            type="button"
+                                            aria-label="Remove collection cover"
+                                            onClick={() => {
+                                                releaseCollectionPreview();
+                                                setCollectionImageFile(null);
+                                                setCollectionImagePreview('');
+                                                setRemoveCollectionImage(Boolean(editingCollectionId && collectionForm.image));
+                                            }}
+                                            className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-slate-700 shadow transition hover:bg-rose-50 hover:text-rose-700"
+                                        >
+                                            <X size={17} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex aspect-[16/7] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-300">
+                                        <ImageIcon size={30} />
+                                    </div>
+                                )}
+                                <label className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
+                                    <Upload size={16} />
+                                    {collectionImagePreview ? 'Replace cover' : 'Upload cover'}
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCollectionImageChange} className="hidden" />
+                                </label>
+                                <p className="mt-2 text-center text-[11px] text-slate-400">JPEG, PNG, or WebP up to 5 MB</p>
+                            </div>
+
+                            <div className="border-t border-slate-100 pt-4">
+                                <div className="mb-3 flex items-center gap-2">
+                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">3</span>
+                                    <span className="text-sm font-bold text-slate-800">Visibility & search</span>
+                                </div>
+                                <label className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
+                                    <span>
+                                        <span className="block">Visible on storefront</span>
+                                        <span className="block text-[11px] font-normal text-slate-400">Customers can discover this collection.</span>
+                                    </span>
+                                    <input
+                                        type="checkbox"
+                                        checked={collectionForm.isActive !== false}
+                                        onChange={e => setCollectionForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                                        className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                </label>
+
+                                <div className="mt-3 space-y-3 rounded-xl bg-slate-50 p-3">
+                                    <label className="block">
+                                        <span className="mb-1.5 flex justify-between text-xs font-bold text-slate-600">
+                                            <span>SEO title</span>
+                                            <span className="font-medium text-slate-400">{(collectionForm.seo?.title || '').length}/70</span>
+                                        </span>
+                                        <input
+                                            value={collectionForm.seo?.title || ''}
+                                            onChange={e => updateCollectionSeo('title', e.target.value)}
+                                            className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            maxLength={70}
+                                            placeholder="Search result title"
+                                        />
+                                    </label>
+                                    <label className="block">
+                                        <span className="mb-1.5 flex justify-between text-xs font-bold text-slate-600">
+                                            <span>SEO description</span>
+                                            <span className="font-medium text-slate-400">{(collectionForm.seo?.description || '').length}/170</span>
+                                        </span>
+                                        <textarea
+                                            value={collectionForm.seo?.description || ''}
+                                            onChange={e => updateCollectionSeo('description', e.target.value)}
+                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+                                            maxLength={170}
+                                            rows={2}
+                                            placeholder="Short search-result description"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        <button disabled={collectionSaving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+
+                        <button
+                            disabled={collectionSaving}
+                            className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
                             <Check size={17} />
-                            {collectionSaving ? 'Saving...' : editingCollectionId ? 'Save collection' : 'Create from selected'}
+                            {collectionSaving ? 'Saving…' : editingCollectionId ? 'Save collection' : `Create collection${selectedCount ? ` (${selectedCount})` : ''}`}
                         </button>
                     </form>
 
-                    <section className="bg-white border border-slate-200 rounded-lg p-5 space-y-3">
-                        <div className="font-semibold text-slate-900">Collections</div>
-                        {collections.length === 0 ? (
-                            <div className="rounded-lg bg-slate-50 px-3 py-4 text-sm text-slate-500">No collections yet. Select products and create your first collection.</div>
-                        ) : collections.map(collection => (
-                            <div key={collection._id} className="flex items-center gap-3 rounded-lg bg-slate-50 p-2.5">
-                                <div className="flex h-12 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-slate-200 text-slate-400">
-                                    {collection.image ? (
-                                        <img src={collection.image} alt="" loading="lazy" className="h-full w-full object-cover" />
-                                    ) : (
-                                        <ImageIcon size={18} />
-                                    )}
+                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="font-bold text-slate-950">Collections</div>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">{collections.length}</span>
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">Edit a collection to load its products and settings back into the workspace.</p>
+                        <div className="mt-4 max-h-[360px] space-y-2 overflow-auto pr-1">
+                            {collections.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-5 text-center text-sm text-slate-500">
+                                    No collections yet.
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="truncate text-sm font-semibold text-slate-800">{collection.title}</div>
-                                    <div className="truncate text-xs text-slate-500">{collection.slug} / {(collection.productIds || []).length} products</div>
+                            ) : collections.map(collection => (
+                                <div key={collection._id} className="group flex items-center gap-3 rounded-xl border border-transparent bg-slate-50 p-2.5 transition hover:border-slate-200 hover:bg-white hover:shadow-sm">
+                                    <div className="flex h-12 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-200 text-slate-400">
+                                        {collection.image ? (
+                                            <img src={collection.image} alt="" loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                                        ) : (
+                                            <ImageIcon size={18} />
+                                        )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className="truncate text-sm font-bold text-slate-800">{collection.title}</div>
+                                            {collection.isActive !== false && (
+                                                <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" title="Visible on storefront" />
+                                            )}
+                                        </div>
+                                        <div className="truncate text-xs text-slate-500">{(collection.productIds || []).length} products · {collection.slug || 'No slug'}</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => beginCollectionEdit(collection)}
+                                        aria-label={`Edit ${collection.title}`}
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-indigo-50 hover:text-indigo-700"
+                                    >
+                                        <Edit3 size={16} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => deleteCollection(collection)}
+                                        aria-label={`Delete ${collection.title}`}
+                                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-700"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
-                                <button type="button" onClick={() => beginCollectionEdit(collection)} aria-label={`Edit ${collection.title}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-white hover:text-indigo-700">
-                                    <Edit3 size={16} />
-                                </button>
-                                <button type="button" onClick={() => deleteCollection(collection)} aria-label={`Delete ${collection.title}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700">
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </section>
                 </aside>
             </div>
 
-            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <div className="border-b border-slate-100 p-5">
-                    <h2 className="font-semibold text-slate-900">Category covers</h2>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">Add one cover per product category. The image appears in category sections and on the category page.</p>
+            <section id="category-covers" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-950">Category presentation</h2>
+                        <p className="mt-1 text-sm text-slate-500">Use strong covers and clean search metadata to make category browsing feel intentional.</p>
+                    </div>
+                    <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">{categories.length} categories</div>
                 </div>
+
                 {categories.length === 0 ? (
-                    <div className="p-8 text-center text-sm text-slate-500">Categories appear here after products have a category.</div>
+                    <div className="px-6 py-16 text-center">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                            <Images size={24} />
+                        </div>
+                        <h3 className="mt-4 font-bold text-slate-900">No categories to customize</h3>
+                        <p className="mt-1 text-sm text-slate-500">Categories appear here after products have a category.</p>
+                    </div>
                 ) : (
-                    <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {categories.map(category => {
                             const key = String(category._id || category.name);
                             const savingCategory = categorySavingId === key;
                             return (
-                                <article key={category.name} className="min-w-0 p-4">
-                                    <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-slate-100 text-slate-300">
+                                <article key={category.name} className="group min-w-0 bg-white p-4 transition hover:bg-slate-50/60">
+                                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 text-slate-300">
                                         {category.image ? (
-                                            <img src={category.image} alt={category.coverImage?.altText || `${category.name} category`} loading="lazy" className="h-full w-full object-cover" />
+                                            <img
+                                                src={category.image}
+                                                alt={category.coverImage?.altText || `${category.name} category`}
+                                                loading="lazy"
+                                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                                            />
                                         ) : (
                                             <div className="flex h-full items-center justify-center"><ImageIcon size={30} /></div>
                                         )}
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/70 to-transparent p-3 pt-10 text-white">
+                                            <div className="truncate text-sm font-bold">{category.name}</div>
+                                            <div className="text-xs text-white/75">{category.productCount || 0} products</div>
+                                        </div>
                                         {savingCategory && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 text-xs font-bold text-slate-700">Saving...</div>
+                                            <div className="absolute inset-0 flex items-center justify-center bg-white/85 text-xs font-bold text-slate-700 backdrop-blur-sm">Saving…</div>
                                         )}
                                     </div>
-                                    <div className="mt-3 flex items-start justify-between gap-2">
-                                        <div className="min-w-0">
-                                            <h3 className="truncate text-sm font-bold text-slate-900">{category.name}</h3>
-                                            <p className="text-xs text-slate-500">{category.productCount || 0} products</p>
-                                        </div>
-                                        <div className="flex shrink-0 items-center gap-1">
-                                            <button type="button" onClick={() => openCategorySeoEditor(category)} disabled={savingCategory} aria-label={`Edit ${category.name} search details`} className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50">
-                                                <Edit3 size={16} />
-                                            </button>
-                                            {category.image && category._id && (
-                                                <button type="button" onClick={() => removeCategoryCover(category)} disabled={savingCategory} aria-label={`Remove ${category.name} cover`} className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50">
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 grid grid-cols-1 gap-2">
+
+                                    <div className="mt-3 flex items-center gap-2">
                                         <button
                                             type="button"
                                             onClick={() => openCategoryPhotoPicker(category)}
                                             disabled={savingCategory}
-                                            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            <Images size={16} />
-                                            Choose product photo
+                                            <Images size={15} />
+                                            Product photo
                                         </button>
-                                        <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
-                                            <Upload size={16} />
-                                            {category.image ? 'Upload another cover' : 'Upload cover'}
-                                            <input
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp"
+                                        <button
+                                            type="button"
+                                            onClick={() => openCategorySeoEditor(category)}
+                                            disabled={savingCategory}
+                                            aria-label={`Edit ${category.name} search details`}
+                                            className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:opacity-50"
+                                        >
+                                            <Edit3 size={16} />
+                                        </button>
+                                        {category.image && category._id && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeCategoryCover(category)}
                                                 disabled={savingCategory}
-                                                onChange={event => {
-                                                    const file = event.target.files?.[0];
-                                                    event.target.value = '';
-                                                    saveCategoryCover(category, file);
-                                                }}
-                                                className="hidden"
-                                            />
-                                        </label>
+                                                aria-label={`Remove ${category.name} cover`}
+                                                className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                     </div>
+
+                                    <label className="mt-2 inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 text-xs font-bold text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700">
+                                        <Upload size={15} />
+                                        {category.image ? 'Upload replacement' : 'Upload custom cover'}
+                                        <input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            disabled={savingCategory}
+                                            onChange={event => {
+                                                const file = event.target.files?.[0];
+                                                event.target.value = '';
+                                                saveCategoryCover(category, file);
+                                            }}
+                                            className="hidden"
+                                        />
+                                    </label>
                                 </article>
                             );
                         })}
                     </div>
                 )}
             </section>
+
+            {selectedCount > 0 && (
+                <div className="fixed inset-x-0 bottom-4 z-40 mx-auto w-[calc(100%-2rem)] max-w-3xl rounded-2xl border border-slate-700 bg-slate-950 p-2 shadow-2xl shadow-slate-950/20 sm:p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3 px-2 text-white">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">
+                                <CheckSquare2 size={17} />
+                            </div>
+                            <div>
+                                <div className="text-sm font-bold">{selectedCount} product{selectedCount === 1 ? '' : 's'} selected</div>
+                                <div className="text-xs text-slate-400">Bulk edit or create a collection from this selection.</div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={clearSelection}
+                                className="min-h-10 rounded-xl px-3 text-xs font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
+                            >
+                                Clear
+                            </button>
+                            <a
+                                href="#collection-editor"
+                                className="inline-flex min-h-10 items-center justify-center rounded-xl bg-white px-4 text-xs font-bold text-slate-950 transition hover:bg-slate-100"
+                            >
+                                Create collection
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Modal
                 isOpen={Boolean(categoryPhotoPicker.category)}

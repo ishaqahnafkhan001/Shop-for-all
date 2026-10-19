@@ -127,6 +127,7 @@ const sanitizePublicProduct = (product) => {
     clean.features = sanitizePublicSellingPoints(clean.features);
     clean.specifications = sanitizePublicKeyValueItems(clean.specifications);
     clean.comments = sanitizePublicKeyValueItems(clean.comments);
+    delete clean.sellerFacts;
     delete clean.entitlementMedia;
     delete clean.planArchive;
     delete clean.__v;

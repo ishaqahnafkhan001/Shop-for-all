@@ -3,6 +3,7 @@ import { fetchStorefrontBootstrap, getStorefrontPlanRedirectUrl } from '@/lib/st
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
+import { getPublishedStorefrontSettings } from '@/lib/storefrontPublishedSettings';
 import {
     buildHomepageJsonLd,
     buildNextHomepageMetadata,
@@ -16,15 +17,22 @@ const stringifyJsonLd = (jsonLd) => JSON.stringify(jsonLd).replace(/</g, '\\u003
 
 const getInitialStorefrontData = cache(async (subdomain, host = '') => {
     try {
-        return await fetchStorefrontBootstrap(subdomain, {
+        let [data, settings] = await Promise.all([fetchStorefrontBootstrap(subdomain, {
             page: 1,
             limit: 9,
             sort: 'newest',
         }, {
             storefrontHost: host,
             fresh: true,
-        });
+        }), getPublishedStorefrontSettings(subdomain, host)]);
+        if (data && Number(data.shop?.themeRevision ?? -1) !== Number(settings.themeRevision || 0)) {
+            data = await fetchStorefrontBootstrap(subdomain, { page: 1, limit: 9, sort: 'newest' }, {
+                storefrontHost: host, fresh: true, expectedRevision: Number(settings.themeRevision || 0),
+            });
+        }
+        return data ? { ...data, shop: settings } : null;
     } catch (error) {
+        if (error.code === 'STOREFRONT_REVISION_CHANGED') return { shop: null, error: error.message };
         const redirectTo = getStorefrontPlanRedirectUrl(error, '/');
         if (redirectTo) return { shop: null, redirectTo };
         if ([404, 423].includes(error.status)) {
@@ -106,7 +114,7 @@ export default async function VendorHomePage({ params, searchParams }) {
                     dangerouslySetInnerHTML={{ __html: stringifyJsonLd(jsonLd) }}
                 />
             ))}
-            <StorefrontHomeClient subdomain={subdomain} initialData={initialData} />
+            <StorefrontHomeClient key={`${subdomain}:${initialData?.shop?.themeRevision ?? 0}`} subdomain={subdomain} initialData={initialData} />
         </>
     );
 }

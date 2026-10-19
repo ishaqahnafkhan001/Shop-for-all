@@ -184,7 +184,7 @@ test('live renderer hides empty heroes and never inserts generic promotional cla
     assert.match(renderer, /activeHeroSlide\.badgeText &&/);
     assert.doesNotMatch(renderer, /Limited time offer/i);
     assert.doesNotMatch(renderer, /Discover Your Favorite Products/);
-    assert.match(core, /slide\.primaryCtaText !== undefined/);
+    assert.match(core, /resolveHeroSlideFields/);
 });
 
 test('admin exposes a separate all-plan branding page without exposing Store Builder', () => {

@@ -6,11 +6,29 @@ import path from 'node:path'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fromAdminNodeModules = (pkgPath) => path.resolve(__dirname, 'node_modules', pkgPath)
+const storefrontPackageManifests = new Set([
+  path.resolve(__dirname, '../packages/storefront-renderer/package.json'),
+  path.resolve(__dirname, '../packages/storefront-theme/package.json')
+])
+
+// preserveSymlinks keeps these packages under node_modules in Vite's cache.
+// Watch their real manifests so newly added exports also work in a warm server.
+const watchStorefrontPackageExports = () => ({
+  name: 'watch-storefront-package-exports',
+  configureServer(server) {
+    server.watcher.add([...storefrontPackageManifests])
+    server.watcher.on('change', file => {
+      if (!storefrontPackageManifests.has(path.resolve(file))) return
+      void server.restart().catch(error => server.config.logger.error(error.message))
+    })
+  }
+})
 
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss()
+    tailwindcss(),
+    watchStorefrontPackageExports()
   ],
 
   resolve: {
