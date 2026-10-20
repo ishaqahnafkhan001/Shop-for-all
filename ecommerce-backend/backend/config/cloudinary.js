@@ -1,5 +1,6 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
+const sharp = require('sharp');
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -103,6 +104,48 @@ const validateImageBuffer = (buffer, file, { allowSvg = false, allowIcon = false
     return isRasterSignatureValid(buffer, file?.mimetype);
 };
 
+// Bound every ISO BMFF/QuickTime atom to the received bytes. A header alone is
+// insufficient: complete product videos need a movie track and media payload.
+const isProductVideoBufferValid = buffer => {
+    const boxes = (start, end) => {
+        const result = [];
+        for (let offset = start; offset < end;) {
+            if (end - offset < 8) return null;
+            let size = buffer.readUInt32BE(offset);
+            let header = 8;
+            if (size === 1) {
+                if (end - offset < 16) return null;
+                const extended = buffer.readBigUInt64BE(offset + 8);
+                if (extended > BigInt(end - offset)) return null;
+                size = Number(extended);
+                header = 16;
+            } else if (size === 0) size = end - offset;
+            if (size < header || size > end - offset) return null;
+            result.push({ type: buffer.toString('ascii', offset + 4, offset + 8), start: offset + header, end: offset + size });
+            offset += size;
+        }
+        return result;
+    };
+    const top = boxes(0, buffer.length);
+    const movie = top?.find(box => box.type === 'moov');
+    const payload = top?.some(box => box.type === 'mdat' && box.end > box.start);
+    if (!movie || !payload) return false;
+    const children = boxes(movie.start, movie.end);
+    return Boolean(children?.some(box => box.type === 'mvhd') && children.some(box => box.type === 'trak' && boxes(box.start, box.end)?.some(child => child.type === 'mdia')));
+};
+
+const validateProductMediaBuffer = async (buffer, file) => {
+    if (buffer.length > 10 * 1024 * 1024) return false;
+    if (['video/mp4', 'video/quicktime'].includes(file.mimetype)) return isProductVideoBufferValid(buffer);
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype) || !validateImageBuffer(buffer, file)) return false;
+    try {
+        // Reuse the installed decoder and reject truncated/corrupt raster data.
+        // Resize bounds the decoded output allocated solely for validation.
+        await sharp(buffer, { failOn: 'warning' }).resize(1, 1).toBuffer();
+        return true;
+    } catch { return false; }
+};
+
 const buildSupportUploadOptions = () => ({
     folder: 'support_attachments',
     resource_type: 'auto',
@@ -132,13 +175,16 @@ class CloudinaryMulterStorage {
 
     _handleFile(req, file, cb) {
         const chunks = [];
+        let truncated = false;
+        file.stream.once('limit', () => { truncated = true; });
         file.stream.on('data', chunk => chunks.push(chunk));
         file.stream.on('error', cb);
         file.stream.on('end', async () => {
             try {
+                if (truncated) return cb(Object.assign(new Error('Uploaded file exceeds the size limit'), { code: 'LIMIT_FILE_SIZE' }));
                 const buffer = Buffer.concat(chunks);
-                if (this.bufferValidator && !this.bufferValidator(buffer, file, req)) {
-                    return cb(new Error('Uploaded file content does not match an allowed image format'));
+                if (this.bufferValidator && !await this.bufferValidator(buffer, file, req)) {
+                    return cb(new Error('Uploaded file content does not match an allowed media format'));
                 }
                 const result = await streamUpload(buffer, this.optionsBuilder(file, req));
                 cb(null, {
@@ -161,11 +207,13 @@ class CloudinaryMulterStorage {
     }
 
     _removeFile(req, file, cb) {
-        cb(null);
+        const publicId = file.public_id || file.filename;
+        if (!publicId) return cb(null);
+        cloudinary.uploader.destroy(publicId, { resource_type: file.resource_type || 'image' }).then(() => cb(null), cb);
     }
 }
 
-const storage = new CloudinaryMulterStorage();
+const storage = new CloudinaryMulterStorage(buildStorefrontUploadOptions, validateProductMediaBuffer);
 const brandStorage = new CloudinaryMulterStorage(
     (file, req) => ({
         ...buildBrandUploadOptions(file, req),
@@ -241,13 +289,17 @@ const allowedSupportMimeTypes = new Set([
 const upload = multer({
     storage,
     limits: {
-        fileSize: 10 * 1024 * 1024,
+        // Busboy emits `limit` at equality; one sentinel byte keeps 10 MiB
+        // inclusive while still rejecting every file larger than the policy.
+        fileSize: 10 * 1024 * 1024 + 1,
         files: 17
     },
     fileFilter: (req, file, cb) => {
         if (!allowedMimeTypes.has(file.mimetype)) {
             return cb(new Error('Unsupported file type'));
         }
+        if ((file.fieldname === 'images' && !file.mimetype.startsWith('image/')) ||
+            (file.fieldname === 'videos' && !file.mimetype.startsWith('video/'))) return cb(new Error('File type does not match the product media field'));
 
         if (file.fieldname === 'images' && req.planAccess?.limits?.imagesPerProduct !== null) {
             req.planImageUploadCount = Number(req.planImageUploadCount || 0) + 1;

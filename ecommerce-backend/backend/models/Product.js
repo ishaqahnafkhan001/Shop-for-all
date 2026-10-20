@@ -197,8 +197,7 @@ productSchema.virtual('finalPrice').get(function () {
     if (!this.pricing) return undefined;
     const discount = this.pricing.discount || 0;
     const price = this.pricing.sellingPrice;
-    if (discount > 0) return Math.round(price - (price * discount) / 100);
-    return price;
+    return Math.round(price - (price * discount) / 100);
 });
 
 productSchema.virtual('totalStock').get(function () {

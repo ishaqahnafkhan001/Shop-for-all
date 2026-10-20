@@ -61,15 +61,14 @@ function cartesian(attributeDefs) {
  * Build a stable lookup key from a variant's attributes array.
  * Sorted by attribute name so order doesn't matter.
  *
- * [{name:"size",value:"m"},{name:"color",value:"black"}] → "color:black|size:m"
+ * Uses JSON pairs to avoid ambiguity when names or values contain separators.
  *
  * Used to match incoming variants against existing DB variants.
  */
 function makeVariantKey(attributes) {
-    return [...attributes]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map(a => `${a.name}:${a.value}`)
-        .join('|');
+    return JSON.stringify((attributes || [])
+        .map(a => [String(a.name).trim().toLowerCase(), String(a.value).trim().toLowerCase()])
+        .sort((a, b) => a[0].localeCompare(b[0])));
 }
 
 /**
@@ -146,7 +145,8 @@ function resolveVariantStock(override = {}, existing, defaultStock = 0) {
 
 function buildVariantRecord(attrCombo, override = {}, existing, defaults = {}) {
     const stock = resolveVariantStock(override, existing, defaults.defaultStock);
-    const priceOverride = override.priceOverride
+    const clearsPrice = override.priceOverride === null || override.pricing?.price === null;
+    const priceOverride = clearsPrice ? undefined : override.priceOverride
         ?? override.pricing?.price
         ?? existing?.priceOverride
         ?? existing?.pricing?.price
@@ -157,6 +157,7 @@ function buildVariantRecord(attrCombo, override = {}, existing, defaults = {}) {
         ...(override.pricing || {})
     };
     if (priceOverride !== undefined) pricing.price = Number(priceOverride);
+    if (clearsPrice) pricing.price = undefined;
 
     const inventory = {
         trackQuantity: true,
@@ -178,6 +179,7 @@ function buildVariantRecord(attrCombo, override = {}, existing, defaults = {}) {
         inventory,
         ...(Object.keys(pricing).length > 0 && { pricing }),
         ...(priceOverride !== undefined && { priceOverride: Number(priceOverride) }),
+        ...(clearsPrice && { priceOverride: undefined }),
         sku: override.sku ?? existing?.sku ?? '',
         barcode: override.barcode ?? existing?.barcode ?? '',
         image: override.image ?? existing?.image ?? '',
@@ -211,7 +213,7 @@ function buildVariantRecord(attrCombo, override = {}, existing, defaults = {}) {
  *
  * @returns {Array} variants
  */
-function expandMatrix(matrix, existingStockMap = new Map()) {
+function expandMatrix(matrix, existingStockMap = new Map(), validateExistingOverride) {
     const {
         attributes,
         defaultStock = 0,
@@ -223,11 +225,12 @@ function expandMatrix(matrix, existingStockMap = new Map()) {
 
     return combinations.map(attrCombo => {
         const pipeKey   = makePipeKey(attrCombo);    // "black|m"   — used in overrides map
-        const stableKey = makeVariantKey(attrCombo); // "color:black|size:m" — used for DB match
+        const stableKey = makeVariantKey(attrCombo); // Canonical JSON key used for DB match.
 
-        const override = overrides[pipeKey] || {};
-
-        return buildVariantRecord(attrCombo, override, existingStockMap.get(stableKey), {
+        const override = overrides[JSON.stringify(attrCombo.map(a => a.value))] || overrides[pipeKey] || {};
+        const existing = existingStockMap.get(stableKey);
+        if (existing && validateExistingOverride) validateExistingOverride(override);
+        return buildVariantRecord(attrCombo, override, existing, {
             defaultStock,
             defaultPrice
         });
@@ -252,13 +255,17 @@ function expandMatrix(matrix, existingStockMap = new Map()) {
  *
  * @returns {{ newVariants: Array, error: string|null }}
  */
-function generateNewOptionCombos(existingVariants, attrName, attrValue, defaultStock = 0, defaultPrice) {
+function generateNewOptionCombos(existingVariants, attrName, attrValue, defaultStock = 0, defaultPrice, maxVariants = 500) {
+    attrName = normalizeOptionName(attrName);
+    attrValue = normalizeOptionText(attrValue);
     // Build dimension map from existing variants
     const dimensionMap = new Map(); // name → Set<value>
     for (const v of existingVariants) {
         for (const a of v.attributes) {
-            if (!dimensionMap.has(a.name)) dimensionMap.set(a.name, new Set());
-            dimensionMap.get(a.name).add(a.value);
+            const name = normalizeOptionName(a.name);
+            if (!dimensionMap.has(name)) dimensionMap.set(name, new Map());
+            const value = normalizeOptionText(a.value);
+            if (!dimensionMap.get(name).has(value.toLowerCase())) dimensionMap.get(name).set(value.toLowerCase(), value);
         }
     }
 
@@ -269,7 +276,7 @@ function generateNewOptionCombos(existingVariants, attrName, attrValue, defaultS
         };
     }
 
-    if (dimensionMap.get(attrName).has(attrValue)) {
+    if (dimensionMap.get(attrName).has(attrValue.toLowerCase())) {
         return {
             newVariants: [],
             error: `Option "${attrValue}" already exists for attribute "${attrName}".`
@@ -279,7 +286,10 @@ function generateNewOptionCombos(existingVariants, attrName, attrValue, defaultS
     // Cross the new value with all other dimension options
     const otherDims = [...dimensionMap.entries()]
         .filter(([name]) => name !== attrName)
-        .map(([name, values]) => ({ name, options: [...values] }));
+        .map(([name, values]) => ({ name, options: [...values.values()] }));
+
+    const projected = existingVariants.length + otherDims.reduce((count, dim) => count * dim.options.length, 1);
+    if (projected > maxVariants) return { newVariants: [], error: `Maximum allowed is ${maxVariants} variants.` };
 
     let newCombos;
     if (otherDims.length === 0) {

@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Boxes, DollarSign, FileText, Image as ImageIcon, ListChecks, PackagePlus, Plus, Search, Trash2, ChevronDown, ChevronUp, X, ArrowLeft, Check, Clock3, Save, Loader2, RotateCcw } from 'lucide-react';
 import API from '../../../api/api';
+import { productImageLimit, mergeProductFiles, toPublishInstant, variantMetadataPayload, productVariantKey, productOptionCombinationCount, productImageSources, MAX_VARIANTS } from '../../../utils/productEditor.js';
+import { useProductImagePreviews } from '../../../hooks/useProductImagePreviews.js';
+import { hasStaffPermission } from '../../../utils/staffPermissions.js';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { AdminLoadingState } from '../../../components/ui/AdminState.jsx';
@@ -64,10 +67,6 @@ const readableError = error => {
     }
     return error?.request ? 'Network error. Your changes may not have reached the server.' : 'Could not complete the action. Please try again.';
 };
-
-const variantKey = variant => (variant.attributes || [])
-    .map(attribute => `${String(attribute.name || '').trim().toLowerCase()}:${String(attribute.value || '').trim().toLowerCase()}`)
-    .sort().join('|');
 
 const normalizeVariantForEdit = (variant = {}) => {
     const stock = Number(variant.inventory?.stock ?? variant.stock ?? 0);
@@ -132,14 +131,16 @@ const EditProduct = () => {
     const navigate    = useNavigate();
     const { id }      = useParams();
     const { user } = useAuth();
-    const imageLimit = Number(user?.planAccess?.limits?.imagesPerProduct) || 5;
-    const canSchedulePublishing = hasFeature(user, 'scheduledProductPublishing');
+    const imageLimit = productImageLimit(user?.planAccess?.limits?.imagesPerProduct);
+    const canSchedulePublishing = hasFeature(user, 'scheduledProductPublishing') && hasStaffPermission(user, 'productsSchedule');
 
     const [loading,      setLoading]      = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stockSubmittingId, setStockSubmittingId] = useState('');
     const stockIdempotencyCounterRef = useRef(0);
+    const stockRequestRef = useRef(null);
     const tempVariantCounterRef = useRef(0);
+    const originalVariantsRef = useRef(new Map());
     const [initialFormFingerprint, setInitialFormFingerprint] = useState(null);
     const [initialCoverIndex, setInitialCoverIndex] = useState(0);
     const [originalImages, setOriginalImages] = useState([]);
@@ -174,9 +175,10 @@ const EditProduct = () => {
         sellerFacts:    blankSellerFacts()
     });
     const [newImageFiles, setNewImageFiles] = useState([]);
-    const [newImagePreviews, setNewImagePreviews] = useState([]);
+    const newImagePreviews = useProductImagePreviews(newImageFiles);
     const [removedImages, setRemovedImages] = useState([]);
     const [coverImageIndex, setCoverImageIndex] = useState(0);
+    const retainedImageCount = productImageSources(formData).length;
 
     // Track locally edited variant metadata / unsaved new variants.
     // Existing inventory stock is always changed through the audited API.
@@ -272,10 +274,12 @@ const EditProduct = () => {
                 if (!active) return;
                 const product = res.data.data || res.data;
                 const nextForm = buildProductFormState(product);
+                originalVariantsRef.current = new Map(nextForm.variants.map(variant => [String(variant._id), variant]));
+                const hasVideoCover = (product.videos || []).includes(product.coverMediaId);
                 const coverIndex = Number.isInteger(product.coverImageIndex)
                     ? product.coverImageIndex
                     : Math.max(0, nextForm.images.indexOf(product.coverImageUrl || product.coverMediaId));
-                const safeCoverIndex = Math.min(Math.max(0, coverIndex), Math.max(0, nextForm.images.length - 1));
+                const safeCoverIndex = hasVideoCover ? -1 : Math.min(Math.max(0, coverIndex), Math.max(0, nextForm.images.length - 1));
 
                 setInitialFormFingerprint(getFormFingerprint(nextForm));
                 setOriginalImages([...nextForm.images]);
@@ -302,20 +306,6 @@ const EditProduct = () => {
         return () => { active = false; };
     }, [id, navigate]);
 
-    useEffect(() => {
-        let active = true;
-        const previews = newImageFiles.map(file => ({
-            file,
-            url: URL.createObjectURL(file)
-        }));
-        queueMicrotask(() => { if (active) setNewImagePreviews(previews); });
-
-        return () => {
-            active = false;
-            previews.forEach(preview => URL.revokeObjectURL(preview.url));
-        };
-    }, [newImageFiles]);
-
     // ── Scalar handlers ───────────────────────────────────────────────────────
     const handleChange = event => setFormData(previous => ({ ...previous, [event.target.id]: event.target.value }));
     const handlePublicationStatusChange = (value) => {
@@ -339,23 +329,9 @@ const EditProduct = () => {
         pricing: { ...previous.pricing, [event.target.id]: event.target.value }
     }));
 
-    const handleImageFiles = (files) => {
-        const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
-        const incoming = Array.from(files || []);
-        const selected = incoming.filter(file => allowed.has(file.type));
-        if (selected.length !== incoming.length) {
-            toast.error('Use PNG, JPG, WebP, AVIF, or GIF images. SVG and other formats are not accepted here.');
-        }
-        if (selected.length === 0) return;
-
-        setNewImageFiles(prev => {
-            const total = formData.images.length + prev.length + selected.length;
-            if (total > imageLimit) {
-                toast.error(`Your plan allows up to ${imageLimit} product images. Remove existing images before adding more.`);
-                return prev;
-            }
-            return [...prev, ...selected];
-        });
+    const handleImageFiles = files => {
+        try { setNewImageFiles(mergeProductFiles(newImageFiles, files, { limit: imageLimit, retained: retainedImageCount })); }
+        catch (error) { toast.error(error.message); }
     };
 
     const removeExistingImage = (imageUrl, index) => {
@@ -415,7 +391,7 @@ const EditProduct = () => {
                 if (vid !== variantId) return variant;
 
                 if (['price', 'compareAtPrice', 'costPrice'].includes(field)) {
-                    const pricing = { ...(variant.pricing || {}), [field]: value === '' ? undefined : Number(value) };
+                    const pricing = { ...(variant.pricing || {}), [field]: value === '' ? null : Number(value) };
                     return {
                         ...variant,
                         pricing,
@@ -439,7 +415,7 @@ const EditProduct = () => {
                         dimensions: {
                             unit: 'cm',
                             ...(variant.dimensions || {}),
-                            [field]: value === '' ? undefined : Number(value)
+                            [field]: value === '' ? null : Number(value)
                         }
                     };
                 }
@@ -463,7 +439,7 @@ const EditProduct = () => {
                 }
 
                 if (field === 'weight') {
-                    return { ...variant, weight: value === '' ? undefined : Number(value) };
+                    return { ...variant, weight: value === '' ? null : Number(value) };
                 }
 
                 return { ...variant, [field]: value };
@@ -477,11 +453,12 @@ const EditProduct = () => {
         : (variant?.inventory?.stock ?? variant?.stock ?? 0);
 
     const openStockAdjustment = (variant, event) => {
-        if (isBusy) return;
+        if (isBusy || !hasStaffPermission(user, 'inventoryManage')) { toast.error('Stock adjustments require inventory permission.'); return; }
         stockReturnFocusRef.current = event?.currentTarget || null;
         setAdjustingVariantId(variant?._id?.toString() || null);
         setAdjustQuantity('');
         setAdjustNote('');
+        stockRequestRef.current = null;
     };
 
     const handleAdjustExistingStock = async event => {
@@ -497,7 +474,9 @@ const EditProduct = () => {
         }
         stockIdempotencyCounterRef.current += 1;
         const nonce = window.crypto?.randomUUID?.() || `${Date.now()}-${stockIdempotencyCounterRef.current}`;
-        const idempotencyKey = `stock-adjust:${id}:${variantId}:${nonce}`;
+        const fingerprint = JSON.stringify([id, variantId, quantity, adjustNote.trim()]);
+        if (stockRequestRef.current?.fingerprint !== fingerprint) stockRequestRef.current = { fingerprint, key: `stock-adjust:${id}:${variantId}:${nonce}` };
+        const idempotencyKey = stockRequestRef.current.key;
         setStockSubmittingId(variantId);
         try {
             const { data } = await API.patch('/admin/inventory/stock', {
@@ -518,9 +497,11 @@ const EditProduct = () => {
                         : item)
                 }));
             }
+            stockRequestRef.current = null;
             setAdjustingVariantId(null);
             toast.success(data?.message || 'Inventory updated. Stock movement recorded.');
         } catch (error) {
+            if (error.response) stockRequestRef.current = null;
             toast.error(readableError(error));
         } finally {
             setStockSubmittingId('');
@@ -586,6 +567,10 @@ const EditProduct = () => {
             toast.error('Attribute name and option value are required');
             return;
         }
+        if (formData.variants.length + productOptionCombinationCount(formData.variants, addOptionForm.name) > MAX_VARIANTS) {
+            toast.error(`Use up to ${MAX_VARIANTS} variants.`);
+            return;
+        }
         const optionStock = Number(addOptionForm.defaultStock);
         if (!Number.isSafeInteger(optionStock) || optionStock < 0) {
             toast.error('Default stock must be a non-negative whole number.');
@@ -602,6 +587,7 @@ const EditProduct = () => {
             });
             const updated = res.data.data;
             if (Array.isArray(updated?.variants)) {
+                originalVariantsRef.current = new Map(updated.variants.map(normalizeVariantForEdit).map(variant => [String(variant._id), variant]));
                 setFormData(previous => ({ ...previous, variants: updated.variants.map(normalizeVariantForEdit) }));
             }
             setAddOptionForm({ name: '', option: '', defaultStock: 0 });
@@ -625,6 +611,7 @@ const EditProduct = () => {
     };
 
     const handleAddCustomVariant = () => {
+        if (formData.variants.length >= MAX_VARIANTS) { toast.error(`Use up to ${MAX_VARIANTS} variants.`); return; }
         // Reject incomplete entries instead of silently throwing them away.
         if (newVariantForm.attributes.some(a => !a.name.trim() || !a.value.trim())) {
             toast.error('Complete every attribute name and value, or remove the unfinished row.');
@@ -645,7 +632,7 @@ const EditProduct = () => {
             toast.error('Initial stock must be a non-negative whole number.');
             return;
         }
-        if (formData.variants.some(v => variantKey(v) === variantKey({ attributes: validAttrs }))) {
+        if (formData.variants.some(v => productVariantKey(v) === productVariantKey({ attributes: validAttrs }))) {
             toast.error('A variant with those attributes already exists.');
             return;
         }
@@ -670,7 +657,7 @@ const EditProduct = () => {
         // Reset the form
         setNewVariantForm({ attributes: [{ name: '', value: '' }], stock: 0 });
         setShowAddVariant(false);
-        toast.success("Variant added locally! Click 'Update Product' to save it.");
+        toast.success("Variant added locally! Click 'Save changes' to save it.");
     };
 
     // ── KV handlers ───────────────────────────────────────────────────────────
@@ -724,7 +711,7 @@ const EditProduct = () => {
     const getAiVariants = () => formData.variants.map(variant => ({
         attributes: variant.attributes || [],
         stock: Number(getDisplayStock(variant) || 0),
-        priceOverride: Number(variant.pricing?.price || variant.priceOverride || formData.pricing.sellingPrice || 0)
+        priceOverride: Number(variant.pricing?.price ?? variant.priceOverride ?? formData.pricing.sellingPrice ?? 0)
     }));
 
     const getAiImages = () => {
@@ -771,7 +758,9 @@ const EditProduct = () => {
             return;
         }
         if (formData.publicationStatus === 'scheduled') {
-            const when = new Date(formData.publishAt);
+            let when;
+            try { when = new Date(toPublishInstant(formData.publishAt)); }
+            catch (error) { toast.error(error.message); return; }
             if (!canSchedulePublishing || !formData.publishAt || Number.isNaN(when.getTime())) {
                 toast.error('Choose a valid scheduled publish time and check your plan access.');
                 return;
@@ -785,7 +774,7 @@ const EditProduct = () => {
             toast.error('Each detail row needs both a title and value.');
             return;
         }
-        if ((formData.images.length + newImageFiles.length) > imageLimit && newImageFiles.length > 0) {
+        if ((retainedImageCount + newImageFiles.length) > imageLimit && newImageFiles.length > 0) {
             toast.error(`Your plan allows up to ${imageLimit} images. Remove excess images before uploading.`);
             return;
         }
@@ -806,7 +795,7 @@ const EditProduct = () => {
             body.append('tags', JSON.stringify(formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)));
             body.append('status', formData.status);
             body.append('publicationStatus', formData.publicationStatus);
-            if (formData.publicationStatus === 'scheduled') body.append('publishAt', new Date(formData.publishAt).toISOString());
+            if (formData.publicationStatus === 'scheduled') body.append('publishAt', toPublishInstant(formData.publishAt));
             body.append('lowStockThreshold', String(formData.lowStockThreshold ?? 5));
             body.append('imageAltText', formData.imageAltText);
             body.append('seo', JSON.stringify(formData.seo));
@@ -817,7 +806,7 @@ const EditProduct = () => {
             body.append('sellerFacts', JSON.stringify(formData.sellerFacts));
             body.append('existingImages', JSON.stringify(formData.images || []));
             body.append('removedImages', JSON.stringify(removedImages));
-            body.append('coverImageIndex', JSON.stringify(coverImageIndex));
+            if (coverImageIndex >= 0) body.append('coverImageIndex', JSON.stringify(coverImageIndex));
             newImageFiles.forEach(file => body.append('images', file));
 
             // Existing stock is NEVER sent through this endpoint: inventory has its own audited route.
@@ -825,27 +814,7 @@ const EditProduct = () => {
                 const variantsPayload = formData.variants
                     .filter(variant => changedStocks[variant._id?.toString() || variant._tempId] !== undefined)
                     .map(variant => {
-                        const isExisting = Boolean(variant._id);
-                        const inventory = { ...(variant.inventory || {}) };
-                        if (isExisting) delete inventory.stock;
-                        else inventory.stock = Number(variant.stock);
-                        const payload = {
-                            attributes: variant.attributes,
-                            priceOverride: variant.pricing?.price ?? variant.priceOverride,
-                            pricing: variant.pricing,
-                            inventory,
-                            image: variant.image,
-                            sku: variant.sku,
-                            barcode: variant.barcode,
-                            weight: variant.weight,
-                            dimensions: variant.dimensions,
-                            status: variant.status || (variant.isActive === false ? 'draft' : 'active'),
-                            tax: variant.tax,
-                            isActive: variant.isActive !== undefined ? variant.isActive : true
-                        };
-                        if (isExisting) payload._id = variant._id;
-                        else payload.stock = Number(variant.stock);
-                        return payload;
+                        return variantMetadataPayload(variant, originalVariantsRef.current.get(String(variant._id)));
                     });
                 if (variantsPayload.length > 0) body.append('variants', JSON.stringify(variantsPayload));
             }
@@ -935,7 +904,7 @@ const EditProduct = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <Input id="slug" label="Product URL slug" value={formData.slug} onChange={handleChange} helperText="Changing the product URL may affect shared links. Old ID links redirect when supported." />
                             <Input id="tags" label="Tags" value={formData.tags} onChange={handleChange} />
-                            <Input id="lowStockThreshold" label="Low Stock Alert" type="number" value={formData.lowStockThreshold} onChange={handleChange} />
+                            <Input id="lowStockThreshold" label="Low Stock Alert" type="number" step="1" min="0" value={formData.lowStockThreshold} onChange={handleChange} />
                         </div>
                         <textarea
                             id="description"
@@ -969,7 +938,7 @@ const EditProduct = () => {
                                     type="datetime-local"
                                     value={formData.publishAt}
                                     onChange={handleChange}
-                                    helperText="Scheduled products stay hidden until this time. Server time publishes them automatically."
+                                    helperText={`Your timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Scheduled products remain hidden until this time.`}
                                     required
                                 />
                                 <SellerHint>
@@ -1045,13 +1014,13 @@ const EditProduct = () => {
                             <label className="text-sm font-medium text-gray-600">Add images</label>
                             <input
                                 type="file"
-                                accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                                accept="image/jpeg,image/png,image/webp"
                                 multiple
                                 onChange={(event) => { handleImageFiles(event.target.files); event.target.value = ''; }}
                                 className="w-full rounded-lg border bg-gray-50 p-2 text-sm"
                             />
                             <p className="text-xs text-gray-500">
-                                Images: {(formData.images?.length || 0) + newImageFiles.length} of {imageLimit} used. Existing over-limit images stay until you remove them, but no new images can be added.
+                                Images: {retainedImageCount + newImageFiles.length} of {imageLimit} used, including variant images. Existing over-limit images stay until you remove them, but no new images can be added.
                             </p>
                         </div>
 
@@ -1123,9 +1092,9 @@ const EditProduct = () => {
                         icon={DollarSign}
                     >
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <Input id="buyingPrice"  label="Buying"     type="number" value={formData.pricing.buyingPrice} onChange={handlePricing} />
-                            <Input id="sellingPrice" label="Selling"    type="number" value={formData.pricing.sellingPrice} onChange={handlePricing} />
-                            <Input id="discount"     label="Discount %" type="number" value={formData.pricing.discount} onChange={handlePricing} />
+                            <Input id="buyingPrice"  label="Buying"     type="number" step="any" value={formData.pricing.buyingPrice} onChange={handlePricing} />
+                            <Input id="sellingPrice" label="Selling"    type="number" step="any" value={formData.pricing.sellingPrice} onChange={handlePricing} />
+                            <Input id="discount"     label="Discount %" type="number" step="any" value={formData.pricing.discount} onChange={handlePricing} />
                         </div>
                         <div className={`p-4 rounded-lg border text-sm space-y-1 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
                             <div className="flex justify-between">
@@ -1182,7 +1151,7 @@ const EditProduct = () => {
                                                 <input value={variant.sku || ''} onChange={event => handleVariantFieldChange(vid, 'sku', event.target.value.toUpperCase())} placeholder="SKU" className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none" />
                                             </label>
                                             <label className="block min-w-0 text-xs font-semibold text-slate-600">Price override
-                                                <input type="number" min="0" value={variant.pricing?.price ?? variant.priceOverride ?? ''} onChange={event => handleVariantFieldChange(vid, 'price', event.target.value)} placeholder={String(formData.pricing.sellingPrice || 0)} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none" />
+                                                <input type="number" step="any" min="0" value={variant.pricing?.price ?? variant.priceOverride ?? ''} onChange={event => handleVariantFieldChange(vid, 'price', event.target.value)} placeholder={String(formData.pricing.sellingPrice || 0)} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none" />
                                             </label>
                                             <label className="block min-w-0 text-xs font-semibold text-slate-600">Status
                                                 <select value={variant.status || (variant.isActive === false ? 'draft' : 'active')} onChange={event => handleVariantFieldChange(vid, 'status', event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none">
@@ -1190,7 +1159,7 @@ const EditProduct = () => {
                                                 </select>
                                             </label>
                                             <div className="min-w-0 text-xs font-semibold text-slate-600">Stock
-                                                {newVariant ? <input aria-label="Initial variant stock" type="number" min="0" value={getDisplayStock(variant)} onChange={event => handleStockChange(vid, event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none" />
+                                                {newVariant ? <input aria-label="Initial variant stock" type="number" step="any" min="0" value={getDisplayStock(variant)} onChange={event => handleStockChange(vid, event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none" />
                                                     : <div className="mt-1.5 flex min-h-10 items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 text-sm"><strong className="text-slate-800">{getDisplayStock(variant)}</strong><button type="button" disabled={isBusy} onClick={event => openStockAdjustment(variant, event)} className="font-semibold text-blue-700 disabled:opacity-50">Adjust</button></div>}
                                             </div>
                                         </div>
@@ -1252,7 +1221,7 @@ const EditProduct = () => {
                                             </td>
                                             <td className="px-3 py-2.5 text-right">
                                                 <input
-                                                    type="number" min={0}
+                                                    type="number" step="any" min={0}
                                                     value={v.pricing?.price ?? v.priceOverride ?? ''}
                                                     onChange={(e) => handleVariantFieldChange(vid, 'price', e.target.value)}
                                                     placeholder={formData.pricing.sellingPrice}
@@ -1261,7 +1230,7 @@ const EditProduct = () => {
                                             </td>
                                             <td className="px-3 py-2.5 text-right">
                                                 <input
-                                                    type="number" min={0}
+                                                    type="number" step="any" min={0}
                                                     value={v.pricing?.compareAtPrice ?? ''}
                                                     onChange={(e) => handleVariantFieldChange(vid, 'compareAtPrice', e.target.value)}
                                                     placeholder="0"
@@ -1270,7 +1239,7 @@ const EditProduct = () => {
                                             </td>
                                             <td className="px-3 py-2.5 text-right">
                                                 <input
-                                                    type="number" min={0}
+                                                    type="number" step="any" min={0}
                                                     value={v.pricing?.costPrice ?? ''}
                                                     onChange={(e) => handleVariantFieldChange(vid, 'costPrice', e.target.value)}
                                                     placeholder={formData.pricing.buyingPrice}
@@ -1280,7 +1249,7 @@ const EditProduct = () => {
                                             <td className="px-3 py-2.5 text-right">
                                                 {isNew ? (
                                                     <input
-                                                        type="number" min={0}
+                                                        type="number" step="any" min={0}
                                                         value={getDisplayStock(v)}
                                                         onChange={(e) => handleStockChange(vid, e.target.value)}
                                                         className={`w-20 text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-colors ${
@@ -1303,7 +1272,7 @@ const EditProduct = () => {
                                             </td>
                                             <td className="px-3 py-2.5 text-right">
                                                 <input
-                                                    type="number" min={0}
+                                                    type="number" step="any" min={0}
                                                     value={v.inventory?.lowStockThreshold ?? formData.lowStockThreshold ?? 5}
                                                     onChange={(e) => handleVariantFieldChange(vid, 'lowStockThreshold', e.target.value)}
                                                     className="w-full text-right border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
@@ -1319,7 +1288,7 @@ const EditProduct = () => {
                                             </td>
                                             <td className="px-3 py-2.5 text-right">
                                                 <input
-                                                    type="number" min={0}
+                                                    type="number" step="any" min={0}
                                                     value={v.weight ?? ''}
                                                     onChange={(e) => handleVariantFieldChange(vid, 'weight', e.target.value)}
                                                     placeholder="kg"
@@ -1331,7 +1300,7 @@ const EditProduct = () => {
                                                     {['length', 'width', 'height'].map(field => (
                                                         <input
                                                             key={field}
-                                                            type="number"
+                                                            type="number" step="any"
                                                             min={0}
                                                             value={v.dimensions?.[field] ?? ''}
                                                             onChange={(e) => handleVariantFieldChange(vid, field, e.target.value)}
@@ -1447,7 +1416,7 @@ const EditProduct = () => {
                                         <div className="space-y-1">
                                             <label className="text-xs font-medium text-gray-500">Default stock</label>
                                             <input
-                                                type="number" min={0}
+                                                type="number" step="any" min={0}
                                                 className="w-full border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                                                 value={addOptionForm.defaultStock}
                                                 onChange={(e) => setAddOptionForm(p => ({ ...p, defaultStock: e.target.value }))}
@@ -1517,7 +1486,7 @@ const EditProduct = () => {
                                     <div className="pt-2 border-t">
                                         <label className="text-xs font-medium text-gray-500 mb-1 block">Initial Stock</label>
                                         <input
-                                            type="number" min={0}
+                                            type="number" step="any" min={0}
                                             className="w-32 border rounded-lg px-2 py-1.5 text-sm"
                                             value={newVariantForm.stock}
                                             onChange={(e) => setNewVariantForm(p => ({ ...p, stock: e.target.value }))}
@@ -1623,7 +1592,7 @@ const EditProduct = () => {
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-500 shadow-sm">
                         <p className="font-black text-slate-950">Seller note</p>
                         <p className="mt-2">
-                            Changes to price, variant details, and status affect the live storefront after you click Update Product. Existing stock changes are saved through Adjust stock.
+                            Changes to price, variant details, and status affect the live storefront after you click Save changes. Existing stock changes are saved through Adjust stock.
                         </p>
                     </div>
                 </div>

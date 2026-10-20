@@ -30,7 +30,8 @@ const inventoryMutationSchema = new Schema({
         trim: true,
         maxlength: 500,
         default: ''
-    }
+    },
+    requestFingerprint: { type: String, default: '' }
 }, { timestamps: true });
 
 inventoryMutationSchema.index(

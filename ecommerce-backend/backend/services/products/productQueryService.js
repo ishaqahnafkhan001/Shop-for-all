@@ -86,9 +86,7 @@ const addComputedProductFields = (product) => {
 
     return {
         ...product,
-        finalPrice: discount > 0
-            ? Math.round(sellingPrice - ((sellingPrice * discount) / 100))
-            : sellingPrice
+        finalPrice: Math.round(sellingPrice - ((sellingPrice * discount) / 100))
     };
 };
 
