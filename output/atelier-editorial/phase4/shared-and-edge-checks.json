@@ -1,0 +1,50 @@
+{
+  "toasts": [
+    {
+      "text": "Synthetic notification only",
+      "visible": true,
+      "zIndex": "100"
+    },
+    {
+      "text": "Synthetic notification only",
+      "visible": false,
+      "zIndex": "9999"
+    }
+  ],
+  "legacyToastHosts": [
+    true,
+    true
+  ],
+  "otpInput": {
+    "focused": "checkout-modal-otp",
+    "locked": "hidden",
+    "value": "<redacted>"
+  },
+  "otpError": {
+    "alert": "Invalid or expired verification code.",
+    "bag": "[{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaa1\",\"variantId\":\"bbbbbbbbbbbbbbbbbbbbbbb1\",\"quantity\":2,\"price\":1080}]"
+  },
+  "otpFocusRestored": "Place Order",
+  "finalBusy": {
+    "visible": true,
+    "closeDisabled": true
+  },
+  "zeroPrice": {
+    "snapshot": "[{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaa1\",\"variantId\":\"bbbbbbbbbbbbbbbbbbbbbbb2\",\"quantity\":1,\"price\":0}]",
+    "atelierSummary": "SummaryOrder Summary1 itemSubtotal৳ 1200Estimated delivery৳ 80Promo codeApplyTotal৳ 1280Proceed to CheckoutContinue ShoppingSecure checkout and order confirmationFast & secure deliveryCash on delivery available at checkout",
+    "legacySummary": "SummaryOrder Summary"
+  },
+  "shortViewportReturn": {
+    "bodyLocked": "hidden",
+    "focusInDialog": true,
+    "overflowY": "auto",
+    "panelHeight": 452,
+    "panelScrollHeight": 452,
+    "viewport": 500
+  },
+  "consentBefore": {
+    "bottom": null,
+    "visible": false
+  },
+  "consentDismissed": true
+}

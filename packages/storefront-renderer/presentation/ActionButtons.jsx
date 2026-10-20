@@ -9,9 +9,9 @@ const trustItems = [
     { icon: Wallet, title: 'Cash on delivery', text: 'Pay when it arrives' },
 ];
 
-const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, onBuyNow }) {
+const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, onBuyNow, presentationVariant }) {
     return (
-        <div className="space-y-4">
+        <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-actions' : undefined} className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 {displayStock > 0 ? (
                     <span className="sf-badge sf-badge-success">
@@ -26,9 +26,9 @@ const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, o
                         Out of Stock
                     </span>
                 )}
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                {presentationVariant !== 'atelier-editorial' && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     Ready for checkout
-                </span>
+                </span>}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -52,7 +52,7 @@ const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, o
                 )}
             </div>
 
-            <div className="grid grid-cols-1 gap-3 pt-3 min-[420px]:grid-cols-2">
+            {presentationVariant !== 'atelier-editorial' && <div className="grid grid-cols-1 gap-3 pt-3 min-[420px]:grid-cols-2">
                 {trustItems.map(({ icon: Icon, title, text }) => (
                     <div key={title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                         <div className="flex items-start gap-3">
@@ -66,16 +66,16 @@ const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, o
                         </div>
                     </div>
                 ))}
-            </div>
+            </div>}
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            {presentationVariant !== 'atelier-editorial' && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="flex items-start gap-3">
                     <Headphones size={19} className="mt-0.5 shrink-0 text-emerald-600" />
                     <p className="text-sm font-semibold leading-6 text-emerald-800">
                         Need help before ordering? Customer support is available for sizing, delivery, and payment questions.
                     </p>
                 </div>
-            </div>
+            </div>}
         </div>
     );
 });

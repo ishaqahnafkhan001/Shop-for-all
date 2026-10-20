@@ -1,0 +1,698 @@
+{
+  "admin": {
+    "bytes": 3978674,
+    "gzip": 1524282,
+    "files": [
+      {
+        "path": "ActivityLogs-Bv6zwt71.js",
+        "bytes": 4694,
+        "gzip": 1697
+      },
+      {
+        "path": "AddProduct-Bz2fXghQ.js",
+        "bytes": 34510,
+        "gzip": 9575
+      },
+      {
+        "path": "AdminPageHeader-CjzD4W1J.js",
+        "bytes": 659,
+        "gzip": 367
+      },
+      {
+        "path": "AdminState-Bqszrm4t.js",
+        "bytes": 2425,
+        "gzip": 878
+      },
+      {
+        "path": "AdvancedAnalytics-BBpTZnBt.js",
+        "bytes": 6106,
+        "gzip": 1893
+      },
+      {
+        "path": "AiOperationStatus-D8KhYcrO.js",
+        "bytes": 2212,
+        "gzip": 946
+      },
+      {
+        "path": "arrow-left-fr2kHN0L.js",
+        "bytes": 154,
+        "gzip": 154
+      },
+      {
+        "path": "arrow-right-CaO5xLz_.js",
+        "bytes": 154,
+        "gzip": 154
+      },
+      {
+        "path": "arrow-up-right-UkefgEDK.js",
+        "bytes": 156,
+        "gzip": 151
+      },
+      {
+        "path": "BarChart-7XNx-eW8.js",
+        "bytes": 346513,
+        "gzip": 101176
+      },
+      {
+        "path": "BasicEditors-CD5APfNq.js",
+        "bytes": 13255,
+        "gzip": 3663
+      },
+      {
+        "path": "Billing-DA28mcwE.js",
+        "bytes": 44591,
+        "gzip": 11087
+      },
+      {
+        "path": "builderUi-CtZdGsTA.js",
+        "bytes": 4191,
+        "gzip": 1413
+      },
+      {
+        "path": "Button-CzcrgE32.js",
+        "bytes": 1491,
+        "gzip": 786
+      },
+      {
+        "path": "calendar-clock-D5FIZq9w.js",
+        "bytes": 367,
+        "gzip": 245
+      },
+      {
+        "path": "CatalogTools-CUeyNVVI.js",
+        "bytes": 56496,
+        "gzip": 13163
+      },
+      {
+        "path": "check-BoW1TWOH.js",
+        "bytes": 113,
+        "gzip": 130
+      },
+      {
+        "path": "CheckoutEditor-CqFNt6rj.js",
+        "bytes": 4282,
+        "gzip": 1825
+      },
+      {
+        "path": "chevron-left-Bsr46lfp.js",
+        "bytes": 119,
+        "gzip": 136
+      },
+      {
+        "path": "chevron-up-CmzrPg63.js",
+        "bytes": 117,
+        "gzip": 131
+      },
+      {
+        "path": "chunk-QTnfLwEv.js",
+        "bytes": 694,
+        "gzip": 422
+      },
+      {
+        "path": "circle-alert-vOmVAuRN.js",
+        "bytes": 239,
+        "gzip": 180
+      },
+      {
+        "path": "circle-check-big-xJZzlb23.js",
+        "bytes": 183,
+        "gzip": 174
+      },
+      {
+        "path": "circle-check-zs-rmnuU.js",
+        "bytes": 167,
+        "gzip": 161
+      },
+      {
+        "path": "circle-x-BeugiHtY.js",
+        "bytes": 196,
+        "gzip": 170
+      },
+      {
+        "path": "clipboard-list-xskRX71N.js",
+        "bytes": 400,
+        "gzip": 254
+      },
+      {
+        "path": "clock-3-XxTJqvow.js",
+        "bytes": 158,
+        "gzip": 159
+      },
+      {
+        "path": "ColorEditor-CKo_SLBK.js",
+        "bytes": 11583,
+        "gzip": 3085
+      },
+      {
+        "path": "copy-tPLbyzUn.js",
+        "bytes": 225,
+        "gzip": 201
+      },
+      {
+        "path": "CustomDomainPage-id-A37Vd.js",
+        "bytes": 11437,
+        "gzip": 3703
+      },
+      {
+        "path": "CustomerCampaignModal-HpfaozJT.js",
+        "bytes": 8337,
+        "gzip": 2745
+      },
+      {
+        "path": "CustomerList-T5oLLpZU.js",
+        "bytes": 9504,
+        "gzip": 3344
+      },
+      {
+        "path": "DashboardRevenueChart-CXH2UdGU.js",
+        "bytes": 1249,
+        "gzip": 691
+      },
+      {
+        "path": "dateTime-UoZZLyFn.js",
+        "bytes": 263,
+        "gzip": 207
+      },
+      {
+        "path": "dm-sans-variable-OkNhvBry.ttf",
+        "bytes": 240164,
+        "gzip": 110510
+      },
+      {
+        "path": "DynamicSectionsEditor-Ck3rVfoy.js",
+        "bytes": 24420,
+        "gzip": 5909
+      },
+      {
+        "path": "EditProduct-B8sZL03K.js",
+        "bytes": 54221,
+        "gzip": 14066
+      },
+      {
+        "path": "EmailNotificationModal-CO1g12w9.js",
+        "bytes": 4905,
+        "gzip": 1958
+      },
+      {
+        "path": "eye-ClftiQBX.js",
+        "bytes": 245,
+        "gzip": 192
+      },
+      {
+        "path": "eye-off-Bvn5iP9z.js",
+        "bytes": 419,
+        "gzip": 264
+      },
+      {
+        "path": "FooterEditor-56SHyH1u.js",
+        "bytes": 3830,
+        "gzip": 1299
+      },
+      {
+        "path": "GrowthCenter-CtX6xshz.js",
+        "bytes": 33919,
+        "gzip": 9659
+      },
+      {
+        "path": "HeroEditor-DAFvTbPs.js",
+        "bytes": 8764,
+        "gzip": 2753
+      },
+      {
+        "path": "HomepageSeoPage-CWRWmrgE.js",
+        "bytes": 38239,
+        "gzip": 11331
+      },
+      {
+        "path": "image-57QjSsyF.js",
+        "bytes": 258,
+        "gzip": 214
+      },
+      {
+        "path": "index-CGEhsjB1.js",
+        "bytes": 360865,
+        "gzip": 114778
+      },
+      {
+        "path": "index-DFskU0Qn.css",
+        "bytes": 222777,
+        "gzip": 32202
+      },
+      {
+        "path": "info-B9mOChMV.js",
+        "bytes": 193,
+        "gzip": 172
+      },
+      {
+        "path": "Input-BFDd2tqL.js",
+        "bytes": 732,
+        "gzip": 415
+      },
+      {
+        "path": "inter-variable-VF2RPR_K.ttf",
+        "bytes": 876576,
+        "gzip": 468926
+      },
+      {
+        "path": "jsx-runtime-KLUqzItW.js",
+        "bytes": 7888,
+        "gzip": 2982
+      },
+      {
+        "path": "layers-CiHEyaJe.js",
+        "bytes": 410,
+        "gzip": 232
+      },
+      {
+        "path": "layout-template-TrEfHJmt.js",
+        "bytes": 275,
+        "gzip": 183
+      },
+      {
+        "path": "lightbulb-CxK3bS0U.js",
+        "bytes": 275,
+        "gzip": 218
+      },
+      {
+        "path": "link-DreoDrJ8.js",
+        "bytes": 245,
+        "gzip": 186
+      },
+      {
+        "path": "list-checks-Bxz4Vw04.js",
+        "bytes": 268,
+        "gzip": 180
+      },
+      {
+        "path": "lock-CUfmENUQ.js",
+        "bytes": 195,
+        "gzip": 183
+      },
+      {
+        "path": "Login-DCJkl4-P.js",
+        "bytes": 7703,
+        "gzip": 2826
+      },
+      {
+        "path": "mail-DFNwmm22.js",
+        "bytes": 202,
+        "gzip": 193
+      },
+      {
+        "path": "map-pin-B1AYBMtS.js",
+        "bytes": 248,
+        "gzip": 217
+      },
+      {
+        "path": "Modal-DHDzQXEP.js",
+        "bytes": 900,
+        "gzip": 487
+      },
+      {
+        "path": "NavigationEditor-GwT3p_BE.js",
+        "bytes": 5848,
+        "gzip": 1997
+      },
+      {
+        "path": "Notifications-DbdoUxBZ.js",
+        "bytes": 6668,
+        "gzip": 2440
+      },
+      {
+        "path": "OrderDetailsModal-TPS5xF5N.js",
+        "bytes": 17682,
+        "gzip": 4715
+      },
+      {
+        "path": "OrderList-DK8Nj4v8.js",
+        "bytes": 16552,
+        "gzip": 5075
+      },
+      {
+        "path": "Overview-DtuybExE.js",
+        "bytes": 29966,
+        "gzip": 8203
+      },
+      {
+        "path": "package-plus-Cpy9_rBw.js",
+        "bytes": 601,
+        "gzip": 357
+      },
+      {
+        "path": "PageRefreshButton-eP1uSKKM.js",
+        "bytes": 637,
+        "gzip": 427
+      },
+      {
+        "path": "PaginationBar-Bcua0iwU.js",
+        "bytes": 1177,
+        "gzip": 564
+      },
+      {
+        "path": "PathaoSyncModal-C2PaD_nD.js",
+        "bytes": 18430,
+        "gzip": 4820
+      },
+      {
+        "path": "pen-line-B370tFBH.js",
+        "bytes": 266,
+        "gzip": 218
+      },
+      {
+        "path": "pencil-C3nDY8wD.js",
+        "bytes": 683,
+        "gzip": 390
+      },
+      {
+        "path": "phone-B1WST1pa.js",
+        "bytes": 311,
+        "gzip": 221
+      },
+      {
+        "path": "PlatformAuditLogs-1Knsl1K0.js",
+        "bytes": 8516,
+        "gzip": 2625
+      },
+      {
+        "path": "play-CsRDywkB.js",
+        "bytes": 337,
+        "gzip": 244
+      },
+      {
+        "path": "plus-B1w0wH6z.js",
+        "bytes": 142,
+        "gzip": 141
+      },
+      {
+        "path": "prebuilt-DhOYMPXW.js",
+        "bytes": 27567,
+        "gzip": 7621
+      },
+      {
+        "path": "PrivacyRequests-BlnZeoJ8.js",
+        "bytes": 5030,
+        "gzip": 1594
+      },
+      {
+        "path": "ProductCardsEditor-BQVHn9Qt.js",
+        "bytes": 7001,
+        "gzip": 1726
+      },
+      {
+        "path": "ProductDetailModal-DA3VmFD7.js",
+        "bytes": 21325,
+        "gzip": 6342
+      },
+      {
+        "path": "ProductList-Cw5FldvQ.js",
+        "bytes": 32819,
+        "gzip": 9348
+      },
+      {
+        "path": "promotionalBanner-Bc7e_i5n.js",
+        "bytes": 39279,
+        "gzip": 9984
+      },
+      {
+        "path": "Promotions-DZr9ID-6.js",
+        "bytes": 52609,
+        "gzip": 12659
+      },
+      {
+        "path": "Returns-DBNI6kHq.js",
+        "bytes": 16458,
+        "gzip": 4425
+      },
+      {
+        "path": "roboto-variable-B3covOPw.ttf",
+        "bytes": 488584,
+        "gzip": 283035
+      },
+      {
+        "path": "rotate-ccw-BRdUj_A-.js",
+        "bytes": 189,
+        "gzip": 175
+      },
+      {
+        "path": "save-BRDSQ8yv.js",
+        "bytes": 316,
+        "gzip": 219
+      },
+      {
+        "path": "sellerFacts-CD3uyZBm.js",
+        "bytes": 28837,
+        "gzip": 8253
+      },
+      {
+        "path": "send-Tx_5dVAw.js",
+        "bytes": 279,
+        "gzip": 222
+      },
+      {
+        "path": "SendMailModal-Cyx0blAH.js",
+        "bytes": 3310,
+        "gzip": 1324
+      },
+      {
+        "path": "SeoAiPanel-diQ-QdTz.js",
+        "bytes": 3040,
+        "gzip": 1170
+      },
+      {
+        "path": "seoHealth-BlQFXwG6.js",
+        "bytes": 7198,
+        "gzip": 3154
+      },
+      {
+        "path": "SeoPreview-CTUnbD1-.js",
+        "bytes": 5280,
+        "gzip": 1792
+      },
+      {
+        "path": "ShippingSettings-DfAl-4QF.js",
+        "bytes": 22020,
+        "gzip": 5520
+      },
+      {
+        "path": "ShopDetail-C0nmQxw6.js",
+        "bytes": 12215,
+        "gzip": 3344
+      },
+      {
+        "path": "shopping-bag-C365-BSY.js",
+        "bytes": 329,
+        "gzip": 235
+      },
+      {
+        "path": "ShopSettings-BmNnMcFd.js",
+        "bytes": 7884,
+        "gzip": 2556
+      },
+      {
+        "path": "sliders-horizontal-C4Y_5mR2.js",
+        "bytes": 413,
+        "gzip": 232
+      },
+      {
+        "path": "smartphone-BEL1iH2z.js",
+        "bytes": 392,
+        "gzip": 264
+      },
+      {
+        "path": "sparkles-BNvK_qsL.js",
+        "bytes": 483,
+        "gzip": 273
+      },
+      {
+        "path": "StaffPermissions-CmeVtceu.js",
+        "bytes": 15263,
+        "gzip": 3875
+      },
+      {
+        "path": "StoreBranding-DWBggrOy.js",
+        "bytes": 19263,
+        "gzip": 6228
+      },
+      {
+        "path": "StoreBuilder-BQbyVzey.js",
+        "bytes": 81118,
+        "gzip": 23365
+      },
+      {
+        "path": "storeBuilderColorConfig-BuVHe7pg.js",
+        "bytes": 16356,
+        "gzip": 4274
+      },
+      {
+        "path": "storeBuilderConstants-Dh7VgmQR.js",
+        "bytes": 12349,
+        "gzip": 3959
+      },
+      {
+        "path": "storeBuilderPolicies-DCVQID-1.js",
+        "bytes": 157,
+        "gzip": 145
+      },
+      {
+        "path": "StoreBuilderPreviewPanel-BvxNn3KY.js",
+        "bytes": 3287,
+        "gzip": 1263
+      },
+      {
+        "path": "storeBuilderThemeUtils-DG4vnxUj.js",
+        "bytes": 2908,
+        "gzip": 1384
+      },
+      {
+        "path": "storefront-theme-BjKCSAWu.js",
+        "bytes": 72787,
+        "gzip": 23355
+      },
+      {
+        "path": "StorefrontPreview-DDp0RPI4.js",
+        "bytes": 198389,
+        "gzip": 47017
+      },
+      {
+        "path": "SuperAdminAnnouncements-DStrrPtu.js",
+        "bytes": 10580,
+        "gzip": 3019
+      },
+      {
+        "path": "SuperAdminBadges-CHkmZTS8.js",
+        "bytes": 13887,
+        "gzip": 4199
+      },
+      {
+        "path": "SuperAdminBilling-z6GnZjCC.js",
+        "bytes": 29453,
+        "gzip": 7151
+      },
+      {
+        "path": "SuperAdminComponents-CXnEBWtS.js",
+        "bytes": 7013,
+        "gzip": 2033
+      },
+      {
+        "path": "SuperAdminDomains-ClzaHkN9.js",
+        "bytes": 9231,
+        "gzip": 3100
+      },
+      {
+        "path": "SuperAdminOperations-DWx-iFkY.js",
+        "bytes": 15370,
+        "gzip": 4433
+      },
+      {
+        "path": "SuperAdminPanel-DL6-FdXh.js",
+        "bytes": 7683,
+        "gzip": 2678
+      },
+      {
+        "path": "SuperAdminPlans-P2yynxQa.js",
+        "bytes": 6959,
+        "gzip": 2585
+      },
+      {
+        "path": "SuperAdminPlatform-CKHG5OSS.js",
+        "bytes": 11382,
+        "gzip": 3536
+      },
+      {
+        "path": "SuperAdminRisk-BTvxlBM_.js",
+        "bytes": 5246,
+        "gzip": 2213
+      },
+      {
+        "path": "SuperAdminShops-xAbldsng.js",
+        "bytes": 7148,
+        "gzip": 2557
+      },
+      {
+        "path": "SupportCenter-DO6cH4gN.js",
+        "bytes": 20262,
+        "gzip": 5281
+      },
+      {
+        "path": "SupportInvite-KvcDeVmr.js",
+        "bytes": 2783,
+        "gzip": 1124
+      },
+      {
+        "path": "Table-Cc0JUtFU.js",
+        "bytes": 1593,
+        "gzip": 657
+      },
+      {
+        "path": "tag-Bdm_OPNQ.js",
+        "bytes": 315,
+        "gzip": 241
+      },
+      {
+        "path": "ThemeGallery-D0pUCzx7.js",
+        "bytes": 13829,
+        "gzip": 4267
+      },
+      {
+        "path": "trash-2-NEks082a.js",
+        "bytes": 317,
+        "gzip": 210
+      },
+      {
+        "path": "TrustedBadge-Y0MY7iie.js",
+        "bytes": 11511,
+        "gzip": 3381
+      },
+      {
+        "path": "upload-COFizPdy.js",
+        "bytes": 219,
+        "gzip": 183
+      },
+      {
+        "path": "useAbortableRequest--_0Axy3d.js",
+        "bytes": 595,
+        "gzip": 374
+      },
+      {
+        "path": "useAiUndo-BYj5Dkzw.js",
+        "bytes": 5838,
+        "gzip": 2657
+      },
+      {
+        "path": "useDebouncedValue-BkgjCXmI.js",
+        "bytes": 264,
+        "gzip": 204
+      },
+      {
+        "path": "user-plus-DbWt4mgW.js",
+        "bytes": 299,
+        "gzip": 226
+      },
+      {
+        "path": "user-TSo2TLZF.js",
+        "bytes": 185,
+        "gzip": 174
+      },
+      {
+        "path": "VendorVerifications-BICfN7fn.js",
+        "bytes": 15211,
+        "gzip": 3705
+      },
+      {
+        "path": "Verification-CHE9DlUl.js",
+        "bytes": 12338,
+        "gzip": 3513
+      },
+      {
+        "path": "video-CL6a0EkM.js",
+        "bytes": 237,
+        "gzip": 211
+      }
+    ]
+  },
+  "storefront": {
+    "bytes": 0,
+    "gzip": 0,
+    "files": []
+  }
+}

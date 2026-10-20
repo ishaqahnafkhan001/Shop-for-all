@@ -1,0 +1,34 @@
+✔ modern-general/full: Gallery full preview, Builder and live home produce identical presentation markup (456.7673ms)
+✔ modern-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (264.9297ms)
+✔ minimal-general/full: Gallery full preview, Builder and live home produce identical presentation markup (196.6645ms)
+✔ minimal-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (205.8655ms)
+✔ modern-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (265.6147ms)
+✔ modern-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (183.7439ms)
+✔ editorial-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (64.9724ms)
+✔ editorial-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (52.8968ms)
+✔ luxury-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (60.6361ms)
+✔ luxury-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (60.9463ms)
+✔ minimal-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (60.0519ms)
+✔ minimal-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (51.7808ms)
+✔ soft-beauty/full: Gallery full preview, Builder and live home produce identical presentation markup (228.9089ms)
+✔ soft-beauty/limited: Gallery full preview, Builder and live home produce identical presentation markup (207.92ms)
+✔ modern-electronics/full: Gallery full preview, Builder and live home produce identical presentation markup (170.9525ms)
+✔ modern-electronics/limited: Gallery full preview, Builder and live home produce identical presentation markup (54.2302ms)
+✔ fresh-grocery/full: Gallery full preview, Builder and live home produce identical presentation markup (56.3046ms)
+✔ fresh-grocery/limited: Gallery full preview, Builder and live home produce identical presentation markup (44.5441ms)
+✔ atelier-editorial/full: Gallery full preview, Builder and live home produce identical presentation markup (54.1893ms)
+✔ atelier-editorial/limited: Gallery full preview, Builder and live home produce identical presentation markup (54.4663ms)
+✔ empty stores do not acquire sample categories or an extra category composition slot in preview (12.7579ms)
+✔ Gallery rejects unavailable plans instead of fabricating a preview (0.5134ms)
+✔ new picker cards replace stale prices and excluded products without expanding the catalog page (18.6335ms)
+✔ mobile navigation uses live viewport anchoring and safe-area dimensions in the iframe (8.555ms)
+✔ project viewport dimensions are explicit and stable; responsive HTML uses real CSS breakpoints (37.2539ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3044.243
+

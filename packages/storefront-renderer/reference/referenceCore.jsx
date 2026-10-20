@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 
-import { getThemeCssVars, resolveHeroSlideFields } from "@scaleup/storefront-theme";
+import { getThemeCssVars, getStorefrontPresentationVariant, resolveHeroSlideFields } from "@scaleup/storefront-theme";
 import { getContainerClass } from "../designTokens";
 
 export {
@@ -203,6 +203,9 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
 
     return {
         "--sf-brand-primary": brand.primary || cssTheme.accent,
+        ...(getStorefrontPresentationVariant(theme) === 'atelier-editorial' ? {
+            '--sf-atelier-max-width': { Narrow: '1024px', Standard: '1200px', Wide: '1272px', 'Full Width': 'none' }[theme.layout?.containerWidth] || '1272px',
+        } : {}),
         "--sf-accent": brand.accent || cssTheme.accent,
         "--sf-accent-hover": brand.hover || cssTheme.accentHover,
         "--sf-accent-soft": brand.soft || cssTheme.accentSoft,
@@ -296,7 +299,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         "--sf-checkout-input-focus": checkout.inputFocus || brand.primary || cssTheme.accent,
         "--sf-checkout-error": checkout.error || "#dc2626",
         "--sf-checkout-success": checkout.success || "#047857",
-        "--sf-body-font": cssTheme.fontFamily,
+        "--sf-body-font": cssTheme.fontFamily === 'DM Sans' ? '"DM Sans", Inter, Arial, sans-serif' : cssTheme.fontFamily,
 
         '--background': cssTheme.background,
         '--foreground': storefrontForeground,
@@ -328,7 +331,7 @@ export const getReferenceThemeStyle = (themeCandidate = {}) => {
         '--sf-card-bg': productCard.background || cssTheme.cardBackground,
         '--sf-footer-bg': footer.background || cssTheme.footerBackground,
         '--sf-mobile-nav-offset': mobileNavOffset,
-        '--sf-heading-font': cssTheme.headingFont,
+        '--sf-heading-font': cssTheme.headingFont === 'DM Sans' ? '"DM Sans", Inter, Arial, sans-serif' : cssTheme.headingFont,
         '--sf-heading-weight': cssTheme.headingWeight,
         '--sf-base-size': `${cssTheme.baseSize}px`,
         '--sf-checkout-radius': cssTheme.checkoutButtonRadius,

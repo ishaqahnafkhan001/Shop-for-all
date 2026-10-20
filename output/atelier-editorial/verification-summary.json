@@ -1,0 +1,65 @@
+{
+  "task": "Atelier Editorial Phases 0–2",
+  "originalRevision": "40515d4f6a01f5460451613efbe592b51df692c3",
+  "focused": {
+    "tests": 226,
+    "passed": 226,
+    "failed": 0
+  },
+  "fullBackend": {
+    "tests": 534,
+    "passed": 529,
+    "failed": 5,
+    "preexistingFailuresReproducedAtOriginalRevision": true
+  },
+  "adminLint": {
+    "errors": 18,
+    "warnings": 4,
+    "addedDiagnostics": 0
+  },
+  "storefrontLint": "pass",
+  "sharedJSXLint": {
+    "files": 15,
+    "newComponentFiles": 5,
+    "addedDiagnostics": 0,
+    "preexistingErrors": 1
+  },
+  "adminBuild": "pass",
+  "storefrontBuild": {
+    "command": "node node_modules/next/dist/bin/next build",
+    "result": "pass",
+    "version": "16.2.10",
+    "staticPages": 10,
+    "evidence": "Observed successful execution output; no raw build log saved."
+  },
+  "syntax": {
+    "files": 15,
+    "passed": 15
+  },
+  "legacyBrowserComparisons": {
+    "cases": 18,
+    "allMarkupComputedStyleAndScreenshotEqual": true
+  },
+  "diffCheck": {
+    "pass": true,
+    "newSourceWhitespaceIssues": []
+  },
+  "scope": {
+    "manifestFiles": 46,
+    "originalTrackedFilesOutsideManifestChecked": 837,
+    "unexpectedChanges": []
+  },
+  "integration": {
+    "status": "blocked",
+    "reason": "Docker desktop Linux daemon unavailable; positively isolated MongoDB environment not available; destructive harness not run."
+  },
+  "rollout": "off by default; no actual environment or tenant configuration changed",
+  "cleanup": {
+    "taskFixtureServersStopped": [
+      5203,
+      5204
+    ],
+    "temporaryOriginalSourceAndArchiveRemoved": true,
+    "applicationDependenciesPreserved": true
+  }
+}

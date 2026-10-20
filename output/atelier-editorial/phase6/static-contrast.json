@@ -1,0 +1,35 @@
+{
+  "method": "Static default palette pairs only; no rendered/browser/assistive-technology certification",
+  "pairs": [
+    {
+      "name": "Ink / paper",
+      "text": "#202721",
+      "background": "#f7f5ee",
+      "contrast": 14.01
+    },
+    {
+      "name": "Muted / paper",
+      "text": "#5f655e",
+      "background": "#f7f5ee",
+      "contrast": 5.48
+    },
+    {
+      "name": "Accent / paper",
+      "text": "#4653c9",
+      "background": "#f7f5ee",
+      "contrast": 5.76
+    },
+    {
+      "name": "Primary button",
+      "text": "#ffffff",
+      "background": "#202721",
+      "contrast": 15.29
+    },
+    {
+      "name": "Secondary action",
+      "text": "#202721",
+      "background": "#dbec8b",
+      "contrast": 11.93
+    }
+  ]
+}

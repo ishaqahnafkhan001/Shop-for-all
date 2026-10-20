@@ -96,6 +96,7 @@ function memoryPublication(initial = initialTheme()) {
         '../billing/planAccessService': { getShopPlanAccess: async () => full },
         '../billing/storeBuilderPlanService': { assertStoreBuilderUpdateAllowed },
         './themeCompatibilityService': { preserveThemeExtensions },
+        './themeAvailabilityService': require('../services/storeBuilder/themeAvailabilityService'),
         './draftConcurrency': require('../services/storeBuilder/draftConcurrency'),
         '../themeSectionService': { ensureThemeSectionArchitecture: async (holder, options) => {
             assert.equal(holder.theme.migrations.bannerSectionsV1, true); // prevents legacy Banner DB query
@@ -314,7 +315,9 @@ test('one-column mobile grids remain one column until the tablet breakpoint', ()
     assert.match(markup, /grid-cols-1 md:grid-cols-2/);
 });
 
-for (const preset of PREBUILT_THEMES) {
+// This established matrix exercises the nine merchant-available themes. Hidden
+// candidates require explicit authorization in their separate adoption suite.
+for (const preset of PREBUILT_THEMES.filter(theme => theme.status === 'active')) {
     test(`Phase 10 ${preset.name}: publication, customization, content and five page presentations`, async () => {
         const source = { ...initialTheme(), hero: { title: 'Audit merchant hero', subtitle: 'Audit merchant subtitle', imageUrl: '/fixture.svg' },
             footer: { text: 'Audit merchant footer' }, policies: { refund: 'Audit refund policy' },

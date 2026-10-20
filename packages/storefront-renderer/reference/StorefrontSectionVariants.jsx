@@ -16,6 +16,7 @@ import {
     optimizeCloudinaryImage,
 } from "./referenceCore";
 import { ProductCard } from "./StorefrontProductCard";
+import { AtelierCategories, AtelierStory } from '../atelier/AtelierSections';
 
 const CATEGORY_IMAGE_WIDTHS = Object.freeze({
     circle: [96, 144, 240, 360],
@@ -99,7 +100,7 @@ const CategoryCount = ({ count, onImage = false }) => {
     );
 };
 
-export function CategoryVariantSection({ section, categories, catalogProducts, previewDevice, responsiveClass, sectionLayout, contentGapClass, colors, LinkComponent }) {
+export function CategoryVariantSection({ section, categories, catalogProducts, previewDevice, responsiveClass, sectionLayout, contentGapClass, colors, LinkComponent, presentationVariant }) {
     const settings = section.settings || {};
     const variant = settings.variant || "cards";
     const maxCategories = Math.min(Math.max(Number(settings.maxCategories) || 10, 1), 24);
@@ -110,6 +111,8 @@ export function CategoryVariantSection({ section, categories, catalogProducts, p
         ? (previewDevice === "desktop" ? categoryGridClasses[desktopColumns] : categoryGridClasses[mobileColumns])
         : `${categoryGridClasses[mobileColumns]} ${categoryDesktopGridClasses[desktopColumns]}`;
     if (!items.length) return null;
+
+    if (presentationVariant === 'atelier-editorial') return <AtelierCategories section={section} items={items} responsiveClass={responsiveClass} sectionLayout={sectionLayout} colors={colors} LinkComponent={LinkComponent} gridClass={categoryGridClass} />;
 
     const shellClass = `${responsiveClass} ${sectionLayout.className} rounded-[1.5rem] border border-slate-200 p-4 shadow-sm sm:p-6 md:rounded-[1.75rem]`;
     const shellStyle = { ...sectionLayout.style, backgroundColor: colors.background || "var(--sf-section-background)" };
@@ -242,10 +245,11 @@ const StoryCopy = ({ section, colors }) => (
     </div>
 );
 
-export function BrandStoryVariantSection({ section, responsiveClass, sectionLayout, contentGapClass, colors }) {
+export function BrandStoryVariantSection({ section, responsiveClass, sectionLayout, contentGapClass, colors, presentationVariant, LinkComponent }) {
     const variant = section.settings?.variant || "standard";
     const image = section.settings?.imageUrl || section.settings?.image || section.settings?.desktopImage || "";
     const focalPoint = section.settings?.focalPoint || { x: 50, y: 50 };
+    if (presentationVariant === 'atelier-editorial') return <AtelierStory section={section} image={image} focalPoint={focalPoint} responsiveClass={responsiveClass} sectionLayout={sectionLayout} LinkComponent={LinkComponent} />;
     const baseStyle = { ...sectionLayout.style, backgroundColor: colors.background || "var(--sf-section-background)" };
     if (variant === "standard" || !image) {
         return (
@@ -280,7 +284,7 @@ export function BrandStoryVariantSection({ section, responsiveClass, sectionLayo
     );
 }
 
-export function CollectionVariantSection({ section, products, previewDevice, responsiveClass, sectionLayout, contentGapClass, colors, productCard, storewideDiscount, onProductAdd, onProductBuyNow, onWishlistToggle, isProductWishlisted, LinkComponent }) {
+export function CollectionVariantSection({ section, products, previewDevice, responsiveClass, sectionLayout, contentGapClass, colors, productCard, storewideDiscount, onProductAdd, onProductBuyNow, onWishlistToggle, isProductWishlisted, LinkComponent, presentationVariant }) {
     const variant = section.settings?.variant || "grid";
     if (!products.length) return null;
     const mosaic = variant === "mosaic" && products.length >= 3;
@@ -296,7 +300,7 @@ export function CollectionVariantSection({ section, products, previewDevice, res
             <div className={`mt-5 grid ${contentGapClass} ${gridClass}`}>
                 {products.slice(0, variant === "spacious" ? 6 : 8).map((product, index) => (
                     <div key={product._id} className={mosaic && index === 0 ? "col-span-2 lg:row-span-2" : ""}>
-                        <ProductCard product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
+                        <ProductCard product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} presentationVariant={presentationVariant} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
                     </div>
                 ))}
             </div>
@@ -304,12 +308,16 @@ export function CollectionVariantSection({ section, products, previewDevice, res
     );
 }
 
-export function TextualVariantSection({ section, responsiveClass, sectionLayout, colors }) {
+export function TextualVariantSection({ section, responsiveClass, sectionLayout, colors, presentationVariant }) {
     const variant = section.settings?.variant || "boxed";
     const isNewsletter = section.type === "Newsletter";
     const isPromo = section.type === "PromoBlock";
     const title = section.title || (isNewsletter ? "Store updates" : isPromo ? "Store promotion" : "Store update");
     const text = section.settings?.text;
+    if (presentationVariant === 'atelier-editorial' && isPromo) {
+        if (!text && !section.title) return null;
+        return <section className={`${responsiveClass} ${sectionLayout.className} atelier-promo`} style={sectionLayout.style}><h2>{title}</h2>{text && <p>{text}</p>}</section>;
+    }
     if (variant === "minimal") {
         return <section data-section-variant={variant} className={`${responsiveClass} ${sectionLayout.className} border-y border-slate-200 py-6 text-center`} style={sectionLayout.style}><SectionHeading title={title} subtitle={text} colors={colors} centered /></section>;
     }

@@ -1,0 +1,10 @@
+[
+  {
+    "path": "ecommerce-backend/backend/models/OTP.js",
+    "beforeEqualToHead": true
+  },
+  {
+    "path": "ecommerce-backend/backend/middlewares/vendorVerificationGuard.js",
+    "beforeEqualToHead": true
+  }
+]

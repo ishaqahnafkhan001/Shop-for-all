@@ -48,10 +48,10 @@ export function TypographyEditor({ theme, setThemeGroup }) {
     return (
         <BuilderCard title="Typography" description="Choose readable fonts and heading weight for a polished storefront." icon={LayoutTemplate}>
             <BuilderSelect label="Heading font" value={theme.typography?.headingFont || 'Inter'} onChange={event => setThemeGroup('typography', 'headingFont', event.target.value)} help="Used for hero, product section headings, and important titles.">
-                <option>Inter</option><option>Arial</option><option>Georgia</option><option>Roboto</option>
+                <option>Inter</option><option>Arial</option><option>Georgia</option><option>Roboto</option>{(theme.presentationVariant === 'atelier-editorial' || theme.typography?.headingFont === 'DM Sans') && <option>DM Sans</option>}
             </BuilderSelect>
             <BuilderSelect label="Body font" value={theme.typography?.bodyFont || 'Inter'} onChange={event => setThemeGroup('typography', 'bodyFont', event.target.value)} help="Used for product names, descriptions, filters, and checkout text.">
-                <option>Inter</option><option>Arial</option><option>Georgia</option><option>Roboto</option>
+                <option>Inter</option><option>Arial</option><option>Georgia</option><option>Roboto</option>{(theme.presentationVariant === 'atelier-editorial' || theme.typography?.bodyFont === 'DM Sans') && <option>DM Sans</option>}
             </BuilderSelect>
             <BuilderSelect label="Heading weight" value={theme.typography?.headingWeight || '800'} onChange={event => setThemeGroup('typography', 'headingWeight', event.target.value)}>
                 <option value="600">Semi bold</option><option value="700">Bold</option><option value="800">Extra bold</option><option value="900">Black</option>

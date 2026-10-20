@@ -1,0 +1,62 @@
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/builder-load-fix/vite.config.before.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/vite.config.js
+index 05e7eab..9fc9280 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/builder-load-fix/vite.config.before.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/vite.config.js
+@@ -6,20 +6,36 @@ import path from 'node:path'
+ 
+ const __dirname = path.dirname(fileURLToPath(import.meta.url))
+ const fromAdminNodeModules = (pkgPath) => path.resolve(__dirname, 'node_modules', pkgPath)
+-const storefrontPackageManifests = new Set([
+-  path.resolve(__dirname, '../packages/storefront-renderer/package.json'),
+-  path.resolve(__dirname, '../packages/storefront-theme/package.json')
+-])
++const storefrontPackageRoots = [
++  path.resolve(__dirname, '../packages/storefront-renderer'),
++  path.resolve(__dirname, '../packages/storefront-theme')
++]
+ 
+-// preserveSymlinks keeps these packages under node_modules in Vite's cache.
+-// Watch their real manifests so newly added exports also work in a warm server.
+-const watchStorefrontPackageExports = () => ({
+-  name: 'watch-storefront-package-exports',
++// Local packages resolve through node_modules junctions, which Vite does not
++// watch. Refresh both transformed modules and optimized dependencies when their
++// real sources change, including newly added/removed modules and exports.
++export const watchStorefrontPackages = () => ({
++  name: 'watch-storefront-packages',
+   configureServer(server) {
+-    server.watcher.add([...storefrontPackageManifests])
+-    server.watcher.on('change', file => {
+-      if (!storefrontPackageManifests.has(path.resolve(file))) return
+-      void server.restart().catch(error => server.config.logger.error(error.message))
++    let restartTimer
++    const onSourceChange = (event, file) => {
++      if (!['add', 'change', 'unlink'].includes(event)) return
++      const absoluteFile = path.resolve(file)
++      const isSharedSource = storefrontPackageRoots.some(root => {
++        const relative = path.relative(root, absoluteFile)
++        return relative && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative)
++      })
++      if (!isSharedSource || !/\.(?:[cm]?js|jsx|css|json)$/.test(absoluteFile)) return
++      clearTimeout(restartTimer)
++      restartTimer = setTimeout(() => {
++        void server.restart(true).catch(error => server.config.logger.error(error.message))
++      }, 100)
++    }
++    server.watcher.add(storefrontPackageRoots)
++    server.watcher.on('all', onSourceChange)
++    server.httpServer?.once('close', () => {
++      clearTimeout(restartTimer)
++      server.watcher.off('all', onSourceChange)
+     })
+   }
+ })
+@@ -28,7 +44,7 @@ export default defineConfig({
+   plugins: [
+     react(),
+     tailwindcss(),
+-    watchStorefrontPackageExports()
++    watchStorefrontPackages()
+   ],
+ 
+   resolve: {

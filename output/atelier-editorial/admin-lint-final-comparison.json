@@ -1,0 +1,271 @@
+{
+  "baseline": [
+    {
+      "path": "ecommerce-admin/src/components/dashboard/Topbar.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'Check' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/src/components/dashboard/Topbar.jsx",
+      "rule": "react-hooks/set-state-in-effect",
+      "severity": 2,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx",
+      "rule": "react-hooks/set-state-in-effect",
+      "severity": 2,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useEffect has a missing dependency: 'autosave'. Either include it or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useMemo has a missing dependency: 'theme'. Either include it or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'setTheme' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+      "rule": "react-hooks/refs",
+      "severity": 2,
+      "message": "Error: Cannot access refs during render"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+      "rule": "react-hooks/refs",
+      "severity": 2,
+      "message": "Error: Cannot access refs during render"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useEffect has a missing dependency: 'persist'. Either include it or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useMemo has unnecessary dependencies: 'branding' and 'shopName'. Either exclude them or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/ai-workflows.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/ai-workflows.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/builder-mobile.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/builder-mobile.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-controls.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-controls.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-presentation.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-presentation.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-responsive.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-responsive.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    }
+  ],
+  "current": [
+    {
+      "path": "ecommerce-admin/src/components/dashboard/Topbar.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'Check' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/src/components/dashboard/Topbar.jsx",
+      "rule": "react-hooks/set-state-in-effect",
+      "severity": 2,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx",
+      "rule": "react-hooks/set-state-in-effect",
+      "severity": 2,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'setTheme' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+      "rule": "react-hooks/refs",
+      "severity": 2,
+      "message": "Error: Cannot access refs during render"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+      "rule": "react-hooks/refs",
+      "severity": 2,
+      "message": "Error: Cannot access refs during render"
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useEffect has a missing dependency: 'persist'. Either include it or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useEffect has a missing dependency: 'autosave'. Either include it or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useMemo has a missing dependency: 'theme'. Either include it or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components."
+    },
+    {
+      "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+      "rule": "react-hooks/exhaustive-deps",
+      "severity": 1,
+      "message": "React Hook useMemo has unnecessary dependencies: 'branding' and 'shopName'. Either exclude them or remove the dependency array."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/ai-workflows.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/ai-workflows.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/builder-mobile.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/builder-mobile.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-controls.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-controls.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-presentation.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-presentation.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-responsive.jsx",
+      "rule": "no-unused-vars",
+      "severity": 2,
+      "message": "'React' is defined but never used."
+    },
+    {
+      "path": "ecommerce-admin/tests/fixtures/theme-responsive.jsx",
+      "rule": "react-refresh/only-export-components",
+      "severity": 2,
+      "message": "Fast refresh only works when a file has exports. Move your component(s) to a separate file."
+    }
+  ],
+  "added": []
+}

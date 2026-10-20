@@ -1,0 +1,64 @@
+(node:32620) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "AnalyticsEvent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32620) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"key":1} for model "OTP". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:32620) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"idempotencyKey":1} for model "Job". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:32620) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "SupportStaffInvitation". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:32620) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"providerMessageId":1} for model "CustomerEmailRecipient". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:32620) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "UpgradeIntent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:10.355Z","requestId":"6e19aa68-4fb3-4121-802c-61014a7c63c5","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":9,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:10.530Z","requestId":"f79ac1ab-cdd1-45f9-863b-4d65b2a79c8e","method":"POST","path":"/api/public/orders","status":201,"durationMs":163,"userId":null,"role":null,"shopId":null}
+✔ public checkout recalculates price and shipping instead of trusting client totals (2407.5625ms)
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:11.148Z","requestId":"9e9a3710-6c49-46a1-aa4f-e1bcd5a49c12","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:11.221Z","requestId":"d7ef8533-da09-4349-8d5f-6aa68b0b2d71","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":71,"userId":"6ad6fe06ffbf2e17e0157131","role":"Customer","shopId":"6ad6fe06ffbf2e17e0157124"}
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:11.233Z","requestId":"2502fc06-2ca2-43ba-bb7a-fcad864e8245","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+Public Order Creation Error: Error: Coupon does not exist
+    at exports.createPublicOrder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\publicController.js:601:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:37:11.333Z","requestId":"3108c19c-fa04-4629-93fc-d737df3f5aea","method":"POST","path":"/api/public/orders","status":400,"durationMs":99,"userId":null,"role":null,"shopId":null}
+✔ authenticated checkout recalculates totals and rejects cross-shop coupons (791.2753ms)
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:11.920Z","requestId":"b031d55e-7d6a-4a15-a6c9-ffaf7ccfb22f","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:11.921Z","requestId":"4c4a66fa-676c-44b9-89f0-45f998839ad2","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+Public Order Creation Error: OutOfStockError: Insufficient stock for "Race Stock Product" (SKU: race-stock-product-sku).
+    at decrementVariantStockAtomically (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\inventoryStockService.js:111:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async exports.createPublicOrder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\publicController.js:499:33) {
+  code: 'OUT_OF_STOCK',
+  statusCode: 400
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:37:12.069Z","requestId":"1f9dc2b2-747e-4e72-84cb-52826a90e3c5","method":"POST","path":"/api/public/orders","status":400,"durationMs":143,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:12.105Z","requestId":"de404bdc-36f3-415f-8fd8-7b138c061fc1","method":"POST","path":"/api/public/orders","status":201,"durationMs":179,"userId":null,"role":null,"shopId":null}
+✔ concurrent checkout against stock one creates only one order and one inventory log (772.2536ms)
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:12.745Z","requestId":"e6483cb6-698d-4209-be2d-6953f53f6b13","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:37:12.758Z","requestId":"1274f953-a7e3-4941-a9b7-7a0aac6104d4","method":"PATCH","path":"/api/admin/orders/6ad6fe08ffbf2e17e01571a0/status","status":403,"durationMs":10,"userId":"6ad6fe08ffbf2e17e0157193","role":"Customer","shopId":{"buffer":{"0":106,"1":214,"2":254,"3":8,"4":255,"5":191,"6":46,"7":23,"8":224,"9":21,"10":113,"11":134}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:12.760Z","requestId":"d2d78a39-68e8-47bf-98b9-3700cab220fd","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+(node:32620) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:37:12.793Z","requestId":"cb6687f3-c7da-4f91-bb59-232094b919fb","method":"PATCH","path":"/api/admin/orders/6ad6fe08ffbf2e17e01571a1/status","status":404,"durationMs":32,"userId":"6ad6fe08ffbf2e17e0157189","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":254,"3":8,"4":255,"5":191,"6":46,"7":23,"8":224,"9":21,"10":113,"11":134}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:37:12.812Z","requestId":"212d2c19-682c-489c-aa64-2811e34840a8","method":"GET","path":"/api/storefront/launchshopa/track-order/6ad6fe08ffbf2e17e01571a0","status":200,"durationMs":18,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":254,"3":8,"4":255,"5":191,"6":46,"7":23,"8":224,"9":21,"10":113,"11":134}}}
+✔ order status and tracking APIs preserve role and privacy boundaries (711.9116ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6095.0516
+

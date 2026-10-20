@@ -1,0 +1,71 @@
+[
+  {
+    "scenario": "long",
+    "clippedHeading": false,
+    "disabledPurchase": false,
+    "heading": "দৈনন্দিন ব্যবহারের জন্য বিক্রেতার নিশ্চিত তথ্যসহ সুন্দর হস্তনির্মিত পণ্যের দীর্ঘ নাম — merchant-authored product with a deliberately long title",
+    "overflow": false,
+    "spinner": false,
+    "thumbs": 2,
+    "unavailableImage": false
+  },
+  {
+    "scenario": "one-image",
+    "clippedHeading": false,
+    "disabledPurchase": false,
+    "heading": "Merchant ceramic vessel",
+    "overflow": false,
+    "spinner": false,
+    "thumbs": 0,
+    "unavailableImage": false
+  },
+  {
+    "scenario": "no-images",
+    "clippedHeading": false,
+    "disabledPurchase": false,
+    "heading": "Merchant ceramic vessel",
+    "overflow": false,
+    "spinner": false,
+    "thumbs": 0,
+    "unavailableImage": true
+  },
+  {
+    "scenario": "broken",
+    "clippedHeading": false,
+    "disabledPurchase": false,
+    "heading": "Merchant ceramic vessel",
+    "overflow": false,
+    "spinner": false,
+    "thumbs": 0,
+    "unavailableImage": true
+  },
+  {
+    "scenario": "soldout",
+    "clippedHeading": false,
+    "disabledPurchase": true,
+    "heading": "Merchant ceramic vessel",
+    "overflow": false,
+    "spinner": false,
+    "thumbs": 2,
+    "unavailableImage": false
+  },
+  {
+    "scenario": "missing",
+    "clippedHeading": false,
+    "disabledPurchase": false,
+    "heading": "Product not found",
+    "overflow": false,
+    "spinner": false,
+    "thumbs": 0,
+    "unavailableImage": false
+  },
+  {
+    "scenario": "loading",
+    "clippedHeading": false,
+    "disabledPurchase": false,
+    "overflow": false,
+    "spinner": true,
+    "thumbs": 0,
+    "unavailableImage": false
+  }
+]

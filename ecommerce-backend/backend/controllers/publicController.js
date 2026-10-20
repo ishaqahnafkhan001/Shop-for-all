@@ -507,7 +507,8 @@ exports.createPublicOrder = async (req, res) => {
             const beforeStock = stockUpdate.beforeStock;
 
             const variantPrice = variant.pricing?.price ?? variant.priceOverride;
-            const basePrice = Number.isFinite(Number(variantPrice))
+            const basePrice = variantPrice !== null && variantPrice !== undefined &&
+                variantPrice !== '' && Number.isFinite(Number(variantPrice))
                 ? Number(variantPrice)
                 : Number(product.pricing?.sellingPrice);
 

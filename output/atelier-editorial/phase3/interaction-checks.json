@@ -1,0 +1,17 @@
+{
+  "variantCheck": {
+    "maxDisabled": true,
+    "price": "Price৳ 0৳ 010% offPaymentCash on delivery",
+    "sku": true
+  },
+  "zeroPriceCartSnapshot": "[{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaa1\",\"variantId\":\"bbbbbbbbbbbbbbbbbbbbbbb2\",\"quantity\":2,\"price\":0}]",
+  "buyNavigation": "/checkout",
+  "mobileFilterRetained": "100",
+  "categoryFilterQuery": "/categories/objects?minPrice=100&maxPrice=900&stock=in&sale=true&rating=4&page=1",
+  "categorySortPaginationQuery": "/categories/objects?minPrice=100&maxPrice=900&stock=in&sale=true&rating=4&page=3&sort=price_asc",
+  "collectionQuery": "/collections/merchant-edit?sort=oldest&page=3",
+  "pickerBag": "[{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaa1\",\"variantId\":\"bbbbbbbbbbbbbbbbbbbbbbb1\",\"quantity\":1,\"price\":1080}]",
+  "tenantB": "[]",
+  "tenantARestored": "[{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaa1\",\"variantId\":\"bbbbbbbbbbbbbbbbbbbbbbb1\",\"quantity\":1,\"price\":1080}]",
+  "scope": "Actual frontend handlers; synthetic data and fail-closed API mocks. No real tenant API or database verification."
+}

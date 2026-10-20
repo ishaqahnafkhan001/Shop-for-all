@@ -1,0 +1,14 @@
+{
+  "admin": {
+    "bytes": 3978794,
+    "gzip": 1524330,
+    "delta": 300,
+    "gzipDelta": 94
+  },
+  "storefront": {
+    "bytes": 3189497,
+    "gzip": 1416012,
+    "delta": -5466,
+    "gzipDelta": -1437
+  }
+}

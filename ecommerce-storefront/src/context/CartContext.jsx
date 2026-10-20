@@ -1,41 +1,51 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
+import { getCartItemPrice } from '@scaleup/storefront-renderer/product-data';
 
 const CartContext = createContext();
 
 const getCartItemKey = (item) => `${item._id}:${item.variantId || item.selectedVariant?._id || 'default'}`;
 
 export const CartProvider = ({ children, subdomain }) => {
-    const [cartItems, setCartItems] = useState([]);
-    const [isMounted, setIsMounted] = useState(false);
-
     const storageKey = `shopforall_cart_${subdomain}`;
+    const [cartState, setCartState] = useState({ key: storageKey, items: [] });
+    const [loadedKey, setLoadedKey] = useState("");
+    const cartItems = useMemo(() => cartState.key === storageKey ? cartState.items : [], [cartState, storageKey]);
+    const setCartItems = next => setCartState(previous => ({
+        key: storageKey,
+        items: typeof next === 'function' ? next(previous.key === storageKey ? previous.items : []) : next,
+    }));
 
     // Load cart from LocalStorage on first render
     useEffect(() => {
+        let cancelled = false;
         const savedCart = localStorage.getItem(storageKey);
         queueMicrotask(() => {
-            setIsMounted(true);
+            if (cancelled) return;
+            setLoadedKey(storageKey);
+            let items = [];
             if (savedCart) {
                 try {
-                    setCartItems(JSON.parse(savedCart).map(item => ({
+                    items = JSON.parse(savedCart).map(item => ({
                         ...item,
                         cartItemId: item.cartItemId || getCartItemKey(item)
-                    })));
+                    }));
                 } catch {
                     console.error("Failed to parse cart data");
                 }
             }
+            setCartState({ key: storageKey, items });
         });
+        return () => { cancelled = true; };
     }, [storageKey]);
 
     // Save cart to LocalStorage whenever it changes
     useEffect(() => {
-        if (isMounted) {
+        if (loadedKey === storageKey && cartState.key === storageKey) {
             localStorage.setItem(storageKey, JSON.stringify(cartItems));
         }
-    }, [cartItems, isMounted, storageKey]);
+    }, [cartItems, loadedKey, storageKey, cartState.key]);
 
     // --- CART ACTIONS --- //
 
@@ -89,9 +99,9 @@ export const CartProvider = ({ children, subdomain }) => {
 
     const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
-    // ✨ THE FIX: Check for finalPrice first, fallback to sellingPrice
+    // Preserve a valid zero in the selected price snapshot.
     const cartTotal = cartItems.reduce((total, item) => {
-        const activePrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
+        const activePrice = getCartItemPrice(item);
         return total + (activePrice * item.quantity);
     }, 0);
 

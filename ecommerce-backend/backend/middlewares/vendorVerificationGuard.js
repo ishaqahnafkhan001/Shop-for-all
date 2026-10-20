@@ -4,7 +4,16 @@ exports.blockVerificationSuspendedShop = async (req, res, next) => {
     try {
         if (!req.tenantId) return next();
 
-        const { shop, status } = await ensureShopVerificationStatus(req.tenantId, { req, owner: req.user });
+        let verification;
+        try {
+            verification = await ensureShopVerificationStatus(req.tenantId, { req, owner: req.user });
+        } catch (error) {
+            // Concurrent first writes can normalize the same Shop document.
+            // Reload through the existing service once; never reuse stale status.
+            if (error.name !== 'VersionError') throw error;
+            verification = await ensureShopVerificationStatus(req.tenantId, { req, owner: req.user });
+        }
+        const { shop, status } = verification;
 
         if (isVerificationSuspension(shop)) {
             return res.status(403).json({

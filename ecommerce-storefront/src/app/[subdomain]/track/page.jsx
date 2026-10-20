@@ -22,6 +22,9 @@ import {
     XCircle
 } from 'lucide-react';
 import API from '@/api/api';
+import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+import {useAtelierDialog} from '@scaleup/storefront-renderer';
+import {useStorefrontTheme} from '@/components/storefront/StorefrontThemeProvider';
 import { toast } from 'react-hot-toast';
 import SafeProductImage from '@/components/storefront/SafeProductImage';
 
@@ -75,14 +78,18 @@ const StatusPill = ({ children, tone = 'slate' }) => {
     );
 };
 
-const ModalShell = ({ title, children, onClose }) => (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-3 py-4 backdrop-blur-sm sm:items-center">
+const ModalShell = ({ title, children, onClose, presentationVariant, busy }) => {
+    const atelier = presentationVariant === 'atelier-editorial';
+    const dialogRef = useAtelierDialog({enabled: atelier, open: true, onClose, busy});
+    return (
+    <div ref={dialogRef} data-atelier-dialog={atelier ? "order-action" : undefined} role={atelier ? "dialog" : undefined} aria-modal={atelier || undefined} aria-label={atelier ? title : undefined} className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-3 py-4 backdrop-blur-sm sm:items-center">
         <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <h2 className="text-lg font-black text-slate-950">{title}</h2>
                 <button
                     type="button"
                     onClick={onClose}
+                    disabled={atelier && busy}
                     className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                     aria-label="Close modal"
                 >
@@ -95,9 +102,13 @@ const ModalShell = ({ title, children, onClose }) => (
         </div>
     </div>
 );
+};
 
 export default function TrackOrderPage({ params }) {
     const { subdomain } = React.use(params);
+    const {theme} = useStorefrontTheme();
+    const presentationVariant = getStorefrontPresentationVariant(theme);
+    const atelier = presentationVariant === 'atelier-editorial';
     const [trackingId, setTrackingId] = useState('');
     const [phone, setPhone] = useState('');
     const [loading, setLoading] = useState(false);
@@ -310,16 +321,16 @@ export default function TrackOrderPage({ params }) {
     };
 
     return (
-        <div className="sf-page min-h-[70vh]">
+        <div className={atelier ? "sf-page atelier-track min-h-[70vh]" : "sf-page min-h-[70vh]"}>
             <div className="mx-auto max-w-5xl px-4 py-10 sm:py-12">
-                <div className="mb-8 text-center">
+                <div data-atelier-part={atelier ? "tracking-heading" : undefined} className="mb-8 text-center">
                     <p className="sf-kicker mb-2">Order tracking</p>
                     <h1 className="sf-heading mb-4 text-4xl">Track Your Order</h1>
                     <p className="mx-auto mb-7 max-w-lg text-sm leading-6 text-slate-500">
                         Enter the short Order ID from your confirmation screen and delivery phone number to view delivery, cancellation, and return support.
                     </p>
 
-                    <form onSubmit={handleTrackOrder} className="mx-auto max-w-xl space-y-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <form data-atelier-part={atelier ? "tracking-lookup" : undefined} onSubmit={handleTrackOrder} className="mx-auto max-w-xl space-y-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="relative">
                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
                                 <Search className="h-5 w-5 text-slate-400" />
@@ -331,6 +342,7 @@ export default function TrackOrderPage({ params }) {
                                     setTrackingId(event.target.value);
                                     resetOrderAccess();
                                 }}
+                                aria-label={atelier ? 'Order ID' : undefined}
                                 placeholder="Order ID, for example A1B2C3"
                                 className="sf-field pl-12 font-mono"
                             />
@@ -342,7 +354,8 @@ export default function TrackOrderPage({ params }) {
                                 setPhone(event.target.value);
                                 resetOrderAccess();
                             }}
-                            placeholder="Delivery phone number"
+                            aria-label={atelier ? 'Delivery phone number' : undefined}
+                                placeholder="Delivery phone number"
                             className="sf-field"
                         />
                         {accessOtpSent && !orderAccessToken && (
@@ -355,7 +368,8 @@ export default function TrackOrderPage({ params }) {
                                     inputMode="numeric"
                                     value={accessOtp}
                                     onChange={(event) => setAccessOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                                    placeholder="Verification code"
+                                    aria-label={atelier ? 'Verification code' : undefined}
+                                placeholder="Verification code"
                                     className="sf-field bg-white text-center font-mono tracking-[0.4em]"
                                 />
                             </div>
@@ -377,7 +391,7 @@ export default function TrackOrderPage({ params }) {
                 </div>
 
                 {order && (
-                    <div className="space-y-5">
+                    <div data-atelier-part={atelier ? "tracking-results" : undefined} className="space-y-5">
                         <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
                             <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:items-center">
                                 <div>
@@ -419,11 +433,11 @@ export default function TrackOrderPage({ params }) {
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="relative mx-auto max-w-2xl">
+                                    <div data-atelier-part={atelier ? "tracking-progress" : undefined} className="relative mx-auto max-w-2xl">
                                         <div className="absolute left-0 top-1/2 h-1.5 w-full -translate-y-1/2 overflow-hidden rounded-full bg-slate-100">
                                             <div
                                                 className="h-full bg-[var(--sf-accent)] transition-all duration-1000 ease-out"
-                                                style={{ width: progressWidth }}
+                                                style={atelier ? {height: progressWidth, width: '100%'} : { width: progressWidth }}
                                             />
                                         </div>
 
@@ -756,7 +770,7 @@ export default function TrackOrderPage({ params }) {
             </div>
 
             {cancelOpen && (
-                <ModalShell title="Cancel this order?" onClose={() => setCancelOpen(false)}>
+                <ModalShell presentationVariant={presentationVariant} busy={actionLoading} title="Cancel this order?" onClose={() => setCancelOpen(false)}>
                     <form onSubmit={handleCancelOrder} className="space-y-4">
                         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
                             <div className="mb-1 flex items-center gap-2 font-black">
@@ -806,7 +820,7 @@ export default function TrackOrderPage({ params }) {
             )}
 
             {returnOpen && (
-                <ModalShell title="Request return/refund" onClose={() => setReturnOpen(false)}>
+                <ModalShell presentationVariant={presentationVariant} busy={actionLoading} title="Request return/refund" onClose={() => setReturnOpen(false)}>
                     <form onSubmit={handleSubmitReturn} className="space-y-4">
                         <div>
                             <span className="text-sm font-black text-slate-700">Select item(s)</span>
@@ -885,7 +899,7 @@ export default function TrackOrderPage({ params }) {
                                             className="relative h-20 overflow-hidden rounded-xl border border-slate-200 bg-cover bg-center"
                                             style={{ backgroundImage: `url(${URL.createObjectURL(file)})` }}
                                             aria-label={file.name}
-                                            role="img"
+                                            role={atelier ? "group" : "img"}
                                         >
                                             <button
                                                 type="button"

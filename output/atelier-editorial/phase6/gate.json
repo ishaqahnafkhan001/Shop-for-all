@@ -1,0 +1,125 @@
+{
+  "phase5": {
+    "status": "Blocked for final acceptance; implementation and isolated checks passed",
+    "initialGate": {
+      "pass": 409,
+      "fail": 0
+    },
+    "finalFocused": {
+      "pass": 410,
+      "fail": 0
+    },
+    "builderTests": {
+      "pass": 27,
+      "fail": 0
+    },
+    "realPersistence": "Blocked: no verified disposable MongoDB environment",
+    "browser": "Blocked: local browser use disabled in Work settings"
+  },
+  "phase6": {
+    "status": "BLOCKED",
+    "parallelFullSuite": {
+      "tests": 717,
+      "pass": 711,
+      "fail": 6,
+      "skipped": 0
+    },
+    "sdkAbortRecheck": {
+      "tests": 9,
+      "pass": 9,
+      "fail": 0
+    },
+    "serialFullSuite": {
+      "tests": 717,
+      "pass": 712,
+      "fail": 5,
+      "skipped": 0
+    },
+    "finalSerialFullSuite": {
+      "tests": 718,
+      "pass": 713,
+      "fail": 5,
+      "skipped": 0
+    },
+    "builds": {
+      "admin": "pass",
+      "storefront": "pass"
+    },
+    "lint": {
+      "admin": {
+        "errors": 18,
+        "warnings": 4,
+        "added": 0
+      },
+      "storefront": "pass",
+      "sharedRenderer": {
+        "files": 29,
+        "addedDiagnostics": 0,
+        "existingHeroError": 1
+      }
+    },
+    "diffCheck": "pass",
+    "newFileWhitespace": [],
+    "SSRParity": {
+      "tests": 25,
+      "comparisons": 20,
+      "allEqual": true
+    },
+    "legacyMarkup": {
+      "productCategoryCollection": 27,
+      "commerceAccountTrackingPolicies": 117
+    },
+    "corePaletteContrast": [
+      {
+        "name": "Ink / paper",
+        "text": "#202721",
+        "background": "#f7f5ee",
+        "contrast": 14.01
+      },
+      {
+        "name": "Muted / paper",
+        "text": "#5f655e",
+        "background": "#f7f5ee",
+        "contrast": 5.48
+      },
+      {
+        "name": "Accent / paper",
+        "text": "#4653c9",
+        "background": "#f7f5ee",
+        "contrast": 5.76
+      },
+      {
+        "name": "Primary button",
+        "text": "#ffffff",
+        "background": "#202721",
+        "contrast": 15.29
+      },
+      {
+        "name": "Secondary action",
+        "text": "#202721",
+        "background": "#dbec8b",
+        "contrast": 11.93
+      }
+    ],
+    "protectedSources": {
+      "files": 352,
+      "changed": []
+    }
+  },
+  "release": {
+    "outcome": "BLOCKED",
+    "localRollout": "unset → off; no allowlist or approved plans in local .env",
+    "runtimeRollout": "not verified",
+    "modifiedEnvironment": false,
+    "realProviderCalls": false,
+    "realMerchantPublications": false
+  },
+  "knownBlockers": [
+    "Browser/UI/network/pixel/responsive/keyboard/hydration checks unavailable this phase",
+    "Real MongoDB HTTP/session/tenant/order/concurrency/asset integration not run",
+    "Existing zero-price variant cart total/display defect",
+    "Existing checkout OTP resend/cooldown gap",
+    "Five baseline tests fail; one additional SDK timeout test intermittent under parallel load",
+    "Product eligibility/downgrade/pilot-owner approvals unresolved"
+  ]
+}

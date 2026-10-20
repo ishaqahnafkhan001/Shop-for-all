@@ -1,0 +1,6 @@
+{
+  "failure": "CheckoutMarketingConsent imported by PreviewCommercePages.jsx is absent from the stale dev-served CheckoutSections.jsx",
+  "cachedResponse": "../checkout-sections-served.js",
+  "onDiskExport": "packages/storefront-renderer/presentation/CheckoutSections.jsx",
+  "actualBrowserStatus": "Disabled in Work settings; no browser render claim"
+}

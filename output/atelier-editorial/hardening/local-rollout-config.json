@@ -1,0 +1,18 @@
+{
+  "settings": [
+    {
+      "key": "ATELIER_EDITORIAL_ROLLOUT",
+      "present": false
+    },
+    {
+      "key": "ATELIER_EDITORIAL_TEST_SHOP_IDS",
+      "present": false
+    },
+    {
+      "key": "ATELIER_EDITORIAL_APPROVED_PLAN_KEYS",
+      "present": false
+    }
+  ],
+  "effectiveMode": "off (keys absent)",
+  "deploymentOverridesVerified": false
+}

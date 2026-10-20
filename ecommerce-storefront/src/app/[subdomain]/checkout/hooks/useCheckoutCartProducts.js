@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import API from "@/api/api";
 
 export function useCheckoutCartProducts({ cartItems, subdomain }) {
-    const [productsDetails, setProductsDetails] = useState({});
+    const [snapshot, setSnapshot] = useState({ subdomain: null, products: {} });
 
     useEffect(() => {
+        let cancelled = false;
         const fetchProducts = async () => {
             try {
                 const ids = [...new Set(cartItems.map((item) => item._id))].join(",");
@@ -22,7 +23,7 @@ export function useCheckoutCartProducts({ cartItems, subdomain }) {
                     mapped[product._id] = product;
                 });
 
-                setProductsDetails(mapped);
+                if (!cancelled) setSnapshot({ subdomain, products: mapped });
             } catch (error) {
                 console.error("Failed to fetch products", error);
             }
@@ -31,7 +32,8 @@ export function useCheckoutCartProducts({ cartItems, subdomain }) {
         if (cartItems.length > 0) {
             fetchProducts();
         }
+        return () => { cancelled = true; };
     }, [cartItems, subdomain]);
 
-    return productsDetails;
+    return snapshot.subdomain === subdomain && cartItems.length > 0 ? snapshot.products : {};
 }

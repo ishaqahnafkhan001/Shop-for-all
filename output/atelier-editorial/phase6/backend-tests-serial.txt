@@ -1,0 +1,1585 @@
+✔ Samsung S23 gets smartphone targeting instead of fashion targeting (10.4017ms)
+✔ Casual Sneakers for Men gets footwear/fashion targeting only (6.7894ms)
+✔ Bluetooth Headphones gets audio/electronics targeting (6.3951ms)
+✔ Face Wash gets beauty/skincare targeting (6.2531ms)
+✔ Baby Diapers gets conservative baby care targeting (7.138ms)
+✔ unknown generic product stays conservative without irrelevant niche targeting (8.0992ms)
+✔ OpenAI output cleanup removes irrelevant electronics interests and normalizes shape (3.7605ms)
+✔ OpenAI prompt contains privacy guardrails and safe context only (1.5294ms)
+✔ Growth fallback removes unsupported commerce claims and exposes evidence limitations (6.159ms)
+[GrowthAdAI] Deterministic fallback used { code: 'AI_NOT_CONFIGURED' }
+✖ empty Product output is never chargeable; every requested section is checked (7.9485ms)
+✔ concise Bangla is accepted and quality repair shares the remaining deadline (2.3112ms)
+✔ partial Collection and three blank SEO alternatives are deterministic fallback (5.3557ms)
+✔ Growth missing copy falls back; synthesized advice is mixed and CTA is validated (17.3139ms)
+✔ SEO Apply-normalize-revision-publish-resolver keeps precise origin and selective manual edits (4.1368ms)
+✔ historical SEO matches remain unknown and direct field edits cannot retain provider attribution (0.4644ms)
+✔ AI numeric configuration rejects malformed and unbounded values (1.6463ms)
+✔ OpenAI configuration never falls back to legacy Gemini credentials or models (0.2355ms)
+✔ canonical request identity ignores object order and request-ID aliases, preserves relevant differences and Unicode (0.9783ms)
+✔ new unresolved ledgers have no TTL and preserve unique tenant-feature operation key (4.6342ms)
+✔ 7, 30 and 90 day evidence windows are exact and frozen; malformed/future/stale intervals are rejected (2.4497ms)
+✔ only canonical taxonomy topics enter Growth context; Bangla marks survive normalization (1.615ms)
+✔ public image decoder validates JPEG, PNG and WebP, strips metadata, rejects spoofed/truncated/oversize images (86.0791ms)
+✔ remote images require exact public URL and tenant ownership before fetch (6.9479ms)
+✔ streaming limits ignore dishonest Content-Length and cancel oversize response (3.052ms)
+✔ cancellation and redirects never deliver an image to the provider (0.4734ms)
+✔ preferences preserve Unicode, validate bounded business wording, and normalize explicit language overrides (1.9494ms)
+✔ semantic operation identity agrees for JSON multipart fields and rejects different image/entity/version/interval (1.0178ms)
+✖ all four generators use the same effective voice for English, Bangla, Banglish and mixed content (18.5896ms)
+✔ selected Product SEO fields define provider schema and acceptance independently (0.6686ms)
+✔ missing OpenAI key starts no provider work (1.8051ms)
+✔ already aborted signal starts no provider calls and leaves no external listeners (0.2784ms)
+✔ installed SDK receives AbortSignal and local deadline aborts its fetch (37.7372ms)
+✔ provider statuses are safe, classified, and never transport retried (1.8746ms)
+✔ reported tokens retained, absent tokens unknown; telemetry failures cannot fail a response (0.7959ms)
+✔ late response after cancellation cannot return a result; listeners are removed (0.4595ms)
+✔ strict JSON schema closes every object and preserves optional fields as nullable (0.1787ms)
+✔ refused, incomplete and empty responses are not accepted as successful output (0.3844ms)
+✔ installed SDK uses Responses JSON schema, inline images, no storage and no automatic retries (6.2152ms)
+✔ badge eligibility thresholds match trusted seller business rules (0.9743ms)
+✔ badge model and shop badge fields support manual Super Admin lifecycle (0.697ms)
+✔ vendor badge routes are protected and request submission is VendorAdmin-only (0.5961ms)
+✔ vendor badge request queues background analysis instead of doing heavy analysis synchronously (0.3797ms)
+✔ background badge analysis scores applications and notifies Super Admin review (0.4625ms)
+✔ platform badge routes use scoped permissions, recent auth, and reason-gated decisions (0.7048ms)
+✔ public storefront only exposes active trusted badge after verification and active subscription checks (0.8317ms)
+✔ admin UI exposes vendor and Super Admin badge pages without changing API shape (0.9116ms)
+✔ Super Admin badge summary is aggregated across the platform, not the current page (0.6283ms)
+✔ accepts storefront paths, anchors, and HTTPS banner destinations (1.0173ms)
+✔ rejects script schemes, ambiguous paths, and credential-bearing URLs (0.2151ms)
+✔ billing default plans match Beginner Starter Growth Pro business rules (0.835ms)
+✔ billing plan helper preserves stored plan overrides and safe fallbacks (0.4161ms)
+✔ billing models include required statuses and tenant indexes (0.8726ms)
+✔ billing routes are protected and mounted under vendor and super admin APIs (0.7192ms)
+✔ new vendor registration creates a trial subscription in the existing transaction (0.9189ms)
+✔ manual payment verification and rejection use durable audited transitions (0.5518ms)
+✔ billing display separates trial, intended, pending, and active plans (0.5891ms)
+✔ trial entitlements use the active Beginner plan, not the intended paid plan (0.1454ms)
+✔ billing suspension is recognized without matching verification suspension (0.1439ms)
+✔ billing gates enforce product and staff limits before create actions (0.4693ms)
+✔ bulk detail and price updates preserve relative variant prices and update alert thresholds (3.2715ms)
+✔ tag remove and clear operate only on selected tags (0.4638ms)
+✔ bulk validation rejects unsafe prices, alert levels, and unknown fields (1.9876ms)
+✔ admin low-stock filter and summary use the same variant-level expression (0.8778ms)
+✔ category metadata is tenant-scoped and public serialization excludes Cloudinary ownership data (12.9333ms)
+✔ category cover routes reuse catalog permissions, feature gates, and validated multipart uploads (0.8607ms)
+✔ collection CRUD supports image uploads and all mutations remain tenant-scoped (1.5679ms)
+✔ Catalog Tools exposes collection edit/delete and category cover management (0.6624ms)
+✔ storefront and Store Builder consume enriched categories without replacing legacy filter strings (171.966ms)
+✔ protected POST without csrf token returns 403 (0.9507ms)
+✔ protected POST with valid csrf token reaches next handler (0.9647ms)
+✔ GET route and login route do not require csrf token (0.2423ms)
+✔ custom domain utilities normalize and validate hostnames safely (1.434ms)
+✔ backend custom-domain routing and persistence guards are wired (3.2938ms)
+✔ custom-domain DNS verification helpers build and validate TXT/CNAME records (2.7958ms)
+✔ custom-domain DNS verification separates ownership from routing readiness (0.7305ms)
+✔ storefront proxy and API proxy preserve custom-domain host context (0.8551ms)
+✔ default policy templates cover refund, shipping, privacy, and terms (1.5575ms)
+✔ policy default fill only adds missing or empty policies (0.2271ms)
+✔ new shop registration seeds editable default policies (0.4466ms)
+✔ store builder and public storefront responses apply missing policy defaults without changing shape (1.1304ms)
+✔ policy backfill script supports dry-run and does not overwrite edited policies (0.5835ms)
+✔ storefront policy pages use default fallback content and reject invalid policy types (0.9588ms)
+✔ Essential Store Branding is available to every plan without unlocking Store Builder (0.8721ms)
+✔ legacy Shop and published-theme identity derives without mutating premium theme data (0.9316ms)
+✔ explicit branding is never overwritten, while unremoved legacy assets remain compatible (0.2369ms)
+✔ custom CTA validation accepts safe destinations and rejects scriptable or administrative URLs (0.5623ms)
+✔ branding update DTO rejects unknown fields before persistence (0.4191ms)
+✔ Beginner public theme receives one safe branding hero and no premium layout mutation (0.2384ms)
+✔ dedicated branding APIs are tenant-authenticated, permission checked, and independently feature gated (1.2415ms)
+✔ live renderer hides empty heroes and never inserts generic promotional claims (0.5119ms)
+✔ admin exposes a separate all-plan branding page without exposing Store Builder (0.6725ms)
+✔ feature access uses plan defaults and denies explicit shop overrides (1.1128ms)
+✔ feature access denies plan-disabled features even when shop flag is true (0.1576ms)
+✔ feature access denies operational features for suspended shops (0.1364ms)
+✔ feature access denies operational features for billing-suspended subscriptions (0.1418ms)
+✔ store builder publish does not require custom domain feature unless domain changes (0.3941ms)
+✔ atomic stock decrement uses tenant-safe elemMatch and $inc update (1.5161ms)
+✔ two concurrent checkout attempts against stock 1 only allow one decrement (2.3908ms)
+✔ consent email uses the tenant shop name and escapes it in HTML (1.939ms)
+✔ consent email skips a missing or inactive tenant shop (0.2448ms)
+SMS provider rejected request {
+  status: 200,
+  phone: '017****5678',
+  sidIncluded: false,
+  phoneFormat: 'local',
+  providerResponse: { status: 'failed', success: false }
+}
+✔ removed arbitrary-recipient order mail route and escapes text templates (17.5555ms)
+✔ SMTP transports verify provider certificates (0.8128ms)
+✔ SMS rejects explicit provider failure inside HTTP 200 without retrying (1.9545ms)
+✔ SMS mock mode cannot report success in production regardless of case (0.4387ms)
+✔ Resend webhook signature requires authentic body and fresh timestamp (0.9342ms)
+✔ unsubscribe token is tenant bound and tamper evident (0.9582ms)
+✔ Resend adapter forwards one stable idempotency key and recipient tags (0.3323ms)
+✔ verified bounce event updates only its tagged tenant recipient and is deduplicated (1.298ms)
+✔ campaign recipient claim is atomic and scoped; SMTP uncertainty is never retried (0.5257ms)
+✔ stale Resend submissions retain their first attempt and stop after the idempotency window (0.3565ms)
+✔ a submitting recipient keeps the campaign job pending after a worker restart (0.3217ms)
+✔ failed OTP delivery invalidates only its issued hash and preserves a retry delay (0.4934ms)
+✔ OTP creation resolves a concurrent unique-key collision as cooldown (0.5464ms)
+✔ OTP consumption uses a conditional atomic write (0.5778ms)
+✔ vendor onboarding route is protected and admin-only (5.3572ms)
+✔ vendor onboarding controller returns tenant-scoped setup signals only (0.4758ms)
+✔ placement and confirmation emails show order snapshots, never internal buying price (18.1932ms)
+✔ receipt is a separate durable job in the checkout transaction (0.2591ms)
+✔ receipt processor fetches the order and customer within the job tenant (0.3437ms)
+✔ both checkout paths enqueue the receipt before commit and worker handles it separately (0.8101ms)
+✔ password reset OTP generation is numeric, six digit, and not stored directly (1.3393ms)
+✔ password policy requires enterprise-grade complexity (0.2101ms)
+✔ password reset limits match security requirements (0.1031ms)
+✔ password reset endpoints are mounted on auth routes (0.3765ms)
+✔ forgot password response is generic and enumeration-safe (0.4392ms)
+✔ password reset is tenant keyed and one-time use (0.2768ms)
+✔ password reset emails use dedicated reset sender configuration (0.5188ms)
+✔ scheduled sale runtime status follows date windows (0.8642ms)
+✔ scheduled sale decorates public product pricing without changing base price (0.41ms)
+✔ scheduled sale product scope and overlap precedence are deterministic (0.3968ms)
+✔ scheduled sale collection scope applies through product collection membership (0.2155ms)
+✔ cart estimate and category filters are URL-backed storefront-only polish (158.0258ms)
+✔ computed product fields preserve already-decorated sale price (0.2263ms)
+✔ low-stock alert trigger crosses threshold once and service has persisted latch/reset path (0.4166ms)
+✔ phase 2 routes and models expose scheduled sales, banner windows, and granular permissions (0.8471ms)
+✔ storefront surfaces sale pricing and sale popups without private pricing fields (0.8814ms)
+✔ admin schedule forms convert browser-local date times to explicit UTC values (0.8389ms)
+✔ product content AI route is protected and mounted before product id route (10.0947ms)
+✔ product content AI missing OpenAI key is friendly and backend-only (4.135ms)
+✔ product content AI uses bounded provider timeouts and safe failure codes (0.4647ms)
+✔ product content AI builds text-only and image-aware prompts without private pricing (1.1779ms)
+✔ product content AI accepts one to three ordered images and does not require three benefits (20.0986ms)
+✔ product content AI preserves mixed saved and uploaded image order within the three-image limit (0.3526ms)
+✔ product content AI does not invent specifications or notes when no evidence exists (0.349ms)
+✔ seller-confirmed facts pass product parsing, validation and model casting, then enrich AI privately (669.3036ms)
+✔ product content AI normalizes shapes and length limits (0.5898ms)
+✔ product content AI malformed JSON path falls back only to evidence-based content (1.46ms)
+✔ product content AI wraps OpenAI provider failures as safe response codes (0.5812ms)
+✔ product content AI sends selected sections through OpenAI Responses strict JSON (0.7998ms)
+✔ selective Product Apply maps public content without changing commerce or unselected fields (5.0169ms)
+✔ selling point point-reason format remains compatible with legacy rows (160.0036ms)
+✔ admin product edit fetches full product detail instead of list summary route state (1.8213ms)
+✔ admin product edit normalizes variants, SEO, and product detail arrays for saving (0.9908ms)
+✔ admin product detail endpoint remains full product response for edit hydration (1.006ms)
+✔ registration links use the configured platform and admin domains (1.9452ms)
+✔ vendor registration email includes storefront and admin links without credentials (0.8611ms)
+✔ SMS registration welcome contains both required links (0.1924ms)
+✔ Super Admin registration email contains safe shop review details (0.2132ms)
+✔ registration creates independent durable jobs before transaction commit (0.9525ms)
+✔ registration enqueues independent email and SMS records in the existing transaction (0.9026ms)
+✔ already accepted welcome delivery is not resent by a retried job (0.4591ms)
+✔ welcome webhook is tenant scoped, deduplicated, and never downgrades delivered to accepted (0.7635ms)
+✔ welcome email and SMS have independent provider outcomes; SMS timeout is uncertain (1.3172ms)
+✔ restart safely reuses a Resend idempotency key but never replays a stale SMS submission (0.7502ms)
+✔ registration OTP generation is numeric, six digit, and hashed before storage (1.518ms)
+✔ registration OTP model stores hash, expiry, attempts, and used marker only (0.4304ms)
+✔ registration OTP verification rejects expired, reused, and over-attempt records (0.2777ms)
+✔ registration controller consumes hashed OTP and does not compare plaintext records (0.296ms)
+✔ public product lookup is tenant scoped and storefront safe (1.628ms)
+✔ public order tracking requires tenant and phone verification (1.2662ms)
+✔ public order tracking actions are tenant scoped and phone verified (0.6718ms)
+✔ customer-facing product and order responses hide vendor cost fields (0.9192ms)
+✔ store builder theme save sanitizes scriptable URLs (867.208ms)
+✔ purchase order receiving is tenant scoped (0.5649ms)
+✔ security middleware and rate limits are mounted (0.333ms)
+✔ csrf token route is mounted and unsafe clients attach csrf header (0.486ms)
+✔ public health endpoint is redacted for production safety (0.3581ms)
+✔ storefront next image config restricts remote optimization hosts (3.5871ms)
+✔ admin AI and banner routes require RBAC permissions (0.654ms)
+✔ upload pipeline enforces type and size limits (0.6399ms)
+✔ analytics event endpoint resolves tenant and validates event types (0.7224ms)
+✔ growth center routes are tenant protected with growth permission (552.0477ms)
+✔ growth center revenue metrics use delivered order revenue only (0.5622ms)
+✔ shop feature flags are enforced on backend routes and vendor frontend routes (3.4156ms)
+✔ catalog collection AI is tenant-protected and preview-applied in admin UI (4.1981ms)
+✔ scheduled product launch uses persisted jobs and hides products until publication (1.7086ms)
+✖ low stock warnings are queued, tenant-scoped, and sent only on threshold crossing (2.4812ms)
+✖ promotion scheduling is enforced by backend checkout evaluation and exposed in admin UI (1.217ms)
+✔ vendor verification routes are protected and use NID upload middleware (24.4796ms)
+✔ verification suspension blocks high-impact vendor mutations only after auth (1.3937ms)
+✔ store builder SEO AI route is protected and backend-only (3.1578ms)
+✔ public tenant resolution checks verification before exposing storefront (0.274ms)
+✔ super admin hardening routes use scoped platform permissions and recent auth (0.8051ms)
+✔ super admin frontend routes and navigation honor scoped platform permissions (0.8908ms)
+✔ platform audit log is separate and non-blocking (0.355ms)
+✔ super admin lists use pagination response shape (0.6683ms)
+✔ dangerous super admin actions require reason and protect verification suspension (0.5829ms)
+✔ super admin sensitive actions create platform audit entries (0.8786ms)
+✔ super admin data models constrain governance values (0.9409ms)
+✔ announcements use soft archive lifecycle (0.9416ms)
+✔ privacy consent, analytics retention, and data requests are wired (1.1175ms)
+✔ request IDs, structured logging, and operations docs exist (0.8794ms)
+✔ mongo-backed queue, worker, and analytics rollups are available (1.1303ms)
+✔ ci workflow and test docs exist (0.4231ms)
+✔ vendor admin pagination responses keep compatibility metadata (1.1782ms)
+✔ storefront pagination keeps page sizes, metadata, and controls consistent (1.1823ms)
+✔ stock mutations use explicit semantics, idempotency, and inventory movement logs (1.1346ms)
+✔ return proof upload is required for new admin and tracked returns (1.4493ms)
+✔ customer email campaigns are tenant-scoped, queued, and product-safe (1.3565ms)
+✔ staff permissions expose operational sections only and hide owner-only sections (1.5723ms)
+✖ confirmed order status email is sent through status update endpoint once (1.4153ms)
+✔ redx courier integration is provider-based, masked, queued, and phone safe (1.5658ms)
+✔ storefront conversion UX keeps recommendations tenant-scoped and checkout OTP backend-backed (191.8611ms)
+(node:3488) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/sitemapXml.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ AI request records are tenant-feature idempotent and expire automatically (1.3427ms)
+✔ Homepage SEO preview resolves through the same shared theme resolver as live output (4.0612ms)
+✔ review eligibility preserves legacy reviews and excludes hidden or deleted reviews (0.1499ms)
+✔ category SEO fields are optional and length bounded (0.1158ms)
+✔ sitemap XML helpers escape unsafe values and emit valid index and URL roots (4.7797ms)
+✔ storefront indexing and structured data share the centralized eligibility decision (1.2435ms)
+✔ migration is dry-run first and does not infer unavailable slug history (0.3675ms)
+(node:35008) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/seo.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ public product detail lookup supports tenant-safe slug and ObjectId fallback (1.4174ms)
+✔ public review routes resolve product slugs without exposing cross-tenant reviews (0.6512ms)
+✔ storefront SEO helpers build canonical metadata and safe product JSON-LD (26.4924ms)
+✔ storefront product image SEO helpers tolerate null product values (63.1347ms)
+✔ storefront branding serves size-bounded Cloudinary icon variants (1.3372ms)
+✔ shared storefront renderer uses responsive images and avoids eager catalog prefetch (2.3517ms)
+✔ storefront canonical helpers preserve verified custom-domain host exactly (11.9037ms)
+✔ homepage SEO resolver preserves the exact saved title across live metadata and preview (6.6307ms)
+✔ homepage SEO fallback, canonical, and preview indexability remain tenant-safe (2.29ms)
+✔ theme contrast utilities use WCAG ratios and repair the known legacy footer default (25.5446ms)
+✔ shared homepage SEO distinguishes generated values, indexing blocks, and approved aliases (709.3263ms)
+✔ homepage SEO provenance, social metadata, and freshness are deterministic (2.5312ms)
+✔ SEO AI context is bounded, public-field-only, injection-delimited, and preserves official branding (303.4125ms)
+✔ internal marketplace search ranks official identity above aliases, spelling synonyms, and bounded fuzzy matches (2.4341ms)
+✔ homepage SEO implementation uses authoritative public catalog and protected canonical sources (0.6703ms)
+✔ storefront theme keeps Google site name compatible for old and new themes (6.9623ms)
+✔ root Scaleup landing page has production SEO and conversion sections (1.1451ms)
+✔ homepage, product, and policy routes render server metadata (0.7845ms)
+✔ storefront hero and response headers preserve safe production defaults (165.4506ms)
+✔ sitemap and robots expose only public SEO URLs and noindex private pages (1.1735ms)
+✔ public storefront branding exposes only safe white-label decision (0.4389ms)
+✔ admin SEO Phase 2 controls expose store and product SEO guidance without schema changes (1.8123ms)
+✔ public collection and category SEO routes are tenant-safe (1.6746ms)
+✔ store builder UX pass keeps preview and live renderer aligned (1.6925ms)
+✔ storefront product links prefer slugs and product slug backfill is dry-run safe (3.242ms)
+✔ pending Pathao approval survives the shop model and appears in courier settings (12.6418ms)
+✔ disabled couriers cannot remain the effective default (0.1616ms)
+✔ Pathao store lookup uses the selected account environment (0.373ms)
+✔ Pathao shipment creation keeps sandbox merchant and platform URLs separate (0.3031ms)
+✔ Pathao authentication accepts encrypted saved credentials (1.2718ms)
+✔ RedX pickup store verification sends a new token without saving it (0.4362ms)
+✔ Bangladesh phone utility normalizes accepted mobile formats (0.9369ms)
+✔ Bangladesh phone utility rejects malformed or non-BD numbers (0.1389ms)
+✔ SMS provider uses bearer auth and does not put API token in request body (0.6344ms)
+✔ vendor registration supports email and sms OTP verification states (0.6062ms)
+✔ checkout phone OTP routes are mounted and final order paths consume proof before stock decrement (1.5084ms)
+✔ vendor verified badge is computed from NID approval plus phone verification (0.7134ms)
+✔ staff management routes expose summary, create, edit, and soft remove behind vendor admin access (1.3839ms)
+✔ staff capacity counts only active VendorStaff and supports remaining slots (0.3561ms)
+✔ staff controller keeps email read-only, tenant scoped, and deactivates instead of deleting (0.4057ms)
+(node:35552) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/theme.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ store builder color controls are centralized in the Colors panel (1.8389ms)
+✔ product card renderer lets Color section values override legacy product card colors (33.4669ms)
+✔ advanced legacy color edits are mirrored to authoritative storefront color groups (5.1068ms)
+✔ storefront color groups persist and apply across all storefront page wrappers (1.1513ms)
+✔ product edit image updates preserve kept images and submit new files through multipart contract (1.5134ms)
+✔ new shops use the shared wishlist default (12.3818ms)
+✔ new shops use the shared catalog title default (2.1776ms)
+✔ contract-valid Editorial catalog spacing survives schema validation and hydration (22.7783ms)
+✔ legacy sparse records retain their historical persistence defaults on hydration (9.1778ms)
+✔ explicit saved wishlist and catalog title values survive construction and hydration (27.9155ms)
+✔ all prebuilt theme configurations survive schema and hydration without presentation drift (120.7396ms)
+✔ every registered Store Builder section has a complete, stable contract (7.8633ms)
+✔ theme contract migrates legacy sections and rejects unsupported section types (0.6541ms)
+✔ theme sanitizer strips unsupported fields and neutralizes stored-content attacks (0.4448ms)
+✔ representative theme survives Mongoose schema and shared normalization round trip (13.2282ms)
+✔ capability metadata is backend-driven and plan aware (0.3307ms)
+✔ vendor dashboard navigation is registry-driven, grouped, and account scoped (1.6344ms)
+✔ store builder shell separates navigation, preview, inspector, issues, and history (1.6854ms)
+✔ custom domain is a separate plan-gated dashboard workspace (1.0162ms)
+✔ dynamic Store Builder sections use stable ids for selection and duplication (0.6502ms)
+✔ store builder polish keeps editing contextual and preview controls focused (2.2075ms)
+✔ Homepage SEO routes reuse Store Builder permission, feature, and suspension guards (0.44ms)
+✔ Homepage SEO draft and revision records include aliases and shared revision protection (0.7957ms)
+✔ standalone Homepage SEO page is deep-linkable and preserves local drafts on conflict (0.9103ms)
+✔ prebuilt registry contains nine immutable, unique, valid production themes (25.2876ms)
+✔ each v2 preset exposes the curated structural signature supported by the shared renderer (0.4007ms)
+✔ every preset resolves deterministically and validates through the shared contract (36.3364ms)
+✔ all full-plan presets follow their blueprints when safe merchant content is available (24.7016ms)
+✔ the nine themes no longer collapse into two effective section structures (28.974ms)
+✔ paired industries remain distinguishable without relying on color (0.4848ms)
+✔ applying a preset preserves merchant content and selected commerce data (1.7582ms)
+✔ missing merchant content never creates fake story, review, FAQ, promotion, trust, or newsletter copy (1.6125ms)
+✔ preset-owned presentation wins while populated merchant content and unmatched sections survive (2.506ms)
+✔ duplicate preset-controlled sections are retained but cannot alter the enabled blueprint sequence (2.783ms)
+✔ limited plan resolution preserves restricted layout and section fields accepted by backend policy (22.4798ms)
+✔ preset application refuses unavailable access and unknown presets without mutating the draft (0.9181ms)
+✔ prebuilt catalog has an isolated package export and is not imported by live storefront source (13.4623ms)
+✔ theme cards and full previews resolve the same merchant-owned hero banner (11.1737ms)
+..\..\packages\storefront-renderer\reference\referenceCore.jsx (5:90) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/referenceCore.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/referenceCore.jsx:5:91 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m5 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249mC[0m[38;5;249ms[0m[38;5;249ms[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249ms[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mH[0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mS[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249md[0m[38;5;249me[0m[38;5;249mF[0m[38;5;249mi[0m[38;5;249me[0m[38;5;249ml[0m[38;5;249md[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m  │[0m                                                                                           ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                                                                        ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontAllProducts.jsx (4:49) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontAllProducts.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontAllProducts.jsx:4:50 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m4 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m'@scaleup/storefront-theme'[38;5;249m;[0m
+ [38;5;240m  │[0m                                                  ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                               ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontFooter.jsx (5:111) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontFooter.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontFooter.jsx:5:112 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m5 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249me[0m[38;5;249md[0m[38;5;249mN[0m[38;5;249ma[0m[38;5;249mv[0m[38;5;249mi[0m[38;5;249mg[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mE[0m[38;5;249mf[0m[38;5;249mf[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249mz[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m  │[0m                                                                                                                ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                                                                                             ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontHeader.jsx (16:111) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontHeader.jsx
+    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontHeader.jsx:16:112 [38;5;246m][0m
+    [38;5;246m│[0m
+ [38;5;246m16 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249me[0m[38;5;249md[0m[38;5;249mN[0m[38;5;249ma[0m[38;5;249mv[0m[38;5;249mi[0m[38;5;249mg[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mE[0m[38;5;249mf[0m[38;5;249mf[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249mz[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m   │[0m                                                                                                                ─────────────┬─────────────  
+ [38;5;240m   │[0m                                                                                                                             ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m────╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontHero.jsx (6:49) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontHero.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontHero.jsx:6:50 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m6 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m'@scaleup/storefront-theme'[38;5;249m;[0m
+ [38;5;240m  │[0m                                                  ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                               ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontHome.jsx (3:118) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontHome.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontHome.jsx:3:119 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m3 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mE[0m[38;5;249mn[0m[38;5;249ma[0m[38;5;249mb[0m[38;5;249ml[0m[38;5;249me[0m[38;5;249md[0m[38;5;249mH[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249mp[0m[38;5;249ma[0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mS[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249ms[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mE[0m[38;5;249mf[0m[38;5;249mf[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249mz[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m  │[0m                                                                                                                       ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                                                                                                    ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontComposition.jsx (3:40) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontComposition.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontComposition.jsx:3:41 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m3 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mp[0m[38;5;249ml[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mH[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249mp[0m[38;5;249ma[0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mC[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249ms[0m[38;5;249mi[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m'@scaleup/storefront-theme'[38;5;249m;[0m
+ [38;5;240m  │[0m                                         ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                      ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+✔ trusted availability keeps nine ordinary gallery cards and hides revoked Atelier at confirmation (158.1ms)
+✔ gallery identifies an existing Atelier presentation when re-adoption is off or appearance provenance differs (876.7721ms)
+✔ modern-general: full round-trip switching preserves merchant content and clears the marker (4.2475ms)
+✔ minimal-general: full round-trip switching preserves merchant content and clears the marker (4.6449ms)
+✔ modern-fashion: full round-trip switching preserves merchant content and clears the marker (2.6907ms)
+✔ editorial-fashion: full round-trip switching preserves merchant content and clears the marker (2.4392ms)
+✔ luxury-jewellery: full round-trip switching preserves merchant content and clears the marker (2.3761ms)
+✔ minimal-jewellery: full round-trip switching preserves merchant content and clears the marker (2.3466ms)
+✔ soft-beauty: full round-trip switching preserves merchant content and clears the marker (2.4619ms)
+✔ modern-electronics: full round-trip switching preserves merchant content and clears the marker (2.7978ms)
+✔ fresh-grocery: full round-trip switching preserves merchant content and clears the marker (2.3751ms)
+✔ only the section structures bypassed by Atelier are theme-controlled; content remains editable (2.9409ms)
+✔ supported typography, colors, mobile composition and grid controls reach the shared renderer (31.2054ms)
+✔ existing home preview uses Atelier scope and the shared presentation (28.3124ms)
+✔ existing product preview uses Atelier scope and the shared presentation (26.9408ms)
+✔ existing cart preview uses Atelier scope and the shared presentation (19.4686ms)
+✔ existing checkout preview uses Atelier scope and the shared presentation (28.3096ms)
+✔ existing policy preview uses Atelier scope and the shared presentation (13.4482ms)
+✔ Atelier checkout preview uses shared consent, local-only controls and a no-op submission boundary (1.9847ms)
+✔ shared marketing control keeps separate opt-in event semantics and identical live markup (0.2631ms)
+✔ actual undo/redo/recovery functions preserve optional identity and merchant settings (215.0882ms)
+✔ existing draft queue serializes Atelier, preserves conflict state and isolates tenant queues (5.174ms)
+✔ preview iframe remains scriptless and viewport export/installed packages match the shared source (5.907ms)
+✔ authorized Atelier draft → publish → JSON reload → switch away → restore passes actual service guards (660.7689ms)
+✔ unapproved tenant, foreign revision and stale publish cannot mutate another tenant in the service unit harness (25.5452ms)
+✔ pilot recovery works with adoption off without relying on a retained old revision (60.9167ms)
+✔ modern-general/cart: exact original markup retained (227.8513ms)
+✔ modern-general/checkout: exact original markup retained (15.6711ms)
+✔ modern-general/policy: exact original markup retained (4.0035ms)
+✔ modern-general/account: exact original markup retained (3.5521ms)
+✔ modern-general/register: exact original markup retained (7.2559ms)
+✔ modern-general/reset: exact original markup retained (2.6411ms)
+✔ modern-general/dashboard: exact original markup retained (8.0657ms)
+✔ modern-general/profile: exact original markup retained (2.0922ms)
+✔ modern-general/security: exact original markup retained (2.9139ms)
+✔ modern-general/vendor: exact original markup retained (3.1693ms)
+✔ modern-general/track: exact original markup retained (3.8969ms)
+✔ modern-general/otp: exact original markup retained (3.136ms)
+✔ modern-general/policy-index: exact original markup retained (4.2965ms)
+✔ minimal-general/cart: exact original markup retained (7.5029ms)
+✔ minimal-general/checkout: exact original markup retained (10.2069ms)
+✔ minimal-general/policy: exact original markup retained (2.7798ms)
+✔ minimal-general/account: exact original markup retained (1.9907ms)
+✔ minimal-general/register: exact original markup retained (2.1988ms)
+✔ minimal-general/reset: exact original markup retained (1.9395ms)
+✔ minimal-general/dashboard: exact original markup retained (6.275ms)
+✔ minimal-general/profile: exact original markup retained (2.3208ms)
+✔ minimal-general/security: exact original markup retained (2.6553ms)
+✔ minimal-general/vendor: exact original markup retained (2.2335ms)
+✔ minimal-general/track: exact original markup retained (2.1391ms)
+✔ minimal-general/otp: exact original markup retained (2.9136ms)
+✔ minimal-general/policy-index: exact original markup retained (3.4209ms)
+✔ modern-fashion/cart: exact original markup retained (9.4837ms)
+✔ modern-fashion/checkout: exact original markup retained (12.4136ms)
+✔ modern-fashion/policy: exact original markup retained (2.6036ms)
+✔ modern-fashion/account: exact original markup retained (2.3641ms)
+✔ modern-fashion/register: exact original markup retained (3.3019ms)
+✔ modern-fashion/reset: exact original markup retained (2.3466ms)
+✔ modern-fashion/dashboard: exact original markup retained (4.1289ms)
+✔ modern-fashion/profile: exact original markup retained (2.8782ms)
+✔ modern-fashion/security: exact original markup retained (2.9821ms)
+✔ modern-fashion/vendor: exact original markup retained (2.6643ms)
+✔ modern-fashion/track: exact original markup retained (2.3719ms)
+✔ modern-fashion/otp: exact original markup retained (3.1384ms)
+✔ modern-fashion/policy-index: exact original markup retained (4.1032ms)
+✔ editorial-fashion/cart: exact original markup retained (9.5413ms)
+✔ editorial-fashion/checkout: exact original markup retained (12.2819ms)
+✔ editorial-fashion/policy: exact original markup retained (3.2039ms)
+✔ editorial-fashion/account: exact original markup retained (2.2574ms)
+✔ editorial-fashion/register: exact original markup retained (2.4159ms)
+✔ editorial-fashion/reset: exact original markup retained (1.8883ms)
+✔ editorial-fashion/dashboard: exact original markup retained (3.6889ms)
+✔ editorial-fashion/profile: exact original markup retained (1.9237ms)
+✔ editorial-fashion/security: exact original markup retained (2.8964ms)
+✔ editorial-fashion/vendor: exact original markup retained (2.9471ms)
+✔ editorial-fashion/track: exact original markup retained (2.4964ms)
+✔ editorial-fashion/otp: exact original markup retained (2.9932ms)
+✔ editorial-fashion/policy-index: exact original markup retained (3.4528ms)
+✔ luxury-jewellery/cart: exact original markup retained (10.132ms)
+✔ luxury-jewellery/checkout: exact original markup retained (12.1806ms)
+✔ luxury-jewellery/policy: exact original markup retained (2.601ms)
+✔ luxury-jewellery/account: exact original markup retained (2.5374ms)
+✔ luxury-jewellery/register: exact original markup retained (2.4404ms)
+✔ luxury-jewellery/reset: exact original markup retained (1.8939ms)
+✔ luxury-jewellery/dashboard: exact original markup retained (4.0901ms)
+✔ luxury-jewellery/profile: exact original markup retained (2.0546ms)
+✔ luxury-jewellery/security: exact original markup retained (2.7067ms)
+✔ luxury-jewellery/vendor: exact original markup retained (2.8039ms)
+✔ luxury-jewellery/track: exact original markup retained (2.2281ms)
+✔ luxury-jewellery/otp: exact original markup retained (3.2886ms)
+✔ luxury-jewellery/policy-index: exact original markup retained (5.3123ms)
+✔ minimal-jewellery/cart: exact original markup retained (9.4283ms)
+✔ minimal-jewellery/checkout: exact original markup retained (12.5332ms)
+✔ minimal-jewellery/policy: exact original markup retained (2.3649ms)
+✔ minimal-jewellery/account: exact original markup retained (2.1228ms)
+✔ minimal-jewellery/register: exact original markup retained (2.6415ms)
+✔ minimal-jewellery/reset: exact original markup retained (1.7785ms)
+✔ minimal-jewellery/dashboard: exact original markup retained (4.3792ms)
+✔ minimal-jewellery/profile: exact original markup retained (2.1176ms)
+✔ minimal-jewellery/security: exact original markup retained (2.8379ms)
+✔ minimal-jewellery/vendor: exact original markup retained (2.8526ms)
+✔ minimal-jewellery/track: exact original markup retained (2.25ms)
+✔ minimal-jewellery/otp: exact original markup retained (3.4362ms)
+✔ minimal-jewellery/policy-index: exact original markup retained (3.3498ms)
+✔ soft-beauty/cart: exact original markup retained (10.1755ms)
+✔ soft-beauty/checkout: exact original markup retained (12.8455ms)
+✔ soft-beauty/policy: exact original markup retained (3.1675ms)
+✔ soft-beauty/account: exact original markup retained (2.1288ms)
+✔ soft-beauty/register: exact original markup retained (2.2553ms)
+✔ soft-beauty/reset: exact original markup retained (1.7668ms)
+✔ soft-beauty/dashboard: exact original markup retained (4.3451ms)
+✔ soft-beauty/profile: exact original markup retained (2.002ms)
+✔ soft-beauty/security: exact original markup retained (2.6447ms)
+✔ soft-beauty/vendor: exact original markup retained (2.3049ms)
+✔ soft-beauty/track: exact original markup retained (2.7295ms)
+✔ soft-beauty/otp: exact original markup retained (3.0446ms)
+✔ soft-beauty/policy-index: exact original markup retained (4.5283ms)
+✔ modern-electronics/cart: exact original markup retained (10.0599ms)
+✔ modern-electronics/checkout: exact original markup retained (12.4687ms)
+✔ modern-electronics/policy: exact original markup retained (2.54ms)
+✔ modern-electronics/account: exact original markup retained (2.8111ms)
+✔ modern-electronics/register: exact original markup retained (2.757ms)
+✔ modern-electronics/reset: exact original markup retained (1.9444ms)
+✔ modern-electronics/dashboard: exact original markup retained (3.6794ms)
+✔ modern-electronics/profile: exact original markup retained (1.8054ms)
+✔ modern-electronics/security: exact original markup retained (2.8001ms)
+✔ modern-electronics/vendor: exact original markup retained (2.8454ms)
+✔ modern-electronics/track: exact original markup retained (1.9575ms)
+✔ modern-electronics/otp: exact original markup retained (2.574ms)
+✔ modern-electronics/policy-index: exact original markup retained (3.2106ms)
+✔ fresh-grocery/cart: exact original markup retained (9.2337ms)
+✔ fresh-grocery/checkout: exact original markup retained (12.5146ms)
+✔ fresh-grocery/policy: exact original markup retained (2.8948ms)
+✔ fresh-grocery/account: exact original markup retained (1.9986ms)
+✔ fresh-grocery/register: exact original markup retained (2.1938ms)
+✔ fresh-grocery/reset: exact original markup retained (2.2623ms)
+✔ fresh-grocery/dashboard: exact original markup retained (3.5462ms)
+✔ fresh-grocery/profile: exact original markup retained (1.7958ms)
+✔ fresh-grocery/security: exact original markup retained (2.9745ms)
+✔ fresh-grocery/vendor: exact original markup retained (2.8756ms)
+✔ fresh-grocery/track: exact original markup retained (2.2331ms)
+✔ fresh-grocery/otp: exact original markup retained (2.7964ms)
+✔ fresh-grocery/policy-index: exact original markup retained (3.8301ms)
+✔ cart keeps real item/quantity/promo/checkout elements and clearly defers coupon validation (12.1022ms)
+✔ checkout retains required delivery fields, COD, separate consent and actual form submission (17.0626ms)
+✔ OTP busy/input/error states keep all original verification restrictions and accessible errors (3.5261ms)
+✔ registration keeps locked identity fields, OTP and resend cooldown; recovery and security remain available (11.1722ms)
+✔ order history and tracking retain eligibility boundaries and disclose no order before access verification (6.6484ms)
+✔ all four full policy types, merchant text escaping and unknown-type 404 remain intact (4.3478ms)
+✔ account decorative assets are local, nonempty and retain exact Figma root dimensions (1.0454ms)
+✔ original nine complete definitions, versions, normalized snapshots, effective output and capabilities are immutable (80.6333ms)
+✔ tenth candidate is hidden and contract-valid without changing nine active presets or schema v4 (14.553ms)
+✔ optional identity has no legacy default, invalid reads fall back and invalid writes fail validation (0.6ms)
+✔ identity persists through Mongoose JSON hydration and explicit clearing survives merge, normalization and reload (35.4259ms)
+✔ homepage composition and preset provenance cannot select or remove the persistent skin (10.884ms)
+✔ full legacy preset application removes identity; limited appearance-only application retains protected identity (42.1992ms)
+✔ CJS and ESM hosts expose exactly the same identity contract (10.1175ms)
+✔ Atelier application retains merchant section order, hidden sections and enabled duplicates (1.6095ms)
+✔ off rollout blocks marker-only, guessed metadata and complete snapshots (4.6439ms)
+✔ invalid rollout blocks marker-only, guessed metadata and complete snapshots (4.0253ms)
+✔ unset rollout blocks marker-only, guessed metadata and complete snapshots (3.145ms)
+✔ exact trusted allowlist permits development adoption, exposes no other tenant IDs, rejects caller plan/tenant flags (4.8752ms)
+✔ on fails closed until server-approved plan keys exist; limited plans cannot acquire the structural marker (9.6605ms)
+✔ off permits unchanged published identity and switching away, rejects reapplication and SEO identity changes (15.4213ms)
+✔ actual draft, publication, tenant-scoped restore and SEO writes reject before any mutation (265.8333ms)
+✔ ordinary gallery contains exactly nine; trusted pilot metadata adds only the tenth candidate (156.5318ms)
+✔ explicit marker selects shared shell/home/card views and real merchant data; removing it leaves legacy markup (129.4716ms)
+✔ zero price, discount, rating, stock and action visibility use the existing product model (5.2498ms)
+✔ new card and hero views forward the parent callbacks without owning commerce or slide state (1.4744ms)
+✔ cleared hero copy/media/CTAs remain clear; empty optional content and zero categories collapse (45.5255ms)
+✔ configured sections, ordering, visibility and optional legacy types remain in the same renderer (29.3738ms)
+✔ long Bengali/Latin merchant text is escaped, never converted to markup or demo identity (31.4257ms)
+✔ existing catalog controls remain accessible and preview anchors prevent navigation (29.7197ms)
+✔ scoped stylesheet cannot affect legacy themes and licensed font is local (42.3888ms)
+✔ modern-general/product: exact pre-change markup remains unchanged (212.2655ms)
+✔ modern-general/category: exact pre-change markup remains unchanged (22.758ms)
+✔ modern-general/collection: exact pre-change markup remains unchanged (11.0148ms)
+✔ minimal-general/product: exact pre-change markup remains unchanged (16.3043ms)
+✔ minimal-general/category: exact pre-change markup remains unchanged (13.4161ms)
+✔ minimal-general/collection: exact pre-change markup remains unchanged (12.3006ms)
+✔ modern-fashion/product: exact pre-change markup remains unchanged (20.273ms)
+✔ modern-fashion/category: exact pre-change markup remains unchanged (15.3843ms)
+✔ modern-fashion/collection: exact pre-change markup remains unchanged (14.5191ms)
+✔ editorial-fashion/product: exact pre-change markup remains unchanged (20.0415ms)
+✔ editorial-fashion/category: exact pre-change markup remains unchanged (14.4925ms)
+✔ editorial-fashion/collection: exact pre-change markup remains unchanged (12.9079ms)
+✔ luxury-jewellery/product: exact pre-change markup remains unchanged (17.6542ms)
+✔ luxury-jewellery/category: exact pre-change markup remains unchanged (15.1897ms)
+✔ luxury-jewellery/collection: exact pre-change markup remains unchanged (12.6309ms)
+✔ minimal-jewellery/product: exact pre-change markup remains unchanged (17.7929ms)
+✔ minimal-jewellery/category: exact pre-change markup remains unchanged (14.9213ms)
+✔ minimal-jewellery/collection: exact pre-change markup remains unchanged (12.6826ms)
+✔ soft-beauty/product: exact pre-change markup remains unchanged (19.4858ms)
+✔ soft-beauty/category: exact pre-change markup remains unchanged (16.3088ms)
+✔ soft-beauty/collection: exact pre-change markup remains unchanged (13.1787ms)
+✔ modern-electronics/product: exact pre-change markup remains unchanged (18.3621ms)
+✔ modern-electronics/category: exact pre-change markup remains unchanged (15.1238ms)
+✔ modern-electronics/collection: exact pre-change markup remains unchanged (13.0218ms)
+✔ fresh-grocery/product: exact pre-change markup remains unchanged (17.5962ms)
+✔ fresh-grocery/category: exact pre-change markup remains unchanged (12.9655ms)
+✔ fresh-grocery/collection: exact pre-change markup remains unchanged (12.8281ms)
+✔ product uses merchant content, real media, options, identifiers and editorial related cards (17.6473ms)
+✔ zero-price variant remains zero; unavailable stock removes purchase and quantity actions (31.1851ms)
+✔ missing media and long Bengali content retain readable text without unsafe HTML (38.1739ms)
+✔ existing product callbacks and quantity limits are forwarded without new commerce state (0.7131ms)
+✔ category preserves actual filters while collection contains only its supported sorting and paging (31.4385ms)
+✔ all supporting-page CSS rules require explicit Atelier root identity (39.5361ms)
+✔ capabilities preserve every supported variant for all presets and isolate each result (192.5833ms)
+✔ property classification covers canonical groups, identity, inheritance, and responsive controls (1.1313ms)
+✔ limited and no-builder controls agree with backend edit rules (8.1228ms)
+✔ safe edits round trip all saved preset identities and permit explicit selection/restore on full plans (167.6217ms)
+✔ snapshot validation prevents omitted restricted fields from silently resetting a saved composition (1.9725ms)
+✔ actual draft, publish and tenant-scoped restore reject restricted changes before writing (259.0819ms)
+✔ actual editor variant options equal the shared registry without a duplicate fallback (0.2336ms)
+✔ actual editor markup applies capability gates and explains composition (42.9056ms)
+✔ actual limited-plan section editor and sidebar disable structural mutations but allow featured content (20.1339ms)
+✔ legacy card values remain explicit even when equal to another style default (4.2381ms)
+✔ explicit inheritance resolves style defaults over stale materialized values (3.2039ms)
+✔ style selection resets only style-owned fields and does not mutate the input (1.043ms)
+✔ an edit equal to the current default becomes an explicit override (0.7249ms)
+✔ an empty inheritance list preserves every explicit style value (0.3962ms)
+✔ inheritance metadata survives schema validation, serialization, and hydration (33.4174ms)
+✔ invalid inheritance metadata cannot target unrelated properties (1.1176ms)
+✔ applying a preset replaces prior card inheritance with the curated presentation (28.1423ms)
+✔ foreground edits reach the authoritative text color and survive persistence (152.8342ms)
+✔ explicit nested colors win within an update regardless of key order (1.9582ms)
+✔ nested text and price edits synchronize only unambiguous aliases (0.4728ms)
+✔ soft color alias precedence is deterministic and preserves the separate soft shade (1.5246ms)
+✔ incomplete input is retained without propagating invalid aliases (0.7017ms)
+✔ no-op updates preserve all nine saved presets and explicit edits are localized (29.9056ms)
+✔ explicit palette choices override generated shades while nested choices remain authoritative (7.6623ms)
+✔ generated brand colors retain the intentionally distinct checkout shade (0.3956ms)
+✔ all nine presets select a registered composition; three representatives select distinct structures (133.6404ms)
+✔ old preset IDs and unknown composition values keep the legacy structure until explicit reapplication (6.6315ms)
+✔ composition survives strict persistence and respects existing plan boundaries (79.9816ms)
+✔ composition partition preserves every section once, original indexes and residual merchant order (0.6204ms)
+✔ actual representative home renders contain distinct hierarchy with one hero and each merchant section once (319.7776ms)
+✔ empty and hidden featured content does not reserve composition columns or create fake content (37.2539ms)
+✔ composition forwards existing commerce callbacks, data and editor selection without replacements (10.8975ms)
+✔ actual layout editor changes reach catalog overrides after draft, publication and reload (490.582ms)
+✔ every exposed nested color changes a resolved style after strict schema publication (1838.4195ms)
+✔ card rating and review controls render independently and honor badge/border colors (23.0333ms)
+✔ variant options consume all four configured chip tokens (1.189ms)
+✔ actual product-card editor controls survive publication and change rendered cards (366.571ms)
+✔ actual typography editor changes survive publication into heading and body tokens (16.2354ms)
+✔ saved wide menu setting changes desktop dropdown composition without losing links (40.4287ms)
+✔ disabling the last hero slide stays disabled after publication without reviving legacy copy (17.0004ms)
+✔ manual review source overrides selected reviews while selected mode keeps its fallback (1.7365ms)
+✔ every explicitly selected featured product is rendered after publication (53.0344ms)
+✔ checkout mobile action consumes checkout colors and shape, and all page headings share typography (0.9692ms)
+✔ preview section toolbar retains original draft indices when plans filter earlier sections (31.5318ms)
+✔ responsive editor commands survive schema publication and preserve explicit section overrides (18.7708ms)
+✔ responsive defaults preserve legacy composition and derived featured tablet columns (18.096ms)
+✔ invalid semantic responsive values are rejected and safely normalized on reads (0.3896ms)
+✔ one-column mobile grids remain one column until the tablet breakpoint (29.4546ms)
+✔ Phase 10 Modern General: publication, customization, content and five page presentations (242.6331ms)
+✔ Phase 10 Minimal General: publication, customization, content and five page presentations (149.7683ms)
+✔ Phase 10 Modern Fashion: publication, customization, content and five page presentations (229.8544ms)
+✔ Phase 10 Editorial Fashion: publication, customization, content and five page presentations (214.1185ms)
+✔ Phase 10 Luxury Jewellery: publication, customization, content and five page presentations (231.8035ms)
+✔ Phase 10 Minimal Jewellery: publication, customization, content and five page presentations (112.1906ms)
+✔ Phase 10 Soft Beauty: publication, customization, content and five page presentations (100.3008ms)
+✔ Phase 10 Modern Electronics: publication, customization, content and five page presentations (102.6593ms)
+✔ Phase 10 Fresh Grocery: publication, customization, content and five page presentations (201.1378ms)
+✔ variant-only inventory and initial attributes exclude disabled and archived variants (0.4368ms)
+(node:34572) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/lib/defaultPolicies.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-storefront\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ all new-store presentation defaults equal the shared contract; historical empty values survive (24.4113ms)
+✔ canonical layers distinguish omission, explicit default values, clears, and responsive values (3.4733ms)
+✔ legacy versions resolve without rewriting inputs or reapplying a preset over merchant edits (10.1697ms)
+✔ future schema versions remain identifiable on reads and are rejected for writes (1.5245ms)
+✔ safe unknown root and nested fields survive strict schema round trips in an opaque archive (20.0337ms)
+✔ compatibility data cannot introduce prototype or Mongo operator keys (0.4367ms)
+✔ all presets preserve presentation and responsive settings across plans and repeated resolution (119.6173ms)
+✔ limited-plan canonical no-op saves pass, actual restricted changes still fail (2.0197ms)
+✔ policy fallbacks are identical across Admin, storefront, and server; merchant text wins (16.1801ms)
+✔ public adapter and storefront facade resolve identically with tenant-scoped environment inputs (17.0528ms)
+✔ actual public settings, shop-info and bootstrap handlers return identical effective themes for two tenants (112.2799ms)
+✔ actual Builder preview passes canonical themes to every renderer across presets and plan contexts (455.8867ms)
+✔ save normalization rejects newer current/incoming themes before external work and allows safe read-only inspection (1.9861ms)
+✔ branding environment loader scopes asset and CTA lookups to each tenant (1.5911ms)
+✔ all nine published presets are styled in the initial HTML and survive serialized props identically (253.8843ms)
+✔ new server revisions and tenant snapshots render immediately without carrying prior theme state (11.0149ms)
+✔ tenant providers reject missing snapshots; platform pages retain their default theme (2.3859ms)
+✔ published settings use fresh, tenant-specific public requests and forward the custom host (3.9107ms)
+✔ direct nested routes render the server settings around children before any client effects (4.3326ms)
+✔ failed and malformed public lookups never render tenant children with a fallback theme (0.77ms)
+✔ missing or locked stores and custom-domain plan redirects retain backend access decisions (0.687ms)
+✔ tenant rewrites preserve the public redirect path and overwrite spoofed path headers (17.7144ms)
+✔ homepage bootstrap revision guards reject mixed snapshots instead of rendering mismatched section data (2.3398ms)
+✔ absent hero fields inherit legacy values only on the first slide (127.0125ms)
+✔ explicit empty hero strings stay cleared through repeated normalization (2.1961ms)
+✔ an explicit empty slide array is not repopulated from the legacy image (1.1522ms)
+✔ Builder, shared renderer, and contract preserve zero coordinates and false flags (0.6351ms)
+✔ Builder synchronization preserves explicit image and CTA clears (0.588ms)
+✔ null inherits nonnullable hero fields while existing nullable metadata can clear (0.5492ms)
+✔ Builder preserves typing whitespace and contract still sanitizes stored content (0.4855ms)
+✔ already normalized legacy slides retain explicit values in both consumers (0.3806ms)
+✔ all hero variants render cleared copy and links without reviving legacy values (21.1824ms)
+✔ Gallery cards render all nine real compositions with merchant hero content and catalog (522.7269ms)
+✔ all five Builder pages use live presentation for every preset, including explicit empty data (1066.9756ms)
+✔ preview product selection includes collections and products beyond the old ten-item truncation (14.2348ms)
+✔ shared product transformation preserves zero prices, variant stock and the existing sale formula (0.2405ms)
+✔ shared views forward live commerce callbacks without replacing them (0.9859ms)
+✔ presentation extraction leaves network, authentication, analytics and order creation in live adapters (3.1348ms)
+✔ shared styling contains provider aliases and local licensed fonts for both consumers (3.3811ms)
+✔ Builder bootstrap prepares public cards and draft-only selections with tenant-scoped queries and real public sanitization (278.8634ms)
+✔ live bootstrap fetches Collection and CollectionShowcase selections outside the catalog page (93.371ms)
+✔ private picker requests opt into public cards without altering ordinary Admin responses (2.0691ms)
+✔ shared trusted badge keeps verification, expiry, plan and subscription gates (0.6334ms)
+✔ modern-general/full: Gallery full preview, Builder and live home produce identical presentation markup (395.506ms)
+✔ modern-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (213.9909ms)
+✔ minimal-general/full: Gallery full preview, Builder and live home produce identical presentation markup (164.8864ms)
+✔ minimal-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (53.2518ms)
+✔ modern-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (64.6737ms)
+✔ modern-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (53.0058ms)
+✔ editorial-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (213.4414ms)
+✔ editorial-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (193.0717ms)
+✔ luxury-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (178.8945ms)
+✔ luxury-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (51.7993ms)
+✔ minimal-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (54.0183ms)
+✔ minimal-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (49.8951ms)
+✔ soft-beauty/full: Gallery full preview, Builder and live home produce identical presentation markup (59.3117ms)
+✔ soft-beauty/limited: Gallery full preview, Builder and live home produce identical presentation markup (52.3418ms)
+✔ modern-electronics/full: Gallery full preview, Builder and live home produce identical presentation markup (61.2326ms)
+✔ modern-electronics/limited: Gallery full preview, Builder and live home produce identical presentation markup (50.3035ms)
+✔ fresh-grocery/full: Gallery full preview, Builder and live home produce identical presentation markup (55.8781ms)
+✔ fresh-grocery/limited: Gallery full preview, Builder and live home produce identical presentation markup (184.9221ms)
+✔ atelier-editorial/full: Gallery full preview, Builder and live home produce identical presentation markup (162.008ms)
+✔ atelier-editorial/limited: Gallery full preview, Builder and live home produce identical presentation markup (188.3203ms)
+✔ empty stores do not acquire sample categories or an extra category composition slot in preview (28.6748ms)
+✔ Gallery rejects unavailable plans instead of fabricating a preview (0.4992ms)
+✔ new picker cards replace stale prices and excluded products without expanding the catalog page (42.6412ms)
+✔ mobile navigation uses live viewport anchoring and safe-area dimensions in the iframe (9.3863ms)
+✔ project viewport dimensions are explicit and stable; responsive HTML uses real CSS breakpoints (41.3445ms)
+✔ autosave and manual save are serialized and use the preceding returned version (4.4218ms)
+✔ publication drains an in-flight save, cancels queued saves and does not delete another draft (0.3675ms)
+✔ discard waits for writes and carries their version; closing a tenant cancels pending writes (0.2511ms)
+✔ failed saves do not advance concurrency tokens or poison the queue (0.5803ms)
+✔ revision watcher ignores failures, wrong tenants and older revisions, and refreshes newer revisions (0.3898ms)
+✔ revision watcher serializes checks and ignores late results after tenant navigation (0.2806ms)
+✔ draft filters require the authenticated tenant and an exact valid concurrency token (2.6886ms)
+✔ actual draft service rejects stale writers and publications racing draft writes (842.6249ms)
+✔ tenant middleware resolves reassigned domains from the database on every request (3.0243ms)
+✔ public revision handler exposes only the authorized tenant revision with no-store caching (94.0995ms)
+✔ configured Redis outages behave as cache misses without worker-local fallback copies (1.1023ms)
+✔ SEO draft writes reject concurrent replacement of the whole Builder draft (1.11ms)
+✔ a committed revision restore remains successful when cache invalidation fails (239.4471ms)
+✔ legacy themes receive current-equivalent structural defaults (3.9706ms)
+✔ all supported structural variants survive normalization with merchant content (6.8988ms)
+✔ unknown variants normalize safely and validation identifies direct invalid payloads (1.1834ms)
+✔ unsupported storefront sections fail closed while every registered legacy section has an explicit renderer (0.7388ms)
+✔ customer-facing product and trust empty states do not invent factual claims (0.8411ms)
+✔ storefront stock filter is interactive and reaches the existing tenant-scoped product query (0.5188ms)
+✔ limited Store Builder access cannot change structural variants directly (6.3436ms)
+✔ shared renderer consumes configuration variants without preset registry knowledge (0.9267ms)
+✔ Store Builder phone and tablet previews do not inherit outer desktop hero breakpoints (0.4125ms)
+✔ representative stores can select different structures using configuration alone (0.6869ms)
+✔ container width helpers activate supported values and preserve the legacy default (4.1859ms)
+✔ section spacing, width, padding, and margin use allowlisted design tokens (0.9867ms)
+✔ product column helpers respect section-specific settings and clamp unsafe values (0.373ms)
+✔ typography and product-card style normalize through safe supported values (5.077ms)
+✔ hero overlay opacity is bounded and consumed by a localized readability layer (0.5453ms)
+✔ shared renderer consumes Phase 2 controls without preset-ID conditionals (2.7551ms)
+✔ four diagnostic themes retain distinct resolved non-color design controls (2.9811ms)
+✔ partial nested Builder edits retain merchant siblings instead of reverting to defaults (97.782ms)
+✔ raw patch distinguishes absence from explicit values without normalizing typing (1.2279ms)
+✔ arrays replace atomically including empty values and inheritance metadata (0.247ms)
+✔ null clears only existing nullable paths and cannot reset an entire group (0.2148ms)
+✔ partial card edits become explicit unless the patch supplies inheritance metadata (4.5864ms)
+✔ patch results share no mutable objects with either input and ignore prototype keys (0.6211ms)
+✔ snapshot loads preserve the previous full-load behavior for sparse and saved themes (33.2921ms)
+✔ normalizing after the merge keeps sanitization in force (0.4249ms)
+✔ subdomain validation normalizes and blocks invalid or reserved names (1.2674ms)
+✔ subdomain availability returns available state and suggestions without exposing shops (1.1631ms)
+✔ auth routes and register controller enforce subdomain availability contract (0.9056ms)
+✔ landing registration UI checks store URL before sending OTP (0.6019ms)
+✔ subscription feature registry is the single typed plan capability source (1.1995ms)
+✔ feature statuses preserve disabling overrides but never let an override bypass a plan (0.3799ms)
+✔ usage thresholds are configurable and warnings expose backend-calculated usage (0.9157ms)
+✔ rich quota errors retain legacy fields and provide upgrade-ready data (0.2549ms)
+✔ domain event bus supports ordered modular subscribers without business coupling (0.6981ms)
+✔ subscription analytics maps business events without coupling to controllers (0.1434ms)
+✔ usage, event, analytics, and immutable audit interfaces are mounted compatibly (1.5123ms)
+◇ injected env (54) from .env // tip: ⌘ enable debugging { debug: true }
+✔ pending payment review preserves active Beginner trial entitlements only (1.2528ms)
+✔ legacy pending approval cannot extend access beyond trial expiry (0.1878ms)
+✔ legacy active subscriptions remain operational without activatedAt (0.1494ms)
+✔ legacy Trial plan markers resolve to Beginner without rewriting real paid plan references (0.1854ms)
+✔ capability registry is default-deny and canonical plans are complete (1.8554ms)
+✔ plan synchronization applies security config version and preserves commercial values (0.2751ms)
+✔ worker runs lock-protected lifecycle and handlers recheck before side effects (1.2481ms)
+✔ subscription and job schemas persist payment, reconciliation, and entitlement safety state (0.4734ms)
+✔ canonical subscription matrix uses exact launch prices, limits, and features (1.3473ms)
+✔ legacy plan names normalize safely and unlimited is represented only by null (0.288ms)
+✔ weekly AI usage resets on Sunday at 00:00 UTC (1.0273ms)
+✔ activity log cutoffs match plan retention without affecting platform logs (0.3884ms)
+✔ Starter Store Builder keeps essential controls and hides advanced public sections (5.1655ms)
+✔ public plan serializer exposes only public pricing and plan comparison fields (15.6268ms)
+✔ order pricing does not treat a missing scheduled-sale override as zero (0.4775ms)
+✔ restricted routes use backend plan features and quota middleware (0.8309ms)
+✔ purpose-specific Super Admin serializers omit protected shop and payment fields (1.9105ms)
+✔ operational serializers never expose job payloads, locks, reporters, or raw reconciliation metadata (0.6976ms)
+✔ sensitive credentials and operational payloads are default-hidden at the model boundary (1.0013ms)
+✔ verification serializer masks NID and omits permanent document locations (0.781ms)
+✔ audit rendering and outbox normalization redact sensitive nested metadata (0.523ms)
+✔ platform roles have scoped permissions instead of implicit SuperAdmin access (0.1719ms)
+✔ reporting month boundaries use the configured platform timezone (1.0023ms)
+✔ generic governance and invoice edits reject protected lifecycle fields (0.6375ms)
+✔ courier credentials are default-hidden and loaded only by dedicated courier paths (0.835ms)
+✔ platform overview uses a bounded reporting window with supporting indexes (0.7881ms)
+✔ Super Admin shop access uses effective plan entitlements instead of raw overrides (0.7138ms)
+✔ Super Admin configuration workspaces are separated from Platform Overview (0.5817ms)
+✔ operational recovery routes require scoped permissions and recent authentication (0.3722ms)
+✔ support roles are platform roles without unrestricted SuperAdmin access (1.2733ms)
+✔ support account roles are accepted by auth but remain separate from shop memberships (1.0201ms)
+✔ vendor and platform support routes are mounted with backend authorization (0.4999ms)
+✔ support tickets store conversations separately and hide internal notes from vendor APIs (0.5424ms)
+✔ invitation tokens are opaque, hashed, one-time, and email queued (0.9193ms)
+✔ assignment service uses active capacity statuses and deterministic skills (0.2937ms)
+✔ safe diagnostics and priority rules avoid raw browser storage or vendor critical abuse (1.1679ms)
+✔ worker processes support email queue without creating a duplicate queue system (1.1471ms)
+ℹ tests 717
+ℹ suites 0
+ℹ pass 712
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 52235.6503
+
+✖ failing tests:
+
+test at tests\ai-acceptance-provenance.test.js:11:1
+✖ empty Product output is never chargeable; every requested section is checked (7.9485ms)
+  AssertionError [ERR_ASSERTION]: seo
+  + actual - expected
+  
+  + 'provider'
+  - 'deterministic_fallback'
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\ai-acceptance-provenance.test.js:14:16)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'provider',
+    expected: 'deterministic_fallback',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\ai-preferences.test.js:27:1
+✖ all four generators use the same effective voice for English, Bangla, Banglish and mixed content (18.5896ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '5.0.0' !== '4.0.0'
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\ai-preferences.test.js:46:142)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '5.0.0',
+    expected: '4.0.0',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\security-hardening.test.js:339:1
+✖ low stock warnings are queued, tenant-scoped, and sent only on threshold crossing (2.4812ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /enqueueLowStockAlertsForLogs\(lowStockLogs\)/. Input:
+  
+  "const { sendAiOperationError } = require('../services/ai/aiHttpErrors');\n" +
+    "const Product = require('../models/Product');\n" +
+    "const Collection = require('../models/Collection');\n" +
+    "const Category = require('../models/Category');\n" +
+    "const User = require('../models/User');\n" +
+    "const StaffPermission = require('../models/StaffPermission');\n" +
+    "const { createProductSchema, updateProductSchema } = require('../validations/productValidation');\n" +
+    "const InventoryLog = require('../models/InventoryLog');\n" +
+    "const mongoose = require('mongoose');\n" +
+    "const cache = require('../services/cacheService');\n" +
+    "const { logAudit } = require('../services/auditLogService');\n" +
+    "const { buildPagination } = require('../utils/pagination');\n" +
+    'const {\n' +
+    '    parseProductPayload,\n' +
+    '    resolveVariantImageReferences,\n' +
+    '    getUniqueProductImageSources\n' +
+    "} = require('../services/products/productMediaService');\n" +
+    'const {\n' +
+    '    generateProductContentSuggestion\n' +
+    "} = require('../services/products/productContentAiService');\n" +
+    'const {\n' +
+    '    slugify,\n' +
+    '    getUniqueSlug,\n' +
+    '    getCachedCategories,\n' +
+    '    invalidateCachedCategories,\n' +
+    '    addComputedProductFields,\n' +
+    '    buildProductListQuery,\n' +
+    '    getProductSort,\n' +
+    '    getSummaryProjection\n' +
+    "} = require('../services/products/productQueryService');\n" +
+    "const { validateBulkUpdates, applyBulkProductUpdates } = require('../services/products/bulkProductUpdates');\n" +
+    'const {\n' +
+    '    normalizeIncomingVariant,\n' +
+    '    buildSimpleVariant,\n' +
+    '    snapshotVariantStock,\n' +
+    '    applyVariantOperations,\n' +
+    '    buildStockAdjustmentLogs,\n' +
+    '    expandMatrix,\n' +
+    '    normalizeProductOptions\n' +
+    "} = require('../services/products/productVariantService');\n" +
+    'const {\n' +
+    '    normalizeProductPublicationFields,\n' +
+    '    enqueueScheduledProductPublication\n' +
+    "} = require('../services/products/scheduledProductService');\n" +
+    'const {\n' +
+    '    enqueueLowStockAlertsForLogs\n' +
+    "} = require('../services/inventoryLowStockAlertService');\n" +
+    "const { applyScheduledSalesToProducts } = require('../services/sales/scheduledSaleService');\n" +
+    "const { getStorefrontPreviewCards } = require('../services/products/storefrontPreviewDataService');\n" +
+    'const {\n' +
+    '    getShopPlanAccess,\n' +
+    '    buildFeatureError,\n' +
+    '    buildLimitError\n' +
+    "} = require('../services/billing/planAccessService');\n" +
+    'const {\n' +
+    '    getWeeklyAiUsage\n' +
+    "} = require('../services/billing/planUsageService');\n" +
+    'const {\n' +
+    '    beginAiGeneration,\n' +
+    '    completeAiGeneration,\n' +
+    '    failAiGeneration,\n' +
+    '    getReplayResponse\n' +
+    "} = require('../services/ai/aiGenerationPolicyService');\n" +
+    "const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');\n" +
+    'const {\n' +
+    '    reserveQuota,\n' +
+    '    releaseQuotaSafely\n' +
+    "} = require('../services/billing/planQuotaReservationService');\n" +
+    "const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');\n" +
+    "const { assertHistoricalSlugAvailable, recordSlugRedirect } = require('../services/seo/slugRedirectService');\n" +
+    '\n' +
+    'const ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];\n' +
+    '\n' +
+    'const invalidateProductReadCaches = async shopId => {\n' +
+    '    invalidateCachedCategories(shopId);\n' +
+    '    return Promise.all([\n' +
+    '        cache.delPattern(`admin:dashboard-overview:${shopId}:*`),\n' +
+    '        cache.delPattern(`storefront:*:${shopId}:*`)\n' +
+    '    ]);\n' +
+    '};\n' +
+    '\n' +
+    'const normalizePageLimit = (value, fallback = 25) => {\n' +
+    '    const requested = parseInt(value, 10);\n' +
+    '    if (!Number.isFinite(requested) || requested <= 0) return fallback;\n' +
+    '    if (ALLOWED_PAGE_SIZES.includes(requested)) return requested;\n' +
+    '    return requested > Math.max(...ALLOWED_PAGE_SIZES)\n' +
+    '        ? Math.max(...ALLOWED_PAGE_SIZES)\n' +
+    '        : fallback;\n' +
+    '};\n' +
+    '\n' +
+    'const normalizeStorefrontPageLimit = (value, fallback = 9) => {\n' +
+    '    const requested = parseInt(value, 10);\n' +
+    '    if (!Number.isFinite(requested) || requested <= 0) return fallback;\n' +
+    '    return Math.min(requested, 48);\n' +
+    '};\n' +
+    '\n' +
+    '\n' +
+    '// ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...\n' +
+    '\n' +
+    "const resolveCoverMediaId = ({ images = [], videos = [], requestedCover = '', coverImageIndex }) => {\n" +
+    "    const media = [...(images || []), ...(videos || [])].map(item => String(item || '').trim()).filter(Boolean);\n" +
+    "    const requested = String(requestedCover || '').trim();\n" +
+    '    if (requested && media.includes(requested)) return requested;\n' +
+    '\n' +
+    '    const numericIndex = Number(coverImageIndex);\n' +
+    '    if (Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < (images || []).length) {\n' +
+    '        return images[numericIndex];\n' +
+    '    }\n' +
+    '\n' +
+    "    return images?.[0] || videos?.[0] || '';\n" +
+    '};\n' +
+    '\n' +
+    "const coverMediaBelongsToProduct = ({ images = [], videos = [], coverMediaId = '' }) => {\n" +
+    "    const cover = String(coverMediaId || '').trim();\n" +
+    '    if (!cover) return true;\n' +
+    "    return [...(images || []), ...(videos || [])].map(item => String(item || '').trim()).includes(cover);\n" +
+    '};\n' +
+    '\n' +
+    'const isSchedulingProductPublication = (payload = {}) => (\n' +
+    "    payload.publicationStatus === 'scheduled' || Boolean(payload.publishAt)\n" +
+    ');\n' +
+    '\n' +
+    'const vendorStaffHasPermission = async (req, permissionName) => {\n' +
+    "    if (req.user?.role !== 'VendorStaff') return true;\n" +
+    '\n' +
+    '    if (req.user.membershipId || req.user.membership_id) {\n' +
+    '        const staffPermission = await StaffPermission.findOne({\n' +
+    '            membership_id: req.user.membershipId || req.user.membership_id,\n' +
+    '            shop_id: req.tenantId\n' +
+    "        }).select('permissions').lean();\n" +
+    '        if (staffPermission?.permissions?.[permissionName]) return true;\n' +
+    '    }\n' +
+    '\n' +
+    "    const user = await User.findById(req.user._id).select('permissions').lean();\n" +
+    '    return Boolean(user?.permissions?.[permissionName]);\n' +
+    '};\n' +
+    '\n' +
+    'const ensureProductSchedulePermission = async (req, payload = {}) => {\n' +
+    '    if (!isSchedulingProductPublication(payload)) return true;\n' +
+    "    return vendorStaffHasPermission(req, 'productsSchedule');\n" +
+    '};\n' +
+    '\n' +
+    'const getPlanContext = async (req) => req.planAccess || getShopPlanAccess(req.tenantId);\n' +
+    '\n' +
+    'const assertProductImageLimit = async (req, productOrCount) => {\n' +
+    '    const context = await getPlanContext(req);\n' +
+    '    const limit = context.limits.imagesPerProduct;\n' +
+    "    const imageCount = typeof productOrCount === 'number'\n" +
+    '        ? productOrCount\n' +
+    '        : getUniqueProductImageSources(productOrCount).length;\n' +
+    '    if (limit !== null && Number(imageCount || 0) > Number(limit)) {\n' +
+    "        const error = new Error('Product image limit reached');\n" +
+    '        error.statusCode = 403;\n' +
+    "        error.payload = await buildLimitError(context, 'imagesPerProduct', Number(imageCount || 0), limit);\n" +
+    '        throw error;\n' +
+    '    }\n' +
+    '    return context;\n' +
+    '};\n' +
+    '\n' +
+    'const assertScheduledPublishingPlan = async (req, payload) => {\n' +
+    '    if (!isSchedulingProductPublication(payload)) return null;\n' +
+    '    const context = await getPlanContext(req);\n' +
+    '    return context.features.scheduledProductPublishing\n' +
+    '        ? null\n' +
+    "        : await buildFeatureError(context, 'scheduledProductPublishing');\n" +
+    '};\n' +
+    '\n' +
+    'const sendAiLimitError = async (req, res, error) => {\n' +
+    '    const context = await getPlanContext(req);\n' +
+    '    const usage = error.usage || await getWeeklyAiUsage({\n' +
+    '        shopId: req.tenantId,\n' +
+    '        limit: context.limits.aiProductCreationsPerWeek\n' +
+    '    });\n' +
+    '    const payload = await buildLimitError(\n' +
+    '        context,\n' +
+    "        'aiProductCreationsPerWeek',\n" +
+    '        usage,\n' +
+    '        context.limits.aiProductCreationsPerWeek\n' +
+    '    );\n' +
+    '    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {\n' +
+    '        req,\n' +
+    '        shopId: req.tenantId,\n' +
+    '        subscriptionId: context.subscription?._id,\n' +
+    '        planKey: context.planKey,\n' +
+    "        affectedResources: ['aiGeneration'],\n" +
+    "        metadata: { resource: 'aiGeneration', usage: payload.usage, notifyVendor: false }\n" +
+    '    });\n' +
+    '    return res.status(403).json(payload);\n' +
+    '};\n' +
+    '\n' +
+    '/**\n' +
+    ' * @desc    Generate Product Description via AI (OpenAI)\n' +
+    ' * @route   POST /api/admin/products/generate-description\n' +
+    ' * @access  Private (Admin)\n' +
+    ' */\n' +
+    'exports.generateDescription = async (req, res) => {\n' +
+    '    let generationState = null;\n' +
+    '    try {\n' +
+    '        const { title, category } = req.body;\n' +
+    '\n' +
+    '        if (!title) {\n' +
+    '            return res.status(400).json({ success: false, error: "Product title is required." });\n' +
+    '        }\n' +
+    '\n' +
+    '        generationState = await beginAiGeneration({\n' +
+    '            req,\n' +
+    "            feature: 'legacy.product_description'\n" +
+    '        });\n' +
+    '        const suggestion = await generateProductContentSuggestion({\n' +
+    '            operation: generationState,\n' +
+    '            body: {\n' +
+    '                title,\n' +
+    '                category,\n' +
+    "                requestedSections: JSON.stringify(['description'])\n" +
+    '            }\n' +
+    '        });\n' +
+    '        const payload = {\n' +
+    '            success: true,\n' +
+    "            description: suggestion.data?.description || '',\n" +
+    '            fallback: Boolean(suggestion.fallback),\n' +
+    '            meta: suggestion.meta\n' +
+    '        };\n' +
+    '        const usage = await completeAiGeneration({\n' +
+    '            req,\n' +
+    '            state: generationState,\n' +
+    '            result: payload,\n' +
+    '            meta: suggestion.meta\n' +
+    '        });\n' +
+    '        generationState = null;\n' +
+    "        res.set('Deprecation', 'true');\n" +
+    "        res.set('Sunset', 'Wed, 31 Dec 2026 23:59:59 GMT');\n" +
+    '        res.status(200).json({ ...payload, usage });\n' +
+    '\n' +
+    '    } catch (err) {\n' +
+    '        const replay = getReplayResponse(err);\n' +
+    '        if (replay) return res.status(200).json({ ...replay, replayed: true });\n' +
+    '        await failAiGeneration({ req, state: generationState, error: err });\n' +
+    '        if (sendAiOperationError(res, err)) return;\n' +
+    "        if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);\n" +
+    "        if (err?.code === 'AI_REQUEST_IN_PROGRESS') {\n" +
+    '            return res.status(409).json({ success: false, code: err.code, error: err.message });\n' +
+    '        }\n' +
+    "        if (err?.code === 'AI_NOT_CONFIGURED') {\n" +
+    '            return res.status(503).json({\n' +
+    '                success: false,\n' +
+    '                configured: false,\n' +
+    "                message: 'AI product suggestions are temporarily unavailable. Please contact support.'\n" +
+    '            });\n' +
+    '        }\n' +
+    "        console.warn('Legacy product AI failure', { requestId: req.id, code: err.code || 'AI_PROVIDER_FAILED' });\n" +
+    "        res.status(502).json({ success: false, code: err.code || 'AI_PROVIDER_FAILED', error: 'Failed to generate description. Please try again.' });\n" +
+    '    }\n' +
+    '};\n' +
+    '\n' +
+    '/**\n' +
+    ' * @desc    Ge'... 39386 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\security-hardening.test.js:371:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'const { sendAiOperationError } = require(\'../services/ai/aiHttpErrors\');\nconst Product = require(\'../models/Product\');\nconst Collection = require(\'../models/Collection\');\nconst Category = require(\'../models/Category\');\nconst User = require(\'../models/User\');\nconst StaffPermission = require(\'../models/StaffPermission\');\nconst { createProductSchema, updateProductSchema } = require(\'../validations/productValidation\');\nconst InventoryLog = require(\'../models/InventoryLog\');\nconst mongoose = require(\'mongoose\');\nconst cache = require(\'../services/cacheService\');\nconst { logAudit } = require(\'../services/auditLogService\');\nconst { buildPagination } = require(\'../utils/pagination\');\nconst {\n    parseProductPayload,\n    resolveVariantImageReferences,\n    getUniqueProductImageSources\n} = require(\'../services/products/productMediaService\');\nconst {\n    generateProductContentSuggestion\n} = require(\'../services/products/productContentAiService\');\nconst {\n    slugify,\n    getUniqueSlug,\n    getCachedCategories,\n    invalidateCachedCategories,\n    addComputedProductFields,\n    buildProductListQuery,\n    getProductSort,\n    getSummaryProjection\n} = require(\'../services/products/productQueryService\');\nconst { validateBulkUpdates, applyBulkProductUpdates } = require(\'../services/products/bulkProductUpdates\');\nconst {\n    normalizeIncomingVariant,\n    buildSimpleVariant,\n    snapshotVariantStock,\n    applyVariantOperations,\n    buildStockAdjustmentLogs,\n    expandMatrix,\n    normalizeProductOptions\n} = require(\'../services/products/productVariantService\');\nconst {\n    normalizeProductPublicationFields,\n    enqueueScheduledProductPublication\n} = require(\'../services/products/scheduledProductService\');\nconst {\n    enqueueLowStockAlertsForLogs\n} = require(\'../services/inventoryLowStockAlertService\');\nconst { applyScheduledSalesToProducts } = require(\'../services/sales/scheduledSaleService\');\nconst { getStorefrontPreviewCards } = require(\'../services/products/storefrontPreviewDataService\');\nconst {\n    getShopPlanAccess,\n    buildFeatureError,\n    buildLimitError\n} = require(\'../services/billing/planAccessService\');\nconst {\n    getWeeklyAiUsage\n} = require(\'../services/billing/planUsageService\');\nconst {\n    beginAiGeneration,\n    completeAiGeneration,\n    failAiGeneration,\n    getReplayResponse\n} = require(\'../services/ai/aiGenerationPolicyService\');\nconst { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require(\'../services/billing/subscriptionEvents\');\nconst {\n    reserveQuota,\n    releaseQuotaSafely\n} = require(\'../services/billing/planQuotaReservationService\');\nconst { mergeCategoryDetails, normalizeCategoryKey } = require(\'../services/categories/categoryService\');\nconst { assertHistoricalSlugAvailable, recordSlugRedirect } = require(\'../services/seo/slugRedirectService\');\n\nconst ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];\n\nconst invalidateProductReadCaches = async shopId => {\n    invalidateCachedCategories(shopId);\n    return Promise.all([\n        cache.delPattern(`admin:dashboard-overview:${shopId}:*`),\n        cache.delPattern(`storefront:*:${shopId}:*`)\n    ]);\n};\n\nconst normalizePageLimit = (value, fallback = 25) => {\n    const requested = parseInt(value, 10);\n    if (!Number.isFinite(requested) || requested <= 0) return fallback;\n    if (ALLOWED_PAGE_SIZES.includes(requested)) return requested;\n    return requested > Math.max(...ALLOWED_PAGE_SIZES)\n        ? Math.max(...ALLOWED_PAGE_SIZES)\n        : fallback;\n};\n\nconst normalizeStorefrontPageLimit = (value, fallback = 9) => {\n    const requested = parseInt(value, 10);\n    if (!Number.isFinite(requested) || requested <= 0) return fallback;\n    return Math.min(requested, 48);\n};\n\n\n// ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...\n\nconst resolveCoverMediaId = ({ images = [], videos = [], requestedCover = \'\', coverImageIndex }) => {\n    const media = [...(images || []), ...(videos || [])].map(item => String(item || \'\').trim()).filter(Boolean);\n    const requested = String(requestedCover || \'\').trim();\n    if (requested && media.includes(requested)) return requested;\n\n    const numericIndex = Number(coverImageIndex);\n    if (Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < (images || []).length) {\n        return images[numericIndex];\n    }\n\n    return images?.[0] || videos?.[0] || \'\';\n};\n\nconst coverMediaBelongsToProduct = ({ images = [], videos = [], coverMediaId = \'\' }) => {\n    const cover = String(coverMediaId || \'\').trim();\n    if (!cover) return true;\n    return [...(images || []), ...(videos || [])].map(item => String(item || \'\').trim()).includes(cover);\n};\n\nconst isSchedulingProductPublication = (payload = {}) => (\n    payload.publicationStatus === \'scheduled\' || Boolean(payload.publishAt)\n);\n\nconst vendorStaffHasPermission = async (req, permissionName) => {\n    if (req.user?.role !== \'VendorStaff\') return true;\n\n    if (req.user.membershipId || req.user.membership_id) {\n        const staffPermission = await StaffPermission.findOne({\n            membership_id: req.user.membershipId || req.user.membership_id,\n            shop_id: req.tenantId\n        }).select(\'permissions\').lean();\n        if (staffPermission?.permissions?.[permissionName]) return true;\n    }\n\n    const user = await User.findById(req.user._id).select(\'permissions\').lean();\n    return Boolean(user?.permissions?.[permissionName]);\n};\n\nconst ensureProductSchedulePermission = async (req, payload = {}) => {\n    if (!isSchedulingProductPublication(payload)) return true;\n    return vendorStaffHasPermission(req, \'productsSchedule\');\n};\n\nconst getPlanContext = async (req) => req.planAccess || getShopPlanAccess(req.tenantId);\n\nconst assertProductImageLimit = async (req, productOrCount) => {\n    const context = await getPlanContext(req);\n    const limit = context.limits.imagesPerProduct;\n    const imageCount = typeof productOrCount === \'number\'\n        ? productOrCount\n        : getUniqueProductImageSources(productOrCount).length;\n    if (limit !== null && Number(imageCount || 0) > Number(limit)) {\n        const error = new Error(\'Product image limit reached\');\n        error.statusCode = 403;\n        error.payload = await buildLimitError(context, \'imagesPerProduct\', Number(imageCount || 0), limit);\n        throw error;\n    }\n    return context;\n};\n\nconst assertScheduledPublishingPlan = async (req, payload) => {\n    if (!isSchedulingProductPublication(payload)) return null;\n    const context = await getPlanContext(req);\n    return context.features.scheduledProductPublishing\n        ? null\n        : await buildFeatureError(context, \'scheduledProductPublishing\');\n};\n\nconst sendAiLimitError = async (req, res, error) => {\n    const context = await getPlanContext(req);\n    const usage = error.usage || await getWeeklyAiUsage({\n        shopId: req.tenantId,\n        limit: context.limits.aiProductCreationsPerWeek\n    });\n    const payload = await buildLimitError(\n        context,\n        \'aiProductCreationsPerWeek\',\n        usage,\n        context.limits.aiProductCreationsPerWeek\n    );\n    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {\n        req,\n        shopId: req.tenantId,\n        subscriptionId: context.subscription?._id,\n        planKey: context.planKey,\n        affectedResources: [\'aiGeneration\'],\n        metadata: { resource: \'aiGeneration\', usage: payload.usage, notifyVendor: false }\n    });\n    return res.status(403).json(payload);\n};\n\n/**\n * @desc    Generate Product Description via AI (OpenAI)\n * @route   POST /api/admin/products/generate-description\n * @access  Private (Admin)\n */\nexports.generateDescription = async (req, res) => {\n    let generationState = null;\n    try {\n        const { title, category } = req.body;\n\n        if (!title) {\n            return res.status(400).json({ success: false, error: "Product title is required." });\n        }\n\n        generationState = await beginAiGeneration({\n            req,\n            feature: \'legacy.product_description\'\n        });\n        const suggestion = await generateProductContentSuggestion({\n            operation: generationState,\n            body: {\n                title,\n                category,\n                requestedSections: JSON.stringify([\'description\'])\n            }\n        });\n        const payload = {\n            success: true,\n            description: suggestion.data?.description || \'\',\n            fallback: Boolean(suggestion.fallback),\n            meta: suggestion.meta\n        };\n        const usage = await completeAiGeneration({\n            req,\n            state: generationState,\n            result: payload,\n            meta: suggestion.meta\n        });\n        generationState = null;\n        res.set(\'Deprecation\', \'true\');\n        res.set(\'Sunset\', \'Wed, 31 Dec 2026 23:59:59 GMT\');\n        res.status(200).json({ ...payload, usage });\n\n    } catch (err) {\n        const replay = getReplayResponse(err);\n        if (replay) return res.status(200).json({ ...replay, replayed: true });\n        await failAiGeneration({ req, state: generationState, error: err });\n        if (sendAiOperationError(res, err)) return;\n        if (err?.code === \'PLAN_LIMIT_REACHED\') return sendAiLimitError(req, res, err);\n        if (err?.code === \'AI_REQUEST_IN_PROGRESS\') {\n            return res.status(409).json({ success: false, code: err.code, error: err.message });\n        }\n        if (err?.code === \'AI_NOT_CONFIGURED\') {\n            return res.status(503).json({\n                success: false,\n                configured: false,\n                message: \'AI product suggestions are temporarily unavailable. Please contact support.\'\n            });\n        }\n        console.warn(\'Legacy product AI failure\', { requestId: req.id, code: err.code || \'AI_PROVIDER_FAILED\' });\n        res.status(502).json({ success: false, code: err.code || \'AI_PROVIDER_FAILED\', error: \'Failed to generate description. Please try again.\' });\n    }\n};\n\n/**\n * @desc    Ge'... 39386 more characters,
+    expected: /enqueueLowStockAlertsForLogs\(lowStockLogs\)/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\security-hardening.test.js:377:1
+✖ promotion scheduling is enforced by backend checkout evaluation and exposed in admin UI (1.217ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /checkout will not apply them before the start time/i. Input:
+  
+  "import { useCallback, useEffect, useMemo, useRef, useState } from 'react';\r\n" +
+    'import {\r\n' +
+    '    AlertCircle, ArrowRight, BadgePercent, CalendarClock, Check, CheckCircle2,\r\n' +
+    '    ChevronDown, ChevronLeft, ChevronRight, Clock3, Copy, Gift, Layers,\r\n' +
+    '    Loader2, LockKeyhole, Package, Pause, Play, Plus, RefreshCw, Search,\r\n' +
+    '    ShieldCheck, ShoppingBag, Sparkles, Tag, TicketPercent, Trash2, X\r\n' +
+    "} from 'lucide-react';\r\n" +
+    "import { Link } from 'react-router-dom';\r\n" +
+    "import { toast } from 'react-hot-toast';\r\n" +
+    "import API from '../../api/api';\r\n" +
+    "import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';\r\n" +
+    "import { useAuth } from '../../context/AuthContext.jsx';\r\n" +
+    "import { hasFeature } from '../../utils/featureAccess.js';\r\n" +
+    "import { hasStaffPermission } from '../../utils/staffPermissions.js';\r\n" +
+    "import { getBrowserTimeZoneLabel, localDateTimeToUtcIso } from '../../utils/dateTime.js';\r\n" +
+    '\r\n' +
+    '// Keeps the API payloads identical to the existing Promotions page.\r\n' +
+    'const newCoupon = () => ({\r\n' +
+    "    name: '', code: '', type: 'PERCENTAGE', value: 0, minSubtotal: 0,\r\n" +
+    "    startsAt: '', expiresAt: '', usageLimit: '', isActive: true,\r\n" +
+    "    appliesTo: { scope: 'ALL', categories: [] },\r\n" +
+    '    buyXGetY: { buyQuantity: 1, getQuantity: 1, getDiscountPercent: 100 }\r\n' +
+    '});\r\n' +
+    '\r\n' +
+    'const newSale = () => ({\r\n' +
+    "    name: '', scope: 'all_products', productIds: [], collectionIds: [],\r\n" +
+    "    discountType: 'percentage', discountValue: 10, priority: 0,\r\n" +
+    "    startsAt: '', endsAt: '',\r\n" +
+    '    popup: {\r\n' +
+    "        enabled: false, title: '', message: '', ctaLabel: 'Shop sale',\r\n" +
+    "        ctaUrl: '#products', frequency: 'once_per_session', timing: 'active',\r\n" +
+    "        displayStartsAt: '', desktopImage: '', mobileImage: ''\r\n" +
+    '    }\r\n' +
+    '});\r\n' +
+    '\r\n' +
+    "const inputClass = 'block min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60';\r\n" +
+    "const secondaryButton = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50';\r\n" +
+    "const primaryButton = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50';\r\n" +
+    '\r\n' +
+    "const money = value => `৳${(Number(value) || 0).toLocaleString('en-BD', { maximumFractionDigits: 2 })}`;\r\n" +
+    'const validDate = value => value && Number.isFinite(new Date(value).getTime());\r\n' +
+    "const dateLabel = value => validDate(value) ? new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set';\r\n" +
+    '\r\n' +
+    'function validateWindow(start, end, required = false) {\r\n' +
+    "    if (required && (!start || !end)) return 'Choose both the start and end time.';\r\n" +
+    "    if (start && !validDate(start)) return 'Choose a valid start time.';\r\n" +
+    "    if (end && !validDate(end)) return 'Choose a valid end time.';\r\n" +
+    '    if (start && end && new Date(start).getTime() >= new Date(end).getTime()) {\r\n' +
+    "        return 'The end time must be later than the start time.';\r\n" +
+    '    }\r\n' +
+    '    return null;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function safeImageUrl(value) {\r\n' +
+    '    if (!value) return true;\r\n' +
+    '    const trimmed = value.trim();\r\n' +
+    '    if (/\\s/.test(trimmed) || [...trimmed].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return false;\r\n' +
+    "    if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\\\')) return true;\r\n" +
+    '    try {\r\n' +
+    '        const url = new URL(trimmed);\r\n' +
+    "        return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;\r\n" +
+    '    } catch {\r\n' +
+    '        return false;\r\n' +
+    '    }\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function safePopupLink(value) {\r\n' +
+    '    if (!value) return true;\r\n' +
+    '    const link = value.trim();\r\n' +
+    "    if (!link || link.length > 500 || /\\s/.test(link) || link.includes('\\\\')) return false;\r\n" +
+    "    if ((link.startsWith('/') && !link.startsWith('//')) || link.startsWith('#')) return true;\r\n" +
+    '    try {\r\n' +
+    '        const url = new URL(link);\r\n' +
+    "        return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;\r\n" +
+    '    } catch {\r\n' +
+    '        return false;\r\n' +
+    '    }\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function couponStatus(promotion, now) {\r\n' +
+    "    if (!promotion.isActive) return 'Paused';\r\n" +
+    '    const startsAt = promotion.startsAt ? new Date(promotion.startsAt).getTime() : null;\r\n' +
+    '    const expiresAt = promotion.expiresAt ? new Date(promotion.expiresAt).getTime() : null;\r\n' +
+    "    if (expiresAt !== null && Number.isFinite(expiresAt) && expiresAt <= now) return 'Expired';\r\n" +
+    "    if (Number(promotion.usageLimit) > 0 && Number(promotion.usageCount || 0) >= Number(promotion.usageLimit)) return 'Limit reached';\r\n" +
+    "    if (startsAt !== null && Number.isFinite(startsAt) && startsAt > now) return 'Scheduled';\r\n" +
+    "    return 'Active';\r\n" +
+    '}\r\n' +
+    '\r\n' +
+    'function couponValue(promotion) {\r\n' +
+    '    switch (promotion.type) {\r\n' +
+    "        case 'PERCENTAGE': return `${Number(promotion.value) || 0}% off`;\r\n" +
+    "        case 'FIXED_AMOUNT': return `${money(promotion.value)} off`;\r\n" +
+    "        case 'FREE_SHIPPING': return 'Free shipping';\r\n" +
+    "        case 'FIRST_ORDER': return 'First-order offer';\r\n" +
+    "        case 'BUY_X_GET_Y': return `Buy ${promotion.buyXGetY?.buyQuantity || 1}, get ${promotion.buyXGetY?.getQuantity || 1}`;\r\n" +
+    "        default: return String(promotion.type || 'Offer').replaceAll('_', ' ');\r\n" +
+    '    }\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'const tones = {\r\n' +
+    "    Active: 'border-emerald-100 bg-emerald-50 text-emerald-700',\r\n" +
+    "    Scheduled: 'border-blue-100 bg-blue-50 text-blue-700',\r\n" +
+    "    Paused: 'border-slate-200 bg-slate-100 text-slate-600',\r\n" +
+    "    Expired: 'border-rose-100 bg-rose-50 text-rose-700',\r\n" +
+    "    'Limit reached': 'border-amber-100 bg-amber-50 text-amber-700'\r\n" +
+    '};\r\n' +
+    '\r\n' +
+    'function StatusPill({ label }) {\r\n' +
+    "    return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${tones[label] || 'border-slate-200 bg-slate-100 text-slate-600'}`}>\r\n" +
+    '        <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />{label}\r\n' +
+    '    </span>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function Field({ label, hint, required = false, children }) {\r\n' +
+    '    return <label className="block min-w-0 space-y-1.5">\r\n' +
+    '        <span className="block text-xs font-bold tracking-wide text-slate-700">{label}{required && <span className="ml-1 text-rose-500" aria-hidden="true">*</span>}</span>\r\n' +
+    '        {children}\r\n' +
+    '        {hint && <span className="block text-xs leading-relaxed text-slate-500">{hint}</span>}\r\n' +
+    '    </label>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function SectionHeading({ icon: Icon, title, description, accessory }) {\r\n' +
+    '    return <div className="flex flex-wrap items-start justify-between gap-3">\r\n' +
+    '        <div className="flex min-w-0 items-start gap-3">\r\n' +
+    '            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Icon size={18} /></div>\r\n' +
+    '            <div><h3 className="font-bold tracking-tight text-slate-900">{title}</h3>{description && <p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p>}</div>\r\n' +
+    '        </div>{accessory}\r\n' +
+    '    </div>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    "function Metric({ icon: Icon, title, value, note, tone = 'blue' }) {\r\n" +
+    "    const colors = tone === 'green' ? 'bg-emerald-50 text-emerald-600' : tone === 'amber' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600';\r\n" +
+    '    return <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">\r\n' +
+    '        <div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-500">{title}</span><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${colors}`}><Icon size={18} /></span></div>\r\n' +
+    '        <div className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 tabular-nums">{value}</div>\r\n' +
+    '        <p className="mt-1 text-xs text-slate-500">{note}</p>\r\n' +
+    '    </div>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function ConfirmDialog({ target, busy, onCancel, onConfirm }) {\r\n' +
+    '    const cancelRef = useRef(null);\r\n' +
+    '    const dialogRef = useRef(null);\r\n' +
+    '    const busyRef = useRef(busy);\r\n' +
+    '    useEffect(() => { busyRef.current = busy; }, [busy]);\r\n' +
+    '    useEffect(() => {\r\n' +
+    '        if (!target) return undefined;\r\n' +
+    '        const previousFocus = document.activeElement;\r\n' +
+    '        const previousOverflow = document.body.style.overflow;\r\n' +
+    "        document.body.style.overflow = 'hidden';\r\n" +
+    '        cancelRef.current?.focus();\r\n' +
+    '        const onKeyDown = event => {\r\n' +
+    "            if (event.key === 'Escape' && !busyRef.current) { event.preventDefault(); onCancel(); }\r\n" +
+    "            if (event.key !== 'Tab') return;\r\n" +
+    "            const elements = Array.from(dialogRef.current?.querySelectorAll('button:not(:disabled)') || []);\r\n" +
+    '            if (!elements.length) return;\r\n' +
+    '            const first = elements[0];\r\n' +
+    '            const last = elements[elements.length - 1];\r\n' +
+    '            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }\r\n' +
+    '            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }\r\n' +
+    '        };\r\n' +
+    "        document.addEventListener('keydown', onKeyDown);\r\n" +
+    '        return () => {\r\n' +
+    "            document.removeEventListener('keydown', onKeyDown);\r\n" +
+    '            document.body.style.overflow = previousOverflow;\r\n' +
+    '            previousFocus?.focus?.();\r\n' +
+    '        };\r\n' +
+    '    }, [target, onCancel]);\r\n' +
+    '    if (!target) return null;\r\n' +
+    '    return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[2px]">\r\n' +
+    '        <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="promotion-dialog-title" aria-describedby="promotion-dialog-desc" className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">\r\n' +
+    '            <div '... 61120 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\security-hardening.test.js:392:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { useCallback, useEffect, useMemo, useRef, useState } from \'react\';\r\nimport {\r\n    AlertCircle, ArrowRight, BadgePercent, CalendarClock, Check, CheckCircle2,\r\n    ChevronDown, ChevronLeft, ChevronRight, Clock3, Copy, Gift, Layers,\r\n    Loader2, LockKeyhole, Package, Pause, Play, Plus, RefreshCw, Search,\r\n    ShieldCheck, ShoppingBag, Sparkles, Tag, TicketPercent, Trash2, X\r\n} from \'lucide-react\';\r\nimport { Link } from \'react-router-dom\';\r\nimport { toast } from \'react-hot-toast\';\r\nimport API from \'../../api/api\';\r\nimport { AdminEmptyState, AdminLoadingState } from \'../../components/ui/AdminState.jsx\';\r\nimport { useAuth } from \'../../context/AuthContext.jsx\';\r\nimport { hasFeature } from \'../../utils/featureAccess.js\';\r\nimport { hasStaffPermission } from \'../../utils/staffPermissions.js\';\r\nimport { getBrowserTimeZoneLabel, localDateTimeToUtcIso } from \'../../utils/dateTime.js\';\r\n\r\n// Keeps the API payloads identical to the existing Promotions page.\r\nconst newCoupon = () => ({\r\n    name: \'\', code: \'\', type: \'PERCENTAGE\', value: 0, minSubtotal: 0,\r\n    startsAt: \'\', expiresAt: \'\', usageLimit: \'\', isActive: true,\r\n    appliesTo: { scope: \'ALL\', categories: [] },\r\n    buyXGetY: { buyQuantity: 1, getQuantity: 1, getDiscountPercent: 100 }\r\n});\r\n\r\nconst newSale = () => ({\r\n    name: \'\', scope: \'all_products\', productIds: [], collectionIds: [],\r\n    discountType: \'percentage\', discountValue: 10, priority: 0,\r\n    startsAt: \'\', endsAt: \'\',\r\n    popup: {\r\n        enabled: false, title: \'\', message: \'\', ctaLabel: \'Shop sale\',\r\n        ctaUrl: \'#products\', frequency: \'once_per_session\', timing: \'active\',\r\n        displayStartsAt: \'\', desktopImage: \'\', mobileImage: \'\'\r\n    }\r\n});\r\n\r\nconst inputClass = \'block min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60\';\r\nconst secondaryButton = \'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50\';\r\nconst primaryButton = \'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50\';\r\n\r\nconst money = value => `৳${(Number(value) || 0).toLocaleString(\'en-BD\', { maximumFractionDigits: 2 })}`;\r\nconst validDate = value => value && Number.isFinite(new Date(value).getTime());\r\nconst dateLabel = value => validDate(value) ? new Date(value).toLocaleString(undefined, { dateStyle: \'medium\', timeStyle: \'short\' }) : \'Not set\';\r\n\r\nfunction validateWindow(start, end, required = false) {\r\n    if (required && (!start || !end)) return \'Choose both the start and end time.\';\r\n    if (start && !validDate(start)) return \'Choose a valid start time.\';\r\n    if (end && !validDate(end)) return \'Choose a valid end time.\';\r\n    if (start && end && new Date(start).getTime() >= new Date(end).getTime()) {\r\n        return \'The end time must be later than the start time.\';\r\n    }\r\n    return null;\r\n}\r\n\r\nfunction safeImageUrl(value) {\r\n    if (!value) return true;\r\n    const trimmed = value.trim();\r\n    if (/\\s/.test(trimmed) || [...trimmed].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return false;\r\n    if (trimmed.startsWith(\'/\') && !trimmed.startsWith(\'//\') && !trimmed.startsWith(\'/\\\\\')) return true;\r\n    try {\r\n        const url = new URL(trimmed);\r\n        return url.protocol === \'https:\' && Boolean(url.hostname) && !url.username && !url.password;\r\n    } catch {\r\n        return false;\r\n    }\r\n}\r\n\r\nfunction safePopupLink(value) {\r\n    if (!value) return true;\r\n    const link = value.trim();\r\n    if (!link || link.length > 500 || /\\s/.test(link) || link.includes(\'\\\\\')) return false;\r\n    if ((link.startsWith(\'/\') && !link.startsWith(\'//\')) || link.startsWith(\'#\')) return true;\r\n    try {\r\n        const url = new URL(link);\r\n        return url.protocol === \'https:\' && Boolean(url.hostname) && !url.username && !url.password;\r\n    } catch {\r\n        return false;\r\n    }\r\n}\r\n\r\nfunction couponStatus(promotion, now) {\r\n    if (!promotion.isActive) return \'Paused\';\r\n    const startsAt = promotion.startsAt ? new Date(promotion.startsAt).getTime() : null;\r\n    const expiresAt = promotion.expiresAt ? new Date(promotion.expiresAt).getTime() : null;\r\n    if (expiresAt !== null && Number.isFinite(expiresAt) && expiresAt <= now) return \'Expired\';\r\n    if (Number(promotion.usageLimit) > 0 && Number(promotion.usageCount || 0) >= Number(promotion.usageLimit)) return \'Limit reached\';\r\n    if (startsAt !== null && Number.isFinite(startsAt) && startsAt > now) return \'Scheduled\';\r\n    return \'Active\';\r\n}\r\n\r\nfunction couponValue(promotion) {\r\n    switch (promotion.type) {\r\n        case \'PERCENTAGE\': return `${Number(promotion.value) || 0}% off`;\r\n        case \'FIXED_AMOUNT\': return `${money(promotion.value)} off`;\r\n        case \'FREE_SHIPPING\': return \'Free shipping\';\r\n        case \'FIRST_ORDER\': return \'First-order offer\';\r\n        case \'BUY_X_GET_Y\': return `Buy ${promotion.buyXGetY?.buyQuantity || 1}, get ${promotion.buyXGetY?.getQuantity || 1}`;\r\n        default: return String(promotion.type || \'Offer\').replaceAll(\'_\', \' \');\r\n    }\r\n}\r\n\r\nconst tones = {\r\n    Active: \'border-emerald-100 bg-emerald-50 text-emerald-700\',\r\n    Scheduled: \'border-blue-100 bg-blue-50 text-blue-700\',\r\n    Paused: \'border-slate-200 bg-slate-100 text-slate-600\',\r\n    Expired: \'border-rose-100 bg-rose-50 text-rose-700\',\r\n    \'Limit reached\': \'border-amber-100 bg-amber-50 text-amber-700\'\r\n};\r\n\r\nfunction StatusPill({ label }) {\r\n    return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${tones[label] || \'border-slate-200 bg-slate-100 text-slate-600\'}`}>\r\n        <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />{label}\r\n    </span>;\r\n}\r\n\r\nfunction Field({ label, hint, required = false, children }) {\r\n    return <label className="block min-w-0 space-y-1.5">\r\n        <span className="block text-xs font-bold tracking-wide text-slate-700">{label}{required && <span className="ml-1 text-rose-500" aria-hidden="true">*</span>}</span>\r\n        {children}\r\n        {hint && <span className="block text-xs leading-relaxed text-slate-500">{hint}</span>}\r\n    </label>;\r\n}\r\n\r\nfunction SectionHeading({ icon: Icon, title, description, accessory }) {\r\n    return <div className="flex flex-wrap items-start justify-between gap-3">\r\n        <div className="flex min-w-0 items-start gap-3">\r\n            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Icon size={18} /></div>\r\n            <div><h3 className="font-bold tracking-tight text-slate-900">{title}</h3>{description && <p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p>}</div>\r\n        </div>{accessory}\r\n    </div>;\r\n}\r\n\r\nfunction Metric({ icon: Icon, title, value, note, tone = \'blue\' }) {\r\n    const colors = tone === \'green\' ? \'bg-emerald-50 text-emerald-600\' : tone === \'amber\' ? \'bg-amber-50 text-amber-600\' : \'bg-blue-50 text-blue-600\';\r\n    return <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">\r\n        <div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-500">{title}</span><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${colors}`}><Icon size={18} /></span></div>\r\n        <div className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 tabular-nums">{value}</div>\r\n        <p className="mt-1 text-xs text-slate-500">{note}</p>\r\n    </div>;\r\n}\r\n\r\nfunction ConfirmDialog({ target, busy, onCancel, onConfirm }) {\r\n    const cancelRef = useRef(null);\r\n    const dialogRef = useRef(null);\r\n    const busyRef = useRef(busy);\r\n    useEffect(() => { busyRef.current = busy; }, [busy]);\r\n    useEffect(() => {\r\n        if (!target) return undefined;\r\n        const previousFocus = document.activeElement;\r\n        const previousOverflow = document.body.style.overflow;\r\n        document.body.style.overflow = \'hidden\';\r\n        cancelRef.current?.focus();\r\n        const onKeyDown = event => {\r\n            if (event.key === \'Escape\' && !busyRef.current) { event.preventDefault(); onCancel(); }\r\n            if (event.key !== \'Tab\') return;\r\n            const elements = Array.from(dialogRef.current?.querySelectorAll(\'button:not(:disabled)\') || []);\r\n            if (!elements.length) return;\r\n            const first = elements[0];\r\n            const last = elements[elements.length - 1];\r\n            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }\r\n            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }\r\n        };\r\n        document.addEventListener(\'keydown\', onKeyDown);\r\n        return () => {\r\n            document.removeEventListener(\'keydown\', onKeyDown);\r\n            document.body.style.overflow = previousOverflow;\r\n            previousFocus?.focus?.();\r\n        };\r\n    }, [target, onCancel]);\r\n    if (!target) return null;\r\n    return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[2px]">\r\n        <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="promotion-dialog-title" aria-describedby="promotion-dialog-desc" className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">\r\n            <div '... 61120 more characters,
+    expected: /checkout will not apply them before the start time/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\security-hardening.test.js:883:1
+✖ confirmed order status email is sent through status update endpoint once (1.4153ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Retry Courier/. Input:
+  
+  "import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';\r\n" +
+    'import {\r\n' +
+    '    CheckCircle,\r\n' +
+    '    Clock,\r\n' +
+    '    Eye,\r\n' +
+    '    Package,\r\n' +
+    '    Search,\r\n' +
+    '    Send,\r\n' +
+    '    Truck,\r\n' +
+    '    X,\r\n' +
+    '    XCircle\r\n' +
+    "} from 'lucide-react';\r\n" +
+    "import { toast } from 'react-hot-toast';\r\n" +
+    "import API from '../../../api/api';\r\n" +
+    "import Table from '../../../components/ui/Table';\r\n" +
+    "import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';\r\n" +
+    "import PaginationBar from '../../../components/ui/PaginationBar.jsx';\r\n" +
+    "import PageRefreshButton from '../../../components/ui/PageRefreshButton.jsx';\r\n" +
+    "import { isAbortError, useAbortableRequest } from '../../../hooks/useAbortableRequest.js';\r\n" +
+    "import useDebouncedValue from '../../../hooks/useDebouncedValue.js';\r\n" +
+    '\r\n' +
+    "const OrderDetailsModal = lazy(() => import('../../../components/dashboard/OrderDetailsModal'));\r\n" +
+    "const PathaoSyncModal = lazy(() => import('./PathaoSyncModal'));\r\n" +
+    "const EmailNotificationModal = lazy(() => import('../../../components/order/EmailNotificationModal.jsx'));\r\n" +
+    '\r\n' +
+    "const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];\r\n" +
+    '\r\n' +
+    'const OrderList = () => {\r\n' +
+    '    const [orders, setOrders] = useState([]);\r\n' +
+    '    const [loading, setLoading] = useState(true);\r\n' +
+    '    const [selectedOrder, setSelectedOrder] = useState(null);\r\n' +
+    "    const [searchQuery, setSearchQuery] = useState('');\r\n" +
+    '    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });\r\n' +
+    '    const [courierSettings, setCourierSettings] = useState(null);\r\n' +
+    '    const [retryingOrderId, setRetryingOrderId] = useState(null);\r\n' +
+    '    const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);\r\n' +
+    '    const [pathaoModalOpen, setPathaoModalOpen] = useState(false);\r\n' +
+    '    const [orderToSync, setOrderToSync] = useState(null);\r\n' +
+    '    const [emailModalOpen, setEmailModalOpen] = useState(false);\r\n' +
+    "    const [pendingStatusUpdate, setPendingStatusUpdate] = useState({ order: null, newStatus: '' });\r\n" +
+    '\r\n' +
+    '    const runAbortable = useAbortableRequest();\r\n' +
+    '    const fetchIdRef = useRef(0);\r\n' +
+    '    const debouncedSearchQuery = useDebouncedValue(searchQuery, 350);\r\n' +
+    '\r\n' +
+    '    const fetchOrders = useCallback(async (page = 1) => {\r\n' +
+    '        const fetchId = fetchIdRef.current + 1;\r\n' +
+    '        fetchIdRef.current = fetchId;\r\n' +
+    '        setLoading(true);\r\n' +
+    '\r\n' +
+    '        try {\r\n' +
+    '            await runAbortable(async ({ signal, isLatest }) => {\r\n' +
+    "                const { data } = await API.get('/admin/orders', {\r\n" +
+    '                    params: {\r\n' +
+    '                        page,\r\n' +
+    '                        limit: 25,\r\n' +
+    '                        search: debouncedSearchQuery || undefined\r\n' +
+    '                    },\r\n' +
+    '                    signal\r\n' +
+    '                });\r\n' +
+    '\r\n' +
+    '                if (!isLatest() || fetchId !== fetchIdRef.current) return;\r\n' +
+    '\r\n' +
+    '                setOrders(data.data || []);\r\n' +
+    '                setPagination(data.pagination || {\r\n' +
+    '                    page,\r\n' +
+    '                    pages: 1,\r\n' +
+    '                    total: data.data?.length || 0\r\n' +
+    '                });\r\n' +
+    '            });\r\n' +
+    '        } catch (error) {\r\n' +
+    '            if (isAbortError(error)) return;\r\n' +
+    "            toast.error('Failed to load orders');\r\n" +
+    '        } finally {\r\n' +
+    '            if (fetchId === fetchIdRef.current) setLoading(false);\r\n' +
+    '        }\r\n' +
+    '    }, [debouncedSearchQuery, runAbortable]);\r\n' +
+    '\r\n' +
+    '    useEffect(() => {\r\n' +
+    '        const timer = setTimeout(() => fetchOrders(1), 0);\r\n' +
+    '        return () => clearTimeout(timer);\r\n' +
+    '    }, [fetchOrders]);\r\n' +
+    '\r\n' +
+    '    useEffect(() => {\r\n' +
+    "        API.get('/admin/shipping/couriers')\r\n" +
+    '            .then(({ data }) => setCourierSettings(data.data || null))\r\n' +
+    '            .catch(() => setCourierSettings(null));\r\n' +
+    '    }, []);\r\n' +
+    '\r\n' +
+    '    const getCourierStatus = (order) => {\r\n' +
+    '        const shipment = order?.courierShipment || {};\r\n' +
+    '\r\n' +
+    '        if (shipment.trackingId || shipment.status) {\r\n' +
+    '            return {\r\n' +
+    "                provider: shipment.provider || order.shippingProvider || 'courier',\r\n" +
+    "                status: shipment.trackingId ? 'synced' : shipment.status,\r\n" +
+    '                hasShipment: Boolean(shipment.trackingId),\r\n' +
+    "                error: shipment.lastError || order.pathaoLastError || ''\r\n" +
+    '            };\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        if (order?.isPathaoSynced) {\r\n' +
+    '            return {\r\n' +
+    "                provider: 'pathao',\r\n" +
+    "                status: 'synced',\r\n" +
+    '                hasShipment: true,\r\n' +
+    "                error: ''\r\n" +
+    '            };\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        return {\r\n' +
+    "            provider: order?.shippingProvider || 'pathao',\r\n" +
+    "            status: order?.pathaoSyncStatus || '',\r\n" +
+    '            hasShipment: Boolean(order?.isPathaoSynced),\r\n' +
+    "            error: order?.pathaoLastError || ''\r\n" +
+    '        };\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const updateStatusInDB = async (orderId, newStatus, options = {}) => {\r\n' +
+    '        try {\r\n' +
+    '            setStatusUpdatingOrderId(orderId);\r\n' +
+    '            setOrders((previous) => previous.map((order) => (\r\n' +
+    '                order._id === orderId ? { ...order, status: newStatus } : order\r\n' +
+    '            )));\r\n' +
+    '\r\n' +
+    '            const { data } = await API.patch(`/admin/orders/${orderId}/status`, {\r\n' +
+    '                status: newStatus,\r\n' +
+    '                ...options\r\n' +
+    '            });\r\n' +
+    '\r\n' +
+    '            if (data?.data) {\r\n' +
+    '                setOrders((previous) => previous.map((order) => (\r\n' +
+    '                    order._id === orderId ? data.data : order\r\n' +
+    '                )));\r\n' +
+    '            }\r\n' +
+    '\r\n' +
+    '            toast.success(`Order status updated to ${newStatus}`);\r\n' +
+    "            if (data?.notification?.sent) toast.success('Customer email accepted by provider');\r\n" +
+    "            else if (options.notifyCustomer) toast.error('Order status changed, but the customer email was not accepted. Check your email settings.');\r\n" +
+    '\r\n' +
+    '            return data?.data || true;\r\n' +
+    '        } catch (error) {\r\n' +
+    "            toast.error(error.response?.data?.error || 'Failed to update status');\r\n" +
+    '            fetchOrders(pagination.page);\r\n' +
+    '            return null;\r\n' +
+    '        } finally {\r\n' +
+    '            setStatusUpdatingOrderId(null);\r\n' +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handleStatusChangeClick = (order, newStatus) => {\r\n' +
+    '        if (!newStatus || newStatus === order.status) return;\r\n' +
+    '\r\n' +
+    "        if (newStatus === 'Confirmed' && !getCourierStatus(order).hasShipment) {\r\n" +
+    '            setOrderToSync(order);\r\n' +
+    '            setPathaoModalOpen(true);\r\n' +
+    '            return;\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    "        if (newStatus === 'Confirmed') {\r\n" +
+    '            updateStatusInDB(order._id, newStatus, { notifyCustomer: true });\r\n' +
+    '            return;\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        setPendingStatusUpdate({ order, newStatus });\r\n' +
+    '        setEmailModalOpen(true);\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handleEmailModalDecision = async (shouldSendEmail, emailData = null) => {\r\n' +
+    '        const { order, newStatus } = pendingStatusUpdate;\r\n' +
+    '        setEmailModalOpen(false);\r\n' +
+    '\r\n' +
+    '        if (!order || !newStatus) return;\r\n' +
+    '\r\n' +
+    '        await updateStatusInDB(order._id, newStatus, {\r\n' +
+    '            notifyCustomer: shouldSendEmail,\r\n' +
+    '            emailSubject: emailData?.subject,\r\n' +
+    '            emailMessage: emailData?.message\r\n' +
+    '        });\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handlePathaoSuccess = (updatedOrder) => {\r\n' +
+    '        if (!updatedOrder?._id) {\r\n' +
+    '            fetchOrders(pagination.page);\r\n' +
+    '            return;\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        setOrders((previous) => previous.map((order) => (\r\n' +
+    '            order._id === updatedOrder._id ? updatedOrder : order\r\n' +
+    '        )));\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handleRetryCourierQueue = async (order) => {\r\n' +
+    '        const courierStatus = getCourierStatus(order);\r\n' +
+    '        setRetryingOrderId(order._id);\r\n' +
+    '\r\n' +
+    '        try {\r\n' +
+    "            const { data } = courierStatus.provider === 'redx'\r\n" +
+    '                ? await API.post(`/admin/orders/${order._id}/courier`, {\r\n' +
+    "                    provider: 'redx',\r\n" +
+    '                    retry: true\r\n' +
+    '                })\r\n' +
+    '                : await API.post(`/admin/orders/${order._id}/pathao`, {\r\n' +
+    '                    retry: true\r\n' +
+    '                });\r\n' +
+    '\r\n' +
+    "            toast.success(data.message || 'Courier retry queued');\r\n" +
+    '\r\n' +
+    '            if (data.data?._id) {\r\n' +
+    '                setOrders((previous) => previous.map((currentOrder) => (\r\n' +
+    '                    currentOrder._id === data.data._id ? data.data : currentOrder\r\n' +
+    '                )));\r\n' +
+    '            } else {\r\n' +
+    '                fetchOrders(pagination.page);\r\n' +
+    '            }\r\n' +
+    '        } catch (error) {\r\n' +
+    "            toast.error(error.response?.data?.error || 'Failed to retry courier queue');\r\n" +
+    '        } finally {\r\n' +
+    '            setRetryingOrderId(null);\r\n' +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const getStatusStyle = (status) => {\r\n' +
+    '        switch (status) {\r\n' +
+    "            case 'Pending': return 'border-amber-200 bg-amber-50 text-amber-700';\r\n" +
+    "            case 'Confirmed': return 'border-sky-200 bg-sky-50 text-sky-700';\r\n" +
+    "            case 'Processing': return 'border-blue-200 bg-blue-50 text-blue-700';\r\n" +
+    "            case 'Shipped': return 'border-violet-200 bg-violet-50 text-violet-700';\r\n" +
+    "            case 'Delivered': return 'border-emerald-200 bg-emerald-50 text-emerald-700';\r\n" +
+    "            case 'Cancelled': return 'border-rose-200 bg-rose-50 text-rose-700';\r\n" +
+    "            case 'Returned': return 'border-orange-200 bg-orange-50 text-orange-700';\r\n" +
+    "            default: return 'border-slate-200 bg-slate-50 text-slate-700';\r\n" +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const getStatusIcon = (status) => {\r\n' +
+    '        switch (status) {\r\n' +
+    `            case 'Pending': return <Clock size={13} aria-hidden="true" />;\r\n` +
+    `            case 'Processing': return <Package size={13} aria-hidden="true" />;\r\n` +
+    `            case 'Shipped': return <Truck size={13} aria-hidden="true" />;\r\n` +
+    `            case 'Delivered': return <CheckCircle size={13} aria-hidden="true" />;\r\n` +
+    "            case 'Cancelled':\r\n" +
+    `            case 'Returned': return <XCircle size={13} aria-hidden="true" />;\r\n` +
+    '            default: return null;\r\n' +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const getCourierStatusStyle = (status) => {\r\n' +
+    '        switch (status) {\r\n' +
+    "            case 'queued': return 'border-amber-200 bg-amber-50 text-amber-700';\r\n" +
+    "            case 'syncing': return 'border-blue-200 bg-blue-50 text-blue-700';\r\n" +
+    "            case 'synced': return 'border-emerald-200 bg-emerald-50 text-emerald-700';\r\n" +
+    "            case 'fa"... 20353 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\security-hardening.test.js:905:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { lazy, Suspense, useCallback, useEffect, useRef, useState } from \'react\';\r\nimport {\r\n    CheckCircle,\r\n    Clock,\r\n    Eye,\r\n    Package,\r\n    Search,\r\n    Send,\r\n    Truck,\r\n    X,\r\n    XCircle\r\n} from \'lucide-react\';\r\nimport { toast } from \'react-hot-toast\';\r\nimport API from \'../../../api/api\';\r\nimport Table from \'../../../components/ui/Table\';\r\nimport { AdminEmptyState, AdminLoadingState } from \'../../../components/ui/AdminState.jsx\';\r\nimport PaginationBar from \'../../../components/ui/PaginationBar.jsx\';\r\nimport PageRefreshButton from \'../../../components/ui/PageRefreshButton.jsx\';\r\nimport { isAbortError, useAbortableRequest } from \'../../../hooks/useAbortableRequest.js\';\r\nimport useDebouncedValue from \'../../../hooks/useDebouncedValue.js\';\r\n\r\nconst OrderDetailsModal = lazy(() => import(\'../../../components/dashboard/OrderDetailsModal\'));\r\nconst PathaoSyncModal = lazy(() => import(\'./PathaoSyncModal\'));\r\nconst EmailNotificationModal = lazy(() => import(\'../../../components/order/EmailNotificationModal.jsx\'));\r\n\r\nconst STATUS_OPTIONS = [\'Pending\', \'Confirmed\', \'Processing\', \'Shipped\', \'Delivered\'];\r\n\r\nconst OrderList = () => {\r\n    const [orders, setOrders] = useState([]);\r\n    const [loading, setLoading] = useState(true);\r\n    const [selectedOrder, setSelectedOrder] = useState(null);\r\n    const [searchQuery, setSearchQuery] = useState(\'\');\r\n    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });\r\n    const [courierSettings, setCourierSettings] = useState(null);\r\n    const [retryingOrderId, setRetryingOrderId] = useState(null);\r\n    const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);\r\n    const [pathaoModalOpen, setPathaoModalOpen] = useState(false);\r\n    const [orderToSync, setOrderToSync] = useState(null);\r\n    const [emailModalOpen, setEmailModalOpen] = useState(false);\r\n    const [pendingStatusUpdate, setPendingStatusUpdate] = useState({ order: null, newStatus: \'\' });\r\n\r\n    const runAbortable = useAbortableRequest();\r\n    const fetchIdRef = useRef(0);\r\n    const debouncedSearchQuery = useDebouncedValue(searchQuery, 350);\r\n\r\n    const fetchOrders = useCallback(async (page = 1) => {\r\n        const fetchId = fetchIdRef.current + 1;\r\n        fetchIdRef.current = fetchId;\r\n        setLoading(true);\r\n\r\n        try {\r\n            await runAbortable(async ({ signal, isLatest }) => {\r\n                const { data } = await API.get(\'/admin/orders\', {\r\n                    params: {\r\n                        page,\r\n                        limit: 25,\r\n                        search: debouncedSearchQuery || undefined\r\n                    },\r\n                    signal\r\n                });\r\n\r\n                if (!isLatest() || fetchId !== fetchIdRef.current) return;\r\n\r\n                setOrders(data.data || []);\r\n                setPagination(data.pagination || {\r\n                    page,\r\n                    pages: 1,\r\n                    total: data.data?.length || 0\r\n                });\r\n            });\r\n        } catch (error) {\r\n            if (isAbortError(error)) return;\r\n            toast.error(\'Failed to load orders\');\r\n        } finally {\r\n            if (fetchId === fetchIdRef.current) setLoading(false);\r\n        }\r\n    }, [debouncedSearchQuery, runAbortable]);\r\n\r\n    useEffect(() => {\r\n        const timer = setTimeout(() => fetchOrders(1), 0);\r\n        return () => clearTimeout(timer);\r\n    }, [fetchOrders]);\r\n\r\n    useEffect(() => {\r\n        API.get(\'/admin/shipping/couriers\')\r\n            .then(({ data }) => setCourierSettings(data.data || null))\r\n            .catch(() => setCourierSettings(null));\r\n    }, []);\r\n\r\n    const getCourierStatus = (order) => {\r\n        const shipment = order?.courierShipment || {};\r\n\r\n        if (shipment.trackingId || shipment.status) {\r\n            return {\r\n                provider: shipment.provider || order.shippingProvider || \'courier\',\r\n                status: shipment.trackingId ? \'synced\' : shipment.status,\r\n                hasShipment: Boolean(shipment.trackingId),\r\n                error: shipment.lastError || order.pathaoLastError || \'\'\r\n            };\r\n        }\r\n\r\n        if (order?.isPathaoSynced) {\r\n            return {\r\n                provider: \'pathao\',\r\n                status: \'synced\',\r\n                hasShipment: true,\r\n                error: \'\'\r\n            };\r\n        }\r\n\r\n        return {\r\n            provider: order?.shippingProvider || \'pathao\',\r\n            status: order?.pathaoSyncStatus || \'\',\r\n            hasShipment: Boolean(order?.isPathaoSynced),\r\n            error: order?.pathaoLastError || \'\'\r\n        };\r\n    };\r\n\r\n    const updateStatusInDB = async (orderId, newStatus, options = {}) => {\r\n        try {\r\n            setStatusUpdatingOrderId(orderId);\r\n            setOrders((previous) => previous.map((order) => (\r\n                order._id === orderId ? { ...order, status: newStatus } : order\r\n            )));\r\n\r\n            const { data } = await API.patch(`/admin/orders/${orderId}/status`, {\r\n                status: newStatus,\r\n                ...options\r\n            });\r\n\r\n            if (data?.data) {\r\n                setOrders((previous) => previous.map((order) => (\r\n                    order._id === orderId ? data.data : order\r\n                )));\r\n            }\r\n\r\n            toast.success(`Order status updated to ${newStatus}`);\r\n            if (data?.notification?.sent) toast.success(\'Customer email accepted by provider\');\r\n            else if (options.notifyCustomer) toast.error(\'Order status changed, but the customer email was not accepted. Check your email settings.\');\r\n\r\n            return data?.data || true;\r\n        } catch (error) {\r\n            toast.error(error.response?.data?.error || \'Failed to update status\');\r\n            fetchOrders(pagination.page);\r\n            return null;\r\n        } finally {\r\n            setStatusUpdatingOrderId(null);\r\n        }\r\n    };\r\n\r\n    const handleStatusChangeClick = (order, newStatus) => {\r\n        if (!newStatus || newStatus === order.status) return;\r\n\r\n        if (newStatus === \'Confirmed\' && !getCourierStatus(order).hasShipment) {\r\n            setOrderToSync(order);\r\n            setPathaoModalOpen(true);\r\n            return;\r\n        }\r\n\r\n        if (newStatus === \'Confirmed\') {\r\n            updateStatusInDB(order._id, newStatus, { notifyCustomer: true });\r\n            return;\r\n        }\r\n\r\n        setPendingStatusUpdate({ order, newStatus });\r\n        setEmailModalOpen(true);\r\n    };\r\n\r\n    const handleEmailModalDecision = async (shouldSendEmail, emailData = null) => {\r\n        const { order, newStatus } = pendingStatusUpdate;\r\n        setEmailModalOpen(false);\r\n\r\n        if (!order || !newStatus) return;\r\n\r\n        await updateStatusInDB(order._id, newStatus, {\r\n            notifyCustomer: shouldSendEmail,\r\n            emailSubject: emailData?.subject,\r\n            emailMessage: emailData?.message\r\n        });\r\n    };\r\n\r\n    const handlePathaoSuccess = (updatedOrder) => {\r\n        if (!updatedOrder?._id) {\r\n            fetchOrders(pagination.page);\r\n            return;\r\n        }\r\n\r\n        setOrders((previous) => previous.map((order) => (\r\n            order._id === updatedOrder._id ? updatedOrder : order\r\n        )));\r\n    };\r\n\r\n    const handleRetryCourierQueue = async (order) => {\r\n        const courierStatus = getCourierStatus(order);\r\n        setRetryingOrderId(order._id);\r\n\r\n        try {\r\n            const { data } = courierStatus.provider === \'redx\'\r\n                ? await API.post(`/admin/orders/${order._id}/courier`, {\r\n                    provider: \'redx\',\r\n                    retry: true\r\n                })\r\n                : await API.post(`/admin/orders/${order._id}/pathao`, {\r\n                    retry: true\r\n                });\r\n\r\n            toast.success(data.message || \'Courier retry queued\');\r\n\r\n            if (data.data?._id) {\r\n                setOrders((previous) => previous.map((currentOrder) => (\r\n                    currentOrder._id === data.data._id ? data.data : currentOrder\r\n                )));\r\n            } else {\r\n                fetchOrders(pagination.page);\r\n            }\r\n        } catch (error) {\r\n            toast.error(error.response?.data?.error || \'Failed to retry courier queue\');\r\n        } finally {\r\n            setRetryingOrderId(null);\r\n        }\r\n    };\r\n\r\n    const getStatusStyle = (status) => {\r\n        switch (status) {\r\n            case \'Pending\': return \'border-amber-200 bg-amber-50 text-amber-700\';\r\n            case \'Confirmed\': return \'border-sky-200 bg-sky-50 text-sky-700\';\r\n            case \'Processing\': return \'border-blue-200 bg-blue-50 text-blue-700\';\r\n            case \'Shipped\': return \'border-violet-200 bg-violet-50 text-violet-700\';\r\n            case \'Delivered\': return \'border-emerald-200 bg-emerald-50 text-emerald-700\';\r\n            case \'Cancelled\': return \'border-rose-200 bg-rose-50 text-rose-700\';\r\n            case \'Returned\': return \'border-orange-200 bg-orange-50 text-orange-700\';\r\n            default: return \'border-slate-200 bg-slate-50 text-slate-700\';\r\n        }\r\n    };\r\n\r\n    const getStatusIcon = (status) => {\r\n        switch (status) {\r\n            case \'Pending\': return <Clock size={13} aria-hidden="true" />;\r\n            case \'Processing\': return <Package size={13} aria-hidden="true" />;\r\n            case \'Shipped\': return <Truck size={13} aria-hidden="true" />;\r\n            case \'Delivered\': return <CheckCircle size={13} aria-hidden="true" />;\r\n            case \'Cancelled\':\r\n            case \'Returned\': return <XCircle size={13} aria-hidden="true" />;\r\n            default: return null;\r\n        }\r\n    };\r\n\r\n    const getCourierStatusStyle = (status) => {\r\n        switch (status) {\r\n            case \'queued\': return \'border-amber-200 bg-amber-50 text-amber-700\';\r\n            case \'syncing\': return \'border-blue-200 bg-blue-50 text-blue-700\';\r\n            case \'synced\': return \'border-emerald-200 bg-emerald-50 text-emerald-700\';\r\n            case \'fa'... 20353 more characters,
+    expected: /Retry Courier/,
+    operator: 'match',
+    diff: 'simple'
+  }

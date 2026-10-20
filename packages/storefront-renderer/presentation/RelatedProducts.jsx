@@ -1,11 +1,17 @@
 "use client";
 import React, { memo } from 'react';
 import { Link } from './Runtime.jsx';
+import { ProductCard } from '../reference/StorefrontProductCard.jsx';
 import SafeProductImage from './SafeProductImage.jsx';
 import { getImageUrlFromValue, getProductImageAlt } from '../media.js';
 
-const RelatedProducts = memo(function RelatedProducts({ products }) {
+const RelatedProducts = memo(function RelatedProducts({ products, presentationVariant, productCard }) {
     if (!products?.length) return null;
+
+    if (presentationVariant === 'atelier-editorial') return <section className="atelier-related">
+        <h2>More from this shop</h2>
+        <div className="atelier-related-grid">{products.map((product, index) => <ProductCard key={product._id} product={product} index={index} presentationVariant={presentationVariant} productCard={{ ...productCard, showQuickBuy: false, showWishlist: false }} LinkComponent={Link} />)}</div>
+    </section>;
 
     return (
         <section className="mt-10">

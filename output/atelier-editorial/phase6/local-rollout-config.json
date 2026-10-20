@@ -1,0 +1,15 @@
+{
+  "files": {
+    "ecommerce-backend/backend/.env": {
+      "fileExists": true,
+      "mode": "(unset → off)",
+      "allowlistConfigured": false,
+      "approvedPlanKeysConfigured": false
+    },
+    "ecommerce-backend/backend/.env.local": {
+      "fileExists": false
+    }
+  },
+  "changed": false,
+  "limits": "Only local files inspected; process/service/deployment configuration not verified. No secrets or tenant IDs recorded."
+}

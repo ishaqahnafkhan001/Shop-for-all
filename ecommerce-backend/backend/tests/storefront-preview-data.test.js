@@ -66,6 +66,7 @@ test('Builder bootstrap prepares public cards and draft-only selections with ten
         '../../models/Review': { find: () => chain([{ _id: 'review-fixture', product_id: firstId, name: 'Buyer', comment: 'Review', rating: 5 }]), getEligibilityQuery: () => ({ isVisible: true }) },
         '../shops/storeBrandingService': { resolveStoreBranding: async () => ({}) },
         './themeCompatibilityService': { preserveThemeExtensions: value => value },
+        './themeAvailabilityService': require('../services/storeBuilder/themeAvailabilityService'),
         '../themeSectionService': { ensureThemeSectionArchitecture: async () => {} },
         '../policies/defaultPolicyTemplates': { fillMissingPolicyDefaults: policies => ({ policies }) },
         '../products/publicProductQueryService': { buildPublicProductQuery },

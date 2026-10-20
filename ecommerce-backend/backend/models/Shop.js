@@ -346,6 +346,7 @@ const shopSchema = new mongoose.Schema({
     },
     branding: { type: essentialBrandingSchema, default: () => ({}) },
     theme: {
+        presentationVariant: { type: String, enum: ['atelier-editorial'], default: undefined },
         extensions: { type: mongoose.Schema.Types.Mixed, default: undefined },
         version: { type: Number, default: THEME_SCHEMA_VERSION, STRUCTURAL_VARIANTS, min: 1 },
         preset: { type: themePresetSchema, default: null },

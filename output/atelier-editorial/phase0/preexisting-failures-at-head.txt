@@ -1,0 +1,838 @@
+[GrowthAdAI] Deterministic fallback used { code: 'AI_NOT_CONFIGURED' }
+✖ empty Product output is never chargeable; every requested section is checked (8.974ms)
+✔ concise Bangla is accepted and quality repair shares the remaining deadline (2.1668ms)
+✔ partial Collection and three blank SEO alternatives are deterministic fallback (5.7621ms)
+✔ Growth missing copy falls back; synthesized advice is mixed and CTA is validated (18.1247ms)
+✔ SEO Apply-normalize-revision-publish-resolver keeps precise origin and selective manual edits (5.328ms)
+✔ historical SEO matches remain unknown and direct field edits cannot retain provider attribution (0.7329ms)
+✔ preferences preserve Unicode, validate bounded business wording, and normalize explicit language overrides (1.9647ms)
+✔ semantic operation identity agrees for JSON multipart fields and rejects different image/entity/version/interval (1.0292ms)
+✖ all four generators use the same effective voice for English, Bangla, Banglish and mixed content (20.2053ms)
+✔ selected Product SEO fields define provider schema and acceptance independently (0.7226ms)
+✔ public product lookup is tenant scoped and storefront safe (1.6678ms)
+✔ public order tracking requires tenant and phone verification (1.5762ms)
+✔ public order tracking actions are tenant scoped and phone verified (0.9061ms)
+✔ customer-facing product and order responses hide vendor cost fields (1.3845ms)
+✔ store builder theme save sanitizes scriptable URLs (1709.0825ms)
+✔ purchase order receiving is tenant scoped (0.7766ms)
+✔ security middleware and rate limits are mounted (0.5274ms)
+✔ csrf token route is mounted and unsafe clients attach csrf header (0.7543ms)
+✔ public health endpoint is redacted for production safety (0.5218ms)
+✔ storefront next image config restricts remote optimization hosts (5.4167ms)
+✔ admin AI and banner routes require RBAC permissions (0.8796ms)
+✔ upload pipeline enforces type and size limits (0.6667ms)
+✔ analytics event endpoint resolves tenant and validates event types (0.8108ms)
+✔ growth center routes are tenant protected with growth permission (1061.4855ms)
+✔ growth center revenue metrics use delivered order revenue only (0.7782ms)
+✔ shop feature flags are enforced on backend routes and vendor frontend routes (5.4121ms)
+✔ catalog collection AI is tenant-protected and preview-applied in admin UI (7.0505ms)
+✔ scheduled product launch uses persisted jobs and hides products until publication (2.1316ms)
+✖ low stock warnings are queued, tenant-scoped, and sent only on threshold crossing (3.0777ms)
+✖ promotion scheduling is enforced by backend checkout evaluation and exposed in admin UI (1.601ms)
+✔ vendor verification routes are protected and use NID upload middleware (25.5919ms)
+✔ verification suspension blocks high-impact vendor mutations only after auth (1.7597ms)
+✔ store builder SEO AI route is protected and backend-only (3.8905ms)
+✔ public tenant resolution checks verification before exposing storefront (0.4144ms)
+✔ super admin hardening routes use scoped platform permissions and recent auth (0.9451ms)
+✔ super admin frontend routes and navigation honor scoped platform permissions (1.5261ms)
+✔ platform audit log is separate and non-blocking (0.5361ms)
+✔ super admin lists use pagination response shape (0.866ms)
+✔ dangerous super admin actions require reason and protect verification suspension (0.8425ms)
+✔ super admin sensitive actions create platform audit entries (1.1562ms)
+✔ super admin data models constrain governance values (1.2004ms)
+✔ announcements use soft archive lifecycle (1.5477ms)
+✔ privacy consent, analytics retention, and data requests are wired (2.0864ms)
+✔ request IDs, structured logging, and operations docs exist (1.7159ms)
+✔ mongo-backed queue, worker, and analytics rollups are available (2.6973ms)
+✔ ci workflow and test docs exist (0.7769ms)
+✔ vendor admin pagination responses keep compatibility metadata (1.9998ms)
+✔ storefront pagination keeps page sizes, metadata, and controls consistent (2.128ms)
+✔ stock mutations use explicit semantics, idempotency, and inventory movement logs (1.598ms)
+✔ return proof upload is required for new admin and tracked returns (1.875ms)
+✔ customer email campaigns are tenant-scoped, queued, and product-safe (1.9239ms)
+✔ staff permissions expose operational sections only and hide owner-only sections (2.6565ms)
+✖ confirmed order status email is sent through status update endpoint once (2.0558ms)
+✔ redx courier integration is provider-based, masked, queued, and phone safe (2.4891ms)
+✔ storefront conversion UX keeps recommendations tenant-scoped and checkout OTP backend-backed (219.6709ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 50
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3218.9671
+
+✖ failing tests:
+
+test at tests\ai-acceptance-provenance.test.js:11:1
+✖ empty Product output is never chargeable; every requested section is checked (8.974ms)
+  AssertionError [ERR_ASSERTION]: seo
+  + actual - expected
+  
+  + 'provider'
+  - 'deterministic_fallback'
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\output\atelier-editorial\phase0\baseline-source\ecommerce-backend\backend\tests\ai-acceptance-provenance.test.js:14:16)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'provider',
+    expected: 'deterministic_fallback',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\ai-preferences.test.js:27:1
+✖ all four generators use the same effective voice for English, Bangla, Banglish and mixed content (20.2053ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '5.0.0' !== '4.0.0'
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\output\atelier-editorial\phase0\baseline-source\ecommerce-backend\backend\tests\ai-preferences.test.js:46:142)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '5.0.0',
+    expected: '4.0.0',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\security-hardening.test.js:339:1
+✖ low stock warnings are queued, tenant-scoped, and sent only on threshold crossing (3.0777ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /enqueueLowStockAlertsForLogs\(lowStockLogs\)/. Input:
+  
+  "const { sendAiOperationError } = require('../services/ai/aiHttpErrors');\r\n" +
+    "const Product = require('../models/Product');\r\n" +
+    "const Collection = require('../models/Collection');\r\n" +
+    "const Category = require('../models/Category');\r\n" +
+    "const User = require('../models/User');\r\n" +
+    "const StaffPermission = require('../models/StaffPermission');\r\n" +
+    "const { createProductSchema, updateProductSchema } = require('../validations/productValidation');\r\n" +
+    "const InventoryLog = require('../models/InventoryLog');\r\n" +
+    "const mongoose = require('mongoose');\r\n" +
+    "const cache = require('../services/cacheService');\r\n" +
+    "const { logAudit } = require('../services/auditLogService');\r\n" +
+    "const { buildPagination } = require('../utils/pagination');\r\n" +
+    'const {\r\n' +
+    '    parseProductPayload,\r\n' +
+    '    resolveVariantImageReferences,\r\n' +
+    '    getUniqueProductImageSources\r\n' +
+    "} = require('../services/products/productMediaService');\r\n" +
+    'const {\r\n' +
+    '    generateProductContentSuggestion\r\n' +
+    "} = require('../services/products/productContentAiService');\r\n" +
+    'const {\r\n' +
+    '    slugify,\r\n' +
+    '    getUniqueSlug,\r\n' +
+    '    getCachedCategories,\r\n' +
+    '    invalidateCachedCategories,\r\n' +
+    '    addComputedProductFields,\r\n' +
+    '    buildProductListQuery,\r\n' +
+    '    getProductSort,\r\n' +
+    '    getSummaryProjection\r\n' +
+    "} = require('../services/products/productQueryService');\r\n" +
+    "const { validateBulkUpdates, applyBulkProductUpdates } = require('../services/products/bulkProductUpdates');\r\n" +
+    'const {\r\n' +
+    '    normalizeIncomingVariant,\r\n' +
+    '    buildSimpleVariant,\r\n' +
+    '    snapshotVariantStock,\r\n' +
+    '    applyVariantOperations,\r\n' +
+    '    buildStockAdjustmentLogs,\r\n' +
+    '    expandMatrix,\r\n' +
+    '    normalizeProductOptions\r\n' +
+    "} = require('../services/products/productVariantService');\r\n" +
+    'const {\r\n' +
+    '    normalizeProductPublicationFields,\r\n' +
+    '    enqueueScheduledProductPublication\r\n' +
+    "} = require('../services/products/scheduledProductService');\r\n" +
+    'const {\r\n' +
+    '    enqueueLowStockAlertsForLogs\r\n' +
+    "} = require('../services/inventoryLowStockAlertService');\r\n" +
+    "const { applyScheduledSalesToProducts } = require('../services/sales/scheduledSaleService');\r\n" +
+    "const { getStorefrontPreviewCards } = require('../services/products/storefrontPreviewDataService');\r\n" +
+    'const {\r\n' +
+    '    getShopPlanAccess,\r\n' +
+    '    buildFeatureError,\r\n' +
+    '    buildLimitError\r\n' +
+    "} = require('../services/billing/planAccessService');\r\n" +
+    'const {\r\n' +
+    '    getWeeklyAiUsage\r\n' +
+    "} = require('../services/billing/planUsageService');\r\n" +
+    'const {\r\n' +
+    '    beginAiGeneration,\r\n' +
+    '    completeAiGeneration,\r\n' +
+    '    failAiGeneration,\r\n' +
+    '    getReplayResponse\r\n' +
+    "} = require('../services/ai/aiGenerationPolicyService');\r\n" +
+    "const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');\r\n" +
+    'const {\r\n' +
+    '    reserveQuota,\r\n' +
+    '    releaseQuotaSafely\r\n' +
+    "} = require('../services/billing/planQuotaReservationService');\r\n" +
+    "const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');\r\n" +
+    "const { assertHistoricalSlugAvailable, recordSlugRedirect } = require('../services/seo/slugRedirectService');\r\n" +
+    '\r\n' +
+    'const ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];\r\n' +
+    '\r\n' +
+    'const invalidateProductReadCaches = async shopId => {\r\n' +
+    '    invalidateCachedCategories(shopId);\r\n' +
+    '    return Promise.all([\r\n' +
+    '        cache.delPattern(`admin:dashboard-overview:${shopId}:*`),\r\n' +
+    '        cache.delPattern(`storefront:*:${shopId}:*`)\r\n' +
+    '    ]);\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'const normalizePageLimit = (value, fallback = 25) => {\r\n' +
+    '    const requested = parseInt(value, 10);\r\n' +
+    '    if (!Number.isFinite(requested) || requested <= 0) return fallback;\r\n' +
+    '    if (ALLOWED_PAGE_SIZES.includes(requested)) return requested;\r\n' +
+    '    return requested > Math.max(...ALLOWED_PAGE_SIZES)\r\n' +
+    '        ? Math.max(...ALLOWED_PAGE_SIZES)\r\n' +
+    '        : fallback;\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'const normalizeStorefrontPageLimit = (value, fallback = 9) => {\r\n' +
+    '    const requested = parseInt(value, 10);\r\n' +
+    '    if (!Number.isFinite(requested) || requested <= 0) return fallback;\r\n' +
+    '    return Math.min(requested, 48);\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    '\r\n' +
+    '// ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...\r\n' +
+    '\r\n' +
+    "const resolveCoverMediaId = ({ images = [], videos = [], requestedCover = '', coverImageIndex }) => {\r\n" +
+    "    const media = [...(images || []), ...(videos || [])].map(item => String(item || '').trim()).filter(Boolean);\r\n" +
+    "    const requested = String(requestedCover || '').trim();\r\n" +
+    '    if (requested && media.includes(requested)) return requested;\r\n' +
+    '\r\n' +
+    '    const numericIndex = Number(coverImageIndex);\r\n' +
+    '    if (Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < (images || []).length) {\r\n' +
+    '        return images[numericIndex];\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    "    return images?.[0] || videos?.[0] || '';\r\n" +
+    '};\r\n' +
+    '\r\n' +
+    "const coverMediaBelongsToProduct = ({ images = [], videos = [], coverMediaId = '' }) => {\r\n" +
+    "    const cover = String(coverMediaId || '').trim();\r\n" +
+    '    if (!cover) return true;\r\n' +
+    "    return [...(images || []), ...(videos || [])].map(item => String(item || '').trim()).includes(cover);\r\n" +
+    '};\r\n' +
+    '\r\n' +
+    'const isSchedulingProductPublication = (payload = {}) => (\r\n' +
+    "    payload.publicationStatus === 'scheduled' || Boolean(payload.publishAt)\r\n" +
+    ');\r\n' +
+    '\r\n' +
+    'const vendorStaffHasPermission = async (req, permissionName) => {\r\n' +
+    "    if (req.user?.role !== 'VendorStaff') return true;\r\n" +
+    '\r\n' +
+    '    if (req.user.membershipId || req.user.membership_id) {\r\n' +
+    '        const staffPermission = await StaffPermission.findOne({\r\n' +
+    '            membership_id: req.user.membershipId || req.user.membership_id,\r\n' +
+    '            shop_id: req.tenantId\r\n' +
+    "        }).select('permissions').lean();\r\n" +
+    '        if (staffPermission?.permissions?.[permissionName]) return true;\r\n' +
+    '    }\r\n' +
+    '\r\n' +
+    "    const user = await User.findById(req.user._id).select('permissions').lean();\r\n" +
+    '    return Boolean(user?.permissions?.[permissionName]);\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'const ensureProductSchedulePermission = async (req, payload = {}) => {\r\n' +
+    '    if (!isSchedulingProductPublication(payload)) return true;\r\n' +
+    "    return vendorStaffHasPermission(req, 'productsSchedule');\r\n" +
+    '};\r\n' +
+    '\r\n' +
+    'const getPlanContext = async (req) => req.planAccess || getShopPlanAccess(req.tenantId);\r\n' +
+    '\r\n' +
+    'const assertProductImageLimit = async (req, productOrCount) => {\r\n' +
+    '    const context = await getPlanContext(req);\r\n' +
+    '    const limit = context.limits.imagesPerProduct;\r\n' +
+    "    const imageCount = typeof productOrCount === 'number'\r\n" +
+    '        ? productOrCount\r\n' +
+    '        : getUniqueProductImageSources(productOrCount).length;\r\n' +
+    '    if (limit !== null && Number(imageCount || 0) > Number(limit)) {\r\n' +
+    "        const error = new Error('Product image limit reached');\r\n" +
+    '        error.statusCode = 403;\r\n' +
+    "        error.payload = await buildLimitError(context, 'imagesPerProduct', Number(imageCount || 0), limit);\r\n" +
+    '        throw error;\r\n' +
+    '    }\r\n' +
+    '    return context;\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    'const assertScheduledPublishingPlan = async (req, payload) => {\r\n' +
+    '    if (!isSchedulingProductPublication(payload)) return null;\r\n' +
+    '    const context = await getPlanContext(req);\r\n' +
+    '    return context.features.scheduledProductPublishing\r\n' +
+    '        ? null\r\n' +
+    "        : await buildFeatureError(context, 'scheduledProductPublishing');\r\n" +
+    '};\r\n' +
+    '\r\n' +
+    'const sendAiLimitError = async (req, res, error) => {\r\n' +
+    '    const context = await getPlanContext(req);\r\n' +
+    '    const usage = error.usage || await getWeeklyAiUsage({\r\n' +
+    '        shopId: req.tenantId,\r\n' +
+    '        limit: context.limits.aiProductCreationsPerWeek\r\n' +
+    '    });\r\n' +
+    '    const payload = await buildLimitError(\r\n' +
+    '        context,\r\n' +
+    "        'aiProductCreationsPerWeek',\r\n" +
+    '        usage,\r\n' +
+    '        context.limits.aiProductCreationsPerWeek\r\n' +
+    '    );\r\n' +
+    '    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {\r\n' +
+    '        req,\r\n' +
+    '        shopId: req.tenantId,\r\n' +
+    '        subscriptionId: context.subscription?._id,\r\n' +
+    '        planKey: context.planKey,\r\n' +
+    "        affectedResources: ['aiGeneration'],\r\n" +
+    "        metadata: { resource: 'aiGeneration', usage: payload.usage, notifyVendor: false }\r\n" +
+    '    });\r\n' +
+    '    return res.status(403).json(payload);\r\n' +
+    '};\r\n' +
+    '\r\n' +
+    '/**\r\n' +
+    ' * @desc    Generate Product Description via AI (OpenAI)\r\n' +
+    ' * @route   POST /api/admin/products/generate-description\r\n' +
+    ' * @access  Private (Admin)\r\n' +
+    ' */\r\n' +
+    'exports.generateDescription = async (req, res) => {\r\n' +
+    '    let generationState = null;\r\n' +
+    '    try {\r\n' +
+    '        const { title, category } = req.body;\r\n' +
+    '\r\n' +
+    '        if (!title) {\r\n' +
+    '            return res.status(400).json({ success: false, error: "Product title is required." });\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        generationState = await beginAiGeneration({\r\n' +
+    '            req,\r\n' +
+    "            feature: 'legacy.product_description'\r\n" +
+    '        });\r\n' +
+    '        const suggestion = await generateProductContentSuggestion({\r\n' +
+    '            operation: generationState,\r\n' +
+    '            body: {\r\n' +
+    '                title,\r\n' +
+    '                category,\r\n' +
+    "                requestedSections: JSON.stringify(['description'])\r\n" +
+    '            }\r\n' +
+    '        });\r\n' +
+    '        const payload = {\r\n' +
+    '            success: true,\r\n' +
+    "            description: suggestion.data?.description || '',\r\n" +
+    '            fallback: Boolean(suggestion.fallback),\r\n' +
+    '            meta: suggestion.meta\r\n' +
+    '        };\r\n' +
+    '        const usage = await completeAiGeneration({\r\n' +
+    '            req,\r\n' +
+    '            state: generationState,\r\n' +
+    '            result: payload,\r\n' +
+    '            meta: suggestion.meta\r\n' +
+    '        });\r\n' +
+    '        generationState = null;\r\n' +
+    "        res.set('Deprecation', 'true');\r\n" +
+    "        res.set('Sunset', 'Wed, 31 Dec 2026 23:59:59 GMT');\r\n" +
+    '        res.status(200).json({ ...payload, usage });\r\n' +
+    '\r\n' +
+    '    } catch (err) {\r\n' +
+    '        const replay = getReplayResponse(err);\r\n' +
+    '        if (replay) return res.status(200).json({ ...replay, replayed: true });\r\n' +
+    '        await failAiGeneration({ req, state: generationState, error: err });\r\n' +
+    '        if (sendAiOperationError(res, err)) return;\r\n' +
+    "        if (err?.code === 'PLAN_LIMIT_REACHED') return sendAiLimitError(req, res, err);\r\n" +
+    "        if (err?.code === 'AI_REQUEST_IN_PROGRESS') {\r\n" +
+    '            return res.status(409).json({ success: false, code: err.code, error: err.message });\r\n' +
+    '        }\r\n' +
+    "        if (err?.code === 'AI_NOT_CONFIGURED') {\r\n" +
+    '            return res.status(503).json({\r\n' +
+    '                success: false,\r\n' +
+    '                configured: false,\r\n' +
+    "                message: 'AI product suggestions are temporarily unavailable. Please contact support.'\r\n" +
+    '            });\r\n' +
+    '        }\r\n' +
+    "        console.warn('Legacy product AI fai"... 40627 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\output\atelier-editorial\phase0\baseline-source\ecommerce-backend\backend\tests\security-hardening.test.js:371:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'const { sendAiOperationError } = require(\'../services/ai/aiHttpErrors\');\r\nconst Product = require(\'../models/Product\');\r\nconst Collection = require(\'../models/Collection\');\r\nconst Category = require(\'../models/Category\');\r\nconst User = require(\'../models/User\');\r\nconst StaffPermission = require(\'../models/StaffPermission\');\r\nconst { createProductSchema, updateProductSchema } = require(\'../validations/productValidation\');\r\nconst InventoryLog = require(\'../models/InventoryLog\');\r\nconst mongoose = require(\'mongoose\');\r\nconst cache = require(\'../services/cacheService\');\r\nconst { logAudit } = require(\'../services/auditLogService\');\r\nconst { buildPagination } = require(\'../utils/pagination\');\r\nconst {\r\n    parseProductPayload,\r\n    resolveVariantImageReferences,\r\n    getUniqueProductImageSources\r\n} = require(\'../services/products/productMediaService\');\r\nconst {\r\n    generateProductContentSuggestion\r\n} = require(\'../services/products/productContentAiService\');\r\nconst {\r\n    slugify,\r\n    getUniqueSlug,\r\n    getCachedCategories,\r\n    invalidateCachedCategories,\r\n    addComputedProductFields,\r\n    buildProductListQuery,\r\n    getProductSort,\r\n    getSummaryProjection\r\n} = require(\'../services/products/productQueryService\');\r\nconst { validateBulkUpdates, applyBulkProductUpdates } = require(\'../services/products/bulkProductUpdates\');\r\nconst {\r\n    normalizeIncomingVariant,\r\n    buildSimpleVariant,\r\n    snapshotVariantStock,\r\n    applyVariantOperations,\r\n    buildStockAdjustmentLogs,\r\n    expandMatrix,\r\n    normalizeProductOptions\r\n} = require(\'../services/products/productVariantService\');\r\nconst {\r\n    normalizeProductPublicationFields,\r\n    enqueueScheduledProductPublication\r\n} = require(\'../services/products/scheduledProductService\');\r\nconst {\r\n    enqueueLowStockAlertsForLogs\r\n} = require(\'../services/inventoryLowStockAlertService\');\r\nconst { applyScheduledSalesToProducts } = require(\'../services/sales/scheduledSaleService\');\r\nconst { getStorefrontPreviewCards } = require(\'../services/products/storefrontPreviewDataService\');\r\nconst {\r\n    getShopPlanAccess,\r\n    buildFeatureError,\r\n    buildLimitError\r\n} = require(\'../services/billing/planAccessService\');\r\nconst {\r\n    getWeeklyAiUsage\r\n} = require(\'../services/billing/planUsageService\');\r\nconst {\r\n    beginAiGeneration,\r\n    completeAiGeneration,\r\n    failAiGeneration,\r\n    getReplayResponse\r\n} = require(\'../services/ai/aiGenerationPolicyService\');\r\nconst { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require(\'../services/billing/subscriptionEvents\');\r\nconst {\r\n    reserveQuota,\r\n    releaseQuotaSafely\r\n} = require(\'../services/billing/planQuotaReservationService\');\r\nconst { mergeCategoryDetails, normalizeCategoryKey } = require(\'../services/categories/categoryService\');\r\nconst { assertHistoricalSlugAvailable, recordSlugRedirect } = require(\'../services/seo/slugRedirectService\');\r\n\r\nconst ALLOWED_PAGE_SIZES = [10, 20, 25, 50, 100];\r\n\r\nconst invalidateProductReadCaches = async shopId => {\r\n    invalidateCachedCategories(shopId);\r\n    return Promise.all([\r\n        cache.delPattern(`admin:dashboard-overview:${shopId}:*`),\r\n        cache.delPattern(`storefront:*:${shopId}:*`)\r\n    ]);\r\n};\r\n\r\nconst normalizePageLimit = (value, fallback = 25) => {\r\n    const requested = parseInt(value, 10);\r\n    if (!Number.isFinite(requested) || requested <= 0) return fallback;\r\n    if (ALLOWED_PAGE_SIZES.includes(requested)) return requested;\r\n    return requested > Math.max(...ALLOWED_PAGE_SIZES)\r\n        ? Math.max(...ALLOWED_PAGE_SIZES)\r\n        : fallback;\r\n};\r\n\r\nconst normalizeStorefrontPageLimit = (value, fallback = 9) => {\r\n    const requested = parseInt(value, 10);\r\n    if (!Number.isFinite(requested) || requested <= 0) return fallback;\r\n    return Math.min(requested, 48);\r\n};\r\n\r\n\r\n// ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...\r\n\r\nconst resolveCoverMediaId = ({ images = [], videos = [], requestedCover = \'\', coverImageIndex }) => {\r\n    const media = [...(images || []), ...(videos || [])].map(item => String(item || \'\').trim()).filter(Boolean);\r\n    const requested = String(requestedCover || \'\').trim();\r\n    if (requested && media.includes(requested)) return requested;\r\n\r\n    const numericIndex = Number(coverImageIndex);\r\n    if (Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < (images || []).length) {\r\n        return images[numericIndex];\r\n    }\r\n\r\n    return images?.[0] || videos?.[0] || \'\';\r\n};\r\n\r\nconst coverMediaBelongsToProduct = ({ images = [], videos = [], coverMediaId = \'\' }) => {\r\n    const cover = String(coverMediaId || \'\').trim();\r\n    if (!cover) return true;\r\n    return [...(images || []), ...(videos || [])].map(item => String(item || \'\').trim()).includes(cover);\r\n};\r\n\r\nconst isSchedulingProductPublication = (payload = {}) => (\r\n    payload.publicationStatus === \'scheduled\' || Boolean(payload.publishAt)\r\n);\r\n\r\nconst vendorStaffHasPermission = async (req, permissionName) => {\r\n    if (req.user?.role !== \'VendorStaff\') return true;\r\n\r\n    if (req.user.membershipId || req.user.membership_id) {\r\n        const staffPermission = await StaffPermission.findOne({\r\n            membership_id: req.user.membershipId || req.user.membership_id,\r\n            shop_id: req.tenantId\r\n        }).select(\'permissions\').lean();\r\n        if (staffPermission?.permissions?.[permissionName]) return true;\r\n    }\r\n\r\n    const user = await User.findById(req.user._id).select(\'permissions\').lean();\r\n    return Boolean(user?.permissions?.[permissionName]);\r\n};\r\n\r\nconst ensureProductSchedulePermission = async (req, payload = {}) => {\r\n    if (!isSchedulingProductPublication(payload)) return true;\r\n    return vendorStaffHasPermission(req, \'productsSchedule\');\r\n};\r\n\r\nconst getPlanContext = async (req) => req.planAccess || getShopPlanAccess(req.tenantId);\r\n\r\nconst assertProductImageLimit = async (req, productOrCount) => {\r\n    const context = await getPlanContext(req);\r\n    const limit = context.limits.imagesPerProduct;\r\n    const imageCount = typeof productOrCount === \'number\'\r\n        ? productOrCount\r\n        : getUniqueProductImageSources(productOrCount).length;\r\n    if (limit !== null && Number(imageCount || 0) > Number(limit)) {\r\n        const error = new Error(\'Product image limit reached\');\r\n        error.statusCode = 403;\r\n        error.payload = await buildLimitError(context, \'imagesPerProduct\', Number(imageCount || 0), limit);\r\n        throw error;\r\n    }\r\n    return context;\r\n};\r\n\r\nconst assertScheduledPublishingPlan = async (req, payload) => {\r\n    if (!isSchedulingProductPublication(payload)) return null;\r\n    const context = await getPlanContext(req);\r\n    return context.features.scheduledProductPublishing\r\n        ? null\r\n        : await buildFeatureError(context, \'scheduledProductPublishing\');\r\n};\r\n\r\nconst sendAiLimitError = async (req, res, error) => {\r\n    const context = await getPlanContext(req);\r\n    const usage = error.usage || await getWeeklyAiUsage({\r\n        shopId: req.tenantId,\r\n        limit: context.limits.aiProductCreationsPerWeek\r\n    });\r\n    const payload = await buildLimitError(\r\n        context,\r\n        \'aiProductCreationsPerWeek\',\r\n        usage,\r\n        context.limits.aiProductCreationsPerWeek\r\n    );\r\n    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.QUOTA_REACHED, {\r\n        req,\r\n        shopId: req.tenantId,\r\n        subscriptionId: context.subscription?._id,\r\n        planKey: context.planKey,\r\n        affectedResources: [\'aiGeneration\'],\r\n        metadata: { resource: \'aiGeneration\', usage: payload.usage, notifyVendor: false }\r\n    });\r\n    return res.status(403).json(payload);\r\n};\r\n\r\n/**\r\n * @desc    Generate Product Description via AI (OpenAI)\r\n * @route   POST /api/admin/products/generate-description\r\n * @access  Private (Admin)\r\n */\r\nexports.generateDescription = async (req, res) => {\r\n    let generationState = null;\r\n    try {\r\n        const { title, category } = req.body;\r\n\r\n        if (!title) {\r\n            return res.status(400).json({ success: false, error: "Product title is required." });\r\n        }\r\n\r\n        generationState = await beginAiGeneration({\r\n            req,\r\n            feature: \'legacy.product_description\'\r\n        });\r\n        const suggestion = await generateProductContentSuggestion({\r\n            operation: generationState,\r\n            body: {\r\n                title,\r\n                category,\r\n                requestedSections: JSON.stringify([\'description\'])\r\n            }\r\n        });\r\n        const payload = {\r\n            success: true,\r\n            description: suggestion.data?.description || \'\',\r\n            fallback: Boolean(suggestion.fallback),\r\n            meta: suggestion.meta\r\n        };\r\n        const usage = await completeAiGeneration({\r\n            req,\r\n            state: generationState,\r\n            result: payload,\r\n            meta: suggestion.meta\r\n        });\r\n        generationState = null;\r\n        res.set(\'Deprecation\', \'true\');\r\n        res.set(\'Sunset\', \'Wed, 31 Dec 2026 23:59:59 GMT\');\r\n        res.status(200).json({ ...payload, usage });\r\n\r\n    } catch (err) {\r\n        const replay = getReplayResponse(err);\r\n        if (replay) return res.status(200).json({ ...replay, replayed: true });\r\n        await failAiGeneration({ req, state: generationState, error: err });\r\n        if (sendAiOperationError(res, err)) return;\r\n        if (err?.code === \'PLAN_LIMIT_REACHED\') return sendAiLimitError(req, res, err);\r\n        if (err?.code === \'AI_REQUEST_IN_PROGRESS\') {\r\n            return res.status(409).json({ success: false, code: err.code, error: err.message });\r\n        }\r\n        if (err?.code === \'AI_NOT_CONFIGURED\') {\r\n            return res.status(503).json({\r\n                success: false,\r\n                configured: false,\r\n                message: \'AI product suggestions are temporarily unavailable. Please contact support.\'\r\n            });\r\n        }\r\n        console.warn(\'Legacy product AI fai'... 40627 more characters,
+    expected: /enqueueLowStockAlertsForLogs\(lowStockLogs\)/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\security-hardening.test.js:377:1
+✖ promotion scheduling is enforced by backend checkout evaluation and exposed in admin UI (1.601ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /checkout will not apply them before the start time/i. Input:
+  
+  "import { useCallback, useEffect, useMemo, useRef, useState } from 'react';\r\n" +
+    'import {\r\n' +
+    '    AlertCircle, ArrowRight, BadgePercent, CalendarClock, Check, CheckCircle2,\r\n' +
+    '    ChevronDown, ChevronLeft, ChevronRight, Clock3, Copy, Gift, Layers,\r\n' +
+    '    Loader2, LockKeyhole, Package, Pause, Play, Plus, RefreshCw, Search,\r\n' +
+    '    ShieldCheck, ShoppingBag, Sparkles, Tag, TicketPercent, Trash2, X\r\n' +
+    "} from 'lucide-react';\r\n" +
+    "import { Link } from 'react-router-dom';\r\n" +
+    "import { toast } from 'react-hot-toast';\r\n" +
+    "import API from '../../api/api';\r\n" +
+    "import { AdminEmptyState, AdminLoadingState } from '../../components/ui/AdminState.jsx';\r\n" +
+    "import { useAuth } from '../../context/AuthContext.jsx';\r\n" +
+    "import { hasFeature } from '../../utils/featureAccess.js';\r\n" +
+    "import { hasStaffPermission } from '../../utils/staffPermissions.js';\r\n" +
+    "import { getBrowserTimeZoneLabel, localDateTimeToUtcIso } from '../../utils/dateTime.js';\r\n" +
+    '\r\n' +
+    '// Keeps the API payloads identical to the existing Promotions page.\r\n' +
+    'const newCoupon = () => ({\r\n' +
+    "    name: '', code: '', type: 'PERCENTAGE', value: 0, minSubtotal: 0,\r\n" +
+    "    startsAt: '', expiresAt: '', usageLimit: '', isActive: true,\r\n" +
+    "    appliesTo: { scope: 'ALL', categories: [] },\r\n" +
+    '    buyXGetY: { buyQuantity: 1, getQuantity: 1, getDiscountPercent: 100 }\r\n' +
+    '});\r\n' +
+    '\r\n' +
+    'const newSale = () => ({\r\n' +
+    "    name: '', scope: 'all_products', productIds: [], collectionIds: [],\r\n" +
+    "    discountType: 'percentage', discountValue: 10, priority: 0,\r\n" +
+    "    startsAt: '', endsAt: '',\r\n" +
+    '    popup: {\r\n' +
+    "        enabled: false, title: '', message: '', ctaLabel: 'Shop sale',\r\n" +
+    "        ctaUrl: '#products', frequency: 'once_per_session', timing: 'active',\r\n" +
+    "        displayStartsAt: '', desktopImage: '', mobileImage: ''\r\n" +
+    '    }\r\n' +
+    '});\r\n' +
+    '\r\n' +
+    "const inputClass = 'block min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60';\r\n" +
+    "const secondaryButton = 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50';\r\n" +
+    "const primaryButton = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50';\r\n" +
+    '\r\n' +
+    "const money = value => `৳${(Number(value) || 0).toLocaleString('en-BD', { maximumFractionDigits: 2 })}`;\r\n" +
+    'const validDate = value => value && Number.isFinite(new Date(value).getTime());\r\n' +
+    "const dateLabel = value => validDate(value) ? new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set';\r\n" +
+    '\r\n' +
+    'function validateWindow(start, end, required = false) {\r\n' +
+    "    if (required && (!start || !end)) return 'Choose both the start and end time.';\r\n" +
+    "    if (start && !validDate(start)) return 'Choose a valid start time.';\r\n" +
+    "    if (end && !validDate(end)) return 'Choose a valid end time.';\r\n" +
+    '    if (start && end && new Date(start).getTime() >= new Date(end).getTime()) {\r\n' +
+    "        return 'The end time must be later than the start time.';\r\n" +
+    '    }\r\n' +
+    '    return null;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function safeImageUrl(value) {\r\n' +
+    '    if (!value) return true;\r\n' +
+    '    const trimmed = value.trim();\r\n' +
+    '    if (/\\s/.test(trimmed) || [...trimmed].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return false;\r\n' +
+    "    if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\\\')) return true;\r\n" +
+    '    try {\r\n' +
+    '        const url = new URL(trimmed);\r\n' +
+    "        return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;\r\n" +
+    '    } catch {\r\n' +
+    '        return false;\r\n' +
+    '    }\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function safePopupLink(value) {\r\n' +
+    '    if (!value) return true;\r\n' +
+    '    const link = value.trim();\r\n' +
+    "    if (!link || link.length > 500 || /\\s/.test(link) || link.includes('\\\\')) return false;\r\n" +
+    "    if ((link.startsWith('/') && !link.startsWith('//')) || link.startsWith('#')) return true;\r\n" +
+    '    try {\r\n' +
+    '        const url = new URL(link);\r\n' +
+    "        return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password;\r\n" +
+    '    } catch {\r\n' +
+    '        return false;\r\n' +
+    '    }\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function couponStatus(promotion, now) {\r\n' +
+    "    if (!promotion.isActive) return 'Paused';\r\n" +
+    '    const startsAt = promotion.startsAt ? new Date(promotion.startsAt).getTime() : null;\r\n' +
+    '    const expiresAt = promotion.expiresAt ? new Date(promotion.expiresAt).getTime() : null;\r\n' +
+    "    if (expiresAt !== null && Number.isFinite(expiresAt) && expiresAt <= now) return 'Expired';\r\n" +
+    "    if (Number(promotion.usageLimit) > 0 && Number(promotion.usageCount || 0) >= Number(promotion.usageLimit)) return 'Limit reached';\r\n" +
+    "    if (startsAt !== null && Number.isFinite(startsAt) && startsAt > now) return 'Scheduled';\r\n" +
+    "    return 'Active';\r\n" +
+    '}\r\n' +
+    '\r\n' +
+    'function couponValue(promotion) {\r\n' +
+    '    switch (promotion.type) {\r\n' +
+    "        case 'PERCENTAGE': return `${Number(promotion.value) || 0}% off`;\r\n" +
+    "        case 'FIXED_AMOUNT': return `${money(promotion.value)} off`;\r\n" +
+    "        case 'FREE_SHIPPING': return 'Free shipping';\r\n" +
+    "        case 'FIRST_ORDER': return 'First-order offer';\r\n" +
+    "        case 'BUY_X_GET_Y': return `Buy ${promotion.buyXGetY?.buyQuantity || 1}, get ${promotion.buyXGetY?.getQuantity || 1}`;\r\n" +
+    "        default: return String(promotion.type || 'Offer').replaceAll('_', ' ');\r\n" +
+    '    }\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'const tones = {\r\n' +
+    "    Active: 'border-emerald-100 bg-emerald-50 text-emerald-700',\r\n" +
+    "    Scheduled: 'border-blue-100 bg-blue-50 text-blue-700',\r\n" +
+    "    Paused: 'border-slate-200 bg-slate-100 text-slate-600',\r\n" +
+    "    Expired: 'border-rose-100 bg-rose-50 text-rose-700',\r\n" +
+    "    'Limit reached': 'border-amber-100 bg-amber-50 text-amber-700'\r\n" +
+    '};\r\n' +
+    '\r\n' +
+    'function StatusPill({ label }) {\r\n' +
+    "    return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${tones[label] || 'border-slate-200 bg-slate-100 text-slate-600'}`}>\r\n" +
+    '        <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />{label}\r\n' +
+    '    </span>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function Field({ label, hint, required = false, children }) {\r\n' +
+    '    return <label className="block min-w-0 space-y-1.5">\r\n' +
+    '        <span className="block text-xs font-bold tracking-wide text-slate-700">{label}{required && <span className="ml-1 text-rose-500" aria-hidden="true">*</span>}</span>\r\n' +
+    '        {children}\r\n' +
+    '        {hint && <span className="block text-xs leading-relaxed text-slate-500">{hint}</span>}\r\n' +
+    '    </label>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function SectionHeading({ icon: Icon, title, description, accessory }) {\r\n' +
+    '    return <div className="flex flex-wrap items-start justify-between gap-3">\r\n' +
+    '        <div className="flex min-w-0 items-start gap-3">\r\n' +
+    '            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Icon size={18} /></div>\r\n' +
+    '            <div><h3 className="font-bold tracking-tight text-slate-900">{title}</h3>{description && <p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p>}</div>\r\n' +
+    '        </div>{accessory}\r\n' +
+    '    </div>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    "function Metric({ icon: Icon, title, value, note, tone = 'blue' }) {\r\n" +
+    "    const colors = tone === 'green' ? 'bg-emerald-50 text-emerald-600' : tone === 'amber' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600';\r\n" +
+    '    return <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">\r\n' +
+    '        <div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-500">{title}</span><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${colors}`}><Icon size={18} /></span></div>\r\n' +
+    '        <div className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 tabular-nums">{value}</div>\r\n' +
+    '        <p className="mt-1 text-xs text-slate-500">{note}</p>\r\n' +
+    '    </div>;\r\n' +
+    '}\r\n' +
+    '\r\n' +
+    'function ConfirmDialog({ target, busy, onCancel, onConfirm }) {\r\n' +
+    '    const cancelRef = useRef(null);\r\n' +
+    '    const dialogRef = useRef(null);\r\n' +
+    '    const busyRef = useRef(busy);\r\n' +
+    '    useEffect(() => { busyRef.current = busy; }, [busy]);\r\n' +
+    '    useEffect(() => {\r\n' +
+    '        if (!target) return undefined;\r\n' +
+    '        const previousFocus = document.activeElement;\r\n' +
+    '        const previousOverflow = document.body.style.overflow;\r\n' +
+    "        document.body.style.overflow = 'hidden';\r\n" +
+    '        cancelRef.current?.focus();\r\n' +
+    '        const onKeyDown = event => {\r\n' +
+    "            if (event.key === 'Escape' && !busyRef.current) { event.preventDefault(); onCancel(); }\r\n" +
+    "            if (event.key !== 'Tab') return;\r\n" +
+    "            const elements = Array.from(dialogRef.current?.querySelectorAll('button:not(:disabled)') || []);\r\n" +
+    '            if (!elements.length) return;\r\n' +
+    '            const first = elements[0];\r\n' +
+    '            const last = elements[elements.length - 1];\r\n' +
+    '            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }\r\n' +
+    '            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }\r\n' +
+    '        };\r\n' +
+    "        document.addEventListener('keydown', onKeyDown);\r\n" +
+    '        return () => {\r\n' +
+    "            document.removeEventListener('keydown', onKeyDown);\r\n" +
+    '            document.body.style.overflow = previousOverflow;\r\n' +
+    '            previousFocus?.focus?.();\r\n' +
+    '        };\r\n' +
+    '    }, [target, onCancel]);\r\n' +
+    '    if (!target) return null;\r\n' +
+    '    return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[2px]">\r\n' +
+    '        <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="promotion-dialog-title" aria-describedby="promotion-dialog-desc" className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">\r\n' +
+    '            <div '... 61120 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\output\atelier-editorial\phase0\baseline-source\ecommerce-backend\backend\tests\security-hardening.test.js:392:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { useCallback, useEffect, useMemo, useRef, useState } from \'react\';\r\nimport {\r\n    AlertCircle, ArrowRight, BadgePercent, CalendarClock, Check, CheckCircle2,\r\n    ChevronDown, ChevronLeft, ChevronRight, Clock3, Copy, Gift, Layers,\r\n    Loader2, LockKeyhole, Package, Pause, Play, Plus, RefreshCw, Search,\r\n    ShieldCheck, ShoppingBag, Sparkles, Tag, TicketPercent, Trash2, X\r\n} from \'lucide-react\';\r\nimport { Link } from \'react-router-dom\';\r\nimport { toast } from \'react-hot-toast\';\r\nimport API from \'../../api/api\';\r\nimport { AdminEmptyState, AdminLoadingState } from \'../../components/ui/AdminState.jsx\';\r\nimport { useAuth } from \'../../context/AuthContext.jsx\';\r\nimport { hasFeature } from \'../../utils/featureAccess.js\';\r\nimport { hasStaffPermission } from \'../../utils/staffPermissions.js\';\r\nimport { getBrowserTimeZoneLabel, localDateTimeToUtcIso } from \'../../utils/dateTime.js\';\r\n\r\n// Keeps the API payloads identical to the existing Promotions page.\r\nconst newCoupon = () => ({\r\n    name: \'\', code: \'\', type: \'PERCENTAGE\', value: 0, minSubtotal: 0,\r\n    startsAt: \'\', expiresAt: \'\', usageLimit: \'\', isActive: true,\r\n    appliesTo: { scope: \'ALL\', categories: [] },\r\n    buyXGetY: { buyQuantity: 1, getQuantity: 1, getDiscountPercent: 100 }\r\n});\r\n\r\nconst newSale = () => ({\r\n    name: \'\', scope: \'all_products\', productIds: [], collectionIds: [],\r\n    discountType: \'percentage\', discountValue: 10, priority: 0,\r\n    startsAt: \'\', endsAt: \'\',\r\n    popup: {\r\n        enabled: false, title: \'\', message: \'\', ctaLabel: \'Shop sale\',\r\n        ctaUrl: \'#products\', frequency: \'once_per_session\', timing: \'active\',\r\n        displayStartsAt: \'\', desktopImage: \'\', mobileImage: \'\'\r\n    }\r\n});\r\n\r\nconst inputClass = \'block min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60\';\r\nconst secondaryButton = \'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50\';\r\nconst primaryButton = \'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/25 disabled:cursor-not-allowed disabled:opacity-50\';\r\n\r\nconst money = value => `৳${(Number(value) || 0).toLocaleString(\'en-BD\', { maximumFractionDigits: 2 })}`;\r\nconst validDate = value => value && Number.isFinite(new Date(value).getTime());\r\nconst dateLabel = value => validDate(value) ? new Date(value).toLocaleString(undefined, { dateStyle: \'medium\', timeStyle: \'short\' }) : \'Not set\';\r\n\r\nfunction validateWindow(start, end, required = false) {\r\n    if (required && (!start || !end)) return \'Choose both the start and end time.\';\r\n    if (start && !validDate(start)) return \'Choose a valid start time.\';\r\n    if (end && !validDate(end)) return \'Choose a valid end time.\';\r\n    if (start && end && new Date(start).getTime() >= new Date(end).getTime()) {\r\n        return \'The end time must be later than the start time.\';\r\n    }\r\n    return null;\r\n}\r\n\r\nfunction safeImageUrl(value) {\r\n    if (!value) return true;\r\n    const trimmed = value.trim();\r\n    if (/\\s/.test(trimmed) || [...trimmed].some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return false;\r\n    if (trimmed.startsWith(\'/\') && !trimmed.startsWith(\'//\') && !trimmed.startsWith(\'/\\\\\')) return true;\r\n    try {\r\n        const url = new URL(trimmed);\r\n        return url.protocol === \'https:\' && Boolean(url.hostname) && !url.username && !url.password;\r\n    } catch {\r\n        return false;\r\n    }\r\n}\r\n\r\nfunction safePopupLink(value) {\r\n    if (!value) return true;\r\n    const link = value.trim();\r\n    if (!link || link.length > 500 || /\\s/.test(link) || link.includes(\'\\\\\')) return false;\r\n    if ((link.startsWith(\'/\') && !link.startsWith(\'//\')) || link.startsWith(\'#\')) return true;\r\n    try {\r\n        const url = new URL(link);\r\n        return url.protocol === \'https:\' && Boolean(url.hostname) && !url.username && !url.password;\r\n    } catch {\r\n        return false;\r\n    }\r\n}\r\n\r\nfunction couponStatus(promotion, now) {\r\n    if (!promotion.isActive) return \'Paused\';\r\n    const startsAt = promotion.startsAt ? new Date(promotion.startsAt).getTime() : null;\r\n    const expiresAt = promotion.expiresAt ? new Date(promotion.expiresAt).getTime() : null;\r\n    if (expiresAt !== null && Number.isFinite(expiresAt) && expiresAt <= now) return \'Expired\';\r\n    if (Number(promotion.usageLimit) > 0 && Number(promotion.usageCount || 0) >= Number(promotion.usageLimit)) return \'Limit reached\';\r\n    if (startsAt !== null && Number.isFinite(startsAt) && startsAt > now) return \'Scheduled\';\r\n    return \'Active\';\r\n}\r\n\r\nfunction couponValue(promotion) {\r\n    switch (promotion.type) {\r\n        case \'PERCENTAGE\': return `${Number(promotion.value) || 0}% off`;\r\n        case \'FIXED_AMOUNT\': return `${money(promotion.value)} off`;\r\n        case \'FREE_SHIPPING\': return \'Free shipping\';\r\n        case \'FIRST_ORDER\': return \'First-order offer\';\r\n        case \'BUY_X_GET_Y\': return `Buy ${promotion.buyXGetY?.buyQuantity || 1}, get ${promotion.buyXGetY?.getQuantity || 1}`;\r\n        default: return String(promotion.type || \'Offer\').replaceAll(\'_\', \' \');\r\n    }\r\n}\r\n\r\nconst tones = {\r\n    Active: \'border-emerald-100 bg-emerald-50 text-emerald-700\',\r\n    Scheduled: \'border-blue-100 bg-blue-50 text-blue-700\',\r\n    Paused: \'border-slate-200 bg-slate-100 text-slate-600\',\r\n    Expired: \'border-rose-100 bg-rose-50 text-rose-700\',\r\n    \'Limit reached\': \'border-amber-100 bg-amber-50 text-amber-700\'\r\n};\r\n\r\nfunction StatusPill({ label }) {\r\n    return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${tones[label] || \'border-slate-200 bg-slate-100 text-slate-600\'}`}>\r\n        <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />{label}\r\n    </span>;\r\n}\r\n\r\nfunction Field({ label, hint, required = false, children }) {\r\n    return <label className="block min-w-0 space-y-1.5">\r\n        <span className="block text-xs font-bold tracking-wide text-slate-700">{label}{required && <span className="ml-1 text-rose-500" aria-hidden="true">*</span>}</span>\r\n        {children}\r\n        {hint && <span className="block text-xs leading-relaxed text-slate-500">{hint}</span>}\r\n    </label>;\r\n}\r\n\r\nfunction SectionHeading({ icon: Icon, title, description, accessory }) {\r\n    return <div className="flex flex-wrap items-start justify-between gap-3">\r\n        <div className="flex min-w-0 items-start gap-3">\r\n            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Icon size={18} /></div>\r\n            <div><h3 className="font-bold tracking-tight text-slate-900">{title}</h3>{description && <p className="mt-0.5 text-xs leading-5 text-slate-500">{description}</p>}</div>\r\n        </div>{accessory}\r\n    </div>;\r\n}\r\n\r\nfunction Metric({ icon: Icon, title, value, note, tone = \'blue\' }) {\r\n    const colors = tone === \'green\' ? \'bg-emerald-50 text-emerald-600\' : tone === \'amber\' ? \'bg-amber-50 text-amber-600\' : \'bg-blue-50 text-blue-600\';\r\n    return <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">\r\n        <div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-500">{title}</span><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${colors}`}><Icon size={18} /></span></div>\r\n        <div className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 tabular-nums">{value}</div>\r\n        <p className="mt-1 text-xs text-slate-500">{note}</p>\r\n    </div>;\r\n}\r\n\r\nfunction ConfirmDialog({ target, busy, onCancel, onConfirm }) {\r\n    const cancelRef = useRef(null);\r\n    const dialogRef = useRef(null);\r\n    const busyRef = useRef(busy);\r\n    useEffect(() => { busyRef.current = busy; }, [busy]);\r\n    useEffect(() => {\r\n        if (!target) return undefined;\r\n        const previousFocus = document.activeElement;\r\n        const previousOverflow = document.body.style.overflow;\r\n        document.body.style.overflow = \'hidden\';\r\n        cancelRef.current?.focus();\r\n        const onKeyDown = event => {\r\n            if (event.key === \'Escape\' && !busyRef.current) { event.preventDefault(); onCancel(); }\r\n            if (event.key !== \'Tab\') return;\r\n            const elements = Array.from(dialogRef.current?.querySelectorAll(\'button:not(:disabled)\') || []);\r\n            if (!elements.length) return;\r\n            const first = elements[0];\r\n            const last = elements[elements.length - 1];\r\n            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }\r\n            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }\r\n        };\r\n        document.addEventListener(\'keydown\', onKeyDown);\r\n        return () => {\r\n            document.removeEventListener(\'keydown\', onKeyDown);\r\n            document.body.style.overflow = previousOverflow;\r\n            previousFocus?.focus?.();\r\n        };\r\n    }, [target, onCancel]);\r\n    if (!target) return null;\r\n    return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[2px]">\r\n        <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="promotion-dialog-title" aria-describedby="promotion-dialog-desc" className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">\r\n            <div '... 61120 more characters,
+    expected: /checkout will not apply them before the start time/i,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\security-hardening.test.js:883:1
+✖ confirmed order status email is sent through status update endpoint once (2.0558ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Retry Courier/. Input:
+  
+  "import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';\r\n" +
+    'import {\r\n' +
+    '    CheckCircle,\r\n' +
+    '    Clock,\r\n' +
+    '    Eye,\r\n' +
+    '    Package,\r\n' +
+    '    Search,\r\n' +
+    '    Send,\r\n' +
+    '    Truck,\r\n' +
+    '    X,\r\n' +
+    '    XCircle\r\n' +
+    "} from 'lucide-react';\r\n" +
+    "import { toast } from 'react-hot-toast';\r\n" +
+    "import API from '../../../api/api';\r\n" +
+    "import Table from '../../../components/ui/Table';\r\n" +
+    "import { AdminEmptyState, AdminLoadingState } from '../../../components/ui/AdminState.jsx';\r\n" +
+    "import PaginationBar from '../../../components/ui/PaginationBar.jsx';\r\n" +
+    "import PageRefreshButton from '../../../components/ui/PageRefreshButton.jsx';\r\n" +
+    "import { isAbortError, useAbortableRequest } from '../../../hooks/useAbortableRequest.js';\r\n" +
+    "import useDebouncedValue from '../../../hooks/useDebouncedValue.js';\r\n" +
+    '\r\n' +
+    "const OrderDetailsModal = lazy(() => import('../../../components/dashboard/OrderDetailsModal'));\r\n" +
+    "const PathaoSyncModal = lazy(() => import('./PathaoSyncModal'));\r\n" +
+    "const EmailNotificationModal = lazy(() => import('../../../components/order/EmailNotificationModal.jsx'));\r\n" +
+    '\r\n' +
+    "const STATUS_OPTIONS = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];\r\n" +
+    '\r\n' +
+    'const OrderList = () => {\r\n' +
+    '    const [orders, setOrders] = useState([]);\r\n' +
+    '    const [loading, setLoading] = useState(true);\r\n' +
+    '    const [selectedOrder, setSelectedOrder] = useState(null);\r\n' +
+    "    const [searchQuery, setSearchQuery] = useState('');\r\n" +
+    '    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });\r\n' +
+    '    const [courierSettings, setCourierSettings] = useState(null);\r\n' +
+    '    const [retryingOrderId, setRetryingOrderId] = useState(null);\r\n' +
+    '    const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);\r\n' +
+    '    const [pathaoModalOpen, setPathaoModalOpen] = useState(false);\r\n' +
+    '    const [orderToSync, setOrderToSync] = useState(null);\r\n' +
+    '    const [emailModalOpen, setEmailModalOpen] = useState(false);\r\n' +
+    "    const [pendingStatusUpdate, setPendingStatusUpdate] = useState({ order: null, newStatus: '' });\r\n" +
+    '\r\n' +
+    '    const runAbortable = useAbortableRequest();\r\n' +
+    '    const fetchIdRef = useRef(0);\r\n' +
+    '    const debouncedSearchQuery = useDebouncedValue(searchQuery, 350);\r\n' +
+    '\r\n' +
+    '    const fetchOrders = useCallback(async (page = 1) => {\r\n' +
+    '        const fetchId = fetchIdRef.current + 1;\r\n' +
+    '        fetchIdRef.current = fetchId;\r\n' +
+    '        setLoading(true);\r\n' +
+    '\r\n' +
+    '        try {\r\n' +
+    '            await runAbortable(async ({ signal, isLatest }) => {\r\n' +
+    "                const { data } = await API.get('/admin/orders', {\r\n" +
+    '                    params: {\r\n' +
+    '                        page,\r\n' +
+    '                        limit: 25,\r\n' +
+    '                        search: debouncedSearchQuery || undefined\r\n' +
+    '                    },\r\n' +
+    '                    signal\r\n' +
+    '                });\r\n' +
+    '\r\n' +
+    '                if (!isLatest() || fetchId !== fetchIdRef.current) return;\r\n' +
+    '\r\n' +
+    '                setOrders(data.data || []);\r\n' +
+    '                setPagination(data.pagination || {\r\n' +
+    '                    page,\r\n' +
+    '                    pages: 1,\r\n' +
+    '                    total: data.data?.length || 0\r\n' +
+    '                });\r\n' +
+    '            });\r\n' +
+    '        } catch (error) {\r\n' +
+    '            if (isAbortError(error)) return;\r\n' +
+    "            toast.error('Failed to load orders');\r\n" +
+    '        } finally {\r\n' +
+    '            if (fetchId === fetchIdRef.current) setLoading(false);\r\n' +
+    '        }\r\n' +
+    '    }, [debouncedSearchQuery, runAbortable]);\r\n' +
+    '\r\n' +
+    '    useEffect(() => {\r\n' +
+    '        const timer = setTimeout(() => fetchOrders(1), 0);\r\n' +
+    '        return () => clearTimeout(timer);\r\n' +
+    '    }, [fetchOrders]);\r\n' +
+    '\r\n' +
+    '    useEffect(() => {\r\n' +
+    "        API.get('/admin/shipping/couriers')\r\n" +
+    '            .then(({ data }) => setCourierSettings(data.data || null))\r\n' +
+    '            .catch(() => setCourierSettings(null));\r\n' +
+    '    }, []);\r\n' +
+    '\r\n' +
+    '    const getCourierStatus = (order) => {\r\n' +
+    '        const shipment = order?.courierShipment || {};\r\n' +
+    '\r\n' +
+    '        if (shipment.trackingId || shipment.status) {\r\n' +
+    '            return {\r\n' +
+    "                provider: shipment.provider || order.shippingProvider || 'courier',\r\n" +
+    "                status: shipment.trackingId ? 'synced' : shipment.status,\r\n" +
+    '                hasShipment: Boolean(shipment.trackingId),\r\n' +
+    "                error: shipment.lastError || order.pathaoLastError || ''\r\n" +
+    '            };\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        if (order?.isPathaoSynced) {\r\n' +
+    '            return {\r\n' +
+    "                provider: 'pathao',\r\n" +
+    "                status: 'synced',\r\n" +
+    '                hasShipment: true,\r\n' +
+    "                error: ''\r\n" +
+    '            };\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        return {\r\n' +
+    "            provider: order?.shippingProvider || 'pathao',\r\n" +
+    "            status: order?.pathaoSyncStatus || '',\r\n" +
+    '            hasShipment: Boolean(order?.isPathaoSynced),\r\n' +
+    "            error: order?.pathaoLastError || ''\r\n" +
+    '        };\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const updateStatusInDB = async (orderId, newStatus, options = {}) => {\r\n' +
+    '        try {\r\n' +
+    '            setStatusUpdatingOrderId(orderId);\r\n' +
+    '            setOrders((previous) => previous.map((order) => (\r\n' +
+    '                order._id === orderId ? { ...order, status: newStatus } : order\r\n' +
+    '            )));\r\n' +
+    '\r\n' +
+    '            const { data } = await API.patch(`/admin/orders/${orderId}/status`, {\r\n' +
+    '                status: newStatus,\r\n' +
+    '                ...options\r\n' +
+    '            });\r\n' +
+    '\r\n' +
+    '            if (data?.data) {\r\n' +
+    '                setOrders((previous) => previous.map((order) => (\r\n' +
+    '                    order._id === orderId ? data.data : order\r\n' +
+    '                )));\r\n' +
+    '            }\r\n' +
+    '\r\n' +
+    '            toast.success(`Order status updated to ${newStatus}`);\r\n' +
+    "            if (data?.notification?.sent) toast.success('Customer email accepted by provider');\r\n" +
+    "            else if (options.notifyCustomer) toast.error('Order status changed, but the customer email was not accepted. Check your email settings.');\r\n" +
+    '\r\n' +
+    '            return data?.data || true;\r\n' +
+    '        } catch (error) {\r\n' +
+    "            toast.error(error.response?.data?.error || 'Failed to update status');\r\n" +
+    '            fetchOrders(pagination.page);\r\n' +
+    '            return null;\r\n' +
+    '        } finally {\r\n' +
+    '            setStatusUpdatingOrderId(null);\r\n' +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handleStatusChangeClick = (order, newStatus) => {\r\n' +
+    '        if (!newStatus || newStatus === order.status) return;\r\n' +
+    '\r\n' +
+    "        if (newStatus === 'Confirmed' && !getCourierStatus(order).hasShipment) {\r\n" +
+    '            setOrderToSync(order);\r\n' +
+    '            setPathaoModalOpen(true);\r\n' +
+    '            return;\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    "        if (newStatus === 'Confirmed') {\r\n" +
+    '            updateStatusInDB(order._id, newStatus, { notifyCustomer: true });\r\n' +
+    '            return;\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        setPendingStatusUpdate({ order, newStatus });\r\n' +
+    '        setEmailModalOpen(true);\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handleEmailModalDecision = async (shouldSendEmail, emailData = null) => {\r\n' +
+    '        const { order, newStatus } = pendingStatusUpdate;\r\n' +
+    '        setEmailModalOpen(false);\r\n' +
+    '\r\n' +
+    '        if (!order || !newStatus) return;\r\n' +
+    '\r\n' +
+    '        await updateStatusInDB(order._id, newStatus, {\r\n' +
+    '            notifyCustomer: shouldSendEmail,\r\n' +
+    '            emailSubject: emailData?.subject,\r\n' +
+    '            emailMessage: emailData?.message\r\n' +
+    '        });\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handlePathaoSuccess = (updatedOrder) => {\r\n' +
+    '        if (!updatedOrder?._id) {\r\n' +
+    '            fetchOrders(pagination.page);\r\n' +
+    '            return;\r\n' +
+    '        }\r\n' +
+    '\r\n' +
+    '        setOrders((previous) => previous.map((order) => (\r\n' +
+    '            order._id === updatedOrder._id ? updatedOrder : order\r\n' +
+    '        )));\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const handleRetryCourierQueue = async (order) => {\r\n' +
+    '        const courierStatus = getCourierStatus(order);\r\n' +
+    '        setRetryingOrderId(order._id);\r\n' +
+    '\r\n' +
+    '        try {\r\n' +
+    "            const { data } = courierStatus.provider === 'redx'\r\n" +
+    '                ? await API.post(`/admin/orders/${order._id}/courier`, {\r\n' +
+    "                    provider: 'redx',\r\n" +
+    '                    retry: true\r\n' +
+    '                })\r\n' +
+    '                : await API.post(`/admin/orders/${order._id}/pathao`, {\r\n' +
+    '                    retry: true\r\n' +
+    '                });\r\n' +
+    '\r\n' +
+    "            toast.success(data.message || 'Courier retry queued');\r\n" +
+    '\r\n' +
+    '            if (data.data?._id) {\r\n' +
+    '                setOrders((previous) => previous.map((currentOrder) => (\r\n' +
+    '                    currentOrder._id === data.data._id ? data.data : currentOrder\r\n' +
+    '                )));\r\n' +
+    '            } else {\r\n' +
+    '                fetchOrders(pagination.page);\r\n' +
+    '            }\r\n' +
+    '        } catch (error) {\r\n' +
+    "            toast.error(error.response?.data?.error || 'Failed to retry courier queue');\r\n" +
+    '        } finally {\r\n' +
+    '            setRetryingOrderId(null);\r\n' +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const getStatusStyle = (status) => {\r\n' +
+    '        switch (status) {\r\n' +
+    "            case 'Pending': return 'border-amber-200 bg-amber-50 text-amber-700';\r\n" +
+    "            case 'Confirmed': return 'border-sky-200 bg-sky-50 text-sky-700';\r\n" +
+    "            case 'Processing': return 'border-blue-200 bg-blue-50 text-blue-700';\r\n" +
+    "            case 'Shipped': return 'border-violet-200 bg-violet-50 text-violet-700';\r\n" +
+    "            case 'Delivered': return 'border-emerald-200 bg-emerald-50 text-emerald-700';\r\n" +
+    "            case 'Cancelled': return 'border-rose-200 bg-rose-50 text-rose-700';\r\n" +
+    "            case 'Returned': return 'border-orange-200 bg-orange-50 text-orange-700';\r\n" +
+    "            default: return 'border-slate-200 bg-slate-50 text-slate-700';\r\n" +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const getStatusIcon = (status) => {\r\n' +
+    '        switch (status) {\r\n' +
+    `            case 'Pending': return <Clock size={13} aria-hidden="true" />;\r\n` +
+    `            case 'Processing': return <Package size={13} aria-hidden="true" />;\r\n` +
+    `            case 'Shipped': return <Truck size={13} aria-hidden="true" />;\r\n` +
+    `            case 'Delivered': return <CheckCircle size={13} aria-hidden="true" />;\r\n` +
+    "            case 'Cancelled':\r\n" +
+    `            case 'Returned': return <XCircle size={13} aria-hidden="true" />;\r\n` +
+    '            default: return null;\r\n' +
+    '        }\r\n' +
+    '    };\r\n' +
+    '\r\n' +
+    '    const getCourierStatusStyle = (status) => {\r\n' +
+    '        switch (status) {\r\n' +
+    "            case 'queued': return 'border-amber-200 bg-amber-50 text-amber-700';\r\n" +
+    "            case 'syncing': return 'border-blue-200 bg-blue-50 text-blue-700';\r\n" +
+    "            case 'synced': return 'border-emerald-200 bg-emerald-50 text-emerald-700';\r\n" +
+    "            case 'fa"... 20353 more characters
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\output\atelier-editorial\phase0\baseline-source\ecommerce-backend\backend\tests\security-hardening.test.js:905:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'import { lazy, Suspense, useCallback, useEffect, useRef, useState } from \'react\';\r\nimport {\r\n    CheckCircle,\r\n    Clock,\r\n    Eye,\r\n    Package,\r\n    Search,\r\n    Send,\r\n    Truck,\r\n    X,\r\n    XCircle\r\n} from \'lucide-react\';\r\nimport { toast } from \'react-hot-toast\';\r\nimport API from \'../../../api/api\';\r\nimport Table from \'../../../components/ui/Table\';\r\nimport { AdminEmptyState, AdminLoadingState } from \'../../../components/ui/AdminState.jsx\';\r\nimport PaginationBar from \'../../../components/ui/PaginationBar.jsx\';\r\nimport PageRefreshButton from \'../../../components/ui/PageRefreshButton.jsx\';\r\nimport { isAbortError, useAbortableRequest } from \'../../../hooks/useAbortableRequest.js\';\r\nimport useDebouncedValue from \'../../../hooks/useDebouncedValue.js\';\r\n\r\nconst OrderDetailsModal = lazy(() => import(\'../../../components/dashboard/OrderDetailsModal\'));\r\nconst PathaoSyncModal = lazy(() => import(\'./PathaoSyncModal\'));\r\nconst EmailNotificationModal = lazy(() => import(\'../../../components/order/EmailNotificationModal.jsx\'));\r\n\r\nconst STATUS_OPTIONS = [\'Pending\', \'Confirmed\', \'Processing\', \'Shipped\', \'Delivered\'];\r\n\r\nconst OrderList = () => {\r\n    const [orders, setOrders] = useState([]);\r\n    const [loading, setLoading] = useState(true);\r\n    const [selectedOrder, setSelectedOrder] = useState(null);\r\n    const [searchQuery, setSearchQuery] = useState(\'\');\r\n    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });\r\n    const [courierSettings, setCourierSettings] = useState(null);\r\n    const [retryingOrderId, setRetryingOrderId] = useState(null);\r\n    const [statusUpdatingOrderId, setStatusUpdatingOrderId] = useState(null);\r\n    const [pathaoModalOpen, setPathaoModalOpen] = useState(false);\r\n    const [orderToSync, setOrderToSync] = useState(null);\r\n    const [emailModalOpen, setEmailModalOpen] = useState(false);\r\n    const [pendingStatusUpdate, setPendingStatusUpdate] = useState({ order: null, newStatus: \'\' });\r\n\r\n    const runAbortable = useAbortableRequest();\r\n    const fetchIdRef = useRef(0);\r\n    const debouncedSearchQuery = useDebouncedValue(searchQuery, 350);\r\n\r\n    const fetchOrders = useCallback(async (page = 1) => {\r\n        const fetchId = fetchIdRef.current + 1;\r\n        fetchIdRef.current = fetchId;\r\n        setLoading(true);\r\n\r\n        try {\r\n            await runAbortable(async ({ signal, isLatest }) => {\r\n                const { data } = await API.get(\'/admin/orders\', {\r\n                    params: {\r\n                        page,\r\n                        limit: 25,\r\n                        search: debouncedSearchQuery || undefined\r\n                    },\r\n                    signal\r\n                });\r\n\r\n                if (!isLatest() || fetchId !== fetchIdRef.current) return;\r\n\r\n                setOrders(data.data || []);\r\n                setPagination(data.pagination || {\r\n                    page,\r\n                    pages: 1,\r\n                    total: data.data?.length || 0\r\n                });\r\n            });\r\n        } catch (error) {\r\n            if (isAbortError(error)) return;\r\n            toast.error(\'Failed to load orders\');\r\n        } finally {\r\n            if (fetchId === fetchIdRef.current) setLoading(false);\r\n        }\r\n    }, [debouncedSearchQuery, runAbortable]);\r\n\r\n    useEffect(() => {\r\n        const timer = setTimeout(() => fetchOrders(1), 0);\r\n        return () => clearTimeout(timer);\r\n    }, [fetchOrders]);\r\n\r\n    useEffect(() => {\r\n        API.get(\'/admin/shipping/couriers\')\r\n            .then(({ data }) => setCourierSettings(data.data || null))\r\n            .catch(() => setCourierSettings(null));\r\n    }, []);\r\n\r\n    const getCourierStatus = (order) => {\r\n        const shipment = order?.courierShipment || {};\r\n\r\n        if (shipment.trackingId || shipment.status) {\r\n            return {\r\n                provider: shipment.provider || order.shippingProvider || \'courier\',\r\n                status: shipment.trackingId ? \'synced\' : shipment.status,\r\n                hasShipment: Boolean(shipment.trackingId),\r\n                error: shipment.lastError || order.pathaoLastError || \'\'\r\n            };\r\n        }\r\n\r\n        if (order?.isPathaoSynced) {\r\n            return {\r\n                provider: \'pathao\',\r\n                status: \'synced\',\r\n                hasShipment: true,\r\n                error: \'\'\r\n            };\r\n        }\r\n\r\n        return {\r\n            provider: order?.shippingProvider || \'pathao\',\r\n            status: order?.pathaoSyncStatus || \'\',\r\n            hasShipment: Boolean(order?.isPathaoSynced),\r\n            error: order?.pathaoLastError || \'\'\r\n        };\r\n    };\r\n\r\n    const updateStatusInDB = async (orderId, newStatus, options = {}) => {\r\n        try {\r\n            setStatusUpdatingOrderId(orderId);\r\n            setOrders((previous) => previous.map((order) => (\r\n                order._id === orderId ? { ...order, status: newStatus } : order\r\n            )));\r\n\r\n            const { data } = await API.patch(`/admin/orders/${orderId}/status`, {\r\n                status: newStatus,\r\n                ...options\r\n            });\r\n\r\n            if (data?.data) {\r\n                setOrders((previous) => previous.map((order) => (\r\n                    order._id === orderId ? data.data : order\r\n                )));\r\n            }\r\n\r\n            toast.success(`Order status updated to ${newStatus}`);\r\n            if (data?.notification?.sent) toast.success(\'Customer email accepted by provider\');\r\n            else if (options.notifyCustomer) toast.error(\'Order status changed, but the customer email was not accepted. Check your email settings.\');\r\n\r\n            return data?.data || true;\r\n        } catch (error) {\r\n            toast.error(error.response?.data?.error || \'Failed to update status\');\r\n            fetchOrders(pagination.page);\r\n            return null;\r\n        } finally {\r\n            setStatusUpdatingOrderId(null);\r\n        }\r\n    };\r\n\r\n    const handleStatusChangeClick = (order, newStatus) => {\r\n        if (!newStatus || newStatus === order.status) return;\r\n\r\n        if (newStatus === \'Confirmed\' && !getCourierStatus(order).hasShipment) {\r\n            setOrderToSync(order);\r\n            setPathaoModalOpen(true);\r\n            return;\r\n        }\r\n\r\n        if (newStatus === \'Confirmed\') {\r\n            updateStatusInDB(order._id, newStatus, { notifyCustomer: true });\r\n            return;\r\n        }\r\n\r\n        setPendingStatusUpdate({ order, newStatus });\r\n        setEmailModalOpen(true);\r\n    };\r\n\r\n    const handleEmailModalDecision = async (shouldSendEmail, emailData = null) => {\r\n        const { order, newStatus } = pendingStatusUpdate;\r\n        setEmailModalOpen(false);\r\n\r\n        if (!order || !newStatus) return;\r\n\r\n        await updateStatusInDB(order._id, newStatus, {\r\n            notifyCustomer: shouldSendEmail,\r\n            emailSubject: emailData?.subject,\r\n            emailMessage: emailData?.message\r\n        });\r\n    };\r\n\r\n    const handlePathaoSuccess = (updatedOrder) => {\r\n        if (!updatedOrder?._id) {\r\n            fetchOrders(pagination.page);\r\n            return;\r\n        }\r\n\r\n        setOrders((previous) => previous.map((order) => (\r\n            order._id === updatedOrder._id ? updatedOrder : order\r\n        )));\r\n    };\r\n\r\n    const handleRetryCourierQueue = async (order) => {\r\n        const courierStatus = getCourierStatus(order);\r\n        setRetryingOrderId(order._id);\r\n\r\n        try {\r\n            const { data } = courierStatus.provider === \'redx\'\r\n                ? await API.post(`/admin/orders/${order._id}/courier`, {\r\n                    provider: \'redx\',\r\n                    retry: true\r\n                })\r\n                : await API.post(`/admin/orders/${order._id}/pathao`, {\r\n                    retry: true\r\n                });\r\n\r\n            toast.success(data.message || \'Courier retry queued\');\r\n\r\n            if (data.data?._id) {\r\n                setOrders((previous) => previous.map((currentOrder) => (\r\n                    currentOrder._id === data.data._id ? data.data : currentOrder\r\n                )));\r\n            } else {\r\n                fetchOrders(pagination.page);\r\n            }\r\n        } catch (error) {\r\n            toast.error(error.response?.data?.error || \'Failed to retry courier queue\');\r\n        } finally {\r\n            setRetryingOrderId(null);\r\n        }\r\n    };\r\n\r\n    const getStatusStyle = (status) => {\r\n        switch (status) {\r\n            case \'Pending\': return \'border-amber-200 bg-amber-50 text-amber-700\';\r\n            case \'Confirmed\': return \'border-sky-200 bg-sky-50 text-sky-700\';\r\n            case \'Processing\': return \'border-blue-200 bg-blue-50 text-blue-700\';\r\n            case \'Shipped\': return \'border-violet-200 bg-violet-50 text-violet-700\';\r\n            case \'Delivered\': return \'border-emerald-200 bg-emerald-50 text-emerald-700\';\r\n            case \'Cancelled\': return \'border-rose-200 bg-rose-50 text-rose-700\';\r\n            case \'Returned\': return \'border-orange-200 bg-orange-50 text-orange-700\';\r\n            default: return \'border-slate-200 bg-slate-50 text-slate-700\';\r\n        }\r\n    };\r\n\r\n    const getStatusIcon = (status) => {\r\n        switch (status) {\r\n            case \'Pending\': return <Clock size={13} aria-hidden="true" />;\r\n            case \'Processing\': return <Package size={13} aria-hidden="true" />;\r\n            case \'Shipped\': return <Truck size={13} aria-hidden="true" />;\r\n            case \'Delivered\': return <CheckCircle size={13} aria-hidden="true" />;\r\n            case \'Cancelled\':\r\n            case \'Returned\': return <XCircle size={13} aria-hidden="true" />;\r\n            default: return null;\r\n        }\r\n    };\r\n\r\n    const getCourierStatusStyle = (status) => {\r\n        switch (status) {\r\n            case \'queued\': return \'border-amber-200 bg-amber-50 text-amber-700\';\r\n            case \'syncing\': return \'border-blue-200 bg-blue-50 text-blue-700\';\r\n            case \'synced\': return \'border-emerald-200 bg-emerald-50 text-emerald-700\';\r\n            case \'fa'... 20353 more characters,
+    expected: /Retry Courier/,
+    operator: 'match',
+    diff: 'simple'
+  }
+

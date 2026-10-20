@@ -5,11 +5,12 @@ const { sendSms, SmsProviderError } = require('../sms/smsProviderService');
 const { maskPhone, normalizeBDPhone } = require('../../utils/phoneUtils');
 
 class CheckoutOtpError extends Error {
-    constructor(message, code = 'INVALID_OTP', statusCode = 400) {
+    constructor(message, code = 'INVALID_OTP', statusCode = 400, retryAfterSeconds) {
         super(message);
         this.name = 'CheckoutOtpError';
         this.code = code;
         this.statusCode = statusCode;
+        this.retryAfterSeconds = retryAfterSeconds;
     }
 }
 
@@ -65,7 +66,8 @@ const sendCheckoutPhoneOtp = async ({ shop, phone, checkoutSessionId, items }) =
         throw new CheckoutOtpError(
             result.error || 'Please wait before requesting another code.',
             result.code || 'OTP_RESEND_COOLDOWN',
-            429
+            429,
+            result.retryAfterSeconds
         );
     }
 

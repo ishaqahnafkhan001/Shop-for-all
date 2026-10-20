@@ -1,0 +1,2 @@
+External HTTP/socket, non-owned MongoDB and real dotenv loading blocked.
+

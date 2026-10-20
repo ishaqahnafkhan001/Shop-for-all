@@ -1,15 +1,17 @@
 "use client";
+import { getCartItemPrice, getCartItemOriginalPrice } from '../normalizeProduct.js';
 import { CheckCircle, Headphones, Minus, Plus, ShieldCheck, ShoppingBag, Tag, Trash2, Truck } from 'lucide-react';
 import { Link } from './Runtime.jsx';
 import SafeProductImage from './SafeProductImage.jsx';
 import { ProductCard } from '../reference/StorefrontProductCard.jsx';
 export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, shipping, totalSavings,
     total, getCartImageUrl, promoCode, setPromoCode, promoFeedback, handleApplyPromo,
-    recommendationsLoading, recommendations, themedProductCard, productActions }) {
+    recommendationsLoading, recommendations, themedProductCard, productActions, presentationVariant }) {
+    const atelier = presentationVariant === 'atelier-editorial';
     // EMPTY STATE
     if (cartItems.length === 0) {
         return (
-            <div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
+            <div className={atelier ? "sf-page atelier-cart flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center" : "sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center"}>
                 <div className="mb-6 rounded-[2rem] bg-white p-6 shadow-sm">
                     <ShoppingBag size={56} className="text-slate-300" />
                 </div>
@@ -28,7 +30,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
     }
 
     return (
-        <div className="sf-page sf-mobile-action-page">
+        <div className={atelier ? "sf-page sf-mobile-action-page atelier-cart" : "sf-page sf-mobile-action-page"}>
         <div className="sf-shell-wide py-8 sm:py-10">
             <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div className="flex items-center">
@@ -47,16 +49,16 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+            <div data-atelier-part={atelier ? "cart-layout" : undefined} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
                 {/* Left Side: Items */}
                 <div className="space-y-4">
                     {cartItems.map((item) => (
-                        <div key={item.cartItemId || item._id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg hover:shadow-indigo-100/60 sm:p-6">
+                        <div data-atelier-part={atelier ? "cart-item" : undefined} key={item.cartItemId || item._id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg hover:shadow-indigo-100/60 sm:p-6">
                             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
                                 <div className="flex w-full min-w-0 flex-1 items-start gap-4 sm:gap-5">
                                     {/* Product Image */}
-                                    <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-indigo-50 sm:h-28 sm:w-28">
+                                    <div data-atelier-part={atelier ? "cart-image" : undefined} className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-indigo-50 sm:h-28 sm:w-28">
                                         <SafeProductImage
                                             src={getCartImageUrl(item)}
                                             alt={item.title}
@@ -111,11 +113,11 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                         {/* Pricing */}
                                         <div className="mt-auto flex items-center gap-2">
                                             <p className="text-lg font-black text-slate-950">
-                                                ৳ {item.cartPrice || item.finalPrice || item.sellingPrice}
+                                                ৳ {getCartItemPrice(item)}
                                             </p>
-                                            {item.pricing?.discount > 0 && (
+                                            {item.pricing?.discount > 0 && getCartItemOriginalPrice(item) > getCartItemPrice(item) && (
                                                 <p className="text-sm text-slate-400 line-through">
-                                                    ৳ {item.pricing.sellingPrice}
+                                                    ৳ {getCartItemOriginalPrice(item)}
                                                 </p>
                                             )}
                                         </div>
@@ -123,7 +125,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                 </div>
 
                                 {/* Controls */}
-                                <div className="flex w-full items-center justify-between gap-4 border-t border-slate-100 pt-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
+                                <div data-atelier-part={atelier ? "cart-controls" : undefined} className="flex w-full items-center justify-between gap-4 border-t border-slate-100 pt-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
                                     <div className="flex flex-col items-center sm:items-end">
                                         <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
                                             <button
@@ -173,7 +175,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
 
                 {/* Right Side: Summary */}
                 <div>
-                    <div className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/70">
+                    <div data-atelier-part={atelier ? "cart-summary" : undefined} className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/70">
                         <div className="mb-6 flex items-start justify-between gap-4">
                             <div>
                                 <p className="sf-kicker">Summary</p>
@@ -260,7 +262,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
             </div>
 
             {(recommendationsLoading || recommendations.length > 0) && (
-                <section className="mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:mt-10 sm:rounded-[2rem] sm:p-7">
+                <section data-atelier-part={atelier ? "cart-recommendations" : undefined} className="mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:mt-10 sm:rounded-[2rem] sm:p-7">
                     <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <p className="sf-kicker">Recommended</p>
@@ -285,6 +287,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                             {recommendations.map((product, index) => (
                                 <ProductCard
                                     key={product._id}
+                                    presentationVariant={presentationVariant}
                                     product={product}
                                     index={index}
                                     storewideDiscount={0}

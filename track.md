@@ -1,3 +1,836 @@
+## 2026-10-20 — User-authorized Atelier availability for all shops
+
+The user superseded the earlier release instruction to keep rollout disabled, first approving ADI-only access and then explicitly requesting **Enable for all shop**. Updated only the rollout keys in the ignored local backend `.env`: `ATELIER_EDITORIAL_ROLLOUT=on`, empty test-shop list, and `ATELIER_EDITORIAL_APPROVED_PLAN_KEYS=beginner,starter,growth,pro`. Other environment values were compared and remain unchanged. The repository example remains safely disabled by default. No tenant themes were applied or published.
+
+Existing plan entitlements remain enforced: Starter receives appearance-only application; Growth/Pro receive complete Atelier; Beginner has no Store Builder access and remains ineligible. The actual environment → backend policy → gallery helper check passed for two synthetic tenant IDs under every current plan (10 gallery entries for Starter/Growth/Pro, 9 for Beginner). Existing Builder/contract suites passed **42/42**, including the frozen nine definitions and write guards. The SSR harness emitted shared-package externalization warnings but no failed tests.
+
+Reloaded only the existing nodemon API process by touching `app.js` modification time (SHA-256 confirmed its bytes unchanged). Health returned connected, uptime 4 seconds, PID changed from 12244 to 24260. No notification worker was started. This changes availability in the **running local backend**, not a remote deployment. Authenticated browser verification remains unavailable in Work settings. Reload Admin to fetch fresh theme availability; no automatic publication occurred.
+
+## 2026-10-20 — React DOM cache generation follow-up
+
+The browser reported `react-dom_client.js` importing private export `t` from an incompatible cached `react-dom.js`. Current HTTP responses contain the export, supporting a mixed immutable-cache-generation failure. A cold-start integration check also exposed that Vite's default HTML scan included Atelier test fixtures with aliases available only under their fixture config; that scan failed and caused incremental on-demand optimization.
+
+Updated `ecommerce-admin/vite.config.js` to scan only `index.html` and include all current runtime package entries, React DOM client, JSX runtimes and shared data/prebuilt entry points in initial optimization. Added `ecommerce-admin/tests/vite-dependency-cache.test.mjs`: an isolated dependency cache and concrete reserved ephemeral port, cold app entry fetch, lazy Builder/preview/gallery fetches, unchanged dependency generation/React responses, and native ESM linking of the generated React DOM client. The test removes only its verified owned temporary cache.
+
+Final checks: **7/7** watcher/cache tests; affected config/tests lint clean; Admin production build passed; HTTP graph from `src/main.jsx` covered **198 modules**, zero failed responses and zero missing exports. No browser cache/profile was modified; a hard refresh (Ctrl+Shift+R) is needed to discard already cached incompatible modules. Browser UI behavior itself remains unverified.
+
+---
+
+## 2026-10-20 — Store Builder development loading repair
+
+**Confirmed cause:** the running admin Vite server served a stale shared `CheckoutSections.jsx` that did not export `CheckoutMarketingConsent`, while `PreviewCommercePages.jsx` imported it. Shared source files reached through node_modules junctions were not watched; the existing watcher only tracked package manifests. The generic route boundary then displayed the loading error.
+
+**Changes:** updated `ecommerce-admin/vite.config.js` to watch both real shared-package source directories, debounce source/module/manifest changes, restart Vite with forced dependency optimization, and remove pending work/listeners when the server closes. Added `ecommerce-admin/tests/storefront-package-watch.test.mjs`. No saved themes or database records were changed.
+
+**Verified:** six targeted tests pass; lint passes for the config and new test; admin production build passes; a disposable module probe confirmed a warm server serves edited shared source and rebuilds optimized dependencies; final HTTP import-graph check covered 86 modules with no failed responses or missing exports; probe removed; `git diff --check` passes. Vite was refreshed in place by its config watcher.
+
+**Limit:** local browser control is disabled in Work settings, so the actual authenticated Store Builder UI was not visually verified. Reload the existing tab once to clear its error boundary. Evidence and the task-only config patch are under `output/atelier-editorial/builder-load-fix/`.
+
+---
+
+# Atelier Editorial — final release hardening and acceptance
+
+Date: 20 October 2026. **Verdict: C. BLOCKED.** The zero-price and checkout OTP defects are fixed and have automated and real MongoDB evidence. Browser acceptance, the retained test/lint failures and product/release approvals are not complete. No real merchant publication, deployment, commit, push, production database migration, rollout change or live notification was performed.
+
+This report supersedes the readiness summary below it, while preserving the historical reports. Scope was the supplied final-hardening request. Required planning/inventory documents, current diff and frozen Phase 0–6 evidence were reviewed; the broad storefront investigation was not repeated. Task-only source hashes, patch, commands and logs are in output/atelier-editorial/hardening.
+
+## 1. Blocker resolution matrix
+
+| Blocker | Before | After | Evidence | Status |
+|---|---|---|---|---|
+| Zero-price variants | Valid zero replaced by base prices in cart/checkout; guest null override could become zero | Shared consumers preserve numeric zero; matching product refresh and both server order paths agree on unit prices | 53 focused tests; eight new database tests include guest/customer persisted totals | **PASS for automated functional gate**; browser gate separate |
+| OTP resend/cooldown | Active dialog omitted supported resend/timing contract | Same send endpoint; server timestamps and retry metadata; expiry, disabled/busy state, duplicate-call locks, tenant/cart binding and timer cleanup | Focused actual hooks/page handlers plus real HTTP cooldown/concurrency/lockout/rate-limit/proof replay tests | **PASS for automated functional/security gate**; physical mobile/focus acceptance blocked |
+| Five backend failures | 713/718 in prior report | Final normal and serial runs each **766/771**, exactly five retained failures | backend-normal-final.txt, backend-serial-final.txt; Phase 0 HEAD failure log | **FAIL overall suite**; five are pre-existing |
+| SDK timing test | Historical intermittent mocked-fetch abort assertion | Three isolated 9/9 runs; passes in initial and final normal/serial full suites | sdk-isolated-1/2/3.txt and full-suite logs | **PASS in executed runs**; historical timing sensitivity is not claimed fixed |
+| MongoDB acceptance | Docker unavailable in prior phase | Official authorized mongo:7 image; owned loopback replica set; final relevant suites **28/30**, including **8/8 new tests** | relevant-integrations-final.txt, mongo-container.json, mongo-indexes.json | Environment **resolved**; acceptance **FAIL** due to two reproduced baseline tests |
+| Browser acceptance | Disabled in Work settings | Availability rechecked; still disabled; no bypass/tool installation | Tool inventory returned Local browser use is disabled in Work settings | **BLOCKED** |
+| Production OTP index state | Not verified | Schema conflict fixed; correct unique/TTL indexes proven only on disposable MongoDB | Actual captured index documents; production untouched | **BLOCKED pending deployed index inspection/remediation approval** |
+| Product/release approval | Undecided | No eligibility, downgrade, merchant ID or availability decision invented | Trusted policy defaults remain off | **BLOCKED** |
+
+## 2. Root causes and corrections
+
+### Price flow
+
+Raw API product data passes through the existing normalizeProduct/getProductPresentation implementation, selected variant, ProductDetails or useStorefrontProductActions, tenant CartProvider, CartView, checkout batch refresh/coupon/totals/summary and the guest or authenticated order API. The server loads the product inside its tenant and recomputes the unit price before persisting the order.
+
+The primary client defect was truthiness fallback at several independent consumers: cartPrice/finalPrice zero fell through to sellingPrice. Checkout rows also ignored cartPrice. Product-card cart construction could coerce a null override to zero and replace zero sellingPrice with the base price. Cart savings/compare-at display could advertise the base product price for a free variant. Checkout fetched current products but did not use them to refresh the selected item price.
+
+The existing product-data module now supplies the common finite/nonnegative price selector and matching-product refresh. Numeric zero is retained; null, undefined, blank, boolean, negative and non-finite candidates are not converted to a free override. Numeric API strings remain supported. Discounts and scheduled sales reuse getProductPresentation. A missing/removed variant is not silently replaced with another chosen option. Display fallback remains advisory: an unavailable/invalid snapshot is never authority to create a free server order.
+
+Cart persistence is scoped to its storage key even when the same mounted provider changes tenant. Batch responses from an earlier tenant/unmounted effect are ignored. Real database tests verify zero, positive, missing/null overrides and server totals; focused tests also cover zero base price, invalid candidate inputs, scheduled/percentage discounts, mixed items, quantities, reload, coupon input, all ten presentations and actual guest/customer checkout callbacks. Backend-authoritative product/variant lookups and stock/proof processing remain in their existing controllers.
+
+The guest controller had a separate Number(null) coercion defect. Its existing server-side pricing now falls back to the product only when an override is absent, while retaining a genuine zero. Client price/total tampering is ignored in the HTTP integration tests.
+
+### OTP flow
+
+Existing contract: POST /api/storefront/:subdomain/checkout/send-otp can be repeated when the existing OTP service permits it. Success supplies expiresAt/resendAvailableAt. Verification uses the existing verify-otp endpoint and returns the same phoneVerificationToken and proof expiry. No alternate endpoint, provider, token scheme or limit was added.
+
+The active dialog now exposes resend, a visible server-timed countdown, expiry feedback and disabled/loading states. Closing/reopening does not reset the cooldown; cart/city changes cannot erase the phone/session cooldown. The hook and page prevent concurrent send/verify/order callbacks. The proof and response epoch include the tenant and checkout binding. Timers stop on cleanup; stale responses cannot trigger a new tenant's order. Six-digit numeric input/paste and existing busy/cancel restrictions remain. Retry-After/positive retryAfterSeconds is consumed; the latter is forwarded from the existing backend OTP service as compatible additive error metadata.
+
+Server cooldown, attempt limit, rate limiter, expiry, cart/shop/session binding and one-use proof consumption remain authoritative. Client countdown is informational. Real database/HTTP tests cover concurrent sends, rejection during cooldown, wrong/expired codes, correct proof, foreign tenant/cart rejection, five-attempt lockout, HTTP rate-limit rejection, proof replay and idempotent order retry with one stock decrement. Synthetic transport acceptance is not evidence of real SMS delivery.
+
+### Additional defects exposed by real database testing
+
+- OTP.js declared key_1 twice, first non-unique and then unique/sparse. Fresh MongoDB index creation failed with IndexKeySpecsConflict. Removed only the duplicate field index; retained explicit unique sparse key, unique email/purpose and TTL indexes. Existing production indexes were not modified.
+- Concurrent first writes could both normalize verification metadata and one Shop.save failed with VersionError, returning HTTP 500 before publication CAS. The guard now retries that error once by reloading through the same tenant/owner verification service, then rechecks suspension. Other/repeated failures still fail closed. Real unprimed concurrent publication now yields one success and one 409; a focused regression confirms suspension is never bypassed. Both pre-fix files exactly matched HEAD (preexisting-infrastructure-findings.json).
+
+## 3. Exact changed files
+
+Compared with task-start hashes, excluding earlier work already present: **21 source/test/report files, 18 modified and 3 added**. Existing uncommitted work was retained. Generated evidence under output is additional test output, not application changes.
+
+| Kind | File | Reason |
+|---|---|---|
+| modified | [ecommerce-admin/tests/fixtures/atelier-route-runtime.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-route-runtime.jsx) | Return the actual timestamp/proof-expiry contract from the existing fail-closed fixture API. |
+| modified | [ecommerce-backend/backend/tests/helpers/atelier-routes.cjs](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/atelier-routes.cjs) | Expose real hooks, CartProvider and checkout through the existing isolated Rolldown harness. |
+| added | [ecommerce-backend/backend/tests/helpers/isolatedAcceptance.cjs](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/isolatedAcceptance.cjs) | Explicit opt-in for the verified disposable endpoint; disable real dotenv loading, sanitize transports, restrict MongoDB/network destinations and block worker startup. |
+| added | [ecommerce-backend/backend/tests/integration/atelier-release-hardening.integration.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/integration/atelier-release-hardening.integration.test.js) | Add eight real MongoDB/HTTP tests for indexes, persisted prices, guarded drafts/publish/restore, publication claims, OTP lifecycle/limits, proof replay and idempotency; install its own SMS mock before imports. |
+| added | [ecommerce-backend/backend/tests/storefront-release-hardening.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-release-hardening.test.js) | Add 53 focused price, persisted-cart, tenant, lifecycle, controller and actual checkout-handler regressions. |
+| modified | [ecommerce-backend/backend/controllers/checkoutOtpController.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/checkoutOtpController.js) | Expose positive numeric retryAfterSeconds on existing error responses as additive metadata. |
+| modified | [ecommerce-backend/backend/controllers/publicController.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/publicController.js) | Treat null/undefined/empty variant overrides as absent instead of coercing null to a free order price; preserve authoritative numeric zero. |
+| modified | [ecommerce-backend/backend/middlewares/vendorVerificationGuard.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/middlewares/vendorVerificationGuard.js) | Retry only a stale-document VersionError once through the same tenant/owner service; reevaluate suspension and fail closed on repeated/other errors. |
+| modified | [ecommerce-backend/backend/models/OTP.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/OTP.js) | Remove the duplicate non-unique key index declaration; preserve the existing unique sparse declaration and TTL. |
+| modified | [ecommerce-backend/backend/services/checkout/checkoutOtpService.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/checkout/checkoutOtpService.js) | Forward the existing OTP service retryAfterSeconds result through the established checkout error; no new endpoint, limit or provider. |
+| modified | [ecommerce-storefront/src/app/[subdomain]/cart/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/cart/page.jsx) | Calculate savings from the selected original and current prices, including valid zero. |
+| modified | [ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCartProducts.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCartProducts.js) | Ignore stale/unmounted refresh responses and isolate the product map by tenant. |
+| modified | [ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCoupon.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCoupon.js) | Keep zero prices in coupon validation item payloads. |
+| modified | [ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutPhoneOtp.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutPhoneOtp.js) | Use server timestamps for cooldown/expiry, preserve cooldown by phone, prevent concurrent calls, reject stale tenant/cart outcomes, bind proof lifetime and clean timers on unmount. |
+| modified | [ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx) | Use refreshed matching-product prices for totals/summary/advisory guest prices/analytics; connect resend state and guard concurrent verification/order submission. |
+| modified | [ecommerce-storefront/src/context/CartContext.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/context/CartContext.jsx) | Preserve zero totals and tenant-keyed persistence; prevent the previous tenant cart from being displayed or written during a mounted tenant change. |
+| modified | [ecommerce-storefront/src/hooks/useStorefrontProductActions.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/hooks/useStorefrontProductActions.js) | Use existing product presentation pricing for selected-variant cart snapshots, preserving zero and scheduled discounts. |
+| modified | [packages/storefront-renderer/normalizeProduct.js](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/normalizeProduct.js) | Reuse the existing product-data module for finite, nonnegative price selection, zero-safe cart/original prices and matching-product checkout refresh; retain existing discount/scheduled-sale calculations. |
+| modified | [packages/storefront-renderer/presentation/CartView.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CartView.jsx) | Render the same zero-safe unit price as totals; compare the selected variant original price and suppress misleading crossed-out base prices for free variants. |
+| modified | [packages/storefront-renderer/presentation/CheckoutSections.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CheckoutSections.jsx) | Use the shared price selector in summary rows; add optional resend/countdown/expiry/feedback controls to the existing active OTP dialog. |
+| modified | [track.md](C:/Users/user/WebstormProjects/Shop-for-all/track.md) | Prepend this final acceptance report and retain all historical evidence. |
+
+No theme definition/version, frozen baseline, stylesheet, package/lock file, application environment file, entitlement or tenant-ownership rule was changed by this task. Existing request paths/body contracts remain; retryAfterSeconds is optional additional response metadata. Shared price/OTP corrections intentionally apply to existing themes too.
+
+## 4. Tests actually executed
+
+All listed unit/integration totals have zero skipped/cancelled tests. Provider transports were mocked or blocked; no real delivery claim is made.
+
+| Directory / command | Final result | Log |
+|---|---|---|
+| Backend: node --test tests/storefront-release-hardening.test.js | **53/53 pass** | focused-final.txt |
+| Backend: node --test tests/store*.test.js | **463/463 pass**; includes the 53 new tests | theme-tests-final.txt |
+| Backend: node --test tests/*.test.js | **766/771 pass; 5 fail** | backend-normal-final.txt |
+| Backend: node --test --test-concurrency=1 tests/*.test.js | **766/771 pass; 5 fail** | backend-serial-final.txt |
+| Backend: node --test tests/ai-provider-adapter.test.js, three independent runs | **9/9 each** | sdk-isolated-1/2/3.txt |
+| Backend: node --test tests/storefront-preview-parity.test.js with THEME_PARITY_REPORT pointing to the evidence file | **25/25 pass; 20 equal SSR comparisons** | preview-live-parity.txt/.json |
+| Sanitized isolated runner, five relevant integration files | **28/30 pass; 2 fail**, new file **8/8 pass** | relevant-integrations-final.txt |
+| Same existing Builder suite with five verified HEAD theme/service/Shop sources substituted | **10/12 pass**, same two failures | builder-head.txt; pre-atelier-loader.cjs; head-source/ |
+| Admin: node node_modules/eslint/bin/eslint.js . | **18 errors, 4 warnings**; all reproduced at HEAD | admin-lint-final.txt; admin-lint-classification.json |
+| Storefront: node node_modules/eslint/bin/eslint.js . | **Pass** | storefront-lint-final.txt |
+| Shared renderer: ESLint.lintText under storefront configuration, comparison with baseline | **No added diagnostics**; one retained Hero diagnostic | shared-lint-final.txt; shared-lint-comparison.json |
+| Admin: node node_modules/vite/bin/vite.js build | **Pass** | admin-build-final.txt |
+| Storefront: node node_modules/next/dist/bin/next build | **Pass** | storefront-build-final.txt |
+| Package resolution in backend/Admin/storefront | Shared theme resolves to the same physical index.cjs; both frontend viewports exports resolve to the same file | package-resolution.json |
+| git diff --check and task-file trailing whitespace scan | **Pass** | diff-check.txt; final-review.json |
+
+The first restricted storefront build failed while downloading existing Geist fonts. The final network-enabled normal build succeeded; no font/code workaround was applied. The first restricted database run failed with loopback EACCES; the sanitized approved runner succeeded outside that network restriction. Initial new-test failures caused by an over-specific static-render whitespace assertion, wrapper-versus-view component identity, a Mongoose-document fixture and an incorrect helper client method were corrected in the new tests. They were not application regressions or weakened legacy assertions. Final files/logs supersede development runs, which remain preserved.
+
+### Exact isolated integration invocation
+
+From repository root, using the task-owned replica set described below:
+
+~~~powershell
+node output/atelier-editorial/hardening/run-integration.cjs relevant-integrations-final tests/integration/atelier-release-hardening.integration.test.js tests/integration/store-builder-safety.integration.test.js tests/integration/checkout-order-safety.integration.test.js tests/integration/tenant-isolation.integration.test.js tests/integration/auth-rbac-privacy.integration.test.js
+~~~
+
+The Node runner selects only those paths, removes inherited application credentials, provides synthetic test secrets, disables actual dotenv loading through the explicit preload, pins MongoDB to the verified URI, mocks email/SMS, blocks external sockets/HTTP and worker startup. No payment/courier/marketing provider transport was reached. The eight-test file installs its own SMS mock before importing checkout services; it does not make the existing general integration command depend on this task-specific URI.
+
+### Database ownership, indexes and cleanup
+
+The user explicitly authorized downloading the official mongo:7 image. Created task-owned container sfa-atelier-acceptance-20261020-c085454b, label com.scaleup.purpose=atelier-acceptance-c085454b, loopback-only 127.0.0.1:27028, replica set rs0, tmpfs /data/db and /data/configdb, no mounted/shared volume, restart disabled. Confirmed the new server initially contained only MongoDB system databases. Only atelier_acceptance_c085454b_test was used. The endpoint/ownership checks were more than a database-name substring check.
+
+Actual index inspection proved unique sparse OTP key_1, unique email_1_purpose_1, TTL expiresAt_1, unique draft shop_id_1 and unique revision shop_id_1_revision_-1. The harness deletes collection documents before/after tests; captured final database is empty. Both temporary container lifecycles were removed after ownership/ID checks. The authorized downloaded image remains cached. No user service, shared database or production worker was reconfigured or stopped. Infrastructure/image provenance and exact index documents remain in mongo-container.json/mongo-indexes.json; the official pull digest was sha256:c53852c00c23ca9f23fc39690350ffa9a80e3642fe8f96879726d8da0abe80a7.
+
+## 5. Retained failures: evidence and disposition
+
+### Five backend unit failures
+
+All reproduce the frozen Phase 0 preexisting-failures-at-head.txt outcomes and the final normal/serial runs. Existing assertions were retained.
+
+| Test | Exact failure | Classification / relationship | Recommended resolution |
+|---|---|---|---|
+| ai-acceptance-provenance.test.js:11, empty Product output | SEO origin actual provider; expected deterministic_fallback | Pre-existing, unrelated AI acceptance behavior | Reconcile requested SEO acceptance/provenance with meaningful generator tests in a separate AI fix |
+| ai-preferences.test.js:27, effective voice | Actual prompt version 5.0.0; expected 4.0.0 | Pre-existing, unrelated contract expectation | Review intended prompt version and update implementation/expectation only with contract evidence |
+| security-hardening.test.js:339, low stock | Missing source match enqueueLowStockAlertsForLogs(lowStockLogs) | Pre-existing source-shape assertion; no security exemption inferred | Trace the current threshold/queue path and replace brittle checks only with equally strong behavior coverage |
+| security-hardening.test.js:377, promotion scheduling | Missing text matching checkout will not apply them before the start time | Pre-existing Admin source/text assertion | Verify current scheduling UI/checkout behavior before correcting the assertion or copy |
+| security-hardening.test.js:883, confirmed order notification | Missing source text Retry Courier | Pre-existing Admin source/text assertion | Verify the current courier retry component/permission path; preserve actual retry/notification coverage |
+
+### Two additional existing integration failures
+
+Current existing Builder suite and verified pre-Atelier theme-source run each produce 10/12; the complete relevant run has 28/30. The HEAD reproduction replaces index.cjs, capabilities.cjs, prebuilt.cjs, Shop.js and storeBuilderService.js only. It retains the current integration harness, independent OTP-index/verification correction and safe transport wrappers; this is explicitly a theme-code baseline comparison, not a claim that an entire original deployment was executed.
+
+| Existing test / command | Exact failure | Baseline / recommended resolution |
+|---|---|---|
+| store-builder-safety.integration.test.js:295, full-plan prebuilt blueprint; runner above or builder-head | RangeError: Theme patch exceeds the supported nesting depth, before the HTTP save | Test spreads a Mongoose theme subdocument into normalizeTheme rather than a plain snapshot. Same failure with HEAD theme code. Correct that fixture serialization in separately approved existing-test maintenance while preserving its round-trip assertions |
+| Same file:438, limited-plan draft autosave | allowedDraft.status is 403; expected 200 at :448 | Same current/HEAD result. Investigate sparse/full snapshot capability handling against the existing limited-plan contract; do not relax entitlements to obtain a pass |
+
+An initial third integration failure (scaleup.codes accepted instead of rejected) was test-environment dependent: the isolated runner had PLATFORM_ROOT_DOMAIN=localhost while the existing assertion expects scaleup.codes. Setting the runner's synthetic platform root to that fixture value fixed it without application changes or network transmission.
+
+### Admin lint: all 22 diagnostics independently checked
+
+Command: node node_modules/eslint/bin/eslint.js . in ecommerce-admin. For every affected file, git show HEAD:<path> was linted with the same unchanged current ESLint configuration and its diagnostics matched by rule/severity/message. Line numbers refer to the current source. No lint rule or assertion was disabled to make the gate pass.
+
+| Source | Level | Rule | Exact message (first line) | Evidence |
+|---|---|---|---|---|
+| [ecommerce-admin/src/components/dashboard/Topbar.jsx:11](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/components/dashboard/Topbar.jsx:11) | Error | no-unused-vars | 'Check' is defined but never used. | Reproduced at HEAD |
+| [ecommerce-admin/src/components/dashboard/Topbar.jsx:391](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/components/dashboard/Topbar.jsx:391) | Error | react-hooks/set-state-in-effect | Error: Calling setState synchronously within an effect can trigger cascading renders | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx:163](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx:163) | Error | react-hooks/set-state-in-effect | Error: Calling setState synchronously within an effect can trigger cascading renders | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx:63](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx:63) | Error | no-unused-vars | 'setTheme' is defined but never used. | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js:18](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js:18) | Error | react-hooks/refs | Error: Cannot access refs during render | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js:23](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js:23) | Error | react-hooks/refs | Error: Cannot access refs during render | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js:65](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js:65) | Warning | react-hooks/exhaustive-deps | React Hook useEffect has a missing dependency: 'persist'. Either include it or remove the dependency array. | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx:508](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx:508) | Warning | react-hooks/exhaustive-deps | React Hook useEffect has a missing dependency: 'autosave'. Either include it or remove the dependency array. | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx:86](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx:86) | Error | react-refresh/only-export-components | Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components. | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx:177](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx:177) | Warning | react-hooks/exhaustive-deps | React Hook useMemo has a missing dependency: 'theme'. Either include it or remove the dependency array. | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx:11](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx:11) | Error | react-refresh/only-export-components | Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components. | Reproduced at HEAD |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx:139](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx:139) | Warning | react-hooks/exhaustive-deps | React Hook useMemo has unnecessary dependencies: 'branding' and 'shopName'. Either exclude them or remove the dependency array. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/ai-workflows.jsx:1](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/ai-workflows.jsx:1) | Error | no-unused-vars | 'React' is defined but never used. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/ai-workflows.jsx:77](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/ai-workflows.jsx:77) | Error | react-refresh/only-export-components | Fast refresh only works when a file has exports. Move your component(s) to a separate file. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/builder-mobile.jsx:1](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/builder-mobile.jsx:1) | Error | no-unused-vars | 'React' is defined but never used. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/builder-mobile.jsx:18](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/builder-mobile.jsx:18) | Error | react-refresh/only-export-components | Fast refresh only works when a file has exports. Move your component(s) to a separate file. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/theme-controls.jsx:1](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/theme-controls.jsx:1) | Error | no-unused-vars | 'React' is defined but never used. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/theme-controls.jsx:16](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/theme-controls.jsx:16) | Error | react-refresh/only-export-components | Fast refresh only works when a file has exports. Move your component(s) to a separate file. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/theme-presentation.jsx:1](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/theme-presentation.jsx:1) | Error | no-unused-vars | 'React' is defined but never used. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/theme-presentation.jsx:9](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/theme-presentation.jsx:9) | Error | react-refresh/only-export-components | Fast refresh only works when a file has exports. Move your component(s) to a separate file. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/theme-responsive.jsx:1](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/theme-responsive.jsx:1) | Error | no-unused-vars | 'React' is defined but never used. | Reproduced at HEAD |
+| [ecommerce-admin/tests/fixtures/theme-responsive.jsx:17](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/theme-responsive.jsx:17) | Error | react-refresh/only-export-components | Fast refresh only works when a file has exports. Move your component(s) to a separate file. | Reproduced at HEAD |
+
+These remain a failed Admin lint gate, including the existing Builder diagnostics; pre-existing does not mean automatically acceptable for release.
+
+### SDK timing finding
+
+The existing 30ms operation deadline includes SDK request setup before fetch is invoked. Under contention it can legitimately expire before the mocked transport's abort listener exists, while the test expects an in-flight abort flag. This is a source-supported explanation of timing sensitivity, not proof of the exact historical scheduler sequence. Three isolated reruns and all executed full configurations passed in this task; no timeout was increased and the provider/test sources were unchanged. Preserve the earlier failed parallel log. Future stabilization should separately test pre-dispatch expiry and a deterministically started in-flight request, preserving cancellation/listener-cleanup assertions. Do not call the historical flake permanently fixed.
+
+## 6. Legacy, security and release-control review
+
+- All nine existing preset definitions/versions/configuration/effective/capability snapshots still pass frozen assertions. Original 144 product/category/collection/cart/checkout/account/tracking/policy markup comparisons match; four frozen legacy fixture files are byte-identical to task start. No baseline was regenerated. Modern General, Minimal General, Modern Fashion, Editorial Fashion, Luxury Jewellery, Minimal Jewellery, Soft Beauty, Modern Electronics and Fresh Grocery remain in the same catalog and policy paths.
+- Twenty full/limited Gallery/Builder/live home SSR comparisons match. This is markup evidence, not a browser pixel/iframe/hydration certification. Shared zero-price and active OTP corrections intentionally change the defective cases across the original themes; legacy static fixtures/rendering outside those corrections are preserved.
+- theme.presentationVariant remains the explicit Atelier identity, independent of homepage composition/provenance. Default-off backend guards were not rewritten. Unit coverage and real HTTP tests reject unauthorized raw/full draft/publish/forged identity/client-policy input, deny foreign revision access and off-mode re-adoption, and allow only an exact server allowlist transition. SEO ignores injected unrelated theme fields; service tests retain its identity boundary. Legacy presets remain available under existing rollout modes.
+- Actual local backend .env has none of the three Atelier rollout/allowlist/approved-plan keys. Default is off; running/deployed overrides remain unverified. The only temporary allowlist values were synthetic shop IDs in isolated test processes. No merchant subscription, entitlement, gallery production availability or application environment was changed.
+- Real tests exercise tenant-scoped products/orders/theme revisions, authenticated roles, private/cost response fields, checkout proof consumption, stock concurrency and order idempotency. No client price or local countdown becomes security authority. The verification retry uses the same trusted tenant/owner service and still returns 403 for suspension/500 for exhausted error recovery.
+- Final task-only review found no stylesheet/unscoped CSS change, dependency/lock change, duplicate commerce service/provider, baseline rewrite or unrelated application edit. Existing uncommitted changes remain. Browser focus, native keyboard behavior, current Figma alignment and actual delivery remain explicitly unverified.
+
+## 7. Performance and browser acceptance
+
+Both final production builds pass. Measured emitted-asset footprint against the task-start built artifacts:
+
+| Artifact set | Final bytes | Per-file gzip total | Byte delta | Gzip delta |
+|---|---:|---:|---:|---:|
+| admin | 3,978,794 | 1,524,330 | +300 | +94 |
+| storefront | 3,189,497 | 1,416,012 | -5466 | -1437 |
+
+These are whole emitted asset-directory totals, including fonts/media and build variability. They are not per-route transfer size, runtime speed, Lighthouse/Core Web Vitals or a measured performance improvement. No browser profiling, new screenshot, visual pixel diff or refreshed Figma inspection was performed. Earlier phase screenshots are historical evidence only.
+
+### Reproducible blocked browser checklist
+
+Use an isolated seeded backend with transport mocks and two test shops, plus current Admin/storefront builds; keep production adoption off. Browser use must first be enabled by the user in Work settings. Do not bypass it with another browser-control tool. Use only an explicitly authorized test-shop allowlist if Atelier must be adopted in that isolated environment.
+
+At **320, 360, 390, 430, 768, 1024 and 1440px**, capture current screenshots and compare with the approved Figma references and frozen legacy screenshots. Check overflow, long English/Bengali text, empty/missing media, focus visibility, contrast, modal scroll, reduced motion and native mobile keyboard/touch operation:
+
+1. Home /: shell/navigation/search, editorial hero ordering, sections, products, footer and bottom navigation.
+2. /products/{seeded-slug}: zero/no/positive override, discounts/scheduled sale, stock, variant change, quantity, add/buy, reviews and related items.
+3. /categories/{seeded-slug} and /collections/{seeded-slug}: retain distinct filters versus sort/paging and URL state; verify add/buy/wishlist/variant modal.
+4. /cart: zero unit/subtotal/compare-at/savings, mixed items, quantity/removal, coupon deferral, reload and tenant switch.
+5. /checkout: customer fields, delivery zones, separate optional marketing and required policy consent, coupon feedback and server quote. Test initial/failed send, resend countdown, cooldown expiry, invalid/expired/correct code, paste, 429/network failure, close/reopen, focus restoration, unmount and double clicks. Confirm one verified order, idempotent retry, rejected-order cart retention and successful cart clear.
+6. /account: login, registration resend timer, reset, profile/history/password and logout; wrong-role/vendor branches.
+7. /track: no order disclosure before access verification; correct/expired access code, cancellation/return eligibility and proof controls.
+8. /policies and all refund/shipping/privacy/terms routes, including missing/unknown policy state.
+9. Admin → Store Builder: the existing five home/product/cart/checkout/policy previews only; allowed/revoked gallery application, responsive iframe scaling, edits, undo/redo, autosave conflict/recovery, publish/reload/restore and content-preserving legacy switch.
+10. Repeat representative legacy pages/actions against original screenshots. Do not claim the nine-theme visual gate from SSR alone.
+
+No scenario above is certified as newly browser-passed in this task. A further existing quote inconsistency remains visible in source: useCheckoutTotals estimates Outside Dhaka at 120 while authoritative getShippingCostForZone returns 130. This task did not change shipping business rules. Resolve/approve that quote alignment before certifying the corresponding checkout scenario; zero unit-price semantics are verified separately.
+
+## 8. Deployment prerequisites, recovery and remaining actions
+
+**Required next work only:**
+
+1. Resolve the five retained unit failures, two reproduced Builder integration failures and Admin lint debt under their existing contracts. Do not suppress assertions or relax plan permissions. The SDK timing limitation remains documented even though current runs pass.
+2. Complete the blocked actual-browser/visual/interaction matrix, including native mobile OTP/focus behavior, five Builder previews, hydration/network inspection and the existing outside-zone quote mismatch.
+3. Before any deployment, inspect actual OTP indexes read-only. If key_1 is already unique/sparse and other required indexes/TTL are correct, no index replacement is needed. If the old non-unique index exists, obtain an approved maintenance operation: back up, review duplicate nonempty keys privately, coordinate issuance/verification during repair, remove only the conflicting index, create/verify the intended unique sparse key index and retain TTL/email-purpose constraints. Do not drop the OTP collection, arbitrarily delete live codes or run automatic production syncIndexes. No migration or production inspection was performed here.
+4. Obtain explicit product decisions: complete Atelier eligibility; limited appearance-only behavior; downgrade/grandfathering; exact pilot merchant IDs; rollout owner; production-availability authorization. Current trusted off policy and existing plan checks remain until then.
+5. Prepare a compatible guarded backend/shared package/Admin/storefront release with adoption off. Validate the deployed package contents/exports and actual environment policy; a version string or local test alone is insufficient. No deployment was done in this task.
+6. Before an approved pilot, export the pilot's complete published configuration and private draft with theme revision/draft token, aliases, custom-domain/settings and current merchant content. Keep a private durable copy with timestamp/checksum outside the retained revision window; the last 20 revisions are not a backup guarantee. Rehearse recovery through existing supported APIs with current concurrency tokens. An approved legacy candidate applied to the latest merchant content and published through guards is the recovery when an old customized revision is unavailable. Integration tests verify newer content survives that recovery. Off blocks new adoption but preserves legitimate existing Atelier edits; switching back to Atelier still requires authorization.
+7. After those gates and an authorized pilot plan, perform any live-provider smoke test only with specifically approved recipients and actual provider/delivery evidence. This task sent none.
+
+**Final readiness: C. BLOCKED.** Functional remediation and new isolated technical tests pass; the complete suite is not green, actual browser acceptance is missing, deployed index/configuration state is unverified and product/pilot authority remains pending. This result does not authorize publication or general availability.
+
+---
+
+# Atelier Editorial — Phases 5 + 6 final report
+
+Date: 20 October 2026. **Release outcome: BLOCKED.** Essential Builder implementation and isolated regression gates pass. Required browser and disposable-database acceptance are unavailable, existing commerce issues remain, and product/rollout approval is pending. No real merchant theme was published, no rollout setting or actual environment value was changed, and no real email/SMS/OTP/courier/payment call, deployment, commit, push or dependency installation was performed.
+
+## A. Phase status
+
+| Phase | Status | Evidence |
+|---|---|---|
+| Phase 5 — Store Builder | **Blocked for final acceptance; implementation passes isolated gates** | Initial gate 409/409 before Phase 6; final gate 410/410. 27 new Builder tests cover real presentation, gallery availability, switching, content preservation, history/queue behavior and actual service guard/publication/restore functions with in-memory models. Browser iframe/UI and real MongoDB persistence are blocked. |
+| Phase 6 — final verification | **Blocked** | Both production builds pass, no new lint diagnostics, 144 exact legacy route markup comparisons pass, 20 current Gallery/Builder/live SSR comparisons match. Final serialized full suite: 713/718 passed; five baseline failures remain. Current browser/network/visual/hydration and real database integration are not certified. |
+
+Phase 0–4 prerequisites were reviewed before edits: frozen nine-theme definition/configuration/markup evidence, optional identity, default-off backend guard, shared homepage and all required supporting-page implementations exist. The previously reported zero-price cart and checkout resend limitations are understood and were not silently rewritten in this task. No new critical data/authorization/legacy failure was found at the Phase 5 isolated gate. Phase 6 proceeded only with independent safe checks; missing integration was never counted as passed.
+
+## B. Exact files changed by this task
+
+Compared with the 824 task-start source hashes in phase5/start-source-hashes.json. This excludes earlier Phase 0–4 work already present in the worktree. Repository-relative labels below link to absolute workspace files. Logs/JSON generated under output are evidence artifacts.
+
+### Modified (11)
+
+- [ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/themeAvailability.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/themeAvailability.js)
+- [packages/storefront-renderer/atelier/atelier.css](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/atelier.css)
+- [ecommerce-admin/src/pages/dashboard/StoreBuilder/PreviewCommercePages.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/PreviewCommercePages.jsx)
+- [ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx)
+- [ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx)
+- [ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/checkout/components/CheckoutSections.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/components/CheckoutSections.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx)
+- [packages/storefront-renderer/presentation/CheckoutSections.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CheckoutSections.jsx)
+- [packages/storefront-theme/capabilities.cjs](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/capabilities.cjs)
+- [track.md](C:/Users/user/WebstormProjects/Shop-for-all/track.md)
+
+### Added (2)
+
+- [ecommerce-backend/backend/tests/helpers/atelier-builder.cjs](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/atelier-builder.cjs)
+- [ecommerce-backend/backend/tests/storefront-atelier-builder.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-atelier-builder.test.js)
+
+## C. Store Builder implementation results
+
+### Gallery, identity and authorized selection
+
+- The existing registry, renderer-based thumbnail, candidate resolver, five preview choices and application workflow are reused. Ordinary availability still yields exactly nine cards; trusted allowlist availability yields the tenth. No browser flag authorizes persistence.
+- Atelier application rechecks the latest server-derived availability at confirmation. Revocation prevents its apply callback. Failed async application retains the draft/dialog and presents a reachable error. Busy state prevents duplicate callbacks and disables cancellation/close while application is pending. Legacy application follows its previous path.
+- Current-theme labeling identifies an existing hidden Atelier preset even when re-adoption is unavailable. Appearance-only provenance is distinguished from the active page presentation, using only theme.presentationVariant for runtime identity.
+- Full switches to each of the nine original presets clear the marker. Limited appearance-only rules retain the protected identity. Composition edits remain independent. Existing contract/service tests cover marker-only/complete payloads, raw/normalized targets, off/unset/invalid policy, allowlist/plan policy, direct draft/publish/restore and SEO bypass boundaries.
+- Local backend .env contains no Atelier rollout mode, allowlist or approved-plan keys, so it defaults off. Only these non-secret settings were inspected; no tenant IDs or secrets were logged. Running service/deployed environment overrides were not verified.
+
+### Five previews and editing controls
+
+- Home/product/cart/checkout/policy still use the existing shared presentation components, resolved theme and iframe viewport architecture. No category/collection/account/tracking Builder mode, new preview application, endpoint or editor was added.
+- The missing separate marketing-consent element in the Atelier checkout preview now uses a small stateless CheckoutMarketingConsent view also used by live checkout. The live callback/payload/security state remains owned by the original page. The local wrapper is additive; the original live consent DOM and semantics are retained.
+- Preview consent can be toggled locally. Customer fields, delivery/coupon values, cart quantities and order actions remain the existing representative non-live adapter state; preview does not pretend to validate coupons, verify phones or create orders. No new client price/shipping calculator was introduced. The submission boundary prevents default and phone verification remains false.
+- The standalone checkout branding sample now receives the same explicit Atelier scope as the page preview.
+- CategoryList, BrandStory and PromoBlock structural variant selectors were advertised as editable although their Atelier branches deliberately control structure. Existing capability metadata now marks those choices theme-controlled. Their content, images, links, visibility, selection IDs, order and spacing remain editable under the existing plan rules. Other section variant controls and the nine presets retain their prior behavior.
+- The existing mobile hero Image first/Text first control now affects Atelier media order below 768px. Tablet/desktop composition stays independent. Existing fonts, heading weight, colors, catalog columns and bottom navigation forwarding are checked. CSS remains explicitly scoped.
+- Iframe sandbox remains allow-same-origin without allow-scripts; style synchronization, scaling and viewport definitions remain unchanged: desktop 1180×800, tablet 768×800, mobile 390×800, smallMobile 320×800. Unit/SSR checks do not evaluate media queries or prove browser scaling.
+
+### Switching, content, autosave and recovery
+
+- Tests exercise legacy → Atelier → each legacy preset while preserving merchant logo/favicon, hero slides/media/copy, navigation, footer/contact, policies, SEO, checkout branding, payment settings and section content/product/review IDs. Existing intentional presentation/section ordering rules remain in place. Products, customers and sessions are not rewritten by theme application.
+- The actual existing snapshot/undo/redo functions were executed in a test context with their state setters substituted. Identity and ancillary merchant settings survive undo, redo and snapshot recovery; malformed snapshots are rejected. This is not a browser keyboard-history test.
+- The actual draft queue was checked for serialization, concurrency-token retention, conflict/pause/resume behavior and separate tenant queues. Existing source tests retain local-recovery and revision-watcher boundaries.
+- Actual backend services and adoption guard were executed with Mongoose I/O replaced by two disposable in-memory record maps: authorized draft → publish → JSON hydration → legacy switch → restore succeeds; stale draft/publish and foreign revision attempts fail; another tenant remains unchanged. Asset ownership/audit I/O is mocked. These checks do not establish MongoDB atomicity, indexes, transactions, real authorization sessions or actual asset ownership.
+- Recovery with adoption off was exercised without an old revision: retain a backup, apply a supported legacy preset to the latest current content and publish a new revision through the existing service. Re-adopting Atelier after switching away still requires authorization.
+
+## D. Exact test results
+
+| Command / method | Result | Evidence |
+|---|---|---|
+| Backend: node --test tests/store*.test.js, initial Phase 5 | 409 passed, 0 failed | phase5/gate-tests.txt |
+| Backend: node --test tests/storefront-atelier-builder.test.js, final | **27 passed, 0 failed**, no skipped tests | phase5/builder-tests.txt |
+| Backend: node --test tests/store*.test.js, final | **410 passed, 0 failed**, no skipped tests | phase6/theme-tests-final.txt |
+| Backend: node --test tests/*.test.js, first parallel run | **717 total: 711 passed, 6 failed**, 0 skipped | phase6/backend-tests.txt |
+| Backend: node --test tests/ai-provider-adapter.test.js | **9 passed, 0 failed** | phase6/ai-provider-recheck.txt |
+| Backend: node --test --test-concurrency=1 tests/*.test.js, first serial run | 717 total: 712 passed, 5 failed | phase6/backend-tests-serial.txt |
+| Same full serial command after final gallery test | **718 total: 713 passed, 5 failed**, 0 skipped | phase6/backend-tests-serial-final.txt |
+| Backend PowerShell: $env:THEME_PARITY_REPORT='<local evidence path>'; node --test tests/storefront-preview-parity.test.js | **25 tests passed; 20 Gallery/Builder/live SSR comparisons identical** (10 presets × full/limited) | phase6/preview-live-parity.txt and .json |
+| Admin: node node_modules/eslint/bin/eslint.js . | **18 existing errors, 4 existing warnings**, zero new diagnostics | phase6/admin-lint.txt |
+| Storefront: node node_modules/eslint/bin/eslint.js . | Passed | phase6/storefront-lint.txt |
+| Shared renderer ESLint.lintText comparison under storefront directory | 29 files, zero added diagnostics; one pre-existing hero diagnostic | phase6/shared-lint-comparison.json |
+| Admin: node node_modules/vite/bin/vite.js build | Passed, final build 2.50s | phase6/admin-build.txt |
+| Storefront: node node_modules/next/dist/bin/next build | Passed | phase6/storefront-build.txt |
+| git diff --check; new-file trailing-whitespace scan | Passed | phase6/diff-check.txt |
+| docker info --format '{{.ServerVersion}}' | Failed preflight: Docker Desktop Linux engine unavailable | phase5/environment.json |
+
+### Failures retained and investigated
+
+The final five failures are the same previously reproduced at original HEAD: ai-acceptance-provenance.test.js:11, ai-preferences.test.js:27 and security-hardening.test.js:339/:377/:883 (low-stock, promotion UI, confirmed-order/courier source assertions). No assertions were removed or baseline snapshots regenerated. Original evidence remains in phase0/preexisting-failures-at-head.txt.
+
+The first parallel full run also failed ai-provider-adapter.test.js:24 at its 30ms deadline: the mocked fetch's abort flag was false. The same file passed 9/9 in isolation and in serialized full runs. Its source/provider files are unchanged by this task. This supports an intermittent timing-test classification; it does not prove every possible scheduling condition is safe. The failed parallel run remains in the report and log. No real provider was called.
+
+During test authoring, two new assertions initially used a synthetic theme without the merchant hero they expected; the fixture was corrected. A later async test was interrupted because its policy-prop simulation omitted a rerender and left a mock promise unresolved; the test setup was corrected. These are recorded in phase6/test-development-notes.json, and final Builder tests pass 27/27.
+
+### Blocked checks — not skipped or passed
+
+- Real MongoDB draft/publish/reload/restore, concurrency, transactions, unique-index and recovery tests were **not run**. No disposable endpoint/ownership was verified; Docker is unavailable.
+- Existing launchSafetyHarness can delete every collection and its name check only requires a database containing "test". That guard alone does not establish ownership/isolation. There is no verified blanket outbound-adapter isolation for this run. No shared/staging/production database was used, no app/worker was started for integration, and no production credentials were exercised.
+- Required two-tenant HTTP/session/customer/order isolation, tampered totals, actual stock/order idempotency, OTP rate limits/expiry, ownership and proof-upload storage remain blocked for integration acceptance. Existing mocked/unit checks pass where applicable; 352 backend production/context/hook source hashes are unchanged.
+- Local browser use is disabled in Work settings. No new browser actions, screenshots, real iframe scaling, live preview network assertions, responsive pixel comparisons, focus/keyboard/screen-reader checks, hydration checks or runtime profiling were executed in this phase. Node preview render/callback tests plus a fail-closed API/session import guard and a mocked-fetch counter verify only that unit boundary. They are not a substitute for real browser network capture.
+- No new external integration, dependency installation, database endpoint guess or alternate browser-control method was used to bypass these blockers.
+
+## E. Visual, responsive and accessibility evidence
+
+The prior Phase 3–4 captures remain available as **historical implementation evidence**, not new Phase 5–6 screenshots:
+
+- [output/atelier-editorial/phase3/product-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/product-desktop.jpg) / [output/atelier-editorial/phase3/product-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/product-mobile.jpg)
+- [output/atelier-editorial/phase3/category-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/category-desktop.jpg) / [output/atelier-editorial/phase3/category-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/category-mobile.jpg)
+- [output/atelier-editorial/phase4/checkout-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/checkout-desktop.jpg) / [output/atelier-editorial/phase4/checkout-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/checkout-mobile.jpg)
+- [output/atelier-editorial/phase4/account-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/account-desktop.jpg) / [output/atelier-editorial/phase4/account-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/account-mobile.jpg)
+- [output/atelier-editorial/phase4/track-verified-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/track-verified-desktop.jpg) / [output/atelier-editorial/phase4/track-verified-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/track-verified-mobile.jpg)
+- [output/atelier-editorial/phase4/policy-index-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/policy-index-desktop.jpg) / [output/atelier-editorial/phase4/policy-index-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/policy-index-mobile.jpg)
+
+Other historical home/cart/collection/policy/reset/modal captures and 168 Phase 4 route/state-width checks remain under output/atelier-editorial. The seven widths 320/360/390/430/768/1024/1440, long Bengali/English, empty/one/many products and media failures require a fresh browser rerun after this task's CSS/control changes. A reduced viewport does not prove operation with a native on-screen keyboard.
+
+Figma connector access is unavailable in this phase. The previously verified frames 2:2–2:10, measured planning documentation and prior captures were used as references. No current pixel-diff or new Figma comparison is claimed. Deliberate differences remain: merchant data instead of fictional FORM & FOUND content; configurable grid/color values; collection's sort-only distinction; secure tracking before order disclosure; complete policies; extended auth/error/OTP/return states. New consent content matches the existing live feature, not a fictional design control. Mobile hero ordering now responds to the supported merchant option.
+
+Static default palette contrast was calculated: ink/paper 14.01:1, muted/paper 5.48:1, accent/paper 5.76:1, primary button 15.29:1 and ink/lime 11.93:1. These pairs meet 4.5:1; they are **not** rendered WCAG certification and do not cover every inherited label, focus state, user override or disabled element. Existing labels, checkbox separation and disabled-state semantics are asserted; complete keyboard/screen-reader/touch-target/reduced-motion validation is blocked in this phase.
+
+## F. Security, compatibility and legacy preservation
+
+| Original preset | Frozen definition/version/configuration, effective output, route markup and SSR parity | Current browser pixels / full commerce integration |
+|---|---|---|
+| modern-general | Pass | Blocked; historical visual evidence retained |
+| minimal-general | Pass | Blocked; historical visual evidence retained |
+| modern-fashion | Pass | Blocked; historical visual evidence retained |
+| editorial-fashion | Pass | Blocked; historical visual evidence retained |
+| luxury-jewellery | Pass | Blocked; historical visual evidence retained |
+| minimal-jewellery | Pass | Blocked; historical visual evidence retained |
+| soft-beauty | Pass | Blocked; historical visual evidence retained |
+| modern-electronics | Pass | Blocked; historical visual evidence retained |
+| fresh-grocery | Pass | Blocked; historical visual evidence retained |
+
+The 410-test gate retains the frozen nine-preset contracts and **144 exact legacy route markup comparisons** (27 product/category/collection + 117 commerce/account/tracking/policy states). The 20 current SSR parity cases agree across Gallery, Builder and live home. These results do not certify current pixel geometry, real merchant saved rows or commerce under real sessions. No frozen fixture or old assertion was changed.
+
+Manual review of the touched paths found no new untrusted HTML sink, arbitrary URL renderer, notification transport, auth/order endpoint, schema migration, business calculator or second theme system. The only runtime identity remains the validated optional marker; existing sanitization, ownership, plan and write guards stay in place. Added checkbox markup is static text with React-controlled state; preview callbacks do not authorize or submit orders. Backend application source, order/auth/OTP hooks and contexts remain byte-identical to task start (352 protected files).
+
+Installed Admin/storefront/backend theme entries resolve to the same physical shared index; both renderer hosts resolve the preserved /viewports export to the same source. Shared package version remains 1.0.0; no package/lockfile was edited. Admin React 19.2.5 and storefront React 19.2.4 remain separate app versions; Admin's existing explicit React aliases/dedupe remain. A matching version string alone is not a release-artifact compatibility check: verify file hashes/exports/fonts/SVG/CSS in the packaged deployment.
+
+Production-asset measurement versus the preceding Phase 4 build: Admin +2778 bytes / +852 individually gzipped bytes; storefront +861 bytes / +122 individually gzipped bytes. This is a local emitted-file comparison, not initial-route transfer size or a Core Web Vitals result. No new dependency or duplicate renderer application was added. Runtime layout shift, LCP/INP, repeated API calls, image loading and hydration are unmeasured. Evidence: phase6/performance.json, assets-before.json, assets-after.json, package-compatibility.json and protected-source.json.
+
+## G. Remaining product decisions and release blockers
+
+1. Confirm complete Atelier subscription eligibility; whether limited plans may discover an appearance-only adaptation; downgrade and grandfathering policy. Current technical boundaries are preserved, not new product approval.
+2. Name disposable pilot stores, an authorized rollout owner and approval/rollback authority. No real pilot or general availability was enabled.
+3. Supply/verify an owned disposable MongoDB replica set and browser access, with no production worker and all outbound transports mocked/blocked; complete the blocked matrix.
+4. Resolve the existing zero-price variant cart display/client-total defect and the active checkout OTP resend/cooldown gap in a separately focused commerce follow-up. This task did not replace price or OTP rules.
+5. Resolve or formally gate the five baseline test failures, existing Admin/shared lint debt and the intermittent SDK timing test before claiming all required release gates passed.
+6. Finish current visual/responsive/accessibility/runtime verification. Prior snapshots must not be regenerated to conceal a regression.
+
+## H. Controlled release and practical recovery runbook
+
+**Current decision: BLOCKED.** No operator should enable a merchant pilot from this report alone. When prerequisites and product/owner approval exist:
+
+### 1. Prepare an isolated acceptance environment
+
+- Verify the exact disposable database endpoint/name, owner and replica-set capability out of band; a name containing "test" is insufficient. Use credentials that cannot access real merchant data.
+- Stop/connect no production worker to this test database. Replace/deny all email/SMS/OTP/payment/courier/webhook/media-provider side effects; prove that a test send/upload cannot reach the Internet. Do not merely rely on NODE_ENV=test.
+- Only then use the existing local Mongo test setup and integration commands. Run integration serially because the harness deletes all collections. Never point MONGO_URI_TEST at production, staging or shared development.
+- Test two distinct tenants across products/categories/themes/customers/sessions/carts/orders; test price/stock tampering, duplicate/retry/consent, auth/reset/OTP/tracking, eligibility and uploads; validate required indexes and publication conflict/recovery.
+- Capture current browser network evidence for all five Builder modes, seven-width screenshots for every live route and Builder viewport, mobile keyboard/focus/safe-area checks and browser performance/hydration observations. Compare all nine against the existing frozen evidence.
+
+### 2. Build/deploy compatible artifacts with adoption off
+
+- Keep the server rollout mode off or unset, with no approved general-plan list. Build a coherent immutable source/artifact revision containing the shared contract, backend guard, Admin and storefront; verify /viewports, all existing exports, DM Sans/license, decorative assets and both CSS files in the package. No migration/backfill is required for the optional marker.
+- Deploy compatible backend/contract readers and writers with the guard off first, then Admin and storefront with the same contract/renderer revision. Verify normal nine-theme reads/writes and exports after each component. Do not activate a candidate while any reader/writer is incompatible.
+- Only the approved owner may enable allowlist mode with exact IDs for the authorized disposable pilot. Leave general rollout disabled and the approved-plan list empty until their separate approval. Recheck server bootstrap availability and rejection for an unapproved tenant; hiding a card alone is not sufficient.
+- On the disposable pilot, save/reload, preview, publish, revision watch, switch-away and restore through existing APIs, retaining expected shop/revision tokens and checking asset ownership. Capture acceptance evidence before any proposal for real merchants.
+
+### 3. Backup and rollback without depending on 20 retained revisions
+
+- Before an approved pilot, export the complete tenant-scoped published snapshot and current draft/revision metadata, including merchant content, selection IDs, branding, policies, SEO, payment/checkout settings, domain/aliases and discount. Store it privately with tenant ID, theme/schema/preset versions and expected revision. Keep asset references/backups needed for recovery. Verify restoration on a disposable clone. No backup was taken from real merchant data in this task.
+- To stop new adoption, set rollout off in the approved environment. This does not erase an unchanged legitimate published Atelier identity; existing edits and switching away remain allowed.
+- If a previous compatible revision exists, use the existing restore flow with the current expected revision after previewing its content. Restoration creates a new revision; it is not a database overwrite.
+- If old revisions have expired, load the **latest** tenant snapshot/draft, apply a supported legacy preset with full authorized Builder access and review preserved content, sections and controls. Save and publish through the normal conflict/ownership validation; verify the marker is absent and the real storefront follows the legacy path. Use the private export to restore any deliberately chosen older content, rather than blindly replacing newer merchant edits.
+- Restoring/re-adopting Atelier from a legacy state requires the server policy to authorize it again, even from a backup/revision. Do not bypass that boundary.
+- Preserve compatible code until affected stores have switched back or restored a compatible snapshot. Only then consider code rollback to a release that cannot read the new marker. Do not delete database collections, bulk-migrate stores or copy a different tenant's theme/assets as recovery.
+
+No step above was executed against a real deployment. Approvals, integration, pilot enablement and merchant publication remain future actions.
+
+---
+
+# Atelier Editorial — Phase 5 gate / Phase 6 active
+
+Essential Builder changes pass 409/409 focused tests, including 26 new component/history/service unit tests. No new critical compatibility failure identified. Real MongoDB persistence and browser acceptance remain blocked by unavailable isolated infrastructure; these are not passed. Phase 6 independent regression/build/static checks are in progress. General adoption remains off; no live publication or external providers.
+
+---
+
+# Atelier Editorial — Phases 3 + 4 implementation report
+
+Date: 20 October 2026. Scope: only the requested Phase 3 and Phase 4 work. **Presentation implementation is finished; production acceptance is conditional on the blockers below. Phase 5 has not started.** Atelier remains hidden and server adoption remains off by default. No actual environment settings, merchant database records, notifications, orders, publication, deployment, commits or dependencies were changed.
+
+## Phase status
+
+| Phase | Result | Evidence and limits |
+|---|---|---|
+| 3 — product, category, collection | **Implemented; isolated frontend gate passed before Phase 4** | Intermediate 259/259 theme tests; 27 exact original-theme route markup comparisons; product variant/quantity/cart/buy, filter retention and queries, collection sorting/pagination, image failures and long Bengali content exercised in the browser. Canonical server route and commerce-hook sources unchanged. |
+| 4 — cart, checkout, account, tracking, policies, shared states | **Presentation implemented; isolated regression gates pass** | Final 383/383 theme tests, 117 additional exact legacy markup comparisons, mocked guest/customer checkout and secure tracking actions, both builds. Existing zero-price cart totals and active checkout resend/cooldown limitation remain acceptance gaps. Database/provider/live tenant integration is not certified. |
+
+## Architecture and reused business logic
+
+The only runtime presentation discriminator is the existing validated optional theme.presentationVariant = 'atelier-editorial', selected through getStorefrontPresentationVariant. Homepage composition, preset provenance, URL and merchant identity are not used to select the presentation. An absent marker retains the original branch. No stateful page was extracted, no new route application, theme provider, commerce service or price/variant algorithm was introduced.
+
+- Scoped atelier-pages.css styles the existing product, catalog, cart, checkout, account, tracking and policy trees. Existing product hooks, CartContext, account session handlers, checkout OTP/coupon/totals/form hooks and tracking handlers are reused.
+- Product details keep gallery/zoom/fallback, variant availability, stock, SKU/barcode, ratings/reviews, quantity, Add/Buy, information tabs and related products. Related products use the existing card primitive with Atelier presentation. Unbacked generic purchase claims are omitted only for Atelier.
+- Category keeps all existing filters, chips, query names, sorting and pagination. Its mobile sheet retains selection. Collection keeps its distinct sort/pagination contract; no fake category filters were added.
+- Cart retains tenant storage and pending coupon behavior: "Coupon saved. It will be validated during checkout." Checkout retains required customer fields, COD, both zones, real coupon calculation, separate policy/marketing consent, phone proof, guest/customer endpoints, idempotency and success-only cart clearing.
+- Account retains login, registration/email verification, existing resend timers, reset stages, history expansion, profile, password changes, logout and the vendor branch. Theme-gated label associations were added where controls lacked accessible names.
+- Tracking retains access-code authorization and shows no order before verification. Existing eligible cancellation, returns, selected items, required images, optional video and multipart payloads remain intact. Proof previews use an Atelier-only group role so their existing remove button is exposed to assistive technology.
+- Policies retain all four full merchant/fallback documents, TOC, individual routes and unknown-type 404. Merchant text is escaped.
+- Search, variant picker, OTP and tracking dialogs gain Atelier-only focus containment, Escape dismissal, busy restrictions, focus restoration, scroll locking and short-viewport scrolling. Consent remains separate and avoids bottom action bars. Atelier toast options use the same library/store, above bottom actions and below dialogs. A single exact CSS relationship hides the existing outer duplicate toast host only when its direct tenant root explicitly selects Atelier; legacy host behavior is unchanged.
+- Existing five Store Builder preview modes reuse the same product/cart/checkout/policy presentation props. No optional category/account/tracking preview modes were added. Full Builder persistence/parity verification belongs to Phase 5.
+- Only the unreleased Atelier preset's checkout defaults were refined to white card/input surfaces and an ink button. Existing merchant overrides still win; a regression assertion covers this. The original nine definitions and versions remain frozen.
+
+### New presentation pieces
+
+- [packages/storefront-renderer/atelier/AtelierAccountAccent.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/AtelierAccountAccent.jsx) — stateless account accent, with two local Figma decorative SVGs.
+- [packages/storefront-renderer/atelier/useAtelierDialog.js](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/useAtelierDialog.js) — presentation-only focus/keyboard/scroll helper; owns no auth/OTP/request state.
+- AtelierCheckoutDialog inside CheckoutSections.jsx — small focus wrapper around the existing modal tree. The legacy modal remains callable without React hooks; the existing direct-call security assertion is preserved.
+- [packages/storefront-renderer/atelier/atelier-pages.css](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/atelier-pages.css) — exact-identity scoped page styles; one explicitly tested parent-host rule as described above.
+
+## Exact verification results
+
+Commands are run from the named project directory with the installed Node runtime. Logs and JSON are under output/atelier-editorial/phase3 and phase4.
+
+| Check | Command / method | Final result |
+|---|---|---|
+| Prerequisite theme baseline | Existing focused theme suites before edits | 226 passed, 0 failed |
+| Phase 3 gate | node --test tests/store*.test.js, before Phase 4 additions | 259 passed, 0 failed |
+| Final theme/Builder gate | Backend: node --test tests/store*.test.js | **383 passed, 0 failed**, 23 files |
+| Full backend unit/security suite | Backend: node --test tests/*.test.js | **691 tests: 686 passed, 5 baseline failures**; no skips |
+| Admin lint | Admin: node node_modules/eslint/bin/eslint.js . | 18 baseline errors, 4 baseline warnings; no additions |
+| Storefront lint | Storefront: node node_modules/eslint/bin/eslint.js . | Passed |
+| Shared renderer lint | ESLint.lintText from storefront directory, 29 files vs task-start snapshots/HEAD | No added diagnostics; StorefrontHero.jsx has its same existing diagnostic |
+| Admin production build | Admin: node node_modules/vite/bin/vite.js build | Passed |
+| Storefront production build | Storefront: node node_modules/next/dist/bin/next build | Passed |
+| Diff hygiene | git diff --check; scan new source/fixtures for trailing whitespace | Passed |
+| Database preflight | docker info --format '{{.ServerVersion}}' | **Blocked**: Docker Desktop Linux engine unavailable; no destructive harness or shared database used |
+
+### Original nine-theme evidence
+
+- 27 exact original markup hashes: nine presets × product/category/collection.
+- 117 exact original markup hashes: nine presets × cart/checkout/policy/login/registration/reset/dashboard/profile/security/vendor/tracking/OTP/policy-index. These frozen values were generated from preserved task-start source copies; current output matches them.
+- Frozen definition, version, normalization, effective configuration and existing renderer assertions remain in the focused suite. No old assertions were removed or relaxed.
+- The 18 Phase 0/2 home desktop/mobile markup/style/JPEG comparisons remain available in phase2/final-legacy-comparison.json and phase0/settled. **They were not rerun after this phase**: local browser use became disabled in Work settings when opening the final comparison tab. Current route markup tests and scoped CSS checks pass; do not present the historical home captures as new visual execution.
+- 355 backend production, commerce context/hook and relevant server route source hashes match task start. AST comparisons of 45 non-render functions in cart/checkout/account/tracking/reset/security files are identical. This proves source preservation, not live database or authorization acceptance.
+
+### Browser verification (synthetic, fail-closed API adapter)
+
+The test-only Vite fixture renders actual storefront components/hooks with synthetic merchant data. Unknown API calls throw; it does not connect to backend/provider services. Authentication context and responses are mocked. No real credentials, customer recipients, orders, OTP sends or uploads to a provider were used.
+
+- **147 route/width cases:** 21 routes/states × 320, 360, 390, 430, 768, 1024, 1440. Zero horizontal overflow, clipped headings or visible buttons smaller than 44px. DM Sans loaded.
+- **21 extra responsive cases:** reset OTP digits, verified tracking and return modal at the same seven widths. Zero measured issues. A 390×500 viewport also kept the return dialog contained and its proof/submit controls reachable by scrolling. A native on-screen keyboard was not emulated.
+- Product selected a stock-2 zero-price variant with correct ID and price snapshot; quantity clamped; Add and Buy forwarded current selection. Missing/loading/one/no/broken-image/long Bengali cases were exercised. Existing authenticated review submission was sent only to the mock adapter; signed-out prompt remained.
+- Category mobile filters retained price/stock/sale/rating on close/reopen and produced the original URL keys. Collection used sort/page and no unsupported filters. Tenant B's bag was empty while A's persisted items restored.
+- Cart quantity/remove/empty and pending coupon UI passed. Coupon validation used the checkout mock, with zone/coupon totals visible. Guest/customer order payload field names, phone proof presence, policy acceptance and marketing=false were recorded without raw sensitive values.
+- A rejected mocked customer order preserved the bag; retry reused the idempotency key; accepted response displayed the order confirmation and cleared the bag. Both guest and customer endpoints were exercised. Invalid OTP retained the bag and showed an accessible alert; busy OTP disabled close/cancel and resisted Escape. Final input focus was checkout-modal-otp.
+- Registration locked identity and disabled resend during its existing 3-minute timer. Recovery retained its 60-second resend timer, six-digit paste, strength/matching validation and mock completion. History expanded, profile/security remained available, mock logout returned to login and vendor URL used the configured test admin origin.
+- Tracking showed no results before access verification or after send alone. Verified requests included the existing access-token header. Pending cancellation and delivered eligible return used actual handlers; proof selection/removal controlled submit availability and multipart field names were retained. Provider eligibility enforcement and actual file storage are not verified here.
+- Search Escape restored its trigger; tracking Tab wrapped and Escape restored the cancellation trigger. The installed real toast library was exercised in a test hierarchy matching the layouts: one visible Atelier host, hidden outer duplicate; both legacy hosts remained as before. Consent declined and dismissed using the existing handler.
+
+### Important failures and blocked acceptance
+
+1. **Existing zero-price cart display/total defect — release blocker.** Selecting a zero-price variant stores cartPrice/finalPrice=0 with the correct variant ID, but existing || price fallbacks in CartContext/CartView/checkout substitute the base price. Browser reproduction showed 0 in the bag snapshot and 1200 in the cart in both Atelier and Modern General. This predates the theme and was preserved because the task forbids price derivation/controller changes. Backend authoritative totals are unchanged, but a correct server does not excuse a misleading cart. Fix and test this as an explicit shared-commerce follow-up before release. See phase4/shared-and-edge-checks.json and the existing source paths in the manifest.
+2. **Existing active checkout OTP modal has no resend/cooldown control.** The active Send Code → Verify flow has no dedicated resend action/cooldown UI. Registration and reset do have timers and those are preserved. No uncontrolled retry or duplicate OTP state was introduced. Restoring a supported server-backed checkout resend contract requires a focused follow-up; this requirement is not certified complete.
+3. **Five pre-existing backend failures remain.** AI acceptance provenance, AI language/voice preferences, low-stock source assertion, promotion UI source assertion and confirmed-order/courier UI source assertion. All five were reproduced at original HEAD during Phase 0 (phase0/preexisting-failures-at-head.txt). Final full suite has exactly these five; the temporary new modal direct-call failure was fixed without changing the old assertion.
+4. **Safe integration unavailable.** Real MongoDB tenant persistence/concurrency, real session authorization, backend checkout price/stock enforcement, provider delivery, live Next SSR/hydration and live publication are not certified. No integration harness was run against the configured merchant database. Docker preflight result is recorded.
+5. **Lint debt remains.** The existing admin errors/warnings and one shared hero diagnostic were not changed as unrelated work. Build success does not imply lint debt was fixed.
+6. **Visual/accessibility limits.** Browser measurements and keyboard checks are not a full assistive-technology audit or exact Figma pixel-diff certification. Current final home JPEG comparison was blocked as stated above.
+
+## Figma comparison and deliberate differences
+
+Frames 2:4–2:10 were read through the Figma connector during this task. The product uses the large 665:748 gallery ratio, editorial name/price, black Add and lime Buy; catalog uses the editorial heading/filter relationship; cart/checkout use thin separators and a white summary; account uses the dark 537px accent and exact 325×270 / 163×165 decorative SVG root sizes. Policies use the TOC/full-document composition. Screenshots were visually inspected.
+
+- Synthetic fixture media/merchant content is clearly test-only; live application continues to use merchant content. No Figma fictional products, customer/orders, prices, courier dates, unsupported delivery promises or demo checkout handlers were added.
+- Grid counts, optional cover, merchant color overrides and existing supported controls can differ from Figma by configuration. Collection has no fake category filter rail.
+- Tracking retains the real verified sequence and all existing status/timeline/payment/cancellation/return sections. It does not display the Figma example order before authorization. Its current step content is arranged vertically; extra existing sections extend the design.
+- Mobile, narrow tablets, registration, reset, dashboard/security/vendor, empty/error/loading and return dialogs extend the same visual language beyond the static frames.
+- Full policies replace the design's short example excerpts. Existing business copy and merchant/fallback policies are retained; Atelier's COD explanation omits platform setup instructions.
+- Rounded badges or state/error treatments that convey existing commerce status remain where appropriate; they were not globally rewritten.
+
+## Screenshots and evidence
+
+All screenshots are isolated synthetic fixtures, not a published merchant site. The task-owned local fixture server on port 5211 was stopped after verification. Key captures:
+
+- [output/atelier-editorial/phase3/product-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/product-desktop.jpg) / [output/atelier-editorial/phase3/product-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/product-mobile.jpg)
+- [output/atelier-editorial/phase3/category-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/category-desktop.jpg) / [output/atelier-editorial/phase3/category-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/category-mobile.jpg)
+- [output/atelier-editorial/phase3/collection-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/collection-desktop.jpg) / [output/atelier-editorial/phase3/collection-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase3/collection-mobile.jpg)
+- [output/atelier-editorial/phase4/cart-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/cart-desktop.jpg) / [output/atelier-editorial/phase4/cart-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/cart-mobile.jpg)
+- [output/atelier-editorial/phase4/checkout-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/checkout-desktop.jpg) / [output/atelier-editorial/phase4/checkout-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/checkout-mobile.jpg)
+- [output/atelier-editorial/phase4/account-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/account-desktop.jpg) / [output/atelier-editorial/phase4/account-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/account-mobile.jpg)
+- [output/atelier-editorial/phase4/track-verified-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/track-verified-desktop.jpg) / [output/atelier-editorial/phase4/track-verified-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/track-verified-mobile.jpg)
+- [output/atelier-editorial/phase4/policy-index-desktop.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/policy-index-desktop.jpg) / [output/atelier-editorial/phase4/policy-index-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/policy-index-mobile.jpg)
+- [output/atelier-editorial/phase4/return-modal-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/return-modal-mobile.jpg) / [output/atelier-editorial/phase4/return-modal-controls-mobile.jpg](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/return-modal-controls-mobile.jpg)
+
+Additional reset/registration/dashboard/vendor/policy-detail/consent/OTP captures are in phase4. Machine-readable summaries: [output/atelier-editorial/phase4/gate.json](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase4/gate.json), changed-files.json, source-invariants.json, responsive-checks.json, additional-states-responsive.json, interaction-checks.json, shared-and-edge-checks.json and shared-lint-comparison.json. Phase 3 intermediate evidence remains in phase3/gate.json.
+
+## Exact changed source/test/document files for this task
+
+This manifest compares against the Phase 3 task-start hashes, **not HEAD**, so it excludes the previous Phase 0–2 implementation. Generated logs, source snapshots, Vite cache and screenshots under output are evidence artifacts rather than application changes. No application source outside the following list was changed.
+
+### Modified (35)
+
+- [ecommerce-admin/src/pages/dashboard/StoreBuilder/PreviewCommercePages.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/PreviewCommercePages.jsx)
+- [ecommerce-admin/vite.config.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/vite.config.js)
+- [ecommerce-storefront/src/app/[subdomain]/account/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/account/page.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/cart/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/cart/page.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/layout.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/layout.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/policies/[type]/PolicyPageClient.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/policies/[type]/PolicyPageClient.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/policies/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/policies/page.jsx)
+- [ecommerce-storefront/src/app/[subdomain]/track/page.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/track/page.jsx)
+- [ecommerce-storefront/src/components/account/AuthView.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/account/AuthView.jsx)
+- [ecommerce-storefront/src/components/account/CustomerDashboard.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/account/CustomerDashboard.jsx)
+- [ecommerce-storefront/src/components/account/CustomerTabs.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/account/CustomerTabs.jsx)
+- [ecommerce-storefront/src/components/account/PasswordResetFlow.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/account/PasswordResetFlow.jsx)
+- [ecommerce-storefront/src/components/account/VendorView.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/account/VendorView.jsx)
+- [ecommerce-storefront/src/components/product/ProductDetails.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/product/ProductDetails.jsx)
+- [ecommerce-storefront/src/components/search/SearchModal.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/search/SearchModal.jsx)
+- [ecommerce-storefront/src/components/storefront/AnalyticsConsentBanner.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/storefront/AnalyticsConsentBanner.jsx)
+- [ecommerce-storefront/src/components/storefront/StorefrontVariantPickerModal.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/storefront/StorefrontVariantPickerModal.jsx)
+- [packages/storefront-renderer/index.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/index.jsx)
+- [packages/storefront-renderer/presentation/ActionButtons.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ActionButtons.jsx)
+- [packages/storefront-renderer/presentation/CartView.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CartView.jsx)
+- [packages/storefront-renderer/presentation/CheckoutSections.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CheckoutSections.jsx)
+- [packages/storefront-renderer/presentation/PolicyView.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/PolicyView.jsx)
+- [packages/storefront-renderer/presentation/ProductDetailsView.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ProductDetailsView.jsx)
+- [packages/storefront-renderer/presentation/ProductExtras.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ProductExtras.jsx)
+- [packages/storefront-renderer/presentation/ProductImageGallery.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ProductImageGallery.jsx)
+- [packages/storefront-renderer/presentation/ProductInfo.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ProductInfo.jsx)
+- [packages/storefront-renderer/presentation/RelatedProducts.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/RelatedProducts.jsx)
+- [packages/storefront-renderer/presentation/ReviewSection.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ReviewSection.jsx)
+- [packages/storefront-renderer/presentation/VariantSelector.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/VariantSelector.jsx)
+- [packages/storefront-renderer/styles.css](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/styles.css)
+- [packages/storefront-theme/prebuilt.cjs](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/prebuilt.cjs)
+- [track.md](C:/Users/user/WebstormProjects/Shop-for-all/track.md)
+
+### Added (24)
+
+- [ecommerce-admin/tests/atelier-routes.config.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/atelier-routes.config.js)
+- [ecommerce-admin/tests/fixtures/atelier-headers.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-headers.js)
+- [ecommerce-admin/tests/fixtures/atelier-image.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-image.js)
+- [ecommerce-admin/tests/fixtures/atelier-link.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-link.js)
+- [ecommerce-admin/tests/fixtures/atelier-navigation.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-navigation.js)
+- [ecommerce-admin/tests/fixtures/atelier-phase4-cases.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-phase4-cases.jsx)
+- [ecommerce-admin/tests/fixtures/atelier-route-cases.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-route-cases.jsx)
+- [ecommerce-admin/tests/fixtures/atelier-route-data.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-route-data.js)
+- [ecommerce-admin/tests/fixtures/atelier-route-runtime.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-route-runtime.jsx)
+- [ecommerce-admin/tests/fixtures/atelier-routes.css](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-routes.css)
+- [ecommerce-admin/tests/fixtures/atelier-routes.html](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-routes.html)
+- [ecommerce-admin/tests/fixtures/atelier-routes.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-routes.jsx)
+- [ecommerce-admin/tests/fixtures/atelier-toast-case.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-toast-case.jsx)
+- [ecommerce-admin/tests/fixtures/atelier-toast.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/atelier-toast.js)
+- [ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase3-markup-sha256.json](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase3-markup-sha256.json)
+- [ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase4-markup-sha256.json](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase4-markup-sha256.json)
+- [ecommerce-backend/backend/tests/helpers/atelier-routes.cjs](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/atelier-routes.cjs)
+- [ecommerce-backend/backend/tests/storefront-atelier-commerce.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-atelier-commerce.test.js)
+- [ecommerce-backend/backend/tests/storefront-atelier-routes.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-atelier-routes.test.js)
+- [packages/storefront-renderer/atelier/AtelierAccountAccent.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/AtelierAccountAccent.jsx)
+- [packages/storefront-renderer/atelier/account-lime.svg](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/account-lime.svg)
+- [packages/storefront-renderer/atelier/account-terracotta.svg](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/account-terracotta.svg)
+- [packages/storefront-renderer/atelier/atelier-pages.css](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/atelier-pages.css)
+- [packages/storefront-renderer/atelier/useAtelierDialog.js](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/useAtelierDialog.js)
+
+## Readiness and safe next work
+
+**Ready for Phase 5 development/verification with adoption kept off; not ready for merchant rollout.** First obtain an available disposable MongoDB test environment, then verify essential existing Builder home/product/cart/checkout/policy controls and preview parity, draft/save/reload/publish/switch/restore persistence under the server gate. Treat the zero-price defect and checkout resend/cooldown contract as explicit acceptance blockers, with focused shared-commerce follow-up authorization. Preserve the original nine tests and baselines. Product eligibility and a controlled test-shop pilot still require the decisions recorded in the planning documents. No new optional preview modes or Phase 5 implementation was started.
+
+---
+
+# Atelier Editorial — Phase 3 gate / Phase 4 active
+
+Phase 3 passed its isolated frontend gate: **259 focused tests**, **27 original-theme route markup comparisons**, **21 responsive route/width checks**, zero new frontend lint diagnostics. Product zero-price variant/quantity/cart/buy, gallery failure, long Bengali, category filter retention/query/pagination, collection sort/paging and tenant cart namespaces exercised using actual frontend handlers and fail-closed API fixtures. Source authority, server routes and commerce hooks remain unchanged.
+
+Evidence: output/atelier-editorial/phase3/{gate.json,gate-tests.txt,route-tests.txt,responsive-checks.json,content-edge-checks.json,interaction-checks.json}. MongoDB/live tenant integration remains blocked, not passed.
+
+Active phase: **4 — cart/checkout/account/tracking/policies and shared states**. Proceed with scoped visual hooks only; no service/controller rewrite, public adoption or real provider sends.
+
+---
+
+# Atelier Editorial — Phases 3 + 4 in progress
+
+Active phase: **3 — product/category/collection**. Preserve prior implementation and all legacy themes. Phase 0–2 prerequisites reviewed; isolated MongoDB integration remains blocked and is not required for safe scoped frontend work. No adoption/publication or real provider calls. Starting source hashes and targeted source copies recorded under output/atelier-editorial/phase3.
+
+Next: isolated presentation CSS, minimal gated hooks, focused functional/legacy tests and browser verification; pass Phase 3 gate before Phase 4.
+
+---
+
+# Atelier Editorial — Phases 0–2 completion report
+
+Task date: 20 October 2026. Active work: **Phases 0–2 finished; stopped before Phase 3.** Release status: **development candidate, adoption off; live persistence/pilot acceptance remains blocked.** This report supersedes the brief Atelier progress entry previously at the top. Historical tracking is preserved below.
+
+## Completion status
+
+| Phase | Status | Verification and limits |
+|---|---|---|
+| 0 — baseline and safety | **Pass** | Original Git state, 869 tracked-file hashes, frozen nine-preset contracts, 200/200 initial focused tests, desktop/mobile and commerce-preview captures, Figma and font-license review. Disposable MongoDB integration classified blocked before any destructive harness ran. |
+| 1 — identity and restrictions | **Pass for isolated implementation gates** | 216/216 intermediate theme tests. Optional identity survives normalization/Mongoose hydration, clears on full legacy application, remains independent of composition; trusted off/allowlist/on and actual service write guards verified with mocked database/provider infrastructure. Real MongoDB persistence/concurrency is **not verified**. |
+| 2 — homepage and preview | **Pass for fixture/automated gates** | Final 226/226 focused tests, both production builds, seven responsive widths and edge-content cases, actual gallery/Builder iframe checks, final 18 original-theme comparisons identical. No authenticated live-store checkout, real tenant publication or production delivery was exercised. |
+
+No general release, merchant publication, subscription-entitlement change, database migration, commit, push or deployment was performed. No outbound email/SMS/OTP/payment provider was invoked. Actual .env values were not changed.
+
+## Implementation and architecture
+
+- The existing shared contract remains the source of truth: optional `theme.presentationVariant = 'atelier-editorial'`; missing/null uses the original rendering path. Schema version 4 and preset catalog version 3 remain unchanged. The original nine definitions and versions are frozen in pre-change fixtures.
+- `getStorefrontPresentationVariant(theme)` selects presentation only from the explicit marker. Preset provenance and homepage composition cannot select the skin. Full application of a legacy preset clears it; limited appearance-only application retains protected identity under existing plan rules.
+- Atelier version 1 is the hidden tenth registry entry. Ordinary galleries still expose nine. Candidate visibility comes from server bootstrap policy; frontend hiding is only UX.
+- A narrow backend guard checks raw input merged with trusted persisted state and the actual normalized write target. The existing central normalizer covers draft, publish, revision restore, SEO full-theme writes and recovered snapshots. Tenant identity comes from the loaded shop; plan policy is fetched by its ID. Client plan/shop/preview flags grant no permission. Invalid identity writes fail validation before sanitization can erase them.
+- Adoption defaults off. Exact authorized test shops may be enabled through server configuration. General eligibility is not invented: `on` also requires explicitly approved server plan keys, empty by default. Existing limited/full access boundaries remain in force; an appearance-only application does not acquire the structural marker. Product eligibility for general release remains a decision.
+- Turning adoption off does not erase an unchanged legitimate published identity. Existing edits and a switch back to a legacy theme remain possible; reapplication/new identity requires authorization. Homepage SEO cannot change presentation/preset identity.
+- Existing preview/live roots receive the same optional data attribute; no new wrapper, theme state store, API fetch, renderer application or commerce service was added.
+- Small Atelier views were necessary for the editorial DOM: header, hero, product card, category/story and footer. Existing parent components prepare navigation, product prices/stock/discounts, slide models, images, links and actions. The new views do not recalculate commerce data or implement cart logic.
+- All presentation selectors are gated by `data-sf-presentation="atelier-editorial"`. The local font face has a unique DM Sans name. No global body/root/utility override or production !important rule was added.
+- Runtime identity, products, categories, content and destinations remain supplied by existing merchant data paths. Only isolated fixtures contain synthetic marketing copy/media. Section application preserves existing IDs, visibility, enabled duplicates, merchant content and rendered order; missing blueprint types are appended. All 13 current optional section types continue through the existing registry.
+- Builder candidate thumbnails render the actual shared homepage. Existing inert preview adapters remain responsible for suppressing live commerce/customer actions. Header/hero structural controls are explicitly theme-controlled; compatible content, media, color, typography and other existing controls remain available.
+
+## Tests and verification
+
+Commands below ran from the indicated application directory. Logs store the expanded explicit file arguments, including the full backend suite; no destructive integration command was run.
+
+| Check | Command / evidence | Result |
+|---|---|---|
+| Original focused baseline | [Exact 19-suite command and output](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase0/focused-tests.txt) | **200 pass, 0 fail** before source edits |
+| Phase 1 focused | [Exact command/output](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase1-tests.txt) | **216 pass, 0 fail** |
+| Final focused theme/Builder suites | [Exact 21-suite command/output](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/focused-tests-final.txt) | **226 pass, 0 fail, 0 skip** |
+| Full backend unit suite | [Expanded node --test command/output](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/backend-unit-tests-final.txt) | **534 tests: 529 pass, 5 fail, 0 skip** |
+| Reproduce those five on original Git HEAD | [Original-source output](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase0/preexisting-failures-at-head.txt); node --require <recorded dependency redirect> --test the same three files | **55 tests: 50 pass, same 5 fail** |
+| Admin lint | `node node_modules/eslint/bin/eslint.js .`; [comparison against original source](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/admin-lint-final-comparison.json) | **18 errors, 4 warnings; no added diagnostics** |
+| Storefront lint | `node node_modules/eslint/bin/eslint.js`; [output](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/storefront-lint-final.txt) | **Pass** |
+| Shared renderer JSX outside app lint roots | `node ../output/atelier-editorial/lint-shared.cjs` from ecommerce-storefront; [comparison](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/shared-jsx-lint-comparison.json) | Five new JSX files: **0 errors/warnings**. All 15 reviewed JSX files: **no added diagnostics**; one pre-existing shared Hero lint error reproduced on HEAD. Uses lintText with storefront JSX config and an app-equivalent file path. |
+| Admin production build | `node node_modules/vite/bin/vite.js build`; [output](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/admin-build-final.txt) | **Pass** |
+| Storefront production build | `node node_modules/next/dist/bin/next build` | **Pass**, Next 16.2.10 Turbopack, compilation 3.3s, static generation 10/10; observed execution output. Existing next/font Google Geist fetch required approved network execution. |
+| Backend/shared JS syntax | `node --check <file>`; [15 exact files/results](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/syntax-check-final.json) | **15/15 pass** |
+| Diff/whitespace and final scope | `git diff --check`, new text-file whitespace check, final diff/manifest review | **Pass**; final summary in [verification summary](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/verification-summary.json) |
+| Real MongoDB integration | Existing disposable Docker replica-set harness inspected; `docker info` failed to reach DockerDesktopLinuxEngine | **Blocked**, not executed; no shared or production DB fallback |
+
+Final focused command (backend directory):
+
+```text
+node --test tests/store-builder-color-product-edit-images.test.js tests/store-builder-contract.test.js tests/store-builder-navigation-seo.test.js tests/store-builder-prebuilt-themes.test.js tests/storefront-atelier-contract.test.js tests/storefront-atelier-presentation.test.js tests/storefront-capabilities.test.js tests/storefront-card-inheritance.test.js tests/storefront-color-aliases.test.js tests/storefront-composition.test.js tests/storefront-control-wiring.test.js tests/storefront-effective-theme.test.js tests/storefront-first-render.test.js tests/storefront-hero-contract.test.js tests/storefront-presentation.test.js tests/storefront-preview-data.test.js tests/storefront-preview-parity.test.js tests/storefront-state-delivery.test.js tests/storefront-structural-variants.test.js tests/storefront-theme-controls.test.js tests/storefront-theme-merge.test.js
+```
+
+### Five pre-existing backend failures
+
+Each failure reproduced from revision `40515d4f6a01f5460451613efbe592b51df692c3` using its original source. They are not relabeled as passing and were not fixed by unrelated changes:
+
+1. `ecommerce-backend/backend/tests/ai-acceptance-provenance.test.js:11` — empty Product output chargeability/requested-section assertion.
+2. `ecommerce-backend/backend/tests/ai-preferences.test.js:27` — four-generator effective voice assertion.
+3. `ecommerce-backend/backend/tests/security-hardening.test.js:339` — low-stock implementation/source assertion.
+4. Same file `:377` — promotion scheduling Admin-source assertion.
+5. Same file `:883` — confirmed-order notification/courier UI-source assertion.
+
+The first two concern existing AI tests; the other three assert existing notification/catalog/promotion UI text or source patterns. Reproduction establishes that this change did not introduce them; it does not establish that the underlying existing functionality is correct. They remain separate maintenance work. Likewise existing Admin lint violations remain unresolved.
+
+### Browser inspection — actual running code, synthetic inputs
+
+- CUA/IAB, isolated localhost Vite fixture; no authenticated merchant/customer APIs. Checked 320, 360, 390, 430, 768, 1024 and 1440px: no document horizontal overflow, detected visible heading/card/category clipping or price/action overlap; local font loaded. [Results](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/responsive-checks.json).
+- Mobile menu expansion and Escape close, slide previous/next/dots/manual pause, unavailable-stock disabled controls and inert preview navigation were exercised. Long Bengali copy at 320/390/1440px and empty/one/many (12 categories)/all-section cases were checked. [Interaction/content results](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/interaction-and-content-checks.json).
+- Gallery and Builder iframe carried the Atelier marker and actual editorial hero. [Preview/long-copy results](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/final-content-and-preview-checks.json). Its earlier empty-content observation is superseded by [fresh-bundle check](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/fresh-build-checks.json): zero visible hero copy/media and zero products when explicitly empty; primary hero button resolves to ink rgb(32,39,33).
+- Initial computed-style captures sampled transitions. Those originals were retained, not overwritten. Canonical settled baselines were captured from an independently extracted original Git revision with transitions disabled only by fixture query `?baseline=1`. Production CSS was not weakened. Original source hashes and frozen contract fixture remain unchanged.
+- Final comparison uses desktop 1440x1000 and mobile 390x900. An initially mismatched 1000px mobile viewport moved the fixed navigation; matching original height resolved it. [Final 18 comparisons](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/final-legacy-comparison.json) all show identical homepage markup, sampled computed styles and JPEG bytes. This evidence covers deterministic fixture inputs, not every possible merchant configuration/browser.
+- Source-level and render tests cover shared preview/live composition and callback forwarding. No real user cart, OTP, payment, account, tenant network fetch or published-store end-to-end flow was claimed as verified.
+
+## Visual review and documented deviations
+
+Reference: Figma `sZlr7zuW8dDLDQ0ESGXSf5`, desktop `2:2`, mobile `2:3`; retrieved contexts and screenshots inspected. Implemented paper #f7f5ee, ink #202721, lime #dbec8b, violet accent with darker #4653c9 for small text, editorial DM Sans, large fluid hero, asymmetric desktop/media stack on mobile, colored product/category fields, inverse story/promo panels and editorial footer.
+
+Official DM Sans normal variable asset and OFL1.1 license were obtained from Google Fonts `ofl/dmsans`; license accompanies the asset. Inter/Arial/system fallbacks remain, including for Bengali glyphs absent from DM Sans. No dependency was installed.
+
+Actual final screenshots include the fixture toolbar, which is outside production storefront UI:
+
+- [Desktop 1440px hero (1425px content capture after scrollbar)](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/atelier-desktop-hero.jpg)
+- [Desktop full homepage](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/atelier-desktop.jpg)
+- [Mobile 390px hero (375px content capture after scrollbar)](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/atelier-mobile-hero.jpg)
+- [Mobile full homepage](C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/phase2/atelier-mobile.jpg)
+
+Meaningful differences: fixture merchant name/content and synthetic geometric media replace FORM & FOUND and fictional product imagery; real stores supply their own assets. Existing merchant section order, optional enabled sections, catalog/filter controls, wishlist/buy actions and policy/support links remain, so page length and content differ from the mockup. Existing merchant aspect ratios and supported configuration are honored. Decorative lime/image-field colors are intentionally theme-owned and explained in Builder. No pixel-perfect fidelity claim is made. Final screenshots were visually inspected for typography, hero, fields, section rhythm and mobile wrapping.
+
+## Exact changed-file manifest
+
+46 application/test/asset/tracker files changed or added; generated evidence is listed separately below. No package manifests or lockfiles changed.
+
+| Repository-relative path | Change |
+|---|---|
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx) | Forward trusted availability to the gallery; reject unavailable client apply attempts for clear UX. |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx) | Apply the optional marker to the existing preview root; reuse shared views and inert preview adapters. |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx) | Offer DM Sans only for Atelier or an already selected DM Sans value. |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx) | Explain Atelier inverse panels and intentionally fixed decorative fields. |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx) | Discover a candidate from trusted metadata; render its actual homepage thumbnail. |
+| [ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/themeAvailability.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/themeAvailability.js) | Pure gallery filter: nine active entries by default; hidden candidate only when explicitly available. |
+| [ecommerce-admin/tests/fixtures/theme-presentation.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/tests/fixtures/theme-presentation.jsx) | Synthetic Atelier content, edge cases, and test-only deterministic baseline mode; original nine fixture inputs preserved. |
+| [ecommerce-admin/vite.config.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-admin/vite.config.js) | Allow only the shared font asset directory in addition to the existing Admin root. |
+| [ecommerce-backend/backend/.env.example](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/.env.example) | Document three default-off rollout variables; actual .env unchanged. |
+| [ecommerce-backend/backend/models/Shop.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/Shop.js) | Optional enum field with undefined default; no backfill or legacy materialization. |
+| [ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js) | Central write-boundary validation/guard and trusted bootstrap availability; SEO scope forwarded. |
+| [ecommerce-backend/backend/services/storeBuilder/themeAvailabilityService.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/themeAvailabilityService.js) | Trusted tenant/plan adoption policy; raw/merged/normalized checks; off/allowlist/on; unchanged published identity remains usable. |
+| [ecommerce-backend/backend/tests/fixtures/atelier-legacy/capture.cjs](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/fixtures/atelier-legacy/capture.cjs) | Fixed-time original nine contract snapshot capture. |
+| [ecommerce-backend/backend/tests/fixtures/atelier-legacy/contracts.json](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/fixtures/atelier-legacy/contracts.json) | Frozen pre-change definitions, versions, raw/normalized/effective configurations and capability outputs. |
+| [ecommerce-backend/backend/tests/store-builder-prebuilt-themes.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/store-builder-prebuilt-themes.test.js) | Keep original nine-preset assertions on the immutable legacy subset; tenth tested separately. |
+| [ecommerce-backend/backend/tests/storefront-atelier-contract.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-atelier-contract.test.js) | Immutable legacy contracts, marker lifecycle, Mongoose hydration, composition independence, section retention and actual service rejection tests. |
+| [ecommerce-backend/backend/tests/storefront-atelier-presentation.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-atelier-presentation.test.js) | Bundle real shared/UI modules; verify gallery, dynamic copy, product flags/callbacks, empty hero, sections and scoped CSS/font license. |
+| [ecommerce-backend/backend/tests/storefront-capabilities.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-capabilities.test.js) | Supply the real new guard dependency to the existing isolated service loader. |
+| [ecommerce-backend/backend/tests/storefront-control-wiring.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-control-wiring.test.js) | Retain nine active-theme publication/rendering cases and supply the new guard dependency. |
+| [ecommerce-backend/backend/tests/storefront-preview-data.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-preview-data.test.js) | Supply the guard dependency to the existing isolated service loader. |
+| [ecommerce-backend/backend/tests/storefront-state-delivery.test.js](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/storefront-state-delivery.test.js) | Supply the guard dependency to the existing isolated service loader. |
+| [ecommerce-storefront/src/components/storefront/StorefrontThemeProvider.jsx](C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/components/storefront/StorefrontThemeProvider.jsx) | Put the same optional presentation marker on the existing live root. |
+| [packages/storefront-renderer/atelier/AtelierFooter.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/AtelierFooter.jsx) | Dynamic identity, existing navigation/support/contact/social links and platform credit. |
+| [packages/storefront-renderer/atelier/AtelierHeader.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/AtelierHeader.jsx) | Editorial dynamic wordmark/logo, utilities and accessible mobile navigation. |
+| [packages/storefront-renderer/atelier/AtelierHero.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/AtelierHero.jsx) | Fluid asymmetrical copy/media presentation with existing slides, destinations and controls. |
+| [packages/storefront-renderer/atelier/AtelierProductCard.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/AtelierProductCard.jsx) | Editorial image fields and controls; no pricing, inventory or cart business logic. |
+| [packages/storefront-renderer/atelier/AtelierSections.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/AtelierSections.jsx) | Dynamic category and story views using existing models/configured content. |
+| [packages/storefront-renderer/atelier/atelier.css](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/atelier/atelier.css) | Marker-scoped paper/ink/editorial styling, responsive rules, reduced motion and local font face. |
+| [packages/storefront-renderer/fonts/DM-Sans-OFL.txt](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/fonts/DM-Sans-OFL.txt) | Official SIL OFL redistribution license. |
+| [packages/storefront-renderer/fonts/dm-sans-variable.ttf](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/fonts/dm-sans-variable.ttf) | Official Google Fonts normal variable DM Sans asset. |
+| [packages/storefront-renderer/reference/StorefrontAllProducts.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontAllProducts.jsx) | Forward homepage presentation to cards and select its scoped container. |
+| [packages/storefront-renderer/reference/StorefrontComposition.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontComposition.jsx) | Use an Atelier container while keeping the existing composition planner. |
+| [packages/storefront-renderer/reference/StorefrontFooter.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontFooter.jsx) | Add the gated footer view; retain existing link preparation and mobile bottom navigation. |
+| [packages/storefront-renderer/reference/StorefrontHeader.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontHeader.jsx) | Add the gated header view; retain menu state, navigation preparation, badges and search callback. |
+| [packages/storefront-renderer/reference/StorefrontHero.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontHero.jsx) | Add the gated hero view, manual pause/reduced motion and Atelier empty-slide handling; preserve legacy branch. |
+| [packages/storefront-renderer/reference/StorefrontHome.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontHome.jsx) | Resolve the marker once and pass it to existing homepage components. |
+| [packages/storefront-renderer/reference/StorefrontProductCard.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontProductCard.jsx) | Forward the existing computed prices, stock, action handlers and design flags to an isolated view. |
+| [packages/storefront-renderer/reference/StorefrontSectionRenderer.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontSectionRenderer.jsx) | Forward presentation through existing registered section branches; add scoped feature/trust hooks. |
+| [packages/storefront-renderer/reference/StorefrontSectionVariants.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/StorefrontSectionVariants.jsx) | Gated category/story/promo presentation; existing category models and optional section renderers reused. |
+| [packages/storefront-renderer/reference/referenceCore.jsx](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/reference/referenceCore.jsx) | Atelier-only max-width variable and quoted local-font fallbacks; old style output preserved. |
+| [packages/storefront-renderer/styles.css](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/styles.css) | Import the scoped stylesheet. |
+| [packages/storefront-theme/capabilities.cjs](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/capabilities.cjs) | Protect identity under existing access boundaries; mark Atelier header/hero structure as theme-controlled. |
+| [packages/storefront-theme/index.cjs](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/index.cjs) | Optional validated/sanitized marker, explicit null clearing, pure selector and DM Sans support. |
+| [packages/storefront-theme/index.mjs](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/index.mjs) | Expose the same selector to ESM consumers. |
+| [packages/storefront-theme/prebuilt.cjs](C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/prebuilt.cjs) | Hidden tenth definition, full/limited switch semantics and Atelier-only merchant section retention. |
+| [track.md](C:/Users/user/WebstormProjects/Shop-for-all/track.md) | Current completion report, manifest, evidence, blockers and next action; historical tracker preserved below. |
+
+Evidence only: `output/atelier-editorial/` contains original/final test logs, source hashes, screenshots, sampled styles/markup, comparison results, source-revision failure reproduction helper, baseline Vite configuration and manifest. These are outside production runtime paths. The task-created original-source extraction/archive and dependency junction were safely removed after stopping both temporary fixture servers. Application node_modules remained intact. The original source is reproducible from the recorded Git revision; the retained baseline Vite config expects the same temporary extraction path and test-only transition-disabling fixture style. Original capture files and diagnostic attempts are retained; final files named above are authoritative.
+
+The four initially untracked reports remain unchanged: `NEW_THEME_IMPLEMENTATION_PLAN.md`, `NEW_THEME_COMPONENT_MAPPING.md`, `NEW_THEME_REGRESSION_MATRIX.md`, `STOREFRONT_RAW_STRUCTURE_AND_FUNCTIONAL_INVENTORY.md`. Historical application code outside the manifest was not altered.
+
+## Configuration, deployment and rollback
+
+Only documented example settings were added:
+
+```dotenv
+ATELIER_EDITORIAL_ROLLOUT=off
+ATELIER_EDITORIAL_TEST_SHOP_IDS=
+ATELIER_EDITORIAL_APPROVED_PLAN_KEYS=
+```
+
+- `off` (also missing/invalid mode): no new adoption. Ordinary galleries remain nine.
+- `allowlist`: only exact server-configured test shop ObjectIds, with normal existing full/limited permissions. Do not put tenant IDs in browser configuration. A full existing Builder access is needed for structural application under current policy; this is not a new product entitlement.
+- `on`: additionally requires server-approved plan keys. Those keys are deliberately unconfigured; product approval is required before choosing them or enabling general availability.
+
+Before a separately authorized pilot:
+
+1. Restore a working positively isolated disposable MongoDB replica set; run persistence/reload, transaction/concurrent revision and tenant authorization integration gates. Never substitute the application database or run a destructive harness without verifying isolation.
+2. Resolve product eligibility, downgrade behavior and exact authorized test merchants. Keep rollout off until then.
+3. Deploy compatible shared-contract readers/backend first, then matching Admin/storefront builds, with adoption still off. No migration/backfill or index change is required for the optional field. Mixed-version readers must not receive pilot themes until both frontends support the marker.
+4. In local development, restart Vite with `--force` after changing shared local package exports; a warm prebundle was stale during verification. Production builds already include the new exports and font.
+5. Export each pilot's trusted published theme and revision before adoption, store securely by tenant, and retain beyond the existing 20-revision history. Only then authorize a narrow allowlist pilot and verify save/reload/publish/restore against disposable/test stores.
+6. For rollback, restore the tenant's known legacy snapshot/export through existing authorized revision/write paths, confirm its marker is absent, then turn adoption off. Switching away is permitted even when adoption is off. Restore legacy snapshots before downgrading old contract readers; turning the gate off alone intentionally does not remove an already published theme.
+
+No live rollout or publication was performed as part of this task.
+
+## Remaining work and risks
+
+- **Release blocker:** real MongoDB integration/persistence/concurrency and authenticated live tenant/publish end-to-end acceptance remain untested because the isolated database is unavailable. Mocked service tests and Mongoose hydration do not replace these gates.
+- **Product decision:** final plan eligibility, approved plan keys, downgrade behavior and authorized pilot cohort. Default-off configuration is the safe state until those decisions and tests are complete.
+- **Existing quality failures:** five backend unit failures and 18 Admin lint errors/4 warnings reproduced on original source; one shared Hero lint error likewise unchanged. Do not treat the full repository as clean.
+- **Visual limits:** one browser engine and synthetic fixture data; actual merchant imagery, all overlay combinations, assistive technologies, live performance and all production device/browser variants still need pilot checks. Existing reduced-motion behavior was preserved/enhanced but no full accessibility certification is claimed.
+- **Next authorized implementation scope:** Phase 3 product/category/collection presentation, followed by later cart/checkout/account/tracking/policy work according to the plan. Their existing commerce primitives remain intact. Extra Builder page-preview modes are optional later work and were not added.
+
+**Next action:** provide/restore the isolated MongoDB environment and complete the recorded integration gates, then obtain explicit pilot/eligibility approval. Stop here; Phase 3 and publication need a separate instruction.
+
+---
+
 # Storefront Theme System — Implementation Track
 
 Current scope: user authorized Phase 13 on 2026-10-10 (Asia/Dhaka).

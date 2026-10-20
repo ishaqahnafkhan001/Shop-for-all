@@ -109,6 +109,7 @@ test('actual draft service rejects stale writers and publications racing draft w
         },
         './draftConcurrency': require('../services/storeBuilder/draftConcurrency'),
         './themeCompatibilityService': require('../services/storeBuilder/themeCompatibilityService'),
+        './themeAvailabilityService': require('../services/storeBuilder/themeAvailabilityService'),
         '../policies/defaultPolicyTemplates': contract,
         '../themeSectionService': { ensureThemeSectionArchitecture: async () => {} },
         '../billing/storeBuilderPlanService': require('../services/billing/storeBuilderPlanService'),

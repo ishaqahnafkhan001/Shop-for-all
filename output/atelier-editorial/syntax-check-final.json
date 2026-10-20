@@ -1,0 +1,62 @@
+[
+  {
+    "path": "ecommerce-backend/backend/models/Shop.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/store-builder-prebuilt-themes.test.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-capabilities.test.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-control-wiring.test.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-preview-data.test.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-state-delivery.test.js",
+    "pass": true
+  },
+  {
+    "path": "packages/storefront-theme/capabilities.cjs",
+    "pass": true
+  },
+  {
+    "path": "packages/storefront-theme/index.cjs",
+    "pass": true
+  },
+  {
+    "path": "packages/storefront-theme/index.mjs",
+    "pass": true
+  },
+  {
+    "path": "packages/storefront-theme/prebuilt.cjs",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/services/storeBuilder/themeAvailabilityService.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/atelier-legacy/capture.cjs",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-atelier-contract.test.js",
+    "pass": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-atelier-presentation.test.js",
+    "pass": true
+  }
+]

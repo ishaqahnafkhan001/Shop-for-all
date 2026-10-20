@@ -12,7 +12,7 @@ import {
     ReferenceStorefrontHome,
     getReferenceThemeStyle
 } from '@scaleup/storefront-renderer';
-import { resolveEffectiveTheme } from '@scaleup/storefront-theme';
+import { getStorefrontPresentationVariant, resolveEffectiveTheme } from '@scaleup/storefront-theme';
 
 const getSectionLabel = (section = {}) => section.settings?.visualLabel || section.title || section.type || 'Section';
 const getCategoryName = (category) => (
@@ -114,7 +114,7 @@ export const createPreviewEditor = ({ theme, activeElement, onSelectElement, onT
 
 export const CheckoutBrandingPreview = ({ theme, shopName }) => {
     const resolved = resolveEffectiveTheme(theme, { shopName });
-    return <div className="sf-presentation" style={getReferenceThemeStyle(resolved)}><CheckoutBrandingBanner checkoutBranding={resolved.checkoutBranding} /><CheckoutTrustBadges /></div>;
+    return <div className="sf-presentation" data-sf-presentation={getStorefrontPresentationVariant(resolved) === 'atelier-editorial' ? 'atelier-editorial' : undefined} style={getReferenceThemeStyle(resolved)}><CheckoutBrandingBanner checkoutBranding={resolved.checkoutBranding} /><CheckoutTrustBadges /></div>;
 };
 
 export const StorefrontPreviewContent = ({
@@ -204,7 +204,7 @@ export const StorefrontPreviewContent = ({
     };
 
     return <PresentationRuntime value={{ Link: PreviewLink, Image: NativeImage }}>
-        <div className="sf-presentation" style={{ ...getReferenceThemeStyle(normalizedTheme), minHeight: '100vh' }}>
+        <div className="sf-presentation" style={{ ...getReferenceThemeStyle(normalizedTheme), minHeight: '100vh' }} data-sf-presentation={getStorefrontPresentationVariant(normalizedTheme) === 'atelier-editorial' ? 'atelier-editorial' : undefined}>
             <ReferenceStorefrontHeader theme={normalizedTheme} shopName={shopName || 'Store preview'} subdomain="preview" cartCount={cartCount} trustedBadge={trustedBadge} shopVerification={shopVerification} editor={editor} LinkComponent={PreviewLink} />
             {renderPreviewPage()}
             <ReferenceStorefrontFooter theme={normalizedTheme} shopName={shopName || 'Store preview'} subdomain="preview" cartCount={cartCount} shopVerification={shopVerification} editor={editor} LinkComponent={PreviewLink} />

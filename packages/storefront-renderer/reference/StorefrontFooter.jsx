@@ -2,7 +2,8 @@
 
 import { BarChart3, ChevronDown, CircleCheck, Home, Lock, Mail, Search, ShoppingBag, Truck, User } from "lucide-react";
 
-import { getSortedNavigation, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
+import { getSortedNavigation, getStorefrontPresentationVariant, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
+import { AtelierFooter } from '../atelier/AtelierFooter';
 import {
     DefaultLink,
     EditorSelectionFrame,
@@ -138,7 +139,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
     return (
         <>
             <EditorSelectionFrame editor={editor} id="footer" label="Footer" locked>
-                <footer className="min-w-0 overflow-x-hidden border-t pb-20 pt-7 text-[var(--sf-footer-text)] sm:pt-10 md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
+                {getStorefrontPresentationVariant(theme) === 'atelier-editorial' ? <AtelierFooter theme={theme} brandName={brandName} storeLinks={storeLinks} supportLinks={supportLinks} contactHref={contactHref} socialLinks={socialLinks} shopVerification={shopVerification} LinkComponent={LinkComponent} /> : <footer className="min-w-0 overflow-x-hidden border-t pb-20 pt-7 text-[var(--sf-footer-text)] sm:pt-10 md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
                     <div className={storefrontContainerClass}>
                         <div className={footerGridClass}>
                             <div className="min-w-0">
@@ -214,7 +215,7 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                             </div>
                         </div>
                     </div>
-                </footer>
+                </footer>}
             </EditorSelectionFrame>
 
             {theme.mobile?.showBottomNavigation && (

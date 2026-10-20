@@ -6,6 +6,7 @@ import * as contractNamespace from './index.cjs';
 const contract = contractNamespace.default || contractNamespace;
 
 export const {
+    getStorefrontPresentationVariant,
     HOMEPAGE_COMPOSITIONS,
     getHomepageComposition,
     planHomepageComposition,

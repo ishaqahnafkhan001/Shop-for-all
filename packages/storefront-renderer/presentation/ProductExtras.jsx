@@ -119,6 +119,7 @@ const EmptyTabState = ({ label }) => (
 );
 
 export const ProductInformationTabs = memo(function ProductInformationTabs({
+    presentationVariant,
     features,
     specifications,
     comments,
@@ -151,7 +152,7 @@ export const ProductInformationTabs = memo(function ProductInformationTabs({
     };
 
     return (
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
+        <section data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-information' : undefined} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
             <div
                 role="tablist"
                 aria-label="Product information"

@@ -1,5 +1,6 @@
 "use client";
 
+import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { toast } from "react-hot-toast";
@@ -12,6 +13,7 @@ import { trackStorefrontEvent } from "@/utils/analyticsTracker";
 
 import {
     CheckoutDetailsColumn,
+    CheckoutMarketingConsent,
     CheckoutEmptyCartState,
     CheckoutMobileStickyBar,
     CheckoutOrderSummary,
@@ -19,6 +21,7 @@ import {
     CheckoutPageShell,
     CheckoutSuccessState,
 } from "./components/CheckoutSections";
+import { getCartItemPrice, refreshCartItemPrice } from "@scaleup/storefront-renderer/product-data";
 import { useCheckoutCartProducts } from "./hooks/useCheckoutCartProducts";
 import { useCheckoutCoupon } from "./hooks/useCheckoutCoupon";
 import { useCheckoutFormState } from "./hooks/useCheckoutFormState";
@@ -35,16 +38,18 @@ const maskCheckoutPhone = (value = "") => {
 export default function CheckoutPage({ params }) {
     const { subdomain } = React.use(params);
     const {
-        cartItems,
-        cartTotal,
+        cartItems: storedCartItems,
         clearCart,
         updateQuantity,
         removeFromCart,
     } = useCart();
     const { user } = useAuth();
     const { theme } = useStorefrontTheme();
+    const presentationVariant = getStorefrontPresentationVariant(theme);
 
     const checkoutTrackedRef = useRef("");
+    const otpActionRef = useRef(false);
+    const placingOrderRef = useRef(false);
     const checkoutIdempotencyRef = useRef({ resetKey: "", key: "" });
     const customerId = user?.role === "Customer" ? (user._id || user.id) : null;
     const policies = useMemo(() => theme.policies || {}, [theme.policies]);
@@ -68,7 +73,11 @@ export default function CheckoutPage({ params }) {
     const [otpModalError, setOtpModalError] = useState("");
 
     const { formData, handleInputChange } = useCheckoutFormState();
-    const productsDetails = useCheckoutCartProducts({ cartItems, subdomain });
+    const productsDetails = useCheckoutCartProducts({ cartItems: storedCartItems, subdomain });
+    const cartItems = useMemo(() => storedCartItems.map(item => (
+        refreshCartItemPrice(item, productsDetails[item._id])
+    )), [storedCartItems, productsDetails]);
+    const cartTotal = cartItems.reduce((sum, item) => sum + getCartItemPrice(item) * item.quantity, 0);
     const {
         promotionCode,
         setPromotionCode,
@@ -105,7 +114,7 @@ export default function CheckoutPage({ params }) {
         checkoutTrackedRef.current = checkoutKey;
 
         cartItems.forEach((item) => {
-            const unitPrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
+            const unitPrice = getCartItemPrice(item);
             trackStorefrontEvent({
                 subdomain,
                 eventType: "begin_checkout",
@@ -154,7 +163,7 @@ export default function CheckoutPage({ params }) {
         ].join("::")
     ), [cartItems, formData.city, formData.phone]);
 
-    const phoneOtp = useCheckoutPhoneOtp({ subdomain, resetKey: checkoutResetKey });
+    const phoneOtp = useCheckoutPhoneOtp({ subdomain, resetKey: checkoutResetKey, phone: formData.phone });
 
     const getCheckoutIdempotencyKey = () => {
         if (checkoutIdempotencyRef.current.resetKey !== checkoutResetKey || !checkoutIdempotencyRef.current.key) {
@@ -227,6 +236,8 @@ export default function CheckoutPage({ params }) {
             return false;
         }
 
+        if (placingOrderRef.current) return false;
+        placingOrderRef.current = true;
         setOtpModalError("");
         if (otpModalOpen) setOtpModalState("placing_order");
 
@@ -291,9 +302,7 @@ export default function CheckoutPage({ params }) {
                         variantId: secureItems[index]?.variantId,
                         quantity: item.quantity,
                         price:
-                            item.cartPrice ||
-                            item.finalPrice ||
-                            item.sellingPrice,
+                            getCartItemPrice(item),
                     })),
                     shippingCost,
                     totalAmount,
@@ -321,10 +330,7 @@ export default function CheckoutPage({ params }) {
 
             cartItems.forEach((item) => {
                 const unitPrice =
-                    item.cartPrice ||
-                    item.finalPrice ||
-                    item.sellingPrice ||
-                    0;
+                    getCartItemPrice(item);
 
                 trackStorefrontEvent({
                     subdomain,
@@ -363,6 +369,7 @@ export default function CheckoutPage({ params }) {
             toast.error(message);
             return false;
         } finally {
+            placingOrderRef.current = false;
             setLoading(false);
         }
     };
@@ -370,11 +377,11 @@ export default function CheckoutPage({ params }) {
     const handlePlaceOrder = async (event) => {
         event.preventDefault();
 
-        if (!validateCheckoutIntent()) return;
+        if (placingOrderRef.current || otpActionRef.current || !validateCheckoutIntent()) return;
 
         if (!phoneOtp.verified) {
             setOtpModalOpen(true);
-            setOtpModalState("idle_confirm_send");
+            setOtpModalState(phoneOtp.codeSent ? "otp_input" : "idle_confirm_send");
             setOtpModalError("");
             return;
         }
@@ -383,31 +390,35 @@ export default function CheckoutPage({ params }) {
     };
 
     const handleOtpModalSendCode = async () => {
-        if (!validateCheckoutIntent()) return;
-        setOtpModalState("sending");
+        if (otpActionRef.current || placingOrderRef.current || phoneOtp.cooldownSeconds > 0 || !validateCheckoutIntent()) return;
+        otpActionRef.current = true;
+        const hadCode = phoneOtp.codeSent;
+        if (!hadCode) setOtpModalState("sending");
         setOtpModalError("");
-        const result = await sendPhoneOtp();
-        if (result) {
-            setOtpModalState("otp_input");
-        } else {
-            setOtpModalState("idle_confirm_send");
-            setOtpModalError("Could not send the verification code. Please check the phone number and try again.");
+        try {
+            const result = await sendPhoneOtp();
+            setOtpModalState(result || hadCode ? "otp_input" : "idle_confirm_send");
+        } finally {
+            otpActionRef.current = false;
         }
     };
 
     const handleOtpModalVerify = async () => {
-        if (!validateCheckoutIntent()) return;
+        if (otpActionRef.current || placingOrderRef.current || !validateCheckoutIntent()) return;
+        otpActionRef.current = true;
         setOtpModalState("verifying");
         setOtpModalError("");
-        const result = await verifyPhoneOtp();
-        const token = result?.phoneVerificationToken;
-        if (!token) {
-            setOtpModalState("otp_input");
-            setOtpModalError("Invalid or expired verification code.");
-            return;
+        try {
+            const result = await verifyPhoneOtp();
+            const token = result?.phoneVerificationToken;
+            if (!token) {
+                setOtpModalState("otp_input");
+                return;
+            }
+            await executePlaceOrder({ verificationToken: token });
+        } finally {
+            otpActionRef.current = false;
         }
-
-        await executePlaceOrder({ verificationToken: token });
     };
 
     if (isSuccess) {
@@ -433,16 +444,15 @@ export default function CheckoutPage({ params }) {
                 )}
             >
                 <CheckoutDetailsColumn
+                    presentationVariant={presentationVariant}
                     formData={formData}
                     isDhaka={isDhaka}
                     onInputChange={handleInputChange}
                 />
 
-                <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-                    <input type="checkbox" checked={marketingEmailOptIn} onChange={(event) => setMarketingEmailOptIn(event.target.checked)} className="mt-1" />
-                    <span>Send me a confirmation email to subscribe to this store&apos;s offers and product updates. Optional; unsubscribe anytime.</span>
-                </label>
+                <CheckoutMarketingConsent checked={marketingEmailOptIn} onChange={setMarketingEmailOptIn} />
                 <CheckoutOrderSummary
+                    presentationVariant={presentationVariant}
                     cartItems={cartItems}
                     checkoutBranding={checkoutBranding}
                     finalShippingCost={finalShippingCost}
@@ -465,7 +475,12 @@ export default function CheckoutPage({ params }) {
                 />
             </CheckoutPageShell>
             <CheckoutOtpModal
-                error={otpModalError}
+                    presentationVariant={presentationVariant}
+                error={otpModalError || phoneOtp.error}
+                message={phoneOtp.message}
+                cooldownSeconds={phoneOtp.cooldownSeconds}
+                expired={phoneOtp.expired}
+                onResendCode={handleOtpModalSendCode}
                 maskedPhone={phoneOtp.maskedPhone || maskCheckoutPhone(formData.phone)}
                 onCancel={() => {
                     if (!loading && !phoneOtp.sending && !phoneOtp.verifying) setOtpModalOpen(false);

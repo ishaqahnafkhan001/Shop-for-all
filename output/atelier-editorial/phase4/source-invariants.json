@@ -1,0 +1,87 @@
+{
+  "protectedFiles": 355,
+  "protectedChanged": [],
+  "handlerComparisons": [
+    {
+      "file": "ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx",
+      "comparedFunctions": [
+        "maskCheckoutPhone",
+        "resolveCartVariantId",
+        "buildCheckoutItems",
+        "getCheckoutIdempotencyKey",
+        "sendPhoneOtp",
+        "verifyPhoneOtp",
+        "validateCheckoutIntent",
+        "executePlaceOrder",
+        "handlePlaceOrder",
+        "handleOtpModalSendCode",
+        "handleOtpModalVerify"
+      ],
+      "changed": []
+    },
+    {
+      "file": "ecommerce-storefront/src/app/[subdomain]/track/page.jsx",
+      "comparedFunctions": [
+        "formatMoney",
+        "formatDateTime",
+        "shortOrderId",
+        "getProductId",
+        "getVariantId",
+        "getItemKey",
+        "resetOrderAccess",
+        "fetchTrackedOrder",
+        "handleTrackOrder",
+        "handleCancelOrder",
+        "openReturnModal",
+        "toggleReturnItem",
+        "handleSubmitReturn",
+        "handleReturnProofImages"
+      ],
+      "changed": []
+    },
+    {
+      "file": "ecommerce-storefront/src/app/[subdomain]/account/page.jsx",
+      "comparedFunctions": [
+        "fetchOrders",
+        "handleSendOTP",
+        "handleAuthSubmit",
+        "handleUserLogout",
+        "handlePasswordReset"
+      ],
+      "changed": []
+    },
+    {
+      "file": "ecommerce-storefront/src/app/[subdomain]/cart/page.jsx",
+      "comparedFunctions": [
+        "getCartImageUrl",
+        "handleApplyPromo"
+      ],
+      "changed": []
+    },
+    {
+      "file": "ecommerce-storefront/src/components/account/PasswordResetFlow.jsx",
+      "comparedFunctions": [
+        "emptyOtp",
+        "formatTime",
+        "getPasswordChecks",
+        "getStrengthLabel",
+        "getCurrentSubdomain",
+        "requestOtp",
+        "verifyOtp",
+        "submitNewPassword",
+        "handleOtpChange",
+        "handleOtpKeyDown",
+        "handleOtpPaste"
+      ],
+      "changed": []
+    },
+    {
+      "file": "ecommerce-storefront/src/components/account/CustomerTabs.jsx",
+      "comparedFunctions": [
+        "toggleOrderDetails",
+        "handlePasswordReset"
+      ],
+      "changed": []
+    }
+  ]
+}
