@@ -2,6 +2,8 @@ const parseProductPayload = (body) => {
     const parsedBody = { ...body };
     const jsonFields = [
         'pricing',
+        'images',
+        'videos',
         'variants',
         'variantMatrix',
         'options',
@@ -44,7 +46,21 @@ const resolveImageReference = (value, imageUrls = []) => {
     if (!raw.startsWith('product-image:')) return raw;
 
     const index = Number(raw.replace('product-image:', ''));
-    return Number.isInteger(index) && imageUrls[index] ? imageUrls[index] : '';
+    if (!Number.isInteger(index) || index < 0 || !imageUrls[index]) throw new Error('Variant image selection is no longer available. Select an image again.');
+    return imageUrls[index];
+};
+
+const resolveCoverMediaId = ({ images = [], videos = [], requestedCover = '', coverImageIndex }) => {
+    if (coverImageIndex !== undefined && coverImageIndex !== null) {
+        const index = Number(coverImageIndex);
+        if (!Number.isInteger(index) || index < 0 || index >= images.length) {
+            if (!images.length && index === 0) return videos[0] || '';
+            throw new Error('Selected cover image is no longer available.');
+        }
+        return images[index];
+    }
+    if ([...images, ...videos].includes(requestedCover)) return requestedCover;
+    return images[0] || videos[0] || '';
 };
 
 const resolveVariantImageReferences = (payload, imageUrls = []) => {
@@ -80,7 +96,7 @@ const normalizeSourceIdentity = (value) => {
 
 const getUniqueProductImageSources = (product = {}) => {
     const values = [
-        product.coverMediaId,
+        ...((product.videos || []).includes(product.coverMediaId) ? [] : [product.coverMediaId]),
         ...(Array.isArray(product.images) ? product.images : []),
         ...(Array.isArray(product.variants)
             ? product.variants.map(variant => variant?.image)
@@ -89,7 +105,26 @@ const getUniqueProductImageSources = (product = {}) => {
     return [...new Set(values.map(normalizeSourceIdentity).filter(Boolean))];
 };
 
+// External HTTP(S) product URLs remain supported. Managed CDN assets must be
+// newly uploaded, already retained, or recorded as belonging to this shop.
+const assertProductMediaReferences = async ({ product, previous = {}, uploaded = [], shopId, session }) => {
+    const sources = [...getUniqueProductImageSources(product), ...(product.videos || [])].filter(Boolean);
+    const retained = new Set([...getUniqueProductImageSources(previous), ...(previous.videos || []), ...uploaded].map(normalizeSourceIdentity));
+    for (const source of sources) {
+        let url;
+        try { url = new URL(source); } catch { throw new Error('Use a valid HTTP(S) product media URL.'); }
+        if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Use a valid HTTP(S) product media URL.');
+        if (retained.has(normalizeSourceIdentity(source))) continue;
+        if (url.hostname !== 'res.cloudinary.com') continue;
+        if (/(?:authenticated|private|verification|vendor_verifications)/i.test(decodeURIComponent(url.pathname))) throw new Error('Private assets cannot be used as product media.');
+        const owned = await require('../../models/Product').exists({ shop_id: shopId, isDeleted: false, $or: [{ images: source }, { videos: source }, { 'variants.image': source }] }).session(session);
+        if (!owned) throw new Error('This managed media asset does not belong to this store. Upload the file instead.');
+    }
+};
+
 module.exports = {
+    assertProductMediaReferences,
+    resolveCoverMediaId,
     parseProductPayload,
     resolveVariantImageReferences,
     normalizeSourceIdentity,

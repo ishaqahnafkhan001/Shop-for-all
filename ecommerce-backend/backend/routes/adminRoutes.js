@@ -185,6 +185,7 @@ const productMediaUpload = (req, res, next) => {
             registerFailedUploadCleanup(req, res);
             return next();
         }
+        await cleanupUploadedProductMedia(req);
         const planLimit = err.code === 'PLAN_IMAGE_LIMIT';
         if (planLimit && req.planAccess) {
             const limit = req.planAccess.limits.imagesPerProduct;

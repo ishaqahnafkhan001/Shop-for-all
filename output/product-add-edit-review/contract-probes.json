@@ -1,0 +1,126 @@
+{
+  "checkedAt": "2026-10-20",
+  "scope": "Isolated runtime probes; no database or HTTP integration",
+  "results": [
+    {
+      "id": "P01",
+      "observation": "Existing variant metadata payload is rejected without stock",
+      "detail": [
+        "\"variants[0].stock\" is required"
+      ]
+    },
+    {
+      "id": "P02",
+      "observation": "Saved simple variant shape is rejected by update schema",
+      "detail": [
+        "\"variants[0].sku\" is not allowed to be empty",
+        "\"variants[0].attributes\" must contain at least 1 items"
+      ]
+    },
+    {
+      "id": "P03",
+      "observation": "Hydrated inventory alert fields are rejected when echoed on save",
+      "detail": [
+        "\"variants[0].inventory.lowStockAlertActive\" is not allowed",
+        "\"variants[0].inventory.lowStockAlertStatus\" is not allowed",
+        "\"variants[0].inventory.lowStockAlertSentAt\" is not allowed"
+      ]
+    },
+    {
+      "id": "P04",
+      "observation": "Optional category submitted as blank blocks create",
+      "detail": [
+        "\"category\" is not allowed to be empty"
+      ]
+    },
+    {
+      "id": "P05",
+      "observation": "Persisted cover wins over a newly selected cover index",
+      "detail": {
+        "requestedIndex": 1,
+        "expectedCover": "https://example.com/b.webp",
+        "actualCover": "https://example.com/a.webp"
+      }
+    },
+    {
+      "id": "P06",
+      "observation": "Base selling price edit leaves simple variant customer price unchanged",
+      "detail": {
+        "newBasePrice": 150,
+        "savedVariantPrice": 100,
+        "displayedPrice": 100
+      }
+    },
+    {
+      "id": "P07",
+      "observation": "Add option changes variants but leaves storefront option definitions stale",
+      "detail": {
+        "variantOptions": [
+          "red",
+          "blue"
+        ],
+        "optionDefinitions": [
+          "red"
+        ],
+        "storefrontOptions": {
+          "color": [
+            "red"
+          ]
+        }
+      }
+    },
+    {
+      "id": "P08",
+      "observation": "Service would reset omitted stock if the schema alone were relaxed",
+      "detail": {
+        "beforeStock": 12,
+        "afterStock": 0,
+        "note": "Latent service behavior; current HTTP validation rejects this payload first."
+      }
+    },
+    {
+      "id": "P09",
+      "observation": "Duplicate check accepts a combination already present on the product",
+      "detail": {
+        "resultingVariants": [
+          "color:red",
+          "color:red"
+        ]
+      }
+    },
+    {
+      "id": "P10",
+      "observation": "Matrix and flat variant limits differ",
+      "detail": {
+        "acceptedMatrixCount": 210,
+        "rejectedFlatCount": 201,
+        "error": "\"variants\" must contain less than or equal to 200 items"
+      }
+    },
+    {
+      "id": "P11",
+      "observation": "Simple variant threshold zero falls back to five",
+      "detail": {
+        "requested": 0,
+        "actual": 5
+      }
+    },
+    {
+      "id": "P12",
+      "observation": "Add-style datetime without offset is interpreted using server timezone",
+      "detail": {
+        "submitted": "2030-11-01T10:00",
+        "parsedTimes": [
+          {
+            "timezone": "UTC",
+            "parsed": "2030-11-01T10:00:00.000Z"
+          },
+          {
+            "timezone": "Asia/Dhaka",
+            "parsed": "2030-11-01T04:00:00.000Z"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -26,7 +26,7 @@ const validateFuturePublishAt = (publishAt) => {
     return date;
 };
 
-const normalizeProductPublicationFields = (value = {}) => {
+const normalizeProductPublicationFields = (value = {}, existing = {}) => {
     if (value.publicationStatus === 'scheduled') {
         const publishAt = validateFuturePublishAt(value.publishAt);
         value.publishAt = publishAt;
@@ -34,24 +34,29 @@ const normalizeProductPublicationFields = (value = {}) => {
         return value;
     }
 
-    if (value.status === 'Draft') {
+    if (value.status === 'Draft' || value.status === 'Archived') {
         value.publicationStatus = 'draft';
         value.publishAt = null;
     } else if (value.status === 'Published' || value.publicationStatus === 'published') {
         value.publicationStatus = 'published';
         value.publishAt = null;
-        value.publishedAt = value.publishedAt || new Date();
+        value.publishedAt = existing.publishedAt || new Date();
         value.status = 'Published';
     }
 
     return value;
 };
 
-const enqueueScheduledProductPublication = async ({ product, shopId }) => {
+const enqueueScheduledProductPublication = async ({ product, shopId, session = null }) => {
     if (!product || product.publicationStatus !== 'scheduled' || !product.publishAt) return null;
     const resolvedShopId = shopId || product.shop_id;
     if (!(await hasFeature(resolvedShopId, 'scheduledProductPublishing'))) return null;
 
+    const idempotencyKey = `${PUBLISH_PRODUCT_JOB}:${product._id}:${new Date(product.publishAt).toISOString()}`;
+    if (session) {
+        const existing = await require('../../models/Job').findOne({ idempotencyKey }).session(session);
+        if (existing) return existing;
+    }
     return enqueueJob({
         queue: SCHEDULED_PRODUCT_QUEUE,
         name: PUBLISH_PRODUCT_JOB,
@@ -60,7 +65,8 @@ const enqueueScheduledProductPublication = async ({ product, shopId }) => {
         payload: {
             productId: product._id
         },
-        idempotencyKey: `${PUBLISH_PRODUCT_JOB}:${product._id}:${new Date(product.publishAt).toISOString()}`
+        session,
+        idempotencyKey
     });
 };
 

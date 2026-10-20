@@ -46,14 +46,14 @@ const productOptionSchema = Joi.object({
 });
 
 const variantPricingSchema = Joi.object({
-    price: Joi.number().min(0).optional(),
-    compareAtPrice: Joi.number().min(0).optional(),
-    costPrice: Joi.number().min(0).optional()
+    price: Joi.number().min(0).allow(null).optional(),
+    compareAtPrice: Joi.number().min(0).allow(null).optional(),
+    costPrice: Joi.number().min(0).allow(null).optional()
 }).optional();
 
 const variantInventorySchema = Joi.object({
     stock: Joi.number().integer().min(0).optional(),
-    reservedStock: Joi.number().integer().min(0).optional(),
+    reservedStock: Joi.forbidden(),
     lowStockThreshold: Joi.number().integer().min(0).optional(),
     trackQuantity: Joi.boolean().optional(),
     allowOversell: Joi.boolean().optional()
@@ -75,7 +75,13 @@ const variantTaxSchema = Joi.object({
 // ─── Duplicate variant guards ─────────────────────────────────────────────────
 const noDuplicateVariants = (variants, helpers) => {
     const seen = new Set();
+    const ids = new Set();
     for (const v of variants) {
+        if (v._id) {
+            if (ids.has(v._id)) return helpers.error('any.invalid');
+            ids.add(v._id);
+        }
+        if (v._id && v.attributes === undefined) continue;
         const key = JSON.stringify(
             [...(v.attributes || [])].sort((a, b) => a.name.localeCompare(b.name))
         );
@@ -93,15 +99,15 @@ const noDuplicateOptions = (options, helpers) => {
 
 // ─── Flat variant schemas ─────────────────────────────────────────────────────
 const variantSchema = Joi.object({
-    sku:           Joi.string().trim().uppercase().max(100).optional(),
+    sku:           Joi.string().trim().uppercase().max(100).allow('').optional(),
     barcode:       Joi.string().trim().max(100).allow('').optional(),
     attributes:    Joi.array().items(attributeSchema).min(1).required(),
     optionKey:     Joi.string().trim().max(500).optional(),
     stock:         Joi.number().integer().min(0).required(),
-    priceOverride: Joi.number().min(0).optional(),
+    priceOverride: Joi.number().min(0).allow(null).optional(),
     pricing:       variantPricingSchema,
     inventory:     variantInventorySchema,
-    image:         Joi.string().uri().allow('').optional(),
+    image:         Joi.string().uri({ scheme: ['https', 'http'] }).allow('').optional(),
     weight:        Joi.number().min(0).allow(null).optional(),
     dimensions:    variantDimensionsSchema,
     status:        Joi.string().valid('active', 'draft', 'archived').optional(),
@@ -111,15 +117,15 @@ const variantSchema = Joi.object({
 
 const updateVariantSchema = Joi.object({
     _id:           Joi.string().hex().length(24).optional(),
-    sku:           Joi.string().trim().uppercase().max(100).optional(),
+    sku:           Joi.string().trim().uppercase().max(100).allow('').optional(),
     barcode:       Joi.string().trim().max(100).allow('').optional(),
-    attributes:    Joi.array().items(attributeSchema).min(1).required(),
+    attributes:    Joi.array().items(attributeSchema).optional(),
     optionKey:     Joi.string().trim().max(500).optional(),
-    stock:         Joi.number().integer().min(0).required(),
-    priceOverride: Joi.number().min(0).optional(),
+    stock:         Joi.when('_id', { is: Joi.exist(), then: Joi.forbidden(), otherwise: Joi.number().integer().min(0).required() }),
+    priceOverride: Joi.number().min(0).allow(null).optional(),
     pricing:       variantPricingSchema,
-    inventory:     variantInventorySchema,
-    image:         Joi.string().uri().allow('').optional(),
+    inventory:     Joi.when('_id', { is: Joi.exist(), then: variantInventorySchema.keys({ stock: Joi.forbidden() }), otherwise: variantInventorySchema }),
+    image:         Joi.string().uri({ scheme: ['https', 'http'] }).allow('').optional(),
     weight:        Joi.number().min(0).allow(null).optional(),
     dimensions:    variantDimensionsSchema,
     status:        Joi.string().valid('active', 'draft', 'archived').optional(),
@@ -130,11 +136,11 @@ const updateVariantSchema = Joi.object({
 // ─── Matrix schemas ───────────────────────────────────────────────────────────
 const overrideEntrySchema = Joi.object({
     stock:         Joi.number().integer().min(0).optional(),
-    priceOverride: Joi.number().min(0).optional(),
+    priceOverride: Joi.number().min(0).allow(null).optional(),
     pricing:       variantPricingSchema,
     inventory:     variantInventorySchema,
-    image:         Joi.string().uri().allow('').optional(),
-    sku:           Joi.string().trim().uppercase().max(100).optional(),
+    image:         Joi.string().uri({ scheme: ['https', 'http'] }).allow('').optional(),
+    sku:           Joi.string().trim().uppercase().max(100).allow('').optional(),
     barcode:       Joi.string().trim().max(100).allow('').optional(),
     lowStockThreshold: Joi.number().integer().min(0).optional(),
     weight:        Joi.number().min(0).allow(null).optional(),
@@ -212,8 +218,8 @@ const seoSchema = Joi.object({
 });
 const publicationFields = {
     publicationStatus: Joi.string().valid('draft', 'scheduled', 'published').optional(),
-    publishAt: Joi.date().iso().allow(null).optional(),
-    publishedAt: Joi.date().iso().allow(null).optional()
+    publishAt: Joi.alternatives().try(Joi.string().pattern(/(?:Z|[+-]\d{2}:\d{2})$/).custom((value, helpers) => Number.isFinite(Date.parse(value)) ? new Date(value) : helpers.error('date.format')), Joi.date().strict()).allow(null).optional(),
+    publishedAt: Joi.forbidden()
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -223,7 +229,7 @@ const createProductSchema = Joi.object({
     title:       Joi.string().trim().min(3).max(100).required(),
     slug:        Joi.string().trim().lowercase().pattern(/^[a-z0-9-]+$/).max(100).optional(),
     description: Joi.string().trim().min(10).max(3000).required(),
-    category:    Joi.string().trim().max(100).optional(),
+    category:    Joi.string().trim().max(100).allow('').optional(),
     tags:        Joi.array().items(Joi.string().trim().lowercase().max(50)).max(30).optional(),
     collections: Joi.array().items(Joi.string().hex().length(24)).max(20).optional(),
     status:      Joi.string().valid('Draft', 'Published', 'Archived').default('Published'),
@@ -231,15 +237,15 @@ const createProductSchema = Joi.object({
     seo:         seoSchema.optional(),
     sellerFacts: sellerFactsSchema,
     lowStockThreshold: Joi.number().integer().min(0).default(5),
-    images:      Joi.array().items(Joi.string().uri()).min(1).max(15).required(),
+    images:      Joi.array().items(Joi.string().uri({ scheme: ['https', 'http'] })).min(1).max(15).required(),
     coverMediaId: Joi.string().trim().max(1000).allow('').optional(),
     imageAltText: Joi.string().trim().max(160).allow('').optional(),
-    videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
+    videos:      Joi.array().items(Joi.string().uri({ scheme: ['https', 'http'] })).max(2).optional(),
     options:     Joi.array().items(productOptionSchema).max(10).optional(),
     pricing:     pricingCreateSchema,
     simpleStock: Joi.number().integer().min(0).default(0),
 
-    variants: Joi.array().items(variantSchema).min(1).max(200)
+    variants: Joi.array().items(variantSchema).min(1).max(500)
         .custom(noDuplicateVariants).messages({ 'any.invalid': 'Duplicate variant combination detected' })
         .optional(),
 
@@ -256,7 +262,7 @@ const updateProductSchema = Joi.object({
     title:       Joi.string().trim().min(3).max(100).optional(),
     slug:        Joi.string().trim().lowercase().pattern(/^[a-z0-9-]+$/).max(100).optional(),
     description: Joi.string().trim().min(10).max(3000).optional(),
-    category:    Joi.string().trim().max(100).optional(),
+    category:    Joi.string().trim().max(100).allow('').optional(),
     tags:        Joi.array().items(Joi.string().trim().lowercase().max(50)).max(30).optional(),
     collections: Joi.array().items(Joi.string().hex().length(24)).max(20).optional(),
     status:      Joi.string().valid('Draft', 'Published', 'Archived').optional(),
@@ -264,14 +270,14 @@ const updateProductSchema = Joi.object({
     seo:         seoSchema.optional(),
     sellerFacts: sellerFactsSchema,
     lowStockThreshold: Joi.number().integer().min(0).optional(),
-    images:      Joi.array().items(Joi.string().uri()).max(15).optional(),
+    images:      Joi.array().items(Joi.string().uri({ scheme: ['https', 'http'] })).max(15).optional(),
     coverMediaId: Joi.string().trim().max(1000).allow('').optional(),
     imageAltText: Joi.string().trim().max(160).allow('').optional(),
-    videos:      Joi.array().items(Joi.string().uri()).max(2).optional(),
+    videos:      Joi.array().items(Joi.string().uri({ scheme: ['https', 'http'] })).max(2).optional(),
     options:     Joi.array().items(productOptionSchema).max(10).optional(),
     pricing:     pricingUpdateSchema,
 
-    variants: Joi.array().items(updateVariantSchema).max(200)
+    variants: Joi.array().items(updateVariantSchema).max(500)
         .custom(noDuplicateVariants).messages({ 'any.invalid': 'Duplicate variant combination detected' })
         .optional(),
 
@@ -286,7 +292,7 @@ const updateProductSchema = Joi.object({
 
     removeVariants: Joi.array().items(Joi.string().hex().length(24)).min(1).optional(),
     ...contentFields
-}).min(1).messages({ 'object.min': 'At least one field must be provided to update' });
+}).oxor('variants', 'variantMatrix', 'addAttributeOption', 'removeVariants').min(1).messages({ 'object.min': 'At least one field must be provided to update', 'object.oxor': 'Provide only one variant operation per request' });
 
 
 // ═══════════════════════════════════════════════════════════════════════════════

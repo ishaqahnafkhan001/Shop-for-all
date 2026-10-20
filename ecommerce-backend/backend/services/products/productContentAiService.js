@@ -5,6 +5,7 @@ const { getAiConfig } = require('../../config/ai');
 const { buildImagePart, isTrustedImageUrl } = require('./productAiImageService');
 const PROMPT_ID = 'product.content';
 const PROMPT_VERSION = '5.0.0';
+const emptyProviderSuggestions = new WeakSet();
 
 const stringSchema = (description = '') => ({
     type: 'string',
@@ -553,6 +554,7 @@ const callProvider = ({ prompt, imageParts, session, sections }) => {
 };
 
 const hasUsefulSellingPoints = (suggestion = {}, context = {}) => {
+    if (emptyProviderSuggestions.has(suggestion)) return false;
     const useful = value => typeof value === 'string' && /[\p{L}\p{N}]/u.test(value);
     const accepted = {
         description: useful(suggestion.description),
@@ -574,10 +576,14 @@ const parseAndCleanProviderText = (text = '') => {
         || ['sellingPoints', 'whyBuy', 'specifications', 'extraNotes'].some(key => raw[key] !== undefined && !Array.isArray(raw[key]))) {
         throw Object.assign(new Error('Invalid product suggestion.'), { code: 'AI_RESPONSE_PARSE_FAILED' });
     }
-    return cleanProductContentSuggestion(raw);
+    const cleaned = cleanProductContentSuggestion(raw);
+    if (!cleaned.description && !cleaned.seoTitle && !cleaned.seoDescription && !cleaned.imageAlt &&
+        !cleaned.sellingPoints.length && !cleaned.specifications.length && !cleaned.extraNotes.length) emptyProviderSuggestions.add(cleaned);
+    return cleaned;
 };
 
 const fillSupportedFields = (suggestion, context) => {
+    if (emptyProviderSuggestions.has(suggestion)) return suggestion;
     const requested = new Set(context.requestedSections);
     const needsSeo = ((requested.has('seo') || requested.has('seoTitle')) && !suggestion.seoTitle)
         || ((requested.has('seo') || requested.has('seoDescription')) && !suggestion.seoDescription);

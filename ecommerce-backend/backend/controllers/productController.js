@@ -15,6 +15,7 @@ const {
     resolveVariantImageReferences,
     getUniqueProductImageSources
 } = require('../services/products/productMediaService');
+const { resolveCoverMediaId, assertProductMediaReferences } = require('../services/products/productMediaService');
 const {
     generateProductContentSuggestion
 } = require('../services/products/productContentAiService');
@@ -38,6 +39,7 @@ const {
     expandMatrix,
     normalizeProductOptions
 } = require('../services/products/productVariantService');
+const { assertVariantSet, updateProductPricing } = require('../services/products/productVariantService');
 const {
     normalizeProductPublicationFields,
     enqueueScheduledProductPublication
@@ -97,19 +99,6 @@ const normalizeStorefrontPageLimit = (value, fallback = 9) => {
 
 // ... [KEEP ALL YOUR EXISTING FUNCTIONS HERE: getShopProducts, getSingleProduct, createProduct, updateProduct, deleteProduct] ...
 
-const resolveCoverMediaId = ({ images = [], videos = [], requestedCover = '', coverImageIndex }) => {
-    const media = [...(images || []), ...(videos || [])].map(item => String(item || '').trim()).filter(Boolean);
-    const requested = String(requestedCover || '').trim();
-    if (requested && media.includes(requested)) return requested;
-
-    const numericIndex = Number(coverImageIndex);
-    if (Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < (images || []).length) {
-        return images[numericIndex];
-    }
-
-    return images?.[0] || videos?.[0] || '';
-};
-
 const coverMediaBelongsToProduct = ({ images = [], videos = [], coverMediaId = '' }) => {
     const cover = String(coverMediaId || '').trim();
     if (!cover) return true;
@@ -128,7 +117,7 @@ const vendorStaffHasPermission = async (req, permissionName) => {
             membership_id: req.user.membershipId || req.user.membership_id,
             shop_id: req.tenantId
         }).select('permissions').lean();
-        if (staffPermission?.permissions?.[permissionName]) return true;
+        if (staffPermission) return Boolean(staffPermission.permissions?.[permissionName]);
     }
 
     const user = await User.findById(req.user._id).select('permissions').lean();
@@ -142,19 +131,28 @@ const ensureProductSchedulePermission = async (req, payload = {}) => {
 
 const getPlanContext = async (req) => req.planAccess || getShopPlanAccess(req.tenantId);
 
-const assertProductImageLimit = async (req, productOrCount) => {
+const assertProductImageLimit = async (req, productOrCount, previousProduct = null) => {
     const context = await getPlanContext(req);
     const limit = context.limits.imagesPerProduct;
     const imageCount = typeof productOrCount === 'number'
         ? productOrCount
         : getUniqueProductImageSources(productOrCount).length;
     if (limit !== null && Number(imageCount || 0) > Number(limit)) {
+        const previous = previousProduct && new Set(getUniqueProductImageSources(previousProduct));
+        if (previous && typeof productOrCount !== 'number' && getUniqueProductImageSources(productOrCount).every(source => previous.has(source))) return context;
         const error = new Error('Product image limit reached');
         error.statusCode = 403;
         error.payload = await buildLimitError(context, 'imagesPerProduct', Number(imageCount || 0), limit);
         throw error;
     }
     return context;
+};
+
+const assertProductCollectionsOwned = async (shopId, collectionIds, session) => {
+    if (!collectionIds) return;
+    const unique = [...new Set(collectionIds.map(String))];
+    const owned = await Collection.countDocuments({ _id: { $in: unique }, shop_id: shopId }).session(session);
+    if (owned !== unique.length) throw Object.assign(new Error('One or more collections are not available in this store.'), { statusCode: 400 });
 };
 
 const assertScheduledPublishingPlan = async (req, payload) => {
@@ -563,8 +561,8 @@ exports.createProduct = async (req, res) => {
         const coverImageIndexInput = parsedBody.coverImageIndex;
         delete parsedBody.coverImageIndex;
         if (parsedBody.coverMediaId && !coverMediaBelongsToProduct({
-            images: imageUrls,
-            videos: videoUrls,
+            images: imageUrls.length ? imageUrls : (parsedBody.images || []),
+            videos: videoUrls.length ? videoUrls : (parsedBody.videos || []),
             coverMediaId: parsedBody.coverMediaId
         })) {
             await session.abortTransaction();
@@ -577,14 +575,14 @@ exports.createProduct = async (req, res) => {
             ...(imageUrls.length > 0 && { images: imageUrls }),
             ...(videoUrls.length > 0 && { videos: videoUrls }),
             coverMediaId: resolveCoverMediaId({
-                images: imageUrls,
-                videos: videoUrls,
+                images: imageUrls.length ? imageUrls : (parsedBody.images || []),
+                videos: videoUrls.length ? videoUrls : (parsedBody.videos || []),
                 requestedCover: parsedBody.coverMediaId,
                 coverImageIndex: coverImageIndexInput
             })
         };
         await assertProductImageLimit(req, imageUrls.length);
-        resolveVariantImageReferences(payload, imageUrls);
+        resolveVariantImageReferences(payload, payload.images || []);
 
         // ── 4. Validate ───────────────────────────────────────────────────────
         const { error, value } = createProductSchema.validate(payload, { abortEarly: true });
@@ -593,6 +591,7 @@ exports.createProduct = async (req, res) => {
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
         normalizeProductPublicationFields(value);
+        await assertProductCollectionsOwned(req.tenantId, value.collections, session);
         const schedulePlanError = await assertScheduledPublishingPlan(req, value);
         if (schedulePlanError) {
             await session.abortTransaction();
@@ -617,6 +616,8 @@ exports.createProduct = async (req, res) => {
                 lowStockThreshold: value.lowStockThreshold
             })];
         }
+        assertVariantSet(value.variants);
+        await assertProductMediaReferences({ product: value, uploaded: [...imageUrls, ...videoUrls], shopId: req.tenantId, session });
         await assertProductImageLimit(req, {
             images: value.images || imageUrls,
             coverMediaId: value.coverMediaId,
@@ -665,13 +666,9 @@ exports.createProduct = async (req, res) => {
             );
         }
 
+        await enqueueScheduledProductPublication({ product, shopId: req.tenantId, session });
         await session.commitTransaction();
         await invalidateProductReadCaches(req.tenantId);
-
-        await enqueueScheduledProductPublication({
-            product,
-            shopId: req.tenantId
-        });
 
         await logAudit({
             req,
@@ -695,7 +692,7 @@ exports.createProduct = async (req, res) => {
         });
 
     } catch (err) {
-        await session.abortTransaction();
+        if (session.inTransaction()) await session.abortTransaction();
         if (err?.payload) return res.status(err.statusCode || 403).json(err.payload);
         console.error('Create product error:', err);
         const isDuplicateSlug = err.code === 11000 && err.keyPattern?.slug;
@@ -733,9 +730,10 @@ exports.updateProduct = async (req, res) => {
         }
 
         const existingImagesInput = parsedBody.existingImages;
+        const directImagesInput = parsedBody.images;
         const removedImagesInput = parsedBody.removedImages;
         const coverImageIndexInput = parsedBody.coverImageIndex;
-        const hasImageUpdateIntent = existingImagesInput !== undefined || removedImagesInput !== undefined || uploadedImageUrls.length > 0;
+        const hasImageUpdateIntent = existingImagesInput !== undefined || directImagesInput !== undefined || removedImagesInput !== undefined || coverImageIndexInput !== undefined || uploadedImageUrls.length > 0;
         delete parsedBody.existingImages;
         delete parsedBody.removedImages;
         delete parsedBody.coverImageIndex;
@@ -746,7 +744,7 @@ exports.updateProduct = async (req, res) => {
         if (parsedBody.variants) {
             parsedBody.variants = parsedBody.variants.map(v => ({
                 ...v,
-                attributes: (v.attributes || []).map(a => ({ name: a.name, value: a.value }))
+                ...(v.attributes !== undefined ? { attributes: v.attributes.map(a => ({ name: a.name, value: a.value })) } : {})
             }));
         }
 
@@ -757,21 +755,23 @@ exports.updateProduct = async (req, res) => {
             isDeleted: false
         }).session(session);
 
-        if (!product) throw new Error('Product not found');
+        if (!product) throw Object.assign(new Error('Product not found'), { statusCode: 404 });
         const previousSlug = product.slug;
+        const previousMedia = product.toObject();
+        const previousCollections = (product.collections || []).map(String);
 
         if (hasImageUpdateIntent) {
             const currentImages = Array.isArray(product.images) ? product.images.map(String).filter(Boolean) : [];
             const requestedExistingImages = Array.isArray(existingImagesInput)
                 ? existingImagesInput.map(String).filter(Boolean)
-                : currentImages;
+                : Array.isArray(directImagesInput) ? directImagesInput.map(String).filter(Boolean) : currentImages;
+            if (directImagesInput !== undefined && !Array.isArray(directImagesInput)) throw new Error('Images must be an array.');
             const removedImages = new Set(Array.isArray(removedImagesInput) ? removedImagesInput.map(String).filter(Boolean) : []);
             const keptExistingImages = requestedExistingImages
-                .filter(imageUrl => currentImages.includes(imageUrl))
+                .filter(imageUrl => existingImagesInput === undefined || currentImages.includes(imageUrl))
                 .filter(imageUrl => !removedImages.has(imageUrl));
             const finalImages = [...new Set([...keptExistingImages, ...uploadedImageUrls])];
-            await assertProductImageLimit(req, finalImages.length);
-
+            const orderedImages = [...keptExistingImages, ...uploadedImageUrls];
             parsedBody.images = finalImages;
             if (parsedBody.coverMediaId && !coverMediaBelongsToProduct({
                 images: finalImages,
@@ -782,12 +782,12 @@ exports.updateProduct = async (req, res) => {
                 return res.status(400).json({ success: false, error: 'Cover media must belong to this product.' });
             }
             parsedBody.coverMediaId = resolveCoverMediaId({
-                images: finalImages,
+                images: orderedImages,
                 videos: parsedBody.videos || product.videos || [],
                 requestedCover: parsedBody.coverMediaId || product.coverMediaId,
                 coverImageIndex: coverImageIndexInput
             });
-            resolveVariantImageReferences(parsedBody, finalImages);
+            resolveVariantImageReferences(parsedBody, orderedImages);
         } else if (parsedBody.variants) {
             resolveVariantImageReferences(parsedBody, product.images || []);
         }
@@ -815,7 +815,8 @@ exports.updateProduct = async (req, res) => {
             await session.abortTransaction();
             return res.status(400).json({ success: false, error: error.details[0].message });
         }
-        normalizeProductPublicationFields(value);
+        normalizeProductPublicationFields(value, product);
+        await assertProductCollectionsOwned(shopId, value.collections, session);
         if (value.slug && String(value.slug).toLowerCase() !== String(previousSlug || '').toLowerCase()) {
             await assertHistoricalSlugAvailable({
                 shopId,
@@ -834,11 +835,6 @@ exports.updateProduct = async (req, res) => {
             await session.abortTransaction();
             return res.status(403).json({ success: false, error: 'Missing staff permission: productsSchedule' });
         }
-        await assertProductImageLimit(req, {
-            images: value.images || product.images || [],
-            coverMediaId: value.coverMediaId ?? product.coverMediaId,
-            variants: value.variants || product.variants || []
-        });
         if (
             product.status === 'Archived' &&
             value.status !== undefined &&
@@ -936,10 +932,16 @@ exports.updateProduct = async (req, res) => {
         }
 
         if (value.pricing) {
-            product.pricing = { ...product.pricing.toObject(), ...value.pricing };
+            updateProductPricing(product, value.pricing);
         }
 
-        applyVariantOperations({ product, value, oldVariantByKey });
+        applyVariantOperations({ product, value, oldVariantByKey, canRemoveStock: await vendorStaffHasPermission(req, 'inventoryManage') });
+        await assertProductMediaReferences({ product: product.toObject(), previous: previousMedia, uploaded: [...uploadedImageUrls, ...uploadedVideoUrls], shopId, session });
+        await assertProductImageLimit(req, product.toObject(), previousMedia);
+        if (value.collections !== undefined) {
+            await Collection.updateMany({ shop_id: shopId, _id: { $in: previousCollections } }, { $pull: { productIds: product._id } }, { session });
+            await Collection.updateMany({ shop_id: shopId, _id: { $in: value.collections } }, { $addToSet: { productIds: product._id } }, { session });
+        }
 
         // ── 7. Save ───────────────────────────────────────────────────────────
         await product.save({ session });
@@ -964,16 +966,12 @@ exports.updateProduct = async (req, res) => {
             await InventoryLog.insertMany(logsToInsert, { session });
         }
 
+        await enqueueScheduledProductPublication({ product, shopId, session });
         await session.commitTransaction();
         await invalidateProductReadCaches(shopId);
         await require('../services/ai/aiContentHistoryService').confirmProductSave(shopId, product, req.user._id);
 
         await enqueueLowStockAlertsForLogs(logsToInsert);
-
-        await enqueueScheduledProductPublication({
-            product,
-            shopId
-        });
 
         await logAudit({
             req,
@@ -999,10 +997,10 @@ exports.updateProduct = async (req, res) => {
         });
 
     } catch (err) {
-        await session.abortTransaction();
+        if (session.inTransaction()) await session.abortTransaction();
         if (err?.payload) return res.status(err.statusCode || 403).json(err.payload);
         console.error('Update product error:', err);
-        return res.status(400).json({ success: false, error: err.message });
+        return res.status(err.statusCode || 400).json({ success: false, error: err.message });
     } finally {
         releaseQuotaSafely(restoreQuotaReservation);
         session.endSession();

@@ -95,9 +95,7 @@ export function getProductPresentation(product, selectedAttributes = {}) {
         : (product?.stock ?? 0);
     const baseOriginalPrice = currentVariant?.pricing?.price ?? currentVariant?.priceOverride ?? product?.sellingPrice ?? 0;
     const productDiscount = product?.discount ?? 0;
-    const productDiscountPrice = productDiscount > 0
-        ? Math.round(baseOriginalPrice - (baseOriginalPrice * productDiscount) / 100)
-        : baseOriginalPrice;
+    const productDiscountPrice = Math.round(baseOriginalPrice - (baseOriginalPrice * productDiscount) / 100);
     const scheduledSale = product?.scheduledSale || null;
     const scheduledSalePrice = scheduledSale
         ? (scheduledSale.discountType === 'fixed'

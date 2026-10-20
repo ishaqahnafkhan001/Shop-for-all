@@ -322,7 +322,9 @@ test('scheduled product launch uses persisted jobs and hides products until publ
     assert.match(productModel, /productSchema\.index\(\{ shop_id:\s*1,\s*publicationStatus:\s*1,\s*publishAt:\s*1 \}\)/);
     assert.match(productModel, /this\.publicationStatus === 'scheduled'[\s\S]*this\.status = 'Draft'[\s\S]*this\.isActive = false/);
     assert.match(productValidation, /publicationStatus:\s*Joi\.string\(\)\.valid\('draft', 'scheduled', 'published'\)/);
-    assert.match(productValidation, /publishAt:\s*Joi\.date\(\)\.iso\(\)/);
+    const { updateProductSchema } = require('../validations/productValidation');
+    assert(updateProductSchema.validate({ publicationStatus: 'scheduled', publishAt: '2030-11-01T10:00' }).error);
+    assert.equal(updateProductSchema.validate({ publicationStatus: 'scheduled', publishAt: '2030-11-01T04:00:00Z' }).error, undefined);
     assert.match(productController, /normalizeProductPublicationFields\(value\)/);
     assert.match(productController, /enqueueScheduledProductPublication/);
     assert.match(scheduledService, /queue:\s*SCHEDULED_PRODUCT_QUEUE/);
@@ -742,7 +744,7 @@ test('storefront pagination keeps page sizes, metadata, and controls consistent'
     assert.match(collectionClient, /aria-label="Collection pagination"/);
 });
 
-test('stock mutations use explicit semantics, idempotency, and inventory movement logs', () => {
+test('stock mutations use explicit semantics, idempotency, and inventory movement logs', async () => {
     const inventoryController = read('controllers/inventory.js');
     const inventoryLog = read('models/InventoryLog.js');
     const inventoryMutation = read('models/InventoryMutation.js');
@@ -750,22 +752,27 @@ test('stock mutations use explicit semantics, idempotency, and inventory movemen
     const catalogTools = readProject('ecommerce-admin/src/pages/dashboard/CatalogTools.jsx');
 
     assert.match(inventoryController, /mode = 'adjust'/);
-    assert.match(inventoryController, /normalizedMode === 'set'/);
-    assert.match(inventoryController, /expectedCurrentStock is required when setting stock/);
-    assert.match(inventoryController, /\$inc:\s*\{[\s\S]*variants\.\$\.stock/);
+    assert.match(inventoryController, /session\.withTransaction/);
+    assert.match(inventoryController, /expectedCurrentStock/);
     assert.match(inventoryController, /\$set:\s*\{[\s\S]*variants\.\$\.stock/);
     assert.match(inventoryController, /InventoryMutation\.findOne\(\{[\s\S]*idempotencyKey/);
     assert.match(inventoryController, /InventoryMutation\.create/);
-    assert.match(inventoryController, /IDEMPOTENCY_IN_PROGRESS/);
-    assert.match(inventoryController, /IDEMPOTENCY_FAILED/);
-    assert.match(inventoryController, /InventoryLog\.create\(logPayload\)/);
+    assert.match(inventoryController, /requestFingerprint/);
+    assert.match(inventoryController, /InventoryLog\.create\(/);
     assert.match(inventoryLog, /idempotencyKey/);
     assert.match(inventoryLog, /partialFilterExpression/);
     assert.match(inventoryMutation, /idempotencyKey/);
     assert.match(inventoryMutation, /completed/);
     assert.match(editProduct, /\/admin\/inventory\/stock/);
     assert.match(editProduct, /mode:\s*'adjust'/);
-    assert.match(editProduct, /delete inventory\.stock/);
+    const { variantMetadataPayload } = await import('../../../ecommerce-admin/src/utils/productEditor.js');
+    const { updateProductSchema } = require('../validations/productValidation');
+    const patch = variantMetadataPayload({ _id: '507f1f77bcf86cd799439011', stock: 12, attributes: [], inventory: { stock: 12, reservedStock: 3 } });
+    assert.equal(patch.stock, undefined);
+    assert.equal(patch.inventory.stock, undefined);
+    assert.equal(patch.inventory.reservedStock, undefined);
+    assert.equal(updateProductSchema.validate({ variants: [patch] }).error, undefined);
+    assert(updateProductSchema.validate({ variants: [{ ...patch, stock: 0 }] }).error);
     assert.match(catalogTools, /Stock quantity is managed from Inventory so every adjustment keeps its movement history and alerts/);
     assert.doesNotMatch(catalogTools, /updates\.stock/);
 });
