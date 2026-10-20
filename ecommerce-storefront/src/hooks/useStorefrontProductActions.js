@@ -8,6 +8,7 @@ import API from "@/api/api";
 import StorefrontVariantPickerModal from "@/components/storefront/StorefrontVariantPickerModal";
 import { useCart } from "@/context/CartContext";
 import { normalizeProduct } from "@/utils/normalizeProduct";
+import { getProductPresentation } from "@scaleup/storefront-renderer/product-data";
 
 const getProductId = (product = {}) => String(product._id || product.id || "");
 const getWishlistKey = (subdomain) => `wishlist:${subdomain || "store"}`;
@@ -40,19 +41,17 @@ const getAvailableVariants = (product = {}) => (
 const buildCartProduct = (product, selectedVariant = null) => {
     const normalized = normalizeProduct(product) || product;
     const variant = selectedVariant || normalized.selectedVariant || null;
-    const variantPrice = variant?.pricing?.price ?? variant?.priceOverride;
-    const basePrice = Number.isFinite(Number(variantPrice))
-        ? Number(variantPrice)
-        : Number(normalized.sellingPrice || normalized.pricing?.sellingPrice || 0);
-    const discount = Number(normalized.discount ?? normalized.pricing?.discount ?? 0);
-    const finalPrice = Math.round(basePrice - ((basePrice * discount) / 100));
+    const attributes = Object.fromEntries((variant?.attributes || []).map(a => [a.name, a.value]));
+    const { baseOriginalPrice: basePrice, displayFinalPrice: finalPrice } = getProductPresentation(
+        {...normalized, variants: variant ? [variant] : []}, attributes
+    );
 
     return {
         ...normalized,
         selectedVariant: variant || normalized.selectedVariant,
         variantId: variant?._id || normalized.variantId || normalized.selectedVariant?._id,
         stock: variant ? getVariantStock(variant) : normalized.stock,
-        sellingPrice: basePrice || normalized.sellingPrice,
+        sellingPrice: basePrice,
         finalPrice: Number.isFinite(finalPrice) ? finalPrice : normalized.finalPrice,
         cartPrice: Number.isFinite(finalPrice) ? finalPrice : normalized.finalPrice,
         imageUrl: variant?.image || normalized.coverMediaId || normalized.imageUrl || normalized.images?.[0] || "",

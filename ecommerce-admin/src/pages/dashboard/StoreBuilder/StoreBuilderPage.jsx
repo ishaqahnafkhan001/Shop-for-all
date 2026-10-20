@@ -302,6 +302,9 @@ const StoreBuilderPage = () => {
 
     const applyPrebuiltTheme = async (preset) => {
         try {
+            if (preset.id === 'atelier-editorial' && bootstrap?.themeAvailability?.['atelier-editorial']?.available !== true) {
+                throw new Error('Atelier Editorial is not available for this store.');
+            }
             const { resolvePrebuiltTheme } = await import('@scaleup/storefront-theme/prebuilt');
             const resolvedTheme = resolvePrebuiltTheme({
                 currentTheme: theme,
@@ -311,8 +314,10 @@ const StoreBuilderPage = () => {
             });
             setTheme(resolvedTheme);
             toast.success(`${preset.name} applied to your draft. Review it before publishing.`);
+            return true;
         } catch (error) {
             toast.error(error?.message || 'Could not apply this storefront theme.');
+            return false;
         }
     };
 
@@ -1853,6 +1858,7 @@ const StoreBuilderPage = () => {
             {themeGalleryOpen && (
                 <Suspense fallback={<div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-100" role="status"><div className="rounded-lg border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-700 shadow-lg">Loading themes…</div></div>}>
                     <ThemeGallery
+                        themeAvailability={bootstrap?.themeAvailability}
                         previewCatalog={bootstrap?.previewCatalog}
                         branding={bootstrap?.shop?.previewBranding}
                         storewideDiscount={storewideDiscount}

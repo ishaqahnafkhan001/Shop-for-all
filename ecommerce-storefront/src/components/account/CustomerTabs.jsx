@@ -6,7 +6,7 @@ import API from '@/api/api'; // Added API import for password reset
 import { toast } from 'react-hot-toast'; // Added toast for notifications
 import SafeProductImage from '@/components/storefront/SafeProductImage';
 
-export function OrderHistoryTab({ orders, subdomain = "" }) {
+export function OrderHistoryTab({ orders, subdomain = "", presentationVariant }) {
     // State to track which order is currently expanded
     const [expandedOrderId, setExpandedOrderId] = useState(null);
 
@@ -69,7 +69,7 @@ export function OrderHistoryTab({ orders, subdomain = "" }) {
                                             </span>
                                         </div>
 
-                                        <button className="flex items-center gap-1 rounded-xl bg-[var(--sf-accent-bg)] px-4 py-2 text-sm font-black text-[var(--sf-accent)] transition-colors group-hover:bg-blue-100">
+                                        <button aria-expanded={presentationVariant === 'atelier-editorial' ? isExpanded : undefined} aria-label={presentationVariant === 'atelier-editorial' ? `${isExpanded ? 'Hide' : 'View'} order ${order._id.slice(-6).toUpperCase()}` : undefined} className="flex items-center gap-1 rounded-xl bg-[var(--sf-accent-bg)] px-4 py-2 text-sm font-black text-[var(--sf-accent)] transition-colors group-hover:bg-blue-100">
                                             {isExpanded ? 'Hide' : 'View'}
                                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                         </button>
@@ -186,7 +186,7 @@ export function ProfileTab({ user }) {
 }
 
 // 🌟 UPDATED: SecurityTab now handles its own state and API requests
-export function SecurityTab() {
+export function SecurityTab({ presentationVariant } = {}) {
     const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [loading, setLoading] = useState(false);
 
@@ -237,10 +237,11 @@ export function SecurityTab() {
             </h2>
             <form onSubmit={handlePasswordReset} className="space-y-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                 <div>
-                    <label className="mb-1.5 block text-sm font-bold text-slate-700">Current Password</label>
+                    <label htmlFor={presentationVariant === 'atelier-editorial' ? 'security-current' : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Current Password</label>
                     <input
                         required
                         type="password"
+                        id={presentationVariant === 'atelier-editorial' ? 'security-current' : undefined}
                         value={passForm.currentPassword}
                         onChange={(e) => setPassForm({ ...passForm, currentPassword: e.target.value })}
                         className="sf-field"
@@ -248,10 +249,11 @@ export function SecurityTab() {
                     />
                 </div>
                 <div>
-                    <label className="mb-1.5 block text-sm font-bold text-slate-700">New Password</label>
+                    <label htmlFor={presentationVariant === 'atelier-editorial' ? 'security-new' : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">New Password</label>
                     <input
                         required
                         type="password"
+                        id={presentationVariant === 'atelier-editorial' ? 'security-new' : undefined}
                         value={passForm.newPassword}
                         onChange={(e) => setPassForm({ ...passForm, newPassword: e.target.value })}
                         className="sf-field"
@@ -269,10 +271,11 @@ export function SecurityTab() {
                     </div>
                 </div>
                 <div>
-                    <label className="mb-1.5 block text-sm font-bold text-slate-700">Confirm New Password</label>
+                    <label htmlFor={presentationVariant === 'atelier-editorial' ? 'security-confirm' : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Confirm New Password</label>
                     <input
                         required
                         type="password"
+                        id={presentationVariant === 'atelier-editorial' ? 'security-confirm' : undefined}
                         value={passForm.confirmPassword}
                         onChange={(e) => setPassForm({ ...passForm, confirmPassword: e.target.value })}
                         className="sf-field"

@@ -1,0 +1,73 @@
+✖ public checkout recalculates price and shipping instead of trusting client totals (5022.7662ms)
+✖ authenticated checkout recalculates totals and rejects cross-shop coupons (5015.1267ms)
+✖ concurrent checkout against stock one creates only one order and one inventory log (5012.0288ms)
+✖ order status and tracking APIs preserve role and privacy boundaries (5011.389ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21587.2191
+
+✖ failing tests:
+
+test at tests\integration\checkout-order-safety.integration.test.js:15:1
+✖ public checkout recalculates price and shipping instead of trusting client totals (5022.7662ms)
+  Error: Unable to connect to MONGO_URI_TEST (atelier_acceptance_c085454b_test).
+  MongoDB error: connect EACCES 127.0.0.1:27028
+  Start a disposable MongoDB test database before running launch-safety integration tests.
+  Example:
+    MONGO_URI_TEST="mongodb://127.0.0.1:27017/shop_for_all_launch_test" npm run test:integration
+  Checkout/order tests use transactions, so use MongoDB Atlas or a local replica set. A standalone local MongoDB may fail transaction tests.
+      at connectTestDatabase (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:112:15)
+      at async createLaunchSafetyContext (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:616:5)
+      at async TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\integration\checkout-order-safety.integration.test.js:16:17)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
+
+test at tests\integration\checkout-order-safety.integration.test.js:54:1
+✖ authenticated checkout recalculates totals and rejects cross-shop coupons (5015.1267ms)
+  Error: Unable to connect to MONGO_URI_TEST (atelier_acceptance_c085454b_test).
+  MongoDB error: connect EACCES 127.0.0.1:27028
+  Start a disposable MongoDB test database before running launch-safety integration tests.
+  Example:
+    MONGO_URI_TEST="mongodb://127.0.0.1:27017/shop_for_all_launch_test" npm run test:integration
+  Checkout/order tests use transactions, so use MongoDB Atlas or a local replica set. A standalone local MongoDB may fail transaction tests.
+      at connectTestDatabase (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:112:15)
+      at async createLaunchSafetyContext (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:616:5)
+      at async TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\integration\checkout-order-safety.integration.test.js:55:17)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\integration\checkout-order-safety.integration.test.js:106:1
+✖ concurrent checkout against stock one creates only one order and one inventory log (5012.0288ms)
+  Error: Unable to connect to MONGO_URI_TEST (atelier_acceptance_c085454b_test).
+  MongoDB error: connect EACCES 127.0.0.1:27028
+  Start a disposable MongoDB test database before running launch-safety integration tests.
+  Example:
+    MONGO_URI_TEST="mongodb://127.0.0.1:27017/shop_for_all_launch_test" npm run test:integration
+  Checkout/order tests use transactions, so use MongoDB Atlas or a local replica set. A standalone local MongoDB may fail transaction tests.
+      at connectTestDatabase (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:112:15)
+      at async createLaunchSafetyContext (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:616:5)
+      at async TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\integration\checkout-order-safety.integration.test.js:107:17)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\integration\checkout-order-safety.integration.test.js:152:1
+✖ order status and tracking APIs preserve role and privacy boundaries (5011.389ms)
+  Error: Unable to connect to MONGO_URI_TEST (atelier_acceptance_c085454b_test).
+  MongoDB error: connect EACCES 127.0.0.1:27028
+  Start a disposable MongoDB test database before running launch-safety integration tests.
+  Example:
+    MONGO_URI_TEST="mongodb://127.0.0.1:27017/shop_for_all_launch_test" npm run test:integration
+  Checkout/order tests use transactions, so use MongoDB Atlas or a local replica set. A standalone local MongoDB may fail transaction tests.
+      at connectTestDatabase (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:112:15)
+      at async createLaunchSafetyContext (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\helpers\launchSafetyHarness.js:616:5)
+      at async TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\integration\checkout-order-safety.integration.test.js:153:17)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+
+Command failed: C:/Program Files/nodejs/node.exe --require ./tests/helpers/isolatedAcceptance.cjs --test --test-concurrency=1 tests/integration/checkout-order-safety.integration.test.js

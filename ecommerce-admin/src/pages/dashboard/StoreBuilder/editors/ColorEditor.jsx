@@ -81,6 +81,7 @@ export function ColorEditor({
 
     return (
         <BuilderCard title="Colors" description="Choose a quick palette, customize each storefront section, or fine-tune advanced legacy colors." icon={Palette}>
+            {theme.presentationVariant === 'atelier-editorial' && <p className="mb-4 text-sm leading-6 text-slate-600">Atelier’s story and promotion panels pair your main text and background colors. Section colors style the remaining sections; the lime highlights and image fields are part of the theme.</p>}
             <div className={`grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-black sm:text-sm ${fullColorControls ? 'grid-cols-3' : 'grid-cols-1'}`}>
                 {(fullColorControls ? [
                     ['quick', 'Quick Setup'],

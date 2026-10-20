@@ -1,0 +1,91 @@
+..\..\packages\storefront-renderer\reference\referenceCore.jsx (5:90) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/referenceCore.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/referenceCore.jsx:5:91 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m5 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249mC[0m[38;5;249ms[0m[38;5;249ms[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249ms[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mH[0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mS[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249md[0m[38;5;249me[0m[38;5;249mF[0m[38;5;249mi[0m[38;5;249me[0m[38;5;249ml[0m[38;5;249md[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m  │[0m                                                                                           ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                                                                        ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontAllProducts.jsx (4:49) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontAllProducts.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontAllProducts.jsx:4:50 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m4 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m'@scaleup/storefront-theme'[38;5;249m;[0m
+ [38;5;240m  │[0m                                                  ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                               ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontHeader.jsx (16:111) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontHeader.jsx
+    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontHeader.jsx:16:112 [38;5;246m][0m
+    [38;5;246m│[0m
+ [38;5;246m16 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249me[0m[38;5;249md[0m[38;5;249mN[0m[38;5;249ma[0m[38;5;249mv[0m[38;5;249mi[0m[38;5;249mg[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mE[0m[38;5;249mf[0m[38;5;249mf[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249mz[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m   │[0m                                                                                                                ─────────────┬─────────────  
+ [38;5;240m   │[0m                                                                                                                             ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m────╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontFooter.jsx (5:111) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontFooter.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontFooter.jsx:5:112 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m5 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249me[0m[38;5;249md[0m[38;5;249mN[0m[38;5;249ma[0m[38;5;249mv[0m[38;5;249mi[0m[38;5;249mg[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mE[0m[38;5;249mf[0m[38;5;249mf[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249mz[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m  │[0m                                                                                                                ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                                                                                             ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontHero.jsx (6:49) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontHero.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontHero.jsx:6:50 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m6 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m'@scaleup/storefront-theme'[38;5;249m;[0m
+ [38;5;240m  │[0m                                                  ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                               ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontHome.jsx (3:118) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontHome.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontHome.jsx:3:119 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m3 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mE[0m[38;5;249mn[0m[38;5;249ma[0m[38;5;249mb[0m[38;5;249ml[0m[38;5;249me[0m[38;5;249md[0m[38;5;249mH[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249mp[0m[38;5;249ma[0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mS[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249ms[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mt[0m[38;5;249mS[0m[38;5;249mt[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249mP[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249me[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mV[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mi[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mt[0m[38;5;249m,[0m[38;5;249m [0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ms[0m[38;5;249mo[0m[38;5;249ml[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mE[0m[38;5;249mf[0m[38;5;249mf[0m[38;5;249me[0m[38;5;249mc[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mv[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249ma[0m[38;5;249ms[0m[38;5;249m [0m[38;5;249mn[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mm[0m[38;5;249ma[0m[38;5;249ml[0m[38;5;249mi[0m[38;5;249mz[0m[38;5;249me[0m[38;5;249mT[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"@scaleup/storefront-theme"[38;5;249m;[0m
+ [38;5;240m  │[0m                                                                                                                       ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                                                                                                    ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+..\..\packages\storefront-renderer\reference\StorefrontComposition.jsx (3:40) [33m[UNRESOLVED_IMPORT] [0mCould not resolve '@scaleup/storefront-theme' in ../../packages/storefront-renderer/reference/StorefrontComposition.jsx
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../packages/storefront-renderer/reference/StorefrontComposition.jsx:3:41 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m3 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249mp[0m[38;5;249ml[0m[38;5;249ma[0m[38;5;249mn[0m[38;5;249mH[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249mp[0m[38;5;249ma[0m[38;5;249mg[0m[38;5;249me[0m[38;5;249mC[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249ms[0m[38;5;249mi[0m[38;5;249mt[0m[38;5;249mi[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m'@scaleup/storefront-theme'[38;5;249m;[0m
+ [38;5;240m  │[0m                                         ─────────────┬─────────────  
+ [38;5;240m  │[0m                                                      ╰─────────────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+✔ trusted availability keeps nine ordinary gallery cards and hides revoked Atelier at confirmation (151.328ms)
+✔ gallery identifies an existing Atelier presentation when re-adoption is off or appearance provenance differs (786.1388ms)
+✔ modern-general: full round-trip switching preserves merchant content and clears the marker (4.2254ms)
+✔ minimal-general: full round-trip switching preserves merchant content and clears the marker (4.4574ms)
+✔ modern-fashion: full round-trip switching preserves merchant content and clears the marker (2.886ms)
+✔ editorial-fashion: full round-trip switching preserves merchant content and clears the marker (2.5405ms)
+✔ luxury-jewellery: full round-trip switching preserves merchant content and clears the marker (2.4801ms)
+✔ minimal-jewellery: full round-trip switching preserves merchant content and clears the marker (2.4062ms)
+✔ soft-beauty: full round-trip switching preserves merchant content and clears the marker (2.448ms)
+✔ modern-electronics: full round-trip switching preserves merchant content and clears the marker (2.3882ms)
+✔ fresh-grocery: full round-trip switching preserves merchant content and clears the marker (2.6597ms)
+✔ only the section structures bypassed by Atelier are theme-controlled; content remains editable (3.1173ms)
+✔ supported typography, colors, mobile composition and grid controls reach the shared renderer (31.8827ms)
+✔ existing home preview uses Atelier scope and the shared presentation (28.0694ms)
+✔ existing product preview uses Atelier scope and the shared presentation (24.8949ms)
+✔ existing cart preview uses Atelier scope and the shared presentation (18.6872ms)
+✔ existing checkout preview uses Atelier scope and the shared presentation (29.7179ms)
+✔ existing policy preview uses Atelier scope and the shared presentation (14.183ms)
+✔ Atelier checkout preview uses shared consent, local-only controls and a no-op submission boundary (2.0789ms)
+✔ shared marketing control keeps separate opt-in event semantics and identical live markup (0.2843ms)
+✔ actual undo/redo/recovery functions preserve optional identity and merchant settings (211.4847ms)
+✔ existing draft queue serializes Atelier, preserves conflict state and isolates tenant queues (5.5018ms)
+✔ preview iframe remains scriptless and viewport export/installed packages match the shared source (6.0153ms)
+✔ authorized Atelier draft → publish → JSON reload → switch away → restore passes actual service guards (636.4864ms)
+✔ unapproved tenant, foreign revision and stale publish cannot mutate another tenant in the service unit harness (19.168ms)
+✔ pilot recovery works with adoption off without relying on a retained old revision (46.5505ms)
+✔ Atelier gallery awaits application, blocks duplicate clicks and retains a rejected draft (60.2467ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2248.2143

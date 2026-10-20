@@ -30,3 +30,6 @@ export { ReferenceStorefrontHome } from "./reference/StorefrontHome.jsx";
 export { StorefrontHero } from "./reference/StorefrontHero.jsx";
 export { ReferenceStorefrontFooter } from "./reference/StorefrontFooter.jsx";
 export { ReferenceStorefrontPage } from "./reference/ReferenceStorefrontPage.jsx";
+
+export { AtelierAccountAccent } from './atelier/AtelierAccountAccent.jsx';
+export { useAtelierDialog } from './atelier/useAtelierDialog.js';

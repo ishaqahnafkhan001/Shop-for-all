@@ -1,0 +1,45 @@
+{
+  "method": "Local emitted production assets before/after this task. Gzip computed individually at default Node zlib settings; not transfer cost, runtime timing, Lighthouse or Core Web Vitals.",
+  "apps": {
+    "admin": {
+      "before": {
+        "bytes": 3975716,
+        "gzip": 1523384
+      },
+      "after": {
+        "bytes": 3978494,
+        "gzip": 1524236
+      },
+      "delta": {
+        "bytes": 2778,
+        "gzip": 852
+      }
+    },
+    "storefront": {
+      "before": {
+        "bytes": 3193590,
+        "gzip": 1416910
+      },
+      "after": {
+        "bytes": 3194451,
+        "gzip": 1417032
+      },
+      "delta": {
+        "bytes": 861,
+        "gzip": 122
+      }
+    }
+  },
+  "fonts": [
+    {
+      "path": "dm-sans-variable-OkNhvBry.ttf",
+      "bytes": 240164,
+      "gzip": 110510,
+      "sha256": "8cd08d97e89c24d0aa92edd2f0f4c8ee6195eee9b7c9f154865a58b02f0c1c0d"
+    }
+  ],
+  "limits": [
+    "Browser profiling, CLS, LCP, INP, hydration and repeated requests could not be measured because browser automation is disabled.",
+    "Both presentations intentionally remain in the shared renderer; no dynamic second application or new dependency was added."
+  ]
+}

@@ -6,20 +6,36 @@ import path from 'node:path'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fromAdminNodeModules = (pkgPath) => path.resolve(__dirname, 'node_modules', pkgPath)
-const storefrontPackageManifests = new Set([
-  path.resolve(__dirname, '../packages/storefront-renderer/package.json'),
-  path.resolve(__dirname, '../packages/storefront-theme/package.json')
-])
+const storefrontPackageRoots = [
+  path.resolve(__dirname, '../packages/storefront-renderer'),
+  path.resolve(__dirname, '../packages/storefront-theme')
+]
 
-// preserveSymlinks keeps these packages under node_modules in Vite's cache.
-// Watch their real manifests so newly added exports also work in a warm server.
-const watchStorefrontPackageExports = () => ({
-  name: 'watch-storefront-package-exports',
+// Local packages resolve through node_modules junctions, which Vite does not
+// watch. Refresh both transformed modules and optimized dependencies when their
+// real sources change, including newly added/removed modules and exports.
+export const watchStorefrontPackages = () => ({
+  name: 'watch-storefront-packages',
   configureServer(server) {
-    server.watcher.add([...storefrontPackageManifests])
-    server.watcher.on('change', file => {
-      if (!storefrontPackageManifests.has(path.resolve(file))) return
-      void server.restart().catch(error => server.config.logger.error(error.message))
+    let restartTimer
+    const onSourceChange = (event, file) => {
+      if (!['add', 'change', 'unlink'].includes(event)) return
+      const absoluteFile = path.resolve(file)
+      const isSharedSource = storefrontPackageRoots.some(root => {
+        const relative = path.relative(root, absoluteFile)
+        return relative && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative)
+      })
+      if (!isSharedSource || !/\.(?:[cm]?js|jsx|css|json)$/.test(absoluteFile)) return
+      clearTimeout(restartTimer)
+      restartTimer = setTimeout(() => {
+        void server.restart(true).catch(error => server.config.logger.error(error.message))
+      }, 100)
+    }
+    server.watcher.add(storefrontPackageRoots)
+    server.watcher.on('all', onSourceChange)
+    server.httpServer?.once('close', () => {
+      clearTimeout(restartTimer)
+      server.watcher.off('all', onSourceChange)
     })
   }
 })
@@ -28,7 +44,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    watchStorefrontPackageExports()
+    watchStorefrontPackages()
   ],
 
   resolve: {
@@ -46,10 +62,33 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    include: ['@scaleup/storefront-theme']
+    // Preview fixture HTML uses its own config and must not enter the app scan.
+    entries: ['index.html'],
+    // Keep React's generated interop exports in one optimization generation.
+    // Late discovery of react-dom/client can otherwise invalidate react-dom
+    // while an open tab still holds its immutable cached response.
+    include: [
+      'react',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-dom',
+      'react-dom/client',
+      'react-router-dom',
+      'react-hot-toast',
+      'axios',
+      'lucide-react',
+      'recharts',
+      '@scaleup/storefront-theme',
+      '@scaleup/storefront-theme/prebuilt',
+      '@scaleup/storefront-renderer/product-data',
+      '@scaleup/storefront-renderer/viewports'
+    ]
   },
 
   server: {
+    // Shared local font and decorative assets resolve outside node_modules through the package junction.
+    // Permit only that asset directory, never the backend/workspace root.
+    fs: { allow: [__dirname, path.resolve(__dirname, '../packages/storefront-renderer/fonts'), path.resolve(__dirname, '../packages/storefront-renderer/atelier')] },
     host: '0.0.0.0',
     port: 5173
   }

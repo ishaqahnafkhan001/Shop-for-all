@@ -1,0 +1,128 @@
+[
+  {
+    "path": "ecommerce-admin/tests/fixtures/atelier-route-runtime.jsx",
+    "kind": "modified",
+    "reason": "Return the actual timestamp/proof-expiry contract from the existing fail-closed fixture API.",
+    "sha256": "0c48002d54d3222ea6dbc2fab15fa59d176c0abaa046901d115e865a0e7b9c70"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/helpers/atelier-routes.cjs",
+    "kind": "modified",
+    "reason": "Expose real hooks, CartProvider and checkout through the existing isolated Rolldown harness.",
+    "sha256": "fdb05b876c3a9ce2df1024e3de672039db488c28fd818975916de32071622f0f"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/helpers/isolatedAcceptance.cjs",
+    "kind": "added",
+    "reason": "Explicit opt-in for the verified disposable endpoint; disable real dotenv loading, sanitize transports, restrict MongoDB/network destinations and block worker startup.",
+    "sha256": "0420495a10fae27aae6d04400135dcbe2ea6acd6266f4cc19a7c38d888fd7cfd"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/integration/atelier-release-hardening.integration.test.js",
+    "kind": "added",
+    "reason": "Add eight real MongoDB/HTTP tests for indexes, persisted prices, guarded drafts/publish/restore, publication claims, OTP lifecycle/limits, proof replay and idempotency; install its own SMS mock before imports.",
+    "sha256": "d8bcb177dd71259c960836a6209a5791dcd87b704a87d38a677f914cf671ce64"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-release-hardening.test.js",
+    "kind": "added",
+    "reason": "Add 53 focused price, persisted-cart, tenant, lifecycle, controller and actual checkout-handler regressions.",
+    "sha256": "eb9692295ffb92c580d9225ff3ed21dc73f8de836768b5ed6d4e279a020120dd"
+  },
+  {
+    "path": "ecommerce-backend/backend/controllers/checkoutOtpController.js",
+    "kind": "modified",
+    "reason": "Expose positive numeric retryAfterSeconds on existing error responses as additive metadata.",
+    "sha256": "1377ea8251be5f07bf4e5ca7813b9df4ec671163e1da14e4fab14f6ea23d61f0"
+  },
+  {
+    "path": "ecommerce-backend/backend/controllers/publicController.js",
+    "kind": "modified",
+    "reason": "Treat null/undefined/empty variant overrides as absent instead of coercing null to a free order price; preserve authoritative numeric zero.",
+    "sha256": "059c4c7d1c74fd0235ad8262d90b378f731058d4919d52798857f8de6c5895f8"
+  },
+  {
+    "path": "ecommerce-backend/backend/middlewares/vendorVerificationGuard.js",
+    "kind": "modified",
+    "reason": "Retry only a stale-document VersionError once through the same tenant/owner service; reevaluate suspension and fail closed on repeated/other errors.",
+    "sha256": "22e2b5e99c7bca5cc034e098c81d9e854cfc76045a30ca4b192a3536fb38b6b5"
+  },
+  {
+    "path": "ecommerce-backend/backend/models/OTP.js",
+    "kind": "modified",
+    "reason": "Remove the duplicate non-unique key index declaration; preserve the existing unique sparse declaration and TTL.",
+    "sha256": "4cbf150a506d97d1d6aaa19c96eaa780db9515943c44c7bb7cb86693259c8f42"
+  },
+  {
+    "path": "ecommerce-backend/backend/services/checkout/checkoutOtpService.js",
+    "kind": "modified",
+    "reason": "Forward the existing OTP service retryAfterSeconds result through the established checkout error; no new endpoint, limit or provider.",
+    "sha256": "9ea52088b36fb4c729b8a437af71a6e28c28ebd685fd099b2bc3a92b17a3e942"
+  },
+  {
+    "path": "ecommerce-storefront/src/app/[subdomain]/cart/page.jsx",
+    "kind": "modified",
+    "reason": "Calculate savings from the selected original and current prices, including valid zero.",
+    "sha256": "62bd138762a273f9c9d789483e42a7cf28a771c53640aa96e441e3ac0a35d6ca"
+  },
+  {
+    "path": "ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCartProducts.js",
+    "kind": "modified",
+    "reason": "Ignore stale/unmounted refresh responses and isolate the product map by tenant.",
+    "sha256": "4673a151fae687db36f233e3a85c9be28264aadae05e713a084c75a22088565b"
+  },
+  {
+    "path": "ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCoupon.js",
+    "kind": "modified",
+    "reason": "Keep zero prices in coupon validation item payloads.",
+    "sha256": "c188449cff357b12a6c0707e031aa3e2bd3534d65dfde8267014eb3fc6457b21"
+  },
+  {
+    "path": "ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutPhoneOtp.js",
+    "kind": "modified",
+    "reason": "Use server timestamps for cooldown/expiry, preserve cooldown by phone, prevent concurrent calls, reject stale tenant/cart outcomes, bind proof lifetime and clean timers on unmount.",
+    "sha256": "5f247330460baca4ff51ffe463d88386405f3d49477f38db716ce04be4ba555e"
+  },
+  {
+    "path": "ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx",
+    "kind": "modified",
+    "reason": "Use refreshed matching-product prices for totals/summary/advisory guest prices/analytics; connect resend state and guard concurrent verification/order submission.",
+    "sha256": "3757828a7e122f8bd198ed83fda9c5a44caeb669405349830c94698dd4d485c1"
+  },
+  {
+    "path": "ecommerce-storefront/src/context/CartContext.jsx",
+    "kind": "modified",
+    "reason": "Preserve zero totals and tenant-keyed persistence; prevent the previous tenant cart from being displayed or written during a mounted tenant change.",
+    "sha256": "d611e7d94224fdcf24e60e3e1926e5d69e680798ae8e64e34670e6ec6921cf95"
+  },
+  {
+    "path": "ecommerce-storefront/src/hooks/useStorefrontProductActions.js",
+    "kind": "modified",
+    "reason": "Use existing product presentation pricing for selected-variant cart snapshots, preserving zero and scheduled discounts.",
+    "sha256": "2a6f496ad537bce653aad5efc7409b9a802f3a0805cdc7fbe4e65f880f5f33f1"
+  },
+  {
+    "path": "packages/storefront-renderer/normalizeProduct.js",
+    "kind": "modified",
+    "reason": "Reuse the existing product-data module for finite, nonnegative price selection, zero-safe cart/original prices and matching-product checkout refresh; retain existing discount/scheduled-sale calculations.",
+    "sha256": "5cc57196000769f852d474ae791e84d9947932b3ab847328a4b183e38d731b30"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/CartView.jsx",
+    "kind": "modified",
+    "reason": "Render the same zero-safe unit price as totals; compare the selected variant original price and suppress misleading crossed-out base prices for free variants.",
+    "sha256": "f7edd924127caa64b212c40de357a76b6baaefbd73d6de67264c3f6687182378"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/CheckoutSections.jsx",
+    "kind": "modified",
+    "reason": "Use the shared price selector in summary rows; add optional resend/countdown/expiry/feedback controls to the existing active OTP dialog.",
+    "sha256": "b7471f04d16babc5270b311cba2355320347b6f48fe635a9566b53cbdc6dd6e6"
+  },
+  {
+    "path": "track.md",
+    "kind": "modified",
+    "reason": "Prepend this final acceptance report and retain all historical evidence.",
+    "sha256": "99eaa6848542644e2f13dd108ff9b63585afd9451b08788154f856ab985d46f6"
+  }
+]

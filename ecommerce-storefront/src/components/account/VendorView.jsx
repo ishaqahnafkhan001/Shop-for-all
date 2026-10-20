@@ -1,10 +1,10 @@
 import React from 'react';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 
-export default function VendorView({ user, handleLogout }) {
+export default function VendorView({ user, handleLogout, presentationVariant }) {
     const adminUrl = process.env.NEXT_PUBLIC_ADMIN_PANEL_URL
     return (
-        <div className="sf-page flex min-h-[70vh] items-center justify-center px-4 py-10">
+        <div className={presentationVariant === 'atelier-editorial' ? "sf-page atelier-vendor flex min-h-[70vh] items-center justify-center px-4 py-10" : "sf-page flex min-h-[70vh] items-center justify-center px-4 py-10"}>
             <div className="relative w-full max-w-3xl overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950 p-8 text-center text-white shadow-2xl sm:p-10">
                 <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
                 <div className="relative z-10">

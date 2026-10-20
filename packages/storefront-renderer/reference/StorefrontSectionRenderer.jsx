@@ -37,6 +37,7 @@ export const HomepageSection = memo(function HomepageSection({
     catalogProducts,
     storewideDiscount,
     productCard,
+    presentationVariant,
     sectionColors = {},
     layout,
     mobile,
@@ -80,7 +81,7 @@ export const HomepageSection = memo(function HomepageSection({
         const featuredSpacing = resolveGridSpacing(section.settings?.spacing, layout?.productGap, layout?.contentSpacing);
         if (!products.length) return null;
         return frame(
-            <section className={`${responsiveVisibilityClass} ${sectionLayout.className}`} style={sectionLayout.style}>
+            <section data-atelier-section={presentationVariant === 'atelier-editorial' ? 'FeaturedProducts' : undefined} className={`${responsiveVisibilityClass} ${sectionLayout.className}`} style={sectionLayout.style}>
                 <div className="mb-4 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
                     <div className="min-w-0">
                         <h2 className="text-xl font-black tracking-tight sm:text-3xl" style={{ ...headingStyle, color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Featured Products"}</h2>
@@ -90,7 +91,7 @@ export const HomepageSection = memo(function HomepageSection({
                 </div>
                 <div className={`grid ${featuredGridClass} ${productGridGapClasses[featuredSpacing]} ${products.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                     {products.map((product, index) => (
-                        <ProductCard key={product._id} product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
+                        <ProductCard key={product._id} product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} presentationVariant={presentationVariant} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
                     ))}
                 </div>
             </section>
@@ -106,7 +107,7 @@ export const HomepageSection = memo(function HomepageSection({
     );
 
     if (section.type === "CategoryList") return frame(
-        <CategoryVariantSection section={section} categories={categories} catalogProducts={catalogProducts} previewDevice={previewDevice} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} LinkComponent={LinkComponent} />
+        <CategoryVariantSection section={section} presentationVariant={presentationVariant} categories={categories} catalogProducts={catalogProducts} previewDevice={previewDevice} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} LinkComponent={LinkComponent} />
     );
 
     if (["Collection", "CollectionShowcase"].includes(section.type)) {
@@ -114,7 +115,7 @@ export const HomepageSection = memo(function HomepageSection({
         const products = sectionProducts?.[stableSectionId]
             || catalogProducts.filter(product => selectedIds.map(String).includes(String(product._id)));
         return frame(
-            <CollectionVariantSection section={section} products={products} previewDevice={previewDevice} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} productCard={productCard} storewideDiscount={storewideDiscount} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isProductWishlisted={isProductWishlisted} LinkComponent={LinkComponent} />
+            <CollectionVariantSection section={section} presentationVariant={presentationVariant} products={products} previewDevice={previewDevice} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} productCard={productCard} storewideDiscount={storewideDiscount} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isProductWishlisted={isProductWishlisted} LinkComponent={LinkComponent} />
         );
     }
 
@@ -147,7 +148,7 @@ export const HomepageSection = memo(function HomepageSection({
         const badges = String(section.settings?.text || "").split(/\n|·|,/).map(item => item.trim()).filter(Boolean).slice(0, 8);
         if (!badges.length) return null;
         return frame(
-            <section className={`${responsiveVisibilityClass} ${sectionLayout.className}`} style={sectionLayout.style}>
+            <section data-atelier-section={presentationVariant === 'atelier-editorial' ? 'TrustBadges' : undefined} className={`${responsiveVisibilityClass} ${sectionLayout.className}`} style={sectionLayout.style}>
                 <h2 className="text-center text-xl font-black sm:text-3xl" style={{ ...headingStyle, color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Why shop with us"}</h2>
                 <div className={`mt-5 grid grid-cols-1 ${contentGapClass} sm:grid-cols-2 lg:grid-cols-4`}>
                     {badges.map((badge, index) => <div key={`${badge}-${index}`} className="flex min-h-24 items-center gap-3 rounded-2xl border border-slate-200 p-4 shadow-sm" style={{ backgroundColor: sectionColors.background || "var(--sf-section-background)", color: sectionColors.trustText || "var(--sf-section-trust-text)" }}><span className="rounded-full bg-[var(--sf-accent-bg)] p-2.5" style={{ color: sectionColors.trustIcon || "var(--sf-section-trust-icon)" }}><ShieldCheck size={20} /></span><span className="text-sm font-black leading-5">{badge}</span></div>)}
@@ -157,11 +158,11 @@ export const HomepageSection = memo(function HomepageSection({
     }
 
     if (section.type === "BrandStory") return frame(
-        <BrandStoryVariantSection section={section} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} />
+        <BrandStoryVariantSection section={section} presentationVariant={presentationVariant} LinkComponent={LinkComponent} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} />
     );
 
     if (["Newsletter", "PromoBlock", "TextBlock", "BrandShowcase"].includes(section.type)) return frame(
-        <TextualVariantSection section={section} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} colors={sectionColors} />
+        <TextualVariantSection section={section} presentationVariant={presentationVariant} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} colors={sectionColors} />
     );
 
     return null;

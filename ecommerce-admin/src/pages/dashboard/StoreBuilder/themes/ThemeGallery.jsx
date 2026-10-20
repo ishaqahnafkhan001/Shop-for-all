@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Eye, Layers3, Search, ShieldCheck, X } from 'lucide-react';
-import { getPrebuiltThemes, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
+import { getPrebuiltThemes, getPrebuiltTheme, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
 import { BuilderButton, DeviceSwitcher } from '../builderUi.jsx';
 import { StorefrontPreview } from '../StorefrontPreview.jsx';
+import { getAvailableGalleryThemes, isGalleryThemeAvailable } from './themeAvailability.js';
 const availableThemes = getPrebuiltThemes();
 const industryFilters = ['All', ...new Set(availableThemes.map(theme => theme.industry))];
 const styleFilters = ['All styles', ...new Set(availableThemes.map(theme => theme.style))];
@@ -53,10 +54,10 @@ const ThemeCard = ({ theme, resolvedTheme, previewProps, current, updateAvailabl
     </article>
 );
 
-const ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm }) => {
+const ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm, busy = false }) => {
     return (
         <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/55 p-0 sm:items-center sm:p-4" onMouseDown={event => {
-            if (event.target === event.currentTarget) onCancel();
+            if (!busy && event.target === event.currentTarget) onCancel();
         }}>
             <section role="alertdialog" aria-modal="true" aria-labelledby="apply-theme-title" aria-describedby="apply-theme-description" className="w-full rounded-t-xl bg-white p-5 shadow-2xl sm:max-w-lg sm:rounded-lg sm:p-6">
                 <div className="flex items-start gap-4">
@@ -76,8 +77,8 @@ const ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm }) => {
                 )}
                 <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-600">You can undo this change or continue editing before you publish.</p>
                 <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                    <BuilderButton type="button" variant="secondary" onClick={onCancel}>Keep current draft</BuilderButton>
-                    <BuilderButton type="button" onClick={onConfirm} autoFocus>Apply to draft</BuilderButton>
+                    <BuilderButton type="button" variant="secondary" onClick={onCancel} disabled={busy}>Keep current draft</BuilderButton>
+                    <BuilderButton type="button" onClick={onConfirm} disabled={busy} autoFocus>{busy ? 'Applying…' : 'Apply to draft'}</BuilderButton>
                 </div>
             </section>
         </div>
@@ -85,6 +86,7 @@ const ApplyThemeDialog = ({ theme, limited, onCancel, onConfirm }) => {
 };
 
 export default function ThemeGallery({
+    themeAvailability,
     open,
     onClose,
     currentTheme,
@@ -106,9 +108,13 @@ export default function ThemeGallery({
     const [previewTheme, setPreviewTheme] = useState(null);
     const [pendingTheme, setPendingTheme] = useState(null);
     const [device, setDevice] = useState('desktop');
+    const [applicationError, setApplicationError] = useState('');
+    const [applyingTheme, setApplyingTheme] = useState(false);
+    const applyingRef = useRef(false);
+    const availableThemes = useMemo(() => getAvailableGalleryThemes(themeAvailability), [themeAvailability]);
     const closeRef = useRef(null);
     const currentPresetId = currentTheme?.preset?.id || '';
-    const currentPreset = availableThemes.find(theme => theme.id === currentPresetId) || null;
+    const currentPreset = availableThemes.find(theme => theme.id === currentPresetId) || (currentPresetId === 'atelier-editorial' ? getPrebuiltTheme(currentPresetId) : null);
     const limited = planAccess?.storeBuilderAccess !== 'full';
 
     const filteredThemes = useMemo(() => {
@@ -118,7 +124,7 @@ export default function ThemeGallery({
             (style === 'All styles' || theme.style === style) &&
             (!query || [theme.name, theme.description, theme.industry, theme.style, ...theme.tags].join(' ').toLowerCase().includes(query))
         ));
-    }, [industry, search, style]);
+    }, [availableThemes, industry, search, style]);
 
     const cardPreviewThemes = useMemo(() => {
         const resolved = new Map();
@@ -130,7 +136,7 @@ export default function ThemeGallery({
             }
         });
         return resolved;
-    }, [currentTheme, planAccess, branding, shopName]);
+    }, [availableThemes, currentTheme, planAccess, branding, shopName]);
 
     const previewResolution = useMemo(() => {
         if (!previewTheme) return { theme: null, error: '' };
@@ -147,7 +153,7 @@ export default function ThemeGallery({
         document.body.style.overflow = 'hidden';
         closeRef.current?.focus();
         const onKeyDown = event => {
-            if (event.key !== 'Escape') return;
+            if (event.key !== 'Escape' || applyingTheme) return;
             if (pendingTheme) setPendingTheme(null);
             else if (previewTheme) setPreviewTheme(null);
             else onClose();
@@ -157,12 +163,35 @@ export default function ThemeGallery({
             document.body.style.overflow = previousOverflow;
             document.removeEventListener('keydown', onKeyDown);
         };
-    }, [onClose, open, pendingTheme, previewTheme]);
+    }, [applyingTheme, onClose, open, pendingTheme, previewTheme]);
 
     if (!open) return null;
 
-    const applyPendingTheme = () => {
-        onApply(pendingTheme);
+    const applyPendingTheme = async () => {
+        if (applyingRef.current) return;
+        setApplicationError('');
+        if (pendingTheme?.id === 'atelier-editorial') {
+            if (!isGalleryThemeAvailable(pendingTheme, themeAvailability)) {
+                setApplicationError('Atelier Editorial is no longer available for this store. Reload Store Builder to refresh availability.');
+                setPendingTheme(null);
+                setPreviewTheme(null);
+                return;
+            }
+            applyingRef.current = true;
+            setApplyingTheme(true);
+            try {
+                if (await onApply(pendingTheme) === false) {
+                    setApplicationError('The theme could not be applied. Your current draft is retained.');
+                    return;
+                }
+            } catch {
+                setApplicationError('The theme could not be applied. Your current draft is retained.');
+                return;
+            } finally {
+                applyingRef.current = false;
+                setApplyingTheme(false);
+            }
+        } else onApply(pendingTheme);
         setPendingTheme(null);
         setPreviewTheme(null);
         onClose();
@@ -182,13 +211,14 @@ export default function ThemeGallery({
                             <BuilderButton type="button" onClick={() => setPendingTheme(previewTheme)} disabled={previewTheme.id === currentPresetId && Number(currentTheme?.preset?.version) === previewTheme.version}>{previewTheme.id === currentPresetId && Number(currentTheme?.preset?.version) === previewTheme.version ? 'Current theme' : 'Use theme'}</BuilderButton>
                         </>
                     )}
-                    <button ref={closeRef} type="button" aria-label="Close theme gallery" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><X size={20} /></button>
+                    <button ref={closeRef} type="button" aria-label="Close theme gallery" onClick={onClose} disabled={applyingTheme} className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><X size={20} /></button>
                 </div>
             </header>
 
             {previewTheme ? (
                 <main className="h-[calc(100vh-65px)] overflow-auto p-3 sm:p-5">
                     <div className="mx-auto max-w-[1500px]">
+                        {applicationError && <p role="alert" className="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{applicationError}</p>}
                         <button type="button" onClick={() => setPreviewTheme(null)} className="mb-3 min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">Back to themes</button>
                         {previewResolution.error ? (
                             <div className="rounded-lg border border-red-200 bg-white p-8 text-center"><p className="font-black text-red-800">Theme preview unavailable</p><p className="mt-2 text-sm text-red-700">{previewResolution.error}</p></div>
@@ -215,6 +245,7 @@ export default function ThemeGallery({
             ) : (
                 <main className="h-[calc(100vh-65px)] overflow-y-auto">
                     <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6 sm:py-7">
+                        {applicationError && <p role="alert" className="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{applicationError}</p>}
                         <div className="grid gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(260px,1fr)_auto_auto] lg:items-end">
                             <label className="block">
                                 <span className="mb-2 block text-xs font-black uppercase tracking-wide text-slate-500">Find a theme</span>
@@ -235,6 +266,8 @@ export default function ThemeGallery({
                                 <h3 className="text-lg font-black text-slate-950">Choose a starting point</h3>
                                 <p className="mt-1 text-sm text-slate-600">Preview with your current products and content. Applying a theme never publishes automatically.</p>
                                 <p className="mt-1 text-sm font-bold text-slate-700">Current design: {currentPreset ? `Based on ${currentPreset.name}` : currentPresetId ? `Based on ${currentPresetId}` : 'Custom'}</p>
+                                {currentTheme?.presentationVariant === 'atelier-editorial' && currentPresetId !== 'atelier-editorial' && <p className="mt-1 text-sm text-slate-600">Current page presentation: Atelier Editorial. Appearance-only changes retain its structure.</p>}
+                                {currentPresetId === 'atelier-editorial' && currentTheme?.presentationVariant !== 'atelier-editorial' && <p className="mt-1 text-sm text-slate-600">Atelier appearance-only adaptation. Your existing page structure is retained.</p>}
                             </div>
                             <p className="text-sm font-bold text-slate-500">{filteredThemes.length} theme{filteredThemes.length === 1 ? '' : 's'}</p>
                         </div>
@@ -252,7 +285,7 @@ export default function ThemeGallery({
                 </main>
             )}
 
-            {pendingTheme && <ApplyThemeDialog theme={pendingTheme} limited={limited} onCancel={() => setPendingTheme(null)} onConfirm={applyPendingTheme} />}
+            {pendingTheme && <ApplyThemeDialog theme={pendingTheme} limited={limited} busy={applyingTheme} onCancel={() => setPendingTheme(null)} onConfirm={applyPendingTheme} />}
         </div>
     );
 }

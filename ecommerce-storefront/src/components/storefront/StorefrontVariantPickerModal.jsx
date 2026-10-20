@@ -1,5 +1,8 @@
 "use client";
 
+import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+import {useAtelierDialog} from '@scaleup/storefront-renderer';
+import {useStorefrontTheme} from '@/components/storefront/StorefrontThemeProvider';
 import SafeProductImage from "@/components/storefront/SafeProductImage";
 import { getImageUrlFromValue, getProductImageAlt } from "@/lib/seo";
 import { Loader2, X } from "lucide-react";
@@ -19,13 +22,16 @@ export default function StorefrontVariantPickerModal({
     onClose,
     onSelectVariant,
 }) {
+    const {theme} = useStorefrontTheme();
+    const atelier = getStorefrontPresentationVariant(theme) === 'atelier-editorial';
+    const dialogRef = useAtelierDialog({enabled: atelier, open, onClose, busy: loading});
     if (!open) return null;
 
     const variants = (product?.variants || []).filter((variant) => variant?.isActive !== false && variant?.status !== "archived");
     const image = product?.images?.[0] || product?.imageUrl || "";
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="variant-picker-title">
+        <div ref={dialogRef} data-atelier-dialog={atelier ? "variant-picker" : undefined} className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="variant-picker-title">
             <div className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 sm:max-w-lg sm:rounded-[2rem]">
                 <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
                     <div>
@@ -40,6 +46,7 @@ export default function StorefrontVariantPickerModal({
                     <button
                         type="button"
                         onClick={onClose}
+                        disabled={atelier && loading}
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-950"
                         aria-label="Close variant selector"
                     >

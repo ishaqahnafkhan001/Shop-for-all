@@ -5,7 +5,7 @@ import { ImageOff, Zap } from 'lucide-react';
 import { shouldUseUnoptimizedImage } from '../imageDomains.js';
 import { getImageUrlFromValue, getProductImageAlt } from '../media.js';
 
-const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount, productTitle, imageAltText }) {
+const ProductImageGallery = memo(function ProductImageGallery({ images, category, displayDiscount, productTitle, imageAltText, presentationVariant }) {
     const [activeIdx,    setActiveIdx]    = useState(0);
     const [isZoomed,     setIsZoomed]     = useState(false);
     const [failedImages, setFailedImages] = useState(() => new Set());
@@ -42,7 +42,7 @@ const ProductImageGallery = memo(function ProductImageGallery({ images, category
     };
 
     return (
-        <div className="min-w-0 lg:sticky lg:top-28">
+        <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'gallery' : undefined} className="min-w-0 lg:sticky lg:top-28">
             <div
                 className="group relative flex aspect-[4/5] max-h-[620px] min-h-[320px] cursor-crosshair items-center justify-center overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-teal-50/50 p-4 shadow-sm shadow-slate-200/70 transition-all duration-500 hover:shadow-xl hover:shadow-teal-100/70 sm:aspect-[5/4] sm:p-6 lg:aspect-[4/5] lg:rounded-[2.25rem] xl:aspect-square"
                 onMouseEnter={() => setIsZoomed(true)}

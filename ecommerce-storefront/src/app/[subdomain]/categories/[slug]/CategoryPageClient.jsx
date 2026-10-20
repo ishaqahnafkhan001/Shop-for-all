@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getStorefrontPresentationVariant } from "@scaleup/storefront-theme";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Filter, PackageX, Tags, X } from "lucide-react";
@@ -49,6 +50,8 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
     });
     const productActions = useStorefrontProductActions({ subdomain: params?.subdomain || shop?.subdomain });
     const { theme } = useStorefrontTheme();
+    const presentationVariant = getStorefrontPresentationVariant(theme);
+    const atelier = presentationVariant === 'atelier-editorial';
     const productCardColors = theme.colors?.productCard;
     const normalizedProducts = useMemo(() => products.map(normalizeProduct).filter(Boolean), [products]);
     const { desktop: desktopColumns, tablet: tabletColumns, mobile: mobileColumns, spacing } = resolveAllProductsLayout(theme.allProducts, theme.layout, theme.productGridStyle);
@@ -150,6 +153,7 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
                         onChange={(event) => setDraftFilters(prev => ({ ...prev, minPrice: event.target.value }))}
                         className="sf-field rounded-2xl px-3 py-3 text-sm"
                         placeholder="Min"
+                        aria-label={atelier ? "Minimum price" : undefined}
                     />
                     <input
                         type="number"
@@ -158,6 +162,7 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
                         onChange={(event) => setDraftFilters(prev => ({ ...prev, maxPrice: event.target.value }))}
                         className="sf-field rounded-2xl px-3 py-3 text-sm"
                         placeholder="Max"
+                        aria-label={atelier ? "Maximum price" : undefined}
                     />
                 </div>
             </div>
@@ -208,7 +213,7 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
     );
 
     return (
-        <div className="sf-page">
+        <div className={atelier ? "sf-page atelier-catalog" : "sf-page"}>
             <section className="border-b border-slate-200 bg-slate-50/80">
                 <div className="sf-shell-wide py-6 sm:py-10">
                     <Link href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 transition hover:text-[var(--sf-accent)]">
@@ -229,7 +234,7 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
                         </p>
                         </div>
                         {categoryImage && (
-                            <div className="relative mt-6 aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100 shadow-sm lg:mt-0">
+                            <div data-atelier-part={atelier ? "catalog-cover" : undefined} className="relative mt-6 aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100 shadow-sm lg:mt-0">
                                 <SafeProductImage
                                     src={categoryImage}
                                     alt={categoryImageAlt}
@@ -287,7 +292,7 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
                 </div>
 
                 <div className="grid gap-7 lg:grid-cols-[280px_minmax(0,1fr)]">
-                    <aside className="hidden self-start rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm lg:block">
+                    <aside data-atelier-part={atelier ? "catalog-filter" : undefined} className="hidden self-start rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm lg:block">
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-500">Filter products</h2>
                             <Filter size={16} className="text-slate-400" />
@@ -327,6 +332,7 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
                         {normalizedProducts.map((product, index) => (
                             <ProductCard
                                 key={product._id}
+                                presentationVariant={presentationVariant}
                                 product={product}
                                 index={index}
                                 storewideDiscount={shop?.storewideDiscount || 0}
@@ -376,7 +382,7 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
                         }}
                         className="absolute inset-0 bg-slate-950/45"
                     />
-                    <div className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-y-auto rounded-t-[2rem] bg-white p-5 shadow-2xl">
+                    <div data-atelier-part={atelier ? "filter-sheet" : undefined} className="absolute inset-x-0 bottom-0 max-h-[86vh] overflow-y-auto rounded-t-[2rem] bg-white p-5 shadow-2xl">
                         <div className="mb-5 flex items-center justify-between">
                             <h2 id="category-filter-title" className="text-lg font-black text-slate-950">Filter products</h2>
                             <button

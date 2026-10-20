@@ -33,7 +33,7 @@ module.exports = ({ STRUCTURAL_VARIANTS, SECTION_REGISTRY, HOMEPAGE_COMPOSITIONS
         'homepageSections.*.settings.variant': structural,
         'homepageSections.*.desktopSettings': responsive, 'homepageSections.*.mobileSettings': responsive,
         'homepageSections.*.settings.mobileImage': responsive, 'homepageSections.*.settings.mobileImages': responsive,
-        preset: identity, version: locked, migrations: locked, extensions: locked,
+        preset: identity, presentationVariant: identity, version: locked, migrations: locked, extensions: locked,
     }).map(([path, rule]) => [path, Object.freeze({ ...rule })])));
 
     const getThemeCapabilityMetadata = (planAccess = {}) => {
@@ -58,10 +58,13 @@ module.exports = ({ STRUCTURAL_VARIANTS, SECTION_REGISTRY, HOMEPAGE_COMPOSITIONS
         const compositionId = getHomepageComposition(theme.layout?.homepageComposition);
         const composition = HOMEPAGE_COMPOSITIONS[compositionId];
         const variants = contract => ({ allowed: [...contract.values], merchantSelectable: full, reason: full ? '' : plan.advancedDesign.label });
+        const atelier = theme.presentationVariant === 'atelier-editorial';
+        const atelierSectionTypes = ['CategoryList', 'BrandStory', 'PromoBlock'];
         const sections = Object.fromEntries(Object.entries(SECTION_REGISTRY).map(([type, definition]) => [type, {
             editable: editable && (full || limitedEditableSections.includes(type)),
             addable: full && definition.editorEnabled,
-            variants: STRUCTURAL_VARIANTS.sections[type] ? variants(STRUCTURAL_VARIANTS.sections[type]) : null,
+            variants: STRUCTURAL_VARIANTS.sections[type] ? { ...variants(STRUCTURAL_VARIANTS.sections[type]),
+                ...(atelier && atelierSectionTypes.includes(type) ? { merchantSelectable: false, classification: 'theme-controlled', reason: 'Atelier Editorial controls this section structure; content, visibility and spacing remain editable.' } : {}) } : null,
         }]));
         return {
             plan,
@@ -72,7 +75,8 @@ module.exports = ({ STRUCTURAL_VARIANTS, SECTION_REGISTRY, HOMEPAGE_COMPOSITIONS
                     ? 'The first eligible section for each theme slot occupies that position. Other sections follow your list order. Hidden or empty sections do not reserve a slot.'
                     : 'Sections follow your list order between the hero and catalog.',
             },
-            header: variants(STRUCTURAL_VARIANTS.header), hero: variants(STRUCTURAL_VARIANTS.hero),
+            header: { ...variants(STRUCTURAL_VARIANTS.header), ...(theme.presentationVariant === 'atelier-editorial' ? { merchantSelectable: false, reason: 'Atelier Editorial controls its header structure.' } : {}) },
+            hero: { ...variants(STRUCTURAL_VARIANTS.hero), ...(theme.presentationVariant === 'atelier-editorial' ? { merchantSelectable: false, reason: 'Atelier Editorial controls its hero structure.' } : {}) },
             sections, sectionStructure: { editable: full, reason: full ? '' : plan.sections.label },
             layout: { editable: full, reason: full ? '' : plan.advancedDesign.label },
             // Colors and mobile toggles have always been accepted by save validation.
@@ -88,7 +92,7 @@ module.exports = ({ STRUCTURAL_VARIANTS, SECTION_REGISTRY, HOMEPAGE_COMPOSITIONS
         const capabilities = getThemeCapabilities(theme, planAccess);
         const root = normalizedPath.split('.')[0];
         let allowedByPlan = capabilities.plan.editing.enabled;
-        if (restrictedKeys.includes(root) || restrictedVariants.some(parts => parts.join('.') === normalizedPath)) {
+        if (root === 'presentationVariant' || restrictedKeys.includes(root) || restrictedVariants.some(parts => parts.join('.') === normalizedPath)) {
             allowedByPlan = capabilities.plan.access === 'full';
         }
         if (root === 'homepageSections') {
@@ -107,8 +111,11 @@ module.exports = ({ STRUCTURAL_VARIANTS, SECTION_REGISTRY, HOMEPAGE_COMPOSITIONS
             const type = sectionType || theme.homepageSections?.[Number(String(path).split('.')[1])]?.type;
             allowed = capabilities.sections[type]?.variants?.allowed;
         }
-        return { ...rule, classification: inherited ? 'inherited' : rule.classification,
-            merchantEditable: allowedByPlan && !rule.commandOnly, allowedByPlan, ...(allowed ? { allowed } : {}) };
+        const presentationControlled = theme.presentationVariant === 'atelier-editorial' && (['header.variant', 'hero.variant'].includes(normalizedPath)
+            || (normalizedPath === 'homepageSections.*.settings.variant' && capabilities.sections[sectionType || theme.homepageSections?.[Number(String(path).split('.')[1])]?.type]?.variants?.merchantSelectable === false));
+        return { ...rule, classification: presentationControlled ? 'theme-controlled' : inherited ? 'inherited' : rule.classification,
+            merchantEditable: allowedByPlan && !rule.commandOnly && !presentationControlled, allowedByPlan, ...(allowed ? { allowed } : {}),
+            ...(presentationControlled ? { reason: 'Atelier Editorial controls this structure.' } : {}) };
     };
 
     const getThemeEditorRestriction = (group, { theme = {}, planAccess = {}, sectionIndex = -1 } = {}) => {
@@ -136,6 +143,8 @@ module.exports = ({ STRUCTURAL_VARIANTS, SECTION_REGISTRY, HOMEPAGE_COMPOSITIONS
         if (caps.plan.access === 'full') return;
         const current = normalizeTheme(currentTheme);
         const incoming = normalizeTheme(incomingTheme);
+        if ((completeSnapshot || incomingTheme.presentationVariant !== undefined)
+            && !deepEqual(incoming.presentationVariant, current.presentationVariant)) reject(caps.layout.reason, 'advancedDesign');
         for (const key of restrictedKeys) {
             if ((completeSnapshot || incomingTheme[key] !== undefined) && !deepEqual(incoming[key], current[key])) reject(caps.layout.reason, 'advancedDesign');
         }

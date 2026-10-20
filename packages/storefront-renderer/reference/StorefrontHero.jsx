@@ -3,6 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { getStorefrontPresentationVariant } from '@scaleup/storefront-theme';
+import { AtelierHero } from '../atelier/AtelierHero';
 
 import {
     EditorSelectionFrame,
@@ -257,6 +259,8 @@ export function StorefrontHero({ theme, shopName, storewideDiscount = 0, LinkCom
     const heroSlides = getHeroSlides(hero);
     const [activeHeroIndex, setActiveHeroIndex] = useState(0);
     const [heroPaused, setHeroPaused] = useState(false);
+    const [manuallyPaused, setManuallyPaused] = useState(false);
+    const atelier = getStorefrontPresentationVariant(theme) === 'atelier-editorial';
     const activeHeroSlide = heroSlides[activeHeroIndex % heroSlides.length] || normalizeHeroSlide({}, 0, hero);
     const activeHeroImage = activeHeroSlide.desktopImage || activeHeroSlide.mobileImage;
     const activeMobileHeroImage = activeHeroSlide.mobileImage || activeHeroImage;
@@ -278,10 +282,10 @@ export function StorefrontHero({ theme, shopName, storewideDiscount = 0, LinkCom
     }, [activeHeroIndex, heroSlides.length]);
 
     useEffect(() => {
-        if (!hasMultipleHeroSlides || heroPaused) return undefined;
+        if (!hasMultipleHeroSlides || heroPaused || (atelier && (manuallyPaused || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches))) return undefined;
         const timer = window.setInterval(() => setActiveHeroIndex((current) => (current + 1) % heroSlides.length), 5000);
         return () => window.clearInterval(timer);
-    }, [hasMultipleHeroSlides, heroPaused, heroSlides.length]);
+    }, [hasMultipleHeroSlides, heroPaused, heroSlides.length, atelier, manuallyPaused]);
 
     const model = {
         activeHeroImage,
@@ -308,7 +312,7 @@ export function StorefrontHero({ theme, shopName, storewideDiscount = 0, LinkCom
     };
     const variant = hero.variant || "fullBleed";
 
-    if (hero.hidden || !heroSlides.length) return <h1 className="sr-only">{shopName || activeHeroSlide.title || hero.title || "Online store"}</h1>;
+    if (hero.hidden || !heroSlides.length || (atelier && Array.isArray(hero.bannerSlides) && hero.bannerSlides.length === 0)) return <h1 className="sr-only">{shopName || activeHeroSlide.title || hero.title || "Online store"}</h1>;
 
     return (
         <EditorSelectionFrame editor={editor} id="hero" label="Hero Banner" locked>
@@ -319,7 +323,8 @@ export function StorefrontHero({ theme, shopName, storewideDiscount = 0, LinkCom
                 onFocusCapture={() => setHeroPaused(true)}
                 onBlurCapture={() => setHeroPaused(false)}
             >
-                {variant === "centered" ? <FullBleedHero model={model} LinkComponent={LinkComponent} centered />
+                {atelier ? <AtelierHero model={model} media={<HeroMedia model={model} cover={false} className="atelier-hero-picture" />} LinkComponent={LinkComponent} paused={manuallyPaused} onPause={() => setManuallyPaused(value => !value)} />
+                    : variant === "centered" ? <FullBleedHero model={model} LinkComponent={LinkComponent} centered />
                     : variant === "fullBleed" ? <FullBleedHero model={model} LinkComponent={LinkComponent} />
                         : <PanelHero model={model} LinkComponent={LinkComponent} variant={variant} />}
             </div>

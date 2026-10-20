@@ -1,3 +1,4 @@
+import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
 import Navbar from '@/components/storefront/Navbar';
 import StorefrontFooter from '@/components/storefront/StorefrontFooter';
 import StorefrontThemeProvider from '@/components/storefront/StorefrontThemeProvider';
@@ -42,7 +43,10 @@ export default async function VendorLayout({ children, params }) {
                 <CartProvider subdomain={subdomain}>
 
                     {/* For popup notifications */}
-                    <Toaster position="bottom-right" />
+                    <Toaster position={getStorefrontPresentationVariant(settings.theme) === 'atelier-editorial' ? 'top-right' : 'bottom-right'} {...(getStorefrontPresentationVariant(settings.theme) === 'atelier-editorial' ? {
+                        containerStyle: {top: '1rem', zIndex: 100},
+                        toastOptions: {style: {background: 'var(--foreground)',color: 'var(--background)',fontFamily: 'var(--sf-body-font)',borderRadius: '4px'}}
+                    } : {})} />
 
                     <Navbar subdomain={subdomain} />
 

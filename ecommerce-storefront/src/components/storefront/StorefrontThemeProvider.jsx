@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useMemo } from 'react';
+import { getStorefrontPresentationVariant } from '@scaleup/storefront-theme';
 import { getReferenceThemeStyle } from '@/components/storefront/ReferenceStorefront';
 import { FALLBACK_THEME, getThemeCssVars } from '@/lib/theme';
 
@@ -31,7 +32,7 @@ export default function StorefrontThemeProvider({ subdomain, settings = null, ch
 
     return (
         <StorefrontThemeContext.Provider value={contextValue}>
-            <div className="sf-presentation" style={style}>{children}</div>
+            <div className="sf-presentation" style={style} data-sf-presentation={getStorefrontPresentationVariant(theme) === 'atelier-editorial' ? 'atelier-editorial' : undefined}>{children}</div>
         </StorefrontThemeContext.Provider>
     );
 }

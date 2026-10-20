@@ -1,0 +1,65 @@
+[
+  {
+    "id": "modern-general",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "minimal-general",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "modern-fashion",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "editorial-fashion",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "luxury-jewellery",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "minimal-jewellery",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "soft-beauty",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "modern-electronics",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  },
+  {
+    "id": "fresh-grocery",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": true,
+    "screenshotBytesEqual": true
+  }
+]

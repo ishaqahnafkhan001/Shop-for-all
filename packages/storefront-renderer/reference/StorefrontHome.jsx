@@ -1,6 +1,6 @@
 "use client";
 
-import { getEnabledHomepageSections, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
+import { getEnabledHomepageSections, getStorefrontPresentationVariant, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
 import {
     DefaultLink,
     getReferenceThemeStyle,
@@ -50,6 +50,7 @@ export function ReferenceStorefrontHome({
     editor,
 }) {
     const theme = normalizeTheme(themeCandidate);
+    const presentationVariant = getStorefrontPresentationVariant(theme);
     const layout = theme.layout || {};
     const productCard = {
         ...(theme.productCard || {}),
@@ -88,6 +89,7 @@ export function ReferenceStorefrontHome({
             catalogProducts={catalogProducts}
             storewideDiscount={storewideDiscount}
             productCard={productCard}
+            presentationVariant={presentationVariant}
             sectionColors={sectionColors}
             layout={layout}
             mobile={theme.mobile}
@@ -150,8 +152,9 @@ export function ReferenceStorefrontHome({
     );
 
     return (
-        <div data-homepage-composition={layout.homepageComposition} className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
+        <div data-homepage-composition={layout.homepageComposition} data-atelier-home={presentationVariant === 'atelier-editorial' ? '' : undefined} className="min-w-0 overflow-x-hidden bg-white" style={getReferenceThemeStyle(theme)}>
             <StorefrontComposition
+                presentationVariant={presentationVariant}
                 layout={layout}
                 sections={enabledSections}
                 isAvailable={isAvailable}

@@ -1,0 +1,110 @@
+[
+  {
+    "id": "modern-general",
+    "device": "desktop",
+    "markupEqual": false,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "minimal-general",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "modern-fashion",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "editorial-fashion",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "luxury-jewellery",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "minimal-jewellery",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "soft-beauty",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "modern-electronics",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "fresh-grocery",
+    "device": "desktop",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "modern-general",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "minimal-general",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "modern-fashion",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "editorial-fashion",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "luxury-jewellery",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": true
+  },
+  {
+    "id": "minimal-jewellery",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "soft-beauty",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "modern-electronics",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  },
+  {
+    "id": "fresh-grocery",
+    "device": "mobile",
+    "markupEqual": true,
+    "computedStylesEqual": false
+  }
+]

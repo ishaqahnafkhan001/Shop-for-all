@@ -1,0 +1,9 @@
+{
+  "gitDiffCheck": {
+    "pass": true,
+    "output": ""
+  },
+  "newSourceWhitespace": "pass",
+  "oldAssertionsAndFrozenBaselines": "unchanged",
+  "environmentFilesChanged": false
+}

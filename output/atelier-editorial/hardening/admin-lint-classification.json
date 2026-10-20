@@ -1,0 +1,222 @@
+[
+  {
+    "file": "ecommerce-admin/src/components/dashboard/Topbar.jsx",
+    "line": 11,
+    "column": 5,
+    "severity": 2,
+    "rule": "no-unused-vars",
+    "error": "'Check' is defined but never used.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/components/dashboard/Topbar.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/components/dashboard/Topbar.jsx",
+    "line": 391,
+    "column": 13,
+    "severity": 2,
+    "rule": "react-hooks/set-state-in-effect",
+    "error": "Error: Calling setState synchronously within an effect can trigger cascading renders",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/components/dashboard/Topbar.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx",
+    "line": 163,
+    "column": 23,
+    "severity": 2,
+    "rule": "react-hooks/set-state-in-effect",
+    "error": "Error: Calling setState synchronously within an effect can trigger cascading renders",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx",
+    "line": 63,
+    "column": 39,
+    "severity": 2,
+    "rule": "no-unused-vars",
+    "error": "'setTheme' is defined but never used.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+    "line": 18,
+    "column": 5,
+    "severity": 2,
+    "rule": "react-hooks/refs",
+    "error": "Error: Cannot access refs during render",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+    "line": 23,
+    "column": 5,
+    "severity": 2,
+    "rule": "react-hooks/refs",
+    "error": "Error: Cannot access refs during render",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js",
+    "line": 65,
+    "column": 8,
+    "severity": 1,
+    "rule": "react-hooks/exhaustive-deps",
+    "error": "React Hook useEffect has a missing dependency: 'persist'. Either include it or remove the dependency array.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/hooks/useAutosaveRecovery.js) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx",
+    "line": 508,
+    "column": 8,
+    "severity": 1,
+    "rule": "react-hooks/exhaustive-deps",
+    "error": "React Hook useEffect has a missing dependency: 'autosave'. Either include it or remove the dependency array.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+    "line": 86,
+    "column": 14,
+    "severity": 2,
+    "rule": "react-refresh/only-export-components",
+    "error": "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+    "line": 177,
+    "column": 9,
+    "severity": 1,
+    "rule": "react-hooks/exhaustive-deps",
+    "error": "React Hook useMemo has a missing dependency: 'theme'. Either include it or remove the dependency array.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+    "line": 11,
+    "column": 14,
+    "severity": 2,
+    "rule": "react-refresh/only-export-components",
+    "error": "Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+    "line": 139,
+    "column": 8,
+    "severity": 1,
+    "rule": "react-hooks/exhaustive-deps",
+    "error": "React Hook useMemo has unnecessary dependencies: 'branding' and 'shopName'. Either exclude them or remove the dependency array.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/ai-workflows.jsx",
+    "line": 1,
+    "column": 8,
+    "severity": 2,
+    "rule": "no-unused-vars",
+    "error": "'React' is defined but never used.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/ai-workflows.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/ai-workflows.jsx",
+    "line": 77,
+    "column": 10,
+    "severity": 2,
+    "rule": "react-refresh/only-export-components",
+    "error": "Fast refresh only works when a file has exports. Move your component(s) to a separate file.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/ai-workflows.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/builder-mobile.jsx",
+    "line": 1,
+    "column": 8,
+    "severity": 2,
+    "rule": "no-unused-vars",
+    "error": "'React' is defined but never used.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/builder-mobile.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/builder-mobile.jsx",
+    "line": 18,
+    "column": 10,
+    "severity": 2,
+    "rule": "react-refresh/only-export-components",
+    "error": "Fast refresh only works when a file has exports. Move your component(s) to a separate file.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/builder-mobile.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/theme-controls.jsx",
+    "line": 1,
+    "column": 8,
+    "severity": 2,
+    "rule": "no-unused-vars",
+    "error": "'React' is defined but never used.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/theme-controls.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/theme-controls.jsx",
+    "line": 16,
+    "column": 10,
+    "severity": 2,
+    "rule": "react-refresh/only-export-components",
+    "error": "Fast refresh only works when a file has exports. Move your component(s) to a separate file.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/theme-controls.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/theme-presentation.jsx",
+    "line": 1,
+    "column": 8,
+    "severity": 2,
+    "rule": "no-unused-vars",
+    "error": "'React' is defined but never used.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/theme-presentation.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/theme-presentation.jsx",
+    "line": 9,
+    "column": 10,
+    "severity": 2,
+    "rule": "react-refresh/only-export-components",
+    "error": "Fast refresh only works when a file has exports. Move your component(s) to a separate file.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/theme-presentation.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/theme-responsive.jsx",
+    "line": 1,
+    "column": 8,
+    "severity": 2,
+    "rule": "no-unused-vars",
+    "error": "'React' is defined but never used.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/theme-responsive.jsx) under current unchanged ESLint config"
+  },
+  {
+    "file": "ecommerce-admin/tests/fixtures/theme-responsive.jsx",
+    "line": 17,
+    "column": 10,
+    "severity": 2,
+    "rule": "react-refresh/only-export-components",
+    "error": "Fast refresh only works when a file has exports. Move your component(s) to a separate file.",
+    "baseline": "reproduced at HEAD",
+    "command": "ESLint.lintText(git show HEAD:ecommerce-admin/tests/fixtures/theme-responsive.jsx) under current unchanged ESLint config"
+  }
+]

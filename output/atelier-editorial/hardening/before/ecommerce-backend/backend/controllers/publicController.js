@@ -1,0 +1,1339 @@
+const Shop = require('../models/Shop'); // Or wherever your Shop model is
+const Product = require('../models/Product');
+const bcrypt = require('bcryptjs');
+
+const mongoose = require('mongoose');
+const Order = require('../models/Order');
+const InventoryLog = require('../models/InventoryLog');
+const User = require('../models/User'); // We need this to create Guest customers
+const Promotion = require('../models/Promotion');
+const ReturnRequest = require('../models/ReturnRequest');
+const { evaluatePromotion } = require('../services/promotionService');
+const { notifyNewOrder } = require('../services/shopEventNotificationService');
+const { enqueueOrderReceipt } = require('../services/orders/orderEmailService');
+const { decrementVariantStockAtomically } = require('../services/inventoryStockService');
+const {
+    enqueueLowStockAlertsForLogs
+} = require('../services/inventoryLowStockAlertService');
+const {
+    applyScheduledSalesToProducts,
+    getScheduledSaleLinePrice
+} = require('../services/sales/scheduledSaleService');
+const { consumeCheckoutPhoneProof } = require('../services/checkout/checkoutOtpService');
+const ConsentLog = require('../models/ConsentLog');
+const { recordCheckoutMarketingConsent } = require('../services/marketing/marketingPreferenceService');
+const { createNotification } = require('../services/notificationService');
+const { logAudit } = require('../services/auditLogService');
+const {
+    PUBLIC_PRODUCT_CARD_PROJECT,
+    sanitizePublicProduct
+} = require('../services/publicProductSerializer');
+const {
+    sanitizeOrderForCustomer
+} = require('../services/orderPrivacyService');
+const {
+    normalizeCustomDomain,
+    buildVerifiedCustomDomainQuery
+} = require('../utils/domainUtils');
+const { normalizeBDPhone, maskPhone } = require('../utils/phoneUtils');
+const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
+const {
+    parseMaybeJson,
+    buildProofFromFiles
+} = require('../services/returns/returnProofService');
+const {
+    ORDER_ACCESS_ACTIONS,
+    sendPublicOrderAccessOtp,
+    verifyPublicOrderAccessOtp,
+    requireOrderAccess
+} = require('../services/orders/orderAccessService');
+const { getShippingCostForZone } = require('../services/orders/orderPricingService');
+const { hasFeature } = require('../services/shops/featureAccessService');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
+
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain branding theme themeRevision storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive verification.status verification.phoneVerified verification.isVendorVerified isActive approvalStatus';
+
+const RETURN_WINDOW_HOURS = 24;
+const RETURN_WINDOW_MS = RETURN_WINDOW_HOURS * 60 * 60 * 1000;
+const ACTIVE_RETURN_STATUSES = ['Requested', 'Approved', 'Received'];
+const isObjectId = (value) => /^[0-9a-fA-F]{24}$/.test(String(value || ''));
+const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const cleanText = (value, max = 500) => String(value || '').replace(/<[^>]*>/g, '').trim().slice(0, max);
+
+const getPublicShopBySubdomain = async (subdomain, session = null) => {
+    const identifier = normalizeCustomDomain(subdomain);
+    if (!identifier) return null;
+
+    const shopQuery = identifier.includes('.')
+        ? {
+            ...buildVerifiedCustomDomainQuery(identifier),
+            isActive: true
+        }
+        : {
+            subdomain: identifier,
+            isActive: true
+        };
+
+    const query = Shop.findOne(shopQuery).select('_id subdomain');
+
+    if (session) query.session(session);
+
+    const shop = await query.lean();
+    if (shop && identifier.includes('.') && !(await hasFeature(shop._id, 'customDomain'))) {
+        return null;
+    }
+    return shop;
+};
+
+const buildPublicOrderQuery = (orderLookup, shopId) => ({
+    shop_id: shopId,
+    isDeleted: false,
+    ...(isObjectId(orderLookup)
+        ? { _id: orderLookup }
+        : {
+            $expr: {
+                $regexMatch: {
+                    input: { $toString: '$_id' },
+                    regex: `${escapeRegex(orderLookup)}$`,
+                    options: 'i'
+                }
+            }
+        })
+});
+
+const getPublicOrderByLookup = (orderLookup, shopId) => (
+    Order.findOne(buildPublicOrderQuery(orderLookup, shopId))
+);
+
+const getAccessTokenErrorResponse = (res, err) => res.status(err.statusCode || 401).json({
+    success: false,
+    code: err.code || 'ORDER_ACCESS_REQUIRED',
+    error: err.message || 'Please verify your phone number to access this order.'
+});
+
+const getOrderAccessActions = () => [
+    ORDER_ACCESS_ACTIONS.track,
+    ORDER_ACCESS_ACTIONS.cancel,
+    ORDER_ACCESS_ACTIONS.return
+];
+
+const getReturnWindowEndsAt = (order) => {
+    const deliveredAt = order?.shipping?.deliveredAt || order?.updatedAt || order?.createdAt;
+    if (!deliveredAt) return null;
+    return new Date(new Date(deliveredAt).getTime() + RETURN_WINDOW_MS);
+};
+
+const summarizeReturnRequest = (request) => {
+    if (!request) return null;
+
+    return {
+        exists: true,
+        id: request._id,
+        status: request.status,
+        reason: request.reason,
+        customerNote: request.customerNote || '',
+        refund: {
+            status: request.refund?.status || 'Pending',
+            amount: request.refund?.amount || 0
+        },
+        proof: {
+            images: (request.proof?.images || []).map(image => ({
+                url: image.url,
+                originalName: image.originalName || ''
+            })).filter(image => image.url),
+            ...(request.proof?.video?.url ? {
+                video: {
+                    url: request.proof.video.url,
+                    originalName: request.proof.video.originalName || ''
+                }
+            } : {})
+        },
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt
+    };
+};
+
+const buildReturnEligibility = ({ order, returnRequest }) => {
+    if (!order) {
+        return { canRequestReturn: false, reason: 'Order not found.' };
+    }
+
+    if (order.status !== 'Delivered') {
+        return {
+            canRequestReturn: false,
+            reason: 'Return is available after delivery.'
+        };
+    }
+
+    if (returnRequest && ACTIVE_RETURN_STATUSES.includes(returnRequest.status)) {
+        return {
+            canRequestReturn: false,
+            reason: 'A return request is already submitted.'
+        };
+    }
+
+    const returnWindowEndsAt = getReturnWindowEndsAt(order);
+    if (returnWindowEndsAt && returnWindowEndsAt.getTime() < Date.now()) {
+        return {
+            canRequestReturn: false,
+            reason: 'Return window has expired. Returns must be requested within 24 hours of delivery.',
+            returnWindowEndsAt
+        };
+    }
+
+    return {
+        canRequestReturn: true,
+        reason: null,
+        returnWindowEndsAt
+    };
+};
+
+const restoreCancelledOrderInventory = async ({ order, shopId, userId = null, session }) => {
+    const logs = [];
+
+    for (const item of order.items || []) {
+        const product = await Product.findOne({
+            _id: item.productId,
+            shop_id: shopId,
+            isDeleted: false
+        }).session(session);
+
+        if (!product) {
+            throw new Error(`Product not found while restoring stock: ${item.title}`);
+        }
+
+        const variant = product.variants.id(item.variantId);
+        if (!variant) {
+            throw new Error(`Variant not found while restoring stock: ${item.title}`);
+        }
+
+        const quantity = Number(item.quantity) || 0;
+        const beforeStock = Number(variant.stock || 0);
+        variant.stock = beforeStock + quantity;
+        if (variant.inventory) variant.inventory.stock = variant.stock;
+
+        await product.save({ session });
+
+        logs.push({
+            shop_id: shopId,
+            productId: product._id,
+            variantId: variant._id,
+            change: quantity,
+            type: 'CANCEL',
+            referenceId: order._id,
+            beforeStock,
+            afterStock: variant.stock,
+            user: userId,
+            note: 'Customer cancelled pending order — stock restored'
+        });
+    }
+
+    if (logs.length > 0) {
+        await InventoryLog.insertMany(logs, { session });
+    }
+
+    return logs;
+};
+
+const buildReturnItemsFromOrder = (order, submittedItems = []) => {
+    const requested = Array.isArray(submittedItems) && submittedItems.length > 0
+        ? submittedItems
+        : order.items.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity
+        }));
+
+    return requested.map(requestedItem => {
+        const orderItem = order.items.find(item => (
+            String(item.productId?._id || item.productId) === String(requestedItem.productId) &&
+            (!requestedItem.variantId || String(item.variantId) === String(requestedItem.variantId))
+        ));
+
+        if (!orderItem) {
+            throw new Error('Return item does not belong to this order.');
+        }
+
+        const quantity = Number(requestedItem.quantity);
+        if (!Number.isFinite(quantity) || quantity < 1 || quantity > Number(orderItem.quantity || 0)) {
+            throw new Error(`Invalid return quantity for ${orderItem.title}.`);
+        }
+
+        return {
+            productId: orderItem.productId?._id || orderItem.productId,
+            variantId: orderItem.variantId,
+            title: orderItem.title,
+            sku: orderItem.sku || '',
+            quantity,
+            refundAmount: Math.max(0, Number(orderItem.price || 0) * quantity)
+        };
+    });
+};
+
+exports.createPublicOrder = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const {
+            subdomain,
+            customer,
+            shippingAddress,
+            shippingZone,
+            shipping,
+            items,
+            promotionCode,
+            source,
+            consent,
+            checkoutSessionId,
+            phoneVerificationToken,
+            idempotencyKey
+        } = req.body;
+
+        // =========================
+        // BASIC VALIDATION
+        // =========================
+        if (!subdomain) {
+            throw new Error('Subdomain is required');
+        }
+
+        if (!customer?.email || !customer?.fullName || !customer?.phone) {
+            throw new Error('Customer fullName, email and phone are required');
+        }
+
+        const normalizedCustomerPhone = normalizeBDPhone(customer.phone);
+        if (!normalizedCustomerPhone) {
+            throw new Error('Enter a valid Bangladesh mobile number.');
+        }
+
+        if (!Array.isArray(items) || items.length === 0) {
+            throw new Error('Order must contain at least one item');
+        }
+
+        if (consent?.checkoutPolicyAccepted !== true) {
+            throw new Error('Policy consent is required before checkout.');
+        }
+
+        // =========================
+        // SHOP CHECK
+        // =========================
+        const shop = await getPublicShopBySubdomain(subdomain, session);
+
+        if (!shop) {
+            throw new Error('Shop not found');
+        }
+
+        const checkoutIdempotencyKey = String(idempotencyKey || req.get('idempotency-key') || '').trim().slice(0, 120);
+
+        // =========================
+        // SHIPPING NORMALIZATION
+        // =========================
+        const requestedZone = shipping?.zone || shippingZone;
+
+        if (!requestedZone) {
+            throw new Error('Shipping zone is required');
+        }
+
+        if (!['Inside Dhaka', 'Outside Dhaka'].includes(requestedZone)) {
+            throw new Error('Invalid shipping zone');
+        }
+
+        const normalizedShippingCost = getShippingCostForZone(requestedZone);
+
+        let normalizedAddress = shipping?.address;
+
+        if (!normalizedAddress && shippingAddress && typeof shippingAddress === 'object') {
+            normalizedAddress = {
+                fullName: shippingAddress.fullName || customer.fullName,
+                phone: shippingAddress.phone || normalizedCustomerPhone,
+                addressLine: shippingAddress.addressLine || shippingAddress.address,
+                city: shippingAddress.city
+            };
+        }
+
+        if (!normalizedAddress && typeof shippingAddress === 'string') {
+            const parts = shippingAddress
+                .split(',')
+                .map(part => part.trim())
+                .filter(Boolean);
+
+            const city = parts.length > 1 ? parts[parts.length - 1] : 'Dhaka';
+            const addressLine = parts.length > 1
+                ? parts.slice(0, -1).join(', ')
+                : parts[0];
+
+            normalizedAddress = {
+                fullName: customer.fullName,
+                phone: normalizedCustomerPhone,
+                addressLine,
+                city
+            };
+        }
+
+        if (normalizedAddress?.phone) {
+            normalizedAddress.phone = normalizeBDPhone(normalizedAddress.phone) || normalizedAddress.phone;
+        }
+
+        if (
+            !normalizedAddress?.fullName ||
+            !normalizedAddress?.phone ||
+            !normalizedAddress?.addressLine ||
+            !normalizedAddress?.city
+        ) {
+            throw new Error(
+                'Shipping address is incomplete. fullName, phone, addressLine and city are required.'
+            );
+        }
+
+        let orderCustomer = await User.findOne({
+            email: customer.email,
+            shop_id: shop._id,
+            role: 'Customer'
+        }).session(session);
+
+        if (checkoutIdempotencyKey && orderCustomer) {
+            const existingOrder = await Order.findOne({
+                shop_id: shop._id,
+                customer: orderCustomer._id,
+                checkoutIdempotencyKey,
+                isDeleted: false
+            }).session(session);
+
+            if (existingOrder) {
+                await session.abortTransaction();
+                return res.status(200).json({
+                    success: true,
+                    idempotent: true,
+                    message: 'Order already placed successfully',
+                    orderId: existingOrder._id,
+                    total: existingOrder.pricing?.total || 0,
+                    order: sanitizeOrderForCustomer(existingOrder)
+                });
+            }
+        }
+
+        await consumeCheckoutPhoneProof({
+            shopId: shop._id,
+            phone: normalizedCustomerPhone,
+            checkoutSessionId,
+            items,
+            verificationToken: phoneVerificationToken,
+            session
+        });
+
+        // =========================
+        // CUSTOMER / GUEST USER
+        // =========================
+        if (!orderCustomer) {
+            const rawPassword = 'GuestUser_' + Math.random().toString(36).slice(-8);
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(rawPassword, salt);
+
+            const [newUser] = await User.create([{
+                shop_id: shop._id,
+                fullName: customer.fullName,
+                email: customer.email,
+                phone: normalizedCustomerPhone,
+                role: 'Customer',
+                password: hashedPassword
+            }], { session });
+
+            orderCustomer = newUser;
+        }
+
+        if (orderCustomer.status === 'Suspended') {
+            throw new Error('This customer account is suspended.');
+        }
+
+        // =========================
+        // SECURE ITEM PROCESSING
+        // =========================
+        const itemsWithSecurePrices = [];
+        const promotionItems = [];
+        const logsToInsert = [];
+
+        let calculatedSubtotal = 0;
+
+        for (const item of items) {
+            const productId = item.productId || item.product;
+            const quantity = Number(item.quantity);
+
+            if (!productId) {
+                throw new Error('Each item must include product or productId');
+            }
+
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+                throw new Error('Each item must include a valid quantity');
+            }
+
+            const product = await Product.findOne({
+                _id: productId,
+                shop_id: shop._id,
+                isDeleted: false
+            }).session(session);
+
+            if (!product) {
+                throw new Error('Product not found.');
+            }
+
+            if (!product.isActive || product.status !== 'Published') {
+                throw new Error(`Product "${product.title}" is not available.`);
+            }
+
+            const variant = item.variantId
+                ? product.variants.id(item.variantId)
+                : product.variants.find(v => v.isActive && v.stock >= quantity)
+                || product.variants.find(v => v.stock >= quantity)
+                || product.variants.find(v => v.isActive)
+                || product.variants[0];
+
+            if (!variant) {
+                throw new Error(`Variant not found for ${product.title}`);
+            }
+
+            if (!variant.isActive) {
+                throw new Error(`Selected variant for ${product.title} is not available.`);
+            }
+
+            const stockUpdate = await decrementVariantStockAtomically({
+                product,
+                shopId: shop._id,
+                variantId: variant._id,
+                quantity,
+                session
+            });
+
+            const beforeStock = stockUpdate.beforeStock;
+
+            const variantPrice = variant.pricing?.price ?? variant.priceOverride;
+            const basePrice = Number.isFinite(Number(variantPrice))
+                ? Number(variantPrice)
+                : Number(product.pricing?.sellingPrice);
+
+            const discount = Number(product.pricing?.discount) || 0;
+
+            const productDiscountPrice = Math.round(
+                basePrice - ((basePrice * discount) / 100)
+            );
+            const scheduledSalePrice = await getScheduledSaleLinePrice({
+                shopId: shop._id,
+                product,
+                variant,
+                session
+            });
+            const unitPrice = scheduledSalePrice?.unitPrice ?? productDiscountPrice;
+
+            const buyingPrice = Number(variant.pricing?.costPrice ?? product.pricing?.buyingPrice);
+            const itemTotal = unitPrice * quantity;
+
+            if (!Number.isFinite(unitPrice) || !Number.isFinite(itemTotal)) {
+                throw new Error(`Invalid pricing data for ${product.title}`);
+            }
+
+            if (!Number.isFinite(buyingPrice)) {
+                throw new Error(`Invalid buying price for ${product.title}`);
+            }
+
+            itemsWithSecurePrices.push({
+                productId: product._id,
+                variantId: variant._id,
+                title: product.title,
+                sku: variant.sku,
+                attributes: variant.attributes,
+                quantity,
+                price: unitPrice,
+                buyingPrice,
+                total: itemTotal,
+                ...(scheduledSalePrice?.scheduledSale ? { scheduledSale: scheduledSalePrice.scheduledSale } : {})
+            });
+
+            promotionItems.push({
+                productId: product._id,
+                category: product.category,
+                collections: product.collections || [],
+                quantity,
+                price: unitPrice,
+                total: itemTotal
+            });
+
+            calculatedSubtotal += itemTotal;
+
+            logsToInsert.push({
+                shop_id: shop._id,
+                productId: product._id,
+                variantId: variant._id,
+                change: -quantity,
+                type: 'ORDER',
+                beforeStock,
+                afterStock: stockUpdate.afterStock,
+                user: orderCustomer._id,
+                note: 'Public Storefront Order'
+            });
+        }
+
+        if (!Number.isFinite(calculatedSubtotal)) {
+            throw new Error('Unable to calculate subtotal for this order');
+        }
+
+        // =========================
+        // PROMOTION / COUPON
+        // =========================
+        let discountAmount = 0;
+        let finalShippingCost = normalizedShippingCost;
+        let promotionSnapshot = null;
+
+        const cleanPromotionCode = promotionCode?.trim()?.toUpperCase();
+
+        if (cleanPromotionCode) {
+            const promotionResult = await evaluatePromotion({
+                shopId: shop._id,
+                code: cleanPromotionCode,
+                subtotal: calculatedSubtotal,
+                items: promotionItems,
+                customerId: orderCustomer._id,
+                customerEmail: customer.email,
+                session
+            });
+
+            if (!promotionResult.valid) {
+                throw new Error(promotionResult.error || 'Coupon is not valid');
+            }
+
+            discountAmount = promotionResult.discountAmount || 0;
+
+            if (promotionResult.freeShipping) {
+                finalShippingCost = 0;
+            }
+
+            promotionSnapshot = {
+                code: promotionResult.promotion.code,
+                type: promotionResult.promotion.type,
+                discountAmount,
+                freeShipping: Boolean(promotionResult.freeShipping)
+            };
+        }
+
+        // =========================
+        // FINAL TOTAL
+        // =========================
+        const totalAmount =
+            Math.max(0, calculatedSubtotal - discountAmount) + finalShippingCost;
+
+        // =========================
+        // CREATE ORDER
+        // =========================
+        const [newOrder] = await Order.create([{
+            shop_id: shop._id,
+            customer: orderCustomer._id,
+            items: itemsWithSecurePrices,
+            pricing: {
+                subtotal: calculatedSubtotal,
+                discount: discountAmount,
+                shipping: finalShippingCost,
+                tax: 0,
+                total: totalAmount
+            },
+            promotion: promotionSnapshot,
+            shipping: {
+                zone: requestedZone,
+                cost: finalShippingCost,
+                address: normalizedAddress
+            },
+            payment: {
+                method: req.body.payment?.method || req.body.paymentMethod || 'COD',
+                status: 'Pending'
+            },
+            status: 'Pending',
+            source: source || 'storefront',
+            checkoutIdempotencyKey
+        }], { session });
+
+        await ConsentLog.create([{
+            shop_id: shop._id,
+            customer_id: orderCustomer._id,
+            order_id: newOrder._id,
+            type: 'checkout_policy',
+            version: consent.version || 'checkout_policy_v1',
+            acceptedAt: new Date(),
+            ip: req.ip || req.headers['x-forwarded-for'] || '',
+            userAgent: req.headers['user-agent'] || ''
+        }], { session });
+        if (consent.marketingEmailOptIn === true) {
+            await recordCheckoutMarketingConsent({
+                shopId: shop._id, customerId: orderCustomer._id, orderId: newOrder._id,
+                ip: req.ip, userAgent: req.headers['user-agent'], session
+            });
+        }
+        await enqueueOrderReceipt({ shopId: shop._id, order: newOrder, customer: orderCustomer, session });
+
+        // =========================
+        // PROMOTION USAGE COUNT
+        // =========================
+        if (promotionSnapshot?.code) {
+            await Promotion.updateOne(
+                {
+                    shop_id: shop._id,
+                    code: promotionSnapshot.code
+                },
+                {
+                    $inc: { usageCount: 1 }
+                }
+            ).session(session);
+        }
+
+        // =========================
+        // INVENTORY LOGS
+        // =========================
+        const logsWithRef = logsToInsert.map(log => ({
+            ...log,
+            referenceId: newOrder._id
+        }));
+        if (logsWithRef.length > 0) {
+            await InventoryLog.insertMany(logsWithRef, { session });
+        }
+
+        await session.commitTransaction();
+
+        await enqueueLowStockAlertsForLogs(logsWithRef);
+
+        notifyNewOrder({
+            shop_id: shop._id,
+            order: newOrder,
+            customer: orderCustomer
+        });
+
+        logAudit({
+            req,
+            shop_id: shop._id,
+            action: 'order.created_after_phone_verification',
+            entityType: 'Order',
+            entityId: newOrder._id,
+            entityLabel: `Order #${String(newOrder._id).slice(-6).toUpperCase()}`,
+            severity: 'info'
+        }).catch(() => {});
+
+        return res.status(201).json({
+            success: true,
+            message: 'Order placed successfully',
+            orderId: newOrder._id,
+            total: totalAmount,
+            order: sanitizeOrderForCustomer(newOrder)
+        });
+
+    } catch (err) {
+        await session.abortTransaction();
+
+        console.error('Public Order Creation Error:', err);
+
+        return res.status(err.statusCode || 400).json({
+            success: false,
+            error: err.message || 'Server error while placing order.',
+            ...(err.code ? { code: err.code } : {})
+        });
+
+    } finally {
+        session.endSession();
+    }
+};
+exports.getPublicShopDetails = async (req, res) => {
+    try {
+        const { subdomain } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 16;
+        const skip = (page - 1) * limit;
+
+        const resolvedShop = await getPublicShopBySubdomain(subdomain);
+        if (!resolvedShop) return res.status(404).json({ error: "Shop not found" });
+        const shop = await Shop.findById(resolvedShop._id)
+            .select(PUBLIC_SHOP_FIELDS)
+            .lean();
+        if (!shop) return res.status(404).json({ error: "Shop not found" });
+        const planAccess = await getShopPlanAccess(shop._id);
+        await applyEffectiveStoreTheme(shop, planAccess);
+        shop.shopVerification = buildPublicShopVerification(shop, {
+            eligible: planAccess.features.publicVerifiedBadge
+        });
+        delete shop.verification;
+        delete shop.isActive;
+        delete shop.approvalStatus;
+
+        const { category, minPrice, maxPrice, sort } = req.query; // ✨ ADDED 'sort'
+        let query = {
+            shop_id: shop._id,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        };
+
+        if (category && category !== 'All') query.category = category;
+
+        if (minPrice || maxPrice) {
+            query['pricing.sellingPrice'] = {}; // FIX: use dot notation for nested fields
+            if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
+            if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
+        }
+
+        let sortQuery = { createdAt: -1, _id: 1 };
+
+        if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
+        else if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
+        else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
+        else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
+
+        const [products, totalProducts, categories] = await Promise.all([
+            Product.aggregate([
+                { $match: query },
+                { $sort: sortQuery },
+                { $skip: skip },
+                { $limit: limit },
+                {
+                    $project: {
+                        title: 1,
+                        slug: 1,
+                        category: 1,
+                        collections: 1,
+                        coverMediaId: 1,
+                        images: { $slice: ['$images', 1] },
+                        pricing: PUBLIC_PRODUCT_CARD_PROJECT.pricing,
+                        averageRating: 1,
+                        numReviews: 1,
+                        totalStock: { $sum: '$variants.stock' },
+                        variantCount: { $size: { $ifNull: ['$variants', []] } }
+                    }
+                }
+            ]),
+            Product.countDocuments(query),
+            Product.distinct('category', {
+                shop_id: shop._id,
+                isDeleted: false,
+                isActive: true,
+                status: 'Published'
+            })
+        ]);
+        const pricedProducts = await applyScheduledSalesToProducts({
+            shopId: shop._id,
+            products
+        });
+        const hasMore = totalProducts > (page * limit);
+
+        res.status(200).json({
+            shop,
+            products: pricedProducts.map(sanitizePublicProduct),
+            hasMore,
+            categories
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+
+exports.getPublicProduct = async (req, res) => {
+    try {
+        const shop = await getPublicShopBySubdomain(req.query.subdomain);
+
+        if (!shop) {
+            return res.status(400).json({ error: "Valid shop subdomain is required." });
+        }
+
+        if (!isObjectId(req.params.id)) {
+            return res.status(400).json({ error: "Invalid product ID format." });
+        }
+
+        const product = await Product.findOne({
+            _id: req.params.id,
+            shop_id: shop._id,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        }).lean();
+
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+        res.status(200).json(sanitizePublicProduct(product));
+    } catch (err) {
+        console.error("Error fetching single product:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+// exports.getMyOrders = async (req, res) => {
+//     try {
+//         const customerId = req.user.id || req.user.userId;
+//
+//         // ✨ ADD THESE LOGS
+//         console.log("🔍 Search requested by Customer ID:", customerId);
+//
+//         const orders = await Order.find({ customer: customerId })
+//             .sort({ createdAt: -1 });
+//
+//         console.log(`📦 Found ${orders.length} orders for this ID.`);
+//         res.status(200).json(orders);
+//     } catch (err) {
+//         console.error("Fetch Orders Error:", err);
+//         res.status(500).json({ error: "Failed to fetch order history." });
+//     }
+// };
+
+exports.sendTrackedOrderAccessOtp = async (req, res) => {
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const phone = String(req.body.phone || req.query.phone || '').trim();
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!phone) {
+            return res.status(400).json({ success: false, error: 'Delivery phone number is required.' });
+        }
+
+        const order = await getPublicOrderByLookup(orderLookup, shopId)
+            .select('_id shop_id shipping status')
+            .lean();
+
+        if (!order) {
+            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+        }
+
+        const result = await sendPublicOrderAccessOtp({
+            order,
+            shop: { _id: shopId, shopName: req.tenantName },
+            phone,
+            ip: req.ip || req.headers['x-forwarded-for'] || '',
+            userAgent: req.headers['user-agent'] || ''
+        });
+
+        if (result.success === false) {
+            return res.status(429).json({
+                success: false,
+                code: result.code,
+                error: result.error,
+                retryAfterSeconds: result.retryAfterSeconds
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Verification code sent to ${result.maskedPhone}.`,
+            maskedPhone: result.maskedPhone,
+            resendAvailableAt: result.resendAvailableAt,
+            expiresAt: result.expiresAt
+        });
+    } catch (err) {
+        return res.status(err.statusCode || 500).json({
+            success: false,
+            error: err.statusCode ? err.message : 'Could not send order access code.'
+        });
+    }
+};
+
+exports.verifyTrackedOrderAccessOtp = async (req, res) => {
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const phone = String(req.body.phone || req.query.phone || '').trim();
+        const otp = String(req.body.otp || '').trim();
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!phone || !otp) {
+            return res.status(400).json({ success: false, error: 'Phone number and verification code are required.' });
+        }
+
+        const order = await getPublicOrderByLookup(orderLookup, shopId)
+            .select('_id shop_id shipping status')
+            .lean();
+
+        if (!order) {
+            return res.status(404).json({ success: false, error: 'Order not found. Please check your ID and phone number.' });
+        }
+
+        const result = await verifyPublicOrderAccessOtp({
+            order,
+            shopId,
+            phone,
+            otp,
+            allowedActions: getOrderAccessActions()
+        });
+
+        return res.status(200).json({
+            success: true,
+            accessToken: result.accessToken,
+            expiresAt: result.expiresAt,
+            allowedActions: result.allowedActions
+        });
+    } catch (err) {
+        const status = err.statusCode || (err.code === 'INVALID_OTP' ? 400 : 500);
+        return res.status(status).json({
+            success: false,
+            code: err.code || 'ORDER_ACCESS_VERIFY_FAILED',
+            error: err.message || 'Could not verify order access code.'
+        });
+    }
+};
+
+exports.trackPublicOrder = async (req, res) => {
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        let shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            return res.status(400).json({ error: "Invalid Order ID format." });
+        }
+
+        if (!shopId) {
+            const shop = await getPublicShopBySubdomain(req.query.subdomain);
+            if (!shop) {
+                return res.status(400).json({ error: "Valid shop subdomain is required." });
+            }
+            shopId = shop._id;
+        }
+
+        const orderQuery = buildPublicOrderQuery(orderLookup, shopId);
+
+        const order = await Order.findOne(orderQuery)
+            // Optional: Populating product titles/images makes the tracking page look better!
+            .populate('items.productId', 'title images category')
+            .select('items pricing promotion payment shipping status cancellation timeline createdAt updatedAt')
+            .lean();
+
+        if (!order) {
+            return res.status(404).json({ error: "Order not found. Please check your ID." });
+        }
+
+        try {
+            requireOrderAccess(req, {
+                shopId,
+                orderId: order._id,
+                action: ORDER_ACCESS_ACTIONS.track
+            });
+        } catch (err) {
+            return getAccessTokenErrorResponse(res, err);
+        }
+
+        const [returnRequest, activeReturnRequest] = await Promise.all([
+            ReturnRequest.findOne({
+                shop_id: shopId,
+                order_id: order._id,
+                isDeleted: false
+            }).sort({ createdAt: -1 }).lean(),
+            ReturnRequest.findOne({
+                shop_id: shopId,
+                order_id: order._id,
+                status: { $in: ACTIVE_RETURN_STATUSES },
+                isDeleted: false
+            }).sort({ createdAt: -1 }).lean()
+        ]);
+
+        const returnEligibility = buildReturnEligibility({ order, returnRequest: activeReturnRequest });
+
+        res.status(200).json({
+            _id: order._id,
+            status: order.status,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+            paymentMethod: order.payment?.method || '',
+            paymentStatus: order.payment?.status || 'Pending',
+            paymentTransactionId: order.payment?.transactionId || '',
+            paidAt: order.payment?.paidAt || null,
+            customerName: order.shipping?.address?.fullName || '',
+            items: (order.items || []).map(item => {
+                const clean = item && typeof item === 'object' ? { ...item } : item;
+                if (clean && typeof clean === 'object') delete clean.buyingPrice;
+                return clean;
+            }),
+            shippingAddress: order.shipping?.address
+                ? {
+                    fullName: order.shipping.address.fullName || '',
+                    phone: maskPhone(order.shipping.address.phone || ''),
+                    addressLine: order.shipping.address.addressLine || '',
+                    city: order.shipping.address.city || ''
+                }
+                : null,
+            shippingZone: order.shipping?.zone,
+            shippingCost: order.pricing?.shipping || order.shipping?.cost || 0,
+            shippingCourier: order.shipping?.courier || '',
+            shippingTrackingId: order.shipping?.trackingId || '',
+            shippedAt: order.shipping?.shippedAt || null,
+            deliveredAt: order.shipping?.deliveredAt || null,
+            subtotal: order.pricing?.subtotal || 0,
+            discount: order.pricing?.discount || 0,
+            tax: order.pricing?.tax || 0,
+            totalAmount: order.pricing?.total || 0,
+            promotion: order.promotion || null,
+            cancellation: order.cancellation || null,
+            timeline: order.timeline || [],
+            canCancel: order.status === 'Pending',
+            cancelUnavailableReason: order.status === 'Pending'
+                ? null
+                : 'This order can only be cancelled while it is pending.',
+            returnRequest: summarizeReturnRequest(returnRequest),
+            returnEligibility
+        });
+    } catch (err) {
+        console.error("Tracking Error:", err);
+        res.status(500).json({ error: "Server error while tracking order." });
+    }
+};
+
+exports.cancelTrackedOrder = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const reason = cleanText(req.body.reason || 'Customer requested cancellation', 160);
+        const note = cleanText(req.body.note || '', 500);
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!reason) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, error: 'Cancellation reason is required.' });
+        }
+
+        const order = await Order.findOne(buildPublicOrderQuery(orderLookup, shopId)).session(session);
+
+        if (!order) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, error: 'Order not found.' });
+        }
+
+        try {
+            requireOrderAccess(req, {
+                shopId,
+                orderId: order._id,
+                action: ORDER_ACCESS_ACTIONS.cancel
+            });
+        } catch (err) {
+            await session.abortTransaction();
+            return getAccessTokenErrorResponse(res, err);
+        }
+
+        if (order.status !== 'Pending') {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                code: 'ORDER_CANCEL_NOT_ALLOWED',
+                message: 'This order can only be cancelled while it is pending.'
+            });
+        }
+
+        const cancelledAt = new Date();
+        const updatedOrder = await Order.findOneAndUpdate(
+            {
+                _id: order._id,
+                shop_id: shopId,
+                isDeleted: false,
+                status: 'Pending'
+            },
+            {
+                $set: {
+                    status: 'Cancelled',
+                    cancellation: {
+                        cancelledBy: 'customer',
+                        reason,
+                        note,
+                        cancelledAt
+                    }
+                },
+                $push: {
+                    timeline: {
+                        type: 'order.cancelled',
+                        actorType: 'customer',
+                        message: 'Customer cancelled the order.',
+                        reason,
+                        createdAt: cancelledAt
+                    }
+                }
+            },
+            { new: true, session }
+        );
+
+        if (!updatedOrder) {
+            await session.abortTransaction();
+            return res.status(400).json({
+                success: false,
+                code: 'ORDER_CANCEL_NOT_ALLOWED',
+                message: 'This order can only be cancelled while it is pending.'
+            });
+        }
+
+        const restoredLogs = await restoreCancelledOrderInventory({
+            order,
+            shopId,
+            userId: order.customer,
+            session
+        });
+
+        await session.commitTransaction();
+
+        await Promise.all([
+            enqueueLowStockAlertsForLogs(restoredLogs),
+            createNotification({
+                shop_id: shopId,
+                type: 'order',
+                title: 'Order cancelled by customer',
+                message: `Order #${String(order._id).slice(-6).toUpperCase()} was cancelled while pending.`,
+                entityType: 'Order',
+                entityId: order._id,
+                severity: 'warning',
+                metadata: { reason }
+            }),
+            logAudit({
+                req,
+                shop_id: shopId,
+                action: 'order.cancelled_by_customer',
+                entityType: 'Order',
+                entityId: order._id,
+                entityLabel: `Order #${String(order._id).slice(-6).toUpperCase()}`,
+                severity: 'warning',
+                before: { status: 'Pending' },
+                after: { status: 'Cancelled', cancellation: updatedOrder.cancellation },
+                metadata: { reason }
+            })
+        ]);
+
+        const refundMessage = order.payment?.status === 'Paid'
+            ? ' Your order was cancelled. Refund processing may take time.'
+            : '';
+
+        return res.status(200).json({
+            success: true,
+            message: `Order cancelled successfully.${refundMessage}`,
+            data: {
+                orderId: order._id,
+                status: 'Cancelled',
+                cancelledBy: 'customer',
+                cancelledAt
+            }
+        });
+    } catch (err) {
+        await session.abortTransaction();
+        console.error('Cancel tracked order error:', err);
+        return res.status(500).json({
+            success: false,
+            error: err.message || 'Failed to cancel order.'
+        });
+    } finally {
+        session.endSession();
+    }
+};
+
+exports.createTrackedReturnRequest = async (req, res) => {
+    try {
+        const orderLookup = String(req.params.orderId || '').trim().replace(/^#/, '');
+        const reason = cleanText(req.body.reason, 160);
+        const customerNote = cleanText(req.body.description || req.body.customerNote || '', 1000);
+        const shopId = req.tenantId;
+
+        if (!orderLookup || !/^[0-9a-fA-F]{6,24}$/.test(orderLookup)) {
+            return res.status(400).json({ success: false, error: 'Invalid Order ID format.' });
+        }
+
+        if (!reason) {
+            return res.status(400).json({ success: false, error: 'Return reason is required.' });
+        }
+
+        const order = await Order.findOne(buildPublicOrderQuery(orderLookup, shopId)).lean();
+
+        if (!order) {
+            return res.status(404).json({ success: false, error: 'Order not found.' });
+        }
+
+        try {
+            requireOrderAccess(req, {
+                shopId,
+                orderId: order._id,
+                action: ORDER_ACCESS_ACTIONS.return
+            });
+        } catch (err) {
+            return getAccessTokenErrorResponse(res, err);
+        }
+
+        const activeReturnRequest = await ReturnRequest.findOne({
+            shop_id: shopId,
+            order_id: order._id,
+            status: { $in: ACTIVE_RETURN_STATUSES },
+            isDeleted: false
+        }).sort({ createdAt: -1 }).lean();
+
+        const eligibility = buildReturnEligibility({ order, returnRequest: activeReturnRequest });
+        if (!eligibility.canRequestReturn) {
+            return res.status(400).json({
+                success: false,
+                code: 'RETURN_NOT_ALLOWED',
+                message: eligibility.reason || 'Return request is not available for this order.'
+            });
+        }
+
+        const returnItems = buildReturnItemsFromOrder(order, parseMaybeJson(req.body.items, req.body.items));
+        const proof = buildProofFromFiles(req.files || {});
+        const refundAmount = returnItems.reduce((sum, item) => sum + (Number(item.refundAmount) || 0), 0);
+
+        const request = await ReturnRequest.create({
+            shop_id: shopId,
+            order_id: order._id,
+            customer_id: order.customer,
+            items: returnItems,
+            reason,
+            customerNote,
+            proof,
+            requestedBy: null,
+            updatedBy: null,
+            refund: {
+                status: refundAmount > 0 ? 'Pending' : 'NotRequired',
+                amount: refundAmount
+            }
+        });
+
+        await Promise.all([
+            createNotification({
+                shop_id: shopId,
+                type: 'return',
+                title: 'New return request',
+                message: `A customer submitted a return request for order #${String(order._id).slice(-6).toUpperCase()}.`,
+                entityType: 'ReturnRequest',
+                entityId: request._id,
+                severity: 'warning',
+                metadata: { orderId: order._id, reason }
+            }),
+            logAudit({
+                req,
+                shop_id: shopId,
+                action: 'return.requested_by_customer',
+                entityType: 'ReturnRequest',
+                entityId: request._id,
+                entityLabel: `Return for order #${String(order._id).slice(-6).toUpperCase()}`,
+                after: { status: request.status, refund: request.refund },
+                metadata: { reason }
+            })
+        ]);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Return request submitted successfully.',
+            data: {
+                returnRequestId: request._id,
+                status: request.status
+            }
+        });
+    } catch (err) {
+        console.error('Create tracked return request error:', err);
+        return res.status(400).json({
+            success: false,
+            error: err.message || 'Failed to submit return request.'
+        });
+    }
+};

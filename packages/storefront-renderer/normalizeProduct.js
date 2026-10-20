@@ -1,3 +1,39 @@
+// Display snapshots are advisory; order prices are always recomputed by the server.
+// Accept numeric API strings, but never coerce null/blank/boolean data to a free price.
+export const getValidPrice = (...values) => {
+    for (const value of values) {
+        if (typeof value !== 'number' && typeof value !== 'string') continue;
+        if (typeof value === 'string' && !value.trim()) continue;
+        const price = Number(value);
+        if (Number.isFinite(price) && price >= 0) return price;
+    }
+    return null;
+};
+
+export const getCartItemPrice = (item = {}) => (
+    getValidPrice(item.cartPrice, item.finalPrice, item.sellingPrice, item.pricing?.sellingPrice) ?? 0
+);
+
+export const getCartItemOriginalPrice = (item = {}) => (
+    getValidPrice(item.selectedVariant?.pricing?.price, item.selectedVariant?.priceOverride,
+        item.sellingPrice, item.pricing?.sellingPrice) ?? 0
+);
+
+// Refresh only the matching product/variant. Never substitute another tenant's ID
+// or silently select a different option when the chosen variant disappeared.
+export const refreshCartItemPrice = (item, rawProduct) => {
+    if (!rawProduct || String(rawProduct._id) !== String(item._id)) return item;
+    const product = normalizeProduct(rawProduct);
+    const variantId = item.variantId || item.selectedVariant?._id;
+    const variant = variantId
+        ? product.variants.find(v => String(v._id) === String(variantId) && v.isActive !== false && v.status !== 'archived')
+        : product.variants.find(v => v.isActive !== false && v.status !== 'archived');
+    if (variantId && !variant) return item;
+    const attributes = Object.fromEntries((variant?.attributes || []).map(a => [a.name, a.value]));
+    const price = getProductPresentation({...product, variants: variant ? [variant] : []}, attributes);
+    return {...item, sellingPrice: price.baseOriginalPrice, finalPrice: price.displayFinalPrice, cartPrice: price.displayFinalPrice};
+};
+
 /**
  * Normalizes raw product data from the API into a consistent shape.
  * Kept outside components so it's never recreated on re-render.
@@ -93,7 +129,7 @@ export function getProductPresentation(product, selectedAttributes = {}) {
     const displayStock      = currentVariant
         ? (currentVariant.inventory?.stock ?? currentVariant.stock ?? 0)
         : (product?.stock ?? 0);
-    const baseOriginalPrice = currentVariant?.pricing?.price ?? currentVariant?.priceOverride ?? product?.sellingPrice ?? 0;
+    const baseOriginalPrice = getValidPrice(currentVariant?.pricing?.price, currentVariant?.priceOverride, product?.sellingPrice) ?? 0;
     const productDiscount = product?.discount ?? 0;
     const productDiscountPrice = productDiscount > 0
         ? Math.round(baseOriginalPrice - (baseOriginalPrice * productDiscount) / 100)

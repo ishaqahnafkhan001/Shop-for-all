@@ -1,0 +1,84 @@
+{
+  "hash": "5751a64e",
+  "configHash": "9358eaf3",
+  "lockfileHash": "a99b3d49",
+  "browserHash": "2c90a305",
+  "optimized": {
+    "@atelier-real-toast": {
+      "src": "../../../../../ecommerce-admin/node_modules/react-hot-toast/dist/index.mjs",
+      "file": "@atelier-real-toast.js",
+      "fileHash": "1fd99485",
+      "needsInterop": false
+    },
+    "@scaleup/storefront-renderer/media": {
+      "src": "../../../../../ecommerce-storefront/node_modules/@scaleup/storefront-renderer/media.js",
+      "file": "@scaleup_storefront-renderer_media.js",
+      "fileHash": "a4839fa9",
+      "needsInterop": false
+    },
+    "@scaleup/storefront-renderer/product-data": {
+      "src": "../../../../../ecommerce-admin/node_modules/@scaleup/storefront-renderer/normalizeProduct.js",
+      "file": "@scaleup_storefront-renderer_product-data.js",
+      "fileHash": "81859cb7",
+      "needsInterop": false
+    },
+    "@scaleup/storefront-theme": {
+      "src": "../../../../../ecommerce-admin/node_modules/@scaleup/storefront-theme/index.mjs",
+      "file": "@scaleup_storefront-theme.js",
+      "fileHash": "f06d125c",
+      "needsInterop": false
+    },
+    "@scaleup/storefront-theme/prebuilt": {
+      "src": "../../../../../ecommerce-admin/node_modules/@scaleup/storefront-theme/prebuilt.mjs",
+      "file": "@scaleup_storefront-theme_prebuilt.js",
+      "fileHash": "345fbebc",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../../../../ecommerce-admin/node_modules/lucide-react/dist/esm/lucide-react.mjs",
+      "file": "lucide-react.js",
+      "fileHash": "b2e00f4a",
+      "needsInterop": false
+    },
+    "react-dom": {
+      "src": "../../../../../ecommerce-admin/node_modules/react-dom/index.js",
+      "file": "react-dom.js",
+      "fileHash": "11f71bc0",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../../../../ecommerce-admin/node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "a8264c4b",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../../../../ecommerce-admin/node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "c0d39026",
+      "needsInterop": true
+    },
+    "react/jsx-dev-runtime": {
+      "src": "../../../../../ecommerce-admin/node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "6c7404ee",
+      "needsInterop": true
+    },
+    "react/jsx-runtime": {
+      "src": "../../../../../ecommerce-admin/node_modules/react/jsx-runtime.js",
+      "file": "react_jsx-runtime.js",
+      "fileHash": "e786157f",
+      "needsInterop": true
+    }
+  },
+  "chunks": {
+    "chunk-B-1-B7_t": {
+      "file": "chunk-B-1-B7_t.js",
+      "isDynamicEntry": false
+    },
+    "storefront-theme-rNTy8Z_a": {
+      "file": "storefront-theme-rNTy8Z_a.js",
+      "isDynamicEntry": false
+    }
+  }
+}

@@ -9,7 +9,7 @@ const variantMatches = (variant, candidate) => {
     });
 };
 
-const VariantSelector = memo(function VariantSelector({ availableAttributes, selectedAttributes, variants = [], onSelect }) {
+const VariantSelector = memo(function VariantSelector({ availableAttributes, selectedAttributes, variants = [], onSelect, presentationVariant }) {
     const optionAvailability = useMemo(() => {
         const availability = {};
         for (const [attrName, values] of Object.entries(availableAttributes)) {
@@ -25,7 +25,7 @@ const VariantSelector = memo(function VariantSelector({ availableAttributes, sel
     if (!Object.keys(availableAttributes).length) return null;
 
     return (
-        <div className="space-y-5 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+        <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-options' : undefined} className="space-y-5 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="flex flex-col gap-2 border-b border-slate-200/70 pb-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p className="text-sm font-black text-slate-950">Choose your options</p>

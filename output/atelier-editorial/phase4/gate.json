@@ -1,0 +1,140 @@
+{
+  "phase3": "Implemented; isolated gate passed before Phase 4",
+  "phase4": "Presentation implemented; production acceptance conditional on existing commerce issues and safe integration",
+  "focusedTests": {
+    "total": 383,
+    "pass": 383,
+    "fail": 0
+  },
+  "backendTests": {
+    "total": 691,
+    "pass": 686,
+    "fail": 5,
+    "failures": "Same five reproduced at original HEAD in Phase 0 evidence"
+  },
+  "lint": {
+    "storefront": "pass",
+    "admin": "18 baseline errors and 4 baseline warnings; no additions",
+    "sharedRenderer": "29 files compared; no additions; 1 baseline error"
+  },
+  "build": {
+    "admin": "pass",
+    "storefront": "pass"
+  },
+  "legacy": {
+    "phase3ExactMarkup": 27,
+    "phase4ExactMarkup": 117,
+    "definitions": "Original nine frozen contracts pass",
+    "previousHomeVisualCases": 18,
+    "currentHomeVisualRerun": "Blocked after browser use disabled in Work settings; Phase 2 evidence retained"
+  },
+  "responsive": {
+    "routeWidthCases": 147,
+    "additionalStateCases": 21,
+    "issues": 0,
+    "widths": [
+      320,
+      360,
+      390,
+      430,
+      768,
+      1024,
+      1440
+    ]
+  },
+  "sourceInvariants": {
+    "protectedFiles": 355,
+    "protectedChanged": [],
+    "handlerComparisons": [
+      {
+        "file": "ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx",
+        "comparedFunctions": [
+          "maskCheckoutPhone",
+          "resolveCartVariantId",
+          "buildCheckoutItems",
+          "getCheckoutIdempotencyKey",
+          "sendPhoneOtp",
+          "verifyPhoneOtp",
+          "validateCheckoutIntent",
+          "executePlaceOrder",
+          "handlePlaceOrder",
+          "handleOtpModalSendCode",
+          "handleOtpModalVerify"
+        ],
+        "changed": []
+      },
+      {
+        "file": "ecommerce-storefront/src/app/[subdomain]/track/page.jsx",
+        "comparedFunctions": [
+          "formatMoney",
+          "formatDateTime",
+          "shortOrderId",
+          "getProductId",
+          "getVariantId",
+          "getItemKey",
+          "resetOrderAccess",
+          "fetchTrackedOrder",
+          "handleTrackOrder",
+          "handleCancelOrder",
+          "openReturnModal",
+          "toggleReturnItem",
+          "handleSubmitReturn",
+          "handleReturnProofImages"
+        ],
+        "changed": []
+      },
+      {
+        "file": "ecommerce-storefront/src/app/[subdomain]/account/page.jsx",
+        "comparedFunctions": [
+          "fetchOrders",
+          "handleSendOTP",
+          "handleAuthSubmit",
+          "handleUserLogout",
+          "handlePasswordReset"
+        ],
+        "changed": []
+      },
+      {
+        "file": "ecommerce-storefront/src/app/[subdomain]/cart/page.jsx",
+        "comparedFunctions": [
+          "getCartImageUrl",
+          "handleApplyPromo"
+        ],
+        "changed": []
+      },
+      {
+        "file": "ecommerce-storefront/src/components/account/PasswordResetFlow.jsx",
+        "comparedFunctions": [
+          "emptyOtp",
+          "formatTime",
+          "getPasswordChecks",
+          "getStrengthLabel",
+          "getCurrentSubdomain",
+          "requestOtp",
+          "verifyOtp",
+          "submitNewPassword",
+          "handleOtpChange",
+          "handleOtpKeyDown",
+          "handleOtpPaste"
+        ],
+        "changed": []
+      },
+      {
+        "file": "ecommerce-storefront/src/components/account/CustomerTabs.jsx",
+        "comparedFunctions": [
+          "toggleOrderDetails",
+          "handlePasswordReset"
+        ],
+        "changed": []
+      }
+    ]
+  },
+  "database": "Blocked: Docker Desktop Linux engine unavailable; no integration harness run",
+  "unresolved": [
+    "Existing zero-price variant cart display and client total fall back to base price in both legacy and Atelier",
+    "Existing active checkout OTP modal lacks resend/cooldown controls; server limits unchanged",
+    "Live SSR/hydration, safe MongoDB tenant persistence and provider integration not verified"
+  ],
+  "adoption": "Off/default server policy; no actual .env, database data or release changed",
+  "fixtureServer": "Task-owned port 5211 stopped after verification"
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/atelier-legacy/capture.cjs",
+    "unchanged": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/atelier-legacy/contracts.json",
+    "unchanged": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase3-markup-sha256.json",
+    "unchanged": true
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase4-markup-sha256.json",
+    "unchanged": true
+  }
+]

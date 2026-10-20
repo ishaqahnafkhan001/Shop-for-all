@@ -1,0 +1,199 @@
+import crypto from 'crypto';
+
+const getBackendApiUrl = () => {
+    const configuredUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL;
+
+    if (configuredUrl) return configuredUrl.replace(/\/$/, '');
+    if (process.env.NODE_ENV === 'production') return 'https://api.scaleup.codes/api';
+    return 'http://localhost:4000/api';
+};
+
+const buildUrl = (path, params = {}) => {
+    const url = new URL(`${getBackendApiUrl()}${path}`);
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, String(value));
+        }
+    });
+
+    return url.toString();
+};
+
+const buildRequestHeaders = ({ storefrontHost = '' } = {}) => {
+    const headers = { accept: 'application/json' };
+    const cleanHost = String(storefrontHost || '').trim().toLowerCase();
+    if (cleanHost) {
+        headers['x-storefront-host'] = cleanHost;
+        const proxySecret = process.env.STOREFRONT_PROXY_SECRET;
+        if (proxySecret) {
+            const timestamp = String(Date.now());
+            headers['x-storefront-timestamp'] = timestamp;
+            headers['x-storefront-signature'] = crypto
+                .createHmac('sha256', proxySecret)
+                .update(`${cleanHost}.${timestamp}`)
+                .digest('hex');
+        }
+    }
+    return headers;
+};
+
+const getServerFetchTimeoutMs = () => {
+    const configured = Number(process.env.STOREFRONT_SERVER_FETCH_TIMEOUT_MS || 0);
+    if (Number.isFinite(configured) && configured > 0) return configured;
+    // A cold storefront bootstrap can include several remote database reads.
+    return 12000;
+};
+
+const isCustomDomainHost = (host = '') => {
+    const cleanHost = String(host || '').trim().toLowerCase().split(':')[0];
+    if (!cleanHost) return false;
+    if (cleanHost === 'localhost' || cleanHost === '127.0.0.1') return false;
+    if (cleanHost.endsWith('.localhost')) return false;
+    if (cleanHost === 'scaleup.codes' || cleanHost.endsWith('.scaleup.codes')) return false;
+    return cleanHost.includes('.');
+};
+
+export const getStorefrontPlanRedirectUrl = (error, pathname = '/') => {
+    if (error?.body?.code !== 'CUSTOM_DOMAIN_PLAN_INACTIVE') return '';
+    const platformDomain = String(process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'scaleup.codes')
+        .trim()
+        .toLowerCase()
+        .replace(/^\.+|\.+$/g, '');
+    const host = String(error?.body?.platformHost || '').trim().toLowerCase();
+    if (!platformDomain || (host !== platformDomain && !host.endsWith(`.${platformDomain}`))) return '';
+    const safePath = String(pathname || '/').startsWith('/') && !String(pathname).startsWith('//')
+        ? String(pathname)
+        : '/';
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    return `${protocol}://${host}${safePath}`;
+};
+
+const fetchPublicJson = async (path, { params = {}, revalidate = 30, storefrontHost = '', fresh = false } = {}) => {
+    const controller = new AbortController();
+    const timeoutMs = getServerFetchTimeoutMs();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const fetchOptions = {
+        headers: buildRequestHeaders({ storefrontHost }),
+        signal: controller.signal,
+    };
+
+    if (fresh || isCustomDomainHost(storefrontHost)) {
+        fetchOptions.cache = 'no-store';
+    } else {
+        fetchOptions.next = { revalidate };
+    }
+
+    let response;
+    try {
+        response = await fetch(buildUrl(path, params), fetchOptions);
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            const timeoutError = new Error(`Storefront backend request timed out after ${timeoutMs} ms`);
+            timeoutError.status = 504;
+            timeoutError.body = { error: timeoutError.message };
+            throw timeoutError;
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        const error = new Error(body.error || body.message || `Request failed with ${response.status}`);
+        error.status = response.status;
+        error.body = body;
+        throw error;
+    }
+
+    return response.json();
+};
+
+export const fetchStorefrontBootstrap = async (subdomain, params = {}, options = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/bootstrap`, {
+        params,
+        revalidate: 30,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    });
+
+    const data = response.data || null;
+    if (options.expectedRevision !== undefined && Number(data?.shop?.themeRevision ?? -1) !== options.expectedRevision) {
+        const error = new Error('The store changed while this page was loading. Please reload to view the latest version.');
+        error.code = 'STOREFRONT_REVISION_CHANGED';
+        throw error;
+    }
+    return data;
+};
+
+export const fetchStorefrontInfo = async (subdomain, options = {}) => (
+    fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/info`, {
+        revalidate: 30,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    })
+);
+
+export const fetchStorefrontProducts = async (subdomain, params = {}, options = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/products`, {
+        params,
+        revalidate: 60,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    });
+
+    return response || {};
+};
+
+export const fetchStorefrontProduct = async (subdomain, productId, options = {}) => (
+    fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/products/${encodeURIComponent(productId)}`, {
+        revalidate: 30,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    })
+);
+
+export const fetchStorefrontCollections = async (subdomain, options = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/collections`, {
+        revalidate: 60,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    });
+
+    return response.data || [];
+};
+
+export const fetchStorefrontCollection = async (subdomain, slug, params = {}, options = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/collections/${encodeURIComponent(slug)}`, {
+        params,
+        revalidate: 60,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    });
+
+    return response.data || null;
+};
+
+export const fetchStorefrontSitemapData = async (subdomain, params = {}, options = {}) => {
+    const response = await fetchPublicJson(`/storefront/${encodeURIComponent(subdomain)}/seo/sitemap`, {
+        params,
+        revalidate: 300,
+        storefrontHost: options.storefrontHost || options.host || '',
+        fresh: options.fresh === true,
+    });
+
+    return response.data || {};
+};
+
+export const fetchStorefrontSlugRedirect = async (subdomain, type, slug, options = {}) => {
+    const response = await fetchPublicJson(
+        `/storefront/${encodeURIComponent(subdomain)}/seo/redirect/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`,
+        {
+            revalidate: 60,
+            storefrontHost: options.storefrontHost || options.host || '',
+            fresh: options.fresh === true
+        }
+    );
+    return response.data || null;
+};

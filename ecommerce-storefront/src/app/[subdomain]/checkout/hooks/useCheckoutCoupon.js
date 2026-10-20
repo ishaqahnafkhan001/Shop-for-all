@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import API from "@/api/api";
+import { getCartItemPrice } from "@scaleup/storefront-renderer/product-data";
 
 export function useCheckoutCoupon({ cartItems, customerEmail, subdomain, subtotal }) {
     const [promotionCode, setPromotionCode] = useState("");
@@ -39,7 +40,7 @@ export function useCheckoutCoupon({ cartItems, customerEmail, subdomain, subtota
                     subtotal,
                     customerEmail,
                     items: cartItems.map((item) => {
-                        const unitPrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
+                        const unitPrice = getCartItemPrice(item);
 
                         return {
                             productId: item._id,

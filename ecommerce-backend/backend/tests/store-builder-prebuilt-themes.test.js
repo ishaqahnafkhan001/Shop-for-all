@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const {
     PREBUILT_THEME_CATALOG_VERSION,
-    PREBUILT_THEMES,
+    PREBUILT_THEMES: ALL_PREBUILT_THEMES,
     getPrebuiltThemes,
     getPrebuiltTheme,
     resolvePrebuiltTheme,
@@ -15,6 +15,9 @@ const { normalizeTheme, validateTheme } = require('@scaleup/storefront-theme');
 const { assertStoreBuilderUpdateAllowed } = require('../services/billing/storeBuilderPlanService');
 
 const APPLIED_AT = '2026-08-05T00:00:00.000Z';
+// Keep every original nine-theme count, version and structural assertion intact.
+// The hidden tenth definition has its own additive contract tests.
+const PREBUILT_THEMES = Object.freeze(ALL_PREBUILT_THEMES.filter(theme => theme.id !== 'atelier-editorial'));
 
 const enabledSectionTypes = theme => theme.homepageSections
     .filter(section => section.isEnabled !== false)

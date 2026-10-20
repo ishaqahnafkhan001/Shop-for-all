@@ -11,6 +11,7 @@ const {
 
 const Shop = require('../../models/Shop');
 const { preserveThemeExtensions } = require('./themeCompatibilityService');
+const { getThemeAvailability, assertThemeAvailability } = require('./themeAvailabilityService');
 const { resolveStoreBranding } = require('../shops/storeBrandingService');
 const Product = require('../../models/Product');
 const Review = require('../../models/Review');
@@ -82,13 +83,14 @@ const normalizeShopAliases = async ({ aliases, shop }) => {
     return result;
 };
 
-const normalizeThemeForShop = async (theme, shop, { readOnly = false } = {}) => {
+const normalizeThemeForShop = async (theme, shop, { readOnly = false, changeScope } = {}) => {
     if (!readOnly) {
         assertSupportedThemeVersion(shop?.theme || {});
         assertSupportedThemeVersion(theme || {});
     }
     const sanitizedTheme = preserveThemeExtensions(toJsonSafeTheme(theme), shop?.theme || {});
-    const validation = validateTheme(sanitizedTheme);
+    const validation = validateTheme({ ...sanitizedTheme,
+        ...(Object.hasOwn(theme || {}, 'presentationVariant') ? { presentationVariant: theme.presentationVariant } : {}) });
     if (!validation.valid && !readOnly) {
         const error = new Error(validation.errors[0]?.message || 'The Store Builder theme is invalid.');
         error.statusCode = 400;
@@ -98,6 +100,7 @@ const normalizeThemeForShop = async (theme, shop, { readOnly = false } = {}) => 
     }
 
     const cleanTheme = normalizeTheme(sanitizedTheme);
+    if (!readOnly) await assertThemeAvailability({ shop, rawTheme: theme, targetTheme: cleanTheme, changeScope });
     const holder = { _id: shop?._id, theme: cleanTheme };
     await ensureThemeSectionArchitecture(holder, { persist: false });
     const policyDefaults = fillMissingPolicyDefaults(holder.theme?.policies || {}, { storeName: shop?.shopName });
@@ -225,6 +228,7 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
     return {
         shop: { ...shop, planAccess, previewBranding, trustedBadge, shopVerification: buildPublicShopVerification(shop, { eligible: access.features?.publicVerifiedBadge }) },
         planAccess,
+        themeAvailability: getThemeAvailability({ shop, planAccess: access }),
         products,
         previewCatalog: {
             products: initialProducts.map(product => cardsById[String(product._id)]).filter(Boolean),
@@ -359,7 +363,7 @@ const publishStoreBuilder = async ({
         throw error;
     }
 
-    const normalizedTheme = await normalizeThemeForShop(theme, current);
+    const normalizedTheme = await normalizeThemeForShop(theme, current, { changeScope });
     // Validate the actual snapshot at the persistence boundary, including restore
     // and direct service callers. Homepage SEO has its own independently gated flow.
     if (changeScope !== 'homepage-seo') {

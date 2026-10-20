@@ -1,0 +1,137 @@
+✖ prebuilt registry contains nine immutable, unique, valid production themes (29.6211ms)
+✖ each v2 preset exposes the curated structural signature supported by the shared renderer (1.513ms)
+✔ every preset resolves deterministically and validates through the shared contract (49.538ms)
+✔ all full-plan presets follow their blueprints when safe merchant content is available (30.1946ms)
+✔ the nine themes no longer collapse into two effective section structures (37.445ms)
+✔ paired industries remain distinguishable without relying on color (0.3613ms)
+✔ applying a preset preserves merchant content and selected commerce data (1.9322ms)
+✔ missing merchant content never creates fake story, review, FAQ, promotion, trust, or newsletter copy (1.4189ms)
+✔ preset-owned presentation wins while populated merchant content and unmatched sections survive (2.5239ms)
+✔ duplicate preset-controlled sections are retained but cannot alter the enabled blueprint sequence (2.6375ms)
+✔ limited plan resolution preserves restricted layout and section fields accepted by backend policy (27.902ms)
+✔ preset application refuses unavailable access and unknown presets without mutating the draft (1.3107ms)
+✔ prebuilt catalog has an isolated package export and is not imported by live storefront source (22.9826ms)
+✔ theme cards and full previews resolve the same merchant-owned hero banner (13.738ms)
+✔ capabilities preserve every supported variant for all presets and isolate each result (195.829ms)
+✔ property classification covers canonical groups, identity, inheritance, and responsive controls (1.2782ms)
+✔ limited and no-builder controls agree with backend edit rules (8.9609ms)
+✔ safe edits round trip all saved preset identities and permit explicit selection/restore on full plans (196.2308ms)
+✔ snapshot validation prevents omitted restricted fields from silently resetting a saved composition (2.1096ms)
+✖ actual draft, publish and tenant-scoped restore reject restricted changes before writing (7.4264ms)
+✔ actual editor variant options equal the shared registry without a duplicate fallback (0.2192ms)
+✔ actual editor markup applies capability gates and explains composition (46.5091ms)
+✔ actual limited-plan section editor and sidebar disable structural mutations but allow featured content (21.2141ms)
+✔ modern-general/full: Gallery full preview, Builder and live home produce identical presentation markup (471.7289ms)
+✔ modern-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (221.1067ms)
+✔ minimal-general/full: Gallery full preview, Builder and live home produce identical presentation markup (181.6627ms)
+✔ minimal-general/limited: Gallery full preview, Builder and live home produce identical presentation markup (161.139ms)
+✔ modern-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (273.6001ms)
+✔ modern-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (242.0951ms)
+✔ editorial-fashion/full: Gallery full preview, Builder and live home produce identical presentation markup (71.5657ms)
+✔ editorial-fashion/limited: Gallery full preview, Builder and live home produce identical presentation markup (53.6417ms)
+✔ luxury-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (61.4018ms)
+✔ luxury-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (52.8763ms)
+✔ minimal-jewellery/full: Gallery full preview, Builder and live home produce identical presentation markup (57.44ms)
+✔ minimal-jewellery/limited: Gallery full preview, Builder and live home produce identical presentation markup (49.6805ms)
+✔ soft-beauty/full: Gallery full preview, Builder and live home produce identical presentation markup (230.5666ms)
+✔ soft-beauty/limited: Gallery full preview, Builder and live home produce identical presentation markup (208.3017ms)
+✔ modern-electronics/full: Gallery full preview, Builder and live home produce identical presentation markup (173.1513ms)
+✔ modern-electronics/limited: Gallery full preview, Builder and live home produce identical presentation markup (49.4016ms)
+✔ fresh-grocery/full: Gallery full preview, Builder and live home produce identical presentation markup (50.812ms)
+✔ fresh-grocery/limited: Gallery full preview, Builder and live home produce identical presentation markup (43.5395ms)
+✔ atelier-editorial/full: Gallery full preview, Builder and live home produce identical presentation markup (58.5156ms)
+✔ atelier-editorial/limited: Gallery full preview, Builder and live home produce identical presentation markup (50.4194ms)
+✔ empty stores do not acquire sample categories or an extra category composition slot in preview (11.5217ms)
+✔ Gallery rejects unavailable plans instead of fabricating a preview (0.5565ms)
+✔ new picker cards replace stale prices and excluded products without expanding the catalog page (16.9618ms)
+✔ mobile navigation uses live viewport anchoring and safe-area dimensions in the iframe (8.9735ms)
+✔ project viewport dimensions are explicit and stable; responsive HTML uses real CSS breakpoints (30.2156ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 45
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3022.0894
+
+✖ failing tests:
+
+test at tests\store-builder-prebuilt-themes.test.js:215:1
+✖ prebuilt registry contains nine immutable, unique, valid production themes (29.6211ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  10 !== 9
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\store-builder-prebuilt-themes.test.js:218:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 10,
+    expected: 9,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\store-builder-prebuilt-themes.test.js:239:1
+✖ each v2 preset exposes the curated structural signature supported by the shared renderer (1.513ms)
+  AssertionError [ERR_ASSERTION]: atelier-editorial
+  + actual - expected
+  
+  + [
+  +   'standard',
+  +   'split',
+  +   'PromoBlock:strip',
+  +   'CategoryList:editorial',
+  +   'FeaturedProducts:default',
+  +   'BrandStory:editorial',
+  +   'TrustBadges:default'
+  + ]
+  - undefined
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\store-builder-prebuilt-themes.test.js:242:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 'standard', 'split', 'PromoBlock:strip', 'CategoryList:editorial', 'FeaturedProducts:default', 'BrandStory:editorial', 'TrustBadges:default' ],
+    expected: undefined,
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\storefront-capabilities.test.js:117:1
+✖ actual draft, publish and tenant-scoped restore reject restricted changes before writing (7.4264ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + Comparison {}
+  - Comparison {
+  -   code: 'STORE_BUILDER_CAPABILITY_REQUIRED'
+  - }
+  
+      at async TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-capabilities.test.js:145:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: TypeError: assertThemeAvailability is not a function
+        at normalizeThemeForShop (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:103:26)
+        at Object.publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:366:35)
+        at async waitForActual (node:assert:646:5)
+        at async strict.rejects (node:assert:769:25)
+        at async TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-capabilities.test.js:145:5)
+        at async Test.run (node:internal/test_runner/test:1113:7)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:788:7),
+    expected: { code: 'STORE_BUILDER_CAPABILITY_REQUIRED' },
+    operator: 'rejects',
+    diff: 'simple'
+  }
+

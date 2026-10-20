@@ -132,6 +132,7 @@ test('actual draft, publish and tenant-scoped restore reject restricted changes 
         '../billing/planAccessService': { getShopPlanAccess: async id => { plans.push(id); return access; } },
         '../billing/storeBuilderPlanService': { assertStoreBuilderUpdateAllowed: assertAllowed },
         './themeCompatibilityService': { preserveThemeExtensions },
+        './themeAvailabilityService': require('../services/storeBuilder/themeAvailabilityService'),
         './draftConcurrency': require('../services/storeBuilder/draftConcurrency'),
         '../themeSectionService': { ensureThemeSectionArchitecture: async () => {} },
         '../policies/defaultPolicyTemplates': { fillMissingPolicyDefaults: contract.fillMissingPolicyDefaults },

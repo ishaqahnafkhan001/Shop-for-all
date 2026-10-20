@@ -1,5 +1,6 @@
 "use client";
 import React from 'react';
+import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
 import { useCart } from '@/context/CartContext';
 import { useParams } from 'next/navigation';
 import API from '@/api/api';
@@ -7,6 +8,7 @@ import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvi
 import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
 import { DEFAULT_CART_DELIVERY_ESTIMATE } from '@/lib/cartConstants';
 import { normalizeProduct } from '@/utils/normalizeProduct';
+import { getCartItemPrice, getCartItemOriginalPrice } from '@scaleup/storefront-renderer/product-data';
 
 import { CartView } from '@scaleup/storefront-renderer/presentation/CartView';
 import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
@@ -35,8 +37,8 @@ export default function CartPage() {
 
     // Calculate total savings based on your Product Schema pricing logic
     const totalSavings = cartItems.reduce((acc, item) => {
-        const original = item.pricing?.sellingPrice || item.sellingPrice || 0;
-        const current = item.finalPrice || item.sellingPrice || 0;
+        const original = getCartItemOriginalPrice(item);
+        const current = getCartItemPrice(item);
         const saving = original > current ? (original - current) * item.quantity : 0;
         return acc + saving;
     }, 0);
@@ -90,6 +92,7 @@ export default function CartPage() {
     };
 
     return <StorefrontPresentationRuntime><CartView {...{
+        presentationVariant: getStorefrontPresentationVariant(theme),
         cartItems, removeFromCart, updateQuantity, subtotal, shipping, totalSavings, total, getCartImageUrl,
         promoCode, setPromoCode, promoFeedback, handleApplyPromo, recommendationsLoading, recommendations,
         themedProductCard, productActions,

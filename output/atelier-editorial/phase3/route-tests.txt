@@ -1,0 +1,42 @@
+node --test tests/storefront-atelier-routes.test.js
+✔ modern-general/product: exact pre-change markup remains unchanged (192.3339ms)
+✔ modern-general/category: exact pre-change markup remains unchanged (19.006ms)
+✔ modern-general/collection: exact pre-change markup remains unchanged (13.4548ms)
+✔ minimal-general/product: exact pre-change markup remains unchanged (16.7575ms)
+✔ minimal-general/category: exact pre-change markup remains unchanged (14.5195ms)
+✔ minimal-general/collection: exact pre-change markup remains unchanged (12.8288ms)
+✔ modern-fashion/product: exact pre-change markup remains unchanged (18.7731ms)
+✔ modern-fashion/category: exact pre-change markup remains unchanged (15.1973ms)
+✔ modern-fashion/collection: exact pre-change markup remains unchanged (14.0061ms)
+✔ editorial-fashion/product: exact pre-change markup remains unchanged (18.9226ms)
+✔ editorial-fashion/category: exact pre-change markup remains unchanged (15.1157ms)
+✔ editorial-fashion/collection: exact pre-change markup remains unchanged (12.7576ms)
+✔ luxury-jewellery/product: exact pre-change markup remains unchanged (18.865ms)
+✔ luxury-jewellery/category: exact pre-change markup remains unchanged (15.2223ms)
+✔ luxury-jewellery/collection: exact pre-change markup remains unchanged (13.2733ms)
+✔ minimal-jewellery/product: exact pre-change markup remains unchanged (18.8651ms)
+✔ minimal-jewellery/category: exact pre-change markup remains unchanged (15.8041ms)
+✔ minimal-jewellery/collection: exact pre-change markup remains unchanged (15.1453ms)
+✔ soft-beauty/product: exact pre-change markup remains unchanged (19.509ms)
+✔ soft-beauty/category: exact pre-change markup remains unchanged (15.2851ms)
+✔ soft-beauty/collection: exact pre-change markup remains unchanged (13.4515ms)
+✔ modern-electronics/product: exact pre-change markup remains unchanged (18.812ms)
+✔ modern-electronics/category: exact pre-change markup remains unchanged (15.8769ms)
+✔ modern-electronics/collection: exact pre-change markup remains unchanged (13.203ms)
+✔ fresh-grocery/product: exact pre-change markup remains unchanged (18.5018ms)
+✔ fresh-grocery/category: exact pre-change markup remains unchanged (14.2634ms)
+✔ fresh-grocery/collection: exact pre-change markup remains unchanged (12.9701ms)
+✔ product uses merchant content, real media, options, identifiers and editorial related cards (17.3928ms)
+✔ zero-price variant remains zero; unavailable stock removes purchase and quantity actions (33.3959ms)
+✔ missing media and long Bengali content retain readable text without unsafe HTML (39.9105ms)
+✔ existing product callbacks and quantity limits are forwarded without new commerce state (0.675ms)
+✔ category preserves actual filters while collection contains only its supported sorting and paging (33.6737ms)
+✔ all supporting-page CSS rules require explicit Atelier root identity (63.7745ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 945.8846

@@ -1,0 +1,170 @@
+(node:17020) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "AnalyticsEvent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17020) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"idempotencyKey":1} for model "Job". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:17020) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"providerMessageId":1} for model "CustomerEmailRecipient". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:17020) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "UpgradeIntent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:17020) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "SupportStaffInvitation". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✔ real MongoDB unique indexes exist for draft, revision and OTP claims (1998.035ms)
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:30.582Z","requestId":"9952b2ab-adbc-4296-a96c-ae836b575af9","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":11,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:30.742Z","requestId":"bbf4f531-2734-4c81-a980-f0b0831e16fc","method":"POST","path":"/api/public/orders","status":201,"durationMs":150,"userId":null,"role":null,"shopId":null}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:30.756Z","requestId":"35726ef4-4464-4ae8-a2b3-d37638117efb","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:30.829Z","requestId":"84af1cbe-5cd7-4091-91de-40aca03aca5a","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":71,"userId":"6ad6ff0a221de53a4999f77a","role":"Customer","shopId":"6ad6ff0a221de53a4999f76d"}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:30.843Z","requestId":"de542e8b-77a9-406f-97f5-f2e5f05e255a","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:30.961Z","requestId":"10529428-82cf-47b6-a838-467729669555","method":"POST","path":"/api/public/orders","status":201,"durationMs":117,"userId":null,"role":null,"shopId":null}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:30.972Z","requestId":"29007565-503d-45b0-8ce2-c28d21fbc18f","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.034Z","requestId":"2d28a321-10bf-423a-a7cd-5cb52d9cde53","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":60,"userId":"6ad6ff0a221de53a4999f77a","role":"Customer","shopId":"6ad6ff0a221de53a4999f76d"}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.054Z","requestId":"c30d4137-d741-46b5-8d28-c0698edb439b","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.168Z","requestId":"406779d1-6bdd-4c6e-a8b6-e789e8ee9ceb","method":"POST","path":"/api/public/orders","status":201,"durationMs":113,"userId":null,"role":null,"shopId":null}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.179Z","requestId":"fdd72e4e-b630-49db-b6e3-91a41ed35a11","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.242Z","requestId":"5997fcd6-b223-41a0-96bd-ee04b7e85b75","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":62,"userId":"6ad6ff0a221de53a4999f77a","role":"Customer","shopId":"6ad6ff0a221de53a4999f76d"}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.255Z","requestId":"ed496376-e2fb-4d0f-a80c-19d51da7b7c1","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.368Z","requestId":"174332a1-9bea-431a-aab1-b79dc0db14fd","method":"POST","path":"/api/public/orders","status":201,"durationMs":112,"userId":null,"role":null,"shopId":null}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.381Z","requestId":"633f6c16-da47-41fa-8e4f-b5a07ff01426","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:31.444Z","requestId":"3ea7cb42-7d82-4ea5-afc3-41592a751190","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":62,"userId":"6ad6ff0a221de53a4999f77a","role":"Customer","shopId":"6ad6ff0a221de53a4999f76d"}
+✔ zero/null/positive/base prices persist correctly through guest and authenticated HTTP checkout (1476.6471ms)
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.036Z","requestId":"31391d03-02d7-45df-bd09-c4fb8791f757","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: Atelier Editorial is not available for this store.
+    at reject (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:37:19)
+    at assertThemeAvailability (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:68:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async normalizeThemeForShop (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:103:20)
+    at async publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:366:29)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 403,
+  code: 'THEME_NOT_AVAILABLE'
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:32.096Z","requestId":"908fa306-0885-4843-9a52-76b63fb31a8f","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":58,"userId":"6ad6ff0b221de53a4999f7d8","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":11,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":213}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.098Z","requestId":"95bfdc62-4a0e-49fc-942e-a4e20788bf70","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: Atelier Editorial is not available for this store.
+    at reject (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:37:19)
+    at assertThemeAvailability (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:68:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async normalizeThemeForShop (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:103:20)
+    at async publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:366:29)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 403,
+  code: 'THEME_NOT_AVAILABLE'
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:32.138Z","requestId":"89309577-7ef1-4e2f-8e86-87b11a34d15f","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":39,"userId":"6ad6ff0b221de53a4999f7d8","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":11,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":213}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.139Z","requestId":"aa170eee-184b-4e80-9f16-f584e0c3e8d5","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: Atelier Editorial is not available for this store.
+    at reject (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:37:19)
+    at assertThemeAvailability (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:62:56)
+    at normalizeThemeForShop (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:103:26)
+    at publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:366:35)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 403,
+  code: 'THEME_NOT_AVAILABLE'
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:32.171Z","requestId":"593b1fd1-2ca6-41e8-b116-5f021dbf8f38","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":31,"userId":"6ad6ff0b221de53a4999f7d8","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":11,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":213}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.172Z","requestId":"50d24cdc-a8cc-4386-8104-3d346919449e","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: Atelier Editorial is not available for this store.
+    at reject (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:37:19)
+    at assertThemeAvailability (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:68:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async normalizeThemeForShop (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:103:20)
+    at async publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:366:29)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 403,
+  code: 'THEME_NOT_AVAILABLE'
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:32.211Z","requestId":"5c1ab229-acd5-45cd-99d4-b0a7cb4c9c1d","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":38,"userId":"6ad6ff0b221de53a4999f7d8","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":11,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":213}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.212Z","requestId":"0c1a492f-163b-4005-99da-d94a2bb870b2","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:32.246Z","requestId":"0b08c479-c54b-422c-8077-e70287fb7aa6","method":"PUT","path":"/api/store-builder/admin/draft","status":403,"durationMs":33,"userId":"6ad6ff0b221de53a4999f7d8","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":11,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":213}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.251Z","requestId":"504ffed4-631d-4045-880e-38ac3dcad893","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.292Z","requestId":"8dee9d82-cd48-4cbb-a24e-fe3f2018100d","method":"PUT","path":"/api/store-builder/admin/seo/draft","status":200,"durationMs":41,"userId":"6ad6ff0b221de53a4999f7d8","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":11,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":213}}}
+✔ default-off guard rejects raw/full/forged/client-policy adoption and ignores SEO marker injection (836.5466ms)
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.859Z","requestId":"fd1e3a0e-bc9e-4f45-9351-7a1e8a8a4b50","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: Atelier Editorial is not available for this store.
+    at reject (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:37:19)
+    at assertThemeAvailability (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\themeAvailabilityService.js:68:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async normalizeThemeForShop (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:103:20)
+    at async publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:366:29)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 403,
+  code: 'THEME_NOT_AVAILABLE'
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:32.906Z","requestId":"0a2f3cb0-2408-4181-8109-68521d0bc875","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":46,"userId":"6ad6ff0c221de53a4999f7ff","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":250}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.907Z","requestId":"a52c9c51-7015-4769-9674-ad3c424d1e16","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.950Z","requestId":"546bb046-005c-4d5f-9b67-ccf8ed95b55e","method":"PUT","path":"/api/store-builder/admin/draft","status":200,"durationMs":42,"userId":"6ad6ff0c221de53a4999f7fc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":249}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:32.953Z","requestId":"18255ebb-1eb6-435c-82e4-c30b76f55f4f","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.043Z","requestId":"e21a1309-608c-4108-af2f-88baf1d955d2","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":89,"userId":"6ad6ff0c221de53a4999f7fc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":249}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.051Z","requestId":"4c03fa2c-858f-4f6a-aef7-afc5ab16f095","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:33.072Z","requestId":"ec1a3ecf-ae8d-41d5-b64f-44dc2e5e7663","method":"POST","path":"/api/store-builder/admin/revisions/6ad6ff0d221de53a4999f81f/restore","status":404,"durationMs":21,"userId":"6ad6ff0c221de53a4999f7ff","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":250}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.073Z","requestId":"ec3831e9-289b-4f09-b85e-c16c4532ac6c","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.144Z","requestId":"52638e73-5f5a-4d44-afd9-009f6c471167","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":70,"userId":"6ad6ff0c221de53a4999f7fc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":249}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.146Z","requestId":"d3904bf5-3d0c-4e3b-a45c-28e42a222d06","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.214Z","requestId":"912eaa55-48dc-48f5-a526-4584013f7f2f","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":67,"userId":"6ad6ff0c221de53a4999f7fc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":249}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.217Z","requestId":"fea07094-1a5c-49ef-a225-12afab93f946","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:33.258Z","requestId":"499cd269-b7bb-4efb-8906-c1fb2d0ff997","method":"POST","path":"/api/store-builder/admin/revisions/6ad6ff0d221de53a4999f81f/restore","status":403,"durationMs":40,"userId":"6ad6ff0c221de53a4999f7fc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":249}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.259Z","requestId":"92816816-a66c-4bcb-8886-fdaa212ede96","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.337Z","requestId":"cd32a73e-da74-4f04-8491-9ec4c0503dfe","method":"POST","path":"/api/store-builder/admin/revisions/6ad6ff0d221de53a4999f81f/restore","status":200,"durationMs":77,"userId":"6ad6ff0c221de53a4999f7fc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":12,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":247,"11":249}}}
+✔ allowlist, real draft/publish/reload/restore and recovery preserve tenant content (1051.6534ms)
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.903Z","requestId":"93eb922c-8eee-48d0-bd74-63999cb55b41","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:33.904Z","requestId":"218cff15-8894-4b59-9283-c7199ad12234","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: The store theme was updated by another session.
+    at execute (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:407:27)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:542:21)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 409,
+  code: 'THEME_CONFLICT',
+  latestRevision: 1,
+  lastPublishedAt: 2026-10-20T05:41:33.966Z
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:34.011Z","requestId":"428b4979-076f-4b81-9cc4-4e5225264c18","method":"PATCH","path":"/api/store-builder/admin","status":409,"durationMs":103,"userId":"6ad6ff0d221de53a4999f84c","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":13,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":73}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:34.019Z","requestId":"730d16fd-5d55-4f72-a0f9-7a8489261b1c","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":112,"userId":"6ad6ff0d221de53a4999f84c","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":214,"2":255,"3":13,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":73}}}
+✔ concurrent publication claims one revision and returns a conflict for the loser (673.0516ms)
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:34.598Z","requestId":"d3ff3412-09f3-440a-8ec4-21032a4a5a81","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:34.622Z","requestId":"7fdf688e-0551-4953-9a21-dd0f8aef653b","method":"POST","path":"/api/storefront/launchshopa/checkout/send-otp","status":429,"durationMs":20,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":121}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:34.623Z","requestId":"f1ae88a2-36fd-4ed9-ba23-bb3f4c4b297a","method":"POST","path":"/api/storefront/launchshopa/checkout/send-otp","status":200,"durationMs":22,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":121}}}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:34.635Z","requestId":"3b442daf-1b4d-4a7a-a085-509e31617aa8","method":"POST","path":"/api/storefront/launchshopa/checkout/verify-otp","status":400,"durationMs":11,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":121}}}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:34.650Z","requestId":"85c5fd59-08d8-4727-81f4-603ed0b6bad2","method":"POST","path":"/api/storefront/launchshopb/checkout/verify-otp","status":400,"durationMs":14,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":122}}}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:34.659Z","requestId":"862ef8b0-4607-4969-9878-69d516e0f1a1","method":"POST","path":"/api/storefront/launchshopa/checkout/verify-otp","status":400,"durationMs":8,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":121}}}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:34.675Z","requestId":"c1c514f1-254d-4744-ac08-a2cbb05f59c2","method":"POST","path":"/api/storefront/launchshopa/checkout/verify-otp","status":200,"durationMs":15,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":121}}}
+(node:17020) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:41:34.695Z","requestId":"4f90544e-2b76-4649-8eaa-94336b34ade5","method":"POST","path":"/api/storefront/launchshopa/checkout/send-otp","status":200,"durationMs":16,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":121}}}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:41:34.707Z","requestId":"b3e67ffa-af02-4744-b872-feb1b30ab88b","method":"POST","path":"/api/storefront/launchshopa/checkout/verify-otp","status":400,"durationMs":8,"userId":null,"role":null,"shopId":{"buffer":{"0":106,"1":214,"2":255,"3":14,"4":34,"5":29,"6":229,"7":58,"8":73,"9":153,"10":248,"11":121}}}
+✔ real OTP concurrency, cooldown, code expiry and bound proof use existing HTTP contract (694.3048ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7622.357
+

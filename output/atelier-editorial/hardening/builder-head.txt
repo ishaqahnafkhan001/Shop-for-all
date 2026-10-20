@@ -1,0 +1,156 @@
+(node:1552) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "AnalyticsEvent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1552) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"idempotencyKey":1} for model "Job". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:1552) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "SupportStaffInvitation". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:1552) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"providerMessageId":1} for model "CustomerEmailRecipient". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:1552) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "UpgradeIntent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:18.027Z","requestId":"750cf7c1-7a83-4ad3-b926-ed90dbfdf3b8","method":"GET","path":"/api/store-builder/admin","status":200,"durationMs":92,"userId":"6ad70029414da918fb4d1662","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":41,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":95}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:18.039Z","requestId":"77940a32-7476-4dc1-a395-13df79006238","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":2,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:18.176Z","requestId":"489f4c6f-9a04-4f39-b788-d809d4ed016d","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":133,"userId":"6ad70029414da918fb4d1662","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":41,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":95}}}
+✔ vendor can load and save only their own Store Builder theme (2409.792ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:18.794Z","requestId":"d24e99d1-4371-4cc1-9719-30f65a2089f5","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:18.882Z","requestId":"9eb941dd-0f04-419e-958c-1631e558a65a","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":85,"userId":"6ad7002a414da918fb4d1689","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":42,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":134}}}
+✔ Store Builder sanitizes scriptable URLs and script tags across theme content (692.1373ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:19.460Z","requestId":"2508392b-78df-44bf-a91a-d77233c4eb47","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:19.471Z","requestId":"0fad0c38-c88f-4088-b496-e6bf183dab52","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":10,"userId":"6ad7002b414da918fb4d16b6","role":"VendorStaff","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":42,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":173}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:19.472Z","requestId":"0b9da1ce-b952-4f11-91b0-c61d3e643577","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:19.481Z","requestId":"1d451367-3739-450a-a90a-54035f28ed2d","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":7,"userId":"6ad7002b414da918fb4d16ba","role":"Customer","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":42,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":173}}}
+✔ non-VendorAdmin roles cannot mutate Store Builder theme (610.8966ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:20.083Z","requestId":"284402c3-9774-47bb-a832-106a6de759f4","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:20.172Z","requestId":"c6cdea50-02b6-4ad9-9854-701d72430592","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":87,"userId":"6ad7002b414da918fb4d16d4","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":43,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":209}}}
+✔ vendor custom domain save normalizes, validates, and resets verification state (689.6738ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:20.760Z","requestId":"126e30bd-763b-4112-ad24-317f1ef610b5","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:20.791Z","requestId":"22dae071-fa9a-487b-8948-15e87787d5b8","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":30,"userId":"6ad7002c414da918fb4d16fb","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":44,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":248}}}
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:20.802Z","requestId":"a20b4031-84f2-4357-88f8-5e4023059fc9","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:20.852Z","requestId":"84762b0b-c32e-40bc-84de-e76f32974904","method":"PATCH","path":"/api/store-builder/admin","status":400,"durationMs":48,"userId":"6ad7002c414da918fb4d16fb","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":44,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":248}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:20.854Z","requestId":"b3c72a7f-cd32-4b21-8e87-245e0dfd97e0","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: This domain is already connected to another shop.
+    at assertCustomDomainAvailable (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:113:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:205:17) {
+  statusCode: 400,
+  code: 'DOMAIN_ALREADY_IN_USE'
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:20.904Z","requestId":"26f5e1b1-29b5-4869-982b-db85c0ddbcf1","method":"PATCH","path":"/api/store-builder/admin","status":400,"durationMs":49,"userId":"6ad7002c414da918fb4d16fb","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":44,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":22,"11":248}}}
+✔ custom domain save rejects platform, duplicate, and plan-disabled domains (719.9405ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:21.527Z","requestId":"794cda5e-920f-465b-84b7-1fdef6fb05f1","method":"GET","path":"/api/store-builder/admin/bootstrap","status":200,"durationMs":44,"userId":"6ad7002d414da918fb4d1721","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":44,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":30}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:21.531Z","requestId":"26b73f57-1a5a-4e73-91b1-e38f169a2424","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:21.629Z","requestId":"8c41c552-fd57-4d75-8ea8-fe5028bbe637","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":96,"userId":"6ad7002d414da918fb4d1721","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":44,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":30}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:21.631Z","requestId":"7dbc4f07-6bde-43cc-bf84-9841f82d3c3a","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: The store theme was updated by another session.
+    at publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:354:23)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 409,
+  code: 'THEME_CONFLICT',
+  latestRevision: 1,
+  lastPublishedAt: 2026-10-20T05:46:21.585Z
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:21.663Z","requestId":"2cdfd0ac-2a9f-4b77-9fec-369d1679b5b9","method":"PATCH","path":"/api/store-builder/admin","status":409,"durationMs":31,"userId":"6ad7002d414da918fb4d1721","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":44,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":30}}}
+✔ Store Builder publish round trip preserves contract fields and rejects stale revisions (766.086ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✖ full-plan prebuilt blueprint and merchant content survive draft and publish round trips (589.6916ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:22.893Z","requestId":"abddf009-7e0b-438c-9d53-d03271fc308e","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:22.978Z","requestId":"f9444706-5c0d-4593-ab27-e22017d05c17","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":84,"userId":"6ad7002e414da918fb4d1771","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":46,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":110}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.036Z","requestId":"94b40ec2-5ab2-43fa-98df-5022e3cff90e","method":"GET","path":"/api/store-builder/admin/bootstrap","status":200,"durationMs":57,"userId":"6ad7002e414da918fb4d1771","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":46,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":110}}}
+✔ Store Builder bootstrap hydrates selected products beyond the first page and scopes SEO totals (780.1063ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.645Z","requestId":"dbe40bfe-2773-47b0-9cd5-0555ae247b37","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.687Z","requestId":"64b7d904-c45b-48f9-a8d3-2e630d033617","method":"PUT","path":"/api/store-builder/admin/draft","status":200,"durationMs":40,"userId":"6ad7002f414da918fb4d17bc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":47,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":185}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.693Z","requestId":"306830f6-16f4-4127-8a20-469e8f267952","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.787Z","requestId":"84379a80-7c17-43a6-bed5-0dccc679390c","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":92,"userId":"6ad7002f414da918fb4d17bc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":47,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":185}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.791Z","requestId":"d2063535-6f71-403c-bf99-80f2e6d18555","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.875Z","requestId":"96744811-566b-49ca-9d0c-04475d0c5071","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":83,"userId":"6ad7002f414da918fb4d17bc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":47,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":185}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.879Z","requestId":"041b434b-d9d5-4f83-ab26-de3e4f48cbcc","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:23.969Z","requestId":"122da7ea-fa7b-442e-a3b4-ca09049e969d","method":"POST","path":"/api/store-builder/admin/revisions/6ad7002f414da918fb4d17da/restore","status":200,"durationMs":89,"userId":"6ad7002f414da918fb4d17bc","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":47,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":185}}}
+✔ Store Builder drafts stay private, publish clears the draft, and restore creates a new revision (942.8627ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:24.569Z","requestId":"dbe25303-9098-489e-ae76-df44c7a43d47","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:24.608Z","requestId":"67649ef6-926a-4968-8689-ffaf19627b0b","method":"PUT","path":"/api/store-builder/admin/draft","status":403,"durationMs":37,"userId":"6ad70030414da918fb4d17eb","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":48,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":23,"11":232}}}
+✖ Store Builder draft autosave enforces the same limited-plan boundary as publish (637.4323ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:25.239Z","requestId":"0475325c-b835-434d-8f8b-2d0cb163a067","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":2,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:25.283Z","requestId":"40e991f9-9d94-4387-9bba-5534bbf292cd","method":"PUT","path":"/api/store-builder/admin/draft","status":200,"durationMs":42,"userId":"6ad70030414da918fb4d180f","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":48,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":24,"11":12}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:25.288Z","requestId":"e2edd486-def7-4a93-ab21-36c42173917f","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+Update store builder settings error: Error: The social image does not belong to this shop or is no longer available.
+    at assertThemeAssetOwnership (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderAssetService.js:62:27)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async publishStoreBuilder (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\services\storeBuilder\storeBuilderService.js:371:5)
+    at async exports.updateStoreBuilderSettings (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\controllers\storeBuilderController.js:222:30) {
+  statusCode: 403,
+  code: 'SOCIAL_IMAGE_NOT_OWNED'
+}
+{"level":"warn","message":"http_request","timestamp":"2026-10-20T05:46:25.333Z","requestId":"0712dda9-3506-44f4-a821-b3dea511590c","method":"PATCH","path":"/api/store-builder/admin","status":403,"durationMs":44,"userId":"6ad70030414da918fb4d180f","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":48,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":24,"11":12}}}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:25.336Z","requestId":"999c6e76-eec1-46f3-9562-7dc521c3510c","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:46:25.423Z","requestId":"f84c56a4-4172-4eda-b9dc-7cc1f122feb4","method":"PATCH","path":"/api/store-builder/admin","status":200,"durationMs":85,"userId":"6ad70030414da918fb4d180f","role":"VendorAdmin","shopId":{"buffer":{"0":106,"1":215,"2":0,"3":48,"4":65,"5":77,"6":169,"7":24,"8":251,"9":77,"10":24,"11":12}}}
+✔ Store Builder asset ownership and lifecycle protect published media (814.479ms)
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:1552) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✔ expired Store Builder asset cleanup deletes abandoned media but preserves published references (618.9474ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 10
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11521.5321
+
+✖ failing tests:
+
+test at tests\integration\store-builder-safety.integration.test.js:295:1
+✖ full-plan prebuilt blueprint and merchant content survive draft and publish round trips (589.6916ms)
+  RangeError: Theme patch exceeds the supported nesting depth.
+      at checkDepth (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:754:31)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:757:9)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:762:45
+      at Array.map (<anonymous>)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:762:18)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:758:60
+      at Array.map (<anonymous>)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:758:48)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:762:45
+      at Array.map (<anonymous>)
+
+test at tests\integration\store-builder-safety.integration.test.js:438:1
+✖ Store Builder draft autosave enforces the same limited-plan boundary as publish (637.4323ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  403 !== 200
+  
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\integration\store-builder-safety.integration.test.js:448:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+

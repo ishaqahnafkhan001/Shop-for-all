@@ -1,0 +1,186 @@
+[
+  {
+    "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx",
+    "change": "Forward trusted availability to the gallery; reject unavailable client apply attempts for clear UX."
+  },
+  {
+    "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+    "change": "Apply the optional marker to the existing preview root; reuse shared views and inert preview adapters."
+  },
+  {
+    "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx",
+    "change": "Offer DM Sans only for Atelier or an already selected DM Sans value."
+  },
+  {
+    "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/ColorEditor.jsx",
+    "change": "Explain Atelier inverse panels and intentionally fixed decorative fields."
+  },
+  {
+    "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+    "change": "Discover a candidate from trusted metadata; render its actual homepage thumbnail."
+  },
+  {
+    "path": "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/themeAvailability.js",
+    "change": "Pure gallery filter: nine active entries by default; hidden candidate only when explicitly available."
+  },
+  {
+    "path": "ecommerce-admin/tests/fixtures/theme-presentation.jsx",
+    "change": "Synthetic Atelier content, edge cases, and test-only deterministic baseline mode; original nine fixture inputs preserved."
+  },
+  {
+    "path": "ecommerce-admin/vite.config.js",
+    "change": "Allow only the shared font asset directory in addition to the existing Admin root."
+  },
+  {
+    "path": "ecommerce-backend/backend/.env.example",
+    "change": "Document three default-off rollout variables; actual .env unchanged."
+  },
+  {
+    "path": "ecommerce-backend/backend/models/Shop.js",
+    "change": "Optional enum field with undefined default; no backfill or legacy materialization."
+  },
+  {
+    "path": "ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js",
+    "change": "Central write-boundary validation/guard and trusted bootstrap availability; SEO scope forwarded."
+  },
+  {
+    "path": "ecommerce-backend/backend/services/storeBuilder/themeAvailabilityService.js",
+    "change": "Trusted tenant/plan adoption policy; raw/merged/normalized checks; off/allowlist/on; unchanged published identity remains usable."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/atelier-legacy/capture.cjs",
+    "change": "Fixed-time original nine contract snapshot capture."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/atelier-legacy/contracts.json",
+    "change": "Frozen pre-change definitions, versions, raw/normalized/effective configurations and capability outputs."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/store-builder-prebuilt-themes.test.js",
+    "change": "Keep original nine-preset assertions on the immutable legacy subset; tenth tested separately."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-atelier-contract.test.js",
+    "change": "Immutable legacy contracts, marker lifecycle, Mongoose hydration, composition independence, section retention and actual service rejection tests."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-atelier-presentation.test.js",
+    "change": "Bundle real shared/UI modules; verify gallery, dynamic copy, product flags/callbacks, empty hero, sections and scoped CSS/font license."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-capabilities.test.js",
+    "change": "Supply the real new guard dependency to the existing isolated service loader."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-control-wiring.test.js",
+    "change": "Retain nine active-theme publication/rendering cases and supply the new guard dependency."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-preview-data.test.js",
+    "change": "Supply the guard dependency to the existing isolated service loader."
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/storefront-state-delivery.test.js",
+    "change": "Supply the guard dependency to the existing isolated service loader."
+  },
+  {
+    "path": "ecommerce-storefront/src/components/storefront/StorefrontThemeProvider.jsx",
+    "change": "Put the same optional presentation marker on the existing live root."
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierFooter.jsx",
+    "change": "Dynamic identity, existing navigation/support/contact/social links and platform credit."
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierHeader.jsx",
+    "change": "Editorial dynamic wordmark/logo, utilities and accessible mobile navigation."
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierHero.jsx",
+    "change": "Fluid asymmetrical copy/media presentation with existing slides, destinations and controls."
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierProductCard.jsx",
+    "change": "Editorial image fields and controls; no pricing, inventory or cart business logic."
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierSections.jsx",
+    "change": "Dynamic category and story views using existing models/configured content."
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/atelier.css",
+    "change": "Marker-scoped paper/ink/editorial styling, responsive rules, reduced motion and local font face."
+  },
+  {
+    "path": "packages/storefront-renderer/fonts/DM-Sans-OFL.txt",
+    "change": "Official SIL OFL redistribution license."
+  },
+  {
+    "path": "packages/storefront-renderer/fonts/dm-sans-variable.ttf",
+    "change": "Official Google Fonts normal variable DM Sans asset."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontAllProducts.jsx",
+    "change": "Forward homepage presentation to cards and select its scoped container."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontComposition.jsx",
+    "change": "Use an Atelier container while keeping the existing composition planner."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontFooter.jsx",
+    "change": "Add the gated footer view; retain existing link preparation and mobile bottom navigation."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontHeader.jsx",
+    "change": "Add the gated header view; retain menu state, navigation preparation, badges and search callback."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontHero.jsx",
+    "change": "Add the gated hero view, manual pause/reduced motion and Atelier empty-slide handling; preserve legacy branch."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontHome.jsx",
+    "change": "Resolve the marker once and pass it to existing homepage components."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontProductCard.jsx",
+    "change": "Forward the existing computed prices, stock, action handlers and design flags to an isolated view."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontSectionRenderer.jsx",
+    "change": "Forward presentation through existing registered section branches; add scoped feature/trust hooks."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontSectionVariants.jsx",
+    "change": "Gated category/story/promo presentation; existing category models and optional section renderers reused."
+  },
+  {
+    "path": "packages/storefront-renderer/reference/referenceCore.jsx",
+    "change": "Atelier-only max-width variable and quoted local-font fallbacks; old style output preserved."
+  },
+  {
+    "path": "packages/storefront-renderer/styles.css",
+    "change": "Import the scoped stylesheet."
+  },
+  {
+    "path": "packages/storefront-theme/capabilities.cjs",
+    "change": "Protect identity under existing access boundaries; mark Atelier header/hero structure as theme-controlled."
+  },
+  {
+    "path": "packages/storefront-theme/index.cjs",
+    "change": "Optional validated/sanitized marker, explicit null clearing, pure selector and DM Sans support."
+  },
+  {
+    "path": "packages/storefront-theme/index.mjs",
+    "change": "Expose the same selector to ESM consumers."
+  },
+  {
+    "path": "packages/storefront-theme/prebuilt.cjs",
+    "change": "Hidden tenth definition, full/limited switch semantics and Atelier-only merchant section retention."
+  },
+  {
+    "path": "track.md",
+    "change": "Current completion report, manifest, evidence, blockers and next action; historical tracker preserved below."
+  }
+]

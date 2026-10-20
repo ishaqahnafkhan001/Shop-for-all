@@ -3,6 +3,7 @@
 
 import { memo, useEffect, useState } from "react";
 import { Heart, ShoppingBag, Zap, Star } from "lucide-react";
+import { AtelierProductCard } from '../atelier/AtelierProductCard';
 
 import {
     buttonShapeClasses,
@@ -34,6 +35,7 @@ export const ProductCard = memo(function ProductCard({
     isWishlisted,
     LinkComponent,
     previewDevice,
+    presentationVariant,
 }) {
     const price = getPrice(product);
     const originalPrice = product.compareAtPrice || product.pricing?.compareAtPrice || product.sellingPrice || product.pricing?.sellingPrice || price;
@@ -129,6 +131,11 @@ export const ProductCard = memo(function ProductCard({
         event.stopPropagation();
         onWishlistToggle?.(product);
     };
+
+    if (presentationVariant === 'atelier-editorial') return <AtelierProductCard product={product} index={index} config={productCard} LinkComponent={LinkComponent}
+        model={{ price, originalPrice, activeDiscount, hasDiscount, stockText, isOutOfStock, rating, reviewCount, showRating, showReviews, sku, wishlisted,
+            imageUrl, imageFailed, onImageError: () => setImageFailed(true), handleAdd, handleBuyNow, handleWishlist, canBuyNow: Boolean(onProductBuyNow),
+            cardColors, aspectClass, imageRadiusClass, cardRadiusClass, shadowClass, cardAlignment, buttonInlineStyle, buttonShapeClass, titleSizeClass, priceSizeClass }} />;
 
     return (
         <article

@@ -13,7 +13,8 @@ import {
     X,
 } from "lucide-react";
 
-import { getSortedNavigation, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
+import { getSortedNavigation, getStorefrontPresentationVariant, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
+import { AtelierHeader } from '../atelier/AtelierHeader';
 import {
     DefaultLink,
     EditorSelectionFrame,
@@ -306,6 +307,14 @@ export function ReferenceStorefrontHeader({
         <div className={`grid w-full min-w-0 items-center gap-6 ${previewDevice ? forcedDesktopLayoutClass : desktopLayoutClass}`}>
             {[brandSlot, searchSlot, standardActionSlot].map((slot, index) => <div key={index} className="min-w-0">{slot}</div>)}
         </div>
+    );
+
+    if (getStorefrontPresentationVariant(theme) === 'atelier-editorial') return (
+        <EditorSelectionFrame editor={editor} id="header" label="Navbar" locked>
+            <AtelierHeader theme={theme} brandName={brandName} badges={<><VerifiedSellerBadge verification={shopVerification} /><TrustedBadge badge={trustedBadge} /></>}
+                navigation={navigationSlot} links={[...headerNavLinks, { label: 'Track Order', url: '/track' }, { label: 'Account', url: '/account' }, { label: 'Cart', url: '/cart' }]}
+                cartCount={cartCount} onSearch={onSearch} open={mobileMenuOpen} onToggle={() => setMobileMenuOpen(value => !value)} onClose={() => setMobileMenuOpen(false)} LinkComponent={LinkComponent} />
+        </EditorSelectionFrame>
     );
 
     return (

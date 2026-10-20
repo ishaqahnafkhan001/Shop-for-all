@@ -8,7 +8,8 @@ import ActionButtons from './ActionButtons.jsx';
 import { ProductInformationTabs } from './ProductExtras.jsx';
 export function ProductDetailsView({ product, currentVariant, displayStock, baseOriginalPrice,
     displayDiscount, displayFinalPrice, availableAttributes, selectedAttributes, handleVariantSelect,
-    quantity, setQuantity, handleAddToCart, handleBuyNow, relatedContent, reviewContent }) {
+    quantity, setQuantity, handleAddToCart, handleBuyNow, relatedContent, reviewContent, presentationVariant }) {
+    const atelier = presentationVariant === 'atelier-editorial';
     const maxQuantity = Math.max(Number(displayStock) || 0, 1);
     const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1));
     const increaseQuantity = () => setQuantity(prev => Math.min(maxQuantity, prev + 1));
@@ -18,7 +19,7 @@ export function ProductDetailsView({ product, currentVariant, displayStock, base
         : productImages;
 
     return (
-        <div className="sf-page sf-mobile-action-page">
+        <div className={atelier ? "sf-page sf-mobile-action-page atelier-product" : "sf-page sf-mobile-action-page"}>
             <div className="sf-shell-wide py-5 sm:py-8 lg:py-10">
                 <Link href="/" className="mb-6 inline-flex items-center text-sm font-bold text-slate-500 transition-colors hover:text-[var(--sf-accent)] group">
                     <div className="mr-3 rounded-full bg-white p-2 shadow-sm transition-colors group-hover:bg-[var(--sf-accent)] group-hover:text-white">
@@ -27,8 +28,9 @@ export function ProductDetailsView({ product, currentVariant, displayStock, base
                     Continue Shopping
                 </Link>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.82fr)] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.72fr)]">
+                <div data-atelier-part={atelier ? "product-grid" : undefined} className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.82fr)] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.72fr)]">
                     <ProductImageGallery
+                        presentationVariant={presentationVariant}
                         images={galleryImages}
                         category={product.category}
                         displayDiscount={displayDiscount}
@@ -37,8 +39,9 @@ export function ProductDetailsView({ product, currentVariant, displayStock, base
                     />
 
                     <aside className="lg:sticky lg:top-28">
-                    <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-4 shadow-xl shadow-slate-200/70 backdrop-blur sm:p-6 lg:rounded-[2.25rem] lg:p-7">
+                    <div data-atelier-part={atelier ? "purchase-panel" : undefined} className="rounded-[2rem] border border-slate-200 bg-white/95 p-4 shadow-xl shadow-slate-200/70 backdrop-blur sm:p-6 lg:rounded-[2.25rem] lg:p-7">
                         <ProductInfo
+                            presentationVariant={presentationVariant}
                             title={product.title}
                             averageRating={product.averageRating}
                             numReviews={product.numReviews}
@@ -52,6 +55,7 @@ export function ProductDetailsView({ product, currentVariant, displayStock, base
                         <div className="my-6 h-px bg-slate-200" />
 
                         <VariantSelector
+                            presentationVariant={presentationVariant}
                             availableAttributes={availableAttributes}
                             selectedAttributes={selectedAttributes}
                             variants={product.variants}
@@ -59,7 +63,7 @@ export function ProductDetailsView({ product, currentVariant, displayStock, base
                         />
 
                         {displayStock > 0 && (
-                            <div className="my-5 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                            <div data-atelier-part={atelier ? "quantity" : undefined} className="my-5 flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
                                 <div>
                                     <p className="text-sm font-black text-slate-950">Quantity</p>
                                     <p className="mt-1 text-xs font-semibold text-slate-500">Choose how many units to add.</p>
@@ -91,6 +95,7 @@ export function ProductDetailsView({ product, currentVariant, displayStock, base
                         )}
 
                         <ActionButtons
+                            presentationVariant={presentationVariant}
                             displayStock={displayStock}
                             onAddToCart={handleAddToCart}
                             onBuyNow={handleBuyNow}
@@ -101,6 +106,7 @@ export function ProductDetailsView({ product, currentVariant, displayStock, base
 
                 <div className="mt-12 border-t border-slate-200 pt-8">
                     <ProductInformationTabs
+                        presentationVariant={presentationVariant}
                         features={product.features}
                         specifications={product.specifications}
                         comments={product.comments}

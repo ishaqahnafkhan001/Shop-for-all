@@ -1,0 +1,97 @@
+✔ cart price: base only (559.0938ms)
+✔ cart price: missing override (0.1444ms)
+✔ cart price: zero snapshot (0.0807ms)
+✔ cart price: zero final (0.0803ms)
+✔ cart price: positive override (0.0969ms)
+✔ cart price: zero base (0.0761ms)
+✔ cart price: null (0.0837ms)
+✔ cart price: empty (0.0837ms)
+✔ cart price: invalid (0.1045ms)
+✔ cart price: negative (0.1066ms)
+✔ cart price: infinite (0.072ms)
+✔ cart price: boolean (0.0477ms)
+✔ cart price: numeric string (0.0432ms)
+✔ cart price: missing all (0.0434ms)
+✔ detail and refresh agree for override undefined (0.568ms)
+✔ detail and refresh agree for override null (0.0901ms)
+✔ detail and refresh agree for override 0 (0.0901ms)
+✔ detail and refresh agree for override 200 (0.0955ms)
+✔ detail and refresh agree for override  (0.0892ms)
+✔ detail and refresh agree for override invalid (0.0746ms)
+✔ scheduled sale and zero base remain zero; normal scheduled discounts stay intact (0.1454ms)
+✔ actual cart: quantity, mixed totals, persistence, reload and mounted tenant change preserve free item (2.7125ms)
+✔ product actions put selected zero override into cart and retain sale calculation (1.0777ms)
+✔ checkout refresh ignores late tenant response and unmounted completion (0.9411ms)
+✔ checkout totals and coupon payload keep zero with multiple items (0.7373ms)
+✔ modern-general: actual cart and checkout render zero price (14.7987ms)
+✔ minimal-general: actual cart and checkout render zero price (6.968ms)
+✔ modern-fashion: actual cart and checkout render zero price (7.381ms)
+✔ editorial-fashion: actual cart and checkout render zero price (7.5889ms)
+✔ luxury-jewellery: actual cart and checkout render zero price (8.8691ms)
+✔ minimal-jewellery: actual cart and checkout render zero price (7.7851ms)
+✔ soft-beauty: actual cart and checkout render zero price (7.7937ms)
+✔ modern-electronics: actual cart and checkout render zero price (8.7969ms)
+✔ fresh-grocery: actual cart and checkout render zero price (7.8094ms)
+✔ atelier-editorial: actual cart and checkout render zero price (8.3393ms)
+✔ OTP initial send, duplicate clicks, server cooldown, resend and cleanup (5.0308ms)
+✔ OTP rate limit and transport failure show error without an uncontrolled retry (1.1738ms)
+✔ OTP numeric paste, invalid, expired and correct proof stay server-bound (2.7538ms)
+✔ OTP stale request or unmounted response never supplies an order proof (1.1619ms)
+✔ active OTP dialog exposes resend states, sanitizes pasted input and preserves busy restrictions (7.4741ms)
+✔ guest actual order controller ignores client prices; override undefined (1699.86ms)
+✔ guest actual order controller ignores client prices; override null (7.6887ms)
+✔ guest actual order controller ignores client prices; override 0 (7.6536ms)
+✔ guest actual order controller ignores client prices; override 200 (7.5773ms)
+✔ customer actual order controller ignores client prices; override undefined (6.8368ms)
+✔ customer actual order controller ignores client prices; override null (3.8627ms)
+✔ customer actual order controller ignores client prices; override 0 (3.8406ms)
+✔ customer actual order controller ignores client prices; override 200 (4.4592ms)
+✔ checkout cooldown metadata is forwarded without changing provider or OTP limits (3.2643ms)
+✔ verification retry is bounded, tenant-scoped, and rechecks suspension instead of bypassing it (2.0457ms)
+✖ guest checkout: verification gates order, reopen retains cooldown, duplicate verification places once (9.774ms)
+✖ customer checkout: verification gates order, reopen retains cooldown, duplicate verification places once (3.3895ms)
+ℹ tests 52
+ℹ suites 0
+ℹ pass 50
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2636.9008
+
+✖ failing tests:
+
+test at tests\storefront-release-hardening.test.js:253:45
+✖ guest checkout: verification gates order, reopen retains cooldown, duplicate verification places once (9.774ms)
+  AssertionError [ERR_ASSERTION]: Expected rendered control
+      at find (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-release-hardening.test.js:52:99)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-release-hardening.test.js:269:34)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\storefront-release-hardening.test.js:253:45
+✖ customer checkout: verification gates order, reopen retains cooldown, duplicate verification places once (3.3895ms)
+  AssertionError [ERR_ASSERTION]: Expected rendered control
+      at find (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-release-hardening.test.js:52:99)
+      at TestContext.<anonymous> (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\tests\storefront-release-hardening.test.js:269:34)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+
+Command failed: C:/Program Files/nodejs/node.exe --test tests/storefront-release-hardening.test.js

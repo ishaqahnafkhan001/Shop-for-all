@@ -1,6 +1,8 @@
 import React from 'react';
+import {AtelierAccountAccent} from '@scaleup/storefront-renderer';
 
 export default function AuthView({
+                                     presentationVariant,
                                      isRegistering,
                                      setIsRegistering,
                                      authForm,
@@ -13,6 +15,7 @@ export default function AuthView({
                                      otpLoading
                                  }) {
 
+    const atelier = presentationVariant === 'atelier-editorial';
     // Helper to format seconds into MM:SS
     const formatTime = (seconds) => {
         const m = Math.floor(seconds / 60);
@@ -21,7 +24,8 @@ export default function AuthView({
     };
 
     return (
-        <div className="sf-page flex min-h-[70vh] items-center justify-center px-4 py-10">
+        <div className={atelier ? "sf-page sf-shell-wide atelier-account" : "sf-page flex min-h-[70vh] items-center justify-center px-4 py-10"}>
+            {atelier && <AtelierAccountAccent/>}
             <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/70 sm:p-8">
                 <p className="sf-kicker mb-2">{isRegistering ? 'Customer account' : 'Welcome back'}</p>
                 <h1 className="mb-2 text-3xl font-black text-slate-950">
@@ -34,8 +38,9 @@ export default function AuthView({
                 <form onSubmit={handleAuthSubmit} className="space-y-4">
                     {isRegistering && (
                         <div>
-                            <label className="mb-1.5 block text-sm font-bold text-slate-700">Full Name</label>
+                            <label htmlFor={atelier ? "account-full-name" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Full Name</label>
                             <input
+                                id={atelier ? "account-full-name" : undefined}
                                 required
                                 type="text"
                                 value={authForm.fullName}
@@ -47,8 +52,9 @@ export default function AuthView({
                     )}
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-bold text-slate-700">Email Address</label>
+                        <label htmlFor={atelier ? "account-email" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Email Address</label>
                         <input
+                                id={atelier ? "account-email" : undefined}
                             required
                             type="email"
                             value={authForm.email}
@@ -59,8 +65,9 @@ export default function AuthView({
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-bold text-slate-700">Password</label>
+                        <label htmlFor={atelier ? "account-password" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Password</label>
                         <input
+                                id={atelier ? "account-password" : undefined}
                             required
                             type="password"
                             value={authForm.password}
@@ -72,8 +79,9 @@ export default function AuthView({
 
                     {isRegistering && otpSent && (
                         <div>
-                            <label className="mb-1.5 block text-sm font-bold text-slate-700">Verification Code</label>
+                            <label htmlFor={atelier ? "account-otp" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Verification Code</label>
                             <input
+                                id={atelier ? "account-otp" : undefined}
                                 required
                                 type="text"
                                 placeholder="Enter 6-digit code"
