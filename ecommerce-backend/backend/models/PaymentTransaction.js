@@ -88,7 +88,7 @@ paymentTransactionSchema.index(
     { provider: 1, transactionId: 1 },
     {
         unique: true,
-        partialFilterExpression: { transactionId: { $type: 'string', $ne: '' } }
+        partialFilterExpression: { transactionId: { $type: 'string', $gt: '' } }
     }
 );
 paymentTransactionSchema.index({ invoiceId: 1, status: 1 });

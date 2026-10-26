@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import PaginationBar from '../../components/ui/PaginationBar.jsx';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
@@ -370,7 +371,7 @@ const PlanCard = ({
     const buttonLabel = isDowngrade
         ? 'Schedule downgrade'
         : isCurrent
-            ? 'Current plan'
+            ? (cycle === subscription.billingCycle ? 'Renew current plan' : 'Change billing cycle')
             : 'Choose plan';
 
     return (
@@ -433,7 +434,7 @@ const PlanCard = ({
             <button
                 type="button"
                 onClick={() => onSelectPlan(plan)}
-                disabled={Boolean(creatingPlan) || isCurrent}
+                disabled={Boolean(creatingPlan) || subscription?.paymentReviewStatus === 'pending_approval'}
                 className={[
                     'mt-6 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black outline-none transition',
                     'focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
@@ -458,6 +459,24 @@ const PlanCard = ({
         </article>
     );
 };
+
+const downloadInvoice = invoice => {
+    const lines = [invoice.status === 'paid' ? 'Subscription payment receipt' : 'Subscription invoice',
+        `Invoice: ${invoice.invoiceNumber || getEntityId(invoice)}`, `Plan: ${invoice.planName}`,
+        `Billing cycle: ${invoice.billingCycle}`, `Amount: BDT ${Number(invoice.amount).toFixed(2)}`,
+        `Status: ${invoice.status}`, `Created: ${formatDate(invoice.createdAt)}`,
+        `Due: ${formatDate(invoice.dueDate)}`, `Paid: ${formatDate(invoice.paidAt)}`,
+        `Purchased period start: ${formatDate(invoice.servicePeriodStart)}`,
+        `Purchased period end: ${formatDate(invoice.servicePeriodEnd)}`];
+    const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `billing-${String(invoice.invoiceNumber || getEntityId(invoice)).replace(/[^a-zA-Z0-9_-]/g, '-')}.txt`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+const isPayableInvoice = invoice => ['unpaid', 'rejected'].includes(invoice.status) && (!invoice.dueDate || new Date(invoice.dueDate).getTime() >= Date.now());
 
 const InvoiceList = ({ invoices, onPay }) => (
     <div>
@@ -494,7 +513,8 @@ const InvoiceList = ({ invoices, onPay }) => (
                             <td className="px-5 py-4 text-slate-600">{formatDate(invoice.dueDate)}</td>
                             <td className="px-5 py-4 text-slate-600">{formatDate(invoice.paidAt)}</td>
                             <td className="px-5 py-4 text-right">
-                                {['unpaid', 'rejected'].includes(invoice.status) && (
+                                <button type="button" onClick={() => downloadInvoice(invoice)} className="mr-3 text-xs font-bold text-indigo-700">Download {invoice.status === 'paid' ? 'receipt' : 'invoice'}</button>
+                                {isPayableInvoice(invoice) && (
                                     <button
                                         type="button"
                                         onClick={() => onPay(invoice)}
@@ -543,7 +563,8 @@ const InvoiceList = ({ invoices, onPay }) => (
                             </div>
                         </div>
 
-                        {['unpaid', 'rejected'].includes(invoice.status) && (
+                        <button type="button" onClick={() => downloadInvoice(invoice)} className="mt-3 text-xs font-bold text-indigo-700">Download {invoice.status === 'paid' ? 'receipt' : 'invoice'}</button>
+                        {isPayableInvoice(invoice) && (
                             <button
                                 type="button"
                                 onClick={() => onPay(invoice)}
@@ -568,6 +589,15 @@ const Billing = () => {
     const [error, setError] = useState('');
     const [current, setCurrent] = useState(null);
     const [invoices, setInvoices] = useState([]);
+    const [payableInvoices, setPayableInvoices] = useState([]);
+    const [selectedInvoiceCache, setSelectedInvoiceCache] = useState(null);
+    const [invoicePage, setInvoicePage] = useState(1);
+    const [paymentPage, setPaymentPage] = useState(1);
+    const [payablePage, setPayablePage] = useState(1);
+    const [pages, setPages] = useState({});
+    const [sectionErrors, setSectionErrors] = useState([]);
+    const loadEpoch = useRef(0);
+    const invoiceRequest = useRef(null);
     const [payments, setPayments] = useState([]);
     const [timeline, setTimeline] = useState([]);
     const [cycle, setCycle] = useState('monthly');
@@ -587,44 +617,41 @@ const Billing = () => {
     });
 
     const load = useCallback(async () => {
+        const epoch = ++loadEpoch.current;
         setLoading(true);
         setError('');
 
         try {
-            const [currentRes, invoiceRes, paymentRes, timelineRes] = await Promise.all([
+            const results = await Promise.allSettled([
                 API.get('/admin/billing/current'),
-                API.get('/admin/billing/invoices', { params: { limit: 20 } }),
-                API.get('/admin/billing/payments', { params: { limit: 20 } }),
-                API.get('/admin/billing/timeline', { params: { limit: 20 } })
+                API.get('/admin/billing/invoices', { params: { limit: 20, page: invoicePage } }),
+                API.get('/admin/billing/payments', { params: { limit: 20, page: paymentPage } }),
+                API.get('/admin/billing/timeline', { params: { limit: 20 } }),
+                API.get('/admin/billing/invoices', { params: { payable: true, limit: 20, page: payablePage } })
             ]);
-
-            const currentData = currentRes.data.data || {};
-            const invoiceRows = invoiceRes.data.data || [];
-
-            setCurrent(currentData);
-            setInvoices(invoiceRows);
-            setPayments(paymentRes.data.data || []);
-            setTimeline(timelineRes.data.data || []);
-
-            const payable = invoiceRows.find((invoice) =>
-                ['unpaid', 'rejected'].includes(invoice.status)
-            );
-
+            if (epoch !== loadEpoch.current) return;
+            if (results[0].status === 'rejected') throw results[0].reason;
+            const bodies = results.map(result => result.status === 'fulfilled' ? result.value.data : { data: [] });
+            setCurrent(bodies[0].data || {});
+            setInvoices(bodies[1].data || []);
+            setPayments(bodies[2].data || []);
+            setTimeline(bodies[3].data || []);
+            setPayableInvoices(bodies[4].data || []);
+            setPages({ invoices: bodies[1].pagination, payments: bodies[2].pagination, payable: bodies[4].pagination });
+            setSectionErrors(results.flatMap((result, index) => result.status === 'rejected' ? [`${['Subscription', 'Invoice history', 'Payment history', 'Timeline', 'Payable invoices'][index]} could not load. Retry this page.`] : []));
+            const payable = bodies[4].data?.[0];
             if (payable) {
-                setSelectedInvoiceId(getEntityId(payable));
-                setPaymentForm((previous) => ({
-                    ...previous,
-                    amount: String(payable.amount || '')
-                }));
-            } else {
-                setSelectedInvoiceId('');
+                setSelectedInvoiceId(previous => previous || getEntityId(payable));
+                setSelectedInvoiceCache(previous => previous || payable);
+                setPaymentForm(previous => ({ ...previous, amount: previous.amount || String(payable.amount) }));
             }
         } catch (err) {
+            if (epoch !== loadEpoch.current) return;
             setError(err.response?.data?.error || 'Failed to load billing.');
         } finally {
-            setLoading(false);
+            if (epoch === loadEpoch.current) setLoading(false);
         }
-    }, []);
+    }, [invoicePage, paymentPage, payablePage]);
 
     useEffect(() => {
         const timer = window.setTimeout(load, 0);
@@ -702,18 +729,8 @@ const Billing = () => {
 
     const currentPlanIndex = PLAN_ORDER.indexOf(planAccess.planKey);
 
-    const selectedInvoice = useMemo(
-        () =>
-            invoices.find(
-                (invoice) => getEntityId(invoice) === String(selectedInvoiceId)
-            ),
-        [invoices, selectedInvoiceId]
-    );
-
-    const paymentCandidates = useMemo(
-        () => invoices.filter((invoice) => ['unpaid', 'rejected'].includes(invoice.status)),
-        [invoices]
-    );
+    const paymentCandidates = useMemo(() => Array.from(new Map([...payableInvoices, ...invoices.filter(isPayableInvoice), ...(selectedInvoiceCache ? [selectedInvoiceCache] : [])].filter(isPayableInvoice).map(invoice => [getEntityId(invoice), invoice])).values()), [payableInvoices, invoices, selectedInvoiceCache]);
+    const selectedInvoice = paymentCandidates.find(invoice => getEntityId(invoice) === selectedInvoiceId);
 
     const createInvoice = async (planName) => {
         setCreatingPlan(planName);
@@ -723,18 +740,23 @@ const Billing = () => {
                 () => null
             );
 
+            const choice = `${planName}:${cycle}`;
+            if (invoiceRequest.current?.choice !== choice) invoiceRequest.current = { choice, key: crypto.randomUUID() };
             const response = await API.post('/admin/billing/invoices', {
+                requestKey: invoiceRequest.current.key,
                 planName,
                 billingCycle: cycle,
                 upgradeIntentToken: searchParams.get('intent') || undefined
             });
 
             const invoice = response.data.data;
-            toast.success(`${planName} invoice created`);
+            invoiceRequest.current = null;
+            toast.success(`${planName} invoice ready`);
 
             await load();
 
             setSelectedInvoiceId(getEntityId(invoice));
+            setSelectedInvoiceCache(invoice);
             setPaymentForm((previous) => ({
                 ...previous,
                 amount: String(invoice?.amount || '')
@@ -786,12 +808,7 @@ const Billing = () => {
             return;
         }
 
-        if (
-            targetIndex !== currentPlanIndex ||
-            subscription?.status !== 'active'
-        ) {
-            createInvoice(plan.name);
-        }
+        createInvoice(plan.name);
     };
 
     const toggleRetainedProduct = (productId) => {
@@ -870,6 +887,7 @@ const Billing = () => {
 
     const selectInvoiceForPayment = (invoice) => {
         setSelectedInvoiceId(getEntityId(invoice));
+        setSelectedInvoiceCache(invoice);
         setPaymentForm((previous) => ({
             ...previous,
             amount: String(invoice?.amount || '')
@@ -896,17 +914,21 @@ const Billing = () => {
         setSubmitting(true);
 
         try {
-            await API.post(
+            const response = await API.post(
                 `/admin/billing/invoices/${selectedInvoiceId}/submit-payment`,
                 {
                     ...paymentForm,
-                    amount: Number(
-                        paymentForm.amount || selectedInvoice?.amount || 0
-                    )
+                    amount: Number(selectedInvoice.amount)
                 }
             );
 
-            toast.success('Payment submitted for Super Admin verification');
+            if (response.data?.data?.status === 'rejected') {
+                toast.error('This transaction was already rejected. Contact billing support if the transfer was correct; do not pay again without checking.');
+                return;
+            }
+            toast.success('Payment details received. Check the payment status below.');
+            setSelectedInvoiceId('');
+            setSelectedInvoiceCache(null);
 
             setPaymentForm({
                 provider: 'manual_bkash',
@@ -1217,11 +1239,13 @@ const Billing = () => {
                     </div>
                 </Panel>
 
+                {sectionErrors.length > 0 && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4">{sectionErrors.map(message => <p key={message}>{message}</p>)}<button type="button" onClick={load} className="mt-2 underline">Retry billing sections</button></div>}
+                {subscription?.pendingBillingCycle && <p className="rounded-xl bg-indigo-50 p-4">Requested billing cycle: {subscription.pendingBillingCycle}. Your active cycle remains {subscription.billingCycle} until approval.</p>}
                 <Panel id="plans" className="scroll-mt-6 p-5 sm:p-6">
                     <SectionHeading
                         eyebrow="Plans"
                         title="Choose the right plan"
-                        description="Upgrade immediately by creating an invoice, or schedule a downgrade for the end of your current paid period."
+                        description="Renew or change plans after payment verification. Remaining paid days are carried forward. Monthly purchases add 30 days; yearly purchases add 365 days. Downgrades take effect at the paid period end."
                         icon={Sparkles}
                         action={
                             <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100/80 p-1">
@@ -1276,6 +1300,7 @@ const Billing = () => {
                             invoices={invoices}
                             onPay={selectInvoiceForPayment}
                         />
+                        <PaginationBar pagination={pages.invoices} label="invoices" onPrevious={() => setInvoicePage(value => value - 1)} onNext={() => setInvoicePage(value => value + 1)} />
                     </Panel>
 
                     <Panel id="payment" className="scroll-mt-6 p-5 sm:p-6">
@@ -1307,6 +1332,13 @@ const Billing = () => {
                                 </div>
                             )}
 
+                            <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm">
+                                <p className="font-bold">Where to pay</p>
+                                <p className="mt-1 whitespace-pre-line">{current?.paymentInstructions?.[{ manual_bkash: 'bkash', manual_nagad: 'nagad', manual_bank: 'bank' }[paymentForm.provider]] || 'Payment destination has not been configured. Contact billing support before sending money.'}</p>
+                                {current?.paymentInstructions?.support && <p className="mt-2">Support: {current.paymentInstructions.support}</p>}
+                                <p className="mt-2">Use the invoice number as your reference. Send the exact invoice amount, then submit your transaction ID below.</p>
+                            </div>
+                            <PaginationBar pagination={pages.payable} label="payable invoices" onPrevious={() => setPayablePage(value => value - 1)} onNext={() => setPayablePage(value => value + 1)} />
                             <div className="mt-5 space-y-4">
                                 <label className="block">
                                     <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-slate-500">
@@ -1316,11 +1348,12 @@ const Billing = () => {
                                         value={selectedInvoiceId}
                                         onChange={(event) => {
                                             const invoiceId = event.target.value;
-                                            const invoice = invoices.find(
+                                            const invoice = paymentCandidates.find(
                                                 (item) => getEntityId(item) === invoiceId
                                             );
 
                                             setSelectedInvoiceId(invoiceId);
+                                            setSelectedInvoiceCache(invoice || null);
                                             setPaymentForm((previous) => ({
                                                 ...previous,
                                                 amount: String(invoice?.amount || '')
@@ -1394,7 +1427,8 @@ const Billing = () => {
                                             min="0"
                                             step="0.01"
                                             inputMode="decimal"
-                                            value={paymentForm.amount}
+                                            readOnly
+                                            value={selectedInvoice?.amount ?? paymentForm.amount}
                                             onChange={(event) =>
                                                 setPaymentForm((previous) => ({
                                                     ...previous,
@@ -1528,8 +1562,8 @@ const Billing = () => {
                         <Panel className="p-5 sm:p-6">
                             <SectionHeading
                                 eyebrow="Payments"
-                                title="Recent payment status"
-                                description="Your latest manual verification submissions."
+                                title="Payment history"
+                                description="Your manual payment history, review results, and rejection reasons."
                                 icon={ShieldCheck}
                             />
 
@@ -1539,7 +1573,7 @@ const Billing = () => {
                                         No manual payments submitted yet.
                                     </div>
                                 ) : (
-                                    payments.slice(0, 5).map((payment) => (
+                                    payments.map((payment) => (
                                         <div
                                             key={getEntityId(payment)}
                                             className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-3"
@@ -1559,11 +1593,12 @@ const Billing = () => {
                                                         .join(' · ')}
                                                 </p>
                                             </div>
-                                            <StatusBadge value={payment.status} />
+                                            <div><StatusBadge value={payment.status} /><p className="mt-1 text-xs">{money(payment.amount)} · Submitted {formatDate(payment.createdAt)}</p><p className="text-xs">Reviewed {formatDate(payment.verifiedAt)}</p>{payment.rejectionReason && <p className="mt-2 max-w-sm text-sm text-rose-700">Reason: {payment.rejectionReason}<br />If this transfer was correct, contact billing support before paying again.</p>}</div>
                                         </div>
                                     ))
                                 )}
                             </div>
+                            <PaginationBar pagination={pages.payments} label="payments" onPrevious={() => setPaymentPage(value => value - 1)} onNext={() => setPaymentPage(value => value + 1)} />
                         </Panel>
 
                         <Panel className="p-5 sm:p-6">

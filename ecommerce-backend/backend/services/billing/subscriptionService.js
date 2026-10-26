@@ -192,9 +192,11 @@ const markPendingApproval = async ({
     planSlug = '',
     billingCycle = 'monthly',
     invoiceId = null,
-    req = null
+    req = null,
+    session = null,
+    deferEvents = false
 }) => {
-    const current = subscription || await Subscription.findById(subscriptionId);
+    const current = subscription || await Subscription.findById(subscriptionId).session(session);
     if (!current) throw new Error('Subscription not found');
     const previous = {
         status: current.status,
@@ -209,11 +211,11 @@ const markPendingApproval = async ({
     current.pendingPlanId = planId || null;
     current.pendingPlanName = planName || '';
     current.pendingPlanSlug = planSlug || getPlanSlug(planName || 'Starter');
-    current.billingCycle = billingCycle || current.billingCycle || 'monthly';
+    current.pendingBillingCycle = billingCycle || current.billingCycle || 'monthly';
     current.lastInvoiceId = invoiceId || current.lastInvoiceId || null;
-    await current.save();
+    await current.save({ session });
 
-    await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, {
+    const eventPayload = {
         req,
         shopId: current.shopId,
         subscriptionId: current._id,
@@ -228,7 +230,9 @@ const markPendingApproval = async ({
         },
         affectedResources: ['subscription', 'payment_approval'],
         metadata: { notifyVendor: false }
-    });
+    };
+    if (deferEvents) current.$locals.deferredSubscriptionEvent = { eventType: SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, eventPayload };
+    else await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.SUBSCRIPTION_CHANGED, eventPayload);
 
     return current;
 };
@@ -307,7 +311,7 @@ const activateSubscription = async ({
     if (
         current.status === 'active' &&
         invoiceId &&
-        String(current.lastInvoiceId || '') === String(invoiceId)
+        String(current.lastPaidInvoiceId || '') === String(invoiceId)
     ) {
         return current;
     }
@@ -331,9 +335,14 @@ const activateSubscription = async ({
     current.paymentReviewStatus = 'approved';
     current.paymentReviewCompletedAt = now;
     current.billingCycle = billingCycle;
-    current.currentPeriodStart = now;
-    current.currentPeriodEnd = addDays(now, periodDays);
-    current.activatedAt = now;
+    const paidThrough = current.currentPeriodEnd && new Date(current.currentPeriodEnd);
+    const periodBase = previous.status === 'active' && paidThrough > now ? paidThrough : now;
+    current.currentPeriodStart = periodBase > now ? current.currentPeriodStart || now : now;
+    current.currentPeriodEnd = addDays(periodBase, periodDays);
+    current.activatedAt = current.activatedAt || now;
+    current.lastPaidInvoiceId = invoiceId || current.lastPaidInvoiceId;
+    current.pendingBillingCycle = '';
+    current.$locals.purchasedPeriod = { start: periodBase, end: current.currentPeriodEnd };
     current.pendingPlanId = null;
     current.pendingPlanName = '';
     current.pendingPlanSlug = '';
@@ -460,6 +469,7 @@ const returnToTrialOrPastDueAfterRejection = async (subscription, options = {}) 
     subscription.pendingPlanId = null;
     subscription.pendingPlanName = '';
     subscription.pendingPlanSlug = '';
+    subscription.pendingBillingCycle = '';
     subscription.paymentReviewStatus = 'rejected';
     subscription.paymentReviewCompletedAt = now;
 

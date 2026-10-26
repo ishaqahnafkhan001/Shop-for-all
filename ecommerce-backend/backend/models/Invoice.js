@@ -62,6 +62,10 @@ const invoiceSchema = new mongoose.Schema({
         default: 'unpaid',
         index: true
     },
+    currentPaymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaymentTransaction', default: null },
+    requestKey: { type: String, maxlength: 120 },
+    servicePeriodStart: Date,
+    servicePeriodEnd: Date,
     dueDate: Date,
     paidAt: Date,
     notes: {

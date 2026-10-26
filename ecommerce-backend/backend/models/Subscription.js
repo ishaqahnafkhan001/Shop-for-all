@@ -70,6 +70,9 @@ const subscriptionSchema = new mongoose.Schema({
         enum: ['monthly', 'yearly'],
         default: 'monthly'
     },
+    pendingBillingCycle: { type: String, enum: ['monthly', 'yearly', ''], default: '' },
+    billingRevision: { type: Number, default: 0 },
+    lastPaidInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice', default: null },
     trialStartedAt: Date,
     trialEndsAt: Date,
     currentPeriodStart: Date,

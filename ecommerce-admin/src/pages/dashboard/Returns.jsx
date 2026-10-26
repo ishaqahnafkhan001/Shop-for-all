@@ -37,6 +37,7 @@ const Returns = () => {
     const [form, setForm] = useState({ orderId: '', reason: '', customerNote: '' });
     const [proofImages, setProofImages] = useState([]);
     const [proofVideo, setProofVideo] = useState(null);
+    const [receiptDraft, setReceiptDraft] = useState({});
     const [refundForm, setRefundForm] = useState({ status: 'Pending', amount: '', method: '', reference: '', note: '' });
     const debouncedOrderId = useDebouncedValue(orderId, 300);
     const runAbortable = useAbortableRequest();
@@ -113,13 +114,16 @@ const Returns = () => {
     };
 
     const updateStatus = async (returnId, nextStatus) => {
+        setSaving(true);
         try {
-            const { data } = await API.patch(`/admin/returns/${returnId}/status`, { status: nextStatus });
+            const { data } = await API.patch(`/admin/returns/${returnId}/status`, { status: nextStatus, ...(nextStatus === 'Received' ? { receiptItems: (selectedReturn.items || []).map(item => ({ productId: item.productId, variantId: item.variantId, restockQuantity: receiptDraft[`${item.productId}:${item.variantId}`]?.quantity === '' ? undefined : Number(receiptDraft[`${item.productId}:${item.variantId}`]?.quantity), dispositionNote: receiptDraft[`${item.productId}:${item.variantId}`]?.note || '' })) } : {}) });
             toast.success('Return status updated');
             setSelectedReturn(data.data);
             fetchReturns(pagination.page);
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to update status');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -156,9 +160,11 @@ const Returns = () => {
 
     const openDetails = (item) => {
         setSelectedReturn(item);
+        setReceiptDraft(Object.fromEntries((item.items || []).map(line => [`${line.productId}:${line.variantId}`, { quantity: '', note: '' }])));
         setRefundForm({
             status: item.refund?.status || 'Pending',
             amount: item.refund?.amount ?? '',
+            shippingAmount: item.refund?.shippingAmount || 0, taxAmount: item.refund?.taxAmount || 0,
             method: item.refund?.method || '',
             reference: item.refund?.reference || '',
             note: item.refund?.note || ''
@@ -459,29 +465,51 @@ const Returns = () => {
                         )}
 
                         <div className="grid gap-2 sm:grid-cols-2">
-                            {selectedNextStatuses.map(option => (
-                                <Button key={option} variant="secondary" onClick={() => updateStatus(selectedReturn._id, option)}>
+                            {selectedNextStatuses.filter(option => !['Received', 'Refunded'].includes(option)).map(option => (
+                                <Button key={option} disabled={saving} variant="secondary" onClick={() => updateStatus(selectedReturn._id, option)}>
                                     Mark {option}
                                 </Button>
                             ))}
                         </div>
 
+                        {['Approved', 'Received'].includes(selectedReturn.status) && !selectedReturn.receivedAt && !selectedReturn.inventoryRestoredAt && (
+                            <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+                                <h3 className="text-sm font-bold">Receive returned items</h3>
+                                <p className="text-sm text-slate-600">Record how many units can be sold again. Only those units are added to stock. Refunds are recorded separately below.</p>
+                                {(selectedReturn.items || []).map(item => {
+                                    const key = `${item.productId}:${item.variantId}`;
+                                    return <div key={key} className="space-y-2 rounded border p-3">
+                                        <p className="font-semibold">{item.title} · Receiving {item.quantity}</p>
+                                        <label className="block text-sm">Sellable units<input type="number" min="0" max={item.quantity} step="1" value={receiptDraft[key]?.quantity ?? ''} onChange={event => setReceiptDraft(previous => ({ ...previous, [key]: { ...previous[key], quantity: event.target.value } }))} className="ml-2 w-24 rounded border p-2" /></label>
+                                        <label className="block text-sm">Reason for units not restocked<input value={receiptDraft[key]?.note || ''} maxLength={300} onChange={event => setReceiptDraft(previous => ({ ...previous, [key]: { ...previous[key], note: event.target.value } }))} placeholder="Damaged, missing catalog variant, etc." className="mt-1 w-full rounded border p-2" /></label>
+                                    </div>;
+                                })}
+                                <Button isLoading={saving} disabled={saving || (selectedReturn.items || []).some(item => receiptDraft[`${item.productId}:${item.variantId}`]?.quantity === '' || receiptDraft[`${item.productId}:${item.variantId}`]?.quantity === undefined)} onClick={() => updateStatus(selectedReturn._id, 'Received')}>Record receipt and restock</Button>
+                            </section>
+                        )}
+                        {(selectedReturn.receivedAt || selectedReturn.inventoryRestoredAt) && <p className="rounded bg-emerald-50 p-3 text-sm text-emerald-900">Receipt recorded. Refund completion will not add stock again.</p>}
+
                         <form onSubmit={updateRefund} className="space-y-3 rounded-xl border border-slate-200 p-4">
+                            <fieldset disabled={selectedReturn.refund?.status === 'Refunded'} className="space-y-3">
                             <h3 className="text-sm font-bold text-slate-950">Manual refund record</h3>
+                            <p className="text-xs text-slate-600">Total refund includes the delivery and tax amounts entered below. The remainder is allocated to returned products. Completed records are locked.</p>
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <select
+                                    aria-label="Refund status"
                                     value={refundForm.status}
                                     onChange={(event) => setRefundForm(prev => ({ ...prev, status: event.target.value }))}
                                     className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                                 >
-                                    {['NotRequired', 'Pending', 'Refunded', 'Failed'].map(option => <option key={option}>{option}</option>)}
+                                    {['NotRequired', 'Pending', 'Refunded', 'Failed'].map(option => <option key={option} disabled={option === 'Refunded' && !selectedReturn.receivedAt && !selectedReturn.inventoryRestoredAt}>{option}</option>)}
                                 </select>
                                 <input
                                     value={refundForm.amount}
                                     onChange={(event) => setRefundForm(prev => ({ ...prev, amount: event.target.value }))}
                                     type="number"
                                     min="0"
-                                    placeholder="Amount"
+                                    step="0.01"
+                                    aria-label="Total refund amount"
+                                    placeholder="Total refund including delivery and tax"
                                     className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                                 />
                                 <input
@@ -497,6 +525,9 @@ const Returns = () => {
                                     className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                                 />
                             </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {['shippingAmount', 'taxAmount'].map(field => <label key={field} className="text-sm">{field === 'shippingAmount' ? 'Delivery refund (BDT)' : 'Tax refund (BDT)'}<input required type="number" step="0.01" min="0" value={refundForm[field] ?? 0} onChange={event => setRefundForm(previous => ({ ...previous, [field]: event.target.value }))} className="mt-1 w-full rounded border p-2" /></label>)}
+                            </div>
                             <textarea
                                 value={refundForm.note}
                                 onChange={(event) => setRefundForm(prev => ({ ...prev, note: event.target.value }))}
@@ -507,6 +538,7 @@ const Returns = () => {
                             <div className="flex justify-end">
                                 <Button type="submit" isLoading={saving}>Save refund</Button>
                             </div>
+                            </fieldset>
                         </form>
                     </div>
                 )}

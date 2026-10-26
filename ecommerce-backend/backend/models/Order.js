@@ -54,6 +54,8 @@ const orderItemSchema = new Schema({
         min: 0
     },
 
+    couponDiscount: { type: Number, min: 0 },
+
     buyingPrice: {
         type: Number,
         required: true,
@@ -201,9 +203,13 @@ const timelineEventSchema = new Schema({
  * 🔹 Shipping Schema
  */
 const shippingSchema = new Schema({
+    rateSnapshot: {
+        ruleId: String, configurationVersion: Number, originalCharge: Number,
+        discount: Number, finalCharge: Number, currency: String, district: String, legacy: Boolean
+    },
     zone: {
         type: String,
-        enum: ['Inside Dhaka', 'Outside Dhaka'],
+        maxlength: 120,
         required: true
     },
 
@@ -309,6 +315,8 @@ const courierShipmentSchema = new Schema({
  * 🔹 Main Order Schema
  */
 const orderSchema = new Schema({
+    deliveryFactId: { type: Schema.Types.ObjectId, ref: 'FinancialFact' },
+    refundRevision: { type: Number, default: 0, min: 0 },
 
     shop_id: {
         type: Schema.Types.ObjectId,
@@ -524,4 +532,5 @@ orderSchema.pre('validate', function () {
     }
 });
 
+orderSchema.index({ shop_id: 1, 'shipping.deliveredAt': 1 });
 module.exports = mongoose.model('Order', orderSchema);

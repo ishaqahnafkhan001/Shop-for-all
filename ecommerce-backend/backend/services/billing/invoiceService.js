@@ -22,6 +22,7 @@ const createInvoice = async ({
     amount,
     dueDate,
     notes = '',
+    requestKey,
     session
 }) => {
     const subscription = await Subscription.findById(subscriptionId).session(session || null);
@@ -38,6 +39,7 @@ const createInvoice = async ({
         planSlug: finalPlanSlug,
         upgradeIntentId,
         invoiceNumber: generateInvoiceNumber(),
+        requestKey,
         amount: Number(finalAmount || 0),
         billingCycle,
         status: 'unpaid',
@@ -54,7 +56,8 @@ const createInvoice = async ({
 const markInvoiceSubmitted = async (invoiceId, options = {}) => {
     const invoice = await Invoice.findById(invoiceId).session(options.session || null);
     if (!invoice) throw new Error('Invoice not found');
-    if (invoice.status === 'paid') throw new Error('Invoice is already paid');
+    if (!['unpaid', 'rejected'].includes(invoice.status)) throw new Error('Only unpaid or rejected invoices can accept payment.');
+    if (invoice.dueDate && invoice.dueDate < new Date()) throw new Error('Invoice has expired. Create a new invoice.');
     invoice.status = 'submitted';
     if (options.notes) invoice.notes = options.notes;
     await invoice.save({ session: options.session });

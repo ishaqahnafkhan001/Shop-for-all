@@ -1,3 +1,5 @@
+const reportingCache = require('../services/cacheService');
+const { snapshotCouponDiscounts, orderAmounts, money } = require('../services/orders/reportingMetrics');
 const Shop = require('../models/Shop'); // Or wherever your Shop model is
 const Product = require('../models/Product');
 const bcrypt = require('bcryptjs');
@@ -47,7 +49,7 @@ const {
     verifyPublicOrderAccessOtp,
     requireOrderAccess
 } = require('../services/orders/orderAccessService');
-const { getShippingCostForZone } = require('../services/orders/orderPricingService');
+const { getOrderShippingRate } = require('../services/orders/shippingRateService');
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
 const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
@@ -256,7 +258,7 @@ const buildReturnItemsFromOrder = (order, submittedItems = []) => {
         }
 
         const quantity = Number(requestedItem.quantity);
-        if (!Number.isFinite(quantity) || quantity < 1 || quantity > Number(orderItem.quantity || 0)) {
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > Number(orderItem.quantity || 0)) {
             throw new Error(`Invalid return quantity for ${orderItem.title}.`);
         }
 
@@ -266,7 +268,7 @@ const buildReturnItemsFromOrder = (order, submittedItems = []) => {
             title: orderItem.title,
             sku: orderItem.sku || '',
             quantity,
-            refundAmount: Math.max(0, Number(orderItem.price || 0) * quantity)
+            refundAmount: money(Math.floor(orderAmounts(order).find(item => item.productId === String(orderItem.productId?._id || orderItem.productId) && item.variantId === String(orderItem.variantId)).net * quantity / orderItem.quantity))
         };
     });
 };
@@ -331,16 +333,6 @@ exports.createPublicOrder = async (req, res) => {
         // =========================
         const requestedZone = shipping?.zone || shippingZone;
 
-        if (!requestedZone) {
-            throw new Error('Shipping zone is required');
-        }
-
-        if (!['Inside Dhaka', 'Outside Dhaka'].includes(requestedZone)) {
-            throw new Error('Invalid shipping zone');
-        }
-
-        const normalizedShippingCost = getShippingCostForZone(requestedZone);
-
         let normalizedAddress = shipping?.address;
 
         if (!normalizedAddress && shippingAddress && typeof shippingAddress === 'object') {
@@ -358,7 +350,7 @@ exports.createPublicOrder = async (req, res) => {
                 .map(part => part.trim())
                 .filter(Boolean);
 
-            const city = parts.length > 1 ? parts[parts.length - 1] : 'Dhaka';
+            const city = parts.length > 1 ? parts[parts.length - 1] : '';
             const addressLine = parts.length > 1
                 ? parts.slice(0, -1).join(', ')
                 : parts[0];
@@ -412,6 +404,9 @@ exports.createPublicOrder = async (req, res) => {
                 });
             }
         }
+
+        const deliveryRate = await getOrderShippingRate({ shopId: shop._id, district: normalizedAddress.city, legacyZone: requestedZone, token: shipping?.quoteToken, session });
+        const normalizedShippingCost = deliveryRate.originalCharge;
 
         await consumeCheckoutPhoneProof({
             shopId: shop._id,
@@ -579,6 +574,7 @@ exports.createPublicOrder = async (req, res) => {
         // =========================
         // PROMOTION / COUPON
         // =========================
+        let eligibleProductIds;
         let discountAmount = 0;
         let finalShippingCost = normalizedShippingCost;
         let promotionSnapshot = null;
@@ -601,6 +597,7 @@ exports.createPublicOrder = async (req, res) => {
             }
 
             discountAmount = promotionResult.discountAmount || 0;
+            eligibleProductIds = promotionResult.eligibleProductIds;
 
             if (promotionResult.freeShipping) {
                 finalShippingCost = 0;
@@ -626,7 +623,7 @@ exports.createPublicOrder = async (req, res) => {
         const [newOrder] = await Order.create([{
             shop_id: shop._id,
             customer: orderCustomer._id,
-            items: itemsWithSecurePrices,
+            items: snapshotCouponDiscounts(itemsWithSecurePrices, discountAmount, eligibleProductIds),
             pricing: {
                 subtotal: calculatedSubtotal,
                 discount: discountAmount,
@@ -636,7 +633,8 @@ exports.createPublicOrder = async (req, res) => {
             },
             promotion: promotionSnapshot,
             shipping: {
-                zone: requestedZone,
+                zone: deliveryRate.zone,
+                rateSnapshot: { ...deliveryRate, discount: deliveryRate.originalCharge - finalShippingCost, finalCharge: finalShippingCost },
                 cost: finalShippingCost,
                 address: normalizedAddress
             },
@@ -694,6 +692,7 @@ exports.createPublicOrder = async (req, res) => {
         }
 
         await session.commitTransaction();
+        await reportingCache.delPattern(`admin:dashboard-overview:${shop._id}:*`);
 
         await enqueueLowStockAlertsForLogs(logsWithRef);
 
@@ -1178,6 +1177,7 @@ exports.cancelTrackedOrder = async (req, res) => {
         });
 
         await session.commitTransaction();
+        await reportingCache.delPattern(`admin:dashboard-overview:${shopId}:*`);
 
         await Promise.all([
             enqueueLowStockAlertsForLogs(restoredLogs),

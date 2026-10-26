@@ -1,10 +1,11 @@
+const { reportInterval } = require('../services/orders/reportingMetrics');
+const { getSalesReport } = require('../services/orders/salesReportService');
 const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
 const mongoose = require('mongoose');
 const AnalyticsEvent = require('../models/AnalyticsEvent');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Shop = require('../models/Shop');
-const ReturnRequest = require('../models/ReturnRequest');
 const { generateAdInsight, normalizeRequestedFields } = require('../services/adInsightAIService');
 const { buildLimitError, getShopPlanAccess } = require('../services/billing/planAccessService');
 const { getWeeklyAiUsage } = require('../services/billing/planUsageService');
@@ -27,17 +28,10 @@ const MIN_AI_AGGREGATE_COHORT = getAiConfig().aggregatePrivacyThreshold;
 
 const asObjectId = (value) => new mongoose.Types.ObjectId(String(value));
 
-const getRangeStart = getGrowthInterval;
+const getRangeStart = query => ({ range: query.from || query.to || ['custom', 'this-month', 'last-month'].includes(query.range) ? 'custom' : ['7', '30', '90'].includes(String(query.range)) ? Number(query.range) : 30, ...reportInterval(query) });
 
 const roundRate = (value) => Math.round((Number(value || 0)) * 100) / 100;
 const rate = (part, total) => total > 0 ? roundRate((part / total) * 100) : 0;
-const deliveredRevenueDateExpression = {
-    $ifNull: [
-        '$shipping.deliveredAt',
-        { $ifNull: ['$deliveredAt', '$updatedAt'] }
-    ]
-};
-
 const uniqueList = (items, limit = 8) => [
     ...new Set((items || []).map(item => String(item || '').trim()).filter(Boolean))
 ].slice(0, limit);
@@ -164,179 +158,49 @@ const classifyProduct = (metrics) => {
 
 const getProductMetrics = async ({ shopId, from, to, productId = null }) => {
     const shopObjectId = asObjectId(shopId);
-    const match = {
-        shop_id: shopObjectId,
-        createdAt: { $gte: from, $lt: to },
-        product_id: { $ne: null },
-        eventType: { $in: Object.values(eventTypes) }
-    };
-
-    if (productId) match.product_id = asObjectId(productId);
-
-    const deliveredOrderMatch = {
-        shop_id: shopObjectId,
-        isDeleted: false,
-        status: 'Delivered',
-        'payment.status': { $ne: 'Refunded' },
-        ...(productId ? { 'items.productId': asObjectId(productId) } : {})
-    };
-
-    const returnedRevenueMatch = {
-        shop_id: shopObjectId,
-        isDeleted: false,
-        $or: [
-            { status: { $in: ['Received', 'Refunded', 'Closed'] } },
-            { 'refund.status': 'Refunded' }
-        ],
-        ...(productId ? { 'items.productId': asObjectId(productId) } : {})
-    };
-
-    const [eventMetrics, statusMetrics, deliveredRevenueMetrics, returnedRevenueMetrics] = await Promise.all([
+    const [events, report, catalog] = await Promise.all([
         AnalyticsEvent.aggregate([
-            { $match: match },
-            {
-                $group: {
-                    _id: '$product_id',
-                    views: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.views] }, 1, 0] } },
-                    addToCarts: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.carts] }, 1, 0] } },
-                    checkouts: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.checkouts] }, 1, 0] } },
-                    orders: { $sum: { $cond: [{ $eq: ['$eventType', eventTypes.orders] }, 1, 0] } }
-                }
-            }
+            { $match: { shop_id: shopObjectId, createdAt: { $gte: from, $lt: to }, product_id: productId ? asObjectId(productId) : { $ne: null } } },
+            { $group: { _id: '$product_id',
+                views: { $sum: { $cond: [{ $eq: ['$eventType', 'product_view'] }, 1, 0] } },
+                addToCarts: { $sum: { $cond: [{ $eq: ['$eventType', 'add_to_cart'] }, 1, 0] } },
+                checkouts: { $sum: { $cond: [{ $eq: ['$eventType', 'begin_checkout'] }, 1, 0] } },
+                orders: { $sum: { $cond: [{ $eq: ['$eventType', 'order_placed'] }, 1, 0] } }
+            } }
         ]),
-        Order.aggregate([
-            {
-                $match: {
-                    shop_id: shopObjectId,
-                    isDeleted: false,
-                    createdAt: { $gte: from, $lt: to },
-                    ...(productId ? { 'items.productId': asObjectId(productId) } : {})
-                }
-            },
-            { $unwind: '$items' },
-            ...(productId ? [{ $match: { 'items.productId': asObjectId(productId) } }] : []),
-            {
-                $group: {
-                    _id: '$items.productId',
-                    confirmedOrders: { $sum: { $cond: [{ $eq: ['$status', 'Confirmed'] }, 1, 0] } },
-                    deliveredOrders: { $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] } },
-                    cancelledOrders: { $sum: { $cond: [{ $eq: ['$status', 'Cancelled'] }, 1, 0] } },
-                    returnedOrders: { $sum: { $cond: [{ $eq: ['$status', 'Returned'] }, 1, 0] } }
-                }
-            }
-        ]),
-        Order.aggregate([
-            { $match: deliveredOrderMatch },
-            { $addFields: { revenueDate: deliveredRevenueDateExpression } },
-            { $match: { revenueDate: { $gte: from, $lt: to } } },
-            { $unwind: '$items' },
-            ...(productId ? [{ $match: { 'items.productId': asObjectId(productId) } }] : []),
-            {
-                $group: {
-                    _id: '$items.productId',
-                    deliveredOrderIds: { $addToSet: '$_id' },
-                    deliveredRevenue: { $sum: '$items.total' }
-                }
-            },
-            {
-                $project: {
-                    deliveredOrders: { $size: '$deliveredOrderIds' },
-                    deliveredRevenue: 1
-                }
-            }
-        ]),
-        ReturnRequest.aggregate([
-            { $match: returnedRevenueMatch },
-            {
-                $addFields: {
-                    revenueDate: {
-                        $ifNull: [
-                            '$refund.refundedAt',
-                            '$updatedAt'
-                        ]
-                    }
-                }
-            },
-            { $match: { revenueDate: { $gte: from, $lt: to } } },
-            { $unwind: '$items' },
-            ...(productId ? [{ $match: { 'items.productId': asObjectId(productId) } }] : []),
-            {
-                $group: {
-                    _id: '$items.productId',
-                    returnedQuantity: { $sum: '$items.quantity' },
-                    returnedRevenue: { $sum: '$items.refundAmount' }
-                }
-            }
-        ])
+        getSalesReport({ tenantId: shopId, from, to }),
+        Product.find({ shop_id: shopObjectId, isDeleted: false, ...(productId ? { _id: productId } : {}) })
+            .select('title slug category images pricing averageRating numReviews variants.stock isActive status').lean()
     ]);
-
-    const productIds = [
-        ...new Set([
-            ...eventMetrics.map(item => String(item._id)),
-            ...statusMetrics.map(item => String(item._id)),
-            ...deliveredRevenueMetrics.map(item => String(item._id)),
-            ...returnedRevenueMetrics.map(item => String(item._id))
-        ])
-    ].filter(Boolean);
-
-    const products = productIds.length
-        ? await Product.find({
-            _id: { $in: productIds.map(asObjectId) },
-            shop_id: shopObjectId,
-            isDeleted: false
-        }).select('title slug category images pricing averageRating numReviews').lean()
-        : [];
-
-    const productMap = new Map(products.map(product => [String(product._id), product]));
-    const statusMap = new Map(statusMetrics.map(item => [String(item._id), item]));
-    const eventMap = new Map(eventMetrics.map(item => [String(item._id), item]));
-    const revenueMap = new Map(deliveredRevenueMetrics.map(item => [String(item._id), item]));
-    const returnedRevenueMap = new Map(returnedRevenueMetrics.map(item => [String(item._id), item]));
-
-    return productIds
-        .map(id => {
-            const product = productMap.get(id);
-            if (!product) return null;
-
-            const event = eventMap.get(id) || {};
-            const status = statusMap.get(id) || {};
-            const revenue = revenueMap.get(id) || {};
-            const returned = returnedRevenueMap.get(id) || {};
-            const netDeliveredRevenue = Math.max(0, Number(revenue.deliveredRevenue || 0) - Number(returned.returnedRevenue || 0));
-            const metrics = {
-                _id: id,
-                product,
-                views: event.views || 0,
-                addToCarts: event.addToCarts || 0,
-                checkouts: event.checkouts || 0,
-                orders: event.orders || 0,
-                revenue: netDeliveredRevenue,
-                confirmedOrders: status.confirmedOrders || 0,
-                deliveredOrders: revenue.deliveredOrders || status.deliveredOrders || 0,
-                cancelledOrders: status.cancelledOrders || 0,
-                returnedOrders: status.returnedOrders || 0,
-                deliveredRevenue: netDeliveredRevenue,
-                grossDeliveredRevenue: revenue.deliveredRevenue || 0,
-                returnedRevenue: returned.returnedRevenue || 0,
-                returnedQuantity: returned.returnedQuantity || 0,
-                revenueDefinition: 'Net delivered product revenue excludes shipping and tax, uses order item snapshots, and deducts refunded return item value.'
-            };
-
-            metrics.addToCartRate = rate(metrics.addToCarts, metrics.views);
-            metrics.conversionRate = rate(metrics.orders, metrics.views);
-            metrics.cartToOrderRate = rate(metrics.orders, metrics.addToCarts);
-            metrics.recommendation = classifyProduct(metrics);
-            metrics.label = metrics.recommendation.label;
-
-            return metrics;
-        })
-        .filter(Boolean)
-        .sort((a, b) => (b.revenue - a.revenue) || (b.orders - a.orders) || (b.views - a.views));
+    const eventMap = new Map(events.map(row => [String(row._id), row]));
+    const salesMap = new Map(report.products.filter(row => !productId || row._id === String(productId)).map(row => [row._id, row]));
+    const catalogMap = new Map(catalog.map(row => [String(row._id), row]));
+    const ids = new Set([...catalogMap.keys(), ...salesMap.keys()]);
+    return [...ids].map(id => {
+        const sales = salesMap.get(id), event = eventMap.get(id) || {};
+        const current = catalogMap.get(id);
+        const product = current || { _id: id, title: sales?.title || 'Archived product', archived: true };
+        const metrics = {
+            _id: id, product, views: event.views || 0, addToCarts: event.addToCarts || 0,
+            checkouts: event.checkouts || 0, orders: event.orders || 0,
+            revenue: sales?.revenue || 0, deliveredRevenue: sales?.revenue || 0,
+            grossDeliveredRevenue: sales?.gross || 0, returnedRevenue: sales?.refunds || 0,
+            deliveredOrders: sales?.orders || 0, revenueDefinition: report.meta.revenueDefinition,
+            dataWarnings: report.meta.warnings,
+            promotionReady: Boolean(current?.isActive && current.status === 'Published' && current.variants?.some(v => v.stock > 0))
+        };
+        metrics.addToCartRate = rate(metrics.addToCarts, metrics.views);
+        metrics.conversionRate = rate(metrics.orders, metrics.views);
+        metrics.cartToOrderRate = rate(metrics.orders, metrics.addToCarts);
+        metrics.recommendation = classifyProduct(metrics);
+        metrics.label = metrics.recommendation.label;
+        return metrics;
+    }).sort((a, b) => b.revenue - a.revenue || b.orders - a.orders || b.views - a.views);
 };
 
 exports.getGrowthOverview = async (req, res) => {
     try {
-        const { range, from, to } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query);
         const shopId = req.tenantId;
 
         const [summary] = await AnalyticsEvent.aggregate([
@@ -359,7 +223,7 @@ exports.getGrowthOverview = async (req, res) => {
         ]);
 
         const products = await getProductMetrics({ shopId, from, to });
-        const bestProduct = products[0] || null;
+        const bestProduct = products.find(item => !item.product.archived && item.deliveredOrders > 0 && item.revenue > 0) || null;
         const needsAttention = products.find(item => ['fix_before_ads', 'checkout_problem'].includes(item.label)) || null;
         const totalDeliveredRevenue = products.reduce((sum, item) => sum + (Number(item.revenue) || 0), 0);
         const totals = {
@@ -384,19 +248,19 @@ exports.getGrowthOverview = async (req, res) => {
         });
     } catch (err) {
         console.error('Growth overview error:', err);
-        res.status(500).json({ success: false, error: 'Failed to load growth overview' });
+        res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : 'Failed to load growth overview' });
     }
 };
 
 exports.getGrowthProducts = async (req, res) => {
     try {
-        const { range, from, to } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query);
         const products = await getProductMetrics({ shopId: req.tenantId, from, to });
 
         res.status(200).json({ success: true, data: { range, products } });
     } catch (err) {
         console.error('Growth products error:', err);
-        res.status(500).json({ success: false, error: 'Failed to load product growth analytics' });
+        res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : 'Failed to load product growth analytics' });
     }
 };
 
@@ -406,7 +270,7 @@ exports.getGrowthProductDetail = async (req, res) => {
             return res.status(400).json({ success: false, error: 'Invalid product ID' });
         }
 
-        const { range, from, to } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query);
         const product = await Product.findOne({
             _id: req.params.productId,
             shop_id: req.tenantId,
@@ -435,9 +299,9 @@ exports.getGrowthProductDetail = async (req, res) => {
             {
                 $group: {
                     _id: {
-                        year: { $year: '$createdAt' },
-                        month: { $month: '$createdAt' },
-                        day: { $dayOfMonth: '$createdAt' },
+                        year: { $year: { date: '$createdAt', timezone: 'Asia/Dhaka' } },
+                        month: { $month: { date: '$createdAt', timezone: 'Asia/Dhaka' } },
+                        day: { $dayOfMonth: { date: '$createdAt', timezone: 'Asia/Dhaka' } },
                         eventType: '$eventType'
                     },
                     count: { $sum: 1 }
@@ -445,39 +309,7 @@ exports.getGrowthProductDetail = async (req, res) => {
             },
             { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
         ]);
-        const deliveredDaily = await Order.aggregate([
-            {
-                $match: {
-                    shop_id: asObjectId(req.tenantId),
-                    isDeleted: false,
-                    status: 'Delivered',
-                    'items.productId': asObjectId(req.params.productId)
-                }
-            },
-            { $addFields: { revenueDate: deliveredRevenueDateExpression } },
-            { $match: { revenueDate: { $gte: from, $lt: to } } },
-            { $unwind: '$items' },
-            { $match: { 'items.productId': asObjectId(req.params.productId) } },
-            {
-                $group: {
-                    _id: {
-                        year: { $year: '$revenueDate' },
-                        month: { $month: '$revenueDate' },
-                        day: { $dayOfMonth: '$revenueDate' }
-                    },
-                    count: { $addToSet: '$_id' },
-                    revenue: { $sum: '$items.total' }
-                }
-            },
-            {
-                $project: {
-                    _id: 1,
-                    count: { $size: '$count' },
-                    revenue: 1
-                }
-            },
-            { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-        ]);
+        const productReport = await getSalesReport({ tenantId: req.tenantId, from, to, productId: req.params.productId });
         const dailyRows = [
             ...daily.map(item => ({
                 date: `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`,
@@ -485,10 +317,10 @@ exports.getGrowthProductDetail = async (req, res) => {
                 count: item.count,
                 revenue: 0
             })),
-            ...deliveredDaily.map(item => ({
-                date: `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`,
+            ...productReport.salesByDay.map(item => ({
+                date: item.date,
                 eventType: 'delivered_revenue',
-                count: item.count,
+                count: item.orders,
                 revenue: item.revenue
             }))
         ].sort((a, b) => a.date.localeCompare(b.date) || a.eventType.localeCompare(b.eventType));
@@ -512,18 +344,19 @@ exports.getGrowthProductDetail = async (req, res) => {
                     cartToOrderRate: 0,
                     recommendation: classifyProduct({ views: 0, addToCarts: 0, orders: 0 })
                 },
-                daily: dailyRows
+                daily: dailyRows,
+                meta: productReport.meta
             }
         });
     } catch (err) {
         console.error('Growth product detail error:', err);
-        res.status(500).json({ success: false, error: 'Failed to load product insight' });
+        res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : 'Failed to load product insight' });
     }
 };
 
 exports.getGrowthSearch = async (req, res) => {
     try {
-        const { range, from, to } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query);
         const searchTerms = await AnalyticsEvent.aggregate([
             {
                 $match: {
@@ -569,23 +402,23 @@ exports.getGrowthSearch = async (req, res) => {
         });
     } catch (err) {
         console.error('Growth search error:', err);
-        res.status(500).json({ success: false, error: 'Failed to load search analytics' });
+        res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : 'Failed to load search analytics' });
     }
 };
 
 exports.getGrowthRecommendations = async (req, res) => {
     try {
-        const { range, from, to } = getRangeStart(req.query.range);
+        const { range, from, to } = getRangeStart(req.query);
         const products = await getProductMetrics({ shopId: req.tenantId, from, to });
         const recommendations = products
-            .filter(item => ['winner', 'hidden_gem', 'fix_before_ads', 'checkout_problem'].includes(item.label))
+            .filter(item => !item.product.archived && ['winner', 'hidden_gem', 'fix_before_ads', 'checkout_problem'].includes(item.label))
             .slice(0, 12)
             .map(item => ({
                 product: item.product,
                 label: item.label,
                 reason: item.recommendation.message,
-                adRecommendation: ['winner', 'hidden_gem'].includes(item.label)
-                    ? 'Recommended for ads'
+                adRecommendation: ['winner', 'hidden_gem'].includes(item.label) && item.promotionReady
+                    ? 'Preliminary signal — review stock and margins'
                     : 'Fix before running ads',
                 suggestedAdAngle: item.label === 'hidden_gem'
                     ? 'Show this product to more people because current buyers respond well.'
@@ -598,7 +431,7 @@ exports.getGrowthRecommendations = async (req, res) => {
         res.status(200).json({ success: true, data: { range, recommendations } });
     } catch (err) {
         console.error('Growth recommendations error:', err);
-        res.status(500).json({ success: false, error: 'Failed to load recommendations' });
+        res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : 'Failed to load recommendations' });
     }
 };
 

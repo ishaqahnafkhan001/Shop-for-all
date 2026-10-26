@@ -1,4 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReportHeader, ChartPanel, RankedBars, InventoryMovementChart } from '../../components/dashboard/ReportVisuals.jsx';
+import useReportPeriod from '../../hooks/useReportPeriod.js';
+import ReportPeriod from '../../components/dashboard/ReportPeriod.jsx';
+import ReportComparison from '../../components/dashboard/ReportComparison.jsx';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, Package, ShoppingCart, TrendingUp, AlertTriangle,
@@ -21,8 +25,12 @@ const DashboardRevenueChart = lazy(() => import('./components/DashboardRevenueCh
 const Overview = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const requestRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
+  const { period, setPeriod } = useReportPeriod();
+  const [comparison, setComparison] = useState(null);
+  const [reportMeta, setReportMeta] = useState(null);
   const [revenue, setRevenue] = useState({});
   const [movement, setMovement] = useState([]);
   const [recentMovements, setRecentMovements] = useState([]);
@@ -61,13 +69,19 @@ const Overview = () => {
   }, [canViewPlatformAnnouncements]);
 
   const fetchData = useCallback(async () => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
     setLoading(true);
     setOverviewError('');
     try {
-      const overviewRes = await API.get('/admin/dashboard-overview');
+      const overviewRes = await API.get('/admin/dashboard-overview', { params: period, signal: controller.signal });
+      if (controller.signal.aborted) return;
       const overviewData = overviewRes.data.data || {};
 
       setStats(overviewData.stats || {});
+      setReportMeta(overviewData.meta || null);
+      setComparison(overviewData.comparison || null);
       setRevenue(overviewData.revenue || {});
       setMovement(overviewData.movement || []);
       setRecentMovements(overviewData.recentMovements || []);
@@ -77,22 +91,23 @@ const Overview = () => {
       setCapabilities(previous => ({ ...previous, ...(overviewData.capabilities || {}) }));
 
     } catch {
+      if (controller.signal.aborted) return;
       setOverviewError('Dashboard load failed. Please retry in a moment.');
       toast.error("Dashboard load failed");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
-  }, []);
+  }, [period]);
 
 	useEffect(() => {
 	    const timer = window.setTimeout(fetchData, 0);
-      return () => window.clearTimeout(timer);
+      return () => { window.clearTimeout(timer); requestRef.current?.abort(); };
   }, [fetchData, user?.role]);
 
   const chartData = useMemo(() => (revenue?.monthlyData || []).map(item => {
     const d = new Date(item.year, item.month - 1);
     return {
-      name: d.toLocaleString('default', { month: 'short' }),
+      name: d.toLocaleString('default', { month: 'short', year: 'numeric' }),
       Revenue: item.revenue,
       Profit: item.profit
     };
@@ -105,7 +120,7 @@ const Overview = () => {
       || topProducts.length > 0
       || lowStock.length > 0;
 
-  if (loading && !hasDashboardData) {
+  if (loading) {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <AdminLoadingState
@@ -116,36 +131,28 @@ const Overview = () => {
     );
   }
 
+  if (overviewError) return <div className="space-y-4 p-4"><ReportPeriod key={JSON.stringify(period)} period={period} onChange={setPeriod} label="Sales period" /><AdminErrorState title="Dashboard unavailable" description={overviewError} action={<button type="button" onClick={fetchData} className="rounded bg-rose-700 px-4 py-2 text-white">Retry</button>} /></div>;
+
   const overview = revenue?.overview || {};
   const goToTopProducts = () => {
-    navigate(hasFeature(user, 'growthCenter') ? '/dashboard/growth?focus=top-products' : '/dashboard/products');
+    navigate(hasFeature(user, 'growthCenter') ? `/dashboard/growth?focus=top-products&${new URLSearchParams(period)}` : '/dashboard/products');
   };
 
   const statCards = [
-    { title: 'Total Revenue', value: `৳ ${overview.totalRevenue?.toLocaleString() || 0}`, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { title: 'Net product sales', value: `৳ ${overview.totalRevenue?.toLocaleString() || 0}`, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50' },
     capabilities.revenueTrends
-      ? { title: 'Net Profit', value: `৳ ${overview.netProfit?.toLocaleString() || 0}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+      ? { title: 'Product gross profit', value: overview.netProfit === null ? "Unavailable" : `৳ ${overview.netProfit?.toLocaleString() || 0}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' }
       : { title: 'Products', value: stats?.totalProducts || 0, icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { title: 'Items Sold',    value: overview.totalItemsSold || 0,                         icon: Package,    color: 'text-purple-600', bg: 'bg-purple-50' },
-    { title: 'Active Orders', value: stats?.activeOrders || 0,                             icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50' }
+    { title: 'Active orders · Current', value: stats?.activeOrders || 0,                             icon: ShoppingCart, color: 'text-amber-600', bg: 'bg-amber-50' }
   ];
 
   return (
-      <div className="max-w-7xl mx-auto space-y-8 px-4 sm:px-6 lg:px-8 py-8 pb-12 bg-gray-50/30 min-h-screen">
+      <div className="report-workspace max-w-7xl mx-auto space-y-6 px-4 sm:px-6 lg:px-8 py-8 pb-12 bg-gray-50/30 min-h-screen">
 
-        {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard Overview</h1>
-            <p className="text-sm text-gray-500 mt-1">Start here each day: review sales, active orders, low stock, and recent inventory changes.</p>
-          </div>
-          <PageRefreshButton
-            onClick={fetchData}
-            loading={loading && hasDashboardData}
-            label="Refresh overview"
-            className="sm:w-auto"
-          />
-        </div>
+        <ReportHeader eyebrow="Store pulse" title="Dashboard Overview" description="Your business at a glance. Review sales, inventory and the products moving your store forward.">
+          <PageRefreshButton onClick={fetchData} loading={loading && hasDashboardData} label="Refresh overview" className="sm:w-auto" />
+        </ReportHeader>
 
         {loading && hasDashboardData && (
           <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700">
@@ -212,14 +219,14 @@ const Overview = () => {
           {statCards.map((s, i) => (
               <div
                   key={i}
-                  className="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 transform hover:-translate-y-1"
+                  className="report-metric bg-white rounded-2xl p-5 border border-gray-100"
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500">{s.title}</p>
                     <h3 className="text-2xl font-bold text-gray-900 mt-2 tracking-tight">{s.value}</h3>
                   </div>
-                  <div className={`p-3 rounded-xl ${s.bg} transition-colors duration-300 group-hover:scale-110`}>
+                  <div className={`p-3 rounded-xl ${s.bg} transition-colors duration-300`}>
                     <s.icon size={24} className={s.color} strokeWidth={2} />
                   </div>
                 </div>
@@ -227,6 +234,12 @@ const Overview = () => {
           ))}
         </div>
 
+        <div className="space-y-2 text-sm">
+          <ReportPeriod key={JSON.stringify(period)} period={period} onChange={setPeriod} label="Sales period" />
+          <p className="text-xs text-slate-500">Asia/Dhaka · Current-day totals are partial. Product gross profit excludes delivery, payment, advertising and operating expenses. Stock and active orders are current.</p>
+          {(reportMeta?.warnings || []).map(warning => <p key={warning} className="rounded border border-amber-200 bg-amber-50 p-3 text-amber-900">{warning}</p>)}
+        </div>
+        <ReportComparison comparison={comparison} />
         {/* MAIN GRID: Chart (2/3) + Side Panel (1/3) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -262,7 +275,7 @@ const Overview = () => {
                 <div className="p-1.5 bg-red-50 rounded-lg">
                   <AlertTriangle size={16} className="text-red-500" />
                 </div>
-                Low Stock Alerts
+                Low Stock Alerts · Current
               </h2>
               <div className="space-y-1">
                 {lowStock.length > 0 ? (
@@ -315,7 +328,7 @@ const Overview = () => {
                           <div className="flex items-center bg-gray-50 px-2 py-1 rounded-md">
                             <span className="text-emerald-600 font-bold">+{m.stockIn}</span>
                             <span className="text-gray-300 mx-2">/</span>
-                            <span className="text-rose-500 font-bold">-{m.stockOut}</span>
+                            <span className="text-rose-500 font-bold">-{Math.abs(m.stockOut || 0)}</span>
                           </div>
                         </div>
                     ))
@@ -352,6 +365,15 @@ const Overview = () => {
           </div>
         </div>
 
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ChartPanel title="Inventory movement" description="Units added and removed on the latest 7 active dates within the last 30 days. Independent of the sales period.">
+            <InventoryMovementChart data={movement} />
+          </ChartPanel>
+          {capabilities.topProducts && <ChartPanel title="Product leaders" description="Top products by delivered units in the selected sales period.">
+            <RankedBars items={topProducts.slice(0, 5).map(product => ({ label: product.title, value: product.totalSold }))} unit="sold" empty="Your product ranking will appear after delivered sales are recorded." />
+          </ChartPanel>}
+        </div>
+
         {/* TOP PRODUCTS TABLE */}
         {capabilities.topProducts && topProducts.length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300">
@@ -372,7 +394,7 @@ const Overview = () => {
                   <thead className="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider">
                   <tr>
                     <th className="py-4 px-6 font-semibold">Product Name</th>
-                    <th className="py-4 px-6 font-semibold text-right">Unit Price</th>
+                    <th className="py-4 px-6 font-semibold text-right">Avg. delivered price</th>
                     <th className="py-4 px-6 font-semibold text-right">Total Units Sold</th>
                   </tr>
                   </thead>

@@ -14,6 +14,8 @@ test('actual Add/Edit UI saves, reloads and retains input across media/metadata/
     const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     const cloudinary = require('../../ecommerce-backend/backend/node_modules/cloudinary').v2;
     const originalUpload = cloudinary.uploader.upload_stream;
+    const originalDestroy = cloudinary.uploader.destroy;
+    cloudinary.uploader.destroy = async () => ({ result: "ok" });
     let uploadCount = 0;
     cloudinary.uploader.upload_stream = (options, callback) => new Writable({
         write(_chunk, _encoding, done) { done(); },
@@ -30,6 +32,7 @@ test('actual Add/Edit UI saves, reloads and retains input across media/metadata/
         await browser.close();
         vite.kill('SIGTERM');
         cloudinary.uploader.upload_stream = originalUpload;
+        cloudinary.uploader.destroy = originalDestroy;
         for (const cleanup of cleanups.reverse()) await cleanup();
     });
     for (let i = 0; i < 100; i++) {
@@ -89,16 +92,23 @@ test('actual Add/Edit UI saves, reloads and retains input across media/metadata/
     assert.equal(await page.locator('button').filter({ hasText: /^Make cover$/ }).count(), 1);
     await page.getByRole('button', { name: 'Make cover', exact: true }).click();
     await page.getByRole('button', { name: 'Make cover', exact: true }).click();
-    const addFailure = '**/api/admin/products';
-    await page.route(addFailure, route => route.request().method() === 'POST' ? route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'Injected Add failure' }) }) : route.continue());
-    await page.getByRole('button', { name: 'Save Product', exact: true }).click();
-    await page.getByText('Injected Add failure', { exact: true }).waitFor();
-    assert.equal(await page.locator('#title').inputValue(), 'Browser-tested cotton shirt');
-    assert.equal(await page.getByRole('button', { name: /^Remove product image/ }).count(), 2);
-    await page.unroute(addFailure);
-    await page.waitForFunction(() => [...document.images].some(img => img.src.startsWith('blob:') && img.complete && img.naturalWidth > 0));
+    // A definitive server rejection now returns to the catalog, with durable recovery.
+    const ProductSubmission = require('../../ecommerce-backend/backend/models/ProductSubmission');
+    // Use real content validation so the rejected save is authoritative.
+    await page.locator('input[type=file]').nth(1).setInputFiles({ name: 'invalid.mp4', mimeType: 'video/mp4', buffer: Buffer.from('not a valid video') });
     await page.getByRole('button', { name: 'Save Product', exact: true }).click();
     await page.waitForURL('**/dashboard/products');
+    await page.getByRole('button', { name: 'Product Activity', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Product Activity', exact: true }).getByRole('tab', { name: /^Unfinished/ }).click();
+    await page.locator('article').filter({ hasText: 'Browser-tested cotton shirt' }).getByRole('link', { name: 'Review & Retry' }).click();
+    await page.locator('#title').waitFor();
+    assert.equal(await page.locator('#title').inputValue(), 'Browser-tested cotton shirt');
+    assert.equal(await page.getByRole('button', { name: /^Remove product image/ }).count(), 2);
+    await page.getByRole('button', { name: 'Remove product video 1', exact: true }).click();
+    assert.equal(await ProductSubmission.countDocuments({ state: 'failed' }), 1);
+    await page.getByRole('button', { name: 'Save Product', exact: true }).click();
+    await page.waitForURL('**/dashboard/products');
+    await page.getByText(/Product added successfully/).first().waitFor();
     await page.waitForFunction(() => window.previewUrls.created.every(url => window.previewUrls.revoked.includes(url)));
     assert.deepEqual(await page.evaluate(() => window.previewUrls.revokedWhileDisplayed), []);
     assert.deepEqual(await page.evaluate(() => [...window.previewUrls.created].sort()), await page.evaluate(() => [...window.previewUrls.revoked].sort()));
@@ -192,6 +202,7 @@ test('actual Add/Edit UI saves, reloads and retains input across media/metadata/
     await page.locator('tbody tr').first().locator('input[type=number]').first().fill('120');
     await page.getByRole('button', { name: 'Save Product', exact: true }).click();
     await page.waitForURL('**/dashboard/products');
+    await page.getByText(/Product added successfully/).first().waitFor();
     const matrix = await Product.findOne({ title: 'Browser-tested matrix product' });
     assert.equal(matrix.variants.length, 2);
     assert.deepEqual(matrix.variants.map(v => v.stock), [3, 3]);

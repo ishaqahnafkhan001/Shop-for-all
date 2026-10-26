@@ -1,3 +1,4 @@
+import DeliveryRateSettings from './DeliveryRateSettings.jsx';
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Info, Link as LinkIcon, MapPin, RefreshCw, ShieldCheck, Trash2, Truck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -60,7 +61,7 @@ const ProviderCard = ({ icon: Icon, name, description, configured, enabled, isDe
     </section>
 );
 
-const ShippingSettings = () => {
+const CourierSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [loadError, setLoadError] = useState(false);
@@ -579,4 +580,6 @@ const ShippingSettings = () => {
     );
 };
 
-export default ShippingSettings;
+export default function ShippingSettings() {
+    return <div className="mx-auto max-w-5xl space-y-6"><DeliveryRateSettings /><CourierSettings /></div>;
+}

@@ -24,6 +24,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const DashboardRevenueChart = ({ data = [] }) => (
+    <div className="h-full flex flex-col"><div className="report-chart-legend"><span><i className="report-dot bg-blue-500" />Net product sales</span><span><i className="report-dot bg-emerald-500" />Product gross profit</span></div><div className="min-h-0 flex-1">
     <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -41,10 +42,10 @@ const DashboardRevenueChart = ({ data = [] }) => (
                 tickFormatter={(value) => `৳${value}`}
             />
             <Tooltip cursor={{ fill: '#F3F4F6' }} content={<CustomTooltip />} />
-            <Bar dataKey="Revenue" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={40} />
-            <Bar dataKey="Profit" fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={40} />
+            <Bar dataKey="Revenue" name="Net product sales" fill="#3B82F6" radius={[6, 6, 0, 0]} maxBarSize={40} isAnimationActive={false} />
+            <Bar dataKey="Profit" name="Product gross profit" fill="#10B981" radius={[6, 6, 0, 0]} maxBarSize={40} isAnimationActive={false} />
         </BarChart>
-    </ResponsiveContainer>
+    </ResponsiveContainer></div></div>
 );
 
 export default DashboardRevenueChart;

@@ -4,6 +4,8 @@ const Product = require('../../models/Product');
 const User = require('../../models/User');
 const InventoryLog = require('../../models/InventoryLog');
 const cache = require('../cacheService');
+const { getSalesReport, getComparedSalesReport } = require('./salesReportService');
+const { ACTIVE_ORDER_STATUSES, reportInterval } = require('./reportingMetrics');
 
 const DEFAULT_LOW_STOCK_LIMIT = 5;
 
@@ -88,139 +90,28 @@ const buildRecentMovementRows = (logs = []) => logs.map((log) => {
 });
 
 const getDashboardStatsData = async (tenantId) => {
-    const shopId = new mongoose.Types.ObjectId(tenantId);
-
-    const [result] = await Order.aggregate([
-        {
-            $match: {
-                shop_id: shopId,
-                isDeleted: false
-            }
-        },
-        {
-            $facet: {
-                revenue: [
-                    { $match: { status: 'Delivered' } },
-                    {
-                        $group: {
-                            _id: null,
-                            total: { $sum: '$pricing.total' }
-                        }
-                    }
-                ],
-                profitAndItems: [
-                    { $match: { status: 'Delivered' } },
-                    { $unwind: '$items' },
-                    {
-                        $group: {
-                            _id: null,
-                            totalCost: {
-                                $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] }
-                            },
-                            itemsRevenue: {
-                                $sum: { $multiply: ['$items.price', '$items.quantity'] }
-                            },
-                            totalItemsSold: { $sum: '$items.quantity' }
-                        }
-                    },
-                    {
-                        $project: {
-                            _id: 0,
-                            totalItemsSold: 1,
-                            netProfit: { $subtract: ['$itemsRevenue', '$totalCost'] }
-                        }
-                    }
-                ],
-                activeOrders: [
-                    {
-                        $match: {
-                            status: { $in: ['Pending', 'Processing', 'Shipped'] }
-                        }
-                    },
-                    { $count: 'count' }
-                ],
-                products: [
-                    {
-                        $lookup: {
-                            from: 'products',
-                            let: { shopId: '$shop_id' },
-                            pipeline: [
-                                {
-                                    $match: {
-                                        $expr: {
-                                            $and: [
-                                                { $eq: ['$shop_id', '$$shopId'] },
-                                                { $eq: ['$isDeleted', false] }
-                                            ]
-                                        }
-                                    }
-                                },
-                                { $count: 'count' }
-                            ],
-                            as: 'products'
-                        }
-                    },
-                    { $unwind: '$products' },
-                    { $replaceRoot: { newRoot: '$products' } }
-                ],
-                customers: [
-                    {
-                        $lookup: {
-                            from: 'users',
-                            let: { shopId: '$shop_id' },
-                            pipeline: [
-                                {
-                                    $match: {
-                                        $expr: {
-                                            $and: [
-                                                { $eq: ['$shop_id', '$$shopId'] },
-                                                { $eq: ['$role', 'Customer'] }
-                                            ]
-                                        }
-                                    }
-                                },
-                                { $count: 'count' }
-                            ],
-                            as: 'customers'
-                        }
-                    },
-                    { $unwind: '$customers' },
-                    { $replaceRoot: { newRoot: '$customers' } }
-                ]
-            }
-        },
-        {
-            $project: {
-                totalRevenue: {
-                    $ifNull: [{ $arrayElemAt: ['$revenue.total', 0] }, 0]
-                },
-                activeOrders: {
-                    $ifNull: [{ $arrayElemAt: ['$activeOrders.count', 0] }, 0]
-                },
-                totalProducts: {
-                    $ifNull: [{ $arrayElemAt: ['$products.count', 0] }, 0]
-                },
-                totalCustomers: {
-                    $ifNull: [{ $arrayElemAt: ['$customers.count', 0] }, 0]
-                },
-                totalItemsSold: {
-                    $ifNull: [{ $arrayElemAt: ['$profitAndItems.totalItemsSold', 0] }, 0]
-                },
-                netProfit: {
-                    $ifNull: [{ $arrayElemAt: ['$profitAndItems.netProfit', 0] }, 0]
-                }
-            }
-        }
+    const [report, activeOrders, totalProducts, totalCustomers] = await Promise.all([
+        getSalesReport({ tenantId }),
+        Order.countDocuments({ shop_id: tenantId, isDeleted: false, status: { $in: ACTIVE_ORDER_STATUSES } }),
+        Product.countDocuments({ shop_id: tenantId, isDeleted: false }),
+        User.countDocuments({ shop_id: tenantId, role: 'Customer' })
     ]);
+    return { totalRevenue: report.summary.revenue, totalItemsSold: report.summary.units,
+        netProfit: report.summary.profit, activeOrders, totalProducts, totalCustomers };
+};
 
-    return result || {
-        totalRevenue: 0,
-        activeOrders: 0,
-        totalProducts: 0,
-        totalCustomers: 0,
-        totalItemsSold: 0,
-        netProfit: 0
-    };
+const getLowStockRows = async tenantId => {
+    const products = await Product.aggregate([
+        { $match: { shop_id: new mongoose.Types.ObjectId(String(tenantId)), isDeleted: false } },
+        { $unwind: '$variants' },
+        { $match: { 'variants.isActive': { $ne: false }, 'variants.status': { $ne: 'archived' } } },
+        { $set: { threshold: { $ifNull: ['$variants.inventory.lowStockThreshold', { $ifNull: ['$lowStockThreshold', 5] }] } } },
+        { $match: { $expr: { $lte: ['$variants.stock', '$threshold'] } } },
+        { $sort: { 'variants.stock': 1, _id: 1, 'variants._id': 1 } },
+        { $limit: 15 },
+        { $project: { title: 1, lowStockThreshold: 1, variants: ['$variants'] } }
+    ]);
+    return buildLowStockRows(products);
 };
 
 const getDashboardOverviewResponse = async (
@@ -230,23 +121,24 @@ const getDashboardOverviewResponse = async (
         lowStockAlerts: true,
         revenueTrends: true,
         customerMetrics: true
-    }
+    },
+    query = {}
 ) => {
     const shopId = new mongoose.Types.ObjectId(tenantId);
+    const interval = reportInterval(query);
     const topProductsEnabled = capabilities.topProducts !== false;
     const lowStockEnabled = capabilities.lowStockAlerts !== false;
     const revenueTrendsEnabled = capabilities.revenueTrends !== false;
     const customerMetricsEnabled = capabilities.customerMetrics !== false;
-    const cacheKey = `admin:dashboard-overview:${shopId}:top-${Number(topProductsEnabled)}:stock-${Number(lowStockEnabled)}:trends-${Number(revenueTrendsEnabled)}:customers-${Number(customerMetricsEnabled)}`;
+    const cacheKey = `admin:dashboard-overview:${shopId}:${interval.from.toISOString()}:${query.to || 'current'}:v2:top-${Number(topProductsEnabled)}:stock-${Number(lowStockEnabled)}:trends-${Number(revenueTrendsEnabled)}:customers-${Number(customerMetricsEnabled)}`;
     const cached = await cache.get(cacheKey);
     if (cached) return cached;
 
+    const report = await getComparedSalesReport({ tenantId, ...interval });
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const orderMatch = { shop_id: shopId, isDeleted: false };
-    const deliveredMatch = { ...orderMatch, status: 'Delivered' };
 
     const [
-        deliveredSummary,
         activeOrders,
         totalProducts,
         totalCustomers,
@@ -257,67 +149,20 @@ const getDashboardOverviewResponse = async (
         topProducts,
         lowStockProducts
     ] = await Promise.all([
-        Order.aggregate([
-            { $match: deliveredMatch },
-            { $unwind: '$items' },
-            {
-                $group: {
-                    _id: null,
-                        totalRevenue: { $sum: '$pricing.total' },
-                        totalItemsSold: { $sum: '$items.quantity' },
-                        totalCost: { $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] } },
-                        itemsRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
-                        deliveredOrderIds: { $addToSet: '$_id' }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    totalRevenue: 1,
-                    totalItemsSold: 1,
-                    completedOrders: { $size: '$deliveredOrderIds' },
-                    netProfit: { $subtract: ['$itemsRevenue', '$totalCost'] }
-                }
-            }
-        ]),
         Order.countDocuments({
             ...orderMatch,
-            status: { $in: ['Pending', 'Processing', 'Shipped'] }
+            status: { $in: ACTIVE_ORDER_STATUSES }
         }),
         Product.countDocuments({ shop_id: shopId, isDeleted: false }),
         customerMetricsEnabled
             ? User.countDocuments({ shop_id: shopId, role: 'Customer' })
             : Promise.resolve(0),
-        revenueTrendsEnabled ? Order.aggregate([
-            { $match: deliveredMatch },
-            { $unwind: '$items' },
-            {
-                $group: {
-                    _id: {
-                        year: { $year: '$createdAt' },
-                        month: { $month: '$createdAt' }
-                    },
-                    revenue: { $sum: '$pricing.total' },
-                    totalCost: { $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] } }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    year: '$_id.year',
-                    month: '$_id.month',
-                    revenue: 1,
-                    profit: { $subtract: ['$revenue', '$totalCost'] }
-                }
-            },
-            { $sort: { year: 1, month: 1 } },
-            { $limit: 12 }
-        ]) : Promise.resolve([]),
+        Promise.resolve(revenueTrendsEnabled ? report.salesByMonth.slice(-12) : []),
         InventoryLog.aggregate([
             { $match: { shop_id: shopId, createdAt: { $gte: thirtyDaysAgo } } },
             {
                 $group: {
-                    _id: { date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } } },
+                    _id: { date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Dhaka' } } },
                     stockIn: { $sum: { $cond: [{ $gt: ['$change', 0] }, '$change', 0] } },
                     stockOut: { $sum: { $cond: [{ $lt: ['$change', 0] }, '$change', 0] } }
                 }
@@ -346,42 +191,18 @@ const getDashboardOverviewResponse = async (
             { $unwind: '$product' },
             { $project: { _id: 0, productId: '$_id', title: '$product.title', totalAdjustment: 1 } }
         ]),
-        topProductsEnabled ? InventoryLog.aggregate([
-            { $match: { shop_id: shopId, type: 'ORDER', change: { $lt: 0 }, createdAt: { $gte: thirtyDaysAgo } } },
-            { $group: { _id: '$productId', totalSold: { $sum: { $multiply: ['$change', -1] } } } },
-            { $sort: { totalSold: -1 } },
-            { $limit: 10 },
-            {
-                $lookup: {
-                    from: 'products',
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'product'
-                }
-            },
-            { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
-            {
-                $project: {
-                    _id: 0,
-                    productId: '$_id',
-                    title: { $ifNull: ['$product.title', 'Unknown Product'] },
-                    price: { $ifNull: ['$product.pricing.sellingPrice', 0] },
-                    thumbnail: '$product.thumbnail',
-                    totalSold: 1
-                }
-            }
-        ]) : Promise.resolve([]),
-        lowStockEnabled ? Product.find({
-            shop_id: shopId,
-            isDeleted: false
-        }).select('title variants lowStockThreshold').limit(500).lean() : Promise.resolve([])
+        Promise.resolve(topProductsEnabled ? [...report.products].sort((a, b) => b.quantity - a.quantity).slice(0, 10).map(row => ({
+            productId: row._id, title: row.title, totalSold: row.quantity, revenue: row.revenue,
+            price: row.quantity ? (row.gross - row.discount) / row.quantity : 0
+        })) : []),
+        lowStockEnabled ? getLowStockRows(shopId) : Promise.resolve([])
     ]);
 
     const stats = {
-        totalRevenue: deliveredSummary[0]?.totalRevenue || 0,
-        totalItemsSold: deliveredSummary[0]?.totalItemsSold || 0,
-        completedOrders: deliveredSummary[0]?.completedOrders || 0,
-        netProfit: deliveredSummary[0]?.netProfit || 0,
+        totalRevenue: report.summary.revenue,
+        totalItemsSold: report.summary.units,
+        completedOrders: report.summary.orders,
+        netProfit: report.summary.profit,
         activeOrders,
         totalProducts,
         totalCustomers
@@ -405,7 +226,9 @@ const getDashboardOverviewResponse = async (
             recentMovements: buildRecentMovementRows(recentMovementLogs),
             adjustments,
             topProducts,
-            lowStock: buildLowStockRows(lowStockProducts)
+            lowStock: lowStockProducts,
+            comparison: report.comparison,
+            meta: report.meta
         }
     };
 
@@ -414,95 +237,17 @@ const getDashboardOverviewResponse = async (
 };
 
 const getRevenueAnalyticsData = async ({ tenantId, month, year }) => {
-    const shopId = new mongoose.Types.ObjectId(tenantId);
-    const matchQuery = {
-        shop_id: shopId,
-        status: { $in: ['Delivered'] },
-        isDeleted: false
-    };
-
-    if (month && year) {
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 1);
-        matchQuery.createdAt = { $gte: startDate, $lt: endDate };
-    }
-
-    const analytics = await Order.aggregate([
-        { $match: matchQuery },
-        { $unwind: '$items' },
-        {
-            $facet: {
-                overview: [
-                    {
-                        $group: {
-                            _id: null,
-                            totalRevenue: {
-                                $sum: {
-                                    $add: [
-                                        { $multiply: ['$items.price', '$items.quantity'] },
-                                        '$pricing.shipping'
-                                    ]
-                                }
-                            },
-                            totalCost: {
-                                $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] }
-                            },
-                            totalItemsSold: { $sum: '$items.quantity' }
-                        }
-                    },
-                    {
-                        $project: {
-                            _id: 0,
-                            totalRevenue: 1,
-                            totalCost: 1,
-                            totalItemsSold: 1,
-                            netProfit: { $subtract: ['$totalRevenue', '$totalCost'] }
-                        }
-                    }
-                ],
-                monthlyData: [
-                    {
-                        $group: {
-                            _id: {
-                                year: { $year: '$createdAt' },
-                                month: { $month: '$createdAt' }
-                            },
-                            revenue: {
-                                $sum: { $multiply: ['$items.price', '$items.quantity'] }
-                            },
-                            cost: {
-                                $sum: { $multiply: ['$items.buyingPrice', '$items.quantity'] }
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            _id: 0,
-                            year: '$_id.year',
-                            month: '$_id.month',
-                            revenue: 1,
-                            cost: 1,
-                            profit: { $subtract: ['$revenue', '$cost'] }
-                        }
-                    },
-                    { $sort: { year: 1, month: 1 } }
-                ]
-            }
-        }
-    ]);
-
-    return {
-        overview: analytics[0]?.overview[0] || {
-            totalRevenue: 0,
-            totalCost: 0,
-            netProfit: 0,
-            totalItemsSold: 0
-        },
-        monthlyData: analytics[0]?.monthlyData || []
-    };
+    const interval = month && year ? reportInterval({
+        from: `${year}-${String(month).padStart(2, '0')}-01`,
+        to: new Date(Date.UTC(Number(year), Number(month), 1) - 6 * 3600000).toISOString()
+    }) : {};
+    const report = await getSalesReport({ tenantId, ...interval });
+    return { overview: { totalRevenue: report.summary.revenue, totalCost: report.summary.cost,
+        totalItemsSold: report.summary.units, netProfit: report.summary.profit }, monthlyData: report.salesByMonth, meta: report.meta };
 };
 
 module.exports = {
+    getLowStockRows,
     getDashboardStatsData,
     getDashboardOverviewResponse,
     getRevenueAnalyticsData

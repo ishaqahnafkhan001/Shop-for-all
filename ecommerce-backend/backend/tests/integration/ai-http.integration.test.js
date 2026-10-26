@@ -265,7 +265,7 @@ test('HTTP AI authorization, tenant ownership, image safety and fixed Growth evi
     assert.equal(detail.status, 200);
     const interval = detail.body.data.interval;
     const from = new Date(interval.from), to = new Date(interval.to);
-    assert.equal(+to - +from, 7 * 86400000);
+    assert.equal(+from, +require('../../services/orders/reportingMetrics').reportInterval({ range: '7' }, to).from);
     await AnalyticsEvent.create([
         ...[0, 1, 2].map(i => ({ shop_id: shopA._id, eventType: 'search', sessionId: `safe-${i}`, metadata: { query: 'clothing' }, createdAt: new Date(+to - 1000) })),
         ...[0, 1, 2].map(i => ({ shop_id: shopA._id, eventType: 'search', sessionId: `unsafe-${i}`, metadata: { query: 'clothing secret@example.com 01711111111' }, createdAt: new Date(+to - 1000) })),

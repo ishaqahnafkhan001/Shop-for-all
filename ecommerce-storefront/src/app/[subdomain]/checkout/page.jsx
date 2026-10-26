@@ -25,6 +25,8 @@ import { useCheckoutFormState } from "./hooks/useCheckoutFormState";
 import { useCheckoutPhoneOtp } from "./hooks/useCheckoutPhoneOtp";
 import { useCheckoutTotals } from "./hooks/useCheckoutTotals";
 
+import { useDeliveryQuote } from "./hooks/useDeliveryQuote";
+
 const maskCheckoutPhone = (value = "") => {
     const digits = String(value).replace(/\D/g, "");
     const local = digits.startsWith("880") ? `0${digits.slice(3)}` : digits;
@@ -81,8 +83,8 @@ export default function CheckoutPage({ params }) {
         subdomain,
         subtotal: cartTotal,
     });
+    const delivery = useDeliveryQuote({ subdomain, district: formData.city });
     const {
-        isDhaka,
         shippingCost,
         subtotal,
         promotionDiscount,
@@ -90,7 +92,7 @@ export default function CheckoutPage({ params }) {
         totalAmount,
     } = useCheckoutTotals({
         cartTotal,
-        city: formData.city,
+        quote: delivery.quote,
         promotionPreview,
     });
 
@@ -202,8 +204,8 @@ export default function CheckoutPage({ params }) {
             return false;
         }
 
-        if (!["Inside Dhaka", "Outside Dhaka"].includes(formData.city)) {
-            toast.error("Please select Inside Dhaka or Outside Dhaka");
+        if (!delivery.quote || delivery.quote.validUntil <= Date.now() || delivery.error) {
+            toast.error("Select your delivery district and review the delivery charge before ordering.");
             return false;
         }
 
@@ -219,6 +221,7 @@ export default function CheckoutPage({ params }) {
     }, [checkoutResetKey]);
 
     const executePlaceOrder = async ({ verificationToken } = {}) => {
+        if (!validateCheckoutIntent()) return false;
         const phoneVerificationToken = verificationToken || phoneOtp.phoneVerificationToken;
 
         if (!phoneVerificationToken) {
@@ -240,9 +243,8 @@ export default function CheckoutPage({ params }) {
                 const securePayload = {
                     items: secureItems,
                     shipping: {
-                        zone: isDhaka
-                            ? "Inside Dhaka"
-                            : "Outside Dhaka",
+                        zone: delivery.quote.zone,
+                        quoteToken: delivery.quote.token,
                         address: {
                             fullName: formData.fullName,
                             phone: formData.phone,
@@ -282,10 +284,10 @@ export default function CheckoutPage({ params }) {
                         email: formData.email,
                         phone: formData.phone,
                     },
-                    shippingAddress: `${formData.address}, ${formData.city}`,
-                    shippingZone: isDhaka
-                        ? "Inside Dhaka"
-                        : "Outside Dhaka",
+                    shipping: {
+                        zone: delivery.quote.zone, quoteToken: delivery.quote.token,
+                        address: { fullName: formData.fullName, phone: formData.phone, addressLine: formData.address, city: formData.city },
+                    },
                     items: cartItems.map((item, index) => ({
                         product: item._id,
                         variantId: secureItems[index]?.variantId,
@@ -358,6 +360,7 @@ export default function CheckoutPage({ params }) {
                 error.message ||
                 "Failed to place order";
 
+            if (/delivery quote|delivery charge/i.test(message)) delivery.refresh();
             setOtpModalError(message);
             if (otpModalOpen) setOtpModalState("error");
             toast.error(message);
@@ -426,6 +429,7 @@ export default function CheckoutPage({ params }) {
                 mobileStickyBar={(
                     <CheckoutMobileStickyBar
                         loading={loading}
+                        deliveryReady={Boolean(delivery.quote) && !delivery.error}
                         phoneVerified={phoneOtp.verified}
                         policyAccepted={policyAccepted}
                         totalAmount={totalAmount}
@@ -434,7 +438,7 @@ export default function CheckoutPage({ params }) {
             >
                 <CheckoutDetailsColumn
                     formData={formData}
-                    isDhaka={isDhaka}
+                    delivery={delivery}
                     onInputChange={handleInputChange}
                 />
 
@@ -447,6 +451,7 @@ export default function CheckoutPage({ params }) {
                     checkoutBranding={checkoutBranding}
                     finalShippingCost={finalShippingCost}
                     loading={loading}
+                        deliveryReady={Boolean(delivery.quote) && !delivery.error}
                     onApplyPromotion={handleApplyPromotion}
                     policies={policies}
                     policyAccepted={policyAccepted}

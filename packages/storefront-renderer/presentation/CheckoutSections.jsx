@@ -182,7 +182,7 @@ export function CheckoutPageShell({ checkoutBranding, children, mobileStickyBar,
     );
 }
 
-export function CheckoutCustomerInfo({ formData, onInputChange }) {
+export function CheckoutCustomerInfo({ formData, onInputChange, districts = [] }) {
     return (
         <div className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
             <h2 className="mb-6 text-2xl font-black text-[var(--sf-checkout-text)]">
@@ -264,7 +264,7 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
 
                 <div className="md:col-span-2">
                     <label htmlFor="checkout-city" className="mb-2 block text-sm font-bold text-slate-700">
-                        Delivery area
+                        Delivery district
                     </label>
 
                     <select
@@ -275,9 +275,8 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
                         onChange={onInputChange}
                         className="sf-field"
                     >
-                        <option value="">Select delivery area</option>
-                        <option value="Inside Dhaka">Inside Dhaka</option>
-                        <option value="Outside Dhaka">Outside Dhaka</option>
+                        <option value="">Select delivery district</option>
+                        {districts.map(district => <option key={district}>{district}</option>)}
                     </select>
                 </div>
             </div>
@@ -285,57 +284,20 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
     );
 }
 
-export function CheckoutDeliveryChargeNotice() {
-    return (
-        <div className="flex gap-5 rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm">
-            <Truck
-                size={32}
-                className="mt-1 text-[var(--sf-checkout-accent)]"
-            />
-
-            <div>
-                <h3 className="mb-1 text-lg font-black text-[var(--sf-checkout-text)]">
-                    Delivery Charge
-                </h3>
-
-                <p className="text-sm font-semibold text-slate-600">
-                    Inside Dhaka → ৳ 80
-                </p>
-
-                <p className="text-sm font-semibold text-slate-600">
-                    Outside Dhaka → ৳ 120
-                </p>
-            </div>
-        </div>
-    );
+export function CheckoutDeliveryChargeNotice({ settings }) {
+    return <div className="rounded-3xl border border-slate-200 p-6">
+        <h3 className="font-bold">Delivery charges</h3>
+        {settings ? <><p>Inside {settings.baseArea} district: ৳ {settings.insideCharge}</p><p>Outside {settings.baseArea} district: ৳ {settings.outsideCharge}</p></> : <p>Select your district to review delivery charges.</p>}
+    </div>;
 }
 
-export function CheckoutDeliveryMethod({ isDhaka }) {
-    const hasSelection = typeof isDhaka === "boolean";
-
-    return (
-        <div className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
-            <h2 className="mb-5 text-2xl font-black text-[var(--sf-checkout-text)]">
-                Delivery Method
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-                <div className={`rounded-2xl border p-4 ${hasSelection && isDhaka ? "border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-black text-[var(--sf-checkout-text)]">Inside Dhaka</span>
-                        <span className="text-sm font-black text-[var(--sf-checkout-accent)]">৳ 80</span>
-                    </div>
-                    <p className="mt-2 text-xs font-semibold text-slate-500">Same-city delivery estimate.</p>
-                </div>
-                <div className={`rounded-2xl border p-4 ${hasSelection && !isDhaka ? "border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-black text-[var(--sf-checkout-text)]">Outside Dhaka</span>
-                        <span className="text-sm font-black text-[var(--sf-checkout-accent)]">৳ 120</span>
-                    </div>
-                    <p className="mt-2 text-xs font-semibold text-slate-500">Nationwide delivery estimate.</p>
-                </div>
-            </div>
-        </div>
-    );
+export function CheckoutDeliveryMethod({ delivery }) {
+    return <div className="rounded-3xl border border-slate-200 p-6" aria-live="polite">
+        <h3 className="font-bold">Your delivery charge</h3>
+        {delivery?.error ? <p role="alert">{delivery.error} <button type="button" onClick={delivery.refresh} className="underline">Retry</button></p>
+            : delivery?.quote ? <p>{delivery.quote.zone}: ৳ {delivery.quote.originalCharge}</p>
+                : <p>Select a district and wait for the delivery charge before ordering.</p>}
+    </div>;
 }
 
 export function CheckoutPaymentMethod() {
@@ -430,15 +392,16 @@ export function CheckoutPhoneOtpBox({
     );
 }
 
-export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange }) {
+export function CheckoutDetailsColumn({ formData, delivery, onInputChange }) {
     return (
         <div className="space-y-7">
             <CheckoutCustomerInfo
                 formData={formData}
                 onInputChange={onInputChange}
+                districts={delivery?.settings?.districts || []}
             />
-            <CheckoutDeliveryChargeNotice />
-            <CheckoutDeliveryMethod isDhaka={isDhaka} />
+            <CheckoutDeliveryChargeNotice settings={delivery?.settings} />
+            <CheckoutDeliveryMethod delivery={delivery} />
             <CheckoutPaymentMethod />
         </div>
     );
@@ -646,6 +609,7 @@ export function CheckoutOrderSummary({
     cartItems,
     checkoutBranding,
     finalShippingCost,
+    deliveryReady = true,
     loading,
     onApplyPromotion,
     policies,
@@ -717,7 +681,7 @@ export function CheckoutOrderSummary({
                             </span>
 
                             <span className="font-bold text-[var(--sf-checkout-text)]">
-                                ৳ {finalShippingCost}
+                                {finalShippingCost == null ? "Select district" : `৳ ${finalShippingCost}`}
                             </span>
                         </div>
 
@@ -740,7 +704,7 @@ export function CheckoutOrderSummary({
                         </span>
 
                         <span className="text-3xl font-black text-[var(--sf-checkout-text)]">
-                            ৳ {totalAmount}
+                            {totalAmount == null ? "Awaiting delivery charge" : `৳ ${totalAmount}`}
                         </span>
                     </div>
 
@@ -751,7 +715,7 @@ export function CheckoutOrderSummary({
 
                     <button
                         type="submit"
-                        disabled={loading || !policyAccepted}
+                        disabled={loading || !policyAccepted || !deliveryReady}
                         className="sf-btn sf-checkout-submit mt-7 w-full py-5 text-lg disabled:opacity-50"
                         style={{ borderRadius: "var(--sf-checkout-radius)" }}
                     >
@@ -791,17 +755,17 @@ export function CheckoutOrderSummary({
     );
 }
 
-export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted, totalAmount }) {
+export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted, totalAmount, deliveryReady = true }) {
     return (
         <div className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-[var(--sf-checkout-card-background)] p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Pay on delivery</p>
-                    <p className="text-xl font-black text-[var(--sf-checkout-text)]">৳ {totalAmount}</p>
+                    <p className="text-xl font-black text-[var(--sf-checkout-text)]">{totalAmount == null ? "Awaiting delivery charge" : `৳ ${totalAmount}`}</p>
                 </div>
                 <button
                     type="submit"
-                    disabled={loading || !policyAccepted}
+                    disabled={loading || !policyAccepted || !deliveryReady}
                     className="sf-btn min-h-0 px-5 py-3 text-sm disabled:opacity-50"
                     style={{ borderRadius: 'var(--sf-checkout-radius)', backgroundColor: 'var(--sf-checkout-button-background)', color: 'var(--sf-checkout-button-text)' }}
                 >
