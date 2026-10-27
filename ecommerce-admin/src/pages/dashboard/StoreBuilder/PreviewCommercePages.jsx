@@ -5,7 +5,7 @@ import RelatedProducts from '@scaleup/storefront-renderer/presentation/RelatedPr
 import ReviewSection from '@scaleup/storefront-renderer/presentation/ReviewSection';
 import { CartView } from '@scaleup/storefront-renderer/presentation/CartView';
 import { PolicyView } from '@scaleup/storefront-renderer/presentation/PolicyView';
-import { CheckoutPageShell, CheckoutDetailsColumn, CheckoutMarketingConsent, CheckoutOrderSummary, CheckoutMobileStickyBar, CheckoutEmptyCartState } from '@scaleup/storefront-renderer/presentation/CheckoutSections';
+import { CheckoutPageShell, CheckoutDetailsColumn, CheckoutOrderSummary, CheckoutMobileStickyBar, CheckoutEmptyCartState } from '@scaleup/storefront-renderer/presentation/CheckoutSections';
 import { getInitialAttributes, getProductPresentation } from '@scaleup/storefront-renderer/product-data';
 import { getDefaultPolicyText, POLICY_LABELS } from '../../../utils/storeBuilderPolicies.js';
 
@@ -15,11 +15,8 @@ const noop = () => {};
 export function PreviewCommercePage({ page, theme, products, shopName, reviews = [] }) {
     const [quantity, setQuantity] = useState(1);
     const [selectedAttributes, setSelectedAttributes] = useState(() => getInitialAttributes(products[0]));
-    const [previewPolicy, setPreviewPolicy] = useState(false);
-    const [previewMarketing, setPreviewMarketing] = useState(false);
     const product = products[0];
     const presentationVariant = getStorefrontPresentationVariant(theme);
-    const atelier = presentationVariant === 'atelier-editorial';
     if (page === 'policy') return <PolicyView presentationVariant={presentationVariant} label={POLICY_LABELS.refund} content={theme.policies?.refund || getDefaultPolicyText('refund', { storeName: shopName })} />;
     if (page === 'product') {
         if (!product) return <div className="sf-page sf-shell py-12">Add a product to preview its detail page.</div>;

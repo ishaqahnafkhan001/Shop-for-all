@@ -394,15 +394,6 @@ export function CheckoutPhoneOtpBox({
     );
 }
 
-export function CheckoutDetailsColumn({ formData, delivery, onInputChange }) {
-    return (
-        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-            <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1" />
-            <span>Send me a confirmation email to subscribe to this store&apos;s offers and product updates. Optional; unsubscribe anytime.</span>
-        </label>
-    );
-}
-
 export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange, presentationVariant }) {
     return (
         <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'checkout-fields' : undefined} className="space-y-7">

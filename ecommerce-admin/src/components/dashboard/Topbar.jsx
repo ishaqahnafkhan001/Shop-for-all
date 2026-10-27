@@ -8,7 +8,6 @@ import {
 import { Link } from 'react-router-dom';
 import {
     Bell,
-    Check,
     ChevronRight,
     ExternalLink,
     Loader2,

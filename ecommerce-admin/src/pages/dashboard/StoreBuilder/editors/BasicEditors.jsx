@@ -60,7 +60,7 @@ export function TypographyEditor({ theme, setThemeGroup }) {
     );
 }
 
-export function LayoutEditor({ theme, setTheme, setThemeGroup, capabilities = getThemeCapabilities(theme) }) {
+export function LayoutEditor({ theme, setThemeGroup, capabilities = getThemeCapabilities(theme) }) {
     return (
         <BuilderCard title="Layout" description="Control page width, section rhythm, and product grid density." icon={LayoutTemplate}>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
