@@ -1,4 +1,6 @@
 const Joi = require('joi');
+const { STAFF_PERMISSION_KEYS } = require('../config/staffPermissions');
+const staffPermissionsSchema = Joi.object(Object.fromEntries(STAFF_PERMISSION_KEYS.map(key => [key, Joi.boolean().strict()]))).unknown(false);
 
 // Base properties shared by all users to keep the validation logic clean
 const baseUserObj = {
@@ -82,10 +84,22 @@ const registerCustomerSchema = Joi.object({
 // 🔥 Schema for an Admin creating a Staff member (Does NOT require subdomain, accepts shop_id)
 const createStaffSchema = Joi.object({
     ...baseUserObj,
+    permissions: staffPermissionsSchema.optional(),
+    password: Joi.string().min(8).max(128).required(),
+    phone: Joi.string().trim().max(40).allow('').optional(),
     shop_id: Joi.string().hex().length(24).optional().messages({
         'string.length': 'Invalid Shop ID format'
     })
 }).required();
+
+const updateStaffSchema = Joi.object({
+    fullName: Joi.string().trim().min(3).max(50),
+    phone: Joi.string().trim().max(40).allow(''),
+    staffTitle: Joi.string().trim().max(80).allow(''),
+    staffNote: Joi.string().trim().max(500).allow(''),
+    status: Joi.string().valid('Active', 'Suspended'),
+    permissions: staffPermissionsSchema
+}).min(1).unknown(false);
 
 // Schema for a simple Login Request
 const loginUserSchema = Joi.object({
@@ -182,6 +196,7 @@ module.exports = {
     registerCustomerSchema,
     createUserSchema: createStaffSchema,
     createStaffSchema,
+    updateStaffSchema,
     loginUserSchema,
     forgotPasswordSchema,
     verifyResetOtpSchema,
