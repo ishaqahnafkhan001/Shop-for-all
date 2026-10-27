@@ -14,3 +14,5 @@ export function CheckoutDetailsColumn(props) { return <StorefrontPresentationRun
 export function CheckoutOrderSummary(props) { return <StorefrontPresentationRuntime><Views.CheckoutOrderSummary {...props} /></StorefrontPresentationRuntime>; }
 export function CheckoutMobileStickyBar(props) { return <StorefrontPresentationRuntime><Views.CheckoutMobileStickyBar {...props} /></StorefrontPresentationRuntime>; }
 export function CheckoutOtpModal(props) { return <StorefrontPresentationRuntime><Views.CheckoutOtpModal {...props} /></StorefrontPresentationRuntime>; }
+
+export function CheckoutMarketingConsent(props) { return <Views.CheckoutMarketingConsent {...props} />; }

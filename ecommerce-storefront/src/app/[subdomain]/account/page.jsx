@@ -1,4 +1,6 @@
 "use client";
+import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+import {useStorefrontTheme} from '@/components/storefront/StorefrontThemeProvider';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import API from '@/api/api';
@@ -13,6 +15,8 @@ import PasswordResetFlow from '@/components/account/PasswordResetFlow';
 export default function AccountPage({ params }) {
     const { subdomain } = React.use(params);
     const router = useRouter();
+    const {theme} = useStorefrontTheme();
+    const presentationVariant = getStorefrontPresentationVariant(theme);
 
     // 🌟 Pull global state and functions from AuthContext
     const { user, loading: authLoading, login, logout, checkAuthStatus } = useAuth();
@@ -174,6 +178,7 @@ export default function AccountPage({ params }) {
         if (isResettingPassword) {
             return (
                 <PasswordResetFlow
+                    presentationVariant={presentationVariant}
                     subdomain={subdomain}
                     onBack={() => setIsResettingPassword(false)}
                     onComplete={() => {
@@ -186,6 +191,7 @@ export default function AccountPage({ params }) {
 
         return (
             <AuthView
+                    presentationVariant={presentationVariant}
                 isRegistering={isRegistering}
                 setIsRegistering={setIsRegistering}
                 onForgotPassword={() => {
@@ -204,11 +210,12 @@ export default function AccountPage({ params }) {
     }
 
     if (user.role === 'VendorAdmin' || user.role === 'VendorStaff') {
-        return <VendorView user={user} handleLogout={handleUserLogout} />;
+        return <VendorView presentationVariant={presentationVariant} user={user} handleLogout={handleUserLogout} />;
     }
 
     return (
         <CustomerDashboard
+                    presentationVariant={presentationVariant}
             user={user}
             orders={orders}
             handleLogout={handleUserLogout}

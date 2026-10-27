@@ -1,0 +1,28 @@
+{
+  "emptyCheck": {
+    "heroCopy": 1,
+    "heroMedia": 0,
+    "overflow": false,
+    "products": 0
+  },
+  "longChecks": [
+    {
+      "clipped": [],
+      "overflow": false,
+      "width": 320
+    },
+    {
+      "clipped": [],
+      "overflow": false,
+      "width": 390
+    },
+    {
+      "clipped": [],
+      "overflow": false,
+      "width": 1440
+    }
+  ],
+  "galleryMarker": "atelier-editorial",
+  "galleryHero": "Make room for the everyday.",
+  "builderMarker": "atelier-editorial"
+}

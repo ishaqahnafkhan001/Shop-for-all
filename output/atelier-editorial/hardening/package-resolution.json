@@ -1,0 +1,13 @@
+{
+  "ecommerce-admin": {
+    "theme": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\index.cjs",
+    "rendererViewports": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\viewports.js"
+  },
+  "ecommerce-storefront": {
+    "theme": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\index.cjs",
+    "rendererViewports": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\viewports.js"
+  },
+  "ecommerce-backend/backend": {
+    "theme": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\index.cjs"
+  }
+}

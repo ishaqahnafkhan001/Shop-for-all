@@ -1,0 +1,82 @@
+{
+  "menuOpen": "true",
+  "menuClosed": "false",
+  "nextTitle": "A different point of view.",
+  "previewNavigationPrevented": true,
+  "outOfStockDisabled": true,
+  "cases": [
+    {
+      "categories": 4,
+      "clippedText": [],
+      "content": "long",
+      "fixtureSectionHeadings": [],
+      "heroMedia": 1,
+      "overflow": false,
+      "products": 12,
+      "width": 390
+    },
+    {
+      "categories": 0,
+      "clippedText": [
+        "Fixture store"
+      ],
+      "content": "empty",
+      "fixtureSectionHeadings": [
+        "Fixture store"
+      ],
+      "heroMedia": 0,
+      "overflow": false,
+      "products": 0,
+      "width": 390
+    },
+    {
+      "categories": 1,
+      "clippedText": [],
+      "content": "one",
+      "fixtureSectionHeadings": [
+        "Fixture store"
+      ],
+      "heroMedia": 1,
+      "overflow": false,
+      "products": 2,
+      "width": 390
+    },
+    {
+      "categories": 12,
+      "clippedText": [],
+      "content": "many",
+      "fixtureSectionHeadings": [
+        "Fixture store"
+      ],
+      "heroMedia": 1,
+      "overflow": false,
+      "products": 12,
+      "width": 390
+    },
+    {
+      "categories": 4,
+      "clippedText": [],
+      "content": "all-sections",
+      "fixtureSectionHeadings": [
+        "Fixture FeaturedProducts",
+        "Fixture Collection",
+        "Fixture CategoryList",
+        "Fixture Banner",
+        "Fixture TextBlock",
+        "Fixture Newsletter",
+        "Fixture Reviews",
+        "Fixture FAQ",
+        "Fixture TrustBadges",
+        "Fixture BrandStory",
+        "Fixture PromoBlock",
+        "Fixture BrandShowcase",
+        "Fixture CollectionShowcase",
+        "Fixture store"
+      ],
+      "heroMedia": 1,
+      "overflow": false,
+      "products": 20,
+      "width": 390
+    }
+  ]
+}

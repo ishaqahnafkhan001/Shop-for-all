@@ -1,0 +1,13 @@
+{
+  "gitDiffCheckExit": 0,
+  "taskFiles": 21,
+  "modified": 18,
+  "added": 3,
+  "parsedFiles": 20,
+  "trailingWhitespace": [],
+  "cssChanges": 0,
+  "dependencyOrEnvironmentChanges": [],
+  "legacyFixturesUnchanged": true,
+  "unexpectedFiles": [],
+  "hashMethod": "SHA-256 of raw bytes; binary files excluded from text whitespace scanning"
+}

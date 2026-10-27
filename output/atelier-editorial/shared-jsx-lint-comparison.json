@@ -1,0 +1,107 @@
+[
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierFooter.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierHeader.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierHero.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierProductCard.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/atelier/AtelierSections.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontAllProducts.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontComposition.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontFooter.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontHeader.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontHero.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 1,
+    "baselineErrors": 1,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontHome.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontProductCard.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontSectionRenderer.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontSectionVariants.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  },
+  {
+    "path": "packages/storefront-renderer/reference/referenceCore.jsx",
+    "method": "ESLint.lintText under storefront working directory",
+    "errors": 0,
+    "baselineErrors": 0,
+    "added": []
+  }
+]

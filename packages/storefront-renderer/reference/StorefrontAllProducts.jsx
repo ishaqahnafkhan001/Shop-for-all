@@ -1,6 +1,7 @@
 "use client";
 
 import { Filter, PackageX, Search, SlidersHorizontal, Star, X } from "lucide-react";
+import { getStorefrontPresentationVariant } from '@scaleup/storefront-theme';
 
 import {
     desktopGridClasses,
@@ -153,7 +154,8 @@ export function StorefrontAllProducts({
                 : plainGridClasses[desktopColumns])
         : liveGridClass;
     const gridGapClass = productGridGapClasses[resolvedLayout.spacing] || productGridGapClasses.Comfortable;
-    const catalogContainerClass = getContainerClass(layout);
+    const presentationVariant = getStorefrontPresentationVariant(theme);
+    const catalogContainerClass = presentationVariant === 'atelier-editorial' ? 'atelier-container' : getContainerClass(layout);
     const catalogSectionWidthClass = getSectionWidthClass(layout);
     const catalogPaddingClass = getAllProductsPaddingClass(allProducts.spacing, layout.sectionSpacing, layout.contentSpacing, layout.productGap, theme.productGridStyle);
     const allProductsHeaderClass = forcedNarrowPreview
@@ -293,6 +295,7 @@ export function StorefrontAllProducts({
                                     <div className={`grid ${gridClass} ${gridGapClass} ${filteredProducts.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                                         {filteredProducts.map((product, index) => (
                                             <ProductCard
+                                                presentationVariant={presentationVariant}
                                                 key={product._id}
                                                 product={product}
                                                 index={index}

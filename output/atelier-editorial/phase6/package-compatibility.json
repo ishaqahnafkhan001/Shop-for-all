@@ -1,0 +1,69 @@
+[
+  {
+    "app": "ecommerce-admin",
+    "themeEntry": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\index.cjs",
+    "themeHash": "d7f9752f6fa530e09a5ff98227ded1e87628ea21565382de9f27e4a741a6f922",
+    "viewportEntry": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\viewports.js",
+    "viewportHash": "a08e5780e8f9caad29278f73072738bad1817f0cd9c3b49518dec6cb6816fa0b",
+    "rendererPackage": {
+      "name": "@scaleup/storefront-renderer",
+      "version": "1.0.0",
+      "private": true,
+      "type": "module",
+      "exports": {
+        ".": "./index.jsx",
+        "./design-tokens": "./designTokens.js",
+        "./product-card": "./reference/StorefrontProductCard.jsx",
+        "./reference-core": "./reference/referenceCore.jsx",
+        "./presentation/*": "./presentation/*.jsx",
+        "./product-data": "./normalizeProduct.js",
+        "./image-domains": "./imageDomains.js",
+        "./media": "./media.js",
+        "./viewports": "./viewports.js",
+        "./styles.css": "./styles.css"
+      },
+      "peerDependencies": {
+        "@scaleup/storefront-theme": "1.0.0",
+        "lucide-react": ">=0.400.0",
+        "react": ">=18.0.0"
+      }
+    },
+    "reactVersion": "19.2.5"
+  },
+  {
+    "app": "ecommerce-storefront",
+    "themeEntry": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\index.cjs",
+    "themeHash": "d7f9752f6fa530e09a5ff98227ded1e87628ea21565382de9f27e4a741a6f922",
+    "viewportEntry": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\viewports.js",
+    "viewportHash": "a08e5780e8f9caad29278f73072738bad1817f0cd9c3b49518dec6cb6816fa0b",
+    "rendererPackage": {
+      "name": "@scaleup/storefront-renderer",
+      "version": "1.0.0",
+      "private": true,
+      "type": "module",
+      "exports": {
+        ".": "./index.jsx",
+        "./design-tokens": "./designTokens.js",
+        "./product-card": "./reference/StorefrontProductCard.jsx",
+        "./reference-core": "./reference/referenceCore.jsx",
+        "./presentation/*": "./presentation/*.jsx",
+        "./product-data": "./normalizeProduct.js",
+        "./image-domains": "./imageDomains.js",
+        "./media": "./media.js",
+        "./viewports": "./viewports.js",
+        "./styles.css": "./styles.css"
+      },
+      "peerDependencies": {
+        "@scaleup/storefront-theme": "1.0.0",
+        "lucide-react": ">=0.400.0",
+        "react": ">=18.0.0"
+      }
+    },
+    "reactVersion": "19.2.4"
+  },
+  {
+    "app": "ecommerce-backend/backend",
+    "themeEntry": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\index.cjs",
+    "themeHash": "d7f9752f6fa530e09a5ff98227ded1e87628ea21565382de9f27e4a741a6f922"
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "modified": [
+    "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/themeAvailability.js",
+    "packages/storefront-renderer/atelier/atelier.css",
+    "ecommerce-admin/src/pages/dashboard/StoreBuilder/PreviewCommercePages.jsx",
+    "ecommerce-admin/src/pages/dashboard/StoreBuilder/StoreBuilderPage.jsx",
+    "ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx",
+    "ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx",
+    "ecommerce-storefront/src/app/[subdomain]/checkout/components/CheckoutSections.jsx",
+    "ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx",
+    "packages/storefront-renderer/presentation/CheckoutSections.jsx",
+    "packages/storefront-theme/capabilities.cjs",
+    "track.md"
+  ],
+  "added": [
+    "ecommerce-backend/backend/tests/helpers/atelier-builder.cjs",
+    "ecommerce-backend/backend/tests/storefront-atelier-builder.test.js"
+  ]
+}

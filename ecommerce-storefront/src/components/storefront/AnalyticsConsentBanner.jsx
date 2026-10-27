@@ -1,5 +1,7 @@
 "use client";
 
+import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+import {useStorefrontTheme} from './StorefrontThemeProvider';
 import { useSyncExternalStore } from "react";
 import {
     getAnalyticsConsent,
@@ -15,6 +17,8 @@ const subscribeToConsentChanges = (callback) => {
 const getServerConsentSnapshot = () => null;
 
 export default function AnalyticsConsentBanner() {
+    const {theme} = useStorefrontTheme();
+    const atelier = getStorefrontPresentationVariant(theme) === 'atelier-editorial';
     const choice = useSyncExternalStore(
         subscribeToConsentChanges,
         getAnalyticsConsent,
@@ -29,7 +33,7 @@ export default function AnalyticsConsentBanner() {
     };
 
     return (
-        <div className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl shadow-slate-900/15 backdrop-blur sm:bottom-5 sm:p-5">
+        <div className={(atelier ? 'atelier-consent ' : '') + "fixed inset-x-3 bottom-3 z-50 mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-2xl shadow-slate-900/15 backdrop-blur sm:bottom-5 sm:p-5"}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                     <p className="text-sm font-black text-slate-950">Help improve this store</p>

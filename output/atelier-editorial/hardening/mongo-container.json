@@ -1,0 +1,22 @@
+{
+  "id": "956f3b1cb758923245e5533e2792b49a8dbdf6affdeff3e6c4e09a79745476f6",
+  "image": "mongo:7",
+  "labels": {
+    "com.scaleup.purpose": "atelier-acceptance-c085454b",
+    "org.opencontainers.image.version": "22.04"
+  },
+  "ports": {
+    "27017/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "27028"
+      }
+    ]
+  },
+  "tmpfs": {
+    "/data/configdb": "",
+    "/data/db": ""
+  },
+  "mounts": [],
+  "removedAfterTests": true
+}

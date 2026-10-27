@@ -136,9 +136,9 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
 });
 
 /* ─── Full section (form + list) ─────────────────────────────── */
-const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess, onSubmitReview }) {
+const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess, onSubmitReview, presentationVariant }) {
     return (
-        <section className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6 lg:p-7">
+        <section data-atelier-part={presentationVariant === 'atelier-editorial' ? 'reviews' : undefined} className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6 lg:p-7">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p className="sf-kicker">Social proof</p>

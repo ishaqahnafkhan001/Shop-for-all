@@ -18,6 +18,7 @@ const StarRow = memo(function StarRow({ rating, size = 16 }) {
 });
 
 const ProductInfo = memo(function ProductInfo({
+                                                  presentationVariant,
                                                   title,
                                                   averageRating,
                                                   numReviews,
@@ -28,11 +29,11 @@ const ProductInfo = memo(function ProductInfo({
                                                   description,
                                               }) {
     const [descriptionExpanded, setDescriptionExpanded] = useState(false);
-    const displayDescription = description || 'Elevate your daily routine with this premium quality product.';
+    const displayDescription = description || (presentationVariant === 'atelier-editorial' ? '' : 'Elevate your daily routine with this premium quality product.');
     const canCollapseDescription = displayDescription.trim().length > 180;
 
     return (
-        <div className="space-y-5">
+        <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-info' : undefined} className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
                 <StarRow rating={averageRating} />
                 <span className="text-sm font-semibold text-slate-500">
@@ -55,13 +56,13 @@ const ProductInfo = memo(function ProductInfo({
                         Barcode: {currentVariant.barcode}
                     </p>
                 )}
-                <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-700">
+                {presentationVariant !== 'atelier-editorial' && <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-emerald-700">
                     <BadgeCheck size={13} />
                     Verified store item
-                </p>
+                </p>}
             </div>
 
-            <div className="flex flex-wrap items-end justify-between gap-5 rounded-[1.5rem] border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-teal-50/70 p-4 sm:p-5">
+            <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-price' : undefined} className="flex flex-wrap items-end justify-between gap-5 rounded-[1.5rem] border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-teal-50/70 p-4 sm:p-5">
                 <div className="flex flex-col">
                     <span className="mb-1 text-sm font-bold text-slate-500">Price</span>
                     <p className="text-3xl font-black text-slate-950 sm:text-4xl">
@@ -83,7 +84,7 @@ const ProductInfo = memo(function ProductInfo({
                 </div>
             </div>
 
-            <div>
+            {displayDescription && <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-description' : undefined}>
                 <p className={`text-base leading-7 text-slate-600 ${canCollapseDescription && !descriptionExpanded ? 'line-clamp-4' : ''}`}>
                     {displayDescription}
                 </p>
@@ -98,7 +99,7 @@ const ProductInfo = memo(function ProductInfo({
                         {descriptionExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                 )}
-            </div>
+            </div>}
         </div>
     );
 });

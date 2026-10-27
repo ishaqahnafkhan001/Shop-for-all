@@ -45,7 +45,7 @@ const getCurrentSubdomain = () => {
     return reservedHosts.includes(hostname) ? '' : hostname;
 };
 
-export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
+export default function PasswordResetFlow({ subdomain, onBack, onComplete, presentationVariant }) {
     const [step, setStep] = useState('email');
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState(emptyOtp);
@@ -183,7 +183,7 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
     };
 
     return (
-        <div className="sf-page flex min-h-[70vh] items-center justify-center px-4 py-10">
+        <div className={presentationVariant === 'atelier-editorial' ? "sf-page atelier-reset flex min-h-[70vh] items-center justify-center px-4 py-10" : "sf-page flex min-h-[70vh] items-center justify-center px-4 py-10"}>
             <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/70 sm:p-8">
                 <p className="sf-kicker mb-2">Secure recovery</p>
                 <h1 className="mb-2 text-3xl font-black text-slate-950">Reset password</h1>
@@ -194,10 +194,11 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
                 {step === 'email' && (
                     <form onSubmit={requestOtp} className="space-y-4">
                         <div>
-                            <label className="mb-1.5 block text-sm font-bold text-slate-700">Email Address</label>
+                            <label htmlFor={presentationVariant === 'atelier-editorial' ? 'reset-email' : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Email Address</label>
                             <input
                                 required
                                 type="email"
+                                id={presentationVariant === 'atelier-editorial' ? 'reset-email' : undefined}
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
                                 className="sf-field"
@@ -256,10 +257,11 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
                 {step === 'password' && (
                     <form onSubmit={submitNewPassword} className="space-y-4">
                         <div>
-                            <label className="mb-1.5 block text-sm font-bold text-slate-700">New Password</label>
+                            <label htmlFor={presentationVariant === 'atelier-editorial' ? 'reset-password' : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">New Password</label>
                             <input
                                 required
                                 type="password"
+                                id={presentationVariant === 'atelier-editorial' ? 'reset-password' : undefined}
                                 value={password}
                                 onChange={(event) => setPassword(event.target.value)}
                                 className="sf-field"
@@ -291,10 +293,11 @@ export default function PasswordResetFlow({ subdomain, onBack, onComplete }) {
                         </div>
 
                         <div>
-                            <label className="mb-1.5 block text-sm font-bold text-slate-700">Confirm Password</label>
+                            <label htmlFor={presentationVariant === 'atelier-editorial' ? 'reset-confirm-password' : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Confirm Password</label>
                             <input
                                 required
                                 type="password"
+                                id={presentationVariant === 'atelier-editorial' ? 'reset-confirm-password' : undefined}
                                 value={confirmPassword}
                                 onChange={(event) => setConfirmPassword(event.target.value)}
                                 className="sf-field"

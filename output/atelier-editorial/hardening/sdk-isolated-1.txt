@@ -1,0 +1,18 @@
+✔ missing OpenAI key starts no provider work (2.9176ms)
+✔ already aborted signal starts no provider calls and leaves no external listeners (0.7008ms)
+✔ installed SDK receives AbortSignal and local deadline aborts its fetch (42.1965ms)
+✔ provider statuses are safe, classified, and never transport retried (2.902ms)
+✔ reported tokens retained, absent tokens unknown; telemetry failures cannot fail a response (0.9958ms)
+✔ late response after cancellation cannot return a result; listeners are removed (0.7964ms)
+✔ strict JSON schema closes every object and preserves optional fields as nullable (0.2841ms)
+✔ refused, incomplete and empty responses are not accepted as successful output (0.5119ms)
+✔ installed SDK uses Responses JSON schema, inline images, no storage and no automatic retries (9.0258ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 905.257
+

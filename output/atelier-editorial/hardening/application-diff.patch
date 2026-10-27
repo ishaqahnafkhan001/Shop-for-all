@@ -1,0 +1,854 @@
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/packages/storefront-renderer/normalizeProduct.js b/C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/normalizeProduct.js
+index 6787cbe..1e4ddc4 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/packages/storefront-renderer/normalizeProduct.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/normalizeProduct.js
+@@ -1,3 +1,39 @@
++// Display snapshots are advisory; order prices are always recomputed by the server.
++// Accept numeric API strings, but never coerce null/blank/boolean data to a free price.
++export const getValidPrice = (...values) => {
++    for (const value of values) {
++        if (typeof value !== 'number' && typeof value !== 'string') continue;
++        if (typeof value === 'string' && !value.trim()) continue;
++        const price = Number(value);
++        if (Number.isFinite(price) && price >= 0) return price;
++    }
++    return null;
++};
++
++export const getCartItemPrice = (item = {}) => (
++    getValidPrice(item.cartPrice, item.finalPrice, item.sellingPrice, item.pricing?.sellingPrice) ?? 0
++);
++
++export const getCartItemOriginalPrice = (item = {}) => (
++    getValidPrice(item.selectedVariant?.pricing?.price, item.selectedVariant?.priceOverride,
++        item.sellingPrice, item.pricing?.sellingPrice) ?? 0
++);
++
++// Refresh only the matching product/variant. Never substitute another tenant's ID
++// or silently select a different option when the chosen variant disappeared.
++export const refreshCartItemPrice = (item, rawProduct) => {
++    if (!rawProduct || String(rawProduct._id) !== String(item._id)) return item;
++    const product = normalizeProduct(rawProduct);
++    const variantId = item.variantId || item.selectedVariant?._id;
++    const variant = variantId
++        ? product.variants.find(v => String(v._id) === String(variantId) && v.isActive !== false && v.status !== 'archived')
++        : product.variants.find(v => v.isActive !== false && v.status !== 'archived');
++    if (variantId && !variant) return item;
++    const attributes = Object.fromEntries((variant?.attributes || []).map(a => [a.name, a.value]));
++    const price = getProductPresentation({...product, variants: variant ? [variant] : []}, attributes);
++    return {...item, sellingPrice: price.baseOriginalPrice, finalPrice: price.displayFinalPrice, cartPrice: price.displayFinalPrice};
++};
++
+ /**
+  * Normalizes raw product data from the API into a consistent shape.
+  * Kept outside components so it's never recreated on re-render.
+@@ -93,7 +129,7 @@ export function getProductPresentation(product, selectedAttributes = {}) {
+     const displayStock      = currentVariant
+         ? (currentVariant.inventory?.stock ?? currentVariant.stock ?? 0)
+         : (product?.stock ?? 0);
+-    const baseOriginalPrice = currentVariant?.pricing?.price ?? currentVariant?.priceOverride ?? product?.sellingPrice ?? 0;
++    const baseOriginalPrice = getValidPrice(currentVariant?.pricing?.price, currentVariant?.priceOverride, product?.sellingPrice) ?? 0;
+     const productDiscount = product?.discount ?? 0;
+     const productDiscountPrice = productDiscount > 0
+         ? Math.round(baseOriginalPrice - (baseOriginalPrice * productDiscount) / 100)
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/context/CartContext.jsx b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/context/CartContext.jsx
+index c69e228..ec1e094 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/context/CartContext.jsx
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/context/CartContext.jsx
+@@ -1,41 +1,51 @@
+ "use client";
+-import React, { createContext, useContext, useState, useEffect } from 'react';
++import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+ import { toast } from 'react-hot-toast';
++import { getCartItemPrice } from '@scaleup/storefront-renderer/product-data';
+ 
+ const CartContext = createContext();
+ 
+ const getCartItemKey = (item) => `${item._id}:${item.variantId || item.selectedVariant?._id || 'default'}`;
+ 
+ export const CartProvider = ({ children, subdomain }) => {
+-    const [cartItems, setCartItems] = useState([]);
+-    const [isMounted, setIsMounted] = useState(false);
+-
+     const storageKey = `shopforall_cart_${subdomain}`;
++    const [cartState, setCartState] = useState({ key: storageKey, items: [] });
++    const [loadedKey, setLoadedKey] = useState("");
++    const cartItems = useMemo(() => cartState.key === storageKey ? cartState.items : [], [cartState, storageKey]);
++    const setCartItems = next => setCartState(previous => ({
++        key: storageKey,
++        items: typeof next === 'function' ? next(previous.key === storageKey ? previous.items : []) : next,
++    }));
+ 
+     // Load cart from LocalStorage on first render
+     useEffect(() => {
++        let cancelled = false;
+         const savedCart = localStorage.getItem(storageKey);
+         queueMicrotask(() => {
+-            setIsMounted(true);
++            if (cancelled) return;
++            setLoadedKey(storageKey);
++            let items = [];
+             if (savedCart) {
+                 try {
+-                    setCartItems(JSON.parse(savedCart).map(item => ({
++                    items = JSON.parse(savedCart).map(item => ({
+                         ...item,
+                         cartItemId: item.cartItemId || getCartItemKey(item)
+-                    })));
++                    }));
+                 } catch {
+                     console.error("Failed to parse cart data");
+                 }
+             }
++            setCartState({ key: storageKey, items });
+         });
++        return () => { cancelled = true; };
+     }, [storageKey]);
+ 
+     // Save cart to LocalStorage whenever it changes
+     useEffect(() => {
+-        if (isMounted) {
++        if (loadedKey === storageKey && cartState.key === storageKey) {
+             localStorage.setItem(storageKey, JSON.stringify(cartItems));
+         }
+-    }, [cartItems, isMounted, storageKey]);
++    }, [cartItems, loadedKey, storageKey, cartState.key]);
+ 
+     // --- CART ACTIONS --- //
+ 
+@@ -89,9 +99,9 @@ export const CartProvider = ({ children, subdomain }) => {
+ 
+     const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+ 
+-    // ✨ THE FIX: Check for finalPrice first, fallback to sellingPrice
++    // Preserve a valid zero in the selected price snapshot.
+     const cartTotal = cartItems.reduce((total, item) => {
+-        const activePrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
++        const activePrice = getCartItemPrice(item);
+         return total + (activePrice * item.quantity);
+     }, 0);
+ 
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/packages/storefront-renderer/presentation/CartView.jsx b/C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CartView.jsx
+index c3045cf..cc2a197 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/packages/storefront-renderer/presentation/CartView.jsx
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CartView.jsx
+@@ -1,4 +1,5 @@
+ "use client";
++import { getCartItemPrice, getCartItemOriginalPrice } from '../normalizeProduct.js';
+ import { CheckCircle, Headphones, Minus, Plus, ShieldCheck, ShoppingBag, Tag, Trash2, Truck } from 'lucide-react';
+ import { Link } from './Runtime.jsx';
+ import SafeProductImage from './SafeProductImage.jsx';
+@@ -112,11 +113,11 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal,
+                                         {/* Pricing */}
+                                         <div className="mt-auto flex items-center gap-2">
+                                             <p className="text-lg font-black text-slate-950">
+-                                                ৳ {item.cartPrice || item.finalPrice || item.sellingPrice}
++                                                ৳ {getCartItemPrice(item)}
+                                             </p>
+-                                            {item.pricing?.discount > 0 && (
++                                            {item.pricing?.discount > 0 && getCartItemOriginalPrice(item) > getCartItemPrice(item) && (
+                                                 <p className="text-sm text-slate-400 line-through">
+-                                                    ৳ {item.pricing.sellingPrice}
++                                                    ৳ {getCartItemOriginalPrice(item)}
+                                                 </p>
+                                             )}
+                                         </div>
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/packages/storefront-renderer/presentation/CheckoutSections.jsx b/C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CheckoutSections.jsx
+index 34bd371..f924fe4 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/packages/storefront-renderer/presentation/CheckoutSections.jsx
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/CheckoutSections.jsx
+@@ -1,4 +1,5 @@
+ "use client";
++import { getCartItemPrice } from '../normalizeProduct.js';
+ 
+ import { useAtelierDialog } from '../atelier/useAtelierDialog.js';
+ import { Image, Link } from "./Runtime.jsx";
+@@ -625,15 +626,12 @@ function CheckoutOrderItem({
+                         <div className="text-right">
+                             <p className="text-lg font-black text-[var(--sf-checkout-text)]">
+                                 ৳
+-                                {(item.finalPrice ||
+-                                        item.sellingPrice) *
+-                                    item.quantity}
++                                {getCartItemPrice(item) * item.quantity}
+                             </p>
+ 
+                             <p className="text-xs text-slate-400">
+                                 ৳
+-                                {item.finalPrice ||
+-                                    item.sellingPrice}
++                                {getCartItemPrice(item)}
+                                 each
+                             </p>
+                         </div>
+@@ -839,6 +837,10 @@ function AtelierCheckoutDialog({ open, onClose, busy, render }) {
+ export function CheckoutOtpModal({
+     presentationVariant,
+     error,
++    message,
++    cooldownSeconds = 0,
++    expired = false,
++    onResendCode,
+     maskedPhone,
+     onCancel,
+     onSendCode,
+@@ -859,10 +861,10 @@ export function CheckoutOtpModal({
+         event.stopPropagation();
+         if (isBusy) return;
+         if (isOtpInput) {
+-            if (otp.length === 6) onVerifyCode();
++            if (otp.length === 6 && !expired) onVerifyCode();
+             return;
+         }
+-        onSendCode();
++        if (cooldownSeconds === 0) onSendCode();
+     };
+ 
+     const renderModal = (dialogRef) => (
+@@ -928,6 +930,20 @@ export function CheckoutOtpModal({
+                         </div>
+                     )}
+ 
++                    {onResendCode && (
++                        <div className="space-y-2 text-sm">
++                            {message && <p role="status" className="text-[var(--sf-checkout-success)]">{message}</p>}
++                            {expired && <p role="status" className="text-[var(--sf-checkout-error)]">Verification code expired. Request a new code.</p>}
++                            {isOtpInput ? (
++                                <button type="button" onClick={onResendCode}
++                                    disabled={isBusy || cooldownSeconds > 0}
++                                    className="sf-btn sf-btn-secondary min-h-11 w-full py-3 disabled:opacity-50">
++                                    {sending ? "Sending code…" : cooldownSeconds > 0 ? `Resend in ${cooldownSeconds}s` : "Resend code"}
++                                </button>
++                            ) : cooldownSeconds > 0 && <p>Request another code in {cooldownSeconds}s.</p>}
++                        </div>
++                    )}
++
+                     {error && (
+                         <p id={atelier ? "checkout-otp-error" : undefined} role={atelier ? "alert" : undefined} className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-[var(--sf-checkout-error)]">
+                             {error}
+@@ -947,7 +963,7 @@ export function CheckoutOtpModal({
+                         {!isOtpInput ? (
+                             <button
+                                 type="submit"
+-                                disabled={isBusy}
++                                disabled={isBusy || cooldownSeconds > 0}
+                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
+                             >
+                                 {sending ? <Loader2 size={17} className="animate-spin" /> : <Phone size={17} />}
+@@ -956,7 +972,7 @@ export function CheckoutOtpModal({
+                         ) : (
+                             <button
+                                 type="submit"
+-                                disabled={isBusy || otp.length !== 6}
++                                disabled={isBusy || otp.length !== 6 || expired}
+                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
+                             >
+                                 {verifying || state === "placing_order" ? <Loader2 size={17} className="animate-spin" /> : <ShieldCheck size={17} />}
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/cart/page.jsx b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/cart/page.jsx
+index 49f695d..7a8c501 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/cart/page.jsx
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/cart/page.jsx
+@@ -8,6 +8,7 @@ import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvi
+ import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
+ import { DEFAULT_CART_DELIVERY_ESTIMATE } from '@/lib/cartConstants';
+ import { normalizeProduct } from '@/utils/normalizeProduct';
++import { getCartItemPrice, getCartItemOriginalPrice } from '@scaleup/storefront-renderer/product-data';
+ 
+ import { CartView } from '@scaleup/storefront-renderer/presentation/CartView';
+ import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
+@@ -36,8 +37,8 @@ export default function CartPage() {
+ 
+     // Calculate total savings based on your Product Schema pricing logic
+     const totalSavings = cartItems.reduce((acc, item) => {
+-        const original = item.pricing?.sellingPrice || item.sellingPrice || 0;
+-        const current = item.finalPrice || item.sellingPrice || 0;
++        const original = getCartItemOriginalPrice(item);
++        const current = getCartItemPrice(item);
+         const saving = original > current ? (original - current) * item.quantity : 0;
+         return acc + saving;
+     }, 0);
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/hooks/useStorefrontProductActions.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/hooks/useStorefrontProductActions.js
+index 437da1c..9dc20db 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/hooks/useStorefrontProductActions.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/hooks/useStorefrontProductActions.js
+@@ -8,6 +8,7 @@ import API from "@/api/api";
+ import StorefrontVariantPickerModal from "@/components/storefront/StorefrontVariantPickerModal";
+ import { useCart } from "@/context/CartContext";
+ import { normalizeProduct } from "@/utils/normalizeProduct";
++import { getProductPresentation } from "@scaleup/storefront-renderer/product-data";
+ 
+ const getProductId = (product = {}) => String(product._id || product.id || "");
+ const getWishlistKey = (subdomain) => `wishlist:${subdomain || "store"}`;
+@@ -40,19 +41,17 @@ const getAvailableVariants = (product = {}) => (
+ const buildCartProduct = (product, selectedVariant = null) => {
+     const normalized = normalizeProduct(product) || product;
+     const variant = selectedVariant || normalized.selectedVariant || null;
+-    const variantPrice = variant?.pricing?.price ?? variant?.priceOverride;
+-    const basePrice = Number.isFinite(Number(variantPrice))
+-        ? Number(variantPrice)
+-        : Number(normalized.sellingPrice || normalized.pricing?.sellingPrice || 0);
+-    const discount = Number(normalized.discount ?? normalized.pricing?.discount ?? 0);
+-    const finalPrice = Math.round(basePrice - ((basePrice * discount) / 100));
++    const attributes = Object.fromEntries((variant?.attributes || []).map(a => [a.name, a.value]));
++    const { baseOriginalPrice: basePrice, displayFinalPrice: finalPrice } = getProductPresentation(
++        {...normalized, variants: variant ? [variant] : []}, attributes
++    );
+ 
+     return {
+         ...normalized,
+         selectedVariant: variant || normalized.selectedVariant,
+         variantId: variant?._id || normalized.variantId || normalized.selectedVariant?._id,
+         stock: variant ? getVariantStock(variant) : normalized.stock,
+-        sellingPrice: basePrice || normalized.sellingPrice,
++        sellingPrice: basePrice,
+         finalPrice: Number.isFinite(finalPrice) ? finalPrice : normalized.finalPrice,
+         cartPrice: Number.isFinite(finalPrice) ? finalPrice : normalized.finalPrice,
+         imageUrl: variant?.image || normalized.coverMediaId || normalized.imageUrl || normalized.images?.[0] || "",
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCoupon.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCoupon.js
+index 3edd643..606447e 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCoupon.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCoupon.js
+@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
+ import { toast } from "react-hot-toast";
+ 
+ import API from "@/api/api";
++import { getCartItemPrice } from "@scaleup/storefront-renderer/product-data";
+ 
+ export function useCheckoutCoupon({ cartItems, customerEmail, subdomain, subtotal }) {
+     const [promotionCode, setPromotionCode] = useState("");
+@@ -39,7 +40,7 @@ export function useCheckoutCoupon({ cartItems, customerEmail, subdomain, subtota
+                     subtotal,
+                     customerEmail,
+                     items: cartItems.map((item) => {
+-                        const unitPrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
++                        const unitPrice = getCartItemPrice(item);
+ 
+                         return {
+                             productId: item._id,
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx
+index d8fa29f..217b139 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx
+@@ -21,6 +21,7 @@ import {
+     CheckoutPageShell,
+     CheckoutSuccessState,
+ } from "./components/CheckoutSections";
++import { getCartItemPrice, refreshCartItemPrice } from "@scaleup/storefront-renderer/product-data";
+ import { useCheckoutCartProducts } from "./hooks/useCheckoutCartProducts";
+ import { useCheckoutCoupon } from "./hooks/useCheckoutCoupon";
+ import { useCheckoutFormState } from "./hooks/useCheckoutFormState";
+@@ -37,8 +38,7 @@ const maskCheckoutPhone = (value = "") => {
+ export default function CheckoutPage({ params }) {
+     const { subdomain } = React.use(params);
+     const {
+-        cartItems,
+-        cartTotal,
++        cartItems: storedCartItems,
+         clearCart,
+         updateQuantity,
+         removeFromCart,
+@@ -48,6 +48,8 @@ export default function CheckoutPage({ params }) {
+     const presentationVariant = getStorefrontPresentationVariant(theme);
+ 
+     const checkoutTrackedRef = useRef("");
++    const otpActionRef = useRef(false);
++    const placingOrderRef = useRef(false);
+     const checkoutIdempotencyRef = useRef({ resetKey: "", key: "" });
+     const customerId = user?.role === "Customer" ? (user._id || user.id) : null;
+     const policies = useMemo(() => theme.policies || {}, [theme.policies]);
+@@ -71,7 +73,11 @@ export default function CheckoutPage({ params }) {
+     const [otpModalError, setOtpModalError] = useState("");
+ 
+     const { formData, handleInputChange } = useCheckoutFormState();
+-    const productsDetails = useCheckoutCartProducts({ cartItems, subdomain });
++    const productsDetails = useCheckoutCartProducts({ cartItems: storedCartItems, subdomain });
++    const cartItems = useMemo(() => storedCartItems.map(item => (
++        refreshCartItemPrice(item, productsDetails[item._id])
++    )), [storedCartItems, productsDetails]);
++    const cartTotal = cartItems.reduce((sum, item) => sum + getCartItemPrice(item) * item.quantity, 0);
+     const {
+         promotionCode,
+         setPromotionCode,
+@@ -108,7 +114,7 @@ export default function CheckoutPage({ params }) {
+         checkoutTrackedRef.current = checkoutKey;
+ 
+         cartItems.forEach((item) => {
+-            const unitPrice = item.cartPrice || item.finalPrice || item.sellingPrice || 0;
++            const unitPrice = getCartItemPrice(item);
+             trackStorefrontEvent({
+                 subdomain,
+                 eventType: "begin_checkout",
+@@ -157,7 +163,7 @@ export default function CheckoutPage({ params }) {
+         ].join("::")
+     ), [cartItems, formData.city, formData.phone]);
+ 
+-    const phoneOtp = useCheckoutPhoneOtp({ subdomain, resetKey: checkoutResetKey });
++    const phoneOtp = useCheckoutPhoneOtp({ subdomain, resetKey: checkoutResetKey, phone: formData.phone });
+ 
+     const getCheckoutIdempotencyKey = () => {
+         if (checkoutIdempotencyRef.current.resetKey !== checkoutResetKey || !checkoutIdempotencyRef.current.key) {
+@@ -230,6 +236,8 @@ export default function CheckoutPage({ params }) {
+             return false;
+         }
+ 
++        if (placingOrderRef.current) return false;
++        placingOrderRef.current = true;
+         setOtpModalError("");
+         if (otpModalOpen) setOtpModalState("placing_order");
+ 
+@@ -294,9 +302,7 @@ export default function CheckoutPage({ params }) {
+                         variantId: secureItems[index]?.variantId,
+                         quantity: item.quantity,
+                         price:
+-                            item.cartPrice ||
+-                            item.finalPrice ||
+-                            item.sellingPrice,
++                            getCartItemPrice(item),
+                     })),
+                     shippingCost,
+                     totalAmount,
+@@ -324,10 +330,7 @@ export default function CheckoutPage({ params }) {
+ 
+             cartItems.forEach((item) => {
+                 const unitPrice =
+-                    item.cartPrice ||
+-                    item.finalPrice ||
+-                    item.sellingPrice ||
+-                    0;
++                    getCartItemPrice(item);
+ 
+                 trackStorefrontEvent({
+                     subdomain,
+@@ -366,6 +369,7 @@ export default function CheckoutPage({ params }) {
+             toast.error(message);
+             return false;
+         } finally {
++            placingOrderRef.current = false;
+             setLoading(false);
+         }
+     };
+@@ -373,11 +377,11 @@ export default function CheckoutPage({ params }) {
+     const handlePlaceOrder = async (event) => {
+         event.preventDefault();
+ 
+-        if (!validateCheckoutIntent()) return;
++        if (placingOrderRef.current || otpActionRef.current || !validateCheckoutIntent()) return;
+ 
+         if (!phoneOtp.verified) {
+             setOtpModalOpen(true);
+-            setOtpModalState("idle_confirm_send");
++            setOtpModalState(phoneOtp.codeSent ? "otp_input" : "idle_confirm_send");
+             setOtpModalError("");
+             return;
+         }
+@@ -386,31 +390,35 @@ export default function CheckoutPage({ params }) {
+     };
+ 
+     const handleOtpModalSendCode = async () => {
+-        if (!validateCheckoutIntent()) return;
+-        setOtpModalState("sending");
++        if (otpActionRef.current || placingOrderRef.current || phoneOtp.cooldownSeconds > 0 || !validateCheckoutIntent()) return;
++        otpActionRef.current = true;
++        const hadCode = phoneOtp.codeSent;
++        if (!hadCode) setOtpModalState("sending");
+         setOtpModalError("");
+-        const result = await sendPhoneOtp();
+-        if (result) {
+-            setOtpModalState("otp_input");
+-        } else {
+-            setOtpModalState("idle_confirm_send");
+-            setOtpModalError("Could not send the verification code. Please check the phone number and try again.");
++        try {
++            const result = await sendPhoneOtp();
++            setOtpModalState(result || hadCode ? "otp_input" : "idle_confirm_send");
++        } finally {
++            otpActionRef.current = false;
+         }
+     };
+ 
+     const handleOtpModalVerify = async () => {
+-        if (!validateCheckoutIntent()) return;
++        if (otpActionRef.current || placingOrderRef.current || !validateCheckoutIntent()) return;
++        otpActionRef.current = true;
+         setOtpModalState("verifying");
+         setOtpModalError("");
+-        const result = await verifyPhoneOtp();
+-        const token = result?.phoneVerificationToken;
+-        if (!token) {
+-            setOtpModalState("otp_input");
+-            setOtpModalError("Invalid or expired verification code.");
+-            return;
++        try {
++            const result = await verifyPhoneOtp();
++            const token = result?.phoneVerificationToken;
++            if (!token) {
++                setOtpModalState("otp_input");
++                return;
++            }
++            await executePlaceOrder({ verificationToken: token });
++        } finally {
++            otpActionRef.current = false;
+         }
+-
+-        await executePlaceOrder({ verificationToken: token });
+     };
+ 
+     if (isSuccess) {
+@@ -468,7 +476,11 @@ export default function CheckoutPage({ params }) {
+             </CheckoutPageShell>
+             <CheckoutOtpModal
+                     presentationVariant={presentationVariant}
+-                error={otpModalError}
++                error={otpModalError || phoneOtp.error}
++                message={phoneOtp.message}
++                cooldownSeconds={phoneOtp.cooldownSeconds}
++                expired={phoneOtp.expired}
++                onResendCode={handleOtpModalSendCode}
+                 maskedPhone={phoneOtp.maskedPhone || maskCheckoutPhone(formData.phone)}
+                 onCancel={() => {
+                     if (!loading && !phoneOtp.sending && !phoneOtp.verifying) setOtpModalOpen(false);
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCartProducts.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCartProducts.js
+index 84f4e4e..ed99ea4 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCartProducts.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutCartProducts.js
+@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
+ import API from "@/api/api";
+ 
+ export function useCheckoutCartProducts({ cartItems, subdomain }) {
+-    const [productsDetails, setProductsDetails] = useState({});
++    const [snapshot, setSnapshot] = useState({ subdomain: null, products: {} });
+ 
+     useEffect(() => {
++        let cancelled = false;
+         const fetchProducts = async () => {
+             try {
+                 const ids = [...new Set(cartItems.map((item) => item._id))].join(",");
+@@ -22,7 +23,7 @@ export function useCheckoutCartProducts({ cartItems, subdomain }) {
+                     mapped[product._id] = product;
+                 });
+ 
+-                setProductsDetails(mapped);
++                if (!cancelled) setSnapshot({ subdomain, products: mapped });
+             } catch (error) {
+                 console.error("Failed to fetch products", error);
+             }
+@@ -31,7 +32,8 @@ export function useCheckoutCartProducts({ cartItems, subdomain }) {
+         if (cartItems.length > 0) {
+             fetchProducts();
+         }
++        return () => { cancelled = true; };
+     }, [cartItems, subdomain]);
+ 
+-    return productsDetails;
++    return snapshot.subdomain === subdomain && cartItems.length > 0 ? snapshot.products : {};
+ }
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/services/checkout/checkoutOtpService.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/checkout/checkoutOtpService.js
+index 3ee104e..28942be 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/services/checkout/checkoutOtpService.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/checkout/checkoutOtpService.js
+@@ -5,11 +5,12 @@ const { sendSms, SmsProviderError } = require('../sms/smsProviderService');
+ const { maskPhone, normalizeBDPhone } = require('../../utils/phoneUtils');
+ 
+ class CheckoutOtpError extends Error {
+-    constructor(message, code = 'INVALID_OTP', statusCode = 400) {
++    constructor(message, code = 'INVALID_OTP', statusCode = 400, retryAfterSeconds) {
+         super(message);
+         this.name = 'CheckoutOtpError';
+         this.code = code;
+         this.statusCode = statusCode;
++        this.retryAfterSeconds = retryAfterSeconds;
+     }
+ }
+ 
+@@ -65,7 +66,8 @@ const sendCheckoutPhoneOtp = async ({ shop, phone, checkoutSessionId, items }) =
+         throw new CheckoutOtpError(
+             result.error || 'Please wait before requesting another code.',
+             result.code || 'OTP_RESEND_COOLDOWN',
+-            429
++            429,
++            result.retryAfterSeconds
+         );
+     }
+ 
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/controllers/checkoutOtpController.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/checkoutOtpController.js
+index 5b0039e..1f192b1 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/controllers/checkoutOtpController.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/checkoutOtpController.js
+@@ -11,7 +11,9 @@ const handleCheckoutOtpError = (res, err) => {
+     return res.status(statusCode || 400).json({
+         success: false,
+         code: err.code || 'INVALID_OTP',
+-        error: err.message || 'Unable to verify phone number.'
++        error: err.message || 'Unable to verify phone number.',
++        ...(Number.isFinite(err.retryAfterSeconds) && err.retryAfterSeconds > 0
++            ? { retryAfterSeconds: err.retryAfterSeconds } : {})
+     });
+ };
+ 
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/controllers/publicController.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/publicController.js
+index be0ee8e..f61ae61 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/controllers/publicController.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/publicController.js
+@@ -507,7 +507,8 @@ exports.createPublicOrder = async (req, res) => {
+             const beforeStock = stockUpdate.beforeStock;
+ 
+             const variantPrice = variant.pricing?.price ?? variant.priceOverride;
+-            const basePrice = Number.isFinite(Number(variantPrice))
++            const basePrice = variantPrice !== null && variantPrice !== undefined &&
++                variantPrice !== '' && Number.isFinite(Number(variantPrice))
+                 ? Number(variantPrice)
+                 : Number(product.pricing?.sellingPrice);
+ 
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutPhoneOtp.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutPhoneOtp.js
+index 6344e4d..8c09110 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutPhoneOtp.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-storefront/src/app/[subdomain]/checkout/hooks/useCheckoutPhoneOtp.js
+@@ -1,96 +1,144 @@
+ "use client";
+ 
+-import { useState } from "react";
++import { useEffect, useRef, useState } from "react";
+ import { toast } from "react-hot-toast";
+-
+ import API from "@/api/api";
+ 
+ const createCheckoutSessionId = () => {
+     if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+     return `checkout_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+ };
++const timestamp = value => {
++    const time = value ? new Date(value).getTime() : 0;
++    return Number.isFinite(time) ? time : 0;
++};
++const normalizePhone = value => String(value || "").replace(/\D/g, "").replace(/^880/, "0");
+ 
+-export function useCheckoutPhoneOtp({ subdomain, resetKey }) {
++export function useCheckoutPhoneOtp({ subdomain, resetKey, phone = "" }) {
++    const bindingKey = `${subdomain}::${resetKey}`;
+     const [checkoutSessionId] = useState(createCheckoutSessionId);
+-    const [otp, setOtp] = useState("");
+-    const [otpKey, setOtpKey] = useState("");
+-    const [maskedPhone, setMaskedPhone] = useState("");
+-    const [maskedPhoneKey, setMaskedPhoneKey] = useState("");
+-    const [phoneVerificationToken, setPhoneVerificationToken] = useState("");
+-    const [verifiedKey, setVerifiedKey] = useState("");
++    const [code, setCode] = useState({ key: "", value: "" });
++    const [delivery, setDelivery] = useState({ key: "", expiresAt: 0, maskedPhone: "" });
++    const [proof, setProof] = useState({ key: "", token: "", expiresAt: 0 });
++    const [cooldowns, setCooldowns] = useState({});
++    const [feedback, setFeedback] = useState({ key: "", error: "", message: "" });
+     const [sending, setSending] = useState(false);
+     const [verifying, setVerifying] = useState(false);
++    const [now, setNow] = useState(Date.now);
++    const mounted = useRef(true);
++    const operation = useRef(null);
++    const latestKey = useRef(bindingKey);
++    const cooldownRef = useRef({});
++    useEffect(() => { latestKey.current = bindingKey; }, [bindingKey]);
++    const phoneKey = `${subdomain}:${normalizePhone(phone)}`;
++    const resendAt = cooldowns[phoneKey] || 0;
++    const codeSent = delivery.key === bindingKey && delivery.expiresAt > 0;
++    const expiresAt = codeSent ? delivery.expiresAt : 0;
++    const verified = proof.key === bindingKey && Boolean(proof.token) && proof.expiresAt > now;
++    const cooldownSeconds = Math.max(0, Math.ceil((resendAt - now) / 1000));
++    const expired = codeSent && expiresAt <= now;
+ 
+-    const visibleOtp = otpKey === resetKey ? otp : "";
+-    const visibleMaskedPhone = maskedPhoneKey === resetKey ? maskedPhone : "";
+-    const verified = Boolean(phoneVerificationToken) && verifiedKey === resetKey;
+-    const updateOtp = (value) => {
+-        setOtpKey(resetKey);
+-        setOtp(value);
+-    };
++    useEffect(() => {
++        mounted.current = true;
++        return () => { mounted.current = false; };
++    }, []);
++    const ticking = resendAt > now || expiresAt > now || (proof.key === bindingKey && proof.expiresAt > now);
++    useEffect(() => {
++        if (!ticking) return;
++        const timer = setInterval(() => setNow(Date.now()), 1000);
++        return () => clearInterval(timer);
++    }, [ticking]);
+ 
+-    const sendOtp = async ({ phone, items }) => {
++    const updateOtp = value => setCode({key: bindingKey, value: String(value).replace(/\D/g, "").slice(0, 6)});
++    const current = key => mounted.current && latestKey.current === key;
++    const setCooldown = (key, until) => {
++        // A cart/city change or dialog close cannot reset the phone/session cooldown.
++        const next = Math.max(cooldownRef.current[key] || 0, until);
++        cooldownRef.current[key] = next;
++        setCooldowns(previous => ({...previous, [key]: next}));
++    };
++    const sendOtp = async ({ phone: requestedPhone, items }) => {
++        if (operation.current) return null;
++        const requestPhoneKey = `${subdomain}:${normalizePhone(requestedPhone)}`;
++        if ((cooldownRef.current[requestPhoneKey] || 0) > Date.now()) return null;
++        const key = bindingKey;
++        operation.current = "send";
+         setSending(true);
+-        setPhoneVerificationToken("");
+-        setVerifiedKey("");
++        setProof({ key: "", token: "", expiresAt: 0 });
++        setFeedback({key, error: "", message: ""});
+         try {
+             const { data } = await API.post(`/storefront/${subdomain}/checkout/send-otp`, {
+-                phone,
+-                items,
+-                checkoutSessionId,
++                phone: requestedPhone, items, checkoutSessionId,
+             });
+-            setMaskedPhone(data.maskedPhone || "");
+-            setMaskedPhoneKey(resetKey);
+-            toast.success(data.message || "Verification code sent");
++            if (!mounted.current) return null;
++            setCooldown(requestPhoneKey, timestamp(data.resendAvailableAt));
++            if (!current(key)) return null;
++            setNow(Date.now());
++            setDelivery({key, maskedPhone: data.maskedPhone || "", expiresAt: timestamp(data.expiresAt)});
++            setCode({key, value: ""});
++            const message = data.message || "Verification code sent";
++            setFeedback({key, error: "", message});
++            toast.success(message);
+             return data;
+         } catch (error) {
+-            toast.error(error.response?.data?.error || "Could not send phone verification code");
++            if (!current(key)) return null;
++            const retry = Number(error.response?.data?.retryAfterSeconds || error.response?.headers?.["retry-after"]);
++            if (Number.isFinite(retry) && retry > 0) setCooldown(requestPhoneKey, Date.now() + retry * 1000);
++            setNow(Date.now());
++            const message = error.response?.data?.error || "Could not send phone verification code. Please try again.";
++            setFeedback({key, error: message, message: ""});
++            toast.error(message);
+             return null;
+         } finally {
+-            setSending(false);
++            operation.current = null;
++            if (mounted.current) setSending(false);
+         }
+     };
+-
+-    const verifyOtp = async ({ phone, items }) => {
+-        if (visibleOtp.trim().length !== 6) {
+-            toast.error("Enter the 6-digit verification code");
++    const verifyOtp = async ({ phone: requestedPhone, items }) => {
++        if (operation.current) return null;
++        const otp = code.key === bindingKey ? code.value : "";
++        if (!/^\d{6}$/.test(otp) || !codeSent || expiresAt <= Date.now()) {
++            const error = expired ? "Verification code expired. Request a new code." : "Enter the 6-digit verification code";
++            setFeedback({key: bindingKey, error, message: ""});
++            toast.error(error);
+             return null;
+         }
+-
++        const key = bindingKey;
++        operation.current = "verify";
+         setVerifying(true);
++        setFeedback({key, error: "", message: ""});
+         try {
+             const { data } = await API.post(`/storefront/${subdomain}/checkout/verify-otp`, {
+-                phone,
+-                items,
+-                otp: visibleOtp.trim(),
+-                checkoutSessionId,
++                phone: requestedPhone, items, otp, checkoutSessionId,
+             });
+-            setPhoneVerificationToken(data.phoneVerificationToken || "");
+-            setVerifiedKey(resetKey);
+-            setMaskedPhone(data.maskedPhone || "");
+-            setMaskedPhoneKey(resetKey);
+-            toast.success(data.message || "Phone verified");
++            if (!current(key)) return null;
++            if (!data.phoneVerificationToken || timestamp(data.expiresAt) <= Date.now()) throw new Error("Missing verification proof");
++            setProof({key, token: data.phoneVerificationToken, expiresAt: timestamp(data.expiresAt)});
++            setNow(Date.now());
++            const message = data.message || "Phone verified";
++            setFeedback({key, error: "", message});
++            toast.success(message);
+             return data;
+         } catch (error) {
+-            setPhoneVerificationToken("");
+-            setVerifiedKey("");
+-            toast.error(error.response?.data?.error || "Invalid or expired verification code");
++            if (!current(key)) return null;
++            setProof({key: "", token: "", expiresAt: 0});
++            const message = error.response?.data?.error || "Invalid or expired verification code";
++            setFeedback({key, error: message, message: ""});
++            toast.error(message);
+             return null;
+         } finally {
+-            setVerifying(false);
++            operation.current = null;
++            if (mounted.current) setVerifying(false);
+         }
+     };
+-
+     return {
+         checkoutSessionId,
+-        otp: visibleOtp,
++        otp: code.key === bindingKey ? code.value : "",
+         setOtp: updateOtp,
+-        maskedPhone: visibleMaskedPhone,
+-        phoneVerificationToken,
+-        verified,
+-        sending,
+-        verifying,
+-        sendOtp,
+-        verifyOtp,
++        maskedPhone: delivery.key === bindingKey ? delivery.maskedPhone : "",
++        phoneVerificationToken: verified ? proof.token : "",
++        verified, sending, verifying, sendOtp, verifyOtp, codeSent, expired, cooldownSeconds,
++        error: feedback.key === bindingKey ? feedback.error : "",
++        message: feedback.key === bindingKey ? feedback.message : "",
+     };
+ }
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/models/OTP.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/OTP.js
+index 48884bd..985cea7 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/models/OTP.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/OTP.js
+@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
+ const otpSchema = new mongoose.Schema({
+     key: {
+         type: String,
+-        trim: true,
+-        index: true
++        trim: true
+     },
+     email: {
+         type: String,
+
+diff --git a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/middlewares/vendorVerificationGuard.js b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/middlewares/vendorVerificationGuard.js
+index 238a44a..9119d4b 100644
+--- a/C:/Users/user/WebstormProjects/Shop-for-all/output/atelier-editorial/hardening/before/ecommerce-backend/backend/middlewares/vendorVerificationGuard.js
++++ b/C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/middlewares/vendorVerificationGuard.js
+@@ -4,7 +4,16 @@ exports.blockVerificationSuspendedShop = async (req, res, next) => {
+     try {
+         if (!req.tenantId) return next();
+ 
+-        const { shop, status } = await ensureShopVerificationStatus(req.tenantId, { req, owner: req.user });
++        let verification;
++        try {
++            verification = await ensureShopVerificationStatus(req.tenantId, { req, owner: req.user });
++        } catch (error) {
++            // Concurrent first writes can normalize the same Shop document.
++            // Reload through the existing service once; never reuse stale status.
++            if (error.name !== 'VersionError') throw error;
++            verification = await ensureShopVerificationStatus(req.tenantId, { req, owner: req.user });
++        }
++        const { shop, status } = verification;
+ 
+         if (isVerificationSuspension(shop)) {
+             return res.status(403).json({

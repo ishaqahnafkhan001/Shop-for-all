@@ -1,0 +1,10 @@
+const fs=require('node:fs');const path=require('node:path');const {spawnSync}=require('node:child_process');
+const backend=path.resolve(__dirname,'../../../ecommerce-backend/backend');
+const [name,...files]=process.argv.slice(2);
+if(!/^[a-z0-9-]+$/.test(name||'') || !files.length || files.some(p=>!/^tests\/integration\/[a-z0-9-]+\.integration\.test\.js$/.test(p)))throw Error('Invalid isolated test arguments');
+const env={};for(const key of ['PATH','Path','SystemRoot','SYSTEMROOT','WINDIR','ComSpec','TEMP','TMP','USERPROFILE'])if(process.env[key])env[key]=process.env[key];
+const uri='mongodb://127.0.0.1:27028/atelier_acceptance_c085454b_test?directConnection=true&replicaSet=rs0';
+Object.assign(env,{NODE_ENV:'test',SFA_ISOLATED_ACCEPTANCE:'c085454b',MONGO_URI_TEST:uri,MONGO_URI:uri,JWT_SECRET:'isolated-acceptance-test-secret',CSRF_SECRET:'isolated-acceptance-csrf-secret',SMS_OTP_SECRET:'isolated-acceptance-otp-secret',ATELIER_EDITORIAL_ROLLOUT:'off',ATELIER_EDITORIAL_TEST_SHOP_IDS:'',ATELIER_EDITORIAL_APPROVED_PLAN_KEYS:'',REDIS_URL:'',ADMIN_APP_URL:'http://localhost:5173',PLATFORM_ROOT_DOMAIN:'scaleup.codes',SUPPORT_EMAIL:'support@example.invalid'});
+const result=spawnSync(process.execPath,['--require','./tests/helpers/isolatedAcceptance.cjs',...(name.endsWith('-head')?['--require',path.join(__dirname,'pre-atelier-loader.cjs')]:[]),'--test','--test-concurrency=1',...files],{cwd:backend,env,encoding:'utf8',maxBuffer:30e6,timeout:300000});
+const output=(result.stdout||'')+'\n'+(result.stderr||'')+(result.error?'\n'+result.error.message:'');fs.writeFileSync(path.join(__dirname,name+'.txt'),output);
+console.log(output.split('\n').filter(line=>/^[✔✖ℹ]|^# (tests|pass|fail|skipped)|^(ok|not ok) /.test(line)).join('\n'));process.exitCode=result.status??1;

@@ -96,6 +96,7 @@ const ALLOWED_THEME_KEYS = Object.freeze([
     'version',
     'extensions',
     'preset',
+    'presentationVariant',
     'logoUrl',
     'faviconUrl',
     'fontFamily',
@@ -331,6 +332,8 @@ const sanitizeThemePayload = (theme = {}) => {
         } };
     }
     if (picked.colors) picked.colors = sanitizeColorObject(picked.colors);
+    // Optional identity: legacy snapshots must not acquire a materialized default.
+    if (picked.presentationVariant !== 'atelier-editorial') delete picked.presentationVariant;
     if (picked.preset) {
         const presetId = cleanText(picked.preset.id, 80)
             .toLowerCase()
@@ -726,7 +729,7 @@ const normalizeNavigation = (navigation = []) => ensurePolicyNavigationLink(Arra
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
-const SUPPORTED_THEME_FONTS = new Set(['Inter', 'Arial', 'Georgia', 'Roboto']);
+const SUPPORTED_THEME_FONTS = new Set(['Inter', 'Arial', 'Georgia', 'Roboto', 'DM Sans']);
 const SUPPORTED_HEADING_WEIGHTS = new Set(['600', '700', '800', '900']);
 const PRODUCT_CARD_STYLE_DEFAULTS = Object.freeze({
     Minimal: { shadow: 'None', buttonStyle: 'Outline', titleWeight: '700' },
@@ -738,7 +741,7 @@ const PRODUCT_CARD_STYLE_FIELDS = Object.freeze(['shadow', 'titleWeight', 'butto
 // These existing nullable fields may be cleared by a partial update. Null at
 // other paths inherits the current value; arrays (including []) replace whole.
 const NULLABLE_THEME_PATCH_PATHS = new Set([
-    'preset', 'preset.appliedAt', 'seo.socialImageAssetId',
+    'preset', 'preset.appliedAt', 'presentationVariant', 'seo.socialImageAssetId',
     'seo.socialImageWidth', 'seo.socialImageHeight',
     'seo.aiSuggestion.generatedAt', 'seo.aiSuggestion.inputSnapshot', 'seo.aiSuggestion.acceptedAt',
 ]);
@@ -971,6 +974,9 @@ const normalizeTheme = (candidate = {}) => {
 
 const validateTheme = (candidate = {}) => {
     const errors = [];
+    if (candidate.presentationVariant != null && candidate.presentationVariant !== 'atelier-editorial') {
+        errors.push({ path: 'presentationVariant', code: 'UNSUPPORTED_VARIANT', message: 'Unsupported storefront presentation variant.' });
+    }
     if (candidate.version !== undefined && (!Number.isInteger(Number(candidate.version)) || Number(candidate.version) < 1 || Number(candidate.version) > THEME_SCHEMA_VERSION)) {
         errors.push({ path: 'version', code: 'UNSUPPORTED_THEME_VERSION', message: 'Unsupported theme schema version.' });
     }
@@ -1112,7 +1118,10 @@ const summarizeThemeChanges = (before = {}, after = {}) => {
     return summaries;
 };
 
+const getStorefrontPresentationVariant = (theme = {}) => theme?.presentationVariant === 'atelier-editorial' ? 'atelier-editorial' : 'default';
+
 module.exports = {
+    getStorefrontPresentationVariant,
     HOMEPAGE_COMPOSITIONS,
     getHomepageComposition,
     planHomepageComposition,

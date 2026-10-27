@@ -14,6 +14,8 @@ import { getImageUrlFromValue } from '@/lib/seo';
 const ReviewSection   = lazy(() => import('./ReviewSection'));
 const RelatedProducts = lazy(() => import('./RelatedProducts'));
 
+import { getStorefrontPresentationVariant } from '@scaleup/storefront-theme';
+import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
 import { ProductDetailsView } from '@scaleup/storefront-renderer/presentation/ProductDetailsView';
 import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
 
@@ -39,6 +41,8 @@ function PageSpinner() {
 
 /* ─── Page component ─────────────────────────────────────────── */
 export default function ProductDetails({ subdomain, id, initialProduct = null }) {
+    const { theme } = useStorefrontTheme();
+    const presentationVariant = getStorefrontPresentationVariant(theme);
     const { addToCart }     = useCart();
     const { user }          = useAuth();
     const router            = useRouter();
@@ -132,10 +136,10 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
     }
 
     return <StorefrontPresentationRuntime><ProductDetailsView
-        product={product} currentVariant={currentVariant} displayStock={displayStock}
+        presentationVariant={presentationVariant} product={product} currentVariant={currentVariant} displayStock={displayStock}
         baseOriginalPrice={baseOriginalPrice} displayDiscount={displayDiscount} displayFinalPrice={displayFinalPrice}
         availableAttributes={availableAttributes} selectedAttributes={selectedAttributes} handleVariantSelect={handleVariantSelect}
         quantity={quantity} setQuantity={setQuantity} handleAddToCart={handleAddToCart} handleBuyNow={handleBuyNow}
-        relatedContent={<Suspense fallback={null}><RelatedProducts subdomain={subdomain} products={relatedProducts} /></Suspense>} reviewContent={<Suspense fallback={<div className="mt-24 h-64 rounded-3xl bg-gray-50 animate-pulse" />}><ReviewSection subdomain={subdomain} id={id} isLoggedIn={isLoggedIn} reviews={reviews} onReviewSuccess={refreshProductStats} /></Suspense>}
+        relatedContent={<Suspense fallback={null}><RelatedProducts subdomain={subdomain} products={relatedProducts} presentationVariant={presentationVariant} productCard={{ ...theme.productCard, colors: theme.colors?.productCard }} /></Suspense>} reviewContent={<Suspense fallback={<div className="mt-24 h-64 rounded-3xl bg-gray-50 animate-pulse" />}><ReviewSection presentationVariant={presentationVariant} subdomain={subdomain} id={id} isLoggedIn={isLoggedIn} reviews={reviews} onReviewSuccess={refreshProductStats} /></Suspense>}
     /></StorefrontPresentationRuntime>;
 }

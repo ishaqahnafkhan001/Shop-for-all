@@ -1,0 +1,61 @@
+{
+  "cart": {
+    "bag": "[{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaa1\",\"variantId\":\"bbbbbbbbbbbbbbbbbbbbbbb1\",\"quantity\":2,\"price\":1080}]",
+    "promo": "Coupon saved. It will be validated during checkout.",
+    "empty": true
+  },
+  "checkout": {
+    "policyDefault": false,
+    "marketingDefault": false,
+    "submitInitiallyDisabled": true,
+    "otpFocus": {
+      "active": null,
+      "bodyLocked": "hidden",
+      "dialog": {
+        "bottom": 600,
+        "height": 600,
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "width": 390,
+        "x": 0,
+        "y": 0
+      }
+    },
+    "digitSanitizing": null,
+    "guestRequests": "[\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1/reviews\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/batch\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/checkout/send-otp\",\n    \"fields\": [\n      \"phone\",\n      \"items\",\n      \"checkoutSessionId\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/checkout/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"items\",\n      \"otp\",\n      \"checkoutSessionId\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/public/orders\",\n    \"fields\": [\n      \"subdomain\",\n      \"customer\",\n      \"shippingAddress\",\n      \"shippingZone\",\n      \"items\",\n      \"shippingCost\",\n      \"totalAmount\",\n      \"promotionCode\",\n      \"source\",\n      \"consent\",\n      \"checkoutSessionId\",\n      \"phoneVerificationToken\",\n      \"idempotencyKey\"\n    ],\n    \"headers\": [],\n    \"phoneProofPresent\": true,\n    \"idempotencyPresent\": true,\n    \"retryKeySameAsPrevious\": false,\n    \"policyAccepted\": true,\n    \"marketingOptIn\": false\n  }\n]",
+    "bagAfter": "[]",
+    "failureRetainsBag": "[{\"id\":\"aaaaaaaaaaaaaaaaaaaaaaa1\",\"variantId\":\"bbbbbbbbbbbbbbbbbbbbbbb1\",\"quantity\":1,\"price\":1080}]",
+    "customerRetryRequests": "[\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/batch\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/checkout/send-otp\",\n    \"fields\": [\n      \"phone\",\n      \"items\",\n      \"checkoutSessionId\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/checkout/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"items\",\n      \"otp\",\n      \"checkoutSessionId\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/public/orders\",\n    \"fields\": [\n      \"subdomain\",\n      \"customer\",\n      \"shippingAddress\",\n      \"shippingZone\",\n      \"items\",\n      \"shippingCost\",\n      \"totalAmount\",\n      \"promotionCode\",\n      \"source\",\n      \"consent\",\n      \"checkoutSessionId\",\n      \"phoneVerificationToken\",\n      \"idempotencyKey\"\n    ],\n    \"headers\": [],\n    \"phoneProofPresent\": true,\n    \"idempotencyPresent\": true,\n    \"retryKeySameAsPrevious\": false,\n    \"policyAccepted\": true,\n    \"marketingOptIn\": false\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/recommendations/cart\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/batch\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/checkout/send-otp\",\n    \"fields\": [\n      \"phone\",\n      \"items\",\n      \"checkoutSessionId\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/checkout/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"items\",\n      \"otp\",\n      \"checkoutSessionId\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders\",\n    \"fields\": [\n      \"items\",\n      \"shipping\",\n      \"payment\",\n      \"promotionCode\",\n      \"source\",\n      \"consent\",\n      \"checkoutSessionId\",\n      \"phoneVerificationToken\",\n      \"idempotencyKey\"\n    ],\n    \"headers\": [],\n    \"phoneProofPresent\": true,\n    \"idempotencyPresent\": true,\n    \"retryKeySameAsPrevious\": false,\n    \"policyAccepted\": true,\n    \"marketingOptIn\": false\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/checkout/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"items\",\n      \"otp\",\n      \"checkoutSessionId\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders\",\n    \"fields\": [\n      \"items\",\n      \"shipping\",\n      \"payment\",\n      \"promotionCode\",\n      \"source\",\n      \"consent\",\n      \"checkoutSessionId\",\n      \"phoneVerificationToken\",\n      \"idempotencyKey\"\n    ],\n    \"headers\": [],\n    \"phoneProofPresent\": true,\n    \"idempotencyPresent\": true,\n    \"retryKeySameAsPrevious\": true,\n    \"policyAccepted\": true,\n    \"marketingOptIn\": false\n  }\n]",
+    "customerSuccess": true,
+    "busy": {
+      "open": true,
+      "closeDisabled": true
+    }
+  },
+  "account": {
+    "registrationIdentityLocked": true,
+    "registrationResendDisabled": true,
+    "resetCooldownDisabled": true,
+    "resetPasteSixDigits": true,
+    "mismatchDisabled": true,
+    "expandedOrder": "true",
+    "profileVisible": true,
+    "logout": true,
+    "vendorAdminUrl": "https://admin.example.test"
+  },
+  "tracking": {
+    "privateDataBeforeVerification": 0,
+    "privateDataAfterSend": 0,
+    "tabWrap": "Close modal",
+    "focusRestored": "Cancel Order",
+    "cancelRequest": "[\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1/reviews\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/DDDDD1/access/send-otp\",\n    \"fields\": [\n      \"phone\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/DDDDD1/access/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"otp\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/ddddddddddddddddddddddd1/cancel\",\n    \"fields\": [\n      \"reason\",\n      \"note\",\n      \"accessToken\"\n    ],\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  }\n]",
+    "returnNeedsProof": true,
+    "proofRemovalDisablesSubmit": true,
+    "returnRequest": "[\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1/reviews\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/DDDDD1/access/send-otp\",\n    \"fields\": [\n      \"phone\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/DDDDD1/access/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"otp\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/ddddddddddddddddddddddd1/cancel\",\n    \"fields\": [\n      \"reason\",\n      \"note\",\n      \"accessToken\"\n    ],\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/DDDDD1/access/send-otp\",\n    \"fields\": [\n      \"phone\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/DDDDD1/access/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"otp\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/ddddddddddddddddddddddd1/returns\",\n    \"fields\": [\n      \"accessToken\",\n      \"reason\",\n      \"description\",\n      \"items\",\n      \"proofImages\"\n    ],\n    \"headers\": [\n      \"Content-Type\",\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  }\n]"
+  },
+  "search": {
+    "restored": null
+  },
+  "reviewRequests": "[\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/DDDDD1/access/verify-otp\",\n    \"fields\": [\n      \"phone\",\n      \"otp\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/orders/ddddddddddddddddddddddd1/returns\",\n    \"fields\": [\n      \"accessToken\",\n      \"reason\",\n      \"description\",\n      \"items\",\n      \"proofImages\"\n    ],\n    \"headers\": [\n      \"Content-Type\",\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/track-order/DDDDD1\",\n    \"headers\": [\n      \"x-order-access-token\"\n    ]\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1/reviews\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1/reviews\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"POST\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1/reviews\",\n    \"fields\": [\n      \"rating\",\n      \"comment\"\n    ],\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1\",\n    \"headers\": []\n  },\n  {\n    \"method\": \"GET\",\n    \"url\": \"/storefront/atelier-test-a/products/aaaaaaaaaaaaaaaaaaaaaaa1/reviews\",\n    \"headers\": []\n  }\n]"
+}

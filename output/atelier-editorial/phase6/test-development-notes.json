@@ -1,0 +1,7 @@
+{
+  "fixtureCorrections": [
+    "Initial new Builder suite: 21/23 passed; two assertions expected a hero although the synthetic theme had no merchant hero. Fixed the fixture; no fake content added to application.",
+    "Async gallery test development paused on an unresolved mock promise after changing policy props without rerendering the test component. Corrected the test rerender and terminated only its test process; final suite passes 27/27."
+  ],
+  "unresolved": "Parallel SDK 30ms abort test failed once, then passed 9/9 in isolation and in full serialized runs; source/dependencies were unchanged. All five baseline failures remain."
+}

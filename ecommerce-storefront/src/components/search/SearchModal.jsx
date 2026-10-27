@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {getStorefrontPresentationVariant} from "@scaleup/storefront-theme";
+import {useAtelierDialog} from "@scaleup/storefront-renderer";
+import {useStorefrontTheme} from "@/components/storefront/StorefrontThemeProvider";
 import { ArrowRight, Search, X } from "lucide-react";
 import { trackStorefrontEvent } from "@/utils/analyticsTracker";
 import SafeProductImage from "@/components/storefront/SafeProductImage";
@@ -12,6 +15,9 @@ export default function SearchModal({
                                         products = []
                                     }) {
     const [query, setQuery] = useState("");
+    const {theme} = useStorefrontTheme();
+    const atelier = getStorefrontPresentationVariant(theme) === 'atelier-editorial';
+    const dialogRef = useAtelierDialog({enabled: atelier, open: isOpen, onClose});
 
     useEffect(() => {
         if (!isOpen) {
@@ -54,7 +60,7 @@ export default function SearchModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-4">
+        <div ref={dialogRef} data-atelier-dialog={atelier ? "search" : undefined} role={atelier ? "dialog" : undefined} aria-modal={atelier || undefined} aria-label={atelier ? "Search products" : undefined} className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-4">
             <div className="mt-4 w-full max-w-3xl overflow-hidden rounded-[1.75rem] border border-white/20 bg-white shadow-2xl shadow-slate-950/30 sm:mt-10">
 
                 {/* Header */}
@@ -66,6 +72,7 @@ export default function SearchModal({
                     <input
                         autoFocus
                         type="text"
+                        aria-label={atelier ? 'Search products' : undefined}
                         placeholder="Search products, categories, descriptions..."
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}

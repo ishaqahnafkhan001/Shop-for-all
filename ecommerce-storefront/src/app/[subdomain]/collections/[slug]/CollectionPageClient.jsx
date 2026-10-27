@@ -52,6 +52,8 @@ export default function CollectionPageClient({ shop, collection, products = [], 
     });
     const productActions = useStorefrontProductActions({ subdomain: params?.subdomain || shop?.subdomain });
     const { theme } = useStorefrontTheme();
+    const presentationVariant = getStorefrontPresentationVariant(theme);
+    const atelier = presentationVariant === 'atelier-editorial';
     const productCardColors = theme.colors?.productCard;
     const normalizedProducts = useMemo(() => products.map(normalizeProduct).filter(Boolean), [products]);
     const { desktop: desktopColumns, tablet: tabletColumns, mobile: mobileColumns, spacing } = resolveAllProductsLayout(theme.allProducts, theme.layout, theme.productGridStyle);
@@ -219,7 +221,7 @@ export default function CollectionPageClient({ shop, collection, products = [], 
     );
 
     return (
-        <div className="sf-page">
+        <div className={atelier ? "sf-page atelier-catalog" : "sf-page"}>
             <section className="border-b border-slate-200 bg-slate-50/80">
                 <div className="sf-shell-wide py-6 sm:py-10">
                     <Link href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 transition hover:text-[var(--sf-accent)]">

@@ -1,5 +1,7 @@
 "use client";
+import { getCartItemPrice } from '../normalizeProduct.js';
 
+import { useAtelierDialog } from '../atelier/useAtelierDialog.js';
 import { Image, Link } from "./Runtime.jsx";
 import SafeProductImage from "./SafeProductImage.jsx";
 
@@ -300,7 +302,7 @@ export function CheckoutDeliveryMethod({ delivery }) {
     </div>;
 }
 
-export function CheckoutPaymentMethod() {
+export function CheckoutPaymentMethod({ presentationVariant } = {}) {
     return (
         <div className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
             <h2 className="mb-5 text-2xl font-black text-[var(--sf-checkout-text)]">
@@ -314,7 +316,7 @@ export function CheckoutPaymentMethod() {
                     <div>
                         <p className="text-sm font-black text-[var(--sf-checkout-text)]">Cash on Delivery</p>
                         <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                            Pay securely when your order arrives. Online payment providers can be enabled later from the platform.
+                            {presentationVariant === 'atelier-editorial' ? 'Pay when your order arrives.' : 'Pay securely when your order arrives. Online payment providers can be enabled later from the platform.'}
                         </p>
                     </div>
                 </div>
@@ -394,7 +396,16 @@ export function CheckoutPhoneOtpBox({
 
 export function CheckoutDetailsColumn({ formData, delivery, onInputChange }) {
     return (
-        <div className="space-y-7">
+        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+            <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1" />
+            <span>Send me a confirmation email to subscribe to this store&apos;s offers and product updates. Optional; unsubscribe anytime.</span>
+        </label>
+    );
+}
+
+export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange, presentationVariant }) {
+    return (
+        <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'checkout-fields' : undefined} className="space-y-7">
             <CheckoutCustomerInfo
                 formData={formData}
                 onInputChange={onInputChange}
@@ -503,6 +514,7 @@ function CheckoutPolicies({ policies, visiblePolicies }) {
 }
 
 function CheckoutOrderItem({
+    presentationVariant,
     item,
     product,
     removeFromCart,
@@ -513,6 +525,7 @@ function CheckoutOrderItem({
     return (
         <div
             key={item.cartItemId || item._id}
+            data-atelier-part={presentationVariant === 'atelier-editorial' ? 'checkout-item' : undefined}
             className="rounded-3xl border border-slate-200 p-5"
         >
             <div className="flex gap-4">
@@ -541,6 +554,7 @@ function CheckoutOrderItem({
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
+                                aria-label={presentationVariant === 'atelier-editorial' ? 'Decrease quantity for ' + item.title : undefined}
                                 onClick={() =>
                                     updateQuantity(
                                         item.cartItemId || item._id,
@@ -558,6 +572,7 @@ function CheckoutOrderItem({
 
                             <button
                                 type="button"
+                                aria-label={presentationVariant === 'atelier-editorial' ? 'Increase quantity for ' + item.title : undefined}
                                 onClick={() =>
                                     updateQuantity(
                                         item.cartItemId || item._id,
@@ -573,15 +588,12 @@ function CheckoutOrderItem({
                         <div className="text-right">
                             <p className="text-lg font-black text-[var(--sf-checkout-text)]">
                                 ৳
-                                {(item.finalPrice ||
-                                        item.sellingPrice) *
-                                    item.quantity}
+                                {getCartItemPrice(item) * item.quantity}
                             </p>
 
                             <p className="text-xs text-slate-400">
                                 ৳
-                                {item.finalPrice ||
-                                    item.sellingPrice}
+                                {getCartItemPrice(item)}
                                 each
                             </p>
                         </div>
@@ -606,6 +618,7 @@ function CheckoutOrderItem({
 }
 
 export function CheckoutOrderSummary({
+    presentationVariant,
     cartItems,
     checkoutBranding,
     finalShippingCost,
@@ -629,7 +642,7 @@ export function CheckoutOrderSummary({
 }) {
     return (
         <div>
-            <div className="sticky top-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] shadow-xl shadow-slate-200/70">
+            <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'checkout-summary' : undefined} className="sticky top-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] shadow-xl shadow-slate-200/70">
                 <div className="border-b border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 sm:p-7">
                     <div className="flex items-start justify-between gap-4">
                         <div>
@@ -647,6 +660,7 @@ export function CheckoutOrderSummary({
                 <div className="max-h-[460px] space-y-5 overflow-y-auto p-6 sm:p-7">
                     {cartItems.map((item) => (
                         <CheckoutOrderItem
+                            presentationVariant={presentationVariant}
                             key={item.cartItemId || item._id}
                             item={item}
                             product={productsDetails[item._id]}
@@ -777,8 +791,19 @@ export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted
     );
 }
 
+// Keep the original modal callable without React hooks; only Atelier needs focus management.
+function AtelierCheckoutDialog({ open, onClose, busy, render }) {
+    const dialogRef = useAtelierDialog({ enabled: true, open, onClose, busy });
+    return render(dialogRef);
+}
+
 export function CheckoutOtpModal({
+    presentationVariant,
     error,
+    message,
+    cooldownSeconds = 0,
+    expired = false,
+    onResendCode,
     maskedPhone,
     onCancel,
     onSendCode,
@@ -790,23 +815,23 @@ export function CheckoutOtpModal({
     state,
     verifying,
 }) {
-    if (!open) return null;
-
+    const atelier = presentationVariant === 'atelier-editorial';
     const isBusy = sending || verifying || state === "placing_order";
+    if (!open) return null;
     const isOtpInput = state === "otp_input" || state === "verifying" || state === "error";
     const handleSubmit = (event) => {
         event.preventDefault();
         event.stopPropagation();
         if (isBusy) return;
         if (isOtpInput) {
-            if (otp.length === 6) onVerifyCode();
+            if (otp.length === 6 && !expired) onVerifyCode();
             return;
         }
-        onSendCode();
+        if (cooldownSeconds === 0) onSendCode();
     };
 
-    return (
-        <div className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-otp-title">
+    const renderModal = (dialogRef) => (
+        <div ref={dialogRef} aria-busy={atelier && isBusy ? true : undefined} data-atelier-dialog={atelier ? "checkout-otp" : undefined} className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-otp-title">
             <form onSubmit={handleSubmit} className="w-full overflow-hidden rounded-t-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] shadow-2xl shadow-slate-950/20 sm:max-w-md sm:rounded-[2rem]">
                 <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
                     <div className="flex items-start gap-3">
@@ -851,6 +876,9 @@ export function CheckoutOtpModal({
                             </label>
                             <input
                                 id="checkout-modal-otp"
+                                autoFocus={atelier || undefined}
+                                aria-invalid={atelier && error ? true : undefined}
+                                aria-describedby={atelier && error ? "checkout-otp-error" : undefined}
                                 value={otp}
                                 onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
                                 placeholder="000000"
@@ -865,8 +893,22 @@ export function CheckoutOtpModal({
                         </div>
                     )}
 
+                    {onResendCode && (
+                        <div className="space-y-2 text-sm">
+                            {message && <p role="status" className="text-[var(--sf-checkout-success)]">{message}</p>}
+                            {expired && <p role="status" className="text-[var(--sf-checkout-error)]">Verification code expired. Request a new code.</p>}
+                            {isOtpInput ? (
+                                <button type="button" onClick={onResendCode}
+                                    disabled={isBusy || cooldownSeconds > 0}
+                                    className="sf-btn sf-btn-secondary min-h-11 w-full py-3 disabled:opacity-50">
+                                    {sending ? "Sending code…" : cooldownSeconds > 0 ? `Resend in ${cooldownSeconds}s` : "Resend code"}
+                                </button>
+                            ) : cooldownSeconds > 0 && <p>Request another code in {cooldownSeconds}s.</p>}
+                        </div>
+                    )}
+
                     {error && (
-                        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-[var(--sf-checkout-error)]">
+                        <p id={atelier ? "checkout-otp-error" : undefined} role={atelier ? "alert" : undefined} className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-[var(--sf-checkout-error)]">
                             {error}
                         </p>
                     )}
@@ -884,7 +926,7 @@ export function CheckoutOtpModal({
                         {!isOtpInput ? (
                             <button
                                 type="submit"
-                                disabled={isBusy}
+                                disabled={isBusy || cooldownSeconds > 0}
                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
                             >
                                 {sending ? <Loader2 size={17} className="animate-spin" /> : <Phone size={17} />}
@@ -893,7 +935,7 @@ export function CheckoutOtpModal({
                         ) : (
                             <button
                                 type="submit"
-                                disabled={isBusy || otp.length !== 6}
+                                disabled={isBusy || otp.length !== 6 || expired}
                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
                             >
                                 {verifying || state === "placing_order" ? <Loader2 size={17} className="animate-spin" /> : <ShieldCheck size={17} />}
@@ -905,4 +947,7 @@ export function CheckoutOtpModal({
             </form>
         </div>
     );
+    return atelier
+        ? <AtelierCheckoutDialog open={open} onClose={onCancel} busy={isBusy} render={renderModal}/>
+        : renderModal();
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {getStorefrontPresentationVariant} from "@scaleup/storefront-theme";
 import { headers } from "next/headers";
 import { FileText, ShieldCheck } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
@@ -70,13 +71,14 @@ export default async function PoliciesPage({ params }) {
     if (shop?.__status === 404) notFound();
     const storeName = shop?.shopName || shop?.name || "this store";
     const policies = shop?.theme?.policies || {};
+    const atelier = getStorefrontPresentationVariant(shop?.theme) === 'atelier-editorial';
 
     return (
-        <div className="sf-page">
+        <div className={atelier ? "sf-page atelier-policy-index" : "sf-page"}>
             <section className="sf-shell py-10 sm:py-14">
-                <div className="mx-auto max-w-5xl">
-                    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
-                        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className={atelier ? "mx-auto" : "mx-auto max-w-5xl"}>
+                    <div data-atelier-part={atelier ? "policy-layout" : undefined} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
+                        <div data-atelier-part={atelier ? "policy-heading" : undefined} className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--sf-accent)]">Store policies</p>
                                 <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
@@ -92,7 +94,7 @@ export default async function PoliciesPage({ params }) {
                             </span>
                         </div>
 
-                        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div data-atelier-part={atelier ? "policy-contents" : undefined} role={atelier ? "navigation" : undefined} aria-label={atelier ? "Policy contents" : undefined} className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                             {POLICY_TYPES.map(type => (
                                 <a
                                     key={type}
@@ -104,7 +106,7 @@ export default async function PoliciesPage({ params }) {
                             ))}
                         </div>
 
-                        <div className="mt-8 space-y-6">
+                        <div data-atelier-part={atelier ? "policy-body" : undefined} className="mt-8 space-y-6">
                             {POLICY_TYPES.map(type => (
                                 <article
                                     id={type}

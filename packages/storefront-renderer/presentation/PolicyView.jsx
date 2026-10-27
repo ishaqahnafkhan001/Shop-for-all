@@ -1,9 +1,9 @@
 "use client";
 import { FileText } from 'lucide-react';
 import { Link } from './Runtime.jsx';
-export function PolicyView({ label, content }) {
+export function PolicyView({ label, content, presentationVariant }) {
     return (
-        <div className="sf-page">
+        <div className={presentationVariant === 'atelier-editorial' ? "sf-page atelier-policy" : "sf-page"}>
             <section className="sf-shell py-10 sm:py-14">
                 <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-9">
                     <div className="mb-7 flex items-center gap-3">

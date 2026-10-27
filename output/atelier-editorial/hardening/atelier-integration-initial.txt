@@ -1,0 +1,141 @@
+(node:16600) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "AnalyticsEvent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:16600) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"key":1} for model "OTP". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:16600) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"idempotencyKey":1} for model "Job". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:16600) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "SupportStaffInvitation". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:16600) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"providerMessageId":1} for model "CustomerEmailRecipient". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:16600) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"expiresAt":1} for model "UpgradeIntent". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✖ real MongoDB unique indexes exist for draft, revision and OTP claims (1950.5778ms)
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.381Z","requestId":"f2654f79-4124-4319-b051-f20c285ce860","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":9,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.547Z","requestId":"510c07c0-5dde-4636-9b75-e04c1c0abfe9","method":"POST","path":"/api/public/orders","status":201,"durationMs":156,"userId":null,"role":null,"shopId":null}
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.563Z","requestId":"4304d85e-115f-4db0-b3c5-d554e24b94f4","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.645Z","requestId":"322b3194-ea08-4295-a5c6-e7c1d919b21b","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":80,"userId":"6ad6fe69854d8da0fb8c18c8","role":"Customer","shopId":"6ad6fe68854d8da0fb8c18bb"}
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.661Z","requestId":"3eac568b-e5aa-420d-8429-661183101b3c","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.780Z","requestId":"e76ec185-01e4-47a0-97b2-3d7c2126ac5c","method":"POST","path":"/api/public/orders","status":201,"durationMs":118,"userId":null,"role":null,"shopId":null}
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.791Z","requestId":"de68de59-6520-45a0-9a1c-a6ab637b161e","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.848Z","requestId":"66a6f9f7-6032-4fc4-aca6-48521ffad5c9","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":56,"userId":"6ad6fe69854d8da0fb8c18c8","role":"Customer","shopId":"6ad6fe68854d8da0fb8c18bb"}
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.862Z","requestId":"532f5a59-be77-4639-aa8d-c2efa7e352b0","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.980Z","requestId":"6cca9443-be5e-439a-8de7-491ca997b997","method":"POST","path":"/api/public/orders","status":201,"durationMs":117,"userId":null,"role":null,"shopId":null}
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:49.992Z","requestId":"85212517-265e-438f-96fe-fe80f987f426","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:50.049Z","requestId":"ee1ce9c6-d7cd-4b35-a37c-aec02822de84","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":56,"userId":"6ad6fe69854d8da0fb8c18c8","role":"Customer","shopId":"6ad6fe68854d8da0fb8c18bb"}
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:50.064Z","requestId":"475f8baf-7088-4343-bd05-a59ab29ef161","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":1,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:50.173Z","requestId":"e2a60db7-6135-4fce-84c6-f929d8797093","method":"POST","path":"/api/public/orders","status":201,"durationMs":108,"userId":null,"role":null,"shopId":null}
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:50.190Z","requestId":"1e32fefd-03cd-455a-a967-36df201a9c0f","method":"GET","path":"/api/auth/csrf-token","status":200,"durationMs":0,"userId":null,"role":null,"shopId":null}
+{"level":"info","message":"http_request","timestamp":"2026-10-20T05:38:50.245Z","requestId":"11acccef-bc5d-4214-926b-1251cce67836","method":"POST","path":"/api/storefront/launchshopa/orders","status":201,"durationMs":54,"userId":"6ad6fe69854d8da0fb8c18c8","role":"Customer","shopId":"6ad6fe68854d8da0fb8c18bb"}
+✔ zero/null/positive/base prices persist correctly through guest and authenticated HTTP checkout (1470.3553ms)
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✖ default-off guard rejects raw/full/forged/client-policy adoption and ignores SEO marker injection (565.6189ms)
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✖ allowlist, real draft/publish/reload/restore and recovery preserve tenant content (557.2549ms)
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✖ concurrent publication claims one revision and returns a conflict for the loser (549.7137ms)
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+(node:16600) [MONGOOSE] Warning: mongoose: the `new` option for `findOneAndUpdate()` and `findOneAndReplace()` is deprecated. Use `returnDocument: 'after'` instead.
+✖ real OTP concurrency, cooldown, code expiry and bound proof use existing HTTP contract (568.88ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 1
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6518.2746
+
+✖ failing tests:
+
+test at tests\integration\atelier-release-hardening.integration.test.js:15:1
+✖ real MongoDB unique indexes exist for draft, revision and OTP claims (1950.5778ms)
+  Error [MongoServerError]: An existing index has the same name as the requested index. When index names are not specified, they are auto generated and can cause conflicts. Please refer to our documentation. Requested index: { v: 2, unique: true, key: { key: 1 }, name: "key_1", sparse: true }, existing index: { v: 2, key: { key: 1 }, name: "key_1" }
+      at Connection.sendCommand (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\cmap\connection.js:320:27)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Connection.command (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\cmap\connection.js:344:26)
+      at async Server.command (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\sdam\server.js:208:29)
+      at async tryOperation (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\execute_operation.js:216:32)
+      at async executeOperation (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\execute_operation.js:80:16)
+      at async Collection.createIndex (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\collection.js:373:25) {
+    errorLabelSet: Set(0) {},
+    errorResponse: { ok: 0, errmsg: 'An existing index has the same name as the requested index. When index names are not specified, they are auto generated and can cause conflicts. Please refer to our documentation. Requested index: { v: 2, unique: true, key: { key: 1 }, name: "key_1", sparse: true }, existing index: { v: 2, key: { key: 1 }, name: "key_1" }', code: 86, codeName: 'IndexKeySpecsConflict', '$clusterTime': { clusterTime: [Object], signature: [Object] }, operationTime: { high: 1792474728, low: 5, unsigned: true } },
+    ok: 0,
+    code: 86,
+    codeName: 'IndexKeySpecsConflict',
+    '$clusterTime': { clusterTime: { high: 1792474728, low: 5, unsigned: true }, signature: { hash: [Object], keyId: 0 } },
+    operationTime: { high: 1792474728, low: 5, unsigned: true }
+  }
+
+test at tests\integration\atelier-release-hardening.integration.test.js:38:1
+✖ default-off guard rejects raw/full/forged/client-policy adoption and ignores SEO marker injection (565.6189ms)
+  RangeError: Theme patch exceeds the supported nesting depth.
+      at checkDepth (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:757:31)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:760:9)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:765:45
+      at Array.map (<anonymous>)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:765:18)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:761:60
+      at Array.map (<anonymous>)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:761:48)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:765:45
+      at Array.map (<anonymous>)
+
+test at tests\integration\atelier-release-hardening.integration.test.js:48:1
+✖ allowlist, real draft/publish/reload/restore and recovery preserve tenant content (557.2549ms)
+  RangeError: Theme patch exceeds the supported nesting depth.
+      at checkDepth (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:757:31)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:760:9)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:765:45
+      at Array.map (<anonymous>)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:765:18)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:761:60
+      at Array.map (<anonymous>)
+      at copy (C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:761:48)
+      at C:\Users\user\WebstormProjects\Shop-for-all\packages\storefront-theme\index.cjs:765:45
+      at Array.map (<anonymous>)
+
+test at tests\integration\atelier-release-hardening.integration.test.js:67:1
+✖ concurrent publication claims one revision and returns a conflict for the loser (549.7137ms)
+  Error [MongoNotConnectedError]: Client must be connected before running operations
+      at autoConnect (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\execute_operation.js:100:19)
+      at executeOperation (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\execute_operation.js:41:40)
+      at createCollections (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\create_collection.js:100:65)
+      at Db.createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\db.js:166:64)
+      at NativeConnection.createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongoose\lib\connection.js:429:18)
+      at async model.createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongoose\lib\model.js:1265:7)
+      at async _createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongoose\lib\model.js:1161:12) {
+    errorLabelSet: Set(0) {}
+  }
+
+test at tests\integration\atelier-release-hardening.integration.test.js:74:1
+✖ real OTP concurrency, cooldown, code expiry and bound proof use existing HTTP contract (568.88ms)
+  Error [MongoNotConnectedError]: Client must be connected before running operations
+      at autoConnect (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\execute_operation.js:100:19)
+      at executeOperation (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\execute_operation.js:41:40)
+      at createCollections (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\operations\create_collection.js:100:65)
+      at Db.createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongodb\lib\db.js:166:64)
+      at NativeConnection.createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongoose\lib\connection.js:429:18)
+      at async model.createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongoose\lib\model.js:1265:7)
+      at async _createCollection (C:\Users\user\WebstormProjects\Shop-for-all\ecommerce-backend\backend\node_modules\mongoose\lib\model.js:1161:12) {
+    errorLabelSet: Set(0) {}
+  }
+

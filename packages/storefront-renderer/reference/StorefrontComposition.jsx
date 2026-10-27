@@ -5,9 +5,9 @@ import { getContainerClass, getContentGapClass, isPreviewNarrow } from './refere
 
 // Layout only: nodes and actions are supplied by the existing Home renderer.
 // No commerce queries, preset-ID branches or duplicate product renderers belong here.
-export function StorefrontComposition({ layout, sections, isAvailable, renderSection, hero, afterHeroContent, catalog, previewDevice }) {
+export function StorefrontComposition({ layout, sections, isAvailable, renderSection, hero, afterHeroContent, catalog, previewDevice, presentationVariant }) {
     const plan = planHomepageComposition({ composition: layout.homepageComposition, sections, isAvailable });
-    const container = getContainerClass(layout);
+    const container = presentationVariant === 'atelier-editorial' ? 'atelier-container atelier-home-content' : getContainerClass(layout);
     const narrow = isPreviewNarrow(previewDevice);
     const gap = getContentGapClass(layout.contentSpacing, layout.productGap);
     const slot = key => plan.slots[key] ? renderSection(plan.slots[key].section, plan.slots[key].index) : null;

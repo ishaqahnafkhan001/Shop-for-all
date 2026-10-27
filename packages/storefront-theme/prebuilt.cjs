@@ -13,9 +13,9 @@ const {
 const PREBUILT_THEME_CATALOG_VERSION = 3;
 const SUPPORTED_INDUSTRIES = new Set(['General', 'Fashion', 'Jewellery', 'Beauty', 'Electronics', 'Grocery']);
 const SUPPORTED_STYLES = new Set(['Modern', 'Minimal', 'Editorial', 'Luxury', 'Soft', 'Fresh']);
-const SUPPORTED_FONTS = new Set(['Inter', 'Arial', 'Georgia', 'Roboto']);
+const SUPPORTED_FONTS = new Set(['Inter', 'Arial', 'Georgia', 'Roboto', 'DM Sans']);
 const SUPPORTED_CARD_STYLES = new Set(['Minimal', 'Modern', 'Premium']);
-const SUPPORTED_PRESENTATION_KEYS = new Set(['colors', 'typography', 'layout', 'productGridStyle', 'productCard', 'header', 'hero', 'mobile', 'allProducts']);
+const SUPPORTED_PRESENTATION_KEYS = new Set(['colors', 'typography', 'layout', 'productGridStyle', 'productCard', 'header', 'hero', 'mobile', 'allProducts', 'presentationVariant']);
 const HEX_COLOR = /^#(?:[0-9a-f]{3}){1,2}$/i;
 
 const deepFreeze = (value) => {
@@ -477,6 +477,40 @@ const themes = [
     })
 ];
 
+const atelierColors = palette({ accent: '#4653c9', accentHover: '#3742a8', accentSoft: '#dbec8b', accentBg: '#eeedf9', accentStrong: '#202721', accentMuted: '#606cf0', accentLight: '#dfdaf5', accentRing: '#dadbd1', background: '#f7f5ee', foreground: '#202721', surface: '#f7f5ee', border: '#dadbd1', muted: '#5f655e', dark: '#202721', heroBackground: '#f7f5ee', heroTitle: '#202721', heroSubtitle: '#202721', footerBackground: '#f7f5ee', footerText: '#5f655e', footerHeading: '#202721' });
+atelierColors.primaryButtonBg = '#202721';
+// Unreleased Atelier checkout defaults; saved merchant color overrides still win.
+atelierColors.checkout.cardBackground = '#ffffff';
+atelierColors.checkout.inputBackground = '#ffffff';
+atelierColors.checkout.buttonBackground = '#202721';
+atelierColors.checkout.buttonText = '#f7f5ee';
+atelierColors.hero.primaryButtonBackground = '#202721';
+atelierColors.productCard.addToCartBackground = '#202721';
+
+// Additive candidate. Original definitions and catalog version are immutable.
+themes.push(defineTheme({
+    id: 'atelier-editorial', version: 1, status: 'hidden', name: 'Atelier Editorial', industry: 'General', style: 'Editorial', thumbnailKey: 'atelier-editorial',
+    description: 'An expressive editorial homepage with paper surfaces, generous imagery and considered typography.',
+    tags: ['editorial', 'asymmetric hero', 'paper surfaces'],
+    presentation: {
+        presentationVariant: 'atelier-editorial',
+        colors: atelierColors,
+        typography: { headingFont: 'DM Sans', bodyFont: 'DM Sans', baseSize: 16, headingWeight: '800' },
+        layout: layout({ composition: 'standard', desktopColumns: 4, spacing: 'Spacious', padding: 24, margin: 40 }), productGridStyle: 'Editorial',
+        productCard: productCard({ style: 'Minimal', aspectRatio: 'Portrait', imageRadius: 'Soft', shadow: 'None', showCategory: false }),
+        header: { variant: 'standard', menuStyle: 'Nested' }, hero: { variant: 'split', overlayOpacity: 0, height: 'Tall' },
+        mobile: { stickyCheckoutButton: true, compactHeader: true, showBottomNavigation: false },
+        allProducts: { desktopColumns: 4, tabletColumns: 3, mobileColumns: 2, spacing: 'Editorial' }
+    },
+    homepageBlueprint: blueprint(
+        { type: 'PromoBlock', variant: 'strip' },
+        { type: 'CategoryList', variant: 'editorial' },
+        'FeaturedProducts',
+        { type: 'BrandStory', variant: 'editorial' },
+        'TrustBadges'
+    )
+}));
+
 const PREBUILT_THEMES = deepFreeze(themes);
 const PREBUILT_THEME_BY_ID = new Map(PREBUILT_THEMES.map(theme => [theme.id, theme]));
 
@@ -584,7 +618,7 @@ const buildHomepageSections = ({ currentTheme, preset, createSectionId }) => {
             };
             return {
                 ...resolvedSection,
-                isEnabled: shouldEnableBlueprintSection({ section: resolvedSection, blueprintItem: item })
+                isEnabled: preset.id === 'atelier-editorial' ? section.isEnabled : shouldEnableBlueprintSection({ section: resolvedSection, blueprintItem: item })
             };
         }
 
@@ -606,11 +640,17 @@ const buildHomepageSections = ({ currentTheme, preset, createSectionId }) => {
     const presetTypes = new Set(preset.homepageBlueprint.map(item => item.type));
     existing.forEach((section, index) => {
         if (consumed.has(index)) return;
-        ordered.push(presetTypes.has(section.type)
+        ordered.push(presetTypes.has(section.type) && preset.id !== 'atelier-editorial'
             ? { ...section, isEnabled: false }
             : section);
     });
 
+    if (preset.id === 'atelier-editorial') {
+        const byId = new Map(ordered.map(section => [section.id, section]));
+        const retained = [...existing].sort((left, right) => left.sortOrder - right.sortOrder).map(section => byId.get(section.id));
+        return [...retained, ...ordered.filter(section => !existing.some(previous => previous.id === section.id))]
+            .map((section, index) => ({ ...section, sortOrder: index }));
+    }
     return ordered.map((section, index) => ({ ...section, sortOrder: index }));
 };
 
@@ -618,6 +658,7 @@ const applyPresentation = ({ currentTheme, preset, createSectionId, appliedAt })
     const presentation = preset.presentation;
     const candidate = {
         ...cloneTheme(currentTheme),
+        presentationVariant: presentation.presentationVariant || null,
         preset: { id: preset.id, version: preset.version, appliedAt },
         fontFamily: presentation.typography.bodyFont,
         productGridStyle: presentation.productGridStyle,
@@ -652,6 +693,7 @@ const applyPresentation = ({ currentTheme, preset, createSectionId, appliedAt })
 
 const applyLimitedPlanBoundary = ({ currentTheme, resolvedTheme }) => normalizeTheme({
     ...resolvedTheme,
+    presentationVariant: currentTheme.presentationVariant || null,
     header: {
         ...(resolvedTheme.header || {}),
         variant: currentTheme.header?.variant
@@ -747,7 +789,7 @@ const validatePrebuiltThemeRegistry = () => {
             errors.push({ path, message: error.message });
         }
     });
-    if (PREBUILT_THEMES.length !== 9) errors.push({ path: 'themes', message: 'The production catalog must contain exactly nine themes.' });
+    if (PREBUILT_THEMES.length !== 10 || getPrebuiltThemes().length !== 9) errors.push({ path: 'themes', message: 'The catalog must contain nine active themes and the hidden Atelier candidate.' });
     return { valid: errors.length === 0, errors };
 };
 

@@ -11,7 +11,9 @@ const handleCheckoutOtpError = (res, err) => {
     return res.status(statusCode || 400).json({
         success: false,
         code: err.code || 'INVALID_OTP',
-        error: err.message || 'Unable to verify phone number.'
+        error: err.message || 'Unable to verify phone number.',
+        ...(Number.isFinite(err.retryAfterSeconds) && err.retryAfterSeconds > 0
+            ? { retryAfterSeconds: err.retryAfterSeconds } : {})
     });
 };
 
