@@ -1,8 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { Boxes, DollarSign, FileText, ListChecks, PackagePlus, Plus, Search, Trash2, X, Image as ImageIcon, Video, Sparkles, Eye } from 'lucide-react';
 import API from '../../../api/api';
+import { useProductSubmissions } from '../../../context/ProductSubmissionContext.jsx';
+import { inspectRecovery, normalizeSubmission, validProductId } from '../../../services/productSubmissionRecovery.js';
 import { productImageLimit, mergeProductFiles, toPublishInstant, MAX_VARIANTS, productCombinationCount, productImageSources } from '../../../utils/productEditor.js';
 import { useProductImagePreviews } from '../../../hooks/useProductImagePreviews.js';
 import { hasStaffPermission } from '../../../utils/staffPermissions.js';
@@ -46,22 +48,25 @@ function makePipeKey(combo) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AddProduct = () => {
+const AddProductForm = ({ recovery }) => {
     const navigate   = useNavigate();
+    const { manager } = useProductSubmissions();
+    const submissionLock = useRef(false);
+    const restored = recovery?.snapshot;
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const imageLimit = productImageLimit(user?.planAccess?.limits?.imagesPerProduct);
     const canSchedulePublishing = hasFeature(user, 'scheduledProductPublishing') && hasStaffPermission(user, 'productsSchedule');
 
     // Multi-media states
-    const [imageFiles, setImageFiles] = useState([]);
-    const [videoFiles, setVideoFiles] = useState([]);
-    const [coverImageIndex, setCoverImageIndex] = useState(0);
+    const [imageFiles, setImageFiles] = useState(restored?.imageFiles || []);
+    const [videoFiles, setVideoFiles] = useState(restored?.videoFiles || []);
+    const [coverImageIndex, setCoverImageIndex] = useState(restored?.coverImageIndex || 0);
     const [collections, setCollections] = useState([]);
-    const [selectedCollections, setSelectedCollections] = useState([]);
+    const [selectedCollections, setSelectedCollections] = useState(restored?.selectedCollections || []);
 
     // ── Scalar fields ─────────────────────────────────────────────────────────
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(restored?.formData || {
         title:          '',
         slug:           '',
         description:    '',
@@ -81,11 +86,11 @@ const AddProduct = () => {
     });
 
     // ── Variant matrix state ──────────────────────────────────────────────────
-    const [attributes,    setAttributes]    = useState([{ name: '', options: [] }]);
-    const [optionInputs,  setOptionInputs]  = useState(['']);
-    const [defaultStock,  setDefaultStock]  = useState(0);
-    const [stockOverrides, setStockOverrides] = useState({});
-    const [variantDetails, setVariantDetails] = useState({});
+    const [attributes,    setAttributes]    = useState(restored?.attributes || [{ name: '', options: [] }]);
+    const [optionInputs,  setOptionInputs]  = useState(restored?.optionInputs || ['']);
+    const [defaultStock,  setDefaultStock]  = useState(restored?.defaultStock ?? 0);
+    const [stockOverrides, setStockOverrides] = useState(restored?.stockOverrides || {});
+    const [variantDetails, setVariantDetails] = useState(restored?.variantDetails || {});
 
     useEffect(() => {
         const dirty = Boolean(formData.title || formData.description || imageFiles.length || videoFiles.length || formData.pricing.sellingPrice !== '');
@@ -380,7 +385,15 @@ const AddProduct = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (isLoading) return;
+        if (submissionLock.current) return;
+        if (formData.title.trim().length < 3 || formData.title.trim().length > 100) { toast.error('Use a product title between 3 and 100 characters.'); return; }
+        if (formData.description.trim().length < 10 || formData.description.trim().length > 3000) { toast.error('Use a description between 10 and 3000 characters.'); return; }
+        if (formData.slug && !/^[a-z0-9-]{1,100}$/i.test(formData.slug)) { toast.error('Use up to 100 letters, numbers or hyphens in the product slug.'); return; }
+        const buyingPrice = Number(formData.pricing.buyingPrice);
+        const sellingPrice = Number(formData.pricing.sellingPrice);
+        const discount = Number(formData.pricing.discount);
+        if (formData.pricing.buyingPrice === '' || formData.pricing.sellingPrice === '' || !Number.isFinite(buyingPrice) || buyingPrice < 0 || !Number.isFinite(sellingPrice) || sellingPrice < buyingPrice || !Number.isFinite(discount) || discount < 0 || discount > 100) { toast.error('Check prices: selling price must cover buying price, and discount must be between 0 and 100.'); return; }
+        if (!Number.isSafeInteger(Number(formData.lowStockThreshold)) || Number(formData.lowStockThreshold) < 0) { toast.error('Low stock threshold must be a non-negative whole number.'); return; }
         if (attributes.some(attr => Boolean(attr.name.trim()) !== Boolean(attr.options.length))) { toast.error('Complete or remove unfinished variant attributes.'); return; }
         if (validAttrs.length && productCombinationCount(validAttrs) > MAX_VARIANTS) { toast.error(`Use up to ${MAX_VARIANTS} variant combinations.`); return; }
         if (!Number.isSafeInteger(Number(defaultStock)) || Number(defaultStock) < 0) { toast.error('Stock must be a non-negative whole number.'); return; }
@@ -415,6 +428,7 @@ const AddProduct = () => {
             const cleanNumber = (value) => value === '' || value === undefined || value === null ? undefined : Number(value);
             const override = {};
             const effectiveStock = stock !== undefined ? Number(stock) : Number(defaultStock);
+            if (!Number.isSafeInteger(effectiveStock) || effectiveStock < 0) { toast.error('Every variant stock must be a non-negative whole number.'); return; }
 
             override.stock = effectiveStock;
             override.inventory = {
@@ -451,6 +465,7 @@ const AddProduct = () => {
             overrides[key] = override;
         }
 
+        submissionLock.current = true;
         setIsLoading(true);
         try {
             const data = new FormData();
@@ -485,16 +500,20 @@ const AddProduct = () => {
             imageFiles.forEach(file => data.append('images', file));
             videoFiles.forEach(file => data.append('videos', file));
 
-            await API.post('/admin/products', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            const snapshot = {
+                formData, imageFiles, videoFiles, coverImageIndex, selectedCollections,
+                attributes, optionInputs, defaultStock, stockOverrides, variantDetails
+            };
+            const id = await manager.enqueue({
+                snapshot, entries: [...data.entries()], id: recovery?.id
             });
-
-            toast.success(formData.publicationStatus === 'scheduled' ? 'Product scheduled.' : formData.status === 'Draft' ? 'Product saved as draft.' : formData.status === 'Archived' ? 'Product archived.' : 'Product published to your store.');
-            navigate('/dashboard/products');
+            const addAnother = e.nativeEvent?.submitter?.value === 'another';
+            navigate(addAnother ? `/dashboard/products/add?fresh=${id}` : '/dashboard/products', { replace: Boolean(recovery) });
         } catch (err) {
             const response = err.response?.data;
-            toast.error(response?.details || response?.error || response?.message || 'Failed to add product');
+            toast.error(response?.details || response?.error || response?.message || err.message || 'Failed to preserve product. Keep this form open.');
         } finally {
+            submissionLock.current = false;
             setIsLoading(false);
         }
     };
@@ -1139,9 +1158,10 @@ const AddProduct = () => {
                         </ProductFormSection>
                     ))}
 
-                    <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">
-                        Save Product
-                    </Button>
+                    <div className="flex flex-wrap gap-3">
+                        <Button type="submit" isLoading={isLoading} className="w-full sm:w-auto">Save Product</Button>
+                        <button type="submit" value="another" disabled={isLoading} className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 focus-visible:outline-2 focus-visible:outline-indigo-500 disabled:opacity-60 sm:w-auto">Save &amp; Add Another</button>
+                    </div>
                 </form>
 
                 {/* ── RIGHT COLUMN: LIVE PREVIEW ───────────────────────────────── */}
@@ -1231,5 +1251,71 @@ const AddProduct = () => {
         </div>
     );
 };
+
+function AddProduct() {
+    const [params] = useSearchParams();
+    const id = params.get('recover');
+    const { manager, records } = useProductSubmissions();
+    const [loaded, setLoaded] = useState(null);
+    const [checking, setChecking] = useState(false);
+    const [recoveryClock, setRecoveryClock] = useState(() => Date.now());
+    const activeRecord = records.find(item => item.id === id);
+    const leaseUntil = activeRecord?.browserLock?.until;
+    useEffect(() => {
+        if (!leaseUntil) return undefined;
+        const timer = setTimeout(() => setRecoveryClock(Date.now()), Math.max(0, leaseUntil - Date.now()) + 10);
+        return () => clearTimeout(timer);
+    }, [leaseUntil]);
+
+    useEffect(() => {
+        if (!id) return undefined;
+        let active = true;
+        (async () => {
+            try {
+                const stored = manager.records.get(id) || (await manager.store.list(manager.scope)).find(record => record.id === id);
+                if (!stored) throw new Error('This recovery is unavailable for this account and shop on this browser.');
+                if (!manager.records.has(id)) manager.records.set(id, normalizeSubmission(stored, manager.scope));
+                if (!manager.running.has(id)) await manager.checkStatus(id).catch(() => {});
+                if (active) setLoaded({ id, record: manager.records.get(id) });
+            } catch (error) { if (active) setLoaded({ id, error: error.message }); }
+        })();
+        return () => { active = false; };
+    }, [id, manager]);
+
+    if (!id) return <AddProductForm key={params.get('fresh') || 'new'} />;
+    if (loaded?.id !== id) return <p role="status" className="p-6">Checking product recovery…</p>;
+    if (loaded.error) return <p role="alert" className="p-6 text-rose-700">{loaded.error}</p>;
+    const record = records.find(item => item.id === id) || manager.records.get(id);
+    if (!record) return <p role="alert" className="p-6">This local recovery was removed or is unavailable for the current account and shop.</p>;
+    const inspection = inspectRecovery(record);
+    const recovery = { ...record, snapshot: inspection.snapshot };
+    const missingFiles = inspection.missingMedia.length > 0;
+    const warnings = <>{missingFiles && <p role="alert">Reselect missing attachments: {inspection.missingMedia.join(', ')}.</p>}{inspection.issues.map(issue => <p key={issue} role="alert">{issue}</p>)}</>;
+    if (record.state === 'saved' && validProductId(record.productId)) return <div role="status" className="space-y-3 p-6"><p>Product added successfully.</p><Link className="text-indigo-700 underline" to={`/dashboard/products/edit/${record.productId}`}>View Product</Link></div>;
+    if (!record.editable || manager.running.has(id) || record.browserLock?.until > recoveryClock || !inspection.validForm) return <div className="space-y-3 p-6">
+        <h1 className="text-xl font-bold">Recover {record.title}</h1>
+        <p role="status">{record.error || 'This product is still saving.'}</p>
+        <p className="text-sm text-slate-600">{missingFiles ? 'Your form is preserved; some media needs to be selected again.' : 'Your form and media are preserved.'} Confirm the original save before editing to avoid creating a duplicate.</p>
+        {warnings}
+        {manager.paused && <a className="inline-flex min-h-11 items-center font-semibold text-indigo-700 underline" href="/login">Sign in again</a>}
+        <Button disabled={checking || manager.running.has(id)} onClick={async () => {
+            setChecking(true);
+            try { await manager.checkStatus(id); }
+            catch (error) { toast.error(error.message); }
+            finally { setChecking(false); }
+        }}>Check Status</Button>
+        {record.canRetryOriginal && inspection.validPayload && !(record.browserLock?.until > recoveryClock) && <Button disabled={checking || manager.running.has(id)} variant="secondary" onClick={async () => {
+            setChecking(true);
+            try { await manager.retry(id); }
+            catch (error) { toast.error(error.message); }
+            finally { setChecking(false); }
+        }}>Retry original submission</Button>}
+        {inspection.validForm && <fieldset disabled aria-label="Unconfirmed product form"><AddProductForm key={id} recovery={recovery} /></fieldset>}
+    </div>;
+    return <div>
+        <div className="mx-4 mt-4 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm"><p role="status">Recovered {record.title}. Review your entries and save again.</p>{(record.originalError || record.error) && <p className="text-rose-800">Original problem: {record.originalError || record.error}</p>}{warnings}</div>
+        <AddProductForm key={id} recovery={recovery} />
+    </div>;
+}
 
 export default AddProduct;

@@ -1,6 +1,7 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const sharp = require('sharp');
+const { prepareSubmissionUpload, confirmSubmissionUpload } = require('../services/products/productSubmissionService');
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -186,7 +187,13 @@ class CloudinaryMulterStorage {
                 if (this.bufferValidator && !await this.bufferValidator(buffer, file, req)) {
                     return cb(new Error('Uploaded file content does not match an allowed media format'));
                 }
-                const result = await streamUpload(buffer, this.optionsBuilder(file, req));
+                const submissionOptions = await prepareSubmissionUpload(req, file.mimetype.startsWith('video/') ? 'video' : 'image');
+                const options = { ...this.optionsBuilder(file, req), ...submissionOptions };
+                const result = await streamUpload(buffer, options).catch(error => {
+                    error.code = 'PRODUCT_UPLOAD_FAILED';
+                    throw error;
+                });
+                await confirmSubmissionUpload(req, submissionOptions, result);
                 cb(null, {
                     path: result.secure_url || result.url || '',
                     filename: result.public_id || '',

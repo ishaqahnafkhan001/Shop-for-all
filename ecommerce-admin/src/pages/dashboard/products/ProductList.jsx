@@ -29,6 +29,8 @@ import PaginationBar from '../../../components/ui/PaginationBar.jsx';
 import PageRefreshButton from '../../../components/ui/PageRefreshButton.jsx';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { useProducts } from '../../../hooks/useProducts';
+import { useProductSubmissions } from '../../../context/ProductSubmissionContext.jsx';
+import { getProductActivityBreakdown, getProductActivityCounts } from '../../../utils/productActivity.js';
 
 const ProductDetailModal = lazy(() => import('../../../components/products/ProductDetailModal.jsx'));
 
@@ -310,6 +312,8 @@ function DeleteConfirmation({ product, busy, error, onCancel, onConfirm }) {
 const ProductList = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { records: productActivity, openActivity } = useProductSubmissions();
+    const activityCounts = getProductActivityCounts(productActivity);
     const canDeleteProducts = user?.role === 'VendorAdmin';
     const [searchParams, setSearchParams] = useSearchParams();
     const {
@@ -564,6 +568,23 @@ const ProductList = () => {
                     </div>
                 </div>
             </header>
+
+            <button
+                type="button"
+                aria-label={`Unfinished products: ${activityCounts.unfinished}`}
+                aria-haspopup="dialog"
+                aria-controls="product-activity-center"
+                onClick={() => openActivity('unfinished')}
+                className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${activityCounts.unfinished ? 'border border-indigo-100 bg-indigo-50/60 text-indigo-950 hover:bg-indigo-50' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+            >
+                {activityCounts.saving ? <Loader2 className="size-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Layers3 className="size-4 shrink-0" aria-hidden="true" />}
+                <span className="min-w-0 flex-1">
+                    <span className="font-semibold">Unfinished products <span className="ml-1 rounded-full bg-white px-2 py-0.5 text-xs ring-1 ring-slate-200/80">{activityCounts.unfinished}</span></span>
+                    {activityCounts.unfinished > 0 && <span className="mt-0.5 block text-xs font-normal text-slate-500">{getProductActivityBreakdown(activityCounts)}</span>}
+                </span>
+                {!activityCounts.unfinished && <span className="hidden text-xs text-slate-400 sm:inline">All caught up</span>}
+                <ChevronRight className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+            </button>
 
             {/* These metrics explicitly describe the fetched page, not store-wide inventory. */}
             <section aria-label="Product overview" className="grid grid-cols-1 gap-3 sm:grid-cols-3">

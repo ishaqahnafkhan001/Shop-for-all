@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation';
 import API from '@/api/api';
 import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
 import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
-import { DEFAULT_CART_DELIVERY_ESTIMATE } from '@/lib/cartConstants';
 import { normalizeProduct } from '@/utils/normalizeProduct';
 import { getCartItemPrice, getCartItemOriginalPrice } from '@scaleup/storefront-renderer/product-data';
 
@@ -26,7 +25,7 @@ export default function CartPage() {
     const [recommendationsLoading, setRecommendationsLoading] = React.useState(false);
 
     const subtotal = cartTotal;
-    const shipping = cartItems.length > 0 ? DEFAULT_CART_DELIVERY_ESTIMATE : 0;
+    const shipping = cartItems.length > 0 ? null : 0;
     const recommendationIds = React.useMemo(() => (
         [...new Set(cartItems.map((item) => item._id).filter(Boolean))]
     ), [cartItems]);
@@ -43,7 +42,7 @@ export default function CartPage() {
         return acc + saving;
     }, 0);
 
-    const total = subtotal + shipping;
+    const total = subtotal;
     const getCartImageUrl = (item) => item.imageUrl || item.images?.[0] || '';
 
     React.useEffect(() => {

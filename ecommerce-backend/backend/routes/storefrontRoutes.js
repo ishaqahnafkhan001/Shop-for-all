@@ -2,6 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
+const deliveryRates = require('../controllers/deliveryRatesController');
+
 const rateLimit = require('express-rate-limit');
 
 // =========================
@@ -90,6 +92,9 @@ const publicOrderActionLimiter = rateLimit({
 // ======================================================
 // STORE INFO
 // ======================================================
+
+router.get('/:subdomain/shipping/quote', resolveTenant, deliveryRates.quote);
+router.get('/:subdomain/shipping/rates', resolveTenant, deliveryRates.getRates);
 
 router.get(
     '/:subdomain/bootstrap',

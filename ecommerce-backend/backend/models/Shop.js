@@ -219,6 +219,13 @@ const aiPreferencesSchema = new mongoose.Schema({
     brandDescription: { type: String, maxlength: 300, default: '' }, updatedAt: Date
 }, { _id: false });
 const shopSchema = new mongoose.Schema({
+    deliveryRates: {
+        configured: { type: Boolean, default: false },
+        baseArea: { type: String, trim: true, maxlength: 80, default: 'Dhaka' },
+        insideCharge: { type: Number, min: 0, max: 100000, default: 80 },
+        outsideCharge: { type: Number, min: 0, max: 100000, default: 120 },
+        version: { type: Number, min: 0, default: 0 }
+    },
     aiPreferences: { type: aiPreferencesSchema, select: false, default: undefined },
     shopName: {
         type: String,

@@ -193,7 +193,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                             </div>
                             <div className="flex justify-between text-slate-600">
                                 <span>Estimated delivery</span>
-                                <span className="font-bold text-slate-950">৳ {shipping}</span>
+                                <span className="font-bold text-slate-950">{shipping == null ? "Calculated at checkout" : `৳ ${shipping}`}</span>
                             </div>
 
                             {totalSavings > 0 && (
@@ -231,7 +231,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                         </div>
 
                         <div className="mb-6 flex items-center justify-between border-t border-slate-200 pt-5">
-                            <span className="text-lg font-black text-slate-950">Total</span>
+                            <span className="text-lg font-black text-slate-950">{shipping == null ? "Subtotal before delivery" : "Total"}</span>
                             <span className="text-3xl font-black text-slate-950">৳ {total}</span>
                         </div>
 

@@ -1,3 +1,4 @@
+const { reportInterval } = require('../orders/reportingMetrics');
 const DAY_MS = 86400000;
 const normalizeTopic = value => String(value || '').normalize('NFKC').toLowerCase()
     .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
@@ -15,11 +16,18 @@ const TOPIC_ALIASES = Object.freeze({ shoes: 'Footwear', footwear: 'Footwear', '
     books: 'Books', 'বই': 'Books', toys: 'Toys', 'খেলনা': 'Toys', food: 'Food', 'খাবার': 'Food' });
 
 const getGrowthInterval = (rangeInput, interval, now = Date.now()) => {
+    if (rangeInput === 'custom') {
+        if (!interval || typeof interval.from !== 'string' || typeof interval.to !== 'string') throw invalidInterval();
+        const from = new Date(interval.from), to = new Date(interval.to);
+        if (!Number.isFinite(+from) || !Number.isFinite(+to) || +from >= +to || +to - +from > 366 * DAY_MS || +to > now + 1000) throw invalidInterval();
+        return { range: 'custom', from, to };
+    }
     const range = ['7', '30', '90'].includes(String(rangeInput)) ? Number(rangeInput) : 30;
     if (interval !== undefined && (!interval || typeof interval !== 'object')) throw invalidInterval();
     const to = interval ? new Date(interval.to) : new Date(now);
     const from = interval ? new Date(interval.from) : new Date(+to - range * DAY_MS);
-    if (!Number.isFinite(+from) || !Number.isFinite(+to) || +to - +from !== range * DAY_MS
+    const calendarFrom = Number.isFinite(+to) ? reportInterval({ range }, to).from : null;
+    if (!Number.isFinite(+from) || !Number.isFinite(+to) || (+to - +from !== range * DAY_MS && +from !== +calendarFrom)
         || +to > now + 1000 || +to < now - DAY_MS) throw invalidInterval();
     return { range, from, to };
 };

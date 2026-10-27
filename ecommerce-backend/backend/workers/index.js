@@ -7,6 +7,7 @@ const {
     cancelJob,
     failJob
 } = require('../services/jobQueueService');
+const { BILLING_NOTIFICATION_QUEUE, processBillingNotificationJob } = require('../services/billing/billingNotificationService');
 const { processShopEventJob } = require('../services/shopEventNotificationService');
 const { ORDER_RECEIPT_QUEUE, processOrderReceiptJob } = require('../services/orders/orderEmailService');
 const { processCourierJob } = require('../services/courierJobService');
@@ -35,6 +36,8 @@ const { getAiConfig } = require('../config/ai');
 const { cleanupExpiredActivityLogs } = require('../services/billing/activityLogRetentionService');
 const { initializeSubscriptionEventHandlers } = require('../services/billing/subscriptionEventHandlers');
 const { cleanupExpiredStoreBuilderAssets } = require('../services/storeBuilder/storeBuilderAssetService');
+const { cleanupProductSubmissionAssets } = require('../services/products/productSubmissionService');
+let nextProductAssetCleanupAt = 0;
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { processDueDowngrades } = require('../services/billing/subscriptionDowngradeService');
 const { syncSubscriptionPlans } = require('../scripts/sync-subscription-plans');
@@ -68,6 +71,7 @@ let nextEmailReconciliationAt = 0;
 
 const handlers = {
     notifications: processShopEventJob,
+    [BILLING_NOTIFICATION_QUEUE]: processBillingNotificationJob,
     [ORDER_RECEIPT_QUEUE]: processOrderReceiptJob,
     courier: processCourierJob,
     badges: processBadgeAnalysisJob,
@@ -88,6 +92,7 @@ const QUEUE_FEATURES = Object.freeze({
 
 const ENTITLEMENT_INDEPENDENT_QUEUES = new Set([
     'support',
+    BILLING_NOTIFICATION_QUEUE,
     ORDER_RECEIPT_QUEUE,
     REGISTRATION_NOTIFICATION_QUEUE
 ]);
@@ -165,6 +170,14 @@ const run = async () => {
     logger.info('worker_started', { queues: Object.keys(handlers) });
 
     while (!shuttingDown) {
+        if (Date.now() >= nextProductAssetCleanupAt) {
+            nextProductAssetCleanupAt = Date.now() + 60 * 1000;
+            try {
+                await cleanupProductSubmissionAssets({ limit: 50 });
+            } catch (error) {
+                logger.error('product_submission_asset_cleanup_failed', { error: String(error?.message || error) });
+            }
+        }
         if (Date.now() >= nextEmailReconciliationAt) {
             nextEmailReconciliationAt = Date.now() + 60 * 1000;
             try {

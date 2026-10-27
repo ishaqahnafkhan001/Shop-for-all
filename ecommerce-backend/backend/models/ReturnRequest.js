@@ -7,10 +7,15 @@ const returnItemSchema = new Schema({
     title: { type: String, trim: true, required: true },
     sku: { type: String, trim: true, default: '' },
     quantity: { type: Number, min: 1, required: true },
+    restockQuantity: { type: Number, min: 0 },
+    dispositionNote: { type: String, trim: true, maxlength: 300 },
     refundAmount: { type: Number, min: 0, default: 0 }
 }, { _id: false });
 
 const refundSchema = new Schema({
+    financialFactId: { type: Schema.Types.ObjectId, ref: 'FinancialFact' },
+    shippingAmount: { type: Number, min: 0, default: 0 },
+    taxAmount: { type: Number, min: 0, default: 0 },
     status: {
         type: String,
         enum: ['NotRequired', 'Pending', 'Refunded', 'Failed'],
@@ -60,6 +65,9 @@ const returnRequestSchema = new Schema({
     refund: { type: refundSchema, default: () => ({}) },
     requestedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    receivedAt: { type: Date },
+    receiptRecordedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    receiptFactId: { type: Schema.Types.ObjectId, ref: 'FinancialFact' },
     inventoryRestoredAt: { type: Date, default: null },
     inventoryRestoredBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     isDeleted: { type: Boolean, default: false, index: true }
@@ -68,4 +76,5 @@ const returnRequestSchema = new Schema({
 returnRequestSchema.index({ shop_id: 1, isDeleted: 1, status: 1, createdAt: -1 });
 returnRequestSchema.index({ shop_id: 1, order_id: 1, isDeleted: 1 });
 
+returnRequestSchema.index({ shop_id: 1, 'refund.status': 1, 'refund.refundedAt': 1 });
 module.exports = mongoose.model('ReturnRequest', returnRequestSchema);

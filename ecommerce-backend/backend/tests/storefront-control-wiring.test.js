@@ -408,3 +408,11 @@ test('variant-only inventory and initial attributes exclude disabled and archive
     assert.deepEqual(ui.getInitialAttributes(unavailable), {});
     assert.equal(ui.normalizeProduct({ stock: 0, variants }).stock, 0);
 });
+
+test('collection page renders category-style filters and filtered empty state', () => {
+    const shop = { theme: initialTheme(), subdomain: 'audit', shopName: 'Audit store' };
+    const output = render(React.createElement(ui.StorefrontThemeProvider, { subdomain: 'audit', settings: shop },
+        React.createElement(ui.CollectionPageClient, { shop, collection: { title: 'Gift picks', description: 'Selected gifts' }, products: [], pagination: { total: 0 }, filters: { minPrice: '100', stock: 'in', sale: 'true', rating: '4' } })));
+    for (const text of ['Minimum price', 'Maximum price', 'Availability', 'On sale', 'Rating', 'Filter products', 'Clear all', 'No products match these filters', 'Gift picks', 'Selected gifts']) assert.ok(output.includes(text), text);
+    assert.match(output, /0 products/);
+});

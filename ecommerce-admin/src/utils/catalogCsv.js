@@ -37,6 +37,7 @@ export const csvToProducts = (text) => {
     if (rows.length < 2) return [];
 
     const headers = rows[0].map(value => value.replace(/^\uFEFF/, '').trim());
+    if (new Set(headers).size !== headers.length) throw new Error('The CSV file has duplicate column names.');
     if (headers.some(header => !header)) throw new Error('The CSV file has an empty column name.');
     return rows.slice(1).map((values, index) => {
         if (values.length !== headers.length) throw new Error(`CSV row ${index + 2} has the wrong number of columns.`);

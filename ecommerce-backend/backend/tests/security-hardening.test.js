@@ -218,22 +218,15 @@ test('growth center routes are tenant protected with growth permission', () => {
     assert.match(controller, /Product\.findOne\(\{[\s\S]*shop_id:\s*req\.tenantId/);
 });
 
-test('growth center revenue metrics use delivered order revenue only', () => {
+test('growth center uses the shared occurrence-date sales contract', () => {
     const controller = read('controllers/growthController.js');
-    const growthCenter = readProject('ecommerce-admin/src/pages/dashboard/GrowthCenter.jsx');
-
-    assert.match(controller, /const deliveredRevenueDateExpression/);
-    assert.match(controller, /status:\s*'Delivered'/);
-    assert.match(controller, /deliveredRevenueMetrics/);
-    assert.match(controller, /returnedRevenueMetrics/);
-    assert.match(controller, /const netDeliveredRevenue = Math\.max\(0,\s*Number\(revenue\.deliveredRevenue \|\| 0\) - Number\(returned\.returnedRevenue \|\| 0\)\)/);
-    assert.match(controller, /revenue:\s*netDeliveredRevenue/);
-    assert.match(controller, /grossDeliveredRevenue:\s*revenue\.deliveredRevenue \|\| 0/);
-    assert.match(controller, /returnedRevenue:\s*returned\.returnedRevenue \|\| 0/);
-    assert.match(controller, /eventType:\s*'delivered_revenue'/);
-    assert.doesNotMatch(controller, /revenue:\s*\{\s*\$sum:\s*\{\s*\$cond:\s*\[\{\s*\$eq:\s*\['\$eventType', eventTypes\.orders\]/);
-    assert.match(growthCenter, /Delivered Revenue/);
-    assert.match(growthCenter, /Only delivered product revenue is counted/);
+    const service = read('services/orders/salesReportService.js');
+    assert.match(controller, /getSalesReport/);
+    assert.match(service, /'shipping.deliveredAt': dateMatch/);
+    assert.match(service, /'refund.status': 'Refunded'/);
+    assert.doesNotMatch(service, /revenueDate.*updatedAt/);
+    // Cross-page totals, partial returns, archived products and negative net sales
+    // are exercised against MongoDB in reporting-shipping.integration.test.js.
 });
 
 test('shop feature flags are enforced on backend routes and vendor frontend routes', async () => {
@@ -1033,6 +1026,6 @@ test('storefront conversion UX keeps recommendations tenant-scoped and checkout 
     const otpHtml = ui.render(ui.CheckoutOtpModal, otpProps);
     assert.match(otpHtml, /autoComplete="one-time-code"/i);
     assert.match(otpHtml, /role="dialog"/);
-    assert.match(checkoutTotals, /selectedZone === "Inside Dhaka"/);
-    assert.match(checkoutTotals, /selectedZone === "Outside Dhaka"/);
+    assert.match(checkoutTotals, /quote\?\.originalCharge/);
+    assert.doesNotMatch(checkoutTotals, /Inside Dhaka|Outside Dhaka/);
 });

@@ -184,20 +184,19 @@ test('scheduled sale collection scope applies through product collection members
     assert.equal(outside.scheduledSale, undefined);
 });
 
-test('cart estimate and category filters are URL-backed storefront-only polish', async () => {
+test('cart defers delivery pricing and category filters remain URL-backed', async () => {
     const cartPage = readRepo('ecommerce-storefront/src/app/[subdomain]/cart/page.jsx');
-    const cartConstants = readRepo('ecommerce-storefront/src/lib/cartConstants.js');
     const categoryPage = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/page.jsx');
     const categoryClient = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx');
     const productController = readBackend('controllers/productController.js');
 
-    assert.match(cartConstants, /DEFAULT_CART_DELIVERY_ESTIMATE\s*=\s*80/);
-    assert.match(cartPage, /DEFAULT_CART_DELIVERY_ESTIMATE/);
+    assert.doesNotMatch(cartPage, /DEFAULT_CART_DELIVERY_ESTIMATE/);
     const ui = await require('./helpers/aiPresentationHarness').loadAiPresentation();
-    const html = ui.render(ui.CartView, { cartItems: [{ _id: 'p', title: 'Product', quantity: 1, price: 100 }], subtotal: 100, shipping: 80, totalSavings: 0, total: 180,
+    const html = ui.render(ui.CartView, { cartItems: [{ _id: 'p', title: 'Product', quantity: 1, price: 100 }], subtotal: 100, shipping: null, totalSavings: 0, total: 100,
         getCartImageUrl: () => '', recommendations: [], productActions: {} });
     assert.match(html, /Estimated delivery/);
-    assert.match(html, /80/);
+    assert.match(html, /Calculated at checkout/);
+    assert.match(html, /Subtotal before delivery/);
     assert.doesNotMatch(cartPage, /\?\s*60\s*:/);
     assert.match(categoryPage, /searchParams/);
     assert.match(categoryPage, /minPrice/);

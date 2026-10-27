@@ -3,8 +3,10 @@ import { toast } from 'react-hot-toast';
 import API from '../api/api'; // Ensure this path is correct
 import { isAbortError, useAbortableRequest } from './useAbortableRequest';
 import useDebouncedValue from './useDebouncedValue';
+import { useProductSubmissions } from '../context/ProductSubmissionContext.jsx';
 
 export const useProducts = (initialLimit = 10) => {
+  const { revision } = useProductSubmissions();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]); // Capture the categories sent by backend
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export const useProducts = (initialLimit = 10) => {
   useEffect(() => {
     const timer = setTimeout(fetchProducts, 0);
     return () => clearTimeout(timer);
-  }, [fetchProducts]);
+  }, [fetchProducts, revision]);
 
   // --- ACTIONS ---
 

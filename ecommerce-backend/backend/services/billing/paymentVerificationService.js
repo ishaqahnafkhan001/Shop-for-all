@@ -1,17 +1,10 @@
 const PaymentTransaction = require('../../models/PaymentTransaction');
 const Invoice = require('../../models/Invoice');
 const Subscription = require('../../models/Subscription');
-const Shop = require('../../models/Shop');
-const User = require('../../models/User');
-const VendorPlan = require('../../models/VendorPlan');
 const UpgradeIntent = require('../../models/UpgradeIntent');
-const { logPlatformAudit } = require('../platformAuditLogService');
 const { runCriticalGovernanceAction } = require('../platformAuditOutboxService');
-const { createNotification } = require('../notificationService');
-const { createPlatformNotification } = require('../platformNotificationService');
-const { sendSuperAdminPaymentSubmittedEmailSafe } = require('../superAdminEmailService');
-const { markInvoiceSubmitted, markInvoicePaid, rejectInvoice } = require('./invoiceService');
-const { getPlanSlug } = require('./billingPlanService');
+const { enqueueBillingNotifications } = require('./billingNotificationService');
+const { markInvoicePaid, rejectInvoice } = require('./invoiceService');
 const {
     activateSubscription,
     emitDeferredSubscriptionEvent,
@@ -19,12 +12,11 @@ const {
     returnToTrialOrPastDueAfterRejection
 } = require('./subscriptionService');
 
+const amountInPaisa = value => {
+    if (!['number', 'string'].includes(typeof value) || value === null || value === '' || typeof value === 'boolean' || !Number.isFinite(Number(value)) || Number(value) <= 0 || !Number.isSafeInteger(Math.round(Number(value) * 100)) || Math.abs(Number(value) * 100 - Math.round(Number(value) * 100)) > 0.00001) throw new Error('Payment amount must be positive with at most two decimals.');
+    return Math.round(Number(value) * 100);
+};
 const getActorId = (req) => req?.user?.accountId || req?.user?.account_id || req?.user?._id || null;
-
-const getShopOwner = async (shopId) => User.findOne({
-    shop_id: shopId,
-    role: 'VendorAdmin'
-}).select('fullName email').lean();
 
 const submitManualPayment = async ({
     shopId,
@@ -36,101 +28,44 @@ const submitManualPayment = async ({
     screenshotUrl = '',
     req = null
 }) => {
-    const invoice = await Invoice.findOne({ _id: invoiceId, shopId });
-    if (!invoice) throw new Error('Invoice not found');
-    if (invoice.status === 'paid') throw new Error('Invoice is already paid');
-    if (invoice.status === 'submitted') throw new Error('This invoice already has a payment waiting for approval');
-
-    const plan = invoice.planId
-        ? await VendorPlan.findById(invoice.planId).select('name slug').lean()
-        : null;
-    const pendingPlanName = plan?.name || invoice.planName || 'Selected plan';
-    const pendingPlanSlug = plan?.slug || invoice.planSlug || getPlanSlug(pendingPlanName);
-
-    const payment = await PaymentTransaction.create({
-        shopId,
-        invoiceId,
-        planId: invoice.planId || null,
-        planName: pendingPlanName,
-        planSlug: pendingPlanSlug,
-        provider,
-        amount: Number(amount || invoice.amount || 0),
-        transactionId,
-        senderNumber,
-        screenshotUrl,
-        status: 'pending',
-        submittedBy: getActorId(req)
+    if (!['manual_bkash', 'manual_nagad', 'manual_bank', 'other'].includes(provider)) throw new Error('Invalid payment provider.');
+    transactionId = String(transactionId || '').trim();
+    if (!transactionId || transactionId.length > 120) throw new Error('Transaction reference is required (maximum 120 characters).');
+    const paid = amountInPaisa(amount);
+    const result = await runCriticalGovernanceAction({
+        mutate: async session => {
+            const invoice = await Invoice.findOne({ _id: invoiceId, shopId }).session(session);
+            if (!invoice) throw new Error('Invoice not found');
+            if (paid !== amountInPaisa(invoice.amount)) throw new Error('Payment amount must match the invoice exactly.');
+            // Serialize all invoice/payment changes for this subscription.
+            const subscription = await Subscription.findOneAndUpdate({ _id: invoice.subscriptionId, shopId }, { $inc: { billingRevision: 1 } }, { new: true, session });
+            if (!subscription) throw new Error('Subscription not found');
+            const existing = await PaymentTransaction.findOne({ provider, transactionId }).session(session);
+            if (existing) {
+                if (String(existing.shopId) !== String(shopId) || String(existing.invoiceId) !== String(invoiceId) || amountInPaisa(existing.amount) !== paid) throw new Error('This transaction reference is already in use.');
+                return { payment: existing, replay: true };
+            }
+            if (!['unpaid', 'rejected'].includes(invoice.status)) throw new Error('Only unpaid or rejected invoices can accept payment.');
+            if (invoice.dueDate && invoice.dueDate < new Date()) throw new Error('Invoice has expired. Create a new invoice.');
+            if (await PaymentTransaction.exists({ shopId, status: 'pending' }).session(session)) throw new Error('A payment is already awaiting review. Wait for its result before submitting another.');
+            const [payment] = await PaymentTransaction.create([{
+                shopId, invoiceId, planId: invoice.planId, planName: invoice.planName, planSlug: invoice.planSlug,
+                provider, amount: paid / 100, transactionId, senderNumber, screenshotUrl, status: 'pending', submittedBy: getActorId(req)
+            }], { session });
+            invoice.status = 'submitted'; invoice.currentPaymentId = payment._id;
+            await invoice.save({ session });
+            await markPendingApproval({ subscription, planId: invoice.planId, planName: invoice.planName, planSlug: invoice.planSlug,
+                billingCycle: invoice.billingCycle, invoiceId: invoice._id, req, session, deferEvents: true });
+            await enqueueBillingNotifications({ payment, event: 'submitted', session });
+            return { payment, subscription, replay: false };
+        },
+        audit: ({ payment }) => ({ req, action: 'billing.payment_submitted', entityType: 'PaymentTransaction', entityId: payment._id,
+            shop_id: shopId, message: 'Manual payment submitted for Super Admin approval', metadata: { invoiceId, provider, amount: payment.amount } })
     });
-
-    const [submittedInvoice, shop, owner] = await Promise.all([
-        markInvoiceSubmitted(invoiceId),
-        Shop.findById(shopId).select('shopName subdomain').lean(),
-        getShopOwner(shopId)
-    ]);
-
-    await markPendingApproval({
-        subscriptionId: submittedInvoice.subscriptionId,
-        planId: submittedInvoice.planId,
-        planName: pendingPlanName,
-        planSlug: pendingPlanSlug,
-        billingCycle: submittedInvoice.billingCycle,
-        invoiceId: submittedInvoice._id,
-        req
-    });
-
-    await logPlatformAudit({
-        req,
-        action: 'billing.payment_submitted',
-        entityType: 'PaymentTransaction',
-        entityId: payment._id,
-        shop_id: shopId,
-        message: 'Manual payment submitted for Super Admin approval',
-        metadata: { invoiceId, provider, amount: payment.amount, pendingPlanName }
-    });
-
-    await createPlatformNotification({
-        recipientType: 'SuperAdmin',
-        type: 'subscription.pending_approval',
-        title: 'New subscription payment submitted',
-        message: `${shop?.shopName || 'A vendor'} submitted payment for ${pendingPlanName}.`,
-        entityType: 'PaymentTransaction',
-        entityId: payment._id,
-        shop_id: shopId,
-        severity: 'warning',
-        metadata: {
-            invoiceId,
-            provider,
-            amount: payment.amount,
-            transactionId,
-            planName: pendingPlanName,
-            shopName: shop?.shopName || '',
-            subdomain: shop?.subdomain || ''
-        }
-    });
-
-    sendSuperAdminPaymentSubmittedEmailSafe({
-        shopName: shop?.shopName || '',
-        ownerName: owner?.fullName || '',
-        ownerEmail: owner?.email || '',
-        planName: pendingPlanName,
-        amount: payment.amount,
-        provider,
-        transactionId,
-        submittedAt: payment.createdAt,
-        adminPath: '/super-admin/billing'
-    });
-
-    await createNotification({
-        shop_id: shopId,
-        type: 'system',
-        title: 'Payment submitted',
-        message: 'Your payment is pending Super Admin approval.',
-        entityType: 'PaymentTransaction',
-        entityId: payment._id,
-        severity: 'info',
-        metadata: { invoiceId, provider, amount: payment.amount, pendingPlanName }
-    });
-
+    if (result.replay) return result.payment;
+    const payment = result.payment;
+    try { await emitDeferredSubscriptionEvent(result.subscription); }
+    catch (error) { console.error('Billing subscription event failed:', error.name); }
     return payment;
 };
 
@@ -141,13 +76,7 @@ const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) =>
     const invoice = await Invoice.findById(payment.invoiceId);
     if (!invoice) throw new Error('Invoice not found');
     if (['approved', 'verified'].includes(payment.status)) {
-        const subscription = await Subscription.findById(invoice.subscriptionId)
-            .select('status lastInvoiceId');
-        if (
-            invoice.status === 'paid' &&
-            subscription?.status === 'active' &&
-            String(subscription.lastInvoiceId || '') === String(invoice._id)
-        ) {
+        if (invoice.status === 'paid' && (!invoice.currentPaymentId || String(invoice.currentPaymentId) === String(payment._id))) {
             return payment;
         }
     }
@@ -174,6 +103,10 @@ const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) =>
                 throw conflict;
             }
 
+            const currentInvoice = await Invoice.findById(currentPayment.invoiceId).session(session);
+            if (!currentInvoice || String(currentInvoice.shopId) !== String(currentPayment.shopId) || amountInPaisa(currentPayment.amount) !== amountInPaisa(currentInvoice.amount)) throw new Error('Payment does not match the invoice amount or shop.');
+            if (currentInvoice.currentPaymentId && String(currentInvoice.currentPaymentId) !== String(currentPayment._id)) throw new Error('This is not the current payment attempt.');
+            if (currentInvoice.status !== 'submitted') throw new Error('Invoice is not awaiting approval.');
             currentPayment.status = 'approved';
             currentPayment.verifiedBy = getActorId(req);
             currentPayment.verifiedAt = verifiedAt;
@@ -197,6 +130,11 @@ const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) =>
                 skipAudit: true,
                 deferEvents: true
             });
+            if (subscription.$locals.purchasedPeriod) {
+                paidInvoice.servicePeriodStart = subscription.$locals.purchasedPeriod.start;
+                paidInvoice.servicePeriodEnd = subscription.$locals.purchasedPeriod.end;
+                await paidInvoice.save({ session });
+            }
             if (paidInvoice.upgradeIntentId) {
                 await UpgradeIntent.updateOne(
                     {
@@ -213,6 +151,7 @@ const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) =>
                     { session }
                 );
             }
+            await enqueueBillingNotifications({ payment: currentPayment, event: 'approved', session });
             return { payment: currentPayment, invoice: paidInvoice, subscription };
         },
         audit: ({ payment: approvedPayment, invoice: paidInvoice }) => ({
@@ -229,18 +168,8 @@ const verifyManualPayment = async ({ paymentId, req = null, adminNote = '' }) =>
             }
         })
     });
-    await emitDeferredSubscriptionEvent(result.subscription);
-
-    await createNotification({
-        shop_id: result.payment.shopId,
-        type: 'system',
-        title: 'Payment verified',
-        message: 'Your payment was approved. Your subscription is now active.',
-        entityType: 'PaymentTransaction',
-        entityId: result.payment._id,
-        severity: 'success',
-        metadata: { invoiceId: result.invoice._id, amount: result.payment.amount }
-    });
+    try { if (result.subscription) await emitDeferredSubscriptionEvent(result.subscription); }
+    catch (error) { console.error('Billing subscription event failed:', error.name); }
 
     return result.payment;
 };
@@ -280,6 +209,8 @@ const rejectManualPayment = async ({ paymentId, rejectionReason, req = null, adm
                 throw conflict;
             }
 
+            const currentInvoice = await Invoice.findById(currentPayment.invoiceId).session(session);
+            if (currentInvoice?.currentPaymentId && String(currentInvoice.currentPaymentId) !== String(currentPayment._id)) throw new Error('This is not the current payment attempt.');
             currentPayment.status = 'rejected';
             currentPayment.rejectionReason = safeReason;
             currentPayment.adminNote = adminNote || currentPayment.adminNote;
@@ -300,6 +231,7 @@ const rejectManualPayment = async ({ paymentId, rejectionReason, req = null, adm
                     deferEvents: true
                 });
             }
+            await enqueueBillingNotifications({ payment: currentPayment, event: 'rejected', session });
             return { payment: currentPayment, invoice: rejectedInvoice, subscription };
         },
         audit: ({ payment: rejectedPayment }) => ({
@@ -313,18 +245,8 @@ const rejectManualPayment = async ({ paymentId, rejectionReason, req = null, adm
             severity: 'warning'
         })
     });
-    if (result.subscription) await emitDeferredSubscriptionEvent(result.subscription);
-
-    await createNotification({
-        shop_id: result.payment.shopId,
-        type: 'system',
-        title: 'Payment rejected',
-        message: `Your payment was rejected: ${safeReason}`,
-        entityType: 'PaymentTransaction',
-        entityId: result.payment._id,
-        severity: 'warning',
-        metadata: { invoiceId: result.payment.invoiceId, reason: safeReason }
-    });
+    try { if (result.subscription) await emitDeferredSubscriptionEvent(result.subscription); }
+    catch (error) { console.error('Billing subscription event failed:', error.name); }
 
     return result.payment;
 };

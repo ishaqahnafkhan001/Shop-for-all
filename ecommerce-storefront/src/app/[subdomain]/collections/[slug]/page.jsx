@@ -22,7 +22,12 @@ import { resolveStorefrontIndexability } from "@/lib/indexability";
 const getCollectionFilters = (searchParams = {}) => ({
     page: Math.max(Number(searchParams.page) || 1, 1),
     limit: Math.min(Math.max(Number(searchParams.limit) || 12, 1), 48),
-    sort: ["newest", "oldest", "price_asc", "price_desc", "rating_desc"].includes(searchParams.sort)
+    minPrice: searchParams.minPrice || "",
+    maxPrice: searchParams.maxPrice || "",
+    stock: ["in", "out"].includes(searchParams.stock) ? searchParams.stock : "all",
+    sale: searchParams.sale === "true" ? "true" : "",
+    rating: ["3", "4"].includes(String(searchParams.rating || "")) ? String(searchParams.rating) : "",
+    sort: ["default", "newest", "oldest", "price_asc", "price_desc", "rating_desc"].includes(searchParams.sort)
         ? searchParams.sort
         : "newest"
 });

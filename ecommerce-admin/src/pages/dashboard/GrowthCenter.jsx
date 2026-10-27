@@ -1,3 +1,6 @@
+import { ReportHeader, ChartPanel, RankedBars, DistributionRing } from '../../components/dashboard/ReportVisuals.jsx';
+import useReportPeriod from '../../hooks/useReportPeriod.js';
+import ReportPeriod from '../../components/dashboard/ReportPeriod.jsx';
 import GrowthCampaignEditor from '../../components/ai/GrowthCampaignEditor.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -24,12 +27,6 @@ import { hasFeature } from '../../utils/featureAccess';
 import { useAiOperation } from '../../hooks/useAiOperation.js';
 import AiOperationStatus from '../../components/ai/AiOperationStatus.jsx';
 
-const rangeOptions = [
-    { label: 'Last 7 days', value: '7' },
-    { label: 'Last 30 days', value: '30' },
-    { label: 'Last 90 days', value: '90' }
-];
-
 const labelStyles = {
     winner: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     hidden_gem: 'bg-cyan-50 text-cyan-700 border-cyan-200',
@@ -40,8 +37,8 @@ const labelStyles = {
 };
 
 const labelText = {
-    winner: 'Winner',
-    hidden_gem: 'Hidden gem',
+    winner: 'Promising signal',
+    hidden_gem: 'Early signal',
     fix_before_ads: 'Fix before ads',
     checkout_problem: 'Checkout problem',
     low_interest: 'Low interest',
@@ -50,11 +47,11 @@ const labelText = {
 
 const sellerActionCopy = {
     winner: {
-        title: 'Advertise next',
+        title: 'Review for a promotion test',
         problem: 'This product already has the strongest buying signal.',
-        why: 'A product with views, carts, and orders is safer to promote because customers are already responding.',
-        action: 'Use this product for your next Facebook or Instagram test campaign.',
-        benefit: 'Spend ad budget on a product with better odds of converting.'
+        why: 'Recorded product events suggest interest; confirm tracking coverage and delivered sales before spending.',
+        action: 'Check available stock, margins and return history before planning a campaign.',
+        benefit: 'Decide whether a measured promotion test is appropriate.'
     },
     fix_before_ads: {
         title: 'Fix before ads',
@@ -74,7 +71,7 @@ const sellerActionCopy = {
         title: 'Watch this hidden gem',
         problem: 'This product has promising interest but not enough volume yet.',
         why: 'Hidden gems can become winners after better placement or a small campaign test.',
-        action: 'Feature it on the homepage, improve images, and test a small ad budget.',
+        action: 'Review stock, margins and delivered sales; improve placement and collect more evidence.',
         benefit: 'You may find a new winning product before competitors notice demand.'
     },
     not_enough_data: {
@@ -97,8 +94,8 @@ const actionPriority = ['winner', 'fix_before_ads', 'checkout_problem', 'hidden_
 
 const buildSellerActions = (products = [], recommendations = []) => (
     actionPriority.map(label => {
-        const source = products.find(item => item.label === label)
-            || recommendations.find(item => item.label === label);
+        const source = products.find(item => item.label === label && !item.product?.archived && (!['winner', 'hidden_gem'].includes(label) || item.promotionReady))
+            || recommendations.find(item => item.label === label && !item.product?.archived && (!['winner', 'hidden_gem'].includes(label) || item.promotionReady));
         if (!source && label !== 'not_enough_data') return null;
         const copy = sellerActionCopy[label];
         return {
@@ -123,7 +120,7 @@ const StatCard = ({ title, value, icon: Icon, helper, tone = 'indigo' }) => {
     }[tone];
 
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="report-metric rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-sm font-semibold text-slate-500">{title}</p>
@@ -146,8 +143,11 @@ const LabelBadge = ({ label }) => (
 
 const GrowthCenter = () => {
     const { user } = useAuth();
-    const [range, setRange] = useState('30');
+    const { period, setPeriod } = useReportPeriod();
+    const range = period.range;
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [refresh, setRefresh] = useState(0);
     const [overview, setOverview] = useState(null);
     const [products, setProducts] = useState([]);
     const [searchTerms, setSearchTerms] = useState([]);
@@ -160,21 +160,23 @@ const GrowthCenter = () => {
         input: { range, interval: selectedProduct?.interval, language } });
     const detailRequest = useRef(null);
     const detailEpoch = useRef(0);
-    useEffect(() => { setSelectedProduct(null); setAdCopy(null); detailEpoch.current++; detailRequest.current?.abort(); }, [range]);
+    useEffect(() => { detailEpoch.current++; detailRequest.current?.abort(); const timer = setTimeout(() => { setSelectedProduct(null); setAdCopy(null); }, 0); return () => clearTimeout(timer); }, [period]);
     useEffect(() => () => { detailEpoch.current++; detailRequest.current?.abort(); }, []);
 
     useEffect(() => {
         let isMounted = true;
+        const controller = new AbortController();
 
         const loadGrowthData = async () => {
             setLoading(true);
+            setLoadError('');
             try {
-                const params = { range };
+                const params = period;
                 const [overviewRes, productsRes, searchRes, recommendationsRes] = await Promise.all([
-                    API.get('/admin/growth/overview', { params }),
-                    API.get('/admin/growth/products', { params }),
-                    API.get('/admin/growth/search', { params }),
-                    API.get('/admin/growth/recommendations', { params })
+                    API.get('/admin/growth/overview', { params, signal: controller.signal }),
+                    API.get('/admin/growth/products', { params, signal: controller.signal }),
+                    API.get('/admin/growth/search', { params, signal: controller.signal }),
+                    API.get('/admin/growth/recommendations', { params, signal: controller.signal })
                 ]);
 
                 if (!isMounted) return;
@@ -183,6 +185,8 @@ const GrowthCenter = () => {
                 setSearchTerms(searchRes.data.data?.terms || []);
                 setRecommendations(recommendationsRes.data.data?.recommendations || []);
             } catch (error) {
+                if (!isMounted) return;
+                setLoadError(error.response?.data?.error || 'Failed to load Growth Center');
                 toast.error(error.response?.data?.error || 'Failed to load Growth Center');
             } finally {
                 if (isMounted) setLoading(false);
@@ -193,8 +197,13 @@ const GrowthCenter = () => {
 
         return () => {
             isMounted = false;
+            controller.abort();
         };
-    }, [range]);
+    }, [period, refresh]);
+
+    useEffect(() => {
+        if (!loading && !loadError && new URLSearchParams(window.location.search).get('focus') === 'top-products') document.getElementById('top-products')?.scrollIntoView({ block: 'start' });
+    }, [loading, loadError]);
 
     const summary = overview?.summary || {};
     const bestProduct = overview?.bestProduct?.product?.title || 'No winner yet';
@@ -215,10 +224,10 @@ const GrowthCenter = () => {
         },
         { key: 'views', label: 'Views', render: row => formatNumber(row.views) },
         { key: 'addToCarts', label: 'Add to Cart', render: row => formatNumber(row.addToCarts) },
-        { key: 'orders', label: 'Orders', render: row => formatNumber(row.orders) },
-        { key: 'revenue', label: 'Delivered revenue', render: row => formatCurrency(row.revenue) },
+        { key: 'orders', label: 'Order events', render: row => formatNumber(row.orders) },
+        { key: 'revenue', label: 'Net product sales', render: row => formatCurrency(row.revenue) },
         { key: 'addToCartRate', label: 'Cart Rate', render: row => formatRate(row.addToCartRate) },
-        { key: 'conversionRate', label: 'Conversion', render: row => formatRate(row.conversionRate) },
+        { key: 'conversionRate', label: 'Order/view ratio', render: row => formatRate(row.conversionRate) },
         { key: 'label', label: 'Label', render: row => <LabelBadge label={row.label} /> },
         {
             key: 'suggestedAction',
@@ -240,7 +249,7 @@ const GrowthCenter = () => {
         setDetailLoading(true);
         setAdCopy(null);
         try {
-            const { data } = await API.get(`/admin/growth/products/${row.product._id}`, { params: { range }, signal: controller.signal });
+            const { data } = await API.get(`/admin/growth/products/${row.product._id}`, { params: period, signal: controller.signal });
             if (epoch === detailEpoch.current) setSelectedProduct(data.data);
         } catch (error) {
             if (!controller.signal.aborted) toast.error(error.response?.data?.error || 'Failed to load product insight');
@@ -269,41 +278,44 @@ const GrowthCenter = () => {
     };
 
     return (
-        <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-slate-950">Growth Center</h1>
-                    <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                        See which products deserve ads, which need fixing, and what customers search before buying.
-                    </p>
-                </div>
-                <select
-                    value={range}
-                    onChange={(event) => setRange(event.target.value)}
-                    className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                >
-                    {rangeOptions.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
-            </div>
+        <div className="report-workspace mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+            <ReportHeader eyebrow="Discover · improve · grow" title="Growth Center" description="Turn shopper activity into your next move. Discover promising products, fix friction and understand search demand." />
+            <div className="report-panel"><ReportPeriod key={JSON.stringify(period)} period={period} onChange={setPeriod} /></div>
 
+            {!loading && !loadError && overview?.interval && <p className="text-sm text-slate-500">Asia/Dhaka · {new Date(overview.interval.from).toLocaleDateString('en-GB', { timeZone: 'Asia/Dhaka' })} to {new Date(overview.interval.to).toLocaleDateString('en-GB', { timeZone: 'Asia/Dhaka' })} · Current-day totals are partial.</p>}
+            {!loading && !loadError && [...new Set(products.flatMap(product => product.dataWarnings || []))].map(warning => <p key={warning} className="text-sm text-amber-800">{warning}</p>)}
+            <p className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Engagement ratios compare recorded product events, not unique shopper sessions. Labels are preliminary signals. Review available stock, margins, returns and tracking coverage before advertising.</p>
+            {loadError && <div role="alert" className="rounded border p-4"><p>{loadError}</p><Button onClick={() => setRefresh(value => value + 1)}>Retry</Button></div>}
             {loading ? (
                 <AdminLoadingState
                     title="Loading Growth Center"
                     description="We are checking product views, carts, checkout starts, orders, searches, and seller recommendations."
                 />
-            ) : (
+            ) : !loadError && (
                 <>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <StatCard title="Product Views" value={formatNumber(summary.views)} icon={Eye} helper="Tracked storefront product views." />
                         <StatCard title="Add to Cart Rate" value={formatRate(summary.addToCartRate)} icon={MousePointerClick} tone="cyan" helper={`${formatNumber(summary.addToCarts)} add-to-cart events.`} />
-                        <StatCard title="Order Conversion" value={formatRate(summary.conversionRate)} icon={TrendingUp} tone="emerald" helper={`${formatNumber(summary.orders)} product order events.`} />
-                        <StatCard title="Delivered Revenue" value={formatCurrency(summary.revenue)} icon={ShoppingCart} tone="amber" helper="Only delivered product revenue is counted." />
-                        <StatCard title="Checkout Rate" value={formatRate(rateSafe(summary.checkouts, summary.addToCarts))} icon={BarChart3} tone="indigo" helper={`${formatNumber(summary.checkouts)} checkout starts.`} />
+                        <StatCard title="Order/view event ratio" value={formatRate(summary.conversionRate)} icon={TrendingUp} tone="emerald" helper={`${formatNumber(summary.orders)} product order events.`} />
+                        <StatCard title="Net product sales" value={formatCurrency(summary.revenue)} icon={ShoppingCart} tone="amber" helper="Delivered items after coupons, less completed refunds." />
+                        <StatCard title="Checkout/cart event ratio" value={formatRate(rateSafe(summary.checkouts, summary.addToCarts))} icon={BarChart3} tone="indigo" helper={`${formatNumber(summary.checkouts)} checkout starts.`} />
                         <StatCard title="Best Product" value={bestProduct} icon={Sparkles} tone="emerald" helper="Highest current performance signal." />
                         <StatCard title="Needs Attention" value={needsAttention} icon={Megaphone} tone="rose" helper="Fix before spending on ads." />
-                        <StatCard title="Search Terms" value={formatNumber(searchTerms.length)} icon={Search} tone="cyan" helper="Unique terms in this period." />
+                        <StatCard title="Top search terms" value={formatNumber(searchTerms.length)} icon={Search} tone="cyan" helper="Top terms returned, up to 25." />
+                    </div>
+
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <ChartPanel title="Recorded shopping activity" description="Independent product event counts, not a session funnel. Repeated events and tracking coverage affect these totals.">
+                            <RankedBars unit="events" items={[
+                                { label: 'Product views', value: summary.views },
+                                { label: 'Add to cart', value: summary.addToCarts },
+                                { label: 'Checkout starts', value: summary.checkouts },
+                                { label: 'Product orders', value: summary.orders },
+                            ]} />
+                        </ChartPanel>
+                        <ChartPanel title="Product signal mix" description="Preliminary labels across the products returned for this period. Review evidence before promoting a product.">
+                            <DistributionRing label="Products" items={Object.entries(labelText).map(([key, label]) => ({ label, value: products.filter(item => (item.label || 'not_enough_data') === key).length }))} />
+                        </ChartPanel>
                     </div>
 
                     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -311,24 +323,24 @@ const GrowthCenter = () => {
                             <div>
                                 <h2 className="text-lg font-black text-slate-950">What should I do today?</h2>
                                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                                    Seller-friendly actions based on your views → cart → checkout → orders funnel.
+                                    Prioritized actions based on recorded product activity and available evidence.
                                 </p>
                             </div>
                             <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
-                                {range} day view
+                                Selected reporting period
                             </span>
                         </div>
-                        <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-5">
+                        <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
                             {sellerActions.map(action => (
                                 <SellerActionCard key={action.label} action={action} />
                             ))}
                         </div>
                     </section>
 
-                    <section className="space-y-4">
+                    <section id="top-products" className="space-y-4">
                         <div>
                             <h2 className="text-lg font-black text-slate-950">Product Performance</h2>
-                            <p className="mt-1 text-sm text-slate-500">Click Insight to inspect the funnel and generate simple ad copy.</p>
+                            <p className="mt-1 text-sm text-slate-500">Open Insight to review recorded activity and prepare campaign copy.</p>
                         </div>
                         <Table
                             columns={tableColumns}
@@ -336,7 +348,7 @@ const GrowthCenter = () => {
                             emptyTitle="No growth data yet"
                             emptyDescription="Visit products, add to cart, search, and place orders from the storefront to start collecting analytics."
                             actions={(row) => (
-                                <Button variant="secondary" size="sm" onClick={() => openProductDetail(row)}>
+                                <Button variant="secondary" size="sm" disabled={row.product?.archived} onClick={() => openProductDetail(row)}>
                                     Insight
                                 </Button>
                             )}
@@ -357,19 +369,7 @@ const GrowthCenter = () => {
                                         icon={Search}
                                         className="shadow-none"
                                     />
-                                ) : searchTerms.slice(0, 8).map(term => (
-                                    <div key={term.query} className="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3">
-                                        <div>
-                                            <p className="font-bold text-slate-900">{term.query}</p>
-                                            <p className="text-xs text-slate-500">
-                                                {term.zeroResultCount} zero-result searches
-                                            </p>
-                                        </div>
-                                        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 shadow-sm">
-                                            {term.searchCount} searches
-                                        </span>
-                                    </div>
-                                ))}
+                                ) : <RankedBars items={searchTerms.slice(0, 8).map(term => ({ label: term.query, value: term.searchCount, detail: `${term.zeroResultCount} zero-result searches` }))} unit="searches" />}
                             </div>
                         </section>
 
@@ -405,6 +405,7 @@ const GrowthCenter = () => {
             <Modal
                 isOpen={Boolean(selectedProduct) || detailLoading}
                 onClose={() => {
+                    detailEpoch.current++; detailRequest.current?.abort(); setDetailLoading(false);
                     setSelectedProduct(null);
                     setAdCopy(null);
                 }}
@@ -418,9 +419,9 @@ const GrowthCenter = () => {
                             <MiniMetric label="Views" value={formatNumber(selectedProduct.metrics.views)} />
                             <MiniMetric label="Add to Cart" value={formatNumber(selectedProduct.metrics.addToCarts)} />
                             <MiniMetric label="Orders" value={formatNumber(selectedProduct.metrics.orders)} />
-                            <MiniMetric label="Revenue" value={formatCurrency(selectedProduct.metrics.revenue)} />
+                            <MiniMetric label="Net product sales" value={formatCurrency(selectedProduct.metrics.revenue)} />
                             <MiniMetric label="Cart Rate" value={formatRate(selectedProduct.metrics.addToCartRate)} />
-                            <MiniMetric label="Conversion" value={formatRate(selectedProduct.metrics.conversionRate)} />
+                            <MiniMetric label="Order/view event ratio" value={formatRate(selectedProduct.metrics.conversionRate)} />
                         </div>
 
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">

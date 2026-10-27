@@ -26,6 +26,7 @@ const {
 const { getShopPlanAccess, buildLimitError } = require('../services/billing/planAccessService');
 const { SUBSCRIPTION_EVENTS, emitSubscriptionEvent } = require('../services/billing/subscriptionEvents');
 const Product = require('../models/Product');
+const { claimProductSubmission, getProductSubmission } = require('../services/products/productSubmissionService');
 const {
     reserveQuota,
     releaseQuotaSafely
@@ -47,7 +48,10 @@ const {
     generateProductContent,
     exportProductsCsv,
     bulkUpdateProducts,
-    bulkImportProducts
+    bulkImportProducts,
+    getCatalogProducts,
+    getCatalogActivity,
+    undoCatalogOperation
 } = require('../controllers/productController');
 
 // Order Controllers
@@ -176,7 +180,7 @@ const registerFailedUploadCleanup = (req, res) => {
     if (req.productUploadCleanupRegistered) return;
     req.productUploadCleanupRegistered = true;
     res.once('finish', () => {
-        if (res.statusCode >= 400) cleanupUploadedProductMedia(req).catch(() => {});
+        if (res.statusCode >= 400 && !req.productCommitted && !req.productCommitUncertain) cleanupUploadedProductMedia(req).catch(() => {});
     });
 };
 const productMediaUpload = (req, res, next) => {
@@ -200,9 +204,9 @@ const productMediaUpload = (req, res, next) => {
             });
             return res.status(403).json(payload);
         }
-        return res.status(planLimit ? 403 : 400).json({
+        return res.status(planLimit ? 403 : req.productSubmission && err.code === 'PRODUCT_UPLOAD_FAILED' ? 503 : 400).json({
             success: false,
-            code: planLimit ? 'PLAN_LIMIT_REACHED' : 'INVALID_PRODUCT_MEDIA',
+            code: planLimit ? 'PLAN_LIMIT_REACHED' : err.code === 'PRODUCT_UPLOAD_FAILED' ? 'PRODUCT_UPLOAD_FAILED' : 'INVALID_PRODUCT_MEDIA',
             ...(planLimit && { limitKey: 'imagesPerProduct' }),
             error: err.message || 'Invalid product media.'
         });
@@ -761,6 +765,10 @@ router.post(
     checkPendingPathaoStore
 );
 
+const deliveryRates = require('../controllers/deliveryRatesController');
+router.get('/shipping/rates', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('shipping'), deliveryRates.getRates);
+router.put('/shipping/rates', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('shipping'), blockBillingSuspendedShop, blockVerificationSuspendedShop, deliveryRates.saveRates);
+
 router.get(
     '/shipping/couriers',
     protect,
@@ -900,6 +908,11 @@ router.get(
     getShopProducts
 );
 
+router.get('/catalog/activity', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('catalogTools'), requireShopFeature('bulkProductTools'), getCatalogActivity);
+router.post('/catalog/activity/:id/undo', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('catalogTools'), requireShopFeature('bulkProductTools'), blockBillingSuspendedShop, blockVerificationSuspendedShop, undoCatalogOperation);
+
+router.get('/catalog/products', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('catalogTools'), requireShopFeature('bulkProductTools'), getCatalogProducts);
+
 router.get(
     '/products/export.csv',
     protect,
@@ -916,7 +929,13 @@ router.post(
     requirePermission('catalogTools'),
     requireShopFeature('bulkProductTools'),
     blockBillingSuspendedShop,
-    requireProductLimit((req) => Array.isArray(req.body?.products) ? Math.min(req.body.products.length, 200) : 1),
+    async (req, res, next) => {
+        try {
+            const previous = typeof req.body?.operationId === 'string' && await require('../models/CatalogImport').exists({ shop_id: req.tenantId, operationId: req.body.operationId });
+            if (previous || req.body?.mode === 'update' || req.body?.dryRun === true) return next();
+            return requireProductLimit((request) => Array.isArray(request.body?.products) ? request.body.products.length : 1)(req, res, next);
+        } catch (error) { next(error); }
+    },
     blockVerificationSuspendedShop,
     bulkImportProducts
 );
@@ -932,6 +951,8 @@ router.patch(
     bulkUpdateProducts
 );
 
+router.get('/product-submissions/:key', protect, authorize('VendorAdmin', 'VendorStaff'), requirePermission('products'), getProductSubmission);
+
 router.get(
     '/products/:id',
     protect,
@@ -945,6 +966,7 @@ router.post(
     protect,
     authorize('VendorAdmin', 'VendorStaff'),
     requirePermission('products'),
+    claimProductSubmission,
     blockBillingSuspendedShop,
     requireProductLimit(),
     blockVerificationSuspendedShop,

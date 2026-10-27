@@ -131,6 +131,7 @@ const serializeSubscription = (subscription) => {
         entitlementVersion: access.entitlementVersion,
         version: Number(plain.__v) || 0,
         billingCycle: plain.billingCycle,
+        pendingBillingCycle: plain.pendingBillingCycle || undefined,
         pendingPlanId: plain.pendingPlanId,
         pendingPlanName: plain.pendingPlanName || '',
         pendingPlanSlug: plain.pendingPlanSlug || '',
@@ -183,11 +184,19 @@ const serializeInvoice = (invoice) => {
         billingCycle: plain.billingCycle,
         status: plain.status,
         dueDate: plain.dueDate,
+        servicePeriodStart: plain.servicePeriodStart,
+        servicePeriodEnd: plain.servicePeriodEnd,
         paidAt: plain.paidAt,
         notes: plain.notes || '',
         createdAt: plain.createdAt,
         updatedAt: plain.updatedAt
     };
+};
+
+const serializeVendorInvoice = invoice => {
+    const serialized = serializeInvoice(invoice);
+    if (serialized) delete serialized.notes;
+    return serialized;
 };
 
 const serializePayment = (payment) => {
@@ -210,7 +219,6 @@ const serializePayment = (payment) => {
         verifiedBy: plain.verifiedBy,
         verifiedAt: plain.verifiedAt,
         rejectionReason: plain.rejectionReason || '',
-        adminNote: plain.adminNote || '',
         createdAt: plain.createdAt,
         updatedAt: plain.updatedAt
     };
@@ -251,7 +259,7 @@ exports.getVendorBillingCurrent = async (req, res) => {
                 pendingPlan,
                 displayPlan: display.displayPlan,
                 billingDisplay: display,
-                latestInvoice: serializeInvoice(latestInvoice),
+                latestInvoice: serializeVendorInvoice(latestInvoice),
                 planAccess: {
                     planKey: access.planKey,
                     planName: access.planName,
@@ -278,7 +286,8 @@ exports.getVendorBillingCurrent = async (req, res) => {
                     badgeEligible: Boolean(item.badgeEligible)
                 })),
                 trialDays: TRIAL_DAYS,
-                graceDays: GRACE_DAYS
+                graceDays: GRACE_DAYS,
+                paymentInstructions: { bkash: process.env.BILLING_BKASH_INSTRUCTIONS || '', nagad: process.env.BILLING_NAGAD_INSTRUCTIONS || '', bank: process.env.BILLING_BANK_INSTRUCTIONS || '', support: process.env.BILLING_SUPPORT_CONTACT || '' }
             }
         });
     } catch (err) {
@@ -582,6 +591,8 @@ exports.getVendorInvoices = async (req, res) => {
         const { page, limit, skip } = getPagination(req.query);
         const query = { shopId };
         if (req.query.status) query.status = req.query.status;
+        if (req.query.payable === 'true') { query.status = { $in: ['unpaid', 'rejected'] }; query.$or = [{ dueDate: { $gte: new Date() } }, { dueDate: null }]; }
+        if (req.query.id && isValidObjectId(req.query.id)) query._id = req.query.id;
 
         const [items, total] = await Promise.all([
             Invoice.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
@@ -590,7 +601,7 @@ exports.getVendorInvoices = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: items.map(serializeInvoice),
+            data: items.map(serializeVendorInvoice),
             pagination: paginationMeta({ page, limit, total })
         });
     } catch (err) {
@@ -695,7 +706,24 @@ exports.createVendorInvoice = async (req, res) => {
         const amount = await calculatePlanPrice(plan?._id || planName, billingCycle);
         const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
-        const invoice = await createInvoice({
+        const requestKey = req.body.requestKey ? String(req.body.requestKey).trim() : undefined;
+        if (requestKey && requestKey.length > 120) throw new Error('Invalid request key.');
+        const session = await mongoose.startSession();
+        let invoice;
+        try {
+            await session.withTransaction(async () => {
+                await Subscription.updateOne({ _id: subscription._id }, { $inc: { billingRevision: 1 } }, { session });
+                if (requestKey) {
+                    invoice = await Invoice.findOne({ shopId, requestKey }).session(session);
+                    if (invoice) {
+                        if (invoice.planSlug !== planSlug || invoice.billingCycle !== billingCycle) throw new Error('This request key was used for a different plan.');
+                        return;
+                    }
+                }
+                if (await PaymentTransaction.exists({ shopId, status: 'pending' }).session(session)) throw new Error('A payment is awaiting review. Wait for its result before creating another invoice.');
+                invoice = await Invoice.findOne({ shopId, planSlug, billingCycle, amount, status: { $in: ['unpaid', 'rejected'] }, dueDate: { $gte: new Date() } }).session(session);
+                if (invoice) return;
+            invoice = await createInvoice({
             shopId,
             subscriptionId: subscription._id,
             planId: plan?._id || null,
@@ -704,9 +732,14 @@ exports.createVendorInvoice = async (req, res) => {
             upgradeIntentId: upgradeIntent?.id || null,
             billingCycle,
             amount,
+            session,
+            requestKey,
             dueDate,
             notes: `Vendor selected ${planName} ${billingCycle} plan.`
         });
+
+            });
+        } finally { await session.endSession(); }
 
         await createNotification({
             shop_id: shopId,
@@ -719,7 +752,7 @@ exports.createVendorInvoice = async (req, res) => {
             metadata: { planName: fallbackPlan.name, billingCycle, amount }
         });
 
-        res.status(201).json({ success: true, data: serializeInvoice(invoice) });
+        res.status(201).json({ success: true, data: serializeVendorInvoice(invoice) });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message || 'Failed to create invoice' });
     }

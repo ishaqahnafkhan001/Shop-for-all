@@ -16,6 +16,7 @@ import {
 
 // Layouts
 import DashboardLayout from './layouts/DashboardLayout';
+import { ProductSubmissionProvider } from './context/ProductSubmissionContext.jsx';
 
 // Pages
 const Login = lazy(() => import('./pages/Login'));
@@ -99,6 +100,7 @@ function App() {
 
     return (
         <Router>
+            <ProductSubmissionProvider>
             <Toaster position="top-right" />
             <Routes>
                 {/* Public / Auth Routes */}
@@ -194,6 +196,7 @@ function App() {
                     element={!user ? <Navigate to="/login" /> : <Navigate to={getRedirectPath(user?.role)} />}
                 />
             </Routes>
+            </ProductSubmissionProvider>
         </Router>
     );
 }

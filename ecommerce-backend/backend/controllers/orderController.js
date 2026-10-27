@@ -1,3 +1,7 @@
+const { ensureDeliveryFact } = require('../services/orders/financialFactService');
+const { snapshotCouponDiscounts } = require('../services/orders/reportingMetrics');
+const { getOrderShippingRate } = require('../services/orders/shippingRateService');
+const reportingCache = require('../services/cacheService');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
@@ -20,7 +24,6 @@ const {
     getShopOrdersPage
 } = require('../services/orders/orderQueryService');
 const {
-    getShippingCostForZone,
     buildOrderLineItem,
     applyPromotionToTotals,
     incrementPromotionUsage
@@ -280,6 +283,8 @@ exports.createOrder = async (req, res) => {
             }
         }
 
+        const deliveryRate = await getOrderShippingRate({ shopId, district: shipping.address.city, legacyZone: shipping.zone, token: shipping.quoteToken, session });
+
         await consumeCheckoutPhoneProof({
             shopId,
             phone: shipping.address.phone,
@@ -363,7 +368,7 @@ exports.createOrder = async (req, res) => {
             subtotal,
             items: promotionItems,
             customerId: userId,
-            shippingCost: getShippingCostForZone(shipping.zone),
+            shippingCost: deliveryRate.originalCharge,
             session
         });
         const { discountAmount, shippingCost, promotionSnapshot } = promotionTotals;
@@ -374,7 +379,7 @@ exports.createOrder = async (req, res) => {
         const [order] = await Order.create([{
             shop_id: shopId,
             customer: userId,
-            items: orderItems,
+            items: snapshotCouponDiscounts(orderItems, discountAmount, promotionTotals.eligibleProductIds),
             pricing: {
                 subtotal,
                 discount: discountAmount,
@@ -387,7 +392,8 @@ exports.createOrder = async (req, res) => {
                 status: 'Pending'
             },
             shipping: {
-                zone: shipping.zone,
+                zone: deliveryRate.zone,
+                rateSnapshot: { ...deliveryRate, discount: deliveryRate.originalCharge - shippingCost, finalCharge: shippingCost },
                 cost: shippingCost,
                 address: shipping.address
             },
@@ -423,6 +429,7 @@ exports.createOrder = async (req, res) => {
         await InventoryLog.insertMany(logsWithRef, { session });
 
         await session.commitTransaction();
+        await reportingCache.delPattern(`admin:dashboard-overview:${req.tenantId}:*`);
 
         await enqueueLowStockAlertsForLogs(logsWithRef);
 
@@ -483,7 +490,7 @@ exports.cancelOrder = async (req, res) => {
 
         if (!order) throw new Error("Order not found");
         if (order.status === 'Cancelled') throw new Error("Order is already cancelled");
-        if (['Shipped', 'Delivered'].includes(order.status)) {
+        if (order.shipping?.deliveredAt || ['Shipped', 'Delivered', 'Returned'].includes(order.status)) {
             throw new Error("Cannot cancel an order that has already been shipped or delivered");
         }
 
@@ -532,6 +539,7 @@ exports.cancelOrder = async (req, res) => {
         await order.save({ session });
 
         await session.commitTransaction();
+        await reportingCache.delPattern(`admin:dashboard-overview:${req.tenantId}:*`);
 
         await enqueueLowStockAlertsForLogs(logs);
 
@@ -591,6 +599,7 @@ exports.getShopOrders = async (req, res) => {
  * @access  Private (Admin)
  */
 exports.updateOrderStatus = async (req, res) => {
+    const session = await mongoose.startSession();
     try {
         // FIX: actually run the Joi validation that was previously only commented about
         const { error, value } = updateOrderStatusSchema.validate(req.body);
@@ -609,24 +618,26 @@ exports.updateOrderStatus = async (req, res) => {
             });
         }
 
-        const previousOrder = await Order.findOne({
-            _id: req.params.id,
-            shop_id: shopId,
-            isDeleted: false
-        }).select('status').lean();
+        let previousOrder, order;
+        await session.withTransaction(async () => {
+            previousOrder = await Order.findOne({ _id: req.params.id, shop_id: shopId, isDeleted: false })
+                .select('status shipping.deliveredAt').session(session).lean();
+            if (!previousOrder) throw Object.assign(new Error('Order not found or access denied'), { statusCode: 404 });
+            if (['Cancelled', 'Returned'].includes(previousOrder.status) || (previousOrder.shipping?.deliveredAt && status !== 'Delivered')) {
+                throw Object.assign(new Error('Completed or cancelled orders cannot return to fulfillment. Use the dedicated return workflow for delivered items.'), { statusCode: 400 });
+            }
+            const update = buildStatusUpdate(status);
+            if (update['shipping.deliveredAt']) update['shipping.deliveredAt'] = { $ifNull: ['$shipping.deliveredAt', update['shipping.deliveredAt']] };
+            order = await Order.findOneAndUpdate({ _id: req.params.id, shop_id: shopId, isDeleted: false },
+                [{ $set: update }], { new: true, updatePipeline: true, session });
+            if (status === 'Delivered') {
+                await ensureDeliveryFact(order, session, previousOrder.shipping?.deliveredAt ? 'existing_delivery_record' : 'delivery_transition');
+                await order.save({ session });
+            }
+        });
+        await order.populate('customer', 'fullName email');
 
-        const update = buildStatusUpdate(status);
-
-        const order = await Order.findOneAndUpdate(
-            { _id: req.params.id, shop_id: shopId, isDeleted: false },
-            { $set: update },
-            { new: true }
-        ).populate('customer', 'fullName email');
-
-        if (!order) {
-            return res.status(404).json({ success: false, error: "Order not found or access denied" });
-        }
-
+        await reportingCache.delPattern(`admin:dashboard-overview:${shopId}:*`);
         const statusChanged = previousOrder?.status !== order.status;
         let emailResult = { sent: false };
 
@@ -668,8 +679,8 @@ exports.updateOrderStatus = async (req, res) => {
 
     } catch (err) {
         console.error("Error updating order status:", err);
-        res.status(500).json({ success: false, error: "Failed to update order status" });
-    }
+        res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : "Failed to update order status" });
+    } finally { await session.endSession(); }
 };
 
 
@@ -703,11 +714,11 @@ exports.getDashboardOverview = async (req, res) => {
             lowStockAlerts: Boolean(planAccess.features.lowStockAlerts),
             revenueTrends: Boolean(planAccess.features.analytics),
             customerMetrics: Boolean(planAccess.features.customerSection)
-        });
+        }, req.query);
         res.status(200).json(response);
     } catch (err) {
         console.error("Dashboard overview error:", err);
-        res.status(500).json({ success: false, error: "Failed to fetch dashboard overview" });
+        res.status(err.statusCode || 500).json({ success: false, error: err.statusCode ? err.message : "Failed to fetch dashboard overview" });
     }
 };
 

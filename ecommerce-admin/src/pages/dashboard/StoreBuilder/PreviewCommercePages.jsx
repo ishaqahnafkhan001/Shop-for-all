@@ -32,8 +32,8 @@ export function PreviewCommercePage({ page, theme, products, shopName, reviews =
     }
     const cartItems = products.slice(0, 2).map(item => ({ ...item, quantity: 1, cartItemId: String(item._id) }));
     const subtotal = cartItems.reduce((total, item) => total + Number(item.finalPrice ?? item.sellingPrice ?? 0), 0);
-    if (page === 'cart') return <CartView presentationVariant={presentationVariant} cartItems={cartItems} subtotal={subtotal} shipping={cartItems.length ? 80 : 0}
-        total={subtotal + (cartItems.length ? 80 : 0)} totalSavings={cartItems.reduce((total, item) => total + Math.max(0, Number(item.pricing?.sellingPrice ?? item.sellingPrice ?? 0) - Number(item.finalPrice ?? 0)), 0)}
+    if (page === 'cart') return <CartView cartItems={cartItems} subtotal={subtotal} shipping={null}
+        total={subtotal} totalSavings={cartItems.reduce((total, item) => total + Math.max(0, Number(item.pricing?.sellingPrice ?? item.sellingPrice ?? 0) - Number(item.finalPrice ?? 0)), 0)}
         getCartImageUrl={item => item.imageUrl || item.images?.[0] || ''} removeFromCart={noop} updateQuantity={noop}
         promoCode="" setPromoCode={noop} handleApplyPromo={noop} recommendations={[]} recommendationsLoading={false}
         productActions={{}} themedProductCard={theme.productCard} />;
@@ -41,12 +41,11 @@ export function PreviewCommercePage({ page, theme, products, shopName, reviews =
     const policies = theme.policies || {};
     const visiblePolicies = Object.entries(POLICY_LABELS).filter(([key]) => policies[key]?.trim());
     return <CheckoutPageShell checkoutBranding={theme.checkoutBranding} onSubmit={event => event.preventDefault()}
-        mobileStickyBar={<CheckoutMobileStickyBar loading={false} phoneVerified={false} policyAccepted={atelier && previewPolicy} totalAmount={subtotal} />}>
-        <CheckoutDetailsColumn presentationVariant={presentationVariant} formData={{ fullName: '', email: '', phone: '', address: '', city: '', notes: '' }} isDhaka={null} onInputChange={noop} />
-        {atelier && <CheckoutMarketingConsent checked={previewMarketing} onChange={setPreviewMarketing} />}
-        <CheckoutOrderSummary presentationVariant={presentationVariant} cartItems={cartItems} checkoutBranding={theme.checkoutBranding} finalShippingCost={0} loading={false}
-            onApplyPromotion={noop} policies={policies} policyAccepted={atelier && previewPolicy} productsDetails={Object.fromEntries(products.map(item => [item._id, item]))}
+        mobileStickyBar={<CheckoutMobileStickyBar loading={false} phoneVerified={false} policyAccepted={false} totalAmount={null} />}>
+        <CheckoutDetailsColumn formData={{ fullName: '', email: '', phone: '', address: '', city: '', notes: '' }} delivery={null} onInputChange={noop} />
+        <CheckoutOrderSummary cartItems={cartItems} checkoutBranding={theme.checkoutBranding} finalShippingCost={null} loading={false}
+            onApplyPromotion={noop} policies={policies} policyAccepted={false} productsDetails={Object.fromEntries(products.map(item => [item._id, item]))}
             promotionCode="" promotionDiscount={0} promotionMessage={null} phoneVerified={false} removeFromCart={noop}
-            setPolicyAccepted={atelier ? setPreviewPolicy : noop} setPromotionCode={noop} subtotal={subtotal} totalAmount={subtotal} updateQuantity={noop} visiblePolicies={visiblePolicies} />
+            setPolicyAccepted={noop} setPromotionCode={noop} subtotal={subtotal} totalAmount={null} updateQuantity={noop} visiblePolicies={visiblePolicies} />
     </CheckoutPageShell>;
 }

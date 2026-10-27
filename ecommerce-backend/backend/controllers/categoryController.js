@@ -334,6 +334,7 @@ exports.updateCategoryMetadata = async (req, res) => {
             await Product.updateMany(sourceProductQuery, { $set: { category: nextName } }, { session });
         }
 
+        if (req.body.altText !== undefined && category.coverImage?.url) category.coverImage.altText = String(req.body.altText).trim().slice(0, 140);
         category.name = nextName;
         category.normalizedName = nextKey;
         category.seo = {

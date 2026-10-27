@@ -6,6 +6,7 @@ import VerificationBanner from '../components/dashboard/VerificationBanner';
 import { CircleHelp, ShieldCheck, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../api/api';
+import ProductActivity from '../components/products/ProductActivity.jsx';
 
 const PlatformStepUpDialog = ({ open, onClose }) => {
     const [password, setPassword] = useState('');
@@ -237,6 +238,7 @@ const DashboardLayout = () => {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
 
             <Topbar onOpenMenu={() => setIsSidebarOpen(true)} />
+            <ProductActivity />
 
             {/*
                   - scroll-smooth: Enables smooth scrolling for anchor links within pages.

@@ -54,8 +54,8 @@ const parseProductIds = (value = []) => {
     if (!Array.isArray(source) || source.length > 500 || source.some(id => !mongoose.Types.ObjectId.isValid(id))) throw invalidProducts();
     return [...new Set(source.map(id => String(id).trim()))];
 };
-const assertCollectionProductsOwned = async (shopId, ids = []) => {
-    if (ids.length && await Product.countDocuments({ _id: { $in: ids }, shop_id: shopId, isDeleted: false }) !== ids.length) throw invalidProducts();
+const assertCollectionProductsOwned = async (shopId, ids = [], session = null) => {
+    if (ids.length && await Product.countDocuments({ _id: { $in: ids }, shop_id: shopId, isDeleted: false }).session(session) !== ids.length) throw invalidProducts();
 };
 
 const parseJsonField = (value, fallback) => {
@@ -133,7 +133,8 @@ const serializeAdminCollection = (collection = {}) => {
         slug: value.slug,
         description: value.description || '',
         image: value.image || '',
-        productIds: value.productIds || [],
+        productIds: (value.productIds || []).map(item => item._id || item),
+        memberNames: Object.fromEntries((value.productIds || []).filter(item => item.title).map(item => [String(item._id), item.title])),
         isActive: value.isActive !== false,
         seo: value.seo || {},
         createdAt: value.createdAt,
@@ -170,7 +171,7 @@ exports.getCollections = async (req, res) => {
     try {
         const collections = await Collection.find({
             shop_id: req.tenantId
-        }).sort({ createdAt: -1 });
+        }).sort({ createdAt: -1 }).populate({ path: 'productIds', select: 'title', match: { shop_id: req.tenantId, isDeleted: false } });
 
         res.status(200).json({ success: true, data: collections.map(serializeAdminCollection) });
     } catch (err) {
@@ -353,27 +354,27 @@ exports.getPublicCollectionBySlug = async (req, res) => {
             collections: collection._id
         });
         const sortQuery = getProductSort(req.query.sort);
-        const [products, total] = await Promise.all([
+        const needsFiltering = ['minPrice', 'maxPrice', 'stock', 'sale', 'rating'].some(key => req.query[key] && req.query[key] !== 'all') || ['price_asc', 'price_desc', 'priceAsc', 'priceDesc'].includes(req.query.sort);
+        const [products, unfilteredTotal] = await Promise.all([
             Product.aggregate([
                 { $match: productMatch },
                 { $sort: sortQuery },
-                { $skip: skip },
-                { $limit: limit },
+                ...(!needsFiltering ? [{ $skip: skip }, { $limit: limit }] : []),
                 { $project: PUBLIC_PRODUCT_CARD_PROJECT }
             ]),
             Product.countDocuments(productMatch)
         ]);
-
-        const pricedProducts = await applyScheduledSalesToProducts({
-            shopId: req.tenantId,
-            products
-        });
+        const pricedProducts = await applyScheduledSalesToProducts({ shopId: req.tenantId, products });
+        const { filterCollectionProducts } = require('../services/collections/collectionProductFilters');
+        const matchingProducts = needsFiltering ? filterCollectionProducts(pricedProducts, req.query) : pricedProducts;
+        const total = needsFiltering ? matchingProducts.length : unfilteredTotal;
+        const pageProducts = needsFiltering ? matchingProducts.slice(skip, skip + limit) : matchingProducts;
 
         res.status(200).json({
             success: true,
             data: {
                 collection: sanitizePublicCollection(collection, total),
-                products: sanitizePublicProducts(pricedProducts),
+                products: sanitizePublicProducts(pageProducts),
                 pagination: buildPagination({ total, page, limit })
             }
         });
@@ -386,12 +387,14 @@ exports.getPublicCollectionBySlug = async (req, res) => {
 exports.createCollection = async (req, res) => {
     const uploadedPublicId = req.file?.public_id || req.file?.filename || '';
     let collectionCreated = false;
+    const session = await mongoose.startSession();
     try {
+        session.startTransaction();
         const payload = {
             ...buildCollectionPayload(req.body),
             shop_id: req.tenantId
         };
-        await assertCollectionProductsOwned(req.tenantId, payload.productIds);
+        await assertCollectionProductsOwned(req.tenantId, payload.productIds, session);
         await assertHistoricalSlugAvailable({
             shopId: req.tenantId,
             resourceType: 'collection',
@@ -406,41 +409,49 @@ exports.createCollection = async (req, res) => {
             payload.imagePublicId = uploadedPublicId;
         }
 
-        const collection = await Collection.create(payload);
-        collectionCreated = true;
+        const [collection] = await Collection.create([payload], { session });
 
         if (Array.isArray(payload.productIds) && payload.productIds.length > 0) {
             await Product.updateMany(
                 { _id: { $in: payload.productIds }, shop_id: req.tenantId },
-                { $addToSet: { collections: collection._id } }
+                { $addToSet: { collections: collection._id } },
+                { session }
             );
         }
 
-        await invalidateCollectionCaches(req.tenantId);
+        await session.commitTransaction();
+        collectionCreated = true;
+        await invalidateCollectionCaches(req.tenantId).catch(error => console.error('Collection cache refresh failed after commit:', error));
 
         res.status(201).json({ success: true, data: serializeAdminCollection(collection) });
     } catch (err) {
+        if (session.inTransaction()) await session.abortTransaction();
         if (!collectionCreated) await destroyImage(uploadedPublicId);
         console.error('Create collection error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to create collection' });
+    } finally {
+        if (session.inTransaction()) await session.abortTransaction();
+        await session.endSession();
     }
 };
 
 exports.updateCollection = async (req, res) => {
     const uploadedPublicId = req.file?.public_id || req.file?.filename || '';
     let uploadedImageSaved = false;
+    const session = await mongoose.startSession();
     try {
+        session.startTransaction();
         const collection = await Collection.findOne({
             _id: req.params.id,
             shop_id: req.tenantId
-        }).select('+imagePublicId');
+        }).select('+imagePublicId').session(session);
         if (!collection) {
             await destroyImage(uploadedPublicId);
             return res.status(404).json({ success: false, error: 'Collection not found' });
         }
 
         const payload = buildCollectionPayload(req.body, { partial: true });
-        await assertCollectionProductsOwned(req.tenantId, payload.productIds);
+        await assertCollectionProductsOwned(req.tenantId, payload.productIds, session);
         const previousSlug = collection.slug;
         if (payload.slug && payload.slug !== previousSlug) {
             await assertHistoricalSlugAvailable({
@@ -460,59 +471,75 @@ exports.updateCollection = async (req, res) => {
             collection.image = '';
             collection.imagePublicId = '';
         }
-        await collection.save();
+        await collection.save({ session });
         await recordSlugRedirect({
             shopId: req.tenantId,
             resourceType: 'collection',
             resourceId: collection._id,
             oldSlug: previousSlug,
-            newSlug: collection.slug
+            newSlug: collection.slug,
+            session
         });
-        uploadedImageSaved = Boolean(req.file?.path);
 
         if (Array.isArray(payload.productIds)) {
             await Product.updateMany(
                 { shop_id: req.tenantId, collections: collection._id },
-                { $pull: { collections: collection._id } }
+                { $pull: { collections: collection._id } },
+                { session }
             );
             await Product.updateMany(
                 { _id: { $in: payload.productIds }, shop_id: req.tenantId },
-                { $addToSet: { collections: collection._id } }
+                { $addToSet: { collections: collection._id } },
+                { session }
             );
         }
 
+        await session.commitTransaction();
+        uploadedImageSaved = Boolean(req.file?.path);
         if ((req.file?.path || removeImage) && previousPublicId && previousPublicId !== uploadedPublicId) {
             await destroyImage(previousPublicId);
         }
-        await invalidateCollectionCaches(req.tenantId);
+        await invalidateCollectionCaches(req.tenantId).catch(error => console.error('Collection cache refresh failed after commit:', error));
 
         res.status(200).json({ success: true, data: serializeAdminCollection(collection) });
     } catch (err) {
+        if (session.inTransaction()) await session.abortTransaction();
         if (!uploadedImageSaved) await destroyImage(uploadedPublicId);
         console.error('Update collection error:', err);
         res.status(400).json({ success: false, error: err.message || 'Failed to update collection' });
+    } finally {
+        if (session.inTransaction()) await session.abortTransaction();
+        await session.endSession();
     }
 };
 
 exports.deleteCollection = async (req, res) => {
+    const session = await mongoose.startSession();
     try {
+        session.startTransaction();
         const collection = await Collection.findOneAndDelete({
             _id: req.params.id,
             shop_id: req.tenantId
-        }).select('+imagePublicId');
+        }).select('+imagePublicId').session(session);
 
         if (!collection) return res.status(404).json({ success: false, error: 'Collection not found' });
 
         await Product.updateMany(
             { shop_id: req.tenantId, collections: collection._id },
-            { $pull: { collections: collection._id } }
+            { $pull: { collections: collection._id } },
+            { session }
         );
+        await session.commitTransaction();
         await destroyImage(collection.imagePublicId);
-        await invalidateCollectionCaches(req.tenantId);
+        await invalidateCollectionCaches(req.tenantId).catch(error => console.error('Collection cache refresh failed after commit:', error));
 
         res.status(200).json({ success: true, message: 'Collection deleted' });
     } catch (err) {
+        if (session.inTransaction()) await session.abortTransaction();
         console.error('Delete collection error:', err);
         res.status(500).json({ success: false, error: 'Failed to delete collection' });
+    } finally {
+        if (session.inTransaction()) await session.abortTransaction();
+        await session.endSession();
     }
 };

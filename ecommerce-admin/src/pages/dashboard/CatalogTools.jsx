@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check, CheckSquare2, Download, Edit3, Image as ImageIcon, Images, Layers, Loader2, Package, RefreshCcw, Search, SlidersHorizontal, Sparkles, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import API from '../../api/api';
@@ -57,31 +57,37 @@ const lowStockVariantCount = (product) => {
     )).length;
 };
 
-const fetchAllCatalogProducts = async () => {
-    const first = await API.get('/admin/products', { params: { page: 1, limit: 100 } });
-    const products = [...(first.data.data || [])];
-    const totalPages = Math.max(Number(first.data.pagination?.totalPages) || 1, 1);
-
-    for (let page = 2; page <= totalPages; page += 4) {
-        const pages = Array.from({ length: Math.min(4, totalPages - page + 1) }, (_, index) => page + index);
-        const responses = await Promise.all(pages.map(nextPage => (
-            API.get('/admin/products', { params: { page: nextPage, limit: 100 } })
-        )));
-        responses.forEach(response => products.push(...(response.data.data || [])));
-    }
-
-    return { ...first, data: { ...first.data, data: [...new Map(products.map(product => [String(product._id), product])).values()] } };
-};
-
 const CatalogTools = () => {
     const [products, setProducts] = useState([]);
+    const [productStats, setProductStats] = useState({ total: 0, published: 0, lowStockProducts: 0, lowStockVariants: 0 });
+    const [productTotal, setProductTotal] = useState(0);
+    const [productNames, setProductNames] = useState({});
+    const [bulkPreview, setBulkPreview] = useState(null);
+    const [activity, setActivity] = useState([]);
+    const [activityError, setActivityError] = useState('');
     const [collections, setCollections] = useState([]);
     const [categories, setCategories] = useState([]);
     const [selected, setSelected] = useState([]);
+    const [collectionMembers, setCollectionMembers] = useState([]);
+    const [collectionBaseline, setCollectionBaseline] = useState(JSON.stringify({ form: emptyCollectionForm, members: [] }));
+    const [activeView, setActiveView] = useState('products');
+    const [sortOrder, setSortOrder] = useState('title');
+    const [page, setPage] = useState(1);
+    const [loadError, setLoadError] = useState('');
+    const loadSequence = useRef(0);
+    const [importDraft, setImportDraft] = useState(null);
+    const [importMode, setImportMode] = useState('create');
+    const [importBusy, setImportBusy] = useState(false);
+    const [importResult, setImportResult] = useState(null);
+    const importLock = useRef(false);
+    const [categorySearch, setCategorySearch] = useState('');
+    const [savedViews, setSavedViews] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [stockFilter, setStockFilter] = useState('');
+    const [visibilityFilter, setVisibilityFilter] = useState('');
+    const [exportScope, setExportScope] = useState('all');
     const [bulk, setBulk] = useState(emptyBulkForm);
     const [bulkSaving, setBulkSaving] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -111,66 +117,51 @@ const CatalogTools = () => {
         suggestion: null
     });
 
-    const operationInput = { form: collectionForm, products: [...selected].sort() };
+    const collectionDirty = JSON.stringify({ form: collectionForm, members: collectionMembers }) !== collectionBaseline || Boolean(collectionImageFile) || removeCollectionImage;
+    useEffect(() => {
+        if (!collectionDirty) return;
+        const warn = event => { event.preventDefault(); event.returnValue = ''; };
+        window.addEventListener('beforeunload', warn);
+        return () => window.removeEventListener('beforeunload', warn);
+    }, [collectionDirty]);
+
+    const operationInput = { form: collectionForm, products: [...collectionMembers].sort() };
     const operation = useAiOperation({ feature: 'catalog.collection', entity: editingCollectionId || 'new-collection', input: operationInput });
     const undo = useAiUndo(editingCollectionId, collectionForm, setCollectionForm);
     const selectedCount = selected.length;
     const hasBulkChanges = bulk.tagsMode === 'clear' || Object.entries(bulk)
         .some(([field, value]) => field !== 'tagsMode' && String(value).trim() !== '');
 
-    const productStats = useMemo(() => {
-        const lowStockProducts = products.filter(product => lowStockVariantCount(product) > 0).length;
-        const lowStockVariants = products.reduce((total, product) => total + lowStockVariantCount(product), 0);
-
-        return {
-            total: products.length,
-            lowStockProducts,
-            lowStockVariants,
-            published: products.filter(product => String(product.status || '').toLowerCase() === 'published').length
-        };
-    }, [products]);
-
-    const filteredProducts = useMemo(() => {
-        const query = searchQuery.trim().toLowerCase();
-        return products.filter(product => {
-            const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
-            const matchesSearch = !query || [
-                product.title,
-                product.category,
-                product.status
-            ].some(value => String(value || '').toLowerCase().includes(query));
-            const matchesCategory = !categoryFilter || product.category === categoryFilter;
-            const matchesStatus = !statusFilter || String(product.status || '').toLowerCase() === statusFilter.toLowerCase();
-            const matchesStock = !stockFilter
-                || (stockFilter === 'low' && lowStockVariantCount(product) > 0)
-                || (stockFilter === 'in' && totalStock > 0)
-                || (stockFilter === 'out' && totalStock <= 0);
-
-            return matchesSearch && matchesCategory && matchesStatus && matchesStock;
-        });
-    }, [products, searchQuery, categoryFilter, statusFilter, stockFilter]);
+    const filteredProducts = products;
+    const pagedProducts = products;
 
     const visibleProductIds = useMemo(
-        () => filteredProducts.map(product => String(product._id)),
-        [filteredProducts]
+        () => pagedProducts.map(product => String(product._id)),
+        [pagedProducts]
     );
 
     const visibleSelectedCount = visibleProductIds.filter(id => selected.includes(id)).length;
     const allVisibleSelected = visibleProductIds.length > 0 && visibleSelectedCount === visibleProductIds.length;
-    const hasProductFilters = Boolean(searchQuery || categoryFilter || statusFilter || stockFilter);
+    const hasProductFilters = Boolean(searchQuery || categoryFilter || statusFilter || stockFilter || visibilityFilter);
 
     const loadData = async () => {
         setLoading(true);
+        const sequence = ++loadSequence.current;
         const [productsResult, collectionsResult, categoriesResult] = await Promise.allSettled([
-            fetchAllCatalogProducts(),
+            API.get('/admin/catalog/products', { params: { page, search: searchQuery, category: categoryFilter, status: statusFilter ? statusFilter[0].toUpperCase() + statusFilter.slice(1) : '', stock: stockFilter, visibility: visibilityFilter, sort: sortOrder } }),
             API.get('/admin/collections'),
             API.get('/admin/categories')
         ]);
 
+        if (sequence !== loadSequence.current) return;
         const failedSections = [];
         if (productsResult.status === 'fulfilled') {
             const productsRes = productsResult.value;
             setProducts(productsRes.data.data || []);
+            setProductTotal(productsRes.data.pagination?.total || 0);
+            setPage(current => Math.min(current, Math.max(1, productsRes.data.pagination?.totalPages || 1)));
+            setProductStats(productsRes.data.summary || { total: 0, published: 0, lowStockProducts: 0, lowStockVariants: 0 });
+            setProductNames(previous => ({ ...previous, ...Object.fromEntries((productsRes.data.data || []).map(product => [String(product._id), product.title])) }));
         } else {
             failedSections.push('products');
         }
@@ -195,6 +186,7 @@ const CatalogTools = () => {
             failedSections.push('category covers');
         }
 
+        setLoadError(failedSections.length ? `Could not load ${failedSections.join(', ')}. Retry to get current data.` : '');
         if (failedSections.length > 0) {
             toast.error(`Could not load ${failedSections.join(', ')}. Your other catalog data is still available.`);
         }
@@ -202,9 +194,11 @@ const CatalogTools = () => {
     };
 
     useEffect(() => {
-        const timer = setTimeout(loadData, 0);
-        return () => clearTimeout(timer);
-    }, []);
+        const timer = setTimeout(loadData, 250);
+        return () => { clearTimeout(timer); loadSequence.current += 1; };
+    // loadData reads the current filters; request sequence discards stale responses.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, searchQuery, categoryFilter, statusFilter, stockFilter, visibilityFilter, sortOrder]);
 
     const toggleProduct = (id) => {
         const normalizedId = String(id);
@@ -226,39 +220,52 @@ const CatalogTools = () => {
     const clearSelection = () => setSelected([]);
 
     const resetProductFilters = () => {
+        setPage(1);
         setSearchQuery('');
         setCategoryFilter('');
         setStatusFilter('');
         setStockFilter('');
+        setVisibilityFilter('');
     };
 
-    const exportCsv = () => {
-        window.open(`${API.defaults.baseURL}/admin/products/export.csv`, '_blank');
+    const exportCsv = async () => {
+        if (exportScope === 'selected' && !selected.length) { toast.error('Select products to export first.'); return; }
+        try {
+            const response = await API.get('/admin/products/export.csv', { responseType: 'blob', params: exportScope === 'selected' ? { ids: selected.join(',') } : exportScope === 'filtered' ? { search: searchQuery, category: categoryFilter, status: statusFilter ? statusFilter[0].toUpperCase() + statusFilter.slice(1) : '', stock: stockFilter, visibility: visibilityFilter } : {} });
+            const url = URL.createObjectURL(response.data);
+            const link = document.createElement('a');
+            link.href = url; link.download = 'product-summary.csv'; link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch { toast.error('Export failed. Please retry.'); }
     };
 
     const importCsv = async (event) => {
         const file = event.target.files?.[0];
-        if (!file) return;
-
+        event.target.value = '';
+        if (!file || importLock.current) return;
         try {
-            const text = await file.text();
-            const imported = csvToProducts(text);
-            if (imported.length === 0) {
-                toast.error('CSV file has no products');
-                return;
+            if (file.size > 5 * 1024 * 1024) throw new Error('Choose a CSV smaller than 5 MB.');
+            const imported = csvToProducts(await file.text());
+            if (!imported.length || imported.length > MAX_CATALOG_IMPORT_ROWS) throw new Error(`Choose a CSV with 1–${MAX_CATALOG_IMPORT_ROWS} products.`);
+            setImportDraft({ rows: imported, key: crypto.randomUUID(), name: file.name });
+            setImportResult(null);
+            setActiveView('transfer');
+        } catch (err) { toast.error(err.message || 'Cannot read CSV'); }
+    };
+
+    const runImport = async (preview) => {
+        if (!importDraft || importLock.current) return;
+        importLock.current = true; setImportBusy(true);
+        try {
+            const { data } = await API.post('/admin/products/bulk-import', { products: importDraft.rows, mode: importMode, dryRun: preview, operationId: importDraft.key });
+            setImportResult(data);
+            if (!preview) {
+                toast.success(`${data.count} products ${importMode === 'update' ? 'updated' : 'created'}.`);
+                setImportDraft(null); await loadData();
             }
-            if (imported.length > MAX_CATALOG_IMPORT_ROWS) {
-                toast.error(`Import up to ${MAX_CATALOG_IMPORT_ROWS} products per CSV file. Split this file and try again.`);
-                return;
-            }
-            await API.post('/admin/products/bulk-import', { products: imported });
-            toast.success(`${imported.length} products imported. Review them before publishing changes.`);
-            loadData();
         } catch (err) {
-            toast.error(err.response?.data?.error || err.message || 'Import failed');
-        } finally {
-            event.target.value = '';
-        }
+            setImportResult(err.response?.data || { error: 'Connection interrupted. Retry this same import safely.' });
+        } finally { importLock.current = false; setImportBusy(false); }
     };
 
     const applyBulkUpdate = async () => {
@@ -334,30 +341,43 @@ const CatalogTools = () => {
             return;
         }
 
-        const hiddenSelectionNote = selectedCount > visibleSelectedCount
-            ? `\n${selectedCount - visibleSelectedCount} selected product${selectedCount - visibleSelectedCount === 1 ? ' is' : 's are'} hidden by the current filters.`
-            : '';
-        if (!window.confirm(`Apply these changes to ${selectedCount} selected product${selectedCount === 1 ? '' : 's'}?${hiddenSelectionNote}\n\n${changedFields.join('\n')}\n\nStock quantities will stay unchanged.`)) return;
-
         setBulkSaving(true);
         try {
-            const response = await API.patch('/admin/products/bulk', { productIds: selected, updates });
-            toast.success(`${response.data.count ?? selectedCount} products updated. Review storefront pricing and visibility.`);
-            setSelected([]);
-            setBulk(emptyBulkForm);
+            const { data } = await API.patch('/admin/products/bulk', { productIds: selected, updates, dryRun: true });
+            setBulkPreview({ rows: data.preview, updates, ids: [...selected], changes: changedFields });
+        } catch (err) { toast.error(err.response?.data?.error || 'Could not preview changes'); }
+        finally { setBulkSaving(false); }
+    };
+
+    const commitBulk = async () => {
+        if (!bulkPreview || bulkSaving) return;
+        setBulkSaving(true);
+        try {
+            const response = await API.patch('/admin/products/bulk', { productIds: bulkPreview.rows.map(row => row.id), updates: bulkPreview.updates, expectedVersions: Object.fromEntries(bulkPreview.rows.map(row => [row.id, row.version])) });
+            toast.success(`${response.data.count} products updated.`);
+            setSelected([]); setBulk(emptyBulkForm); setBulkPreview(null);
             await loadData();
-        } catch (err) {
-            toast.error(err.response?.data?.error || 'Bulk update failed');
-        } finally {
-            setBulkSaving(false);
-        }
+        } catch (err) { toast.error(err.response?.data?.error || 'Bulk update failed'); }
+        finally { setBulkSaving(false); }
+    };
+
+    const loadActivity = async () => {
+        try { const { data } = await API.get('/admin/catalog/activity'); setActivity(data.data); setActivityError(''); }
+        catch { setActivityError('Could not load history. Please retry.'); }
+    };
+    const undoOperation = async (id) => {
+        if (!window.confirm('Restore the values before this bulk operation? This is allowed only if every affected product is unchanged since then.')) return;
+        try { await API.post(`/admin/catalog/activity/${id}/undo`); await loadActivity(); await loadData(); toast.success('Bulk operation undone.'); }
+        catch (err) { toast.error(err.response?.data?.error || 'Could not undo operation'); }
     };
 
     const releaseCollectionPreview = () => {
         if (collectionImagePreview.startsWith('blob:')) URL.revokeObjectURL(collectionImagePreview);
     };
 
-    const resetCollectionEditor = () => {
+    const resetCollectionEditor = (force = false) => {
+        if (!force && collectionDirty && !window.confirm('Discard unsaved collection changes?')) return;
+        setCollectionBaseline(JSON.stringify({ form: emptyCollectionForm, members: [] }));
         undo.clear();
         operation.cancel();
         releaseCollectionPreview();
@@ -367,7 +387,7 @@ const CatalogTools = () => {
         setCollectionImagePreview('');
         setRemoveCollectionImage(false);
         setCollectionAi({ loading: false, error: '', suggestion: null });
-        setSelected([]);
+        setCollectionMembers([]);
     };
 
     const handleCollectionImageChange = (event) => {
@@ -385,9 +405,10 @@ const CatalogTools = () => {
     };
 
     const beginCollectionEdit = (collection) => {
+        if (collectionDirty && !window.confirm('Discard unsaved collection changes and edit this collection?')) return;
         releaseCollectionPreview();
         setEditingCollectionId(collection._id);
-        setCollectionForm({
+        const nextForm = {
             title: collection.title || '',
             slug: collection.slug || '',
             description: collection.description || '',
@@ -397,11 +418,15 @@ const CatalogTools = () => {
                 title: collection.seo?.title || '',
                 description: collection.seo?.description || ''
             }
-        });
+        };
+        setCollectionForm(nextForm);
+        setProductNames(previous => ({ ...previous, ...(collection.memberNames || {}) }));
+        setCollectionBaseline(JSON.stringify({ form: nextForm, members: (collection.productIds || []).map(item => String(item?._id || item)) }));
         setCollectionImageFile(null);
         setCollectionImagePreview(collection.image || '');
         setRemoveCollectionImage(false);
-        setSelected((collection.productIds || []).map(item => String(item?._id || item)));
+        setCollectionMembers((collection.productIds || []).map(item => String(item?._id || item)));
+        setActiveView('collections');
         setCollectionAi({ loading: false, error: '', suggestion: null });
         window.requestAnimationFrame(() => document.getElementById('collection-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     };
@@ -417,7 +442,7 @@ const CatalogTools = () => {
             payload.append('description', collectionForm.description);
             payload.append('isActive', String(collectionForm.isActive !== false));
             payload.append('seo', JSON.stringify(collectionForm.seo || {}));
-            payload.append('productIds', JSON.stringify(selected));
+            payload.append('productIds', JSON.stringify(collectionMembers));
             if (collectionImageFile) payload.append('image', collectionImageFile);
             if (removeCollectionImage) payload.append('removeImage', 'true');
 
@@ -428,7 +453,7 @@ const CatalogTools = () => {
                 await API.post('/admin/collections', payload);
                 toast.success('Collection created from selected products.');
             }
-            resetCollectionEditor();
+            resetCollectionEditor(true);
             await loadData();
         } catch (err) {
             toast.error(err.response?.data?.error || `Failed to ${editingCollectionId ? 'update' : 'create'} collection`);
@@ -441,7 +466,7 @@ const CatalogTools = () => {
         if (!window.confirm(`Delete "${collection.title}"? Products will not be deleted.`)) return;
         try {
             await API.delete(`/admin/collections/${collection._id}`);
-            if (editingCollectionId === collection._id) resetCollectionEditor();
+            if (editingCollectionId === collection._id) resetCollectionEditor(true);
             setCollections(prev => prev.filter(item => item._id !== collection._id));
             toast.success('Collection deleted.');
         } catch (err) {
@@ -541,6 +566,7 @@ const CatalogTools = () => {
         setCategorySeoEditor({
             category,
             name: category.name || '',
+            altText: category.coverImage?.altText || '',
             title: category.seo?.title || '',
             description: category.seo?.description || '',
             saving: false
@@ -556,6 +582,7 @@ const CatalogTools = () => {
             const { data } = await API.put('/admin/categories/metadata', {
                 categoryName: category.name,
                 name: categorySeoEditor.name,
+                altText: categorySeoEditor.altText || '',
                 seo: {
                     title: categorySeoEditor.title,
                     description: categorySeoEditor.description
@@ -565,7 +592,10 @@ const CatalogTools = () => {
                 item.name === category.name ? { ...item, ...(data.data || {}) } : item
             )));
             setCategorySeoEditor({ category: null, name: '', title: '', description: '', saving: false });
-            toast.success(`${category.name} search details updated.`);
+            setCategoryFilter(current => current === category.name ? (data.data?.name || categorySeoEditor.name) : current);
+            setPage(1);
+            await loadData();
+            toast.success('Category details updated.');
         } catch (err) {
             setCategorySeoEditor(prev => ({ ...prev, saving: false }));
             toast.error(err.response?.data?.error || 'Failed to update category search details');
@@ -589,9 +619,9 @@ const CatalogTools = () => {
         toast.success(data.fallback ? 'Basic collection suggestion generated.' : 'AI collection suggestion ready.');
     };
     const generateCollectionAi = async () => {
-        if (!collectionForm.title.trim() && selectedCount === 0) { toast.error('Add a collection title or select products before using AI.'); return; }
+        if (!collectionForm.title.trim() && collectionMembers.length === 0) { toast.error('Add a collection title or select products before using AI.'); return; }
         setCollectionAi({ loading: true, error: '', suggestion: null });
-        const body = { title: collectionForm.title, description: collectionForm.description, seo: collectionForm.seo, productIds: selected, entityId: editingCollectionId || 'new-collection' };
+        const body = { title: collectionForm.title, description: collectionForm.description, seo: collectionForm.seo, productIds: collectionMembers, entityId: editingCollectionId || 'new-collection' };
         receiveCollection(await operation.run(options => API.post('/admin/collections/ai/suggest', body, options)));
         setCollectionAi(previous => ({ ...previous, loading: false }));
     };
@@ -628,9 +658,9 @@ const CatalogTools = () => {
                             <Sparkles size={14} />
                             Catalog workspace
                         </div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Manage your catalog without losing context</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Catalog</h1>
                         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                            Find products quickly, make safe bulk changes, build collections, and keep category presentation polished from one workspace.
+                            Edit products, organize collections, and manage category presentation.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -642,18 +672,18 @@ const CatalogTools = () => {
                         <button
                             onClick={exportCsv}
                             className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow"
-                            title="Download your current catalog as a CSV backup"
+                            title="Export summary fields. Images, descriptions and variants are not included."
                         >
                             <Download size={17} />
-                            Export CSV
+                            Export summary
                         </button>
                         <label
                             className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow"
-                            title="Upload a CSV to create or update products in bulk"
+                            title="Preview a CSV before creating or updating products"
                         >
                             <Upload size={17} />
                             Import CSV
-                            <input type="file" accept=".csv" onChange={importCsv} className="hidden" />
+                            <input type="file" accept=".csv" disabled={importBusy} onChange={importCsv} className="sr-only" />
                         </label>
                     </div>
                 </div>
@@ -676,14 +706,24 @@ const CatalogTools = () => {
                 </div>
             </header>
 
-            <nav className="flex gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-                <a href="#products" className="whitespace-nowrap rounded-lg bg-slate-950 px-4 py-2 text-sm font-bold text-white">Products</a>
-                <a href="#collection-editor" className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">Collections</a>
-                <a href="#category-covers" className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-950">Category covers</a>
+            {loadError && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{loadError} <button onClick={loadData} className="font-bold underline">Retry</button></div>}
+            <nav aria-label="Catalog sections" className="flex gap-2 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                {[['products', 'Products & bulk edit'], ['collections', 'Collections'], ['categories', 'Categories'], ['transfer', 'Import / Export'], ['activity', 'Activity']].map(([id, label]) => <button key={id} onClick={() => { setActiveView(id); if (id === 'activity') loadActivity(); }} aria-current={activeView === id ? 'page' : undefined} className={`whitespace-nowrap rounded-lg px-4 py-3 text-sm font-bold ${activeView === id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>{label}</button>)}
             </nav>
+            {activeView === 'activity' && <section className="rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Bulk edit history</h2><p className="mt-2 text-sm text-slate-500">Last 50 operations. Undo is available only while every affected product remains unchanged.</p>{activityError && <p role="alert">{activityError} <button onClick={loadActivity}>Retry</button></p>}{!activity.length && !activityError && <p className="py-8 text-slate-500">No bulk edits recorded yet.</p>}{activity.map(item => <div key={item._id} className="flex flex-wrap items-center justify-between gap-3 border-b py-4"><div><p className="font-bold">{item.count} products updated</p><p className="text-xs text-slate-500">{new Date(item.createdAt).toLocaleString()} · {item.actor}</p><p className="text-sm text-slate-600">{Object.keys(item.updates || {}).join(', ')}</p></div><button disabled={Boolean(item.undoneAt)} onClick={() => undoOperation(item._id)} className="rounded-lg border px-4 py-2 disabled:opacity-40">{item.undoneAt ? 'Undone' : 'Undo'}</button></div>)}</section>}
+            {activeView === 'transfer' && <section className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><h2 className="font-bold">Export product summary</h2><label className="mt-3 block text-sm">Export scope <select aria-label="Export scope" value={exportScope} onChange={e => setExportScope(e.target.value)} className="ml-2 rounded border p-2"><option value="all">All products</option><option value="filtered">Current filters</option><option value="selected">Selected products ({selected.length})</option></select></label><button onClick={exportCsv} className="mt-3 rounded-lg border bg-white px-4 py-2 font-bold">Download summary CSV</button></div>
+                <h2 className="text-xl font-bold">Import with confidence</h2>
+                <p className="text-sm text-slate-600">Upload up to 200 rows. Validate first, then apply the entire batch. If a row fails, nothing is saved. Summary exports preserve neither images nor variant details and are not full backups.</p>
+                <label className="block text-sm font-bold">Import mode<select disabled={importBusy} value={importMode} onChange={event => { setImportMode(event.target.value); setImportResult(null); }} className="ml-3 rounded-lg border p-2"><option value="create">Create new products</option><option value="update">Update existing products by ID</option></select></label>
+                <p className="text-sm text-slate-500">Updates preserve variants, stock, images, descriptions and URLs. New Published rows will be published. Existing publication schedules are preserved. Review status before applying.</p>
+                <label className="inline-flex cursor-pointer rounded-lg bg-indigo-600 px-4 py-3 font-bold text-white">Choose CSV<input aria-label="Choose catalog CSV" type="file" accept=".csv" disabled={importBusy} onChange={importCsv} className="sr-only" /></label>
+                {importDraft && <div className="rounded-xl bg-slate-50 p-4 space-y-3"><p className="font-semibold">{importDraft.name} · {importDraft.rows.length} rows</p><div className="max-h-60 overflow-auto"><table className="w-full text-left text-sm"><thead><tr><th>Row</th><th>Product</th><th>Status</th><th>Price</th></tr></thead><tbody>{importDraft.rows.map((row, index) => <tr key={index}><td>{index + 2}</td><td>{row.title || row.id}</td><td>{row.status || (importMode === 'create' ? 'Draft' : 'Unchanged')}</td><td>{row.sellingPrice ?? 'Unchanged'}</td></tr>)}</tbody></table></div><button disabled={importBusy} onClick={() => runImport(true)} className="rounded-lg border bg-white px-4 py-2 font-bold">{importBusy ? 'Processing…' : 'Validate rows'}</button>{importResult?.preview && <button disabled={importBusy} onClick={() => runImport(false)} className="ml-2 rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white">Apply {importDraft.rows.length} {importMode === 'update' ? 'updates' : 'new products'}</button>}</div>}
+                {importResult && <div role="status" className={`rounded-xl p-4 text-sm ${importResult.success ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>{importResult.error || (importResult.preview ? 'Validation passed. Review the rows above and apply when ready.' : `${importResult.count} products saved.`)}{importResult.errors?.map(item => <p key={item.row}>Row {item.row}: {item.error}</p>)}{importResult.errors?.length > 0 && <button onClick={() => { const url = URL.createObjectURL(new Blob([JSON.stringify(importResult.errors, null, 2)], { type: 'application/json' })); const link = document.createElement('a'); link.href = url; link.download = 'catalog-import-errors.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }} className="mt-2 font-bold underline">Download row errors</button>}</div>}
+            </section>}
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-                <section id="products" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className={`${['products', 'collections'].includes(activeView) ? 'grid' : 'hidden'} grid-cols-1 gap-6 ${activeView === 'products' ? 'xl:grid-cols-[minmax(0,1fr)_380px]' : ''}`}>
+                <section id="products" hidden={activeView !== 'products'} className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="border-b border-slate-100 p-5 sm:p-6">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                             <div>
@@ -696,18 +736,18 @@ const CatalogTools = () => {
                                 </p>
                             </div>
                             <div className="text-sm font-semibold text-slate-500">
-                                Showing <span className="text-slate-900">{filteredProducts.length}</span> of {products.length}
+                                Showing <span className="text-slate-900">{filteredProducts.length}</span> of {productTotal} matching
                             </div>
                         </div>
 
-                        <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_160px_150px]">
-                            <label className="relative block">
+                        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                            <label className="relative block sm:col-span-2">
                                 <Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                     value={searchQuery}
-                                    onChange={event => setSearchQuery(event.target.value)}
+                                    onChange={event => { setPage(1); setSearchQuery(event.target.value); }}
                                     className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                                    placeholder="Search products..."
+                                    aria-label="Search products" placeholder="Search title, SKU or tags..."
                                 />
                                 {searchQuery && (
                                     <button
@@ -721,8 +761,8 @@ const CatalogTools = () => {
                                 )}
                             </label>
                             <select
-                                value={categoryFilter}
-                                onChange={event => setCategoryFilter(event.target.value)}
+                                aria-label="Category" value={categoryFilter}
+                                onChange={event => { setPage(1); setCategoryFilter(event.target.value); }}
                                 className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
                             >
                                 <option value="">All categories</option>
@@ -731,8 +771,8 @@ const CatalogTools = () => {
                                 ))}
                             </select>
                             <select
-                                value={statusFilter}
-                                onChange={event => setStatusFilter(event.target.value)}
+                                aria-label="Product status" value={statusFilter}
+                                onChange={event => { setPage(1); setStatusFilter(event.target.value); }}
                                 className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
                             >
                                 <option value="">Any status</option>
@@ -741,17 +781,18 @@ const CatalogTools = () => {
                                 <option value="archived">Archived</option>
                             </select>
                             <select
-                                value={stockFilter}
-                                onChange={event => setStockFilter(event.target.value)}
+                                aria-label="Stock level" value={stockFilter}
+                                onChange={event => { setPage(1); setStockFilter(event.target.value); }}
                                 className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
                             >
                                 <option value="">Any stock</option>
                                 <option value="low">Low stock</option>
                                 <option value="in">In stock</option>
                                 <option value="out">Out of stock</option>
-                            </select>
+                            </select><select aria-label="Storefront visibility filter" value={visibilityFilter} onChange={event => { setPage(1); setVisibilityFilter(event.target.value); }} className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"><option value="">Any visibility</option><option value="true">Enabled</option><option value="false">Hidden</option></select>
                         </div>
 
+                        <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => { const name = window.prompt('Name this filter view'); if (name?.trim()) setSavedViews(previous => [...previous, { name: name.trim(), searchQuery, categoryFilter, statusFilter, stockFilter, visibilityFilter, sortOrder }]); }} className="rounded-lg border px-3 py-2 text-xs font-bold">Save view for this session</button>{savedViews.map((view, index) => <button key={index} onClick={() => { setPage(1); setSearchQuery(view.searchQuery); setCategoryFilter(view.categoryFilter); setStatusFilter(view.statusFilter); setStockFilter(view.stockFilter); setVisibilityFilter(view.visibilityFilter || ''); setSortOrder(view.sortOrder); }} className="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700">{view.name}</button>)}</div>
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                             <div className="flex flex-wrap items-center gap-2">
                                 <button
@@ -761,7 +802,7 @@ const CatalogTools = () => {
                                     className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     <CheckSquare2 size={16} />
-                                    {allVisibleSelected ? 'Unselect visible' : 'Select visible'}
+                                    {allVisibleSelected ? 'Unselect page' : 'Select page'}
                                 </button>
                                 {selectedCount > 0 && (
                                     <button
@@ -790,6 +831,7 @@ const CatalogTools = () => {
                         </div>
                     </div>
 
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-3 text-sm"><label>Sort <select aria-label="Sort products" value={sortOrder} onChange={e => { setPage(1); setSortOrder(e.target.value); }} className="rounded border p-2"><option value="title">Title A–Z</option><option value="price">Price: low first</option><option value="stock">Stock: low first</option></select></label><div className="flex items-center gap-3"><button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page} of {Math.max(1, Math.ceil(productTotal / 50))}</span><button disabled={page * 50 >= productTotal} onClick={() => setPage(p => p + 1)}>Next</button></div></div>
                     <div className="max-h-[760px] overflow-auto">
                         {loading && products.length > 0 && (
                             <div className="sticky top-0 z-10 border-b border-indigo-100 bg-indigo-50/95 px-5 py-2 text-sm font-semibold text-indigo-700 backdrop-blur">
@@ -797,7 +839,7 @@ const CatalogTools = () => {
                             </div>
                         )}
 
-                        {loading && products.length === 0 ? (
+                        {loading && products.length === 0 && !hasProductFilters ? (
                             <div className="grid gap-3 p-5">
                                 {[1, 2, 3, 4, 5].map(item => (
                                     <div key={item} className="flex animate-pulse items-center gap-4 rounded-xl border border-slate-100 p-4">
@@ -810,12 +852,12 @@ const CatalogTools = () => {
                                     </div>
                                 ))}
                             </div>
-                        ) : products.length === 0 ? (
+                        ) : products.length === 0 && !hasProductFilters ? (
                             <div className="px-6 py-16 text-center">
                                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                                     <Package size={24} />
                                 </div>
-                                <h3 className="mt-4 font-bold text-slate-900">No products yet</h3>
+                                <h3 className="mt-4 font-bold text-slate-900">{loadError ? 'Products unavailable' : 'No products yet'}</h3>
                                 <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">
                                     Add products to your catalog before using bulk actions or creating product collections.
                                 </p>
@@ -837,7 +879,7 @@ const CatalogTools = () => {
                             </div>
                         ) : (
                             <div className="divide-y divide-slate-100">
-                                {filteredProducts.map(product => {
+                                {pagedProducts.map(product => {
                                     const productId = String(product._id);
                                     const totalStock = product.totalStock ?? product.variants?.reduce((sum, variant) => sum + (variant.stock || 0), 0) ?? 0;
                                     const lowStockCount = lowStockVariantCount(product);
@@ -867,7 +909,7 @@ const CatalogTools = () => {
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <div className="truncate font-bold text-slate-900">{product.title}</div>
+                                                    <div className="truncate font-bold text-slate-900">{product.title}</div><a href={`/dashboard/products/edit/${product._id}`} onClick={event => { if (collectionDirty && !window.confirm('Leave with unsaved collection changes?')) event.preventDefault(); event.stopPropagation(); }} className="text-xs font-semibold text-indigo-600 underline">Edit product</a>
                                                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                                                         status.toLowerCase() === 'published'
                                                             ? 'bg-emerald-50 text-emerald-700'
@@ -879,9 +921,9 @@ const CatalogTools = () => {
                                                     </span>
                                                 </div>
                                                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                                                    <span>{product.category || 'General'}</span>
+                                                    <span>{product.category || 'General'}</span><span>Price {Number(product.pricing?.sellingPrice || 0).toLocaleString()}</span><span>{product.isActive === false ? 'Hidden' : 'Enabled'}</span><span>{(product.tags || []).join(', ')}</span>
                                                     <span className="hidden text-slate-300 sm:inline">•</span>
-                                                    <span className={lowStock ? 'font-semibold text-amber-700' : ''}>Stock {totalStock}</span>
+                                                    <span className={lowStock ? 'font-semibold text-amber-700' : ''}>Stock {totalStock}</span><span>{(product.skus || []).filter(Boolean).join(', ')}</span>
                                                     {product.pricing?.discount > 0 && (
                                                         <>
                                                             <span className="hidden text-slate-300 sm:inline">•</span>
@@ -904,15 +946,15 @@ const CatalogTools = () => {
                     </div>
                 </section>
 
-                <aside className="space-y-6 xl:self-start">
-                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <aside className={activeView === 'collections' ? 'grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]' : 'space-y-6 xl:self-start'}>
+                    <section id="bulk-editor" hidden={activeView !== 'products'} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2 font-bold text-slate-950">
                                     <SlidersHorizontal size={18} className="text-indigo-600" />
                                     Bulk edit
                                 </div>
-                                <p className="mt-1 text-xs leading-5 text-slate-500">Choose the fields to change. You will review them before applying.</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">Choose fields for up to 500 products. Review values before applying.</p>
                             </div>
                             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${selectedCount ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
                                 {selectedCount}
@@ -927,7 +969,7 @@ const CatalogTools = () => {
                         )}
                         {selectedCount > visibleSelectedCount && (
                             <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-                                {selectedCount - visibleSelectedCount} selected product{selectedCount - visibleSelectedCount === 1 ? ' is' : 's are'} hidden by your current filters and will still be updated.
+                                {selectedCount - visibleSelectedCount} selected product{selectedCount - visibleSelectedCount === 1 ? ' is' : 's are'} outside this page or hidden by your filters and will still be updated.
                             </p>
                         )}
 
@@ -1064,7 +1106,7 @@ const CatalogTools = () => {
 
                         <button
                             onClick={applyBulkUpdate}
-                            disabled={selectedCount === 0 || !hasBulkChanges || bulkSaving}
+                            disabled={selectedCount === 0 || selectedCount > 500 || !hasBulkChanges || bulkSaving}
                             className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                             title="Apply the filled bulk fields to selected products"
                         >
@@ -1078,7 +1120,7 @@ const CatalogTools = () => {
                         )}
                     </section>
 
-                    <form id="collection-editor" onSubmit={saveCollection} className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <form hidden={activeView !== 'collections'} id="collection-editor" onSubmit={saveCollection} className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2 font-bold text-slate-950">
@@ -1086,15 +1128,15 @@ const CatalogTools = () => {
                                     {editingCollectionId ? 'Edit collection' : 'Create collection'}
                                 </div>
                                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                                    {selectedCount > 0
-                                        ? `${selectedCount} selected product${selectedCount === 1 ? '' : 's'} will be included.`
+                                    {collectionMembers.length > 0
+                                        ? `${collectionMembers.length} collection members will be included.`
                                         : 'Select products first, or build an empty collection and add items later.'}
                                 </p>
                             </div>
                             {editingCollectionId && (
                                 <button
                                     type="button"
-                                    onClick={resetCollectionEditor}
+                                    onClick={() => resetCollectionEditor()}
                                     className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                                 >
                                     <X size={15} />
@@ -1130,7 +1172,7 @@ const CatalogTools = () => {
                         {collectionAi.suggestion && (
                             <div className="mt-4">
                                 <AiFieldComparison
-                                    current={{ title: collectionForm.title, slug: collectionForm.slug, description: collectionForm.description, seo: collectionForm.seo }}
+                                    current={{ name: collectionForm.title, slug: collectionForm.slug, description: collectionForm.description, seoTitle: collectionForm.seo?.title, seoDescription: collectionForm.seo?.description }}
                                     proposed={collectionAi.suggestion}
                                 />
                             </div>
@@ -1249,7 +1291,7 @@ const CatalogTools = () => {
                                 <label className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
                                     <Upload size={16} />
                                     {collectionImagePreview ? 'Replace cover' : 'Upload cover'}
-                                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCollectionImageChange} className="hidden" />
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCollectionImageChange} className="sr-only" />
                                 </label>
                                 <p className="mt-2 text-center text-[11px] text-slate-400">JPEG, PNG, or WebP up to 5 MB</p>
                             </div>
@@ -1304,16 +1346,17 @@ const CatalogTools = () => {
                             </div>
                         </div>
 
+                        <div className="mt-5 rounded-xl border p-4"><h3 className="font-bold">Collection members ({collectionMembers.length})</h3><p className="my-2 text-xs text-slate-500">Membership is independent of bulk selection. Select products on the Products tab, then add them here.</p><button type="button" onClick={() => setCollectionMembers(prev => [...new Set([...prev, ...selected])])} disabled={!selected.length} className="rounded border px-3 py-2 text-sm disabled:opacity-40">Add {selected.length} selected products</button><div className="max-h-56 overflow-auto">{collectionMembers.map(id => <div key={id} className="flex justify-between gap-3 border-b py-2 text-sm"><span>{productNames[id] || id}</span><button type="button" aria-label={`Remove member ${id}`} onClick={() => setCollectionMembers(prev => prev.filter(value => value !== id))}>Remove</button></div>)}</div></div>
                         <button
                             disabled={collectionSaving}
                             className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Check size={17} />
-                            {collectionSaving ? 'Saving…' : editingCollectionId ? 'Save collection' : `Create collection${selectedCount ? ` (${selectedCount})` : ''}`}
+                            {collectionSaving ? 'Saving…' : editingCollectionId ? 'Save collection' : `Create collection (${collectionMembers.length})`}
                         </button>
                     </form>
 
-                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <section hidden={activeView !== 'collections'} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div className="font-bold text-slate-950">Collections</div>
                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">{collections.length}</span>
@@ -1365,13 +1408,13 @@ const CatalogTools = () => {
                 </aside>
             </div>
 
-            <section id="category-covers" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <section hidden={activeView !== 'categories'} id="category-covers" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-950">Category presentation</h2>
+                        <h2 className="text-lg font-bold text-slate-950">Category covers & details</h2>
                         <p className="mt-1 text-sm text-slate-500">Use strong covers and clean search metadata to make category browsing feel intentional.</p>
                     </div>
-                    <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">{categories.length} categories</div>
+                    <input aria-label="Search categories" value={categorySearch} onChange={e => setCategorySearch(e.target.value)} placeholder="Search categories" className="rounded-xl border px-3 py-2 text-sm" />
                 </div>
 
                 {categories.length === 0 ? (
@@ -1384,7 +1427,7 @@ const CatalogTools = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {categories.map(category => {
+                        {categories.filter(category => category.name.toLowerCase().includes(categorySearch.toLowerCase())).map(category => {
                             const key = String(category._id || category.name);
                             const savingCategory = categorySavingId === key;
                             return (
@@ -1453,7 +1496,7 @@ const CatalogTools = () => {
                                                 event.target.value = '';
                                                 saveCategoryCover(category, file);
                                             }}
-                                            className="hidden"
+                                            className="sr-only"
                                         />
                                     </label>
                                 </article>
@@ -1463,7 +1506,7 @@ const CatalogTools = () => {
                 )}
             </section>
 
-            {selectedCount > 0 && (
+            {selectedCount > 0 && activeView === 'products' && (
                 <div className="fixed inset-x-0 bottom-4 z-40 mx-auto w-[calc(100%-2rem)] max-w-3xl rounded-2xl border border-slate-700 bg-slate-950 p-2 shadow-2xl shadow-slate-950/20 sm:p-3">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3 px-2 text-white">
@@ -1483,17 +1526,24 @@ const CatalogTools = () => {
                             >
                                 Clear
                             </button>
-                            <a
-                                href="#collection-editor"
+                            <button type="button" onClick={() => document.getElementById('bulk-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="min-h-10 rounded-xl border border-slate-600 px-3 text-xs font-bold text-white">Bulk edit</button>
+                            <button
+                                type="button" onClick={() => { if (!editingCollectionId && !collectionDirty) setCollectionMembers([...selected]); setActiveView('collections'); }}
                                 className="inline-flex min-h-10 items-center justify-center rounded-xl bg-white px-4 text-xs font-bold text-slate-950 transition hover:bg-slate-100"
                             >
-                                Create collection
-                            </a>
+                                {editingCollectionId ? 'Open collection editor' : 'Create collection'}
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
+            <Modal isOpen={Boolean(bulkPreview)} onClose={() => { if (!bulkSaving) setBulkPreview(null); }} title="Review bulk changes">
+                <p className="text-sm text-slate-600">{bulkPreview?.rows.length} products will change. Stock quantities stay unchanged. If any product changes before you apply, you will need to review again.</p>
+                <ul className="my-3 list-disc pl-5 text-sm">{bulkPreview?.changes.map(change => <li key={change}>{change}</li>)}</ul>
+                <div className="max-h-80 overflow-auto"><table className="w-full text-left text-sm"><thead><tr><th>Product / variant</th><th>Current price</th><th>New price</th><th>After discount</th></tr></thead><tbody>{bulkPreview?.rows.map(row => <tr key={row.id}><td className="py-3">{row.title}<div className="text-xs text-slate-500">{row.variants.map(variant => `${variant.sku || 'Default'}: ${variant.before} → ${variant.after}`).join('; ')}</div></td><td>{row.before.sellingPrice}</td><td>{row.after.sellingPrice}</td><td>{(row.after.sellingPrice * (1 - row.after.discount / 100)).toFixed(2)}{row.after.sellingPrice * (1 - row.after.discount / 100) < row.after.buyingPrice && <span className="block text-amber-700">Below cost</span>}</td></tr>)}</tbody></table></div>
+                <button disabled={bulkSaving || !bulkPreview?.rows.length} onClick={commitBulk} className="mt-4 rounded-lg bg-indigo-600 px-4 py-3 font-bold text-white disabled:opacity-50">{bulkSaving ? 'Applying…' : 'Apply changes'}</button>
+            </Modal>
             <Modal
                 isOpen={Boolean(categoryPhotoPicker.category)}
                 onClose={() => {
@@ -1555,7 +1605,7 @@ const CatalogTools = () => {
                         setCategorySeoEditor({ category: null, name: '', title: '', description: '', saving: false });
                     }
                 }}
-                title={`Search details${categorySeoEditor.category?.name ? ` for ${categorySeoEditor.category.name}` : ''}`}
+                title={`Category details${categorySeoEditor.category?.name ? ` for ${categorySeoEditor.category.name}` : ''}`}
             >
                 <form onSubmit={saveCategorySeo} className="space-y-4">
                     <p className="text-sm leading-6 text-slate-600">
@@ -1565,6 +1615,7 @@ const CatalogTools = () => {
                         <span>Category name</span>
                         <input
                             required
+                            aria-label="Category name"
                             value={categorySeoEditor.name}
                             onChange={event => setCategorySeoEditor(prev => ({ ...prev, name: event.target.value }))}
                             maxLength={80}
@@ -1593,9 +1644,10 @@ const CatalogTools = () => {
                             placeholder="Describe this category accurately for search results."
                         />
                     </label>
+                    <label className="block space-y-1.5 text-sm font-semibold text-slate-700"><span>Cover image description</span><input value={categorySeoEditor.altText || ''} onChange={event => setCategorySeoEditor(previous => ({ ...previous, altText: event.target.value }))} maxLength={140} className="min-h-11 w-full rounded-lg border border-slate-200 px-3" placeholder="Describe the cover for screen readers" /></label>
                     <button disabled={categorySeoEditor.saving} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-bold text-white hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60">
                         <Check size={17} />
-                        {categorySeoEditor.saving ? 'Saving...' : 'Save search details'}
+                        {categorySeoEditor.saving ? 'Saving...' : 'Save category details'}
                     </button>
                 </form>
             </Modal>

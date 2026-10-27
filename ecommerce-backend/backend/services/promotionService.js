@@ -289,6 +289,7 @@ exports.evaluatePromotion = async ({
         valid: true,
         promotion,
         discountAmount,
-        freeShipping
+        freeShipping,
+        eligibleProductIds: eligibleItems.map(item => String(item.productId))
     };
 };

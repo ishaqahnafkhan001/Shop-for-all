@@ -1,8 +1,9 @@
+const { receiveReturnInventory, settleReturnRefund } = require('../services/returns/returnSettlementService');
+const reportingCache = require('../services/cacheService');
+const { money, orderAmounts } = require('../services/orders/reportingMetrics');
 const mongoose = require('mongoose');
 const ReturnRequest = require('../models/ReturnRequest');
 const Order = require('../models/Order');
-const Product = require('../models/Product');
-const InventoryLog = require('../models/InventoryLog');
 const { logAudit } = require('../services/auditLogService');
 const { createNotification } = require('../services/notificationService');
 const { buildPagination } = require('../utils/pagination');
@@ -40,72 +41,6 @@ const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ''
 
 const toMoney = (value) => Math.max(0, Number(value) || 0);
 
-const restoreReturnedInventory = async ({ request, shopId, userId, session }) => {
-    if (request.inventoryRestoredAt) {
-        return { restored: false, logs: [] };
-    }
-
-    const order = await Order.findOne({
-        _id: request.order_id,
-        shop_id: shopId,
-        isDeleted: false
-    }).session(session);
-
-    if (!order) throw new Error('Order not found while restoring returned stock.');
-
-    const logs = [];
-
-    for (const item of request.items || []) {
-        const product = await Product.findOne({
-            _id: item.productId,
-            shop_id: shopId,
-            isDeleted: false
-        }).session(session);
-
-        if (!product) {
-            throw new Error(`Product not found while restoring return item: ${item.title}`);
-        }
-
-        const variant = product.variants.id(item.variantId);
-        if (!variant) {
-            throw new Error(`Variant not found while restoring return item: ${item.title}`);
-        }
-
-        const quantity = Number(item.quantity) || 0;
-        const beforeStock = Number(variant.stock || 0);
-        variant.stock = beforeStock + quantity;
-        if (variant.inventory) variant.inventory.stock = variant.stock;
-
-        await product.save({ session });
-
-        logs.push({
-            shop_id: shopId,
-            productId: product._id,
-            variantId: variant._id,
-            change: quantity,
-            type: 'RETURN',
-            referenceId: order._id,
-            beforeStock,
-            afterStock: variant.stock,
-            user: userId,
-            note: `Refunded return ${String(request._id).slice(-6).toUpperCase()} — stock restored`
-        });
-    }
-
-    if (logs.length > 0) {
-        await InventoryLog.insertMany(logs, { session });
-    }
-
-    order.status = 'Returned';
-    if (order.payment) order.payment.status = 'Refunded';
-    await order.save({ session });
-
-    request.inventoryRestoredAt = new Date();
-    request.inventoryRestoredBy = userId;
-
-    return { restored: true, logs };
-};
-
 const buildReturnItems = (order, submittedItems = []) => {
     const requested = Array.isArray(submittedItems) && submittedItems.length > 0
         ? submittedItems
@@ -126,7 +61,7 @@ const buildReturnItems = (order, submittedItems = []) => {
         }
 
         const quantity = Number(requestedItem.quantity);
-        if (!Number.isFinite(quantity) || quantity < 1 || quantity > orderItem.quantity) {
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > orderItem.quantity) {
             throw new Error(`Invalid return quantity for ${orderItem.title}.`);
         }
 
@@ -136,7 +71,7 @@ const buildReturnItems = (order, submittedItems = []) => {
             title: orderItem.title,
             sku: orderItem.sku || '',
             quantity,
-            refundAmount: toMoney(requestedItem.refundAmount ?? orderItem.price * quantity)
+            refundAmount: toMoney(requestedItem.refundAmount ?? money(Math.floor(orderAmounts(order).find(item => item.productId === String(orderItem.productId) && item.variantId === String(orderItem.variantId)).net * quantity / orderItem.quantity)))
         };
     });
 };
@@ -293,55 +228,56 @@ exports.createReturn = async (req, res) => {
 
 exports.updateReturnStatus = async (req, res) => {
     const session = await mongoose.startSession();
-    session.startTransaction();
 
     try {
         const { status, note } = req.body;
-        const request = await ReturnRequest.findOne({
-            _id: req.params.id,
-            shop_id: req.tenantId,
-            isDeleted: false
-        }).session(session);
+        let request, before, restored, restoredLogs;
+        await session.withTransaction(async () => {
+            request = await ReturnRequest.findOne({
+                _id: req.params.id,
+                shop_id: req.tenantId,
+                isDeleted: false
+            }).session(session);
 
-        if (!request) {
-            await session.abortTransaction();
-            return res.status(404).json({ success: false, error: 'Return request not found' });
-        }
+            if (!request) {
+                throw Object.assign(new Error('Return request not found'), { statusCode: 404 });
+            }
 
-        if (!VALID_TRANSITIONS[request.status]?.includes(status)) {
-            await session.abortTransaction();
-            return res.status(400).json({
-                success: false,
-                error: `Cannot change return from ${request.status} to ${status}`
-            });
-        }
+            if (!VALID_TRANSITIONS[request.status]?.includes(status) && !(status === 'Received' && request.status === 'Received' && !request.receivedAt && !request.inventoryRestoredAt)) {
+                throw Object.assign(new Error(`Cannot change return from ${request.status} to ${status}`), { statusCode: 400 });
+            }
 
-        const before = { status: request.status, internalNote: request.internalNote };
-        request.status = status;
-        if (note !== undefined) request.internalNote = note;
-        request.updatedBy = req.user?._id;
+            before = { status: request.status, internalNote: request.internalNote };
+            if (status !== 'Received') request.status = status;
+            if (note !== undefined) request.internalNote = note;
+            request.updatedBy = req.user?._id;
 
-        let restored = false;
-        let restoredLogs = [];
-        if (status === 'Refunded') {
-            request.refund = {
-                ...(request.refund?.toObject ? request.refund.toObject() : request.refund || {}),
-                status: 'Refunded',
-                refundedAt: request.refund?.refundedAt || new Date(),
-                updatedBy: req.user?._id
-            };
-            const restoreResult = await restoreReturnedInventory({
-                request,
-                shopId: req.tenantId,
-                userId: req.user?._id,
-                session
-            });
-            restored = restoreResult.restored;
-            restoredLogs = restoreResult.logs || [];
-        }
+            restored = false;
+            restoredLogs = [];
+            if (status === 'Received') {
+                const receipt = await receiveReturnInventory({ request, receiptItems: req.body.receiptItems, shopId: req.tenantId, userId: req.user?._id, session });
+                restored = receipt.restored; restoredLogs = receipt.logs;
+            }
+            if (status === 'Refunded') {
+                request.refund = {
+                    ...(request.refund?.toObject ? request.refund.toObject() : request.refund || {}),
+                    status: 'Refunded',
+                    refundedAt: request.refund?.refundedAt || new Date(),
+                    updatedBy: req.user?._id
+                };
+                const restoreResult = await settleReturnRefund({
+                    request,
+                    shopId: req.tenantId,
+                    userId: req.user?._id,
+                    session
+                });
+                restored = restoreResult.restored;
+                restoredLogs = restoreResult.logs || [];
+            }
 
-        await request.save({ session });
-        await session.commitTransaction();
+            await request.save({ session });
+        });
+        await reportingCache.delPattern(`admin:dashboard-overview:${req.tenantId}:*`);
 
         await Promise.all([
             enqueueLowStockAlertsForLogs(restoredLogs),
@@ -372,9 +308,9 @@ exports.updateReturnStatus = async (req, res) => {
 
         res.status(200).json({ success: true, message: 'Return status updated', data: request });
     } catch (err) {
-        await session.abortTransaction();
+        if (session.inTransaction()) await session.abortTransaction();
         console.error('Update return status error:', err);
-        res.status(500).json({ success: false, error: err.message || 'Failed to update return status' });
+        res.status(err.statusCode || 400).json({ success: false, error: err.message || 'Failed to update return status' });
     } finally {
         session.endSession();
     }
@@ -382,50 +318,63 @@ exports.updateReturnStatus = async (req, res) => {
 
 exports.updateReturnRefund = async (req, res) => {
     const session = await mongoose.startSession();
-    session.startTransaction();
 
     try {
-        const { status, amount, method, reference, note } = req.body;
-        const request = await ReturnRequest.findOne({
-            _id: req.params.id,
-            shop_id: req.tenantId,
-            isDeleted: false
-        }).session(session);
+        const { status, amount, shippingAmount, taxAmount, method, reference, note } = req.body;
+        let request, before, restored, restoredLogs;
+        await session.withTransaction(async () => {
+            request = await ReturnRequest.findOne({
+                _id: req.params.id,
+                shop_id: req.tenantId,
+                isDeleted: false
+            }).session(session);
 
-        if (!request) {
-            await session.abortTransaction();
-            return res.status(404).json({ success: false, error: 'Return request not found' });
-        }
+            if (!request) {
+                throw Object.assign(new Error('Return request not found'), { statusCode: 404 });
+            }
 
-        const before = { refund: request.refund?.toObject ? request.refund.toObject() : request.refund };
-        request.refund = {
-            ...(request.refund?.toObject ? request.refund.toObject() : request.refund || {}),
-            status: status || request.refund?.status || 'Pending',
-            amount: amount !== undefined ? toMoney(amount) : toMoney(request.refund?.amount),
-            method: method !== undefined ? method : request.refund?.method || '',
-            reference: reference !== undefined ? reference : request.refund?.reference || '',
-            note: note !== undefined ? note : request.refund?.note || '',
-            refundedAt: status === 'Refunded' ? new Date() : request.refund?.refundedAt || null,
-            updatedBy: req.user?._id
-        };
+            if (status === 'Refunded' && !['Received', 'Refunded'].includes(request.status)) {
+                throw Object.assign(new Error('Receive the returned items before completing their refund.'), { statusCode: 400 });
+            }
+            if (request.refund?.status === 'Refunded') {
+                throw Object.assign(new Error('A completed refund is locked. Contact support if a correction is needed.'), { statusCode: 409 });
+            }
+            if (amount !== undefined && (!Number.isFinite(Number(amount)) || Number(amount) < 0 || Math.abs(Number(amount) * 100 - Math.round(Number(amount) * 100)) > 0.00001)) throw new Error('Refund amount must be non-negative with at most two decimals.');
+            for (const component of [shippingAmount, taxAmount]) {
+                if (component !== undefined && (!Number.isFinite(Number(component)) || Number(component) < 0 || Math.abs(Number(component) * 100 - Math.round(Number(component) * 100)) > 0.00001)) throw new Error('Refund components must be non-negative amounts with at most two decimals.');
+            }
+            before = { refund: request.refund?.toObject ? request.refund.toObject() : request.refund };
+            request.refund = {
+                ...(request.refund?.toObject ? request.refund.toObject() : request.refund || {}),
+                status: status || request.refund?.status || 'Pending',
+                amount: amount !== undefined ? toMoney(amount) : toMoney(request.refund?.amount),
+                shippingAmount: shippingAmount === undefined ? request.refund?.shippingAmount || 0 : Number(shippingAmount),
+                taxAmount: taxAmount === undefined ? request.refund?.taxAmount || 0 : Number(taxAmount),
+                method: method !== undefined ? method : request.refund?.method || '',
+                reference: reference !== undefined ? reference : request.refund?.reference || '',
+                note: note !== undefined ? note : request.refund?.note || '',
+                refundedAt: status === 'Refunded' ? new Date() : request.refund?.refundedAt || null,
+                updatedBy: req.user?._id
+            };
 
-        let restored = false;
-        let restoredLogs = [];
-        if (request.refund.status === 'Refunded') {
-            request.status = 'Refunded';
-            const restoreResult = await restoreReturnedInventory({
-                request,
-                shopId: req.tenantId,
-                userId: req.user?._id,
-                session
-            });
-            restored = restoreResult.restored;
-            restoredLogs = restoreResult.logs || [];
-        }
+            restored = false;
+            restoredLogs = [];
+            if (request.refund.status === 'Refunded') {
+                request.status = 'Refunded';
+                const restoreResult = await settleReturnRefund({
+                    request,
+                    shopId: req.tenantId,
+                    userId: req.user?._id,
+                    session
+                });
+                restored = restoreResult.restored;
+                restoredLogs = restoreResult.logs || [];
+            }
 
-        request.updatedBy = req.user?._id;
-        await request.save({ session });
-        await session.commitTransaction();
+            request.updatedBy = req.user?._id;
+            await request.save({ session });
+        });
+        await reportingCache.delPattern(`admin:dashboard-overview:${req.tenantId}:*`);
 
         await Promise.all([
             enqueueLowStockAlertsForLogs(restoredLogs),
@@ -457,9 +406,9 @@ exports.updateReturnRefund = async (req, res) => {
 
         res.status(200).json({ success: true, message: 'Refund updated', data: request });
     } catch (err) {
-        await session.abortTransaction();
+        if (session.inTransaction()) await session.abortTransaction();
         console.error('Update return refund error:', err);
-        res.status(500).json({ success: false, error: err.message || 'Failed to update refund details' });
+        res.status(err.statusCode || 400).json({ success: false, error: err.message || 'Failed to update refund details' });
     } finally {
         session.endSession();
     }

@@ -28,12 +28,8 @@ const orderItemSchema = Joi.object({
  * Shipping info
  */
 const shippingSchema = Joi.object({
-    zone: Joi.string()
-        .valid('Inside Dhaka', 'Outside Dhaka')
-        .required()
-        .messages({
-            'any.only': 'Shipping zone must be "Inside Dhaka" or "Outside Dhaka"'
-        }),
+    zone: Joi.string().trim().max(120).optional(),
+    quoteToken: Joi.string().max(3000).optional(),
     address: Joi.object({
         fullName:    Joi.string().trim().min(2).required(),
         phone:       Joi.string().trim().min(11).required(),

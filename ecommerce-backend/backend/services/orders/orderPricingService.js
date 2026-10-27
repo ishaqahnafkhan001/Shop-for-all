@@ -1,7 +1,7 @@
 const Promotion = require('../../models/Promotion');
 const { evaluatePromotion } = require('../promotionService');
 
-const getShippingCostForZone = (zone) => (zone === 'Inside Dhaka' ? 80 : 130);
+const getShippingCostForZone = (zone) => (zone === 'Inside Dhaka' ? 80 : 120);
 
 const buildOrderLineItem = ({ product, variant, item, unitPriceOverride = null, scheduledSale = null }) => {
     const basePrice = variant.pricing?.price ?? variant.priceOverride ?? product.pricing.sellingPrice;
@@ -73,6 +73,7 @@ const applyPromotionToTotals = async ({
     const discountAmount = promotionResult.discountAmount;
     return {
         discountAmount,
+        eligibleProductIds: promotionResult.eligibleProductIds,
         shippingCost: promotionResult.freeShipping ? 0 : shippingCost,
         promotionSnapshot: {
             code: promotionResult.promotion.code,

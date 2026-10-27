@@ -16,3 +16,7 @@ test('CSV import rejects malformed rows rather than silently shifting product fi
     assert.throws(() => csvToProducts('title,category\nShirt'), /wrong number of columns/);
     assert.equal(MAX_CATALOG_IMPORT_ROWS, 200);
 });
+
+test('duplicate CSV headers cannot silently overwrite a value', () => {
+    assert.throws(() => csvToProducts('title,title\nFirst,Second'), /duplicate column/);
+});

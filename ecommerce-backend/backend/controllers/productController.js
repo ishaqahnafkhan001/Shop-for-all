@@ -1,5 +1,8 @@
 const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
 const Product = require('../models/Product');
+const CatalogImport = require('../models/CatalogImport');
+const CatalogOperation = require('../models/CatalogOperation');
+const { completeProductSubmission } = require('../services/products/productSubmissionService');
 const Collection = require('../models/Collection');
 const Category = require('../models/Category');
 const User = require('../models/User');
@@ -379,6 +382,31 @@ exports.generateProductContent = async (req, res) => {
  * @route   GET /api/admin/products
  * @access  Private (Admin)
  */
+exports.getCatalogProducts = async (req, res) => {
+    try {
+        const base = { shop_id: new mongoose.Types.ObjectId(req.tenantId), isDeleted: false };
+        const query = { ...base };
+        const search = String(req.query.search || '').trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (search) query.$or = ['title', 'category', 'tags', 'variants.sku'].map(field => ({ [field]: { $regex: search, $options: 'i' } }));
+        if (req.query.category) query.category = String(req.query.category);
+        if (req.query.status) query.status = String(req.query.status);
+        if (['true', 'false'].includes(req.query.visibility)) query.isActive = req.query.visibility === 'true';
+        const projection = { ...getSummaryProjection(false), skus: '$variants.sku' };
+        const computedMatch = {};
+        if (req.query.stock === 'in') computedMatch.totalStock = { $gt: 0 };
+        if (req.query.stock === 'out') computedMatch.totalStock = { $lte: 0 };
+        if (req.query.stock === 'low') computedMatch.lowStockVariantCount = { $gt: 0 };
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = 50;
+        const sort = req.query.sort === 'price' ? { 'pricing.sellingPrice': 1, _id: 1 } : req.query.sort === 'stock' ? { totalStock: 1, _id: 1 } : { title: 1, _id: 1 };
+        const [result, summary] = await Promise.all([
+            Product.aggregate([{ $match: query }, { $project: projection }, { $match: computedMatch }, { $facet: { data: [{ $sort: sort }, { $skip: (page - 1) * limit }, { $limit: limit }], count: [{ $count: 'total' }] } }]),
+            Product.aggregate([{ $match: base }, { $project: projection }, { $group: { _id: null, total: { $sum: 1 }, published: { $sum: { $cond: [{ $eq: ['$status', 'Published'] }, 1, 0] } }, lowStockVariants: { $sum: '$lowStockVariantCount' }, lowStockProducts: { $sum: { $cond: [{ $gt: ['$lowStockVariantCount', 0] }, 1, 0] } } } }])
+        ]);
+        res.json({ success: true, data: result[0]?.data || [], pagination: buildPagination({ total: result[0]?.count[0]?.total || 0, page, limit }), summary: summary[0] || { total: 0, published: 0, lowStockProducts: 0, lowStockVariants: 0 } });
+    } catch (error) { res.status(500).json({ success: false, error: 'Could not load catalog products' }); }
+};
+
 exports.getShopProducts = async (req, res) => {
     try {
         const shopId = req.tenantId;
@@ -667,8 +695,21 @@ exports.createProduct = async (req, res) => {
         }
 
         await enqueueScheduledProductPublication({ product, shopId: req.tenantId, session });
-        await session.commitTransaction();
-        await invalidateProductReadCaches(req.tenantId);
+        await completeProductSubmission(req, product._id, session);
+        try {
+            // Retry the same commit, never the transaction body, on a lost commit reply.
+            for (let attempt = 0; ; attempt++) {
+                try { await session.commitTransaction(); break; }
+                catch (error) {
+                    if (!error.hasErrorLabel?.('UnknownTransactionCommitResult') || attempt >= 2) throw error;
+                }
+            }
+        } catch (error) {
+            req.productCommitUncertain = Boolean(error.hasErrorLabel?.('UnknownTransactionCommitResult'));
+            throw error;
+        }
+        req.productCommitted = true;
+        await invalidateProductReadCaches(req.tenantId).catch(error => console.error('Product cache invalidation failed:', error.message));
 
         await logAudit({
             req,
@@ -683,7 +724,7 @@ exports.createProduct = async (req, res) => {
                 category: product.category,
                 price: product.pricing?.sellingPrice
             }
-        });
+        }).catch(error => console.error('Product audit failed:', error.message));
 
         return res.status(201).json({
             success: true,
@@ -692,7 +733,7 @@ exports.createProduct = async (req, res) => {
         });
 
     } catch (err) {
-        if (session.inTransaction()) await session.abortTransaction();
+        if (session.inTransaction() && !req.productCommitUncertain) await session.abortTransaction();
         if (err?.payload) return res.status(err.statusCode || 403).json(err.payload);
         console.error('Create product error:', err);
         const isDuplicateSlug = err.code === 11000 && err.keyPattern?.slug;
@@ -1065,10 +1106,18 @@ exports.deleteProduct = async (req, res) => {
 
 exports.exportProductsCsv = async (req, res) => {
     try {
-        const products = await Product.find({
-            shop_id: req.tenantId,
-            isDeleted: false
-        }).sort({ createdAt: -1 });
+        const ids = req.query.ids ? String(req.query.ids).split(',') : [];
+        if (ids.some(id => !mongoose.isValidObjectId(id))) return res.status(400).json({ error: 'Invalid export selection' });
+        const query = { shop_id: req.tenantId, isDeleted: false, ...(ids.length ? { _id: { $in: ids } } : {}) };
+        if (req.query.category) query.category = String(req.query.category);
+        if (req.query.status) query.status = String(req.query.status);
+        const search = String(req.query.search || '').trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (search) query.$or = ['title', 'category', 'tags', 'variants.sku'].map(field => ({ [field]: { $regex: search, $options: 'i' } }));
+        if (req.query.stock === 'in') query.$expr = { $gt: [{ $sum: '$variants.stock' }, 0] };
+        if (req.query.stock === 'out') query.$expr = { $lte: [{ $sum: '$variants.stock' }, 0] };
+        if (req.query.stock === 'low') query.$expr = { $gt: [getSummaryProjection(false).lowStockVariantCount, 0] };
+        if (['true', 'false'].includes(req.query.visibility)) query.isActive = req.query.visibility === 'true';
+        const products = await Product.find(query).sort({ createdAt: -1 });
 
         const headers = [
             'id',
@@ -1088,7 +1137,7 @@ exports.exportProductsCsv = async (req, res) => {
 
         const escapeCsv = (value) => {
             const raw = value === undefined || value === null ? '' : String(value);
-            return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
+            return /[",\r\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
         };
 
         const rows = products.map(product => [
@@ -1120,7 +1169,8 @@ exports.bulkUpdateProducts = async (req, res) => {
     let session;
 
     try {
-        const { productIds, updates: requestedUpdates = {} } = req.body;
+        const { productIds, updates: requestedUpdates = {}, dryRun = false } = req.body;
+        if (productIds?.length > 500) return res.status(400).json({ error: 'Select up to 500 products per bulk operation.' });
 
         if (!Array.isArray(productIds) || productIds.length === 0) {
             return res.status(400).json({ success: false, error: 'productIds are required' });
@@ -1130,6 +1180,7 @@ exports.bulkUpdateProducts = async (req, res) => {
         }
 
         const updates = validateBulkUpdates(requestedUpdates);
+        await CatalogOperation.createCollection();
         session = await mongoose.startSession();
         session.startTransaction();
 
@@ -1139,12 +1190,30 @@ exports.bulkUpdateProducts = async (req, res) => {
             isDeleted: false
         }).session(session);
 
+        if (req.body.expectedVersions && products.some(product => req.body.expectedVersions[String(product._id)] !== product.updatedAt.toISOString())) throw new Error('A selected product changed. Close this preview and review again.');
+        if (req.body.expectedVersions && products.length !== Object.keys(req.body.expectedVersions).length) throw new Error('A selected product is unavailable. Review again.');
+        const snapshots = [];
+        const preview = [];
         for (const product of products) {
+            const before = Object.fromEntries(['category', 'status', 'isActive', 'tags', 'pricing', 'lowStockThreshold', 'variants', 'seo', 'publicationStatus', 'publishAt', 'publishedAt', 'schedulePlanBlockedAt', 'schedulePlanBlockedReason'].map(key => [key, product.toObject()[key]]));
             applyBulkProductUpdates(product, updates);
-
-            await product.save({ session });
+            await product.validate();
+            preview.push({ id: String(product._id), version: product.updatedAt.toISOString(), title: product.title, before: before.pricing, after: product.pricing.toObject(), variants: product.variants.map((variant, index) => ({ sku: variant.sku, before: before.variants[index]?.priceOverride ?? before.variants[index]?.pricing?.price ?? before.pricing.sellingPrice, after: variant.priceOverride ?? variant.pricing?.price ?? product.pricing.sellingPrice })) });
+            if (!dryRun) {
+                await product.save({ session });
+                const visibility = updates.isActive ?? before.isActive;
+                if (product.isActive !== visibility) {
+                    await Product.updateOne({ _id: product._id, shop_id: req.tenantId }, { $set: { isActive: visibility } }, { session, timestamps: false });
+                    product.isActive = visibility;
+                }
+                snapshots.push({ productId: product._id, before, afterVersion: product.updatedAt });
+            }
         }
-
+        if (dryRun) {
+            await session.abortTransaction();
+            return res.json({ success: true, preview, count: products.length });
+        }
+        await CatalogOperation.create([{ shop_id: req.tenantId, actor: req.user.name || String(req.user._id), count: products.length, updates, snapshots }], { session });
         await session.commitTransaction();
         const followUps = await Promise.allSettled([
             invalidateProductReadCaches(req.tenantId),
@@ -1179,61 +1248,99 @@ exports.bulkUpdateProducts = async (req, res) => {
     }
 };
 
-exports.bulkImportProducts = async (req, res) => {
+exports.getCatalogActivity = async (req, res) => {
     try {
-        const { products } = req.body;
+        const data = await CatalogOperation.find({ shop_id: req.tenantId }).select('-snapshots').sort({ createdAt: -1 }).limit(50).lean();
+        res.json({ success: true, data });
+    } catch { res.status(500).json({ error: 'Could not load catalog history' }); }
+};
 
-        if (!Array.isArray(products) || products.length === 0) {
-            return res.status(400).json({ success: false, error: 'products array is required' });
-        }
-
-        const docs = products.slice(0, 200).map(item => {
-            const sellingPrice = Number(item.sellingPrice || item.pricing?.sellingPrice || 0);
-            const buyingPrice = Number(item.buyingPrice || item.pricing?.buyingPrice || 0);
-            const stock = Number(item.stock || item.totalStock || 0);
-
-            return {
-                shop_id: req.tenantId,
-                title: item.title,
-                slug: item.slug || slugify(item.title),
-                description: item.description || 'Imported product. Please update the product description.',
-                category: item.category || 'General',
-                tags: Array.isArray(item.tags)
-                    ? item.tags
-                    : String(item.tags || '').split('|').map(tag => tag.trim()).filter(Boolean),
-                status: item.status || 'Draft',
-                images: item.image ? [item.image] : ['https://via.placeholder.com/400'],
-                pricing: {
-                    buyingPrice,
-                    sellingPrice: Math.max(sellingPrice, buyingPrice),
-                    discount: Number(item.discount || 0)
-                },
-                variants: [{
-                    sku: item.sku || '',
-                    attributes: [{ name: 'default', value: 'default' }],
-                    stock,
-                    isActive: true
-                }],
-                seo: {
-                    title: item.seoTitle || '',
-                    description: item.seoDescription || ''
-                },
-                lowStockThreshold: Number(item.lowStockThreshold || 5)
-            };
+exports.undoCatalogOperation = async (req, res) => {
+    const session = await mongoose.startSession();
+    try {
+        await session.withTransaction(async () => {
+            const operation = await CatalogOperation.findOne({ _id: req.params.id, shop_id: req.tenantId, undoneAt: null }).session(session);
+            if (!operation) throw new Error('Operation unavailable or already undone');
+            for (const snapshot of operation.snapshots) {
+                const product = await Product.findOne({ _id: snapshot.productId, shop_id: req.tenantId, isDeleted: false, updatedAt: snapshot.afterVersion }).session(session);
+                if (!product) throw new Error('A product changed after this operation. Nothing was restored.');
+                product.set(snapshot.before);
+                await product.save({ session });
+                await Product.updateOne({ _id: product._id, shop_id: req.tenantId }, { $set: { isActive: snapshot.before.isActive } }, { session, timestamps: false });
+            }
+            operation.undoneAt = new Date();
+            await operation.save({ session });
         });
+        await Promise.allSettled([invalidateProductReadCaches(req.tenantId), logAudit({ req, shop_id: req.tenantId, action: 'product.catalog_undone', entityType: 'Product', metadata: { operationId: req.params.id } })]);
+        res.json({ success: true });
+    } catch (error) { res.status(409).json({ error: error.message }); }
+    finally { await session.endSession(); }
+};
 
-        const created = await Product.insertMany(docs, { ordered: false });
-
-        res.status(201).json({
-            success: true,
-            message: `${created.length} products imported`,
-            count: created.length
-        });
-    } catch (err) {
-        console.error('Bulk import products error:', err);
-        res.status(400).json({
-            success: false,
-            error: err.message || 'Bulk import failed'
-        });
+exports.bulkImportProducts = async (req, res) => {
+    const { prepareImportRow, applyImportRow } = require('../services/products/catalogImport');
+    const { createHash } = require('node:crypto');
+    const { products, mode = 'create', dryRun = false, operationId } = req.body;
+    if (!['create', 'update'].includes(mode) || !Array.isArray(products) || !products.length || products.length > 200 || typeof operationId !== 'string' || !/^[a-zA-Z0-9-]{16,80}$/.test(operationId) || typeof dryRun !== 'boolean') {
+        return res.status(400).json({ success: false, error: 'Choose a mode, operation ID and 1–200 rows.' });
     }
+    const fingerprint = createHash('sha256').update(JSON.stringify({ products, mode })).digest('hex');
+    const identity = { shop_id: req.tenantId, operationId };
+    let session;
+    try {
+        await CatalogImport.createCollection();
+        await CatalogImport.createIndexes();
+        const previous = await CatalogImport.findOne(identity).lean();
+        if (previous) {
+            if (previous.fingerprint !== fingerprint) return res.status(409).json({ success: false, error: 'This import ID was already used for different rows. Upload the file again.' });
+            return res.json({ success: true, count: previous.count, replayed: true });
+        }
+        session = await mongoose.startSession();
+        let count = 0;
+        await session.withTransaction(async () => {
+            const errors = [];
+            const documents = [];
+            const seen = new Set();
+            for (let index = 0; index < products.length; index += 1) {
+                try {
+                    const row = prepareImportRow(products[index], mode);
+                    if (mode === 'update' && seen.has(row.id)) throw new Error('Duplicate product id in this file');
+                    seen.add(row.id);
+                    let product;
+                    if (mode === 'update') {
+                        product = await Product.findOne({ _id: row.id, shop_id: req.tenantId, isDeleted: false }).session(session);
+                        if (!product) throw new Error('Product not found in this store');
+                    } else {
+                        product = new Product({ shop_id: req.tenantId, title: row.title, slug: await getUniqueSlug({ shopId: req.tenantId, requestedSlug: row.slug, title: row.title, session }), description: row.description || 'Imported product. Please update the product description.', category: row.category || 'General', status: row.status || 'Draft', images: row.image ? [row.image] : [], pricing: { buyingPrice: 0, sellingPrice: 0, discount: 0 }, variants: [{ sku: row.sku || '', attributes: [{ name: 'default', value: 'default' }], stock: row.stock ?? row.totalStock ?? 0, isActive: true }], seo: {}, lowStockThreshold: row.lowStockThreshold ?? 5 });
+                        const base = product.slug;
+                        let suffix = 2;
+                        while (documents.some(doc => doc.slug === product.slug)) product.slug = `${base}-${suffix++}`;
+                    }
+                    applyImportRow(product, row, mode);
+                    await product.validate();
+                    documents.push(product);
+                } catch (error) { errors.push({ row: index + 2, error: error.message }); }
+            }
+            if (errors.length) { const error = new Error('Validation failed. No products were saved.'); error.rows = errors; throw error; }
+            count = documents.length;
+            if (!dryRun) {
+                for (const product of documents) {
+                    const visibility = product.isActive;
+                    await product.save({ session });
+                    if (mode === 'update' && visibility !== product.isActive) await Product.updateOne({ _id: product._id, shop_id: req.tenantId }, { $set: { isActive: visibility } }, { session, timestamps: false });
+                }
+                await CatalogImport.create([{ ...identity, fingerprint, count, mode }], { session });
+            }
+        });
+        if (!dryRun) {
+            const results = await Promise.allSettled([invalidateProductReadCaches(req.tenantId), logAudit({ req, shop_id: req.tenantId, action: 'product.catalog_imported', entityType: 'Product', entityLabel: `${count} products`, after: { count, mode }, metadata: { operationId } })]);
+            results.filter(result => result.status === 'rejected').forEach(result => console.error('Import follow-up failed:', result.reason));
+        }
+        return res.json({ success: true, count, preview: dryRun });
+    } catch (error) {
+        // A concurrent submission may have committed the same operation while this request waited.
+        const previous = await CatalogImport.findOne(identity).lean().catch(() => null);
+        if (previous?.fingerprint === fingerprint) return res.json({ success: true, count: previous.count, replayed: true });
+        return res.status(400).json({ success: false, error: error.rows ? error.message : 'Import failed. No products were saved by this attempt. Retry the same file safely.', errors: error.rows || [] });
+    } finally { if (session) await session.endSession(); }
 };
