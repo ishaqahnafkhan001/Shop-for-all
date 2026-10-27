@@ -23,6 +23,8 @@ jobs:
           cache-dependency-path: ecommerce-backend/backend/package-lock.json
       - name: Install
         run: npm ci
+      - name: Install admin test bundler deps
+        run: npm ci --prefix ../../ecommerce-admin
       - name: Test
         run: npm test
         env:

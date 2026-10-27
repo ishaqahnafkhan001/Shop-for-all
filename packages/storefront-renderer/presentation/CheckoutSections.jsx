@@ -394,7 +394,7 @@ export function CheckoutPhoneOtpBox({
     );
 }
 
-export function CheckoutDetailsColumn({ formData, delivery, onInputChange }) {
+export function CheckoutMarketingConsent({ checked, onChange }) {
     return (
         <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
             <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1" />
