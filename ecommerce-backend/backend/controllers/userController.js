@@ -1,9 +1,10 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Account = require('../models/Account');
 const ShopMembership = require('../models/ShopMembership');
 const StaffPermission = require('../models/StaffPermission');
 const bcrypt = require('bcryptjs');
-const { createUserSchema } = require('../validations/userValidation');
+const { createUserSchema, updateStaffSchema } = require('../validations/userValidation');
 const {
     normalizeEmail,
     createMembershipArtifacts
@@ -140,6 +141,7 @@ exports.getShopCustomers = async (req, res) => {
  * @route   POST /api/admin/users
  */
 exports.createShopUser = async (req, res) => {
+    let session;
     try {
         const { error, value } = createUserSchema.validate(req.body);
         if (error) return res.status(400).json({ error: error.details[0].message });
@@ -150,13 +152,15 @@ exports.createShopUser = async (req, res) => {
             });
         }
 
+        session = await mongoose.startSession();
+        session.startTransaction();
         const currentShopId = req.user.shopId;
         const cleanEmail = normalizeEmail(value.email);
 
         const existingMembership = await User.findOne({
             email: cleanEmail,
             shop_id: currentShopId
-        });
+        }).session(session);
 
         if (existingMembership) {
             return res.status(400).json({ error: "Email already registered in this shop" });
@@ -165,7 +169,7 @@ exports.createShopUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(value.password, salt);
 
-        let account = await Account.findOne({ email: cleanEmail }).select('+passwordHash');
+        let account = await Account.findOne({ email: cleanEmail }).select('+passwordHash').session(session);
 
         if (account) {
             const passwordMatches = await bcrypt.compare(value.password, account.passwordHash);
@@ -175,11 +179,11 @@ exports.createShopUser = async (req, res) => {
                 });
             }
         } else {
-            account = await Account.create({
+            [account] = await Account.create([{
                 email: cleanEmail,
                 fullName: value.fullName,
                 passwordHash: hashedPassword
-            });
+            }], { session });
         }
 
         const { legacyUser: newUser } = await createMembershipArtifacts({
@@ -192,11 +196,11 @@ exports.createShopUser = async (req, res) => {
             staffNote: value.staffNote || '',
             passwordHash: account.passwordHash || hashedPassword,
             permissions: sanitizeStaffPermissions(value.permissions),
-            session: null
+            session
         });
 
         await logAudit({
-            req,
+            req, session, strict: true,
             shop_id: currentShopId,
             action: 'user.created',
             entityType: 'User',
@@ -208,6 +212,7 @@ exports.createShopUser = async (req, res) => {
             }
         });
 
+        await session.commitTransaction();
         res.status(201).json({
             message: `${value.role} created successfully`,
             user: {
@@ -223,7 +228,10 @@ exports.createShopUser = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: "Failed to create user" });
+        res.status(err.code === 11000 ? 409 : 500).json({ error: err.code === 11000 ? "This account is already registered. Refresh the staff list." : "Failed to create user" });
+    } finally {
+        if (session?.inTransaction()) await session.abortTransaction();
+        await session?.endSession();
     }
 };
 
@@ -233,8 +241,8 @@ exports.createShopUser = async (req, res) => {
  */
 exports.getShopUsers = async (req, res) => {
     try {
-        const users = await User.find({ shop_id: req.user.shopId })
-            .select('-password')
+        const users = await User.find({ shop_id: req.user.shopId, role: 'VendorStaff' })
+            .select('_id fullName email phone staffTitle staffNote role status permissions createdAt updatedAt')
             .sort({ createdAt: -1 });
 
         res.status(200).json(users);
@@ -261,12 +269,19 @@ exports.getStaffSummary = async (req, res) => {
 
 const updateShopUser = async (req, res) => {
     let quotaReservation = null;
+    let session;
     try {
+        const validation = updateStaffSchema.validate(req.body);
+        if (validation.error) return res.status(400).json({ error: validation.error.details[0].message });
+        req.body = validation.value;
+        if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: 'Invalid staff ID.' });
+        session = await mongoose.startSession();
+        session.startTransaction();
         const user = await User.findOne({
             _id: req.params.id,
             shop_id: req.user.shopId,
             role: 'VendorStaff'
-        });
+        }).session(session);
 
         if (!user) {
             return res.status(404).json({ error: 'Staff member not found' });
@@ -365,30 +380,19 @@ const updateShopUser = async (req, res) => {
                 user.planSuspendedFor = '';
             }
             if (user.membership_id) {
-                await ShopMembership.findByIdAndUpdate(user.membership_id, {
+                await ShopMembership.findOneAndUpdate({ _id: user.membership_id, shop_id: req.user.shopId }, {
                     $set: {
                         status: req.body.status,
                         ...(req.body.status === 'Active'
                             ? { planSuspendedAt: null, planSuspendedFor: '' }
                             : {})
                     }
-                });
+                }, { session });
             }
         }
 
-        await user.save();
-
-        if (beforeAudit.status !== 'Active' && user.status === 'Active') {
-            const context = await getShopPlanAccess(req.user.shopId);
-            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.USAGE_CHANGED, {
-                req,
-                shopId: req.user.shopId,
-                subscriptionId: context.subscription?._id,
-                planKey: context.planKey,
-                affectedResources: ['staff'],
-                metadata: { action: 'staff_added', resource: 'staff' }
-            });
-        }
+        if (beforeAudit.status === 'Active' && user.status === 'Suspended') user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+        await user.save({ session });
 
         if (Object.prototype.hasOwnProperty.call(req.body, 'permissions') && user.membership_id) {
             await StaffPermission.findOneAndUpdate(
@@ -403,12 +407,12 @@ const updateShopUser = async (req, res) => {
                         legacyUser_id: user._id
                     }
                 },
-                { upsert: true, new: true }
+                { upsert: true, new: true, session }
             );
         }
 
         await logAudit({
-            req,
+            req, session, strict: true,
             shop_id: req.user.shopId,
             action: 'staff.updated',
             entityType: 'User',
@@ -424,6 +428,19 @@ const updateShopUser = async (req, res) => {
                 permissions: user.permissions?.toObject?.() || user.permissions || {}
             }
         });
+
+        await session.commitTransaction();
+        if (beforeAudit.status !== 'Active' && user.status === 'Active') {
+            const context = await getShopPlanAccess(req.user.shopId);
+            await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.USAGE_CHANGED, {
+                req,
+                shopId: req.user.shopId,
+                subscriptionId: context.subscription?._id,
+                planKey: context.planKey,
+                affectedResources: ['staff'],
+                metadata: { action: 'staff_added', resource: 'staff' }
+            });
+        }
 
         res.status(200).json({
             success: true,
@@ -442,8 +459,10 @@ const updateShopUser = async (req, res) => {
         });
     } catch (err) {
         console.error('Update staff error:', err);
-        res.status(500).json({ error: 'Failed to update staff member' });
+        res.status(err.code === 112 ? 409 : 500).json({ error: err.code === 112 ? 'Staff changed in another request. Refresh and retry.' : 'Failed to update staff member' });
     } finally {
+        if (session?.inTransaction()) await session.abortTransaction();
+        await session?.endSession();
         releaseQuotaSafely(quotaReservation);
     }
 };
@@ -452,12 +471,16 @@ exports.updateShopUser = updateShopUser;
 exports.updateShopUserPermissions = updateShopUser;
 
 exports.removeShopStaff = async (req, res) => {
+    let session;
     try {
+        if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ error: 'Invalid staff ID.' });
+        session = await mongoose.startSession();
+        session.startTransaction();
         const user = await User.findOne({
             _id: req.params.id,
             shop_id: req.user.shopId,
             role: 'VendorStaff'
-        });
+        }).session(session);
 
         if (!user) {
             return res.status(404).json({ error: 'Staff member not found' });
@@ -469,16 +492,15 @@ exports.removeShopStaff = async (req, res) => {
 
         const previousStatus = user.status;
         user.status = 'Suspended';
-        await user.save();
+        if (previousStatus === 'Active') user.sessionVersion = Number(user.sessionVersion || 0) + 1;
+        await user.save({ session });
 
         if (user.membership_id) {
-            await ShopMembership.findByIdAndUpdate(user.membership_id, {
-                status: 'Suspended'
-            });
+            await ShopMembership.findOneAndUpdate({ _id: user.membership_id, shop_id: req.user.shopId }, { status: 'Suspended' }, { session });
         }
 
         await logAudit({
-            req,
+            req, session, strict: true,
             shop_id: req.user.shopId,
             action: 'staff.removed',
             entityType: 'User',
@@ -489,6 +511,7 @@ exports.removeShopStaff = async (req, res) => {
             after: { status: user.status }
         });
 
+        await session.commitTransaction();
         if (previousStatus === 'Active') {
             const context = await getShopPlanAccess(req.user.shopId);
             await emitSubscriptionEvent(SUBSCRIPTION_EVENTS.USAGE_CHANGED, {
@@ -519,5 +542,8 @@ exports.removeShopStaff = async (req, res) => {
     } catch (err) {
         console.error('Remove staff error:', err);
         res.status(500).json({ error: 'Failed to remove staff member' });
+    } finally {
+        if (session?.inTransaction()) await session.abortTransaction();
+        await session?.endSession();
     }
 };

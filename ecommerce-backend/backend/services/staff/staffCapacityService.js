@@ -5,63 +5,7 @@ const { resolveSubscriptionAccess } = require('../billing/subscriptionAccessReso
 const { ensureSubscriptionExists } = require('../billing/subscriptionService');
 const { computeEffectiveFeatures, getEffectivePlanRef, getPlanFeatures } = require('../shops/featureAccessService');
 
-const STAFF_PERMISSION_KEYS = [
-    'overview',
-    'products',
-    'catalogTools',
-    'orders',
-    'returns',
-    'customers',
-    'privacyRequests',
-    'promotions',
-    'notifications',
-    'shipping',
-    'analytics',
-    'growthCenter',
-    'storeBuilder',
-    'settings',
-    'activityLogs',
-    'collectionsAi',
-    'productsSchedule',
-    'salesManage',
-    'bannersManage',
-    'inventoryAlertsManage',
-    'inventoryRead',
-    'inventoryManage',
-    'growthRead',
-    'purchaseOrdersRead',
-    'purchaseOrdersManage',
-    'purchaseOrdersReceive'
-];
-
-const DEFAULT_STAFF_PERMISSIONS = {
-    overview: false,
-    products: true,
-    catalogTools: false,
-    orders: true,
-    returns: false,
-    customers: false,
-    privacyRequests: false,
-    promotions: false,
-    notifications: false,
-    shipping: false,
-    analytics: false,
-    growthCenter: false,
-    storeBuilder: false,
-    settings: false,
-    activityLogs: false,
-    collectionsAi: false,
-    productsSchedule: false,
-    salesManage: false,
-    bannersManage: false,
-    inventoryAlertsManage: false,
-    inventoryRead: false,
-    inventoryManage: false,
-    growthRead: false,
-    purchaseOrdersRead: false,
-    purchaseOrdersManage: false,
-    purchaseOrdersReceive: false
-};
+const { STAFF_PERMISSION_KEYS, DEFAULT_STAFF_PERMISSIONS } = require('../../config/staffPermissions');
 
 const normalizeStaffLimit = (value) => {
     if (value === null || value === undefined) return null;
@@ -74,8 +18,12 @@ const normalizeStaffLimit = (value) => {
 };
 
 const sanitizeStaffPermissions = (input = {}, base = DEFAULT_STAFF_PERMISSIONS) => {
+    if (!input || typeof input !== 'object' || Array.isArray(input)
+        || Object.entries(input).some(([key, value]) => !STAFF_PERMISSION_KEYS.includes(key) || typeof value !== 'boolean')) {
+        throw Object.assign(new Error('Permissions must contain only supported boolean values.'), { statusCode: 400 });
+    }
     return STAFF_PERMISSION_KEYS.reduce((acc, key) => {
-        acc[key] = Boolean(Object.prototype.hasOwnProperty.call(input, key) ? input[key] : base[key]);
+        acc[key] = Object.prototype.hasOwnProperty.call(input, key) ? input[key] : base[key] === true;
         return acc;
     }, {});
 };
