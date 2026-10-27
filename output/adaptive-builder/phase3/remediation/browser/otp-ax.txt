@@ -1,0 +1,86 @@
+Browser tab: 3, Title: "Adaptive synthetic checkout", URL: "http://127.0.0.1:5233/?page=checkout&palette=custom&scenario=otp".
+1 AXWebArea Adaptive synthetic checkout, URL: 127.0.0.1:5233/?page=checkout&palette=custom&scenario=otp
+	2 container
+		3 link Description: Back to Cart, Value: 127.0.0.1:5233/cart
+		4 text CHECKOUT
+		5 heading Complete your order, Value: 1
+			6 text Complete your order
+		7 text Confirm delivery details, review your items, and place the order securely. Secure COD Delivery
+		8 heading Customer Information, Value: 2
+			9 text Customer Information
+		10 text Full Name
+		11 text field (settable) Full Name, Value: Synthetic Buyer, ID: checkout-full-name
+		12 text Email
+		13 text field (settable) Email, Value: <redacted>
+		14 text Phone Number
+		15 text field (settable) Phone Number, Value: <redacted>
+		16 text Full Address
+		17 text entry area (settable) Full Address, Value: Synthetic road, ID: checkout-address
+		18 text Delivery area
+		19 pop up button (collapsed, settable) Delivery area, Value: Inside Dhaka, ID: checkout-city, Secondary Actions: Expand
+			20 menu
+				21 Select delivery area
+				22 (selected) Inside Dhaka
+				23 Outside Dhaka
+		24 heading Delivery Charge, Value: 3
+			25 text Delivery Charge
+		26 text Inside Dhaka → ৳ 80
+		27 text Outside Dhaka → ৳ 120
+		28 heading Delivery Method, Value: 2
+			29 text Delivery Method
+		30 text Inside Dhaka ৳ 80
+		31 text Same-city delivery estimate.
+		32 text Outside Dhaka ৳ 120
+		33 text Nationwide delivery estimate.
+		34 heading Payment Method, Value: 2
+			35 text Payment Method
+		36 text Cash on Delivery
+		37 text Pay when your order arrives.
+		38 container
+			39 checkbox (settable, integer) Value: 0, Description: Send me a confirmation email to subscribe to this store's offers and product updates. Optional; unsubscribe anytime.
+			40 text Send me a confirmation email to subscribe to this store's offers and product updates. Optional; unsubscribe anytime.
+		41 container
+			42 text REVIEW
+			43 heading Order Summary, Value: 2
+				44 text Order Summary
+			45 text 1  item
+			46 image Synthetic vessel
+			47 heading Synthetic vessel, Value: 3
+				48 text Synthetic vessel
+			49 button Decrease quantity for Synthetic vessel
+			50 text 1
+			51 button Increase quantity for Synthetic vessel
+			52 text ৳ 120 ৳ 120 each
+			53 button Remove
+			54 text Coupon Code
+			55 text field (settable) Coupon Code, ID: checkout-coupon-code
+			56 button Apply
+			57 text Subtotal ৳  120 Delivery Charge ৳  80 Total ৳  200
+			58 checkbox (settable, integer) Value: 1, ID: checkout-policy-consent, Description: I agree to this store's policies before placing my order. Review the policy sections below. This confirms you understand delivery, refund, and privacy terms.
+			59 text I agree to this store's policies before placing my order. Review the policy sections below. This confirms you understand delivery, refund, and privacy terms.
+			60 button Place Order
+				61 text Place Order
+			62 text Secure Checkout Cash on delivery order. You pay when the product arrives. Store Policies
+			63 button (collapsed) Shipping, Secondary Actions: Expand
+				64 text Shipping
+		65 container
+			66 text PAY ON DELIVERY ৳  200
+			67 button Place order
+		68 container Verify your phone number
+			69 container
+				70 heading Verify your phone number, Value: 2, ID: checkout-otp-title
+					71 text Verify your phone number
+				72 text We need to verify your delivery phone before placing this order.
+				73 button Close phone verification
+				74 text Enter the 6-digit code sent to  017****0000 . Verification code
+				75 text field (settable) Verification code, Value: <redacted>
+				76 button (disabled) Resend in 30s
+					77 text Resend in 30s
+				78 text Synthetic invalid code
+				79 button Cancel
+				80 button (disabled) Verify & place order
+		81 text Shipping and support information for this synthetic shop.
+		82 container fixture-state
+			83 text Synthetic actions:  none
+
+The focused UI element is 75 text field (settable) Verification code, Value: <redacted>

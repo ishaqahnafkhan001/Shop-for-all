@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { SiteBuilderDocument, installThemeGuard } = require('./storeBuilderThemeContract');
 const {
     FALLBACK_THEME,
     PRODUCT_CARD_STYLE_FIELDS,
@@ -345,7 +346,9 @@ const shopSchema = new mongoose.Schema({
         planInactiveAt: Date
     },
     branding: { type: essentialBrandingSchema, default: () => ({}) },
+    adaptiveWriteLock: { type: Number, default: undefined, select: false },
     theme: {
+        siteBuilder: { type: SiteBuilderDocument, default: undefined },
         presentationVariant: { type: String, enum: ['atelier-editorial'], default: undefined },
         extensions: { type: mongoose.Schema.Types.Mixed, default: undefined },
         version: { type: Number, default: THEME_SCHEMA_VERSION, STRUCTURAL_VARIANTS, min: 1 },
@@ -836,4 +839,5 @@ shopSchema.pre('findOneAndUpdate', async function normalizeStoreSearchIdentityUp
     this.set('searchNameNormalized', normalizeSearchText(officialName));
 });
 
+installThemeGuard(shopSchema);
 module.exports = mongoose.model('Shop', shopSchema);

@@ -24,6 +24,7 @@ const {
 const { hasFeature } = require('../services/shops/featureAccessService');
 const { getShopPlanAccess } = require('../services/billing/planAccessService');
 const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
+const { readAdaptiveRollout } = require('../services/storeBuilder/adaptiveRolloutPolicy');
 const { buildPagination } = require('../utils/pagination');
 const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
 const { normalizeSearchText } = require('../services/products/productQueryService');
@@ -182,6 +183,8 @@ exports.getStorefrontBootstrap = async (req, res) => {
         ]);
         if (!shop) return res.status(404).json({ error: 'Shop details not found.' });
         const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
+            adaptivePolicy: readAdaptiveRollout().fingerprint,
+            operational: planAccess.isOperational && planAccess.shopOperational,
             revision: Number(shop.themeRevision || 0),
             updatedAt: shop.updatedAt,
             plan: planAccess.planKey,

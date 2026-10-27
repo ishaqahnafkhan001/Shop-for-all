@@ -1,0 +1,2375 @@
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/PreviewSectionToolbar.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\PreviewSectionToolbar.jsx"
+index e69de29..68404b6 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\PreviewSectionToolbar.jsx"
+@@ -0,0 +1,52 @@
++import { Eye, EyeOff, Lock, Pencil } from 'lucide-react';
++export default function PreviewSectionToolbar ({
++    id,
++    label,
++    locked,
++    section,
++    sectionIndex,
++    onSelectElement,
++    onToggleSectionVisibility
++}) {
++    const isDynamicSection = (id?.startsWith('section:') || id?.startsWith('section-')) && Number.isInteger(sectionIndex) && sectionIndex >= 0;
++    const isVisible = section?.isEnabled !== false;
++    const stop = (event) => {
++        event.preventDefault();
++        event.stopPropagation();
++    };
++    const handleAction = (event, action) => {
++        stop(event);
++        action?.();
++    };
++    const buttonClass = 'inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40';
++
++    return (
++        <div
++            className="absolute right-3 top-3 z-[90] flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-xl shadow-slate-950/15 backdrop-blur"
++            onMouseDown={stop}
++            onClick={stop}
++        >
++            <span className="max-w-[160px] truncate rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-black text-white">
++                {label || 'Section'}
++            </span>
++            {locked && (
++                <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-50 px-2 text-[11px] font-black text-amber-800">
++                    <Lock size={12} />
++                    Locked layout
++                </span>
++            )}
++            <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onSelectElement?.(id))} aria-label={`Edit ${label || 'section'}`}>
++                <Pencil size={13} />
++                Edit
++            </button>
++            {isDynamicSection && (
++                <>
++                    <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onToggleSectionVisibility?.(sectionIndex, !isVisible))} aria-label={`${isVisible ? 'Hide' : 'Show'} ${label || 'section'}`}>
++                        {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
++                        {isVisible ? 'Hide' : 'Show'}
++                    </button>
++                </>
++            )}
++        </div>
++    );
++}
+
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/StorefrontPreview.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\StorefrontPreview.jsx"
+index 14cd746..897c955 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\StorefrontPreview.jsx"
+@@ -5,7 +5,7 @@ import { PreviewCommercePage } from './PreviewCommercePages.jsx';
+ import { normalizeProduct } from '@scaleup/storefront-renderer/product-data';
+ import { PresentationRuntime, NativeImage } from '@scaleup/storefront-renderer/presentation/Runtime';
+ import { STOREFRONT_VIEWPORTS } from '@scaleup/storefront-renderer/viewports';
+-import { Eye, EyeOff, Lock, Pencil } from 'lucide-react';
++import { createPreviewEditor } from './previewEditor.js';
+ import {
+     ReferenceStorefrontFooter,
+     ReferenceStorefrontHeader,
+@@ -14,7 +14,6 @@ import {
+ } from '@scaleup/storefront-renderer';
+ import { getStorefrontPresentationVariant, resolveEffectiveTheme } from '@scaleup/storefront-theme';
+ 
+-const getSectionLabel = (section = {}) => section.settings?.visualLabel || section.title || section.type || 'Section';
+ const getCategoryName = (category) => (
+     typeof category === 'string'
+         ? category.trim()
+@@ -31,87 +30,6 @@ const PreviewLink = ({ href, children, className, ...props }) => {
+     );
+ };
+ 
+-const PreviewSectionToolbar = ({
+-    id,
+-    label,
+-    locked,
+-    section,
+-    sectionIndex,
+-    onSelectElement,
+-    onToggleSectionVisibility
+-}) => {
+-    const isDynamicSection = (id?.startsWith('section:') || id?.startsWith('section-')) && Number.isInteger(sectionIndex) && sectionIndex >= 0;
+-    const isVisible = section?.isEnabled !== false;
+-    const stop = (event) => {
+-        event.preventDefault();
+-        event.stopPropagation();
+-    };
+-    const handleAction = (event, action) => {
+-        stop(event);
+-        action?.();
+-    };
+-    const buttonClass = 'inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40';
+-
+-    return (
+-        <div
+-            className="absolute right-3 top-3 z-[90] flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-xl shadow-slate-950/15 backdrop-blur"
+-            onMouseDown={stop}
+-            onClick={stop}
+-        >
+-            <span className="max-w-[160px] truncate rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-black text-white">
+-                {label || 'Section'}
+-            </span>
+-            {locked && (
+-                <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-50 px-2 text-[11px] font-black text-amber-800">
+-                    <Lock size={12} />
+-                    Locked layout
+-                </span>
+-            )}
+-            <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onSelectElement?.(id))} aria-label={`Edit ${label || 'section'}`}>
+-                <Pencil size={13} />
+-                Edit
+-            </button>
+-            {isDynamicSection && (
+-                <>
+-                    <button type="button" className={buttonClass} onClick={event => handleAction(event, () => onToggleSectionVisibility?.(sectionIndex, !isVisible))} aria-label={`${isVisible ? 'Hide' : 'Show'} ${label || 'section'}`}>
+-                        {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+-                        {isVisible ? 'Hide' : 'Show'}
+-                    </button>
+-                </>
+-            )}
+-        </div>
+-    );
+-};
+-
+-export const createPreviewEditor = ({ theme, activeElement, onSelectElement, onToggleSectionVisibility }) => {
+-    if (!onSelectElement) return null;
+-    // Resolve commands against the draft, before plan filtering and sorting.
+-    const sections = theme?.homepageSections || [];
+-
+-    return {
+-        selectedId: activeElement,
+-        onSelect: onSelectElement,
+-        renderToolbar: (id, meta = {}) => {
+-            const sectionIndex = id?.startsWith('section:')
+-                ? sections.findIndex(section => String(section?.id || section?._id) === id.slice('section:'.length))
+-                : (id?.startsWith('section-') ? Number(id.replace('section-', '')) : -1);
+-            const section = sectionIndex >= 0 ? sections[sectionIndex] : null;
+-
+-            return (
+-                <PreviewSectionToolbar
+-                    id={id}
+-                    label={section ? getSectionLabel(section) : meta.label}
+-                    locked={Boolean(meta.locked)}
+-                    section={section}
+-                    sectionIndex={sectionIndex}
+-                    onSelectElement={onSelectElement}
+-                    onToggleSectionVisibility={onToggleSectionVisibility}
+-                />
+-            );
+-        }
+-    };
+-};
+-
+ export const CheckoutBrandingPreview = ({ theme, shopName }) => {
+     const resolved = resolveEffectiveTheme(theme, { shopName });
+     return <div className="sf-presentation" data-sf-presentation={getStorefrontPresentationVariant(resolved) === 'atelier-editorial' ? 'atelier-editorial' : undefined} style={getReferenceThemeStyle(resolved)}><CheckoutBrandingBanner checkoutBranding={resolved.checkoutBranding} /><CheckoutTrustBadges /></div>;
+@@ -174,7 +92,7 @@ export const StorefrontPreviewContent = ({
+         }, {});
+     }, [availableReviews, normalizedTheme.homepageSections]);
+     const editor = useMemo(() => createPreviewEditor({ theme, activeElement, onSelectElement, onToggleSectionVisibility }),
+-        [activeElement, theme?.homepageSections, onSelectElement, onToggleSectionVisibility]);
++        [activeElement, theme, onSelectElement, onToggleSectionVisibility]);
+     const renderPreviewPage = () => {
+         if (previewPage !== 'home') return <PreviewCommercePage key={`${previewPage}-${products[0]?._id || 'empty'}`} page={previewPage} theme={normalizedTheme} shopName={shopName} products={products} reviews={availableReviews} />;
+ 
+
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/adaptive/AdaptiveInspector.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\adaptive\\AdaptiveInspector.jsx"
+index 4c08b1b..038a780 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\adaptive\\AdaptiveInspector.jsx"
+@@ -1,4 +1,4 @@
+-import { useState } from 'react';
++import { useId, useState } from 'react';
+ import { BLOCK_REGISTRY, COLOR_TOKENS, PAGE_TEMPLATES, STYLE_PROPERTIES } from '@scaleup/storefront-theme/adaptive';
+ import { contrastRatio, getStorefrontPresentationVariant } from '@scaleup/storefront-theme';
+ import { editorTokens, freshDesignId, styleOrigin } from './adaptiveEditorState.js';
+@@ -19,14 +19,21 @@ function LinkContent({ node, content }) {
+ }
+ export function DraftField({ label, value, onChange, type = 'text', multiline = false, encode = value => value, ...props }) {
+     const [draft, setDraft] = useState(''), [editing, setEditing] = useState(false);
++    const [error, setError] = useState(null), fieldId = useId();
++    const apply = input => {
++        const result = onChange(encode(input));
++        setError(result?.valid === false ? (result.errors?.[0]?.message || 'Enter a value within the approved bounds.') : null);
++        return result;
++    };
+     const displayed = editing ? draft : String(value ?? '');
+     const Field = multiline ? 'textarea' : 'input';
+-    return <label className="grid min-w-0 gap-1 text-xs font-semibold text-slate-700">{label}
+-        <Field {...props} type={multiline ? undefined : type} rows={multiline ? 4 : undefined} className={inputClass} value={displayed}
++    return <><label className="grid min-w-0 gap-1 text-xs font-semibold text-slate-700">{label}
++        <Field {...props} id={fieldId} aria-invalid={error ? true : undefined} aria-describedby={error ? `${fieldId}-error` : undefined}
++            type={multiline ? undefined : type} rows={multiline ? 4 : undefined} className={inputClass} value={displayed}
+             onFocus={() => { setDraft(String(value ?? '')); setEditing(true); }}
+-            onChange={event => { setDraft(event.target.value); onChange(encode(event.target.value)); }}
+-            onBlur={() => { if (displayed === String(value ?? '') || onChange(encode(displayed))?.valid !== false) setEditing(false); }} />
+-    </label>;
++            onChange={event => { setDraft(event.target.value); apply(event.target.value); }}
++            onBlur={() => { if (displayed === String(value ?? '') || apply(displayed)?.valid !== false) setEditing(false); }} />
++    </label>{error && <span id={`${fieldId}-error`} className="text-xs text-red-700">{error}</span>}</>;
+ }
+ function StyleControl({ property, value, functional, onChange, onAuto }) {
+     const rule = STYLE_PROPERTIES[property], label = labelFor(property);
+
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/adaptive/adaptiveEditorState.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\adaptive\\adaptiveEditorState.js"
+index 92d11f2..2c1ede6 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\adaptive\\adaptiveEditorState.js"
+@@ -1,13 +1,12 @@
+-import { applyPageTemplateCommand, BLOCK_REGISTRY, COLOR_TOKENS, PAGE_KINDS, PAGE_TEMPLATES, validatePageTemplates } from '@scaleup/storefront-theme/adaptive';
++import { applyPageTemplateCommand, BLOCK_REGISTRY, getAdaptiveColorTokens, PAGE_KINDS, PAGE_TEMPLATES, validatePageTemplates } from '@scaleup/storefront-theme/adaptive';
+ import { normalizeStoredTheme, validateStoredTheme } from '@scaleup/storefront-theme/storage';
+-import { normalizeThemeColors } from '@scaleup/storefront-theme';
+ 
+ export const EDITABLE_REGIONS = Object.freeze([...PAGE_KINDS]);
+ export const PAGE_GROUPS = Object.freeze({ Storefront: { home: 'Homepage', product: 'Product Details', category: 'Categories', collection: 'Collections' },
+     Shopping: { cart: 'Cart', checkout: 'Checkout' }, Customer: { account: 'Account', track: 'Order Tracking' },
+     Information: { policiesIndex: 'Policies', policy: 'Policy Details' }, Global: { header: 'Global header', footer: 'Global footer' } });
+ export const VIEWPORTS = Object.freeze({ base: { label: 'Mobile', width: 390 }, tablet: { label: 'Tablet', width: 768 }, desktop: { label: 'Desktop', width: 1280 } });
+-export const editorTokens = theme => { const colors = normalizeThemeColors(theme); return Object.fromEntries(COLOR_TOKENS.map(key => [key, colors[key]])); };
++export const editorTokens = getAdaptiveColorTokens;
+ export const regionTemplateId = (document, region) => ['header', 'footer'].includes(region) ? document.globals[region] : document.defaultTemplates[region];
+ export const mayOpenAdaptiveEditor = (theme, availability) => Number(theme?.version) === 5 && availability?.available === true;
+ export const nodeLabel = (tree, nodeId) => {
+
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\editors\\BasicEditors.jsx"
+index 82d3e04..ed1422d 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\editors\\BasicEditors.jsx"
+@@ -60,7 +60,7 @@ export function TypographyEditor({ theme, setThemeGroup }) {
+     );
+ }
+ 
+-export function LayoutEditor({ theme, setTheme, setThemeGroup, capabilities = getThemeCapabilities(theme) }) {
++export function LayoutEditor({ theme, setThemeGroup, capabilities = getThemeCapabilities(theme) }) {
+     return (
+         <BuilderCard title="Layout" description="Control page width, section rhythm, and product grid density." icon={LayoutTemplate}>
+             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/previewEditor.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\previewEditor.js"
+index e69de29..a68cb11 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\previewEditor.js"
+@@ -0,0 +1,14 @@
++import { createElement } from 'react';
++import PreviewSectionToolbar from './PreviewSectionToolbar.jsx';
++const getSectionLabel = (section = {}) => section.settings?.visualLabel || section.title || section.type || 'Section';
++export const createPreviewEditor = ({ theme, activeElement, onSelectElement, onToggleSectionVisibility }) => {
++    if (!onSelectElement) return null;
++    const sections = theme?.homepageSections || [];
++    return { selectedId: activeElement, onSelect: onSelectElement, renderToolbar: (id, meta = {}) => {
++        const sectionIndex = id?.startsWith('section:') ? sections.findIndex(section => String(section?.id || section?._id) === id.slice('section:'.length))
++            : (id?.startsWith('section-') ? Number(id.replace('section-', '')) : -1);
++        const section = sectionIndex >= 0 ? sections[sectionIndex] : null;
++        return createElement(PreviewSectionToolbar, { id, label: section ? getSectionLabel(section) : meta.label, locked: Boolean(meta.locked),
++            section, sectionIndex, onSelectElement, onToggleSectionVisibility });
++    } };
++};
+
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/ThemeGallery.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\themes\\ThemeGallery.jsx"
+index 9e35679..ddbc602 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\themes\\ThemeGallery.jsx"
+@@ -1,6 +1,7 @@
++import { buildPreviewTheme } from './themePreview.js';
+ import { useEffect, useMemo, useRef, useState } from 'react';
+ import { Check, Eye, Layers3, Search, ShieldCheck, X } from 'lucide-react';
+-import { getPrebuiltThemes, getPrebuiltTheme, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
++import { getPrebuiltThemes, getPrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
+ import { BuilderButton, DeviceSwitcher } from '../builderUi.jsx';
+ import { StorefrontPreview } from '../StorefrontPreview.jsx';
+ import { getAvailableGalleryThemes, isGalleryThemeAvailable } from './themeAvailability.js';
+@@ -8,17 +9,6 @@ const availableThemes = getPrebuiltThemes();
+ const industryFilters = ['All', ...new Set(availableThemes.map(theme => theme.industry))];
+ const styleFilters = ['All styles', ...new Set(availableThemes.map(theme => theme.style))];
+ 
+-export const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {
+-    let sectionIndex = 0;
+-    return resolvePrebuiltTheme({
+-        currentTheme,
+-        presetId,
+-        planAccess,
+-        appliedAt: '2026-01-01T00:00:00.000Z',
+-        createSectionId: type => `preview-${presetId}-${String(type).toLowerCase()}-${sectionIndex += 1}`
+-    });
+-};
+-
+ // The full Gallery preview consumes the resolved candidate that Apply uses.
+ // Keep its input forwarding in one place for Gallery/Builder/live comparisons.
+ export function ThemeGalleryPreview({ theme, planAccess, branding, storewideDiscount, shopName, trustedBadge, shopVerification, device, products, previewCatalog, categories, reviews }) {
+@@ -136,7 +126,7 @@ export default function ThemeGallery({
+             }
+         });
+         return resolved;
+-    }, [availableThemes, currentTheme, planAccess, branding, shopName]);
++    }, [availableThemes, currentTheme, planAccess]);
+ 
+     const previewResolution = useMemo(() => {
+         if (!previewTheme) return { theme: null, error: '' };
+
+
+# ecommerce-admin/src/pages/dashboard/StoreBuilder/themes/themePreview.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\themes\\themePreview.js"
+index e69de29..470899c 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\src\\pages\\dashboard\\StoreBuilder\\themes\\themePreview.js"
+@@ -0,0 +1,12 @@
++import { resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
++export const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {
++    let sectionIndex = 0;
++    return resolvePrebuiltTheme({
++        currentTheme,
++        presetId,
++        planAccess,
++        appliedAt: '2026-01-01T00:00:00.000Z',
++        createSectionId: type => `preview-${presetId}-${String(type).toLowerCase()}-${sectionIndex += 1}`
++    });
++};
++
+
+
+# ecommerce-admin/tests/fixtures/adaptive-dialogs.html
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\tests\\fixtures\\adaptive-dialogs.html"
+index e69de29..d3ee0fd 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\tests\\fixtures\\adaptive-dialogs.html"
+@@ -0,0 +1,5 @@
++<!doctype html>
++<html lang="en">
++  <head><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Adaptive dialog acceptance fixture</title></head>
++  <body><div id="root"></div><script type="module" src="./adaptive-dialogs.jsx"></script></body>
++</html>
+
+
+# ecommerce-admin/tests/fixtures/adaptive-dialogs.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\tests\\fixtures\\adaptive-dialogs.jsx"
+index e69de29..23be896 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-admin\\tests\\fixtures\\adaptive-dialogs.jsx"
+@@ -0,0 +1,57 @@
++import { useState } from 'react';
++import { createRoot } from 'react-dom/client';
++import { PageTemplateRenderer, resolveAdaptivePage } from '@scaleup/storefront-renderer/adaptive';
++import { createPreviewBootstrap, createPreviewCore, PREVIEW_ACTIONS } from '../../src/pages/dashboard/StoreBuilder/adaptive/previewState.js';
++import { editorTokens } from '../../src/pages/dashboard/StoreBuilder/adaptive/adaptiveEditorState.js';
++import '../../src/index.css';
++
++// This fixture mounts the existing shared presentation, not an editor or route
++// controller. All actions affect local React state; no API/provider is imported.
++const bootstrap = createPreviewBootstrap();
++const plans = Object.fromEntries(['track', 'header'].map(pageKind => {
++    const result = resolveAdaptivePage({ siteBuilder: bootstrap.shop.theme.siteBuilder, pageKind, colorTokens: editorTokens(bootstrap.shop.theme) });
++    if (!result.valid) throw new Error('Synthetic template must validate.');
++    return [pageKind, result.value];
++}));
++const initial = scenario => {
++    if (scenario.startsWith('header')) {
++        const theme = scenario === 'header-long' ? { ...bootstrap.shop.theme, navigation: Array.from({ length: 12 }, (_, index) => ({
++            label: `দীর্ঘ নেভিগেশন লিংক — Collection ${index + 1}`, url: '/policies', sortOrder: index,
++        })) } : bootstrap.shop.theme;
++        return { ...createPreviewCore('header', 'navigation', { theme, shop: bootstrap.shop }), preview: false };
++    }
++    const core = createPreviewCore('track', scenario, { theme: bootstrap.shop.theme });
++    return { ...core, presentationVariant: 'reference', atelier: false,
++        order: { ...core.order, status: scenario === 'found' ? 'Pending' : 'Delivered' },
++        returnProofImages: [new File(['synthetic proof only'], 'synthetic-proof.png', { type: 'image/png' })] };
++};
++export default function Fixture() {
++    const [scenario, setScenario] = useState('found');
++    const [core, setCore] = useState(() => initial('found'));
++    const [busy, setBusy] = useState(false);
++    const update = key => value => setCore(previous => ({ ...previous, [key]: typeof value === 'function' ? value(previous[key]) : value }));
++    const actions = { ...PREVIEW_ACTIONS, core: { ...PREVIEW_ACTIONS.core,
++        setCancelOpen: update('cancelOpen'), setReturnOpen: update('returnOpen'),
++        setCancelReason: update('cancelReason'), setCancelNote: update('cancelNote'),
++        setReturnReason: update('returnReason'), setReturnDescription: update('returnDescription'),
++        setReturnProofImages: update('returnProofImages'), setReturnProofVideo: update('returnProofVideo'),
++        openReturnModal: () => update('returnOpen')(true),
++        handleReturnProofImages: event => update('returnProofImages')(Array.from(event.target.files || []).slice(0, 3)),
++        toggleReturnItem: item => update('selectedReturnItems')(previous => {
++            const key = `${item.productId._id}:${item.variantId || ''}`;
++            return previous.includes(key) ? previous.filter(value => value !== key) : [...previous, key];
++        }),
++    } };
++    return <>
++        <header className="space-y-3 border-b p-4">
++            <h1 className="text-xl font-bold">Synthetic tracking dialog acceptance</h1>
++            <p>No order access, OTP, upload, cancellation, return or provider request is sent.</p>
++            <label className="mr-4">Example <select aria-label="Example" value={scenario} onChange={event => { setScenario(event.target.value); setCore(initial(event.target.value)); }}>
++                <option value="found">Pending cancellation</option><option value="return-eligible">Eligible return</option><option value="header">Global navigation</option><option value="header-long">Long global navigation</option>
++            </select></label>
++            <label><input type="checkbox" checked={busy} onChange={event => setBusy(event.target.checked)} /> Simulate pending action</label>
++        </header>
++        <PageTemplateRenderer plan={plans[scenario.startsWith('header') ? 'header' : 'track']} pageKind={scenario.startsWith('header') ? 'header' : 'track'} data={{ core: { ...core, actionLoading: busy } }} actions={actions} />
++    </>;
++}
++createRoot(document.getElementById('root')).render(<Fixture />);
+
+
+# ecommerce-backend/backend/controllers/storeBuilderController.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\controllers\\storeBuilderController.js"
+index d8f9066..a6b7cc4 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\controllers\\storeBuilderController.js"
+@@ -1,4 +1,5 @@
+ const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
++const logger = require('../services/logger');
+ const Shop = require('../models/Shop');
+ const Review = require('../models/Review');
+ const Product = require('../models/Product');
+@@ -50,6 +51,12 @@ const {
+ 
+ const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+ 
++const recordBuilderFailure = (req, error, operation) => logger.warn('store_builder_operation_failed', {
++    operation, shopId: String(req.tenantId || ''), requestId: req.id,
++    code: /^[A-Z0-9_]{1,64}$/.test(String(error.code || '')) ? error.code : 'STORE_BUILDER_FAILED',
++    status: Number(error.statusCode) || 400,
++});
++
+ const sendStoreBuilderError = (res, err, fallbackMessage) => {
+     const message = err.message || fallbackMessage;
+     return res.status(err.statusCode || 400).json({
+@@ -251,7 +258,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
+             planAccess: responseShop.planAccess
+         });
+     } catch (err) {
+-        console.error('Update store builder settings error:', err);
++        recordBuilderFailure(req, err, 'publish');
+         const duplicateDomain = err?.code === 11000 && String(err?.message || '').includes('customDomain');
+         const message = duplicateDomain
+             ? 'This domain is already connected to another shop.'
+@@ -628,6 +635,7 @@ exports.saveStoreBuilderDraft = async (req, res) => {
+         res.status(200).json({ success: true, message: 'Draft saved', data: draft });
+     } catch (err) {
+         const message = err.message || 'Failed to save Store Builder draft';
++        recordBuilderFailure(req, err, 'draft-save');
+         res.status(err.statusCode || 400).json({
+             success: false,
+             code: err.code || 'INVALID_THEME',
+@@ -641,13 +649,23 @@ exports.saveStoreBuilderDraft = async (req, res) => {
+ exports.deleteStoreBuilderDraft = async (req, res) => {
+     try {
+         assertDraftTenant(req);
+-        const currentDraft = await StoreBuilderDraft.findOne({ shop_id: req.tenantId }).select('theme.version').lean();
+-        if (Number(currentDraft?.theme?.version) === 5) throw Object.assign(new Error('Adaptive drafts remain read-only during reader-first rollout.'), { statusCode: 409, code: 'ADAPTIVE_READ_ONLY' });
+-        const result = await StoreBuilderDraft.deleteOne({ ...draftWriteFilter(req.tenantId, req.body?.expectedDraftUpdatedAt), 'theme.version': { $ne: 5 } });
++        const currentDraft = await StoreBuilderDraft.findOne({ shop_id: req.tenantId }).select('theme').lean();
++        let versionFilter = { $ne: 5 };
++        if (Number(currentDraft?.theme?.version) === 5) {
++            const policy = require('../services/storeBuilder/adaptivePersistencePolicy');
++            const access = await getShopPlanAccess(req.tenantId);
++            if (!policy.getAdaptiveAvailability({ shopId: req.tenantId, planAccess: access }).available) throw Object.assign(new Error('Adaptive drafts remain read-only while adaptive writes are disabled.'), { statusCode: 409, code: 'ADAPTIVE_READ_ONLY' });
++            if (typeof req.body?.expectedDraftUpdatedAt !== 'string') throw Object.assign(new Error('Reload this draft before discarding it.'), { statusCode: 409, code: 'THEME_CLIENT_UPGRADE_REQUIRED' });
++            const shop = await Shop.findById(req.tenantId).select('theme').lean();
++            await policy.assertAdaptiveThemeMutation({ shop, candidate: currentDraft.theme, req });
++            versionFilter = 5;
++        }
++        const result = await StoreBuilderDraft.deleteOne({ ...draftWriteFilter(req.tenantId, req.body?.expectedDraftUpdatedAt), 'theme.version': versionFilter });
+         if (req.body?.expectedDraftUpdatedAt !== undefined && !result.deletedCount
+             && await StoreBuilderDraft.findOne({ shop_id: req.tenantId }).select('_id').lean()) throw draftConflict();
+         res.status(200).json({ success: true, message: 'Draft discarded' });
+     } catch (err) {
++        recordBuilderFailure(req, err, 'draft-discard');
+         res.status(err.statusCode || 500).json({ success: false, code: err.code, error: err.statusCode ? err.message : 'Failed to discard Store Builder draft' });
+     }
+ };
+@@ -697,6 +715,7 @@ exports.restoreStoreBuilderRevision = async (req, res) => {
+         res.status(200).json({ success: true, message: 'Revision restored as a new published revision', data: restored });
+     } catch (err) {
+         const message = err.message || 'Failed to restore Store Builder revision';
++        recordBuilderFailure(req, err, 'revision-restore');
+         res.status(err.statusCode || 400).json({
+             success: false,
+             code: err.code,
+@@ -727,7 +746,8 @@ exports.getPublicStorefrontSettings = async (req, res) => {
+         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+ 
+         const planAccess = await getShopPlanAccess(req.tenantId);
+-        const cacheKey = `storefront:settings:${req.tenantId}:${JSON.stringify({ revision: Number(shop.themeRevision || 0),
++        const cacheKey = `storefront:settings:${req.tenantId}:${JSON.stringify({ adaptivePolicy: require('../services/storeBuilder/adaptiveRolloutPolicy').readAdaptiveRollout().fingerprint,
++            operational: planAccess.isOperational && planAccess.shopOperational, revision: Number(shop.themeRevision || 0),
+             updatedAt: shop.updatedAt, plan: planAccess.planKey, access: planAccess.storeBuilderAccess, features: planAccess.features })}`;
+         const cached = await cache.get(cacheKey);
+         if (cached) return res.status(200).json(cached);
+@@ -737,7 +757,7 @@ exports.getPublicStorefrontSettings = async (req, res) => {
+         await cache.set(cacheKey, response, 60);
+         res.status(200).json(response);
+     } catch (err) {
+-        console.error('Get public storefront settings error:', err);
++        recordBuilderFailure(req, err, 'public-resolution');
+         res.status(500).json({ success: false, error: 'Failed to load storefront settings' });
+     }
+ };
+
+
+# ecommerce-backend/backend/controllers/storeController.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\controllers\\storeController.js"
+index 950c5a4..69514d1 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\controllers\\storeController.js"
+@@ -24,6 +24,7 @@ const {
+ const { hasFeature } = require('../services/shops/featureAccessService');
+ const { getShopPlanAccess } = require('../services/billing/planAccessService');
+ const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
++const { readAdaptiveRollout } = require('../services/storeBuilder/adaptiveRolloutPolicy');
+ const { buildPagination } = require('../utils/pagination');
+ const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
+ const { normalizeSearchText } = require('../services/products/productQueryService');
+@@ -182,6 +183,8 @@ exports.getStorefrontBootstrap = async (req, res) => {
+         ]);
+         if (!shop) return res.status(404).json({ error: 'Shop details not found.' });
+         const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
++            adaptivePolicy: readAdaptiveRollout().fingerprint,
++            operational: planAccess.isOperational && planAccess.shopOperational,
+             revision: Number(shop.themeRevision || 0),
+             updatedAt: shop.updatedAt,
+             plan: planAccess.planKey,
+
+
+# ecommerce-backend/backend/scripts/check-adaptive-release-config.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\scripts\\check-adaptive-release-config.js"
+index e69de29..c68c34a 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\scripts\\check-adaptive-release-config.js"
+@@ -0,0 +1,11 @@
++'use strict';
++// Read-only configuration check. No database connection or merchant enablement.
++require('dotenv').config({ quiet: true });
++const { readAdaptiveRollout } = require('../services/storeBuilder/adaptiveRolloutPolicy');
++const policy = readAdaptiveRollout();
++console.log(JSON.stringify({ configuration: policy.valid ? 'PASS' : 'FAIL', mode: policy.mode, enabled: policy.enabled,
++    approvalPresent: policy.approved, pilotTenantCount: policy.tenantCount, writes: policy.writes, rendering: policy.rendering,
++    policyFingerprint: policy.fingerprint, productionAuthorization: 'NOT VERIFIED',
++    requirements: ['All instances must use identical policy', 'Reader-first deployment', 'MongoDB transactions and indexes', 'Explicit tenant and product approval', 'Browser/accessibility acceptance'],
++}, null, 2));
++if (!policy.valid) process.exitCode = 1;
+
+
+# ecommerce-backend/backend/services/storeBuilder/adaptivePersistencePolicy.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\adaptivePersistencePolicy.js"
+index 4b64df6..d31d02c 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\adaptivePersistencePolicy.js"
+@@ -7,10 +7,7 @@ const { getShopPlanAccess } = require('../billing/planAccessService');
+ const { normalizeStoredTheme } = require('@scaleup/storefront-theme');
+ const { themeError } = require('../../models/storeBuilderThemeContract');
+ 
+-// No entitlement has been approved. An environment flag alone cannot authorize
+-// adoption in this reader-first release. Atelier's rollout is independent.
+-const getAdaptiveAvailability = () => ({ available: false,
+-    enabled: process.env.ADAPTIVE_BUILDER_ROLLOUT === 'on', reason: 'ADAPTIVE_ENTITLEMENT_NOT_APPROVED' });
++const { getAdaptiveAvailability } = require('./adaptiveRolloutPolicy');
+ const permissionError = (code, message) => Object.assign(themeError(code, message), { statusCode: 403 });
+ 
+ const assertAdaptiveActor = async ({ shopId, req }) => {
+@@ -29,12 +26,12 @@ const assertAdaptiveThemeMutation = async ({ shop, candidate, req, changeScope }
+     if (Number(shop?.theme?.version) !== 5 && Number(candidate?.version) !== 5) return;
+     await assertAdaptiveActor({ shopId: shop._id, req });
+     const access = await getShopPlanAccess(shop._id); // Ignore caller-supplied plans.
+-    if (access.storeBuilderAccess !== 'full') throw Object.assign(themeError('ADAPTIVE_PLAN_REQUIRED', 'Adaptive design requires an explicitly approved plan.'), { statusCode: 403 });
++    if (access.storeBuilderAccess !== 'full' || !access.isOperational || !access.shopOperational) throw Object.assign(themeError('ADAPTIVE_PLAN_REQUIRED', 'Active Store Builder access is required.'), { statusCode: 403 });
+     const before = normalizeStoredTheme(JSON.parse(JSON.stringify(shop.theme || {})));
+     const next = normalizeStoredTheme(JSON.parse(JSON.stringify(candidate)));
+     if (Number(before.version) !== 5 || JSON.stringify(before.siteBuilder) !== JSON.stringify(next.siteBuilder)) {
+-        if (!getAdaptiveAvailability().available) throw Object.assign(themeError('ADAPTIVE_ADOPTION_DISABLED', 'Adaptive Store Builder adoption is disabled.'), { statusCode: 403 });
+-    } else if (changeScope !== 'homepage-seo') {
++        if (!getAdaptiveAvailability({ shopId: shop._id, planAccess: access }).available) throw Object.assign(themeError('ADAPTIVE_ADOPTION_DISABLED', 'Adaptive Store Builder adoption is disabled.'), { statusCode: 403 });
++    } else if (changeScope !== 'homepage-seo' && !getAdaptiveAvailability({ shopId: shop._id, planAccess: access }).available) {
+         throw Object.assign(themeError('ADAPTIVE_READ_ONLY', 'Adaptive editing remains disabled during reader-first rollout.'), { statusCode: 403 });
+     }
+     if (changeScope === 'homepage-seo') {
+
+
+# ecommerce-backend/backend/services/storeBuilder/adaptiveRolloutPolicy.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\adaptiveRolloutPolicy.js"
+index e69de29..cdb78a7 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\adaptiveRolloutPolicy.js"
+@@ -0,0 +1,31 @@
++'use strict';
++const { createHash } = require('node:crypto');
++
++// Process configuration is an operator control, never a request/merchant field.
++// An approval reference records authorization; it is not a password or API key.
++const readAdaptiveRollout = (env = process.env) => {
++    const mode = env.ADAPTIVE_BUILDER_ROLLOUT || 'off';
++    const approval = env.ADAPTIVE_BUILDER_APPROVAL || '';
++    const rawIds = env.ADAPTIVE_BUILDER_SHOP_IDS || '';
++    const ids = rawIds ? rawIds.split(',').map(value => value.trim().toLowerCase()) : [];
++    const valid = ['off', 'pilot', 'all'].includes(mode)
++        && (!rawIds || (ids.length <= 100 && ids.every(id => /^[a-f0-9]{24}$/.test(id))))
++        && ['off', 'on', undefined].includes(env.ADAPTIVE_BUILDER_WRITES)
++        && ['off', 'on', undefined].includes(env.ADAPTIVE_BUILDER_RENDERING);
++    const approved = /^[a-zA-Z0-9][a-zA-Z0-9._/-]{7,79}$/.test(approval);
++    const enabled = valid && approved && mode !== 'off' && (mode !== 'pilot' || ids.length > 0);
++    const writes = enabled && env.ADAPTIVE_BUILDER_WRITES === 'on';
++    const rendering = enabled && env.ADAPTIVE_BUILDER_RENDERING === 'on';
++    const fingerprint = createHash('sha256').update(JSON.stringify({ mode, approved, valid, ids: [...new Set(ids)].sort(), writes, rendering })).digest('hex').slice(0, 20);
++    return { mode: valid ? mode : 'off', valid, approved, tenantCount: new Set(ids).size, enabled, writes, rendering, fingerprint,
++        allows: shopId => enabled && (mode === 'all' || ids.includes(String(shopId).toLowerCase())) };
++};
++const getAdaptiveAvailability = ({ shopId, planAccess } = {}) => {
++    const policy = readAdaptiveRollout();
++    const eligible = planAccess?.storeBuilderAccess === 'full' && planAccess.isOperational === true && planAccess.shopOperational === true && planAccess.features?.storeBuilder === true;
++    const allowed = eligible && policy.allows(shopId);
++    return { available: Boolean(allowed && policy.writes), rendering: Boolean(allowed && policy.rendering), enabled: policy.enabled,
++        reason: !policy.enabled ? 'ADAPTIVE_ENTITLEMENT_NOT_APPROVED' : !eligible ? 'ADAPTIVE_ACCESS_REQUIRED'
++            : !policy.allows(shopId) ? 'ADAPTIVE_TENANT_NOT_APPROVED' : !policy.writes ? 'ADAPTIVE_WRITES_DISABLED' : null };
++};
++module.exports = { readAdaptiveRollout, getAdaptiveAvailability };
+
+
+# ecommerce-backend/backend/services/storeBuilder/effectiveThemeService.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\effectiveThemeService.js"
+index e949433..692c823 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\effectiveThemeService.js"
+@@ -1,6 +1,8 @@
+ const { resolveEffectiveTheme } = require('@scaleup/storefront-theme');
+ const { ensureThemeSectionArchitecture } = require('../themeSectionService');
+ const { resolveStoreBranding } = require('../shops/storeBrandingService');
++const { getAdaptiveAvailability } = require('./adaptiveRolloutPolicy');
++const logger = require('../logger');
+ 
+ // All callers supply a shop loaded through their existing tenant/domain boundary.
+ // Branding resolves assets and CTA targets using this shop's ID, never request data.
+@@ -10,6 +12,18 @@ const applyEffectiveStoreTheme = async (shop, planAccess) => {
+     const branding = await resolveStoreBranding(shop);
+     const theme = Number(shop.theme?.version) >= 5 ? JSON.parse(JSON.stringify(shop.theme)) : shop.theme;
+     if (Number(theme?.version) >= 5) require('@scaleup/storefront-theme').assertReadableThemeVersion(theme);
++    // Never reuse a caller-provided projection or expose the private library.
++    delete shop.adaptive;
++    if (Number(theme?.version) === 5 && getAdaptiveAvailability({ shopId: shop._id, planAccess }).rendering) {
++        try {
++            shop.adaptive = await getAdaptivePublicProjection({ shopId: shop._id, published: { theme, themeRevision: shop.themeRevision } });
++        } catch (error) {
++            // Required commerce remains available through the validated v4 backing
++            // presentation. Do not log graph content, URLs or exception messages.
++            logger.warn('store_builder_adaptive_public_fallback', { shopId: String(shop._id), revision: Number(shop.themeRevision || 0),
++                code: ['ASSET_UNAVAILABLE', 'INVALID_ADAPTIVE_THEME'].includes(error.code) ? error.code : 'ADAPTIVE_PROJECTION_FAILED' });
++        }
++    }
+     shop.theme = resolveEffectiveTheme(theme, { planAccess, branding, shopName: shop.shopName });
+     shop.branding = branding;
+     shop.themeRevision = Number(shop.themeRevision || 0);
+@@ -17,14 +31,14 @@ const applyEffectiveStoreTheme = async (shop, planAccess) => {
+     return shop;
+ };
+ 
+-// Future renderer integration only. No current route/cache invokes this projection.
+-// A tenant-scoped snapshot and two bounded media queries avoid per-node reads.
+-const getAdaptivePublicProjection = async ({ shopId }) => {
++// Only published snapshots reach this function. The public caller gates access;
++// internal recovery tests may inspect projections with rollout still OFF.
++const getAdaptivePublicProjection = async ({ shopId, published }) => {
+     const Shop = require('../../models/Shop');
+     const { normalizeStoredTheme, projectAdaptiveTheme, collectAdaptiveReferences } = require('@scaleup/storefront-theme/storage');
+     const { assertThemeAssetOwnership } = require('./storeBuilderAssetService');
+     const StoreBuilderAsset = require('../../models/StoreBuilderAsset');
+-    const shop = await Shop.findById(shopId).select('theme themeRevision').lean();
++    const shop = published ? { _id: shopId, ...published } : await Shop.findById(shopId).select('theme themeRevision').lean();
+     if (!shop || Number(shop.theme?.version) !== 5) return null;
+     const theme = normalizeStoredTheme(JSON.parse(JSON.stringify(shop.theme)));
+     await assertThemeAssetOwnership({ shopId: shop._id, theme });
+@@ -33,7 +47,33 @@ const getAdaptivePublicProjection = async ({ shopId }) => {
+     const assets = await StoreBuilderAsset.find({ shop_id: shop._id, _id: { $in: refs.assetIds }, status: { $in: ['active', 'retired'] } })
+         .select('_id url width height mimeType').lean();
+     if (assets.length !== refs.assetIds.length) throw Object.assign(new Error('Published adaptive media is unavailable.'), { code: 'ASSET_UNAVAILABLE', statusCode: 409 });
+-    return { revision: Number(shop.themeRevision || 0), siteBuilder, assets: assets.map(asset => ({ id: String(asset._id),
++    const sourcesByTemplate = await resolvePublicSources(shopId, siteBuilder);
++    return { revision: Number(shop.themeRevision || 0), siteBuilder, sourcesByTemplate, assets: assets.map(asset => ({ id: String(asset._id),
+         url: asset.url, width: asset.width, height: asset.height, mimeType: asset.mimeType })) };
+ };
++
++// One bounded batch per source family, independent of block count. Reuse public
++// card serialization and scheduled pricing; never return private product fields.
++const resolvePublicSources = async (shopId, graph) => {
++    const mongoose = require('mongoose');
++    const Product = require('../../models/Product');
++    const { PUBLIC_PRODUCT_CARD_PROJECT, sanitizePublicProducts } = require('../publicProductSerializer');
++    const { applyScheduledSalesToProducts } = require('../sales/scheduledSaleService');
++    const nodes = Object.values(graph.templates).flatMap(tree => Object.values(tree.nodes));
++    const ids = [...new Set(nodes.flatMap(node => node.source?.productIds || []))];
++    const catalogLimit = Math.max(0, ...nodes.filter(node => node.source?.kind === 'catalog').map(node => node.source.limit));
++    const categoryLimit = Math.max(0, ...nodes.filter(node => node.source?.kind === 'categories').map(node => node.source.limit));
++    const query = { shop_id: new mongoose.Types.ObjectId(String(shopId)), status: 'Published', isActive: true, isDeleted: false };
++    const [manual, catalog, categories] = await Promise.all([
++        ids.length ? Product.aggregate([{ $match: { ...query, _id: { $in: ids.map(id => new mongoose.Types.ObjectId(id)) } } }, { $project: PUBLIC_PRODUCT_CARD_PROJECT }]) : [],
++        catalogLimit ? Product.aggregate([{ $match: query }, { $sort: { createdAt: -1, _id: 1 } }, { $limit: catalogLimit }, { $project: PUBLIC_PRODUCT_CARD_PROJECT }]) : [],
++        categoryLimit ? Product.aggregate([{ $match: { ...query, category: { $type: 'string', $ne: '' } } }, { $group: { _id: '$category' } }, { $sort: { _id: 1 } }, { $limit: categoryLimit }]) : [],
++    ]);
++    const priced = sanitizePublicProducts(await applyScheduledSalesToProducts({ shopId, products: [...manual, ...catalog] }));
++    const byId = new Map(priced.map(product => [String(product._id), product]));
++    return Object.fromEntries(Object.entries(graph.templates).map(([id, tree]) => [id, Object.fromEntries(Object.entries(tree.nodes).filter(([, node]) => ['manualProducts', 'catalog', 'categories'].includes(node.source?.kind)).map(([nodeId, node]) => [nodeId,
++        node.source.kind === 'categories' ? { categories: categories.slice(0, node.source.limit).map(item => item._id) }
++            : { products: (node.source.kind === 'manualProducts' ? node.source.productIds : catalog.map(product => String(product._id))).map(key => byId.get(String(key))).filter(Boolean).slice(0, node.source.productIds?.length || node.source.limit) }
++    ]))]));
++};
+ module.exports = { applyEffectiveStoreTheme, getAdaptivePublicProjection };
+
+
+# ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\storeBuilderService.js"
+index b219f71..7b66453 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\services\\storeBuilder\\storeBuilderService.js"
+@@ -3,6 +3,7 @@ const {
+     assertSupportedThemeVersion,
+     assertReadableThemeVersion,
+     normalizeStoredTheme,
++    mergeThemePatch,
+     getThemeCapabilityMetadata,
+     normalizeSearchAliases,
+     normalizeSearchText,
+@@ -100,7 +101,14 @@ const normalizeThemeForShop = async (theme, shop, { readOnly = false, changeScop
+         if (currentAdaptive) assertCompleteThemeWrite(shop.theme, theme);
+     }
+     if (adaptive) normalizeStoredTheme(toJsonSafeTheme(theme)); // Reject before legacy sanitization.
+-    const sanitizedTheme = preserveThemeExtensions(toJsonSafeTheme(theme), shop?.theme || {});
++    // Merge a permitted partial write before defaults/migrations. Otherwise a
++    // typography-only draft can synthesize a fallback section and fail limited
++    // plan checks, or overwrite omitted merchant content. v5 complete-write
++    // fences above still run against the unmerged incoming candidate.
++    const previousTheme = toJsonSafeTheme(shop?.theme);
++    const presetChanged = Object.hasOwn(theme || {}, 'preset') && theme.preset?.id !== previousTheme?.preset?.id;
++    const candidate = readOnly || adaptive || presetChanged ? toJsonSafeTheme(theme) : mergeThemePatch(previousTheme, toJsonSafeTheme(theme));
++    const sanitizedTheme = preserveThemeExtensions(candidate, previousTheme);
+     const validate = adaptive ? require('@scaleup/storefront-theme').validateStoredTheme : validateTheme;
+     const validation = validate({ ...sanitizedTheme,
+         ...(Object.hasOwn(theme || {}, 'presentationVariant') ? { presentationVariant: theme.presentationVariant } : {}) });
+@@ -250,7 +258,7 @@ const getStoreBuilderBootstrap = async ({ shopId }) => {
+     const planAccess = safePlanAccess(access);
+ 
+     return {
+-        adaptiveAvailability: adaptivePolicy.getAdaptiveAvailability(),
++        adaptiveAvailability: adaptivePolicy.getAdaptiveAvailability({ shopId: shop._id, planAccess: access }),
+         adaptiveAssets: adaptiveAssets.map(asset => ({ assetId: String(asset._id), url: asset.url, width: asset.width, height: asset.height,
+             status: asset.status, expiresAt: asset.expiresAt })),
+         shop: { ...shop, planAccess, previewBranding, trustedBadge, shopVerification: buildPublicShopVerification(shop, { eligible: access.features?.publicVerifiedBadge }) },
+
+
+# ecommerce-backend/backend/tests/adaptive-release.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\adaptive-release.test.js"
+index e69de29..2287a0b 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\adaptive-release.test.js"
+@@ -0,0 +1,104 @@
++'use strict';
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const { readAdaptiveRollout, getAdaptiveAvailability } = require('../services/storeBuilder/adaptiveRolloutPolicy');
++const shopId = 'a11111111111111111111111';
++const config = { ADAPTIVE_BUILDER_ROLLOUT: 'pilot', ADAPTIVE_BUILDER_APPROVAL: 'synthetic-release-approval', ADAPTIVE_BUILDER_SHOP_IDS: shopId,
++    ADAPTIVE_BUILDER_WRITES: 'on', ADAPTIVE_BUILDER_RENDERING: 'on' };
++test('rollout defaults OFF and legacy on/partial/invalid configuration cannot grant access', () => {
++    for (const env of [{}, { ...config, ADAPTIVE_BUILDER_ROLLOUT: 'on' }, { ...config, ADAPTIVE_BUILDER_APPROVAL: '' },
++        { ...config, ADAPTIVE_BUILDER_SHOP_IDS: '' }, { ...config, ADAPTIVE_BUILDER_SHOP_IDS: `${shopId},garbage` },
++        { ...config, ADAPTIVE_BUILDER_WRITES: 'true' }, { ...config, ADAPTIVE_BUILDER_ROLLOUT: 'off' }]) {
++        const policy = readAdaptiveRollout(env); assert.equal(policy.writes, false); assert.equal(policy.rendering, false); assert.equal(policy.allows(shopId), false);
++    }
++});
++test('pilot and wider rollout remain explicit; write and render kills are independent', () => {
++    const pilot = readAdaptiveRollout(config); assert.equal(pilot.allows(shopId), true); assert.equal(pilot.allows('b11111111111111111111111'), false);
++    assert.equal(readAdaptiveRollout({ ...config, ADAPTIVE_BUILDER_ROLLOUT: 'all' }).allows('b11111111111111111111111'), true);
++    assert.equal(readAdaptiveRollout({ ...config, ADAPTIVE_BUILDER_WRITES: 'off' }).rendering, true);
++    assert.equal(readAdaptiveRollout({ ...config, ADAPTIVE_BUILDER_RENDERING: 'off' }).writes, true);
++    assert.notEqual(pilot.fingerprint, readAdaptiveRollout({ ...config, ADAPTIVE_BUILDER_RENDERING: 'off' }).fingerprint);
++});
++test('availability requires trusted active full access in addition to operator approval', t => {
++    for (const [key, value] of Object.entries(config)) { const before = process.env[key]; t.after(() => before === undefined ? delete process.env[key] : process.env[key] = before); process.env[key] = value; }
++    const full = { storeBuilderAccess: 'full', isOperational: true, shopOperational: true, features: { storeBuilder: true } };
++    assert.equal(getAdaptiveAvailability({ shopId, planAccess: full }).available, true);
++    for (const planAccess of [undefined, { ...full, storeBuilderAccess: 'none' }, { ...full, storeBuilderAccess: 'limited' },
++        { ...full, isOperational: false }, { ...full, shopOperational: false }, { ...full, features: { storeBuilder: false } }]) assert.equal(getAdaptiveAvailability({ shopId, planAccess }).available, false);
++    assert.equal(getAdaptiveAvailability().available, false);
++});
++
++for (const kind of ['cancel', 'return']) for (const busy of [false, true]) test(`adaptive tracking ${kind} dialog exposes its name and protects pending actions (busy=${busy})`, async () => {
++    const h = await require('./helpers/adaptive-editor.cjs').loadAdaptiveEditor();
++    const bootstrap = h.ui.createPreviewBootstrap(), theme = bootstrap.shop.theme;
++    const result = h.ui.resolveAdaptivePage({ siteBuilder: theme.siteBuilder, pageKind: 'track', colorTokens: h.ui.editorTokens(theme) });
++    assert.equal(result.valid, true);
++    const core = h.ui.createPreviewCore('track', 'return-eligible', { theme, shop: bootstrap.shop, products: bootstrap.products });
++    Object.assign(core, { presentationVariant: 'reference', atelier: false, cancelOpen: kind === 'cancel', returnOpen: kind === 'return', actionLoading: busy });
++    const html = h.render(h.React.createElement(h.ui.PageTemplateRenderer, { plan: result.value, pageKind: 'track', data: { core }, actions: h.ui.PREVIEW_ACTIONS }));
++    assert.match(html, /role="dialog"/);
++    assert.match(html, /aria-modal="true"/);
++    assert.ok(html.includes(`aria-label="${kind === 'cancel' ? 'Cancel this order?' : 'Request return/refund'}"`));
++    const close = html.match(/<button[^>]*aria-label="Close modal"[^>]*>/)?.[0];
++    assert.ok(close, 'Dialog has a named close action');
++    assert.equal(close.includes('disabled=""'), busy, 'Closing cannot hide an in-flight action');
++    const dismiss = html.match(new RegExp(`<button[^>]*>\\s*${kind === 'cancel' ? 'Keep order' : 'Not now'}\\s*</button>`))?.[0];
++    assert.ok(dismiss);
++    assert.equal(dismiss.includes('disabled=""'), busy);
++    assert.ok(html.includes(busy ? (kind === 'cancel' ? 'Cancelling...' : 'Submitting...') : (kind === 'cancel' ? 'Confirm cancel' : 'Submit request')));
++});
++
++test('adaptive return proof keeps its remove action exposed outside image semantics', async () => {
++    const h = await require('./helpers/adaptive-editor.cjs').loadAdaptiveEditor();
++    const bootstrap = h.ui.createPreviewBootstrap(), theme = bootstrap.shop.theme;
++    const result = h.ui.resolveAdaptivePage({ siteBuilder: theme.siteBuilder, pageKind: 'track', colorTokens: h.ui.editorTokens(theme) });
++    assert.equal(result.valid, true);
++    const core = h.ui.createPreviewCore('track', 'return-eligible', { theme, shop: bootstrap.shop, products: bootstrap.products });
++    Object.assign(core, { presentationVariant: 'reference', atelier: false, returnOpen: true, returnProofImages: [new File([], 'synthetic-proof.png', { type: 'image/png' })] });
++    const html = h.render(h.React.createElement(h.ui.PageTemplateRenderer, { plan: result.value, pageKind: 'track', data: { core }, actions: h.ui.PREVIEW_ACTIONS }));
++    assert.match(html, /aria-label="synthetic-proof.png" role="group"/);
++    assert.match(html, /aria-label="Remove proof image"/);
++});
++
++test('adaptive mobile navigation trigger declares its closed dialog state', async () => {
++    const h = await require('./helpers/adaptive-editor.cjs').loadAdaptiveEditor();
++    const bootstrap = h.ui.createPreviewBootstrap(), theme = bootstrap.shop.theme;
++    const result = h.ui.resolveAdaptivePage({ siteBuilder: theme.siteBuilder, pageKind: 'header', colorTokens: h.ui.editorTokens(theme) });
++    assert.equal(result.valid, true);
++    const core = h.ui.createPreviewCore('header', 'navigation', { theme, shop: bootstrap.shop });
++    core.preview = false;
++    const html = h.render(h.React.createElement(h.ui.PageTemplateRenderer, { plan: result.value, pageKind: 'header', data: { core }, actions: h.ui.PREVIEW_ACTIONS }));
++    const trigger = html.match(/<button[^>]*aria-label="Open menu"[^>]*>/)?.[0];
++    assert.ok(trigger);
++    assert.match(trigger, /aria-haspopup="dialog"/);
++    assert.match(trigger, /aria-expanded="false"/);
++    assert.doesNotMatch(html, /aria-label="Store navigation"/);
++});
++
++test('adaptive return upload controls remain in the keyboard focus order', async () => {
++    const h = await require('./helpers/adaptive-editor.cjs').loadAdaptiveEditor();
++    const bootstrap = h.ui.createPreviewBootstrap(), theme = bootstrap.shop.theme;
++    const result = h.ui.resolveAdaptivePage({ siteBuilder: theme.siteBuilder, pageKind: 'track', colorTokens: h.ui.editorTokens(theme) });
++    assert.equal(result.valid, true);
++    const core = h.ui.createPreviewCore('track', 'return-eligible', { theme });
++    core.returnOpen = true;
++    const html = h.render(h.React.createElement(h.ui.PageTemplateRenderer, { plan: result.value, pageKind: 'track', data: { core }, actions: h.ui.PREVIEW_ACTIONS }));
++    const uploads = html.match(/<input[^>]*type="file"[^>]*>/g) || [];
++    assert.equal(uploads.length, 2);
++    for (const upload of uploads) assert.match(upload, /class="sr-only"/);
++    assert.match(html, /focus-within:ring-2/);
++});
++
++test('adaptive catalog purchase labels can wrap in narrow cards', async () => {
++    const h = await require('./helpers/adaptive-editor.cjs').loadAdaptiveEditor();
++    const bootstrap = h.ui.createPreviewBootstrap(), theme = bootstrap.shop.theme;
++    const result = h.ui.resolveAdaptivePage({ siteBuilder: theme.siteBuilder, pageKind: 'home', colorTokens: h.ui.editorTokens(theme) });
++    assert.equal(result.valid, true);
++    const core = h.ui.createPreviewCore('home', 'content', { theme, shop: bootstrap.shop });
++    const html = h.render(h.React.createElement(h.ui.PageTemplateRenderer, { plan: result.value, pageKind: 'home', data: {
++        core, sources: { home_products: { products: bootstrap.products } },
++    }, actions: h.ui.PREVIEW_ACTIONS }));
++    assert.match(html, /relative z-20 flex w-full flex-wrap gap-2/);
++    assert.match(html, /min-w-0 whitespace-normal break-words">Buy Now<\/span>/);
++    assert.match(html, /min-h-11 basis-24 grow/);
++});
+
+
+# ecommerce-backend/backend/tests/custom-domain.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\custom-domain.test.js"
+index a9b7277..e0a399e 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\custom-domain.test.js"
+@@ -225,7 +225,8 @@ test('storefront proxy and API proxy preserve custom-domain host context', () =>
+     assert.match(storefrontProxy, /export default function proxy/);
+     assert.match(storefrontProxy, /RESERVED_HOSTS/);
+     assert.match(storefrontProxy, /hostname\.endsWith\(`\.\$\{PLATFORM_DOMAIN\}`\)/);
+-    assert.match(storefrontProxy, /return NextResponse\.rewrite\(new URL\(`\/\$\{hostname\}\$\{url\.pathname\}`/);
++    assert.match(storefrontProxy, /return rewriteTenant\(hostname\)/);
++    assert.match(storefrontProxy, /target\.search = url\.search/);
+     assert.match(proxy, /headers\.set\('x-storefront-host', hostname\)/);
+     assert.match(homepage, /storefrontHost:\s*host/);
+     assert.match(authContext, /return reservedHosts\.includes\(hostname\) \? '' : hostname/);
+
+
+# ecommerce-backend/backend/tests/helpers/adaptive-published-preview.cjs
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\helpers\\adaptive-published-preview.cjs"
+index e69de29..fad5bf3 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\helpers\\adaptive-published-preview.cjs"
+@@ -0,0 +1,33 @@
++'use strict';
++// Explicitly isolated synthetic storefront for real browser/hydration review.
++// No worker or provider transport can start under the acceptance preload.
++if (process.env.SFA_ACCEPTANCE_DATABASE !== 'adaptive_browser' || process.env.NODE_ENV !== 'test' || process.env.SFA_ISOLATED_ACCEPTANCE !== 'c085454b') throw Error('Use the adaptive_browser acceptance preload');
++const path = require('node:path'), { spawn } = require('node:child_process');
++const { createLaunchSafetyContext, Shop } = require('./launchSafetyHarness');
++const { fixture } = require('../fixtures/adaptive-builder/contract-fixtures.cjs');
++const { normalizeStoredTheme } = require('@scaleup/storefront-theme/storage');
++const Collection = require('../../models/Collection');
++const cleanups = [];
++async function main() {
++    const ctx = await createLaunchSafetyContext({ after: callback => cleanups.push(callback) });
++    const shopId = ctx.data.shops.shopA._id, graph = fixture(), product = ctx.data.products.productA.product;
++    Object.assign(process.env, { ADAPTIVE_BUILDER_ROLLOUT: 'pilot', ADAPTIVE_BUILDER_APPROVAL: 'synthetic-browser-only', ADAPTIVE_BUILDER_SHOP_IDS: String(shopId), ADAPTIVE_BUILDER_WRITES: 'on', ADAPTIVE_BUILDER_RENDERING: 'on' });
++    graph.templates.tpl_home.nodes.products = { type: 'catalog.products', source: { kind: 'catalog', limit: 6 } };
++    graph.templates.tpl_home.rootOrder.push('products');
++    graph.templates.tpl_home.nodes.story_text.content.text = 'Synthetic release storefront — পরীক্ষামূলক দোকান';
++    const theme = normalizeStoredTheme({ ...(await Shop.findById(shopId).lean()).theme, version: 5, siteBuilder: graph, migrations: { bannerSectionsV1: true } });
++    const published = await ctx.vendorAClient().unsafePatch('/api/store-builder/admin', { theme, expectedRevision: 0 });
++    if (published.status !== 200) throw Error('Synthetic publication failed: ' + published.body?.code);
++    await Collection.create({ shop_id: shopId, title: 'Synthetic collection', slug: 'browser-fixture', productIds: [product._id] });
++    const next = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', '3018'], {
++        cwd: path.resolve(__dirname, '../../../../ecommerce-storefront'), windowsHide: true, stdio: 'inherit',
++        env: { ...process.env, NODE_ENV: 'production', API_URL: `${ctx.baseUrl}/api`, NEXT_PUBLIC_USE_DIRECT_API: 'false', STOREFRONT_PROXY_SECRET: '', NEXT_TELEMETRY_DISABLED: '1' },
++    });
++    console.log(JSON.stringify({ synthetic: true, storefront: 'http://launchshopa.localhost:3018/', product: `/products/${product.slug || product._id}`, category: `/categories/${encodeURIComponent(product.category)}`, collection: '/collections/browser-fixture',
++        note: 'Separate disposable DB; simulated providers; published only to this synthetic process. No production activation.' }));
++    let closing = false;
++    const close = async () => { if (closing) return; closing = true; next.kill('SIGTERM'); for (const cleanup of cleanups.reverse()) await cleanup(); process.exit(0); };
++    for (const signal of ['SIGINT','SIGTERM']) process.on(signal, close);
++    next.on('exit', () => { if (!closing) close(); });
++}
++main().catch(error => { console.error(error); process.exitCode = 1; });
+
+
+# ecommerce-backend/backend/tests/helpers/benchmark-adaptive-release.cjs
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\helpers\\benchmark-adaptive-release.cjs"
+index e69de29..396a3b3 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\helpers\\benchmark-adaptive-release.cjs"
+@@ -0,0 +1,26 @@
++'use strict';
++const fs = require('node:fs'), path = require('node:path');
++const { performance } = require('node:perf_hooks');
++const { loadAdaptiveEditor } = require('./adaptive-editor.cjs');
++const { sizedFixture } = require('../fixtures/adaptive-builder/contract-fixtures.cjs');
++const { normalizeStoredTheme } = require('@scaleup/storefront-theme/storage');
++async function main() {
++    const h = await loadAdaptiveEditor(), bootstrap = h.ui.createPreviewBootstrap(), results = [];
++    const measure = (fn, count = 30) => { const values = []; for (let i = 0; i < count; i++) { const start = performance.now(); fn(); values.push(performance.now() - start); } values.sort((a, b) => a - b); return { medianMs: values[Math.floor(count / 2)], p95Ms: values[Math.floor(count * .95)] }; };
++    for (const count of [14, 80, 200]) {
++        const theme = normalizeStoredTheme({ version: 5, siteBuilder: sizedFixture(count) }), tokens = h.ui.editorTokens(theme);
++        const snapshot = h.ui.stableStringify({ theme, searchAliases: [], customDomain: {}, storewideDiscount: 0 });
++        const resolve = kind => { const result = h.ui.resolveAdaptivePage({ siteBuilder: theme.siteBuilder, pageKind: kind, colorTokens: tokens }); if (!result.valid) throw new Error(JSON.stringify(result.errors)); return result.value; };
++        const productPlan = resolve('product'), data = { core: h.ui.createPreviewCore('product', 'normal', { theme, shop: bootstrap.shop }) };
++        const edit = () => { const result = h.ui.applyAdaptiveEdit(theme, { kind: 'setStyle', templateId: 'tpl_product', nodeId: 'core_tpl_product', partId: 'title', tier: 'desktop', property: 'fontSize', value: { unit: 'px', value: 28 } }); if (!result.valid) throw new Error(JSON.stringify(result.errors)); };
++        results.push({ count, snapshotUtf8Bytes: Buffer.byteLength(snapshot), max30HistoryStringsUtf16Bytes: snapshot.length * 2 * 30,
++            serialization: measure(() => h.ui.stableStringify({ theme, searchAliases: [], customDomain: {}, storewideDiscount: 0 })),
++            validatedInspectorEdit: measure(edit), resolveAll12Pages: measure(() => Object.keys(h.ui.PREVIEW_SCENARIOS).forEach(resolve), 10),
++            styleCompilation: measure(() => h.ui.compileAdaptiveStyles(productPlan, 'ab_1234')),
++            productSsrPreview: measure(() => h.render(h.React.createElement(h.ui.PageTemplateRenderer, { plan: productPlan, pageKind: 'product', data, actions: h.ui.PREVIEW_ACTIONS }))) });
++    }
++    const report = { environment: 'Local Node synthetic repeated operations. Pure Node timings only; browser observations are recorded separately. These are not Web Vitals.',
++        history: 'Retained 30 past JSON strings only; excludes current/future snapshots and object/React/browser overhead.', results };
++    fs.writeFileSync(path.resolve(__dirname, '../../../../output/adaptive-builder/phase6/performance.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report));
++}
++main().catch(error => { console.error(error); process.exitCode = 1; });
+
+
+# ecommerce-backend/backend/tests/helpers/isolatedAcceptance.cjs
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\helpers\\isolatedAcceptance.cjs"
+index 9baa3d9..b62da46 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\helpers\\isolatedAcceptance.cjs"
+@@ -2,7 +2,13 @@
+ 
+ // Explicit opt-in only. Run against the task-owned, tmpfs Docker replica set.
+ // Never use this preload with a shared developer/staging/production database.
+-const expected = 'mongodb://127.0.0.1:27028/atelier_acceptance_c085454b_test?directConnection=true&replicaSet=rs0';
++// Separate, hardcoded disposable databases protect browser fixture identities
++// from destructive regression-test cleanup.
++const databases = { adaptive_phase6: 'adaptive_release_phase6_test', adaptive_browser: 'adaptive_browser_phase6_test', preview: 'atelier_acceptance_c085454b_test' };
++const scenario = process.env.SFA_ACCEPTANCE_DATABASE || 'preview';
++if (!Object.hasOwn(databases, scenario)) throw new Error('Unknown disposable acceptance database');
++const database = databases[scenario];
++const expected = `mongodb://127.0.0.1:27028/${database}?directConnection=true&replicaSet=rs0`;
+ if (process.env.NODE_ENV !== 'test' || process.env.SFA_ISOLATED_ACCEPTANCE !== 'c085454b' || process.env.MONGO_URI_TEST !== expected) {
+   throw new Error('Isolated acceptance requires the verified task-owned loopback replica set.');
+ }
+
+
+# ecommerce-backend/backend/tests/integration/adaptive-release.integration.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\integration\\adaptive-release.integration.test.js"
+index e69de29..c33abe9 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\integration\\adaptive-release.integration.test.js"
+@@ -0,0 +1,143 @@
++'use strict';
++const test = require('node:test'), assert = require('node:assert/strict');
++const fs = require('node:fs'), path = require('node:path');
++const { spawn } = require('node:child_process');
++const { createLaunchSafetyContext, Shop, setShopPlan } = require('../helpers/launchSafetyHarness');
++const { fixture } = require('../fixtures/adaptive-builder/contract-fixtures.cjs');
++const { normalizeStoredTheme } = require('@scaleup/storefront-theme/storage');
++const { createPageTemplateDocument, getAdaptiveColorTokens } = require('@scaleup/storefront-theme/adaptive');
++const Asset = require('../../models/StoreBuilderAsset');
++const Revision = require('../../models/StoreBuilderRevision');
++const Draft = require('../../models/StoreBuilderDraft');
++const Collection = require('../../models/Collection');
++const media = require('../../services/storeBuilder/storeBuilderAssetService');
++const { loadAdaptiveRenderer } = require('../helpers/adaptive-renderer.cjs');
++const root = path.resolve(__dirname, '../../../..');
++const out = path.join(root, 'output/adaptive-builder/phase6');
++const check = (response, status = 200) => { assert.equal(response.status, status, JSON.stringify(response.body)); return response.body; };
++// Node's fetch discards a custom Host header. Use HTTP directly so Next's real
++// tenant proxy receives the same public host a browser would send.
++const storefrontRequest = route => new Promise((resolve, reject) => {
++    const request = require('node:http').get({ hostname: '127.0.0.1', port: 3018, path: route, headers: { Host: 'launchshopa.localhost:3018' } }, response => {
++        let html = ''; response.setEncoding('utf8'); response.on('data', chunk => { html += chunk; });
++        response.on('end', () => resolve({ status: response.statusCode, text: async () => html }));
++    });
++    request.on('error', reject); request.setTimeout(60000, () => request.destroy(new Error('Next SSR timeout')));
++});
++
++test('authorized disposable lifecycle uses actual HTTP publication, published projection, Next routes, kill switches and retained-media restoration', { timeout: 300000 }, async t => {
++    assert.equal(process.env.SFA_ACCEPTANCE_DATABASE, 'adaptive_phase6', 'Use the second hardcoded disposable database');
++    const keys = ['ADAPTIVE_BUILDER_ROLLOUT','ADAPTIVE_BUILDER_APPROVAL','ADAPTIVE_BUILDER_SHOP_IDS','ADAPTIVE_BUILDER_WRITES','ADAPTIVE_BUILDER_RENDERING'];
++    const before = Object.fromEntries(keys.map(key => [key, process.env[key]]));
++    t.after(() => { for (const key of keys) before[key] === undefined ? delete process.env[key] : process.env[key] = before[key]; });
++    const ctx = await createLaunchSafetyContext(t), shopId = ctx.data.shops.shopA._id, client = ctx.vendorAClient();
++    for (const [model, fields] of [[Draft, ['shop_id']], [Revision, ['shop_id','revision']], [Asset, ['publicId']]]) {
++        const indexes = await model.collection.indexes();
++        assert.ok(indexes.some(index => index.unique && fields.length === Object.keys(index.key).length && fields.every(field => Object.hasOwn(index.key, field))), `${model.modelName}: required unique index exists in disposable MongoDB`);
++    }
++    const graph = fixture();
++    let theme = normalizeStoredTheme({ ...(await Shop.findById(shopId).lean()).theme, version: 5, siteBuilder: graph, migrations: { bannerSectionsV1: true } });
++    check(await client.unsafePut('/api/store-builder/admin/draft', { expectedShopId: String(shopId), theme, basedOnRevision: 0, expectedDraftUpdatedAt: null }), 403);
++    Object.assign(process.env, { ADAPTIVE_BUILDER_ROLLOUT: 'pilot', ADAPTIVE_BUILDER_APPROVAL: 'synthetic-phase6-test', ADAPTIVE_BUILDER_SHOP_IDS: String(shopId), ADAPTIVE_BUILDER_WRITES: 'on', ADAPTIVE_BUILDER_RENDERING: 'on' });
++    assert.equal(check(await client.get('/api/store-builder/admin/bootstrap')).bootstrap.adaptiveAvailability.available, true);
++    const image = await Asset.create({ shop_id: shopId, publicId: 'phase6-public', url: 'https://res.cloudinary.com/test/image/upload/phase6.png', width: 400, height: 300, mimeType: 'image/png', status: 'temporary' });
++    graph.templates.tpl_home.nodes.image = { type: 'content.image', content: { assetId: String(image._id), alt: 'Synthetic product image' } };
++    graph.templates.tpl_home.nodes.section_story.slots.body.push('image');
++    graph.templates.tpl_home.nodes.products = { type: 'catalog.products', source: { kind: 'manualProducts', productIds: [String(ctx.data.products.productA.product._id)] } };
++    graph.templates.tpl_home.rootOrder.push('products');
++    graph.savedSections.private_copy = { name: 'Private library sentinel', pageKind: 'home', rootOrder: ['private_text'], nodes: { private_text: { type: 'content.text', content: { text: 'PRIVATE_LIBRARY_SENTINEL' } } } };
++    theme = normalizeStoredTheme({ ...theme, siteBuilder: graph });
++    const empty = normalizeStoredTheme({ ...theme, siteBuilder: createPageTemplateDocument() });
++    // Revision 1 retains the exact legacy presentation as a v5-compatible
++    // recovery snapshot. No v4 writer is allowed to erase later v5 content.
++    check(await client.unsafePatch('/api/store-builder/admin', { theme: empty, expectedRevision: 0 }));
++    const recovery = await Revision.findOne({ shop_id: shopId, revision: 1 }).lean();
++    const savePayload = { expectedShopId: String(shopId), theme, basedOnRevision: 1, expectedDraftUpdatedAt: null };
++    check(await client.unsafePut('/api/store-builder/admin/draft', savePayload));
++    const draft = check(await client.get('/api/store-builder/admin/draft')).data;
++    assert.deepEqual(draft.theme.siteBuilder, theme.siteBuilder);
++    check(await client.unsafeDelete('/api/store-builder/admin/draft'), 409);
++    const csrf = check(await client.get('/api/auth/csrf-token')).csrfToken;
++    check(await client.delete('/api/store-builder/admin/draft', { headers: { 'x-csrf-token': csrf }, body: { expectedShopId: String(shopId), expectedDraftUpdatedAt: draft.updatedAt } }));
++    assert.equal(await Draft.countDocuments({ shop_id: shopId }), 0);
++    check(await client.unsafePut('/api/store-builder/admin/draft', savePayload));
++    const info = () => ctx.client().get('/api/storefront/launchshopa/info');
++    assert.equal(check(await info()).adaptive?.siteBuilder.defaultTemplates.home, undefined, 'Draft is not published');
++    check(await client.unsafePatch('/api/store-builder/admin', { theme, expectedRevision: 1 }));
++    const published = check(await info());
++    assert.equal(published.adaptive.revision, 2);
++    assert.equal(published.theme.siteBuilder, undefined);
++    assert.equal(published.adaptive.siteBuilder.savedSections, undefined);
++    assert.equal(JSON.stringify(published).includes('PRIVATE_LIBRARY_SENTINEL'), false);
++    assert.deepEqual(published.adaptive.sourcesByTemplate.tpl_home.products.products.map(item => item._id), [String(ctx.data.products.productA.product._id)]);
++    assert.equal(published.adaptive.sourcesByTemplate.tpl_home.products.products[0].pricing.costPrice, undefined);
++    assert.equal(check(await ctx.vendorBClient().get('/api/store-builder/admin/bootstrap')).bootstrap.adaptiveAvailability.available, false);
++    check(await ctx.vendorBClient().unsafePut('/api/store-builder/admin/draft', { ...savePayload, basedOnRevision: 0, expectedShopId: String(ctx.data.shops.shopB._id), theme: empty }), 403);
++    check(await ctx.staffAClient().unsafePatch('/api/store-builder/admin', { theme, expectedRevision: 2 }), 403);
++    const foreign = structuredClone(theme); foreign.siteBuilder.templates.tpl_home.nodes.products.source.productIds = [String(ctx.data.products.productB.product._id)];
++    assert.ok((await client.unsafePatch('/api/store-builder/admin', { theme: foreign, expectedRevision: 2 })).status >= 400);
++    check(await client.unsafePatch('/api/store-builder/admin', { theme: { version: 4 }, expectedRevision: 2 }), 409);
++
++    // Start the real Next application against this test's real HTTP backend.
++    // This is SSR evidence only; it does not claim browser/hydration acceptance.
++    const storefront = path.join(root, 'ecommerce-storefront');
++    const log = fs.openSync(path.join(out, 'next-ssr-server.log'), 'w');
++    const next = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '--hostname', '127.0.0.1', '--port', '3018'], {
++        cwd: storefront, windowsHide: true, stdio: ['ignore', log, log], env: { ...process.env, NODE_ENV: 'production', API_URL: `${ctx.baseUrl}/api`, NEXT_PUBLIC_API_URL: `${ctx.baseUrl}/api`, STOREFRONT_PROXY_SECRET: '', NEXT_TELEMETRY_DISABLED: '1' },
++    });
++    t.after(async () => { next.kill('SIGTERM'); await new Promise(resolve => { if(next.exitCode !== null) return resolve(); next.once('exit', resolve); setTimeout(resolve, 5000).unref(); }); fs.closeSync(log); });
++    let ready = false;
++    for(let attempt = 0; attempt < 80; attempt++) {
++        if (next.exitCode !== null) throw Error('Next exited before readiness; inspect next-ssr-server.log');
++        try { const response = await fetch('http://127.0.0.1:3018/robots.txt', { signal: AbortSignal.timeout(1000) }); if(response.ok) { ready = true; break; } } catch { /* bounded cold start */ }
++        await new Promise(resolve => setTimeout(resolve, 500));
++    }
++    assert.equal(ready, true, 'Next server ready');
++    const collection = await Collection.create({ shop_id: shopId, title: 'Synthetic release collection', slug: 'release-fixture', productIds: [ctx.data.products.productA.product._id] });
++    assert.ok(collection._id);
++    const product = ctx.data.products.productA.product;
++    const routes = [['home','/'], ['product',`/products/${product.slug || product._id}`], ['category',`/categories/${encodeURIComponent(product.category)}`],
++        ['collection','/collections/release-fixture'], ['cart','/cart'], ['checkout','/checkout'], ['account','/account'], ['track','/track'], ['policiesIndex','/policies'], ['policy','/policies/shipping']];
++    const evidence = [];
++    const renderer = await loadAdaptiveRenderer();
++    for (const [kind, route] of routes) {
++        const started = performance.now();
++        const response = await storefrontRequest(route);
++        const html = await response.text(); fs.writeFileSync(path.join(out, `ssr-${kind}.html`), html);
++        assert.equal(response.status, 200, `${kind}: ${html.slice(-1500)}`);
++        assert.ok(html.includes(`data-ab-template="tpl_${kind}"`), `${kind}: actual Next route selects assigned template`);
++        assert.ok(html.includes('data-ab-template="tpl_header"'), `${kind}: global header`);
++        assert.ok(html.includes('data-ab-template="tpl_footer"'), `${kind}: global footer`);
++        const plan = renderer.ui.resolveAdaptivePage({ siteBuilder: published.adaptive.siteBuilder, pageKind: kind, colorTokens: getAdaptiveColorTokens(published.theme) });
++        assert.equal(plan.valid, true, JSON.stringify(plan.errors));
++        const css = renderer.ui.compileAdaptiveStyles(plan.value, 'ab_1234').replaceAll('ab_1234', 'SCOPE');
++        const scoped = html.match(new RegExp(`<div class="sf-adaptive" data-ab-scope="([^"]+)" data-ab-template="tpl_${kind}"><style>([\\s\\S]*?)</style>`));
++        assert.ok(scoped, `${kind}: shared style output present`);
++        assert.equal(scoped[2].replaceAll(scoped[1], 'SCOPE'), css, `${kind}: exact preview/live compiler parity`);
++        evidence.push({ pageKind: kind, route, status: response.status, ssrMs: performance.now() - started, bytes: Buffer.byteLength(html), exactCssParity: true });
++    }
++    process.env.ADAPTIVE_BUILDER_WRITES = 'off';
++    check(await client.unsafePatch('/api/store-builder/admin', { theme, expectedRevision: 2 }), 403);
++    assert.ok(check(await info()).adaptive, 'Write kill preserves rendering');
++    process.env.ADAPTIVE_BUILDER_RENDERING = 'off';
++    assert.equal(check(await info()).adaptive, undefined);
++    assert.equal(check(await ctx.client().get('/api/storefront/launchshopa/bootstrap')).data.shop.adaptive, undefined, 'Cache cannot defeat kill');
++    let fallback = await (await storefrontRequest('/')).text();
++    assert.equal(fallback.includes('data-ab-template='), false);
++    assert.equal((await Shop.findById(shopId)).theme.version, 5);
++    process.env.ADAPTIVE_BUILDER_WRITES = 'on'; process.env.ADAPTIVE_BUILDER_RENDERING = 'on';
++    await setShopPlan({ shopId, plan: ctx.data.plans.beginner });
++    assert.equal(check(await info()).adaptive, undefined, 'Downgrade falls back without conversion');
++    check(await client.unsafePatch('/api/store-builder/admin', { theme, expectedRevision: 2 }), 403);
++    await setShopPlan({ shopId, plan: ctx.data.plans.pro });
++    assert.ok(check(await info()).adaptive, 'Re-enablement retains design');
++    check(await client.unsafePost(`/api/store-builder/admin/revisions/${recovery._id}/restore`, { expectedRevision: 2 }));
++    assert.equal((await Shop.findById(shopId)).theme.version, 5);
++    assert.deepEqual(check(await info()).adaptive.siteBuilder.defaultTemplates, {});
++    fallback = await (await storefrontRequest('/')).text();
++    assert.equal(fallback.includes('data-ab-template='), false, 'Restored empty assignments use legacy routes');
++    assert.equal((await media.cleanupExpiredStoreBuilderAssets()).deleted, 0, 'Retained revision pins media');
++    assert.notEqual((await Asset.findById(image._id)).status, 'deleted');
++    assert.equal(await Draft.countDocuments({ shop_id: shopId }), 0);
++    fs.writeFileSync(path.join(out, 'actual-route-evidence.json'), JSON.stringify({ synthetic: true, browser: false, hydration: 'NOT RUN', routes: evidence, globalFamilies: ['header','footer'], restoredLegacyPresentation: true, mediaRetained: true }, null, 2));
++});
+
+
+# ecommerce-backend/backend/tests/integration/store-builder-safety.integration.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\integration\\store-builder-safety.integration.test.js"
+index cb1b1df..1dbc467 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\integration\\store-builder-safety.integration.test.js"
+@@ -301,7 +301,7 @@ test('full-plan prebuilt blueprint and merchant content survive draft and publis
+     let sectionIndex = 0;
+     const resolvedTheme = resolvePrebuiltTheme({
+         currentTheme: normalizeTheme({
+-            ...(shopA.theme || {}),
++            ...shopA.toObject().theme,
+             homepageSections: [
+                 { id: 'merchant-story', type: 'BrandStory', title: 'Our real story', settings: { text: 'Merchant-authored story.' } },
+                 { id: 'merchant-featured', type: 'FeaturedProducts', title: 'Merchant picks', settings: { productIds: [], source: { type: 'manual', productIds: [] } } },
+@@ -337,12 +337,18 @@ test('full-plan prebuilt blueprint and merchant content survive draft and publis
+     assert.equal(published.body.data.theme.homepageSections[0].settings.text, 'Merchant-authored story.');
+     assert.deepEqual(published.body.data.theme.preset, {
+         id: 'editorial-fashion',
+-        version: 2,
++        version: resolvedTheme.preset.version,
+         appliedAt: '2026-08-05T00:00:00.000Z'
+     });
+ 
+     const persisted = await Shop.findById(shopA._id).lean();
+     assert.deepEqual(persisted.theme.homepageSections.filter(section => section.isEnabled !== false).map(section => section.type), expectedTypes);
++    // Applying today's frozen preset uses its current version; previously
++    // saved version-2 snapshots must still remain version 2 on ordinary saves.
++    const older = { ...persisted.theme, preset: { ...persisted.theme.preset, version: 2 } };
++    const olderDraft = await vendorA.unsafePut('/api/store-builder/admin/draft', { basedOnRevision: 1, theme: older });
++    assert.equal(olderDraft.status, 200, JSON.stringify(olderDraft.body));
++    assert.equal(olderDraft.body.data.theme.preset.version, 2);
+ });
+ 
+ test('Store Builder bootstrap hydrates selected products beyond the first page and scopes SEO totals', async (t) => {
+@@ -445,8 +451,10 @@ test('Store Builder draft autosave enforces the same limited-plan boundary as pu
+         basedOnRevision: 0,
+         theme: { typography: { headingFont: 'Arial', bodyFont: 'Inter', headingWeight: '700' } }
+     });
+-    assert.equal(allowedDraft.status, 200);
++    assert.equal(allowedDraft.status, 200, JSON.stringify(allowedDraft.body));
+     assert.equal(allowedDraft.body.data.theme.typography.headingFont, 'Arial');
++    assert.equal(allowedDraft.body.data.theme.hero.title, shopA.theme.hero.title);
++    assert.deepEqual(allowedDraft.body.data.theme.homepageSections, []);
+ 
+     const blockedDraft = await vendorA.unsafePut('/api/store-builder/admin/draft', {
+         basedOnRevision: 0,
+
+
+# ecommerce-backend/backend/tests/storefront-control-wiring.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-control-wiring.test.js"
+index fb71284..de01db0 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-control-wiring.test.js"
+@@ -23,8 +23,8 @@ test.before(async () => {
+     const shared = path.join(root, 'packages/storefront-renderer').replaceAll('\\', '/');
+     const bundle = await rolldown({ input: 'virtual:controls', platform: 'node', external: ['react', 'react/jsx-runtime', 'react-dom', 'lucide-react'],
+         resolve: { alias: { '@scaleup/storefront-theme': path.join(root, 'packages/storefront-theme/index.mjs'), '@': path.join(root, 'ecommerce-storefront/src') } },
+-        plugins: [{ name: 'controls', resolveId: id => id === 'virtual:controls' ? id : ['next/link', 'next/image', 'next/navigation'].includes(id) ? `virtual:${id}` : id.includes('useStorefrontProductActions') ? 'virtual:product-actions' : null,
+-            load: id => id === 'virtual:next/link' ? `import React from 'react'; export default function Link({children, prefetch, ...props}) { return React.createElement('a', props, children); }`
++        plugins: [{ name: 'controls', resolveId: id => id === './PublishedAdaptivePage' ? 'virtual:inactive-adaptive' : id === 'virtual:controls' ? id : ['next/link', 'next/image', 'next/navigation'].includes(id) ? `virtual:${id}` : id.includes('useStorefrontProductActions') ? 'virtual:product-actions' : null,
++            load: id => id === 'virtual:inactive-adaptive' ? `export default function UnexpectedAdaptiveLoad() { throw new Error('Legacy controls must not select adaptive rendering'); }` : id === 'virtual:next/link' ? `import React from 'react'; export default function Link({children, prefetch, ...props}) { return React.createElement('a', props, children); }`
+                 : id === 'virtual:next/image' ? `import React from 'react'; export default function Image({fill, priority, unoptimized, ...props}) { return React.createElement('img', props); }`
+                 : id === 'virtual:next/navigation' ? `export const useParams = () => ({ subdomain: 'audit' }); export const useRouter = () => ({ push() {}, replace() {} }); export const usePathname = () => '/categories/audit'; export const useSearchParams = () => new URLSearchParams();`
+                 : id === 'virtual:product-actions' ? `export const useStorefrontProductActions = () => ({ addProductToCart() {}, buyNow() {}, toggleWishlist() {}, isWishlisted: () => false, variantPicker: null });`
+@@ -35,6 +35,7 @@ test.before(async () => {
+                 export * from '${base}/editors/BasicEditors.jsx';
+                 export * from '${base}/editors/ProductCardsEditor.jsx';
+                 export * from '${base}/StorefrontPreview.jsx';
++                export * from '${base}/previewEditor.js';
+                 export * from '${shared}/reference/referenceCore.jsx';
+                 export * from '${shared}/designTokens.js';
+                 export * from '${shared}/normalizeProduct.js';
+@@ -50,7 +51,7 @@ test.before(async () => {
+             ` : null }],
+     });
+     try {
+-        const { output } = await bundle.generate({ format: 'cjs' });
++        const { output } = await bundle.generate({ format: 'cjs', inlineDynamicImports: true });
+         const compiled = new Module(filename, module);
+         compiled.paths = Module._nodeModulePaths(path.dirname(filename));
+         compiled._compile(output[0].code, filename);
+
+
+# ecommerce-backend/backend/tests/storefront-effective-theme.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-effective-theme.test.js"
+index 20efa5e..fd2e2be 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-effective-theme.test.js"
+@@ -150,7 +150,7 @@ test('policy fallbacks are identical across Admin, storefront, and server; merch
+ const loadAdapter = (deps) => {
+     const filename = path.join(root, 'ecommerce-backend/backend/services/storeBuilder/effectiveThemeService.js');
+     const compiled = new Module(filename, module);
+-    compiled.require = id => deps[id] || require(id);
++    compiled.require = id => deps[id] || Module.createRequire(filename)(id);
+     compiled._compile(fs.readFileSync(filename, 'utf8'), filename);
+     return compiled.exports;
+ };
+@@ -196,6 +196,7 @@ test('actual public settings, shop-info and bootstrap handlers return identical
+         '../models/Collection': { find: () => chain([]) },
+         '../services/cacheService': { get: async key => structuredClone(cacheData.get(key)), set: async (key, data) => cacheData.set(key, structuredClone(data)) },
+         '../services/storeBuilder/effectiveThemeService': { applyEffectiveStoreTheme },
++        '../services/storeBuilder/adaptiveRolloutPolicy': require('../services/storeBuilder/adaptiveRolloutPolicy'),
+         '../services/billing/planAccessService': { getShopPlanAccess: async () => plan('none') },
+         '../services/shops/featureAccessService': { hasFeature: async () => false },
+         '../services/verification/vendorVerificationStatusService': { buildPublicShopVerification: () => ({}) },
+
+
+# ecommerce-backend/backend/tests/storefront-first-render.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-first-render.test.js"
+index ac119e7..b5bbcc5 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-first-render.test.js"
+@@ -164,7 +164,19 @@ test('tenant rewrites preserve the public redirect path and overwrite spoofed pa
+         assert.equal(result.options.request.headers.get('x-storefront-pathname'), '/products/example?variant=blue');
+         assert.equal(result.options.request.headers.get('host'), host);
+         if (host === 'localhost') assert.equal(result.url, undefined);
+-        else assert.ok(result.url.includes(`/${host === 'merchant.example.com' ? host : 'alpha'}/products/example`));
++        else {
++            assert.ok(result.url.includes(`/${host === 'merchant.example.com' ? host : 'alpha'}/products/example`));
++            assert.equal(new URL(result.url).search, '?variant=blue');
++        }
++    }
++});
++
++test('tenant homepage rewrites avoid a trailing-slash redirect to the internal tenant path', () => {
++    for (const host of ['alpha.localhost', 'alpha.scaleup.codes', 'merchant.example.com']) {
++        const url = new URL(`http://${host}/?search=synthetic`);
++        const result = ui.proxy({ url: String(url), nextUrl: url, headers: new Headers({ host }) });
++        assert.equal(new URL(result.url).pathname, host === 'merchant.example.com' ? `/${host}` : '/alpha');
++        assert.equal(new URL(result.url).search, '?search=synthetic');
+     }
+ });
+ 
+
+
+# ecommerce-backend/backend/tests/storefront-preview-data.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-preview-data.test.js"
+index 4e1a293..793ed5f 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-preview-data.test.js"
+@@ -110,6 +110,7 @@ test('live bootstrap fetches Collection and CollectionShowcase selections outsid
+     const sections = ['FeaturedProducts', 'Collection', 'CollectionShowcase'].map((type, index) => ({ id: `section-${index}`, type, isEnabled: true, settings: { productIds: [selectedId] } }));
+     let selectedQuery = null;
+     const controller = load('controllers/storeController.js', {
++        '../services/storeBuilder/adaptiveRolloutPolicy': require('../services/storeBuilder/adaptiveRolloutPolicy'),
+         mongoose, joi: require('joi'),
+         '../models/Shop': { findById: () => chain({ _id: tenant, theme: { homepageSections: sections } }) },
+         '../models/Product': {
+
+
+# ecommerce-backend/backend/tests/storefront-preview-parity.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-preview-parity.test.js"
+index c48a043..04c2cc4 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-preview-parity.test.js"
+@@ -22,6 +22,7 @@ test.before(async () => {
+         resolve: { alias: { '@': src, '@scaleup/storefront-theme': path.join(root, 'packages/storefront-theme/index.mjs') } },
+         plugins: [{ name: 'controlled-environment', resolveId(id) {
+             if (id.startsWith('virtual:')) return id;
++            if (id === './PublishedAdaptivePage') return 'virtual:inactive-adaptive';
+             if (id.endsWith('/StorefrontPreviewFrame.jsx')) return 'virtual:frame';
+             if (id === 'next/link') return 'virtual:link';
+             if (id === 'next/image') return 'virtual:image';
+@@ -33,9 +34,11 @@ test.before(async () => {
+             if (id.includes('/components/search/SearchModal')) return 'virtual:search';
+             return null;
+         }, load(id) {
++            if (id === 'virtual:inactive-adaptive') return `export default function UnexpectedAdaptiveLoad() { throw new Error('Legacy parity must never select adaptive rendering'); }`;
+             if (id === 'virtual:parity') return `
+                 export * from '${builder}/StorefrontPreview.jsx';
+                 export * from '${builder}/themes/ThemeGallery.jsx';
++                export * from '${builder}/themes/themePreview.js';
+                 export * from '${builder}/StoreBuilderPreviewPanel.jsx';
+                 export {default as Provider} from '${src}/components/storefront/StorefrontThemeProvider.jsx';
+                 export {default as Navbar} from '${src}/components/storefront/Navbar.jsx';
+@@ -58,7 +61,7 @@ test.before(async () => {
+         } }],
+     });
+     try {
+-        const { output } = await bundle.generate({ format: 'cjs' });
++        const { output } = await bundle.generate({ format: 'cjs', inlineDynamicImports: true });
+         const compiled = new Module(filename, module);
+         compiled.paths = Module._nodeModulePaths(path.dirname(filename));
+         compiled._compile(output[0].code, filename);
+
+
+# ecommerce-backend/backend/tests/storefront-release-hardening.test.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-release-hardening.test.js"
+index b61dc7a..cc7b8b5 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\storefront-release-hardening.test.js"
+@@ -113,6 +113,9 @@ const walk = (node, fn) => {
+   if (Array.isArray(node)) return node.forEach(n => walk(n, fn));
+   if (!node || typeof node !== 'object') return;
+   fn(node);
++  // The route now supplies its unchanged presentation through the guarded live
++  // boundary. Inspect that real render port as well as ordinary JSX children.
++  if (node.props?.pageKind === 'checkout' && typeof node.props.renderCore === 'function') walk(node.props.renderCore(false), fn);
+   walk(node.props?.children, fn);
+ };
+ const find = (node, predicate) => {
+
+
+# ecommerce-storefront/src/app/[subdomain]/StorefrontHomeClient.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\StorefrontHomeClient.jsx"
+index f96915c..bec375d 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\StorefrontHomeClient.jsx"
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import { useCallback, useEffect, useRef, useState } from 'react';
+ import Link from 'next/link';
+ import { PackageX, Tag, X } from 'lucide-react';
+@@ -358,7 +359,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null })
+ 
+     return (
+         <>
+-            <ReferenceStorefrontHome
++            <AdaptivePresentation pageKind="home" catalogActions={{ addToCart: handleProductAdd, buyNow: product => productActions.buyNow(product, { location: "adaptive-home" }) }}><ReferenceStorefrontHome
+                 theme={theme}
+                 shopName={shop?.shopName || initialData?.shop?.shopName || subdomain}
+                 products={products}
+@@ -397,7 +398,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null })
+                         onCountdownBoundary={refreshBootstrap}
+                     />
+                 )}
+-            />
++            /></AdaptivePresentation>
+             {activeSalePopup && (
+                 <div
+                     role="dialog"
+
+
+# ecommerce-storefront/src/app/[subdomain]/account/page.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\account\\page.jsx"
+index af6e2e8..82c0104 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\account\\page.jsx"
+@@ -1,4 +1,5 @@
+ "use client";
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+ import {useStorefrontTheme} from '@/components/storefront/StorefrontThemeProvider';
+ import React, { useState, useEffect } from 'react';
+@@ -165,19 +166,19 @@ export default function AccountPage({ params }) {
+     // 🌟 Use authLoading from context instead of local state
+     if (authLoading || (user && user.role === 'Customer' && ordersLoading)) {
+         return (
+-            <div className="min-h-[60vh] flex items-center justify-center">
++            <AdaptivePresentation pageKind="account" core><div className="min-h-[60vh] flex items-center justify-center">
+                 <div className="relative">
+                     <div className="h-12 w-12 rounded-full border-4 border-gray-200"></div>
+                     <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-[var(--sf-accent)] border-t-transparent animate-spin"></div>
+                 </div>
+-            </div>
++            </div></AdaptivePresentation>
+         );
+     }
+ 
+     if (!user) {
+         if (isResettingPassword) {
+             return (
+-                <PasswordResetFlow
++                <AdaptivePresentation pageKind="account" core><PasswordResetFlow
+                     presentationVariant={presentationVariant}
+                     subdomain={subdomain}
+                     onBack={() => setIsResettingPassword(false)}
+@@ -185,12 +186,12 @@ export default function AccountPage({ params }) {
+                         setIsResettingPassword(false);
+                         setIsRegistering(false);
+                     }}
+-                />
++                /></AdaptivePresentation>
+             );
+         }
+ 
+         return (
+-            <AuthView
++            <AdaptivePresentation pageKind="account" core><AuthView
+                     presentationVariant={presentationVariant}
+                 isRegistering={isRegistering}
+                 setIsRegistering={setIsRegistering}
+@@ -205,16 +206,16 @@ export default function AccountPage({ params }) {
+                 handleSendOTP={handleSendOTP}
+                 otpTimer={otpTimer}
+                 otpLoading={otpLoading}
+-            />
++            /></AdaptivePresentation>
+         );
+     }
+ 
+     if (user.role === 'VendorAdmin' || user.role === 'VendorStaff') {
+-        return <VendorView presentationVariant={presentationVariant} user={user} handleLogout={handleUserLogout} />;
++        return <AdaptivePresentation pageKind="account" core><VendorView presentationVariant={presentationVariant} user={user} handleLogout={handleUserLogout} /></AdaptivePresentation>;
+     }
+ 
+     return (
+-        <CustomerDashboard
++        <AdaptivePresentation pageKind="account" core><CustomerDashboard
+                     presentationVariant={presentationVariant}
+             user={user}
+             orders={orders}
+@@ -222,6 +223,6 @@ export default function AccountPage({ params }) {
+             passForm={passForm}
+             setPassForm={setPassForm}
+             handlePasswordReset={handlePasswordReset}
+-        />
++        /></AdaptivePresentation>
+     );
+ }
+
+
+# ecommerce-storefront/src/app/[subdomain]/cart/page.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\cart\\page.jsx"
+index 7a8c501..5dc7499 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\cart\\page.jsx"
+@@ -1,4 +1,5 @@
+ "use client";
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import React from 'react';
+ import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+ import { useCart } from '@/context/CartContext';
+@@ -91,10 +92,10 @@ export default function CartPage() {
+         setPromoFeedback({ type: 'success', text: 'Coupon saved. It will be validated during checkout.' });
+     };
+ 
+-    return <StorefrontPresentationRuntime><CartView {...{
++    return <StorefrontPresentationRuntime><AdaptivePresentation pageKind="cart" core><CartView {...{
+         presentationVariant: getStorefrontPresentationVariant(theme),
+         cartItems, removeFromCart, updateQuantity, subtotal, shipping, totalSavings, total, getCartImageUrl,
+         promoCode, setPromoCode, promoFeedback, handleApplyPromo, recommendationsLoading, recommendations,
+         themedProductCard, productActions,
+-    }} /></StorefrontPresentationRuntime>;
++    }} /></AdaptivePresentation></StorefrontPresentationRuntime>;
+ }
+
+
+# ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\categories\\[slug]\\CategoryPageClient.jsx"
+index f84cdac..1e18bf6 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\categories\\[slug]\\CategoryPageClient.jsx"
+@@ -1,4 +1,5 @@
+ "use client";
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import { CategoryView, STOCK_LABELS, money, CategoryFilters } from '@scaleup/storefront-renderer/presentation/CategoryView';
+ import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
+ 
+@@ -137,6 +138,6 @@ export default function CategoryPageClient({ shop, category, categoryDetail = nu
+     );
+ 
+     return (
+-        <StorefrontPresentationRuntime><CategoryView {...{ activeFilters, atelier, category, categoryImage, categoryImageAlt, clearFilters, filterButtonRef, filterContent, filters, gridClass, gridGapClass, hasRatingData, mobileFiltersOpen, normalizedProducts, page, presentationVariant, productActions, setMobileFiltersOpen, shop, themedProductCard, total, totalPages, updateQuery }} /></StorefrontPresentationRuntime>
++        <StorefrontPresentationRuntime><AdaptivePresentation pageKind="category" core><CategoryView {...{ activeFilters, atelier, category, categoryImage, categoryImageAlt, clearFilters, filterButtonRef, filterContent, filters, gridClass, gridGapClass, hasRatingData, mobileFiltersOpen, normalizedProducts, page, presentationVariant, productActions, setMobileFiltersOpen, shop, themedProductCard, total, totalPages, updateQuery }} /></AdaptivePresentation></StorefrontPresentationRuntime>
+     );
+ }
+
+
+# ecommerce-storefront/src/app/[subdomain]/checkout/components/CheckoutSections.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\checkout\\components\\CheckoutSections.jsx"
+index 4e4ca5c..5dc5c66 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\checkout\\components\\CheckoutSections.jsx"
+@@ -1,6 +1,7 @@
+ "use client";
+ import * as Views from '@scaleup/storefront-renderer/presentation/CheckoutSections';
+ import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
++const Region = ({ active, name, children }) => active ? <div data-ab-region={name}>{children}</div> : children;
+ export function CheckoutSuccessState(props) { return <StorefrontPresentationRuntime><Views.CheckoutSuccessState {...props} /></StorefrontPresentationRuntime>; }
+ export function CheckoutEmptyCartState(props) { return <StorefrontPresentationRuntime><Views.CheckoutEmptyCartState {...props} /></StorefrontPresentationRuntime>; }
+ export function CheckoutTrustBadges(props) { return <StorefrontPresentationRuntime><Views.CheckoutTrustBadges {...props} /></StorefrontPresentationRuntime>; }
+@@ -10,8 +11,8 @@ export function CheckoutDeliveryChargeNotice(props) { return <StorefrontPresenta
+ export function CheckoutDeliveryMethod(props) { return <StorefrontPresentationRuntime><Views.CheckoutDeliveryMethod {...props} /></StorefrontPresentationRuntime>; }
+ export function CheckoutPaymentMethod(props) { return <StorefrontPresentationRuntime><Views.CheckoutPaymentMethod {...props} /></StorefrontPresentationRuntime>; }
+ export function CheckoutPhoneOtpBox(props) { return <StorefrontPresentationRuntime><Views.CheckoutPhoneOtpBox {...props} /></StorefrontPresentationRuntime>; }
+-export function CheckoutDetailsColumn(props) { return <StorefrontPresentationRuntime><Views.CheckoutDetailsColumn {...props} /></StorefrontPresentationRuntime>; }
+-export function CheckoutOrderSummary(props) { return <StorefrontPresentationRuntime><Views.CheckoutOrderSummary {...props} /></StorefrontPresentationRuntime>; }
++export function CheckoutDetailsColumn(props) { return <StorefrontPresentationRuntime><Region active={props.adaptiveParts} name="details"><Views.CheckoutDetailsColumn {...props} /></Region></StorefrontPresentationRuntime>; }
++export function CheckoutOrderSummary(props) { return <StorefrontPresentationRuntime><Region active={props.adaptiveParts} name="summary"><Views.CheckoutOrderSummary {...props} /></Region></StorefrontPresentationRuntime>; }
+ export function CheckoutMobileStickyBar(props) { return <StorefrontPresentationRuntime><Views.CheckoutMobileStickyBar {...props} /></StorefrontPresentationRuntime>; }
+ export function CheckoutOtpModal(props) { return <StorefrontPresentationRuntime><Views.CheckoutOtpModal {...props} /></StorefrontPresentationRuntime>; }
+ 
+
+
+# ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\checkout\\page.jsx"
+index 217b139..5386015 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\checkout\\page.jsx"
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+ import React, { useEffect, useMemo, useRef, useState } from "react";
+ 
+@@ -422,20 +423,20 @@ export default function CheckoutPage({ params }) {
+     };
+ 
+     if (isSuccess) {
+-        return <CheckoutSuccessState orderId={orderId} />;
++        return <AdaptivePresentation pageKind="checkout" core><CheckoutSuccessState orderId={orderId} /></AdaptivePresentation>;
+     }
+ 
+     if (cartItems.length === 0) {
+-        return <CheckoutEmptyCartState />;
++        return <AdaptivePresentation pageKind="checkout" core><CheckoutEmptyCartState /></AdaptivePresentation>;
+     }
+ 
+-    return (
++    return <AdaptivePresentation pageKind="checkout" renderCore={adaptiveParts => (
+         <>
+-            <CheckoutPageShell
++            <CheckoutPageShell adaptiveParts={adaptiveParts}
+                 checkoutBranding={checkoutBranding}
+                 onSubmit={handlePlaceOrder}
+                 mobileStickyBar={(
+-                    <CheckoutMobileStickyBar
++                    <CheckoutMobileStickyBar adaptiveParts={adaptiveParts}
+                         loading={loading}
+                         phoneVerified={phoneOtp.verified}
+                         policyAccepted={policyAccepted}
+@@ -443,15 +444,15 @@ export default function CheckoutPage({ params }) {
+                     />
+                 )}
+             >
+-                <CheckoutDetailsColumn
++                <CheckoutDetailsColumn adaptiveParts={adaptiveParts}
+                     presentationVariant={presentationVariant}
+                     formData={formData}
+                     isDhaka={isDhaka}
+                     onInputChange={handleInputChange}
+                 />
+ 
+-                <CheckoutMarketingConsent checked={marketingEmailOptIn} onChange={setMarketingEmailOptIn} />
+-                <CheckoutOrderSummary
++                <CheckoutMarketingConsent adaptiveParts={adaptiveParts} checked={marketingEmailOptIn} onChange={setMarketingEmailOptIn} />
++                <CheckoutOrderSummary adaptiveParts={adaptiveParts}
+                     presentationVariant={presentationVariant}
+                     cartItems={cartItems}
+                     checkoutBranding={checkoutBranding}
+@@ -474,7 +475,7 @@ export default function CheckoutPage({ params }) {
+                     visiblePolicies={visiblePolicies}
+                 />
+             </CheckoutPageShell>
+-            <CheckoutOtpModal
++            <CheckoutOtpModal adaptiveParts={adaptiveParts}
+                     presentationVariant={presentationVariant}
+                 error={otpModalError || phoneOtp.error}
+                 message={phoneOtp.message}
+@@ -495,5 +496,5 @@ export default function CheckoutPage({ params }) {
+                 verifying={phoneOtp.verifying}
+             />
+         </>
+-    );
++    )} />;
+ }
+
+
+# ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\collections\\[slug]\\CollectionPageClient.jsx"
+index 39e3f15..ce51fc6 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\collections\\[slug]\\CollectionPageClient.jsx"
+@@ -1,4 +1,5 @@
+ "use client";
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import { CollectionView } from '@scaleup/storefront-renderer/presentation/CollectionView';
+ import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
+ 
+@@ -50,6 +51,6 @@ export default function CollectionPageClient({ shop, collection, products = [],
+     };
+ 
+     return (
+-        <StorefrontPresentationRuntime><CollectionView {...{ atelier, collection, filters, gridClass, gridGapClass, normalizedProducts, page, pagination, presentationVariant, productActions, shop, themedProductCard, total, totalPages, updateQuery }} /></StorefrontPresentationRuntime>
++        <StorefrontPresentationRuntime><AdaptivePresentation pageKind="collection" core><CollectionView {...{ atelier, collection, filters, gridClass, gridGapClass, normalizedProducts, page, pagination, presentationVariant, productActions, shop, themedProductCard, total, totalPages, updateQuery }} /></AdaptivePresentation></StorefrontPresentationRuntime>
+     );
+ }
+
+
+# ecommerce-storefront/src/app/[subdomain]/policies/[type]/PolicyPageClient.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\policies\\[type]\\PolicyPageClient.jsx"
+index ebfe598..6913113 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\policies\\[type]\\PolicyPageClient.jsx"
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
+ import { PolicyView } from '@scaleup/storefront-renderer/presentation/PolicyView';
+ import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
+@@ -13,5 +14,5 @@ export default function PolicyPageClient({ type }) {
+         storeName: settings?.shopName || settings?.name || "this store"
+     });
+ 
+-    return <StorefrontPresentationRuntime><PolicyView presentationVariant={getStorefrontPresentationVariant(theme)} label={label} content={content} /></StorefrontPresentationRuntime>;
++    return <StorefrontPresentationRuntime><AdaptivePresentation pageKind="policy" core><PolicyView presentationVariant={getStorefrontPresentationVariant(theme)} label={label} content={content} /></AdaptivePresentation></StorefrontPresentationRuntime>;
+ }
+
+
+# ecommerce-storefront/src/app/[subdomain]/policies/page.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\policies\\page.jsx"
+index c52237c..c2981b5 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\policies\\page.jsx"
+@@ -1,3 +1,4 @@
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import { PolicyIndexView } from '@scaleup/storefront-renderer/presentation/PolicyIndexView';
+ 
+ import {getStorefrontPresentationVariant} from "@scaleup/storefront-theme";
+@@ -75,6 +76,6 @@ export default async function PoliciesPage({ params }) {
+     const atelier = getStorefrontPresentationVariant(shop?.theme) === 'atelier-editorial';
+ 
+     return (
+-        <PolicyIndexView {...{ atelier, policies, storeName }} />
++        <AdaptivePresentation pageKind="policiesIndex" core><PolicyIndexView {...{ atelier, policies, storeName }} /></AdaptivePresentation>
+     );
+ }
+
+
+# ecommerce-storefront/src/app/[subdomain]/track/page.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\track\\page.jsx"
+index e234494..2384b27 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\app\\[subdomain]\\track\\page.jsx"
+@@ -1,4 +1,5 @@
+ "use client";
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import { TrackingView, cancellationReasons, returnReasons, getProductId, getVariantId, getItemKey } from '@scaleup/storefront-renderer/presentation/TrackingView';
+ import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
+ import React, { useMemo, useState } from 'react';
+@@ -242,6 +243,6 @@ export default function TrackOrderPage({ params }) {
+     };
+ 
+     return (
+-        <StorefrontPresentationRuntime><TrackingView {...{ accessOtp, accessOtpMaskedPhone, accessOtpSent, actionLoading, address, atelier, canRequestReturn, cancelNote, cancelOpen, cancelReason, currentStepIndex, handleCancelOrder, handleReturnProofImages, handleSubmitReturn, handleTrackOrder, loading, openReturnModal, order, orderAccessToken, orderItems, phone, presentationVariant, progressWidth, resetOrderAccess, returnDescription, returnOpen, returnProofImages, returnProofVideo, returnReason, returnStatusTone, selectedReturnItems, setAccessOtp, setCancelNote, setCancelOpen, setCancelReason, setPhone, setReturnDescription, setReturnOpen, setReturnProofImages, setReturnProofVideo, setReturnReason, setTrackingId, steps, toggleReturnItem, trackingId }} /></StorefrontPresentationRuntime>
++        <StorefrontPresentationRuntime><AdaptivePresentation pageKind="track" core><TrackingView {...{ accessOtp, accessOtpMaskedPhone, accessOtpSent, actionLoading, address, atelier, canRequestReturn, cancelNote, cancelOpen, cancelReason, currentStepIndex, handleCancelOrder, handleReturnProofImages, handleSubmitReturn, handleTrackOrder, loading, openReturnModal, order, orderAccessToken, orderItems, phone, presentationVariant, progressWidth, resetOrderAccess, returnDescription, returnOpen, returnProofImages, returnProofVideo, returnReason, returnStatusTone, selectedReturnItems, setAccessOtp, setCancelNote, setCancelOpen, setCancelReason, setPhone, setReturnDescription, setReturnOpen, setReturnProofImages, setReturnProofVideo, setReturnReason, setTrackingId, steps, toggleReturnItem, trackingId }} /></AdaptivePresentation></StorefrontPresentationRuntime>
+     );
+ }
+
+
+# ecommerce-storefront/src/components/account/CustomerTabs.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\account\\CustomerTabs.jsx"
+index 21d2cc0..2407dd3 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\account\\CustomerTabs.jsx"
+@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast'; // Added toast for notifications
+ 
+ 
+ // 🌟 UPDATED: SecurityTab now handles its own state and API requests
+-export function SecurityTab({ presentationVariant } = {}) {
++export function SecurityTab({ presentationVariant, adaptiveParts = false } = {}) {
+     const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+     const [loading, setLoading] = useState(false);
+ 
+@@ -54,6 +54,6 @@ export function SecurityTab({ presentationVariant } = {}) {
+     };
+ 
+     return (
+-        <AccountSecurityView {...{ handlePasswordReset, loading, passForm, passwordScore, passwordsMatch, presentationVariant, setPassForm }} />
++        <AccountSecurityView {...{ adaptiveParts, handlePasswordReset, loading, passForm, passwordScore, passwordsMatch, presentationVariant, setPassForm }} />
+     );
+ }
+
+
+# ecommerce-storefront/src/components/product/ProductDetails.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\product\\ProductDetails.jsx"
+index c1afd9a..75b0332 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\product\\ProductDetails.jsx"
+@@ -1,4 +1,5 @@
+ "use client";
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import { useCallback, lazy, Suspense, useEffect, useRef, useState } from 'react';
+ import { useCart }    from '@/context/CartContext';
+ import { useAuth }    from '@/context/AuthContext';
+@@ -116,11 +117,11 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
+     }, [handleAttributeSelect]);
+ 
+     /* ── Guards ── */
+-    if (loading) return <PageSpinner />;
++    if (loading) return <AdaptivePresentation pageKind="product" core><PageSpinner /></AdaptivePresentation>;
+ 
+     if (error || !product) {
+         return (
+-            <div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
++            <AdaptivePresentation pageKind="product" core><div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
+                 <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-white shadow-sm">
+                     <ShoppingCart size={40} className="text-slate-300" />
+                 </div>
+@@ -131,15 +132,15 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
+                 <Link href="/" className="sf-btn sf-btn-primary mt-8 px-6">
+                     <ArrowLeft size={18} /> Back to shop
+                 </Link>
+-            </div>
++            </div></AdaptivePresentation>
+         );
+     }
+ 
+-    return <StorefrontPresentationRuntime><ProductDetailsView
++    return <StorefrontPresentationRuntime><AdaptivePresentation pageKind="product" core><ProductDetailsView
+         presentationVariant={presentationVariant} product={product} currentVariant={currentVariant} displayStock={displayStock}
+         baseOriginalPrice={baseOriginalPrice} displayDiscount={displayDiscount} displayFinalPrice={displayFinalPrice}
+         availableAttributes={availableAttributes} selectedAttributes={selectedAttributes} handleVariantSelect={handleVariantSelect}
+         quantity={quantity} setQuantity={setQuantity} handleAddToCart={handleAddToCart} handleBuyNow={handleBuyNow}
+         relatedContent={<Suspense fallback={null}><RelatedProducts subdomain={subdomain} products={relatedProducts} presentationVariant={presentationVariant} productCard={{ ...theme.productCard, colors: theme.colors?.productCard }} /></Suspense>} reviewContent={<Suspense fallback={<div className="mt-24 h-64 rounded-3xl bg-gray-50 animate-pulse" />}><ReviewSection presentationVariant={presentationVariant} subdomain={subdomain} id={id} isLoggedIn={isLoggedIn} reviews={reviews} onReviewSuccess={refreshProductStats} /></Suspense>}
+-    /></StorefrontPresentationRuntime>;
++    /></AdaptivePresentation></StorefrontPresentationRuntime>;
+ }
+
+
+# ecommerce-storefront/src/components/product/ReviewSection.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\product\\ReviewSection.jsx"
+index 6ee33e2..8aac3f0 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\product\\ReviewSection.jsx"
+@@ -2,5 +2,5 @@
+ import API from '@/api/api';
+ import SharedReviewSection from '@scaleup/storefront-renderer/presentation/ReviewSection';
+ export default function ReviewSection(props) {
+-    return <SharedReviewSection {...props} onSubmitReview={review => API.post(`/storefront/${props.subdomain}/products/${props.id}/reviews`, review)} />;
++    return <SharedReviewSection {...props} accountHref="/account" onSubmitReview={review => API.post(`/storefront/${props.subdomain}/products/${props.id}/reviews`, review)} />;
+ }
+
+
+# ecommerce-storefront/src/components/search/SearchModal.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\search\\SearchModal.jsx"
+index ab88dc4..7ca75a4 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\search\\SearchModal.jsx"
+@@ -15,9 +15,10 @@ export default function SearchModal({
+                                         products = []
+                                     }) {
+     const [query, setQuery] = useState("");
+-    const {theme} = useStorefrontTheme();
++    const {theme, settings} = useStorefrontTheme();
+     const atelier = getStorefrontPresentationVariant(theme) === 'atelier-editorial';
+-    const dialogRef = useAtelierDialog({enabled: atelier, open: isOpen, onClose});
++    const accessibleDialog = atelier || Boolean(settings?.adaptive);
++    const dialogRef = useAtelierDialog({enabled: accessibleDialog, open: isOpen, onClose});
+ 
+     useEffect(() => {
+         if (!isOpen) {
+@@ -60,7 +61,7 @@ export default function SearchModal({
+     if (!isOpen) return null;
+ 
+     return (
+-        <div ref={dialogRef} data-atelier-dialog={atelier ? "search" : undefined} role={atelier ? "dialog" : undefined} aria-modal={atelier || undefined} aria-label={atelier ? "Search products" : undefined} className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-4">
++        <div ref={dialogRef} data-atelier-dialog={atelier ? "search" : undefined} role={accessibleDialog ? "dialog" : undefined} aria-modal={accessibleDialog || undefined} aria-label={accessibleDialog ? "Search products" : undefined} className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-4">
+             <div className="mt-4 w-full max-w-3xl overflow-hidden rounded-[1.75rem] border border-white/20 bg-white shadow-2xl shadow-slate-950/30 sm:mt-10">
+ 
+                 {/* Header */}
+@@ -70,9 +71,9 @@ export default function SearchModal({
+                     </div>
+ 
+                     <input
+-                        autoFocus
++                        autoFocus={!settings?.adaptive}
+                         type="text"
+-                        aria-label={atelier ? 'Search products' : undefined}
++                        aria-label={accessibleDialog ? 'Search products' : undefined}
+                         placeholder="Search products, categories, descriptions..."
+                         value={query}
+                         onChange={(e) => setQuery(e.target.value)}
+
+
+# ecommerce-storefront/src/components/storefront/AdaptivePresentation.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\AdaptivePresentation.jsx"
+index e69de29..2011465 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\AdaptivePresentation.jsx"
+@@ -0,0 +1,21 @@
++"use client";
++import dynamic from 'next/dynamic';
++import { cloneElement } from 'react';
++import { useStorefrontTheme } from './StorefrontThemeProvider';
++
++// Conditional client import preserves SSR and avoids executing the adaptive
++// validator/compiler on v4 routes. Authority comes from the server snapshot,
++// never local storage, query parameters or a browser feature flag.
++const PublishedAdaptivePage = dynamic(() => import('./PublishedAdaptivePage'));
++export default function AdaptivePresentation({ pageKind, children, core = false, renderCore, catalogActions }) {
++    const { settings, theme } = useStorefrontTheme();
++    const projection = settings?.adaptive;
++    const assignment = ['header', 'footer'].includes(pageKind)
++        ? projection?.siteBuilder?.globals?.[pageKind] : projection?.siteBuilder?.defaultTemplates?.[pageKind];
++    const fallback = renderCore ? renderCore(false) : children;
++    if (!projection || !assignment) return fallback;
++    const trustedRender = renderCore || (core ? adaptiveParts => cloneElement(children, typeof children.type === 'string'
++        ? (adaptiveParts ? { 'data-ab-part': 'surface' } : {}) : { adaptiveParts }) : undefined);
++    return <PublishedAdaptivePage projection={projection} pageKind={pageKind} theme={theme}
++        renderCore={trustedRender} catalogActions={catalogActions} fallback={fallback} subdomain={settings.subdomain} />;
++}
+
+
+# ecommerce-storefront/src/components/storefront/Navbar.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\Navbar.jsx"
+index e2b4bbf..fa34c26 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\Navbar.jsx"
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import Link from 'next/link';
+ import { useEffect, useState } from 'react';
+ import API from '@/api/api';
+@@ -46,7 +47,7 @@ export default function Navbar({ subdomain }) {
+ 
+     return (
+         <>
+-            <ReferenceStorefrontHeader
++            <AdaptivePresentation pageKind="header" core><ReferenceStorefrontHeader
+                 theme={theme}
+                 shopName={shopSettings?.shopName}
+                 subdomain={subdomain}
+@@ -55,7 +56,7 @@ export default function Navbar({ subdomain }) {
+                 cartCount={cartCount}
+                 onSearch={() => setSearchOpen(true)}
+                 LinkComponent={Link}
+-            />
++            /></AdaptivePresentation>
+             <SearchModal
+                 isOpen={searchOpen}
+                 onClose={() => setSearchOpen(false)}
+
+
+# ecommerce-storefront/src/components/storefront/PublishedAdaptivePage.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\PublishedAdaptivePage.jsx"
+index e69de29..82a5fc3 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\PublishedAdaptivePage.jsx"
+@@ -0,0 +1,22 @@
++"use client";
++import { useEffect, useMemo } from 'react';
++import { PageTemplateRenderer, resolveAdaptivePage } from '@scaleup/storefront-renderer/adaptive';
++import { getAdaptiveColorTokens } from '@scaleup/storefront-theme/adaptive';
++import StorefrontPresentationRuntime from './StorefrontPresentationRuntime';
++import { useStorefrontProductActions } from '@/hooks/useStorefrontProductActions';
++
++export default function PublishedAdaptivePage({ projection, pageKind, theme, renderCore, catalogActions, fallback, subdomain }) {
++    const productActions = useStorefrontProductActions({ subdomain });
++    const resolved = useMemo(() => resolveAdaptivePage({ siteBuilder: projection.siteBuilder, pageKind,
++        colorTokens: getAdaptiveColorTokens(theme) }), [projection.siteBuilder, pageKind, theme]);
++    const assets = useMemo(() => Object.fromEntries((projection.assets || []).map(asset => [asset.id, asset])), [projection.assets]);
++    useEffect(() => {
++        if (!resolved.valid) console.warn('store_builder_adaptive_renderer_fallback', { pageKind, revision: projection.revision,
++            codes: [...new Set(resolved.errors.map(error => error.code))].slice(0, 5) });
++    }, [resolved, pageKind, projection.revision]);
++    if (!resolved.valid) return fallback;
++    return <StorefrontPresentationRuntime><PageTemplateRenderer pageKind={pageKind} plan={resolved.value}
++        data={{ assets, sources: projection.sourcesByTemplate?.[resolved.value.templateId] || {}, catalogLayout: theme.layout, productCard: theme.productCard }}
++        actions={{ core: { render: renderCore }, catalog: catalogActions || { addToCart: productActions.addProductToCart, buyNow: productActions.buyNow } }} />
++        {productActions.variantPicker}</StorefrontPresentationRuntime>;
++}
+
+
+# ecommerce-storefront/src/components/storefront/StorefrontFooter.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\StorefrontFooter.jsx"
+index 0280b92..9bd6014 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\components\\storefront\\StorefrontFooter.jsx"
+@@ -1,5 +1,6 @@
+ "use client";
+ 
++import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
+ import Link from 'next/link';
+ import { useCart } from '@/context/CartContext';
+ import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
+@@ -10,13 +11,13 @@ export default function StorefrontFooter({ subdomain }) {
+     const { theme, settings } = useStorefrontTheme();
+ 
+     return (
+-        <ReferenceStorefrontFooter
++        <AdaptivePresentation pageKind="footer" core><ReferenceStorefrontFooter
+             theme={theme}
+             shopName={settings?.shopName}
+             subdomain={subdomain}
+             cartCount={cartCount}
+             shopVerification={settings?.shopVerification}
+             LinkComponent={Link}
+-        />
++        /></AdaptivePresentation>
+     );
+ }
+
+
+# ecommerce-storefront/src/proxy.js
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\proxy.js"
+index 60ec3d7..73cbe97 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-storefront\\src\\proxy.js"
+@@ -28,6 +28,13 @@ export default function proxy(req) {
+     // Always replace a caller-supplied value.
+     requestHeaders.set('x-storefront-pathname', `${url.pathname}${url.search}`);
+     const options = { request: { headers: requestHeaders } };
++    const rewriteTenant = tenant => {
++        const target = new URL(req.url);
++        // Avoid exposing the internal tenant path through a root-slash redirect.
++        target.pathname = `/${tenant}${url.pathname === '/' ? '' : url.pathname}`;
++        target.search = url.search;
++        return NextResponse.rewrite(target, options);
++    };
+ 
+     if (!hostname || RESERVED_HOSTS.has(hostname)) {
+         return NextResponse.next(options);
+@@ -36,18 +43,18 @@ export default function proxy(req) {
+     if (hostname.endsWith('.localhost')) {
+         const subdomain = hostname.slice(0, -'.localhost'.length);
+         if (subdomain && !subdomain.includes('.')) {
+-            return NextResponse.rewrite(new URL(`/${subdomain}${url.pathname}`, req.url), options);
++            return rewriteTenant(subdomain);
+         }
+     }
+ 
+     if (hostname.endsWith(`.${PLATFORM_DOMAIN}`)) {
+         const subdomain = hostname.slice(0, -`.${PLATFORM_DOMAIN}`.length);
+         if (subdomain && !subdomain.includes('.') && !RESERVED_SUBDOMAINS.has(subdomain)) {
+-            return NextResponse.rewrite(new URL(`/${subdomain}${url.pathname}`, req.url), options);
++            return rewriteTenant(subdomain);
+         }
+ 
+         return NextResponse.next(options);
+     }
+ 
+-    return NextResponse.rewrite(new URL(`/${hostname}${url.pathname}`, req.url), options);
++    return rewriteTenant(hostname);
+ }
+
+
+# packages/storefront-renderer/adaptive/ProtectedCore.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\ProtectedCore.jsx"
+index 911c2bc..1d7ad14 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\ProtectedCore.jsx"
+@@ -19,6 +19,11 @@ import { CheckoutPageShell, CheckoutDetailsColumn, CheckoutOrderSummary, Checkou
+ // merchant graph has no data/action path into this boundary. No controllers or
+ // API-owning hooks are imported here.
+ export function ProtectedCore({ pageKind, data = {}, actions = {} }) {
++    // Only application controller code supplies this port. Merchant JSON cannot
++    // name functions/components. Live routes reuse the exact existing views and
++    // callbacks (including API-owning security/review children); preview uses the
++    // inert adapters below. Both are framed by the same validated core node.
++    if (typeof actions.render === 'function') return actions.render(true);
+     if (pageKind === 'header' || pageKind === 'footer') {
+         const View = pageKind === 'header' ? ReferenceStorefrontHeader : ReferenceStorefrontFooter;
+         return <View adaptiveParts theme={data.theme} shopName={data.shopName} subdomain={data.subdomain}
+@@ -36,6 +41,7 @@ export function ProtectedCore({ pageKind, data = {}, actions = {} }) {
+                 availableAttributes={data.availableAttributes} selectedAttributes={data.selectedAttributes}
+                 quantity={data.quantity} setQuantity={actions.setQuantity} handleVariantSelect={actions.selectVariant}
+                 handleAddToCart={actions.addToCart} handleBuyNow={actions.buyNow}
++                relatedContent={data.relatedContent} reviewContent={data.reviewContent}
+                 presentationVariant={data.presentationVariant} />
+         </>;
+     }
+
+
+# packages/storefront-renderer/presentation/CategoryView.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\CategoryView.jsx"
+index 0a311f1..a6a3ca2 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\CategoryView.jsx"
+@@ -1,8 +1,10 @@
+ 'use client';
+ 
+ import { ArrowLeft, Filter, PackageX, Tags, X } from 'lucide-react';
++import { cloneElement, useEffect } from 'react';
+ import { Link } from './Runtime.jsx';
+ import SafeProductImage from './SafeProductImage.jsx';
++import { useAtelierDialog } from '../atelier/useAtelierDialog.js';
+ import { ProductCard } from '../reference/StorefrontProductCard.jsx';
+ 
+ 
+@@ -89,7 +91,18 @@ export function CategoryFilters({ adaptiveParts = false, applyFilters, atelier,
+             </div>
+         </div>); }
+ 
+-export function CategoryView({ adaptiveParts = false, activeFilters, atelier, category, categoryImage, categoryImageAlt, clearFilters, filterButtonRef, filterContent, filters, gridClass, gridGapClass, hasRatingData, mobileFiltersOpen, normalizedProducts, page, presentationVariant, productActions, setMobileFiltersOpen, shop, themedProductCard, total, totalPages, updateQuery }) { return (<div className={atelier ? "sf-page atelier-catalog" : "sf-page"}>
++export function CategoryView({ adaptiveParts = false, activeFilters, atelier, category, categoryImage, categoryImageAlt, clearFilters, filterButtonRef, filterContent, filters, gridClass, gridGapClass, hasRatingData, mobileFiltersOpen, normalizedProducts, page, presentationVariant, productActions, setMobileFiltersOpen, shop, themedProductCard, total, totalPages, updateQuery }) {
++    const filterDialogRef = useAtelierDialog({ enabled: adaptiveParts, open: mobileFiltersOpen, onClose: () => setMobileFiltersOpen(false) });
++    useEffect(() => {
++        if (!adaptiveParts || !mobileFiltersOpen) return undefined;
++        const desktop = filterDialogRef.current?.ownerDocument.defaultView?.matchMedia('(min-width:1024px)');
++        if (!desktop) return undefined;
++        const closeHiddenDrawer = () => { if (desktop.matches) setMobileFiltersOpen(false); };
++        closeHiddenDrawer();
++        desktop.addEventListener('change', closeHiddenDrawer);
++        return () => desktop.removeEventListener('change', closeHiddenDrawer);
++    }, [adaptiveParts, mobileFiltersOpen, setMobileFiltersOpen, filterDialogRef]);
++    return (<div className={atelier ? "sf-page atelier-catalog" : "sf-page"}>
+             <section data-ab-surface={adaptiveParts ? '' : undefined} className="border-b border-slate-200 bg-slate-50/80">
+                 <div className="sf-shell-wide py-6 sm:py-10">
+                     <Link href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 transition hover:text-[var(--sf-accent)]">
+@@ -173,7 +186,7 @@ export function CategoryView({ adaptiveParts = false, activeFilters, atelier, ca
+                             <h2 className="text-sm font-black uppercase tracking-[0.14em] text-slate-500">Filter products</h2>
+                             <Filter size={16} className="text-slate-400" />
+                         </div>
+-                        {filterContent}
++                        {adaptiveParts && filterContent ? cloneElement(filterContent, { adaptiveParts: true }) : filterContent}
+                     </aside>
+ 
+                     <div>
+@@ -248,7 +261,7 @@ export function CategoryView({ adaptiveParts = false, activeFilters, atelier, ca
+                 </div>
+             </section>
+             {mobileFiltersOpen && (
+-                <div className="fixed inset-0 z-[130] lg:hidden" role="dialog" aria-modal="true" aria-labelledby="category-filter-title">
++                <div ref={filterDialogRef} className="fixed inset-0 z-[130] lg:hidden" role="dialog" aria-modal="true" aria-labelledby="category-filter-title">
+                     <button data-ab-surface={adaptiveParts ? '' : undefined}
+                         type="button"
+                         aria-label="Close filters"
+@@ -273,7 +286,7 @@ export function CategoryView({ adaptiveParts = false, activeFilters, atelier, ca
+                                 <X size={18} />
+                             </button>
+                         </div>
+-                        {filterContent}
++                        {adaptiveParts && filterContent ? cloneElement(filterContent, { adaptiveParts: true }) : filterContent}
+                     </div>
+                 </div>
+             )}
+
+
+# packages/storefront-renderer/presentation/CheckoutSections.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\CheckoutSections.jsx"
+index a750637..20861d6 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\CheckoutSections.jsx"
+@@ -592,7 +592,7 @@ function CheckoutOrderItem({ adaptiveParts = false,
+                         <div className="flex items-center gap-2">
+                             <button data-ab-surface={adaptiveParts ? '' : undefined}
+                                 type="button"
+-                                aria-label={presentationVariant === 'atelier-editorial' ? 'Decrease quantity for ' + item.title : undefined}
++                                aria-label={adaptiveParts || presentationVariant === 'atelier-editorial' ? 'Decrease quantity for ' + item.title : undefined}
+                                 onClick={() =>
+                                     updateQuantity(
+                                         item.cartItemId || item._id,
+@@ -610,7 +610,7 @@ function CheckoutOrderItem({ adaptiveParts = false,
+ 
+                             <button data-ab-surface={adaptiveParts ? '' : undefined}
+                                 type="button"
+-                                aria-label={presentationVariant === 'atelier-editorial' ? 'Increase quantity for ' + item.title : undefined}
++                                aria-label={adaptiveParts || presentationVariant === 'atelier-editorial' ? 'Increase quantity for ' + item.title : undefined}
+                                 onClick={() =>
+                                     updateQuantity(
+                                         item.cartItemId || item._id,
+
+
+# packages/storefront-renderer/presentation/ReviewSection.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\ReviewSection.jsx"
+index 18f4226..3f8781c 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\ReviewSection.jsx"
+@@ -35,7 +35,7 @@ const ReviewCard = memo(function ReviewCard({ review }) {
+ });
+ 
+ /* ─── Write-a-review form ────────────────────────────────────── */
+-const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSuccess, onSubmitReview }) {
++const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSuccess, onSubmitReview, accountHref }) {
+     const [newReview,   setNewReview]   = useState({ rating: 0, comment: '' });
+     const [submitting,  setSubmitting]  = useState(false);
+     const [message,     setMessage]     = useState({ type: '', text: '' });
+@@ -71,7 +71,7 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
+                 <User size={48} className="mx-auto mb-4 text-slate-300" />
+                 <p className="mb-4 text-slate-600">Log in to submit a review and share your thoughts.</p>
+                 <Link
+-                    href={`/${subdomain}/account`}
++                    href={accountHref || `/${subdomain}/account`}
+                     className="sf-btn sf-btn-primary"
+                 >
+                     Log In / Register
+@@ -136,7 +136,7 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
+ });
+ 
+ /* ─── Full section (form + list) ─────────────────────────────── */
+-const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess, onSubmitReview, presentationVariant }) {
++const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess, onSubmitReview, presentationVariant, accountHref }) {
+     return (
+         <section data-atelier-part={presentationVariant === 'atelier-editorial' ? 'reviews' : undefined} className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6 lg:p-7">
+             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+@@ -156,7 +156,7 @@ const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, r
+                 <div className="lg:col-span-1">
+                     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                         <h3 className="mb-5 text-xl font-black text-slate-950">Write a Review</h3>
+-                        <ReviewForm
++                        <ReviewForm accountHref={accountHref}
+                             subdomain={subdomain}
+                             id={id}
+                             isLoggedIn={isLoggedIn}
+
+
+# packages/storefront-renderer/presentation/TrackingView.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\TrackingView.jsx"
+index da769f2..88417f7 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\TrackingView.jsx"
+@@ -55,16 +55,17 @@ const StatusPill = ({ adaptiveParts = false, children, tone = 'slate' }) => {
+ };
+ const ModalShell = ({ adaptiveParts = false, title, children, onClose, presentationVariant, busy }) => {
+     const atelier = presentationVariant === 'atelier-editorial';
+-    const dialogRef = useAtelierDialog({enabled: atelier, open: true, onClose, busy});
++    const accessibleDialog = atelier || adaptiveParts;
++    const dialogRef = useAtelierDialog({enabled: accessibleDialog, open: true, onClose, busy});
+     return (
+-    <div data-ab-surface={adaptiveParts ? '' : undefined} ref={dialogRef} data-atelier-dialog={atelier ? "order-action" : undefined} role={atelier ? "dialog" : undefined} aria-modal={atelier || undefined} aria-label={(atelier || adaptiveParts) ? title : undefined} className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-3 py-4 backdrop-blur-sm sm:items-center">
++    <div data-ab-surface={adaptiveParts ? '' : undefined} ref={dialogRef} data-atelier-dialog={atelier ? "order-action" : undefined} role={accessibleDialog ? "dialog" : undefined} aria-modal={accessibleDialog || undefined} aria-label={accessibleDialog ? title : undefined} className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-3 py-4 backdrop-blur-sm sm:items-center">
+         <div data-ab-surface={adaptiveParts ? '' : undefined} className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                 <h2 className="text-lg font-black text-slate-950">{title}</h2>
+                 <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                     type="button"
+                     onClick={onClose}
+-                    disabled={atelier && busy}
++                    disabled={accessibleDialog && busy}
+                     className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                     aria-label="Close modal"
+                 >
+@@ -561,6 +562,7 @@ export function TrackingView({ adaptiveParts = false, accessOtp, accessOtpMasked
+                             <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                 type="button"
+                                 onClick={() => setCancelOpen(false)}
++                                disabled={adaptiveParts && actionLoading}
+                                 className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+                             >
+                                 Keep order
+@@ -629,23 +631,23 @@ export function TrackingView({ adaptiveParts = false, accessOtp, accessOtpMasked
+                                 </div>
+                             </div>
+                             <div className="mt-3 grid gap-3 sm:grid-cols-2">
+-                                <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} className="rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50">
++                                <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} className={"rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50" + (adaptiveParts ? " focus-within:ring-2 focus-within:ring-slate-700 focus-within:ring-offset-2" : "")}>
+                                     Add proof images
+                                     <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                                         type="file"
+                                         accept="image/jpeg,image/png,image/webp"
+                                         multiple
+                                         onChange={handleReturnProofImages}
+-                                        className="hidden"
++                                        className={adaptiveParts ? "sr-only" : "hidden"}
+                                     />
+                                 </label>
+-                                <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} className="rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50">
++                                <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} className={"rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50" + (adaptiveParts ? " focus-within:ring-2 focus-within:ring-slate-700 focus-within:ring-offset-2" : "")}>
+                                     Add optional video
+                                     <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                                         type="file"
+                                         accept="video/mp4,video/quicktime"
+                                         onChange={event => setReturnProofVideo(event.target.files?.[0] || null)}
+-                                        className="hidden"
++                                        className={adaptiveParts ? "sr-only" : "hidden"}
+                                     />
+                                 </label>
+                             </div>
+@@ -657,7 +659,7 @@ export function TrackingView({ adaptiveParts = false, accessOtp, accessOtpMasked
+                                             className="relative h-20 overflow-hidden rounded-xl border border-slate-200 bg-cover bg-center"
+                                             style={{ backgroundImage: `url(${URL.createObjectURL(file)})` }}
+                                             aria-label={file.name}
+-                                            role={atelier ? "group" : "img"}
++                                            role={(atelier || adaptiveParts) ? "group" : "img"}
+                                         >
+                                             <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                                 type="button"
+@@ -690,6 +692,7 @@ export function TrackingView({ adaptiveParts = false, accessOtp, accessOtpMasked
+                             <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                 type="button"
+                                 onClick={() => setReturnOpen(false)}
++                                disabled={adaptiveParts && actionLoading}
+                                 className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+                             >
+                                 Not now
+
+
+# packages/storefront-renderer/reference/StorefrontHeader.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\reference\\StorefrontHeader.jsx"
+index c846318..3dd35f3 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\reference\\StorefrontHeader.jsx"
+@@ -1,7 +1,7 @@
+ /* eslint-disable @next/next/no-img-element */
+ "use client";
+ 
+-import { useState } from "react";
++import { useEffect, useState } from "react";
+ import {
+     ChevronDown,
+     Menu,
+@@ -15,6 +15,7 @@ import {
+ 
+ import { getSortedNavigation, getStorefrontPresentationVariant, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
+ import { AtelierHeader } from '../atelier/AtelierHeader';
++import { useAtelierDialog } from '../atelier/useAtelierDialog.js';
+ import {
+     DefaultLink,
+     EditorSelectionFrame,
+@@ -201,6 +202,15 @@ export function ReferenceStorefrontHeader({ adaptiveParts = false,
+     const visibleHeaderNavLinks = headerNavLinks.slice(0, 3);
+     const overflowHeaderNavLinks = headerNavLinks.slice(3);
+     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
++    const mobileMenuRef = useAtelierDialog({ enabled: adaptiveParts && !preview, open: mobileMenuOpen, onClose: () => setMobileMenuOpen(false) });
++    useEffect(() => {
++        if (!adaptiveParts || !mobileMenuOpen) return undefined;
++        const desktop = window.matchMedia('(min-width: 1024px)');
++        const closeOnDesktop = () => { if (desktop.matches) setMobileMenuOpen(false); };
++        closeOnDesktop();
++        desktop.addEventListener('change', closeOnDesktop);
++        return () => desktop.removeEventListener('change', closeOnDesktop);
++    }, [adaptiveParts, mobileMenuOpen]);
+     const forcedDesktopLayoutClass = "grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
+     const desktopLayoutClass = "lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
+     const brandSlot = (
+@@ -235,17 +245,18 @@ export function ReferenceStorefrontHeader({ adaptiveParts = false,
+     );
+     const utilitySlot = (
+         <div data-ab-part={adaptiveParts ? 'utilities' : undefined} className="flex shrink-0 items-center justify-end gap-1 xl:gap-2">
+-            <LinkSlot LinkComponent={LinkComponent} href="/track" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
++            <LinkSlot aria-label={adaptiveParts ? 'Track order' : undefined} LinkComponent={LinkComponent} href="/track" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
+                 <Truck size={17} className="shrink-0" />
+                 <span className="hidden 2xl:inline">Track Order</span>
+             </LinkSlot>
+-            <LinkSlot LinkComponent={LinkComponent} href="/account" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
++            <LinkSlot aria-label={adaptiveParts ? 'Customer account' : undefined} LinkComponent={LinkComponent} href="/account" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
+                 <User size={17} className="shrink-0" />
+                 <span className="hidden 2xl:inline">Account</span>
+             </LinkSlot>
+             <LinkSlot
+                 LinkComponent={LinkComponent}
+                 href="/cart"
++                aria-label={adaptiveParts ? `Cart, ${cartCount} items` : undefined}
+                 prefetch={false}
+                 className="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-[var(--sf-primary-button-bg)] px-3 text-sm font-black text-[var(--sf-primary-button-text)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sf-primary-button-hover-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] xl:px-4"
+             >
+@@ -332,6 +343,8 @@ export function ReferenceStorefrontHeader({ adaptiveParts = false,
+                                 onClick={() => setMobileMenuOpen(true)}
+                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11"
+                                 aria-label="Open menu"
++                                aria-haspopup={adaptiveParts ? 'dialog' : undefined}
++                                aria-expanded={adaptiveParts ? mobileMenuOpen : undefined}
+                             >
+                                 <Menu size={20} />
+                             </button>
+@@ -374,7 +387,7 @@ export function ReferenceStorefrontHeader({ adaptiveParts = false,
+ 
+             {mobileMenuOpen && !preview && (
+                 <div data-ab-surface={adaptiveParts ? '' : undefined} className="fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+-                    <aside data-ab-surface={adaptiveParts ? '' : undefined} className="h-full w-[86vw] max-w-sm bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
++                    <aside data-ab-surface={adaptiveParts ? '' : undefined} ref={mobileMenuRef} role={adaptiveParts ? 'dialog' : undefined} aria-modal={adaptiveParts || undefined} aria-label={adaptiveParts ? 'Store navigation' : undefined} className={"h-full w-[86vw] max-w-sm bg-white p-5 shadow-2xl" + (adaptiveParts ? " overflow-y-auto" : "")} onClick={(event) => event.stopPropagation()}>
+                         <div className="mb-6 flex items-center justify-between gap-4">
+                             <BrandMark adaptiveParts={adaptiveParts} theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
+                             <button data-ab-surface={adaptiveParts ? '' : undefined} type="button" onClick={() => setMobileMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Close menu">
+
+
+# packages/storefront-renderer/reference/StorefrontProductCard.jsx
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\reference\\StorefrontProductCard.jsx"
+index d1db8cb..38a15fc 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\reference\\StorefrontProductCard.jsx"
+@@ -106,7 +106,7 @@ export const ProductCard = memo(function ProductCard({ adaptiveParts = false,
+     const wishlistClass = forceMobilePreview
+         ? "right-2 top-2 h-10 w-10"
+         : "right-2 top-2 h-10 w-10 sm:right-3 sm:top-3 sm:h-11 sm:w-11";
+-    const quickBuyButtonClass = forceMobilePreview
++    const quickBuyButtonClass = adaptiveParts ? "min-h-11 basis-24 grow px-2 py-2 text-xs sm:text-sm" : forceMobilePreview
+         ? "h-11 px-1.5 text-[11px]"
+         : "h-11 px-1.5 text-[11px] min-[430px]:px-2 min-[430px]:text-xs sm:px-3 sm:text-sm";
+ 
+@@ -236,7 +236,7 @@ export const ProductCard = memo(function ProductCard({ adaptiveParts = false,
+                 )}
+                 <div className="mt-auto flex flex-col gap-3 pt-4">
+                     {productCard?.showQuickBuy !== false && (
+-                        <div className="relative z-20 grid w-full grid-cols-2 gap-2">
++                        <div className={adaptiveParts ? "relative z-20 flex w-full flex-wrap gap-2" : "relative z-20 grid w-full grid-cols-2 gap-2"}>
+                             <button data-ab-surface={adaptiveParts ? '' : undefined}
+                                 type="button"
+                                 disabled={isOutOfStock}
+@@ -248,7 +248,7 @@ export const ProductCard = memo(function ProductCard({ adaptiveParts = false,
+                                     : buttonInlineStyle}
+                             >
+                                 {!forceMobilePreview && <ShoppingBag size={14} className="hidden shrink-0 sm:block" />}
+-                                <span className="truncate">{isOutOfStock ? "Unavailable" : "Add"}</span>
++                                <span className={adaptiveParts ? "min-w-0 whitespace-normal break-words" : "truncate"}>{isOutOfStock ? "Unavailable" : "Add"}</span>
+                             </button>
+                             {onProductBuyNow && (
+                                 <button data-ab-surface={adaptiveParts ? '' : undefined}
+@@ -262,7 +262,9 @@ export const ProductCard = memo(function ProductCard({ adaptiveParts = false,
+                                         : { backgroundColor: cardColors.buyNowBackground, borderColor: cardColors.buyNowBackground, color: cardColors.buyNowText }}
+                                 >
+                                     {!forceMobilePreview && <Zap size={14} className="hidden shrink-0 sm:block" />}
+-                                    {forceMobilePreview ? (
++                                    {adaptiveParts ? (
++                                        <span className="min-w-0 whitespace-normal break-words">Buy Now</span>
++                                    ) : forceMobilePreview ? (
+                                         <span className="truncate">Buy</span>
+                                     ) : (
+                                         <>
+
+
+# packages/storefront-theme/adaptive.cjs
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\adaptive.cjs"
+index 97fbd5e..6eb5e30 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\adaptive.cjs"
+@@ -6,7 +6,11 @@ const { ADAPTIVE_CONTRACT_VERSION, PAGE_KINDS, DEFAULT_PAGE_KINDS, SOURCE_BINDIN
+ const { validatePageTemplates, validateCompleteThemeBudget } = require('./pageTemplateValidation.cjs');
+ const { ADAPTIVE_BREAKPOINTS, APPROVED_FONTS, COLOR_TOKENS, STYLE_PROPERTIES, validateResponsiveStyles, tierForWidth, resolveResponsiveStyles } = require('./responsiveStyles.cjs');
+ const { applyPageTemplateCommand } = require('./pageTemplateCommands.cjs');
++const getAdaptiveColorTokens = theme => {
++    const colors = require('./index.cjs').normalizeThemeColors(theme);
++    return Object.fromEntries(COLOR_TOKENS.map(key => [key, colors[key]]));
++};
+ module.exports = { LIMITS, ADAPTIVE_CONTRACT_VERSION, PAGE_KINDS, DEFAULT_PAGE_KINDS, SOURCE_BINDINGS, PAGE_TEMPLATES, BLOCK_REGISTRY,
+     coreNodeId, createPageTemplate, createPageTemplateDocument, validatePageTemplates, validateCompleteThemeBudget,
+     ADAPTIVE_BREAKPOINTS, APPROVED_FONTS, COLOR_TOKENS, STYLE_PROPERTIES, validateResponsiveStyles, tierForWidth,
+-    resolveResponsiveStyles, applyPageTemplateCommand };
++    resolveResponsiveStyles, applyPageTemplateCommand, getAdaptiveColorTokens };
+
+
+# packages/storefront-theme/adaptive.mjs
+diff --git "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp" "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\adaptive.mjs"
+index 26d4a54..0729b6d 100644
+--- "a/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase6\\diff-before.tmp"
++++ "b/C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\adaptive.mjs"
+@@ -3,5 +3,5 @@ const contract = namespace.default || namespace;
+ export const { LIMITS, ADAPTIVE_CONTRACT_VERSION, PAGE_KINDS, DEFAULT_PAGE_KINDS, SOURCE_BINDINGS, PAGE_TEMPLATES, BLOCK_REGISTRY,
+     coreNodeId, createPageTemplate, createPageTemplateDocument, validatePageTemplates, validateCompleteThemeBudget,
+     ADAPTIVE_BREAKPOINTS, APPROVED_FONTS, COLOR_TOKENS, STYLE_PROPERTIES, validateResponsiveStyles, tierForWidth,
+-    resolveResponsiveStyles, applyPageTemplateCommand } = contract;
++    resolveResponsiveStyles, applyPageTemplateCommand, getAdaptiveColorTokens } = contract;
+ export default contract;

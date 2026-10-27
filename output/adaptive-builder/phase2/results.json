@@ -1,0 +1,69 @@
+{
+  "phase2Safety": "PASS",
+  "phase3Readiness": "PASS for inactive development after review",
+  "adoption": "DISABLED for all merchants; entitlements unapproved even if environment flag is on",
+  "productionRelease": "BLOCKED by existing failures and later release gates",
+  "unit": {
+    "newPure": 14,
+    "newIntegration": 35
+  },
+  "compatibility": {
+    "passed": 564,
+    "total": 564,
+    "exactRenderingCases": 370,
+    "earlierHashes": 144,
+    "homeParity": 20
+  },
+  "backend": {
+    "before": {
+      "passed": 1002,
+      "total": 1007,
+      "failed": 5
+    },
+    "final": {
+      "passed": 1016,
+      "total": 1021,
+      "failed": 5
+    },
+    "introducedFailures": 0,
+    "log": "backend-final-gate.log"
+  },
+  "database": {
+    "before": {
+      "passed": 18,
+      "total": 20,
+      "failed": 2
+    },
+    "final": {
+      "passed": 53,
+      "total": 55,
+      "failed": 2
+    },
+    "newPassed": 35,
+    "newTotal": 35,
+    "introducedFailures": 0,
+    "log": "integration-final-gate.log"
+  },
+  "lint": {
+    "admin": {
+      "errors": 18,
+      "warnings": 4,
+      "classification": "pre-existing"
+    },
+    "storefront": "PASS",
+    "changedJavaScript": {
+      "files": 24,
+      "errors": 5,
+      "warnings": 0,
+      "preExisting": 5,
+      "introduced": 0
+    }
+  },
+  "builds": {
+    "admin": "PASS",
+    "storefront": "PASS"
+  },
+  "diffCheck": "PASS",
+  "productionWrites": "none performed",
+  "phase3Started": false
+}

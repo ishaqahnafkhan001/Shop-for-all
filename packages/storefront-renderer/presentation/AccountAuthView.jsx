@@ -1,0 +1,150 @@
+import React from 'react';
+import {AtelierAccountAccent} from '../atelier/AtelierAccountAccent.jsx';
+
+export default function AuthView({ adaptiveParts = false,
+                                     presentationVariant,
+                                     isRegistering,
+                                     setIsRegistering,
+                                     authForm,
+                                     setAuthForm,
+                                     onForgotPassword,
+                                     handleAuthSubmit,
+                                     otpSent,
+                                     handleSendOTP,
+                                     otpTimer,
+                                     otpLoading
+                                 }) {
+
+    const atelier = presentationVariant === 'atelier-editorial';
+    // Helper to format seconds into MM:SS
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    return (
+        <div className={atelier ? "sf-page sf-shell-wide atelier-account" : "sf-page flex min-h-[70vh] items-center justify-center px-4 py-10"}>
+            {atelier && <AtelierAccountAccent/>}
+            <div data-ab-surface={adaptiveParts ? '' : undefined} className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/70 sm:p-8">
+                <p className="sf-kicker mb-2">{isRegistering ? 'Customer account' : 'Welcome back'}</p>
+                <h1 data-ab-part={adaptiveParts ? 'heading' : undefined} className="mb-2 text-3xl font-black text-slate-950">
+                    {isRegistering ? 'Create Account' : 'Welcome Back'}
+                </h1>
+                <p className="mb-6 text-sm leading-6 text-slate-500">
+                    {isRegistering ? 'Create a shop-specific customer account to track orders and review purchases.' : 'Sign in to view orders, tracking, and account details.'}
+                </p>
+
+                <form onSubmit={handleAuthSubmit} className="space-y-4">
+                    {isRegistering && (
+                        <div>
+                            <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor={(atelier || adaptiveParts) ? "account-full-name" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Full Name</label>
+                            <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
+                                id={(atelier || adaptiveParts) ? "account-full-name" : undefined}
+                                required
+                                type="text"
+                                value={authForm.fullName}
+                                onChange={(e) => setAuthForm({ ...authForm, fullName: e.target.value })}
+                                disabled={otpSent}
+                                className="sf-field disabled:bg-slate-50 disabled:text-slate-400"
+                            />
+                        </div>
+                    )}
+
+                    <div>
+                        <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor={(atelier || adaptiveParts) ? "account-email" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Email Address</label>
+                        <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
+                                id={(atelier || adaptiveParts) ? "account-email" : undefined}
+                            required
+                            type="email"
+                            value={authForm.email}
+                            onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                            disabled={isRegistering && otpSent}
+                            className="sf-field disabled:bg-slate-50 disabled:text-slate-400"
+                        />
+                    </div>
+
+                    <div>
+                        <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor={(atelier || adaptiveParts) ? "account-password" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Password</label>
+                        <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
+                                id={(atelier || adaptiveParts) ? "account-password" : undefined}
+                            required
+                            type="password"
+                            value={authForm.password}
+                            onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                            disabled={isRegistering && otpSent}
+                            className="sf-field disabled:bg-slate-50 disabled:text-slate-400"
+                        />
+                    </div>
+
+                    {isRegistering && otpSent && (
+                        <div>
+                            <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor={(atelier || adaptiveParts) ? "account-otp" : undefined} className="mb-1.5 block text-sm font-bold text-slate-700">Verification Code</label>
+                            <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                                id={(atelier || adaptiveParts) ? "account-otp" : undefined}
+                                required
+                                type="text"
+                                placeholder="Enter 6-digit code"
+                                value={authForm.otp}
+                                onChange={(e) => setAuthForm({ ...authForm, otp: e.target.value })}
+                                className="sf-field border-[var(--sf-accent-soft)] bg-[var(--sf-accent-bg)]/40"
+                            />
+
+                            {/* Resend Logic */}
+                            <div className="flex justify-between items-center mt-2">
+                                <p className="text-xs text-slate-500">Check your email for the code.</p>
+                                <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                    type="button"
+                                    onClick={handleSendOTP}
+                                    disabled={otpTimer > 0 || otpLoading}
+                                    className={`text-xs font-bold ${otpTimer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-[var(--sf-accent)] hover:text-[var(--sf-accent-hover)]'}`}
+                                >
+                                    {otpLoading ? 'Sending...' : otpTimer > 0 ? `Resend in ${formatTime(otpTimer)}` : 'Resend Code'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {isRegistering && !otpSent ? (
+                        <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                            type="button"
+                            onClick={handleSendOTP}
+                            disabled={otpTimer > 0 || otpLoading}
+                            className="sf-btn sf-btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:bg-slate-400"
+                        >
+                            {otpLoading && <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
+                            {otpLoading ? 'Sending code...' : otpTimer > 0 ? `Please wait ${formatTime(otpTimer)}` : 'Send Verification Code'}
+                        </button>
+                    ) : (
+                        <>
+                            {!isRegistering && (
+                                <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                    type="button"
+                                    onClick={onForgotPassword}
+                                    className="w-full text-right text-xs font-black text-[var(--sf-accent)] hover:text-[var(--sf-accent-hover)]"
+                                >
+                                    Forgot password?
+                                </button>
+                            )}
+                            <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                type="submit"
+                                className="sf-btn sf-btn-primary mt-4 w-full"
+                            >
+                                {isRegistering ? 'Verify & Sign Up' : 'Sign In'}
+                            </button>
+                        </>
+                    )}
+                </form>
+
+                <div className="mt-6 text-center">
+                    <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                        onClick={() => setIsRegistering(!isRegistering)}
+                        className="text-sm font-bold text-slate-600 hover:text-slate-950"
+                    >
+                        {isRegistering ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

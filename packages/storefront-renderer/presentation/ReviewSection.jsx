@@ -35,7 +35,7 @@ const ReviewCard = memo(function ReviewCard({ review }) {
 });
 
 /* ─── Write-a-review form ────────────────────────────────────── */
-const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSuccess, onSubmitReview }) {
+const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSuccess, onSubmitReview, accountHref }) {
     const [newReview,   setNewReview]   = useState({ rating: 0, comment: '' });
     const [submitting,  setSubmitting]  = useState(false);
     const [message,     setMessage]     = useState({ type: '', text: '' });
@@ -71,7 +71,7 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
                 <User size={48} className="mx-auto mb-4 text-slate-300" />
                 <p className="mb-4 text-slate-600">Log in to submit a review and share your thoughts.</p>
                 <Link
-                    href={`/${subdomain}/account`}
+                    href={accountHref || `/${subdomain}/account`}
                     className="sf-btn sf-btn-primary"
                 >
                     Log In / Register
@@ -136,7 +136,7 @@ const ReviewForm = memo(function ReviewForm({ subdomain, id, isLoggedIn, onSucce
 });
 
 /* ─── Full section (form + list) ─────────────────────────────── */
-const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess, onSubmitReview, presentationVariant }) {
+const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, reviews, onReviewSuccess, onSubmitReview, presentationVariant, accountHref }) {
     return (
         <section data-atelier-part={presentationVariant === 'atelier-editorial' ? 'reviews' : undefined} className="mt-10 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6 lg:p-7">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -156,7 +156,7 @@ const ReviewSection = memo(function ReviewSection({ subdomain, id, isLoggedIn, r
                 <div className="lg:col-span-1">
                     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                         <h3 className="mb-5 text-xl font-black text-slate-950">Write a Review</h3>
-                        <ReviewForm
+                        <ReviewForm accountHref={accountHref}
                             subdomain={subdomain}
                             id={id}
                             isLoggedIn={isLoggedIn}

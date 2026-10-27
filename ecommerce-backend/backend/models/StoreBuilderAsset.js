@@ -21,14 +21,17 @@ const storeBuilderAssetSchema = new mongoose.Schema({
     height: { type: Number, min: 0, default: 0 },
     status: {
         type: String,
-        enum: ['temporary', 'active', 'retired', 'deleted', 'failed'],
+        enum: ['temporary', 'active', 'retired', 'deleting', 'deleted', 'failed'],
         default: 'temporary',
         index: true
     },
     expiresAt: { type: Date, default: null, index: true },
     promotedAt: { type: Date, default: null },
     retiredAt: { type: Date, default: null },
-    cleanupAfter: { type: Date, default: null, index: true }
+    cleanupAfter: { type: Date, default: null, index: true },
+    cleanupClaimedAt: { type: Date, default: null },
+    referenceRevision: { type: Number, min: 0, default: undefined },
+    cleanupFromStatus: { type: String, enum: ['temporary', 'retired'], default: undefined }
 }, { timestamps: true });
 
 storeBuilderAssetSchema.index({ shop_id: 1, url: 1 });

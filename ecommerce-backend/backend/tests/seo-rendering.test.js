@@ -782,10 +782,12 @@ test('public collection and category SEO routes are tenant-safe', () => {
     const appDir = path.join(repoRoot, 'ecommerce-storefront/src/app/[subdomain]');
     const routeFiles = fs.readdirSync(appDir, { withFileTypes: true }).map(entry => entry.name);
     const collectionPage = readRepo('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/page.jsx');
-    const collectionClient = readRepo('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx');
+    const collectionClient = readRepo('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx')
+        + readRepo('packages/storefront-renderer/presentation/CollectionView.jsx');
     const homePage = readRepo('ecommerce-storefront/src/app/[subdomain]/page.jsx');
     const categoryPage = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/page.jsx');
-    const categoryClient = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx');
+    const categoryClient = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx')
+        + readRepo('packages/storefront-renderer/presentation/CategoryView.jsx');
     const sectionVariants = readRepo('packages/storefront-renderer/reference/StorefrontSectionVariants.jsx');
     const themeContract = readRepo('packages/storefront-theme/index.cjs');
     const collectionController = read('controllers/collectionController.js');
@@ -887,7 +889,8 @@ test('storefront product links prefer slugs and product slug backfill is dry-run
     const searchModal = readRepo('ecommerce-storefront/src/components/search/SearchModal.jsx');
     const ui = await require('./helpers/aiPresentationHarness').loadAiPresentation();
     const relatedProducts = ui.render(ui.RelatedProducts, { products: [{ _id: 'one', slug: 'blue-shirt', title: 'Blue' }, { _id: 'two', title: 'Other' }] });
-    const accountTabs = readRepo('ecommerce-storefront/src/components/account/CustomerTabs.jsx');
+    const accountTabs = readRepo('ecommerce-storefront/src/components/account/CustomerTabs.jsx')
+        + readRepo('packages/storefront-renderer/presentation/AccountTabsViews.jsx');
     const backfillScript = read('scripts/backfillProductSlugs.js');
 
     assert.match(productCard, /product\.slug \|\| product\._id/);

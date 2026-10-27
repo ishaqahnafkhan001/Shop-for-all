@@ -1,0 +1,96 @@
+{
+  "environment": "Local Node, warm repeated operations; browser timings recorded separately.",
+  "history": "30 past snapshots, not measured browser heap; reports retained string data only, excluding current/future/object overhead.",
+  "results": [
+    {
+      "count": 14,
+      "homeNodes": 3,
+      "snapshotUtf8Bytes": 8965,
+      "max30HistoryStringsUtf16Bytes": 537900,
+      "selection": {
+        "medianMs": 0.0004000000000132786,
+        "p95Ms": 0.00329999999996744
+      },
+      "tree": {
+        "medianMs": 0.0011000000000080945,
+        "p95Ms": 0.007900000000006457
+      },
+      "serialization": {
+        "medianMs": 0.10660000000001446,
+        "p95Ms": 0.14220000000000255
+      },
+      "validatedEdit": {
+        "medianMs": 12.594800000000077,
+        "p95Ms": 14.311399999999992
+      },
+      "resolution": {
+        "medianMs": 3.161000000000058,
+        "p95Ms": 3.5373000000001866
+      },
+      "ssrPreview": {
+        "medianMs": 0.3933999999999287,
+        "p95Ms": 7.50630000000001
+      }
+    },
+    {
+      "count": 80,
+      "homeNodes": 50,
+      "snapshotUtf8Bytes": 26437,
+      "max30HistoryStringsUtf16Bytes": 1586220,
+      "selection": {
+        "medianMs": 0.00029999999992469384,
+        "p95Ms": 0.0004999999998744897
+      },
+      "tree": {
+        "medianMs": 0.010800000000017462,
+        "p95Ms": 0.024499999999989086
+      },
+      "serialization": {
+        "medianMs": 0.27070000000003347,
+        "p95Ms": 0.4561999999998534
+      },
+      "validatedEdit": {
+        "medianMs": 16.476900000000114,
+        "p95Ms": 18.107300000000123
+      },
+      "resolution": {
+        "medianMs": 6.789200000000164,
+        "p95Ms": 7.446200000000317
+      },
+      "ssrPreview": {
+        "medianMs": 3.7644000000000233,
+        "p95Ms": 4.142300000000432
+      }
+    },
+    {
+      "count": 200,
+      "homeNodes": 50,
+      "snapshotUtf8Bytes": 58411,
+      "max30HistoryStringsUtf16Bytes": 3504660,
+      "selection": {
+        "medianMs": 0.00029999999969732016,
+        "p95Ms": 0.00030000000060681487
+      },
+      "tree": {
+        "medianMs": 0.004200000000309956,
+        "p95Ms": 0.009799999999813735
+      },
+      "serialization": {
+        "medianMs": 0.6022000000002663,
+        "p95Ms": 0.9961999999995896
+      },
+      "validatedEdit": {
+        "medianMs": 23.42290000000048,
+        "p95Ms": 24.455399999999827
+      },
+      "resolution": {
+        "medianMs": 8.399800000000141,
+        "p95Ms": 10.264400000000023
+      },
+      "ssrPreview": {
+        "medianMs": 3.800799999999981,
+        "p95Ms": 4.273799999999937
+      }
+    }
+  ]
+}

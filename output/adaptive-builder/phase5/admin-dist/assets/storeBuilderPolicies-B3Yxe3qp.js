@@ -1,0 +1,1 @@
+import"./seoHealth-Cxd5ukn-.js";var e={refund:`Refund Policy`,shipping:`Shipping Policy`,privacy:`Privacy Policy`,terms:`Terms & Conditions`};export{e as t};

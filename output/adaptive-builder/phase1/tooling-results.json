@@ -1,0 +1,13 @@
+{
+  "lint": {
+    "files": 10,
+    "errors": 0,
+    "warnings": 0
+  },
+  "browserBundle": {
+    "bytes": 173282,
+    "externalImports": 0,
+    "syntaxAndPureSmoke": "PASS",
+    "limitation": "Browser-target bundle imported in Node; not a DOM/browser interaction test."
+  }
+}

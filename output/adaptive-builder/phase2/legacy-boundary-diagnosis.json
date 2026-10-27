@@ -1,0 +1,49 @@
+{
+  "rawMongooseSpread": {
+    "name": "RangeError",
+    "message": "Theme patch exceeds the supported nesting depth.",
+    "enumerableKeys": [
+      "siteBuilder",
+      "presentationVariant",
+      "extensions",
+      "version",
+      "preset",
+      "logoUrl",
+      "faviconUrl",
+      "fontFamily",
+      "productGridStyle",
+      "header",
+      "colors",
+      "typography",
+      "hero",
+      "layout",
+      "productCard",
+      "checkoutBranding",
+      "mobile",
+      "paymentSettings",
+      "seo",
+      "homepageSections",
+      "allProducts",
+      "migrations",
+      "navigation",
+      "footer",
+      "policies"
+    ]
+  },
+  "plainMongooseVersion": 4,
+  "limitedFinalCandidate": {
+    "code": "STORE_BUILDER_CAPABILITY_REQUIRED",
+    "capability": "sectionReordering",
+    "message": "Requires a plan with advanced homepage sections (current: your current plan)"
+  },
+  "changedRestrictedFields": [
+    "homepageSections"
+  ],
+  "homepageSectionIds": {
+    "before": [],
+    "after": [
+      "featured-products"
+    ]
+  },
+  "note": "Diagnostic of existing failures only. No legacy assertions or production plan rules changed."
+}

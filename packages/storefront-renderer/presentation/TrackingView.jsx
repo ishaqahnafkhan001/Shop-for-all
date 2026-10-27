@@ -1,0 +1,713 @@
+'use client';
+
+import { AlertTriangle, Box, Calendar, CheckCircle, ClipboardList, CreditCard, ImageIcon, MapPin, Package, Phone, RefreshCcw, Search, ShieldCheck, Tag, Truck, Video, X, XCircle } from 'lucide-react';
+
+import SafeProductImage from './SafeProductImage.jsx';
+
+
+import { useAtelierDialog } from '../atelier/useAtelierDialog.js';
+
+const cancellationReasons = [
+    'Ordered by mistake',
+    'Found better price',
+    'Wrong item/quantity',
+    'Delivery will take too long',
+    'Other'
+];
+const returnReasons = [
+    'Damaged product',
+    'Wrong product delivered',
+    'Product differs from description',
+    'Missing item',
+    'Quality issue',
+    'Other'
+];
+const formatMoney = (value) => `৳ ${Number(value || 0).toLocaleString('en-BD')}`;
+const formatDateTime = (value) => (
+    value
+        ? new Date(value).toLocaleString('en-BD', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        : 'Not available'
+);
+const shortOrderId = (value) => `#${String(value || '').slice(-8).toUpperCase()}`;
+const getProductId = (item) => String(item?.productId?._id || item?.productId || '');
+const getVariantId = (item) => String(item?.variantId || '');
+const getItemKey = (item) => `${getProductId(item)}:${getVariantId(item)}`;
+const StatusPill = ({ adaptiveParts = false, children, tone = 'slate' }) => {
+    const tones = {
+        slate: 'border-slate-200 bg-slate-50 text-slate-700',
+        green: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        amber: 'border-amber-200 bg-amber-50 text-amber-700',
+        red: 'border-rose-200 bg-rose-50 text-rose-700',
+        teal: 'border-teal-200 bg-teal-50 text-teal-700'
+    };
+
+    return (
+        <span data-ab-surface={adaptiveParts ? '' : undefined} className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-black ${tones[tone] || tones.slate}`}>
+            {children}
+        </span>
+    );
+};
+const ModalShell = ({ adaptiveParts = false, title, children, onClose, presentationVariant, busy }) => {
+    const atelier = presentationVariant === 'atelier-editorial';
+    const accessibleDialog = atelier || adaptiveParts;
+    const dialogRef = useAtelierDialog({enabled: accessibleDialog, open: true, onClose, busy});
+    return (
+    <div data-ab-surface={adaptiveParts ? '' : undefined} ref={dialogRef} data-atelier-dialog={atelier ? "order-action" : undefined} role={accessibleDialog ? "dialog" : undefined} aria-modal={accessibleDialog || undefined} aria-label={accessibleDialog ? title : undefined} className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-3 py-4 backdrop-blur-sm sm:items-center">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <h2 className="text-lg font-black text-slate-950">{title}</h2>
+                <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                    type="button"
+                    onClick={onClose}
+                    disabled={accessibleDialog && busy}
+                    className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Close modal"
+                >
+                    <X size={18} />
+                </button>
+            </div>
+            <div className="max-h-[75vh] overflow-y-auto p-5">
+                {children}
+            </div>
+        </div>
+    </div>
+);
+};
+
+export function TrackingView({ adaptiveParts = false, accessOtp, accessOtpMaskedPhone, accessOtpSent, actionLoading, address, atelier, canRequestReturn, cancelNote, cancelOpen, cancelReason, currentStepIndex, handleCancelOrder, handleReturnProofImages, handleSubmitReturn, handleTrackOrder, loading, openReturnModal, order, orderAccessToken, orderItems, phone, presentationVariant, progressWidth, resetOrderAccess, returnDescription, returnOpen, returnProofImages, returnProofVideo, returnReason, returnStatusTone, selectedReturnItems, setAccessOtp, setCancelNote, setCancelOpen, setCancelReason, setPhone, setReturnDescription, setReturnOpen, setReturnProofImages, setReturnProofVideo, setReturnReason, setTrackingId, steps, toggleReturnItem, trackingId }) { return (<div className={atelier ? "sf-page atelier-track min-h-[70vh]" : "sf-page min-h-[70vh]"}>
+            <div className="mx-auto max-w-5xl px-4 py-10 sm:py-12">
+                <div data-atelier-part={atelier ? "tracking-heading" : undefined} className="mb-8 text-center">
+                    <p className="sf-kicker mb-2">Order tracking</p>
+                    <h1 data-ab-part={adaptiveParts ? 'heading' : undefined} className="sf-heading mb-4 text-4xl">Track Your Order</h1>
+                    <p className="mx-auto mb-7 max-w-lg text-sm leading-6 text-slate-500">
+                        Enter the short Order ID from your confirmation screen and delivery phone number to view delivery, cancellation, and return support.
+                    </p>
+
+                    <form data-ab-surface={adaptiveParts ? '' : undefined} data-atelier-part={atelier ? "tracking-lookup" : undefined} onSubmit={handleTrackOrder} className="mx-auto max-w-xl space-y-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="relative">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                                <Search className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                                type="text"
+                                value={trackingId}
+                                onChange={(event) => {
+                                    setTrackingId(event.target.value);
+                                    resetOrderAccess();
+                                }}
+                                aria-label={(atelier || adaptiveParts) ? 'Order ID' : undefined}
+                                placeholder="Order ID, for example A1B2C3"
+                                className="sf-field pl-12 font-mono"
+                            />
+                        </div>
+                        <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                            type="tel"
+                            value={phone}
+                            onChange={(event) => {
+                                setPhone(event.target.value);
+                                resetOrderAccess();
+                            }}
+                            aria-label={(atelier || adaptiveParts) ? 'Delivery phone number' : undefined}
+                                placeholder="Delivery phone number"
+                            className="sf-field"
+                        />
+                        {accessOtpSent && !orderAccessToken && (
+                            <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-left">
+                                <p className="mb-2 text-xs font-bold text-emerald-800">
+                                    Enter the 6-digit code sent to {accessOtpMaskedPhone || 'your delivery phone'}.
+                                </p>
+                                <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={accessOtp}
+                                    onChange={(event) => setAccessOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    aria-label={(atelier || adaptiveParts) ? 'Verification code' : undefined}
+                                placeholder="Verification code"
+                                    className="sf-field bg-white text-center font-mono tracking-[0.4em]"
+                                />
+                            </div>
+                        )}
+                        <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                            type="submit"
+                            disabled={loading}
+                            className="sf-btn sf-btn-primary w-full disabled:opacity-50"
+                        >
+                            {loading
+                                ? 'Checking...'
+                                : orderAccessToken
+                                    ? 'Track'
+                                    : accessOtpSent
+                                        ? 'Verify and track'
+                                        : 'Send access code'}
+                        </button>
+                    </form>
+                </div>
+
+                {order && (
+                    <div data-ab-part={adaptiveParts ? 'summary' : undefined} data-atelier-part={atelier ? "tracking-results" : undefined} className="space-y-5">
+                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+                            <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex flex-col items-start justify-between gap-4 border-b border-slate-200 bg-slate-50 px-6 py-5 sm:flex-row sm:items-center">
+                                <div>
+                                    <p className="mb-1 text-sm font-black uppercase tracking-widest text-slate-400">Order ID</p>
+                                    <p className="font-mono text-lg font-black text-[var(--sf-accent)]">{shortOrderId(order._id)}</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                                    <StatusPill adaptiveParts={adaptiveParts} tone={order.status === 'Cancelled' ? 'red' : order.status === 'Delivered' ? 'green' : 'teal'}>
+                                        {order.status}
+                                    </StatusPill>
+                                    <StatusPill adaptiveParts={adaptiveParts} tone={order.paymentStatus === 'Paid' ? 'green' : 'amber'}>
+                                        {order.paymentMethod || 'COD'} / {order.paymentStatus || 'Pending'}
+                                    </StatusPill>
+                                </div>
+                                <div className="text-left sm:text-right">
+                                    <p className="mb-1 text-sm font-black uppercase tracking-widest text-slate-400">Order Date</p>
+                                    <p className="flex items-center gap-2 font-bold text-slate-950 sm:justify-end">
+                                        <Calendar size={16} className="text-slate-400" />
+                                        {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold text-slate-400">
+                                        Updated {formatDateTime(order.updatedAt)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="border-b border-slate-200 px-5 py-10 sm:px-8">
+                                {order.status === 'Cancelled' ? (
+                                    <div className="py-8 text-center">
+                                        <XCircle size={64} className="mx-auto mb-4 text-red-500" />
+                                        <h3 className="text-2xl font-black text-slate-950">Order Cancelled</h3>
+                                        <p className="mt-2 text-slate-500">
+                                            This order has been cancelled and will not be delivered.
+                                        </p>
+                                        {order.cancellation?.reason && (
+                                            <p className="mt-3 text-sm font-semibold text-slate-600">
+                                                Reason: {order.cancellation.reason}
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div data-atelier-part={atelier ? "tracking-progress" : undefined} className="relative mx-auto max-w-2xl">
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="absolute left-0 top-1/2 h-1.5 w-full -translate-y-1/2 overflow-hidden rounded-full bg-slate-100">
+                                            <div
+                                                className="h-full bg-[var(--sf-accent)] transition-all duration-1000 ease-out"
+                                                style={atelier ? {height: progressWidth, width: '100%'} : { width: progressWidth }}
+                                            />
+                                        </div>
+
+                                        <div className="relative z-10 flex items-center justify-between">
+                                            {steps.map((step, index) => {
+                                                const isCompleted = index <= currentStepIndex;
+                                                const isCurrent = index === currentStepIndex;
+
+                                                return (
+                                                    <div data-ab-surface={adaptiveParts ? '' : undefined} key={step} className="flex flex-col items-center bg-white px-1 sm:px-2">
+                                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className={`flex h-11 w-11 items-center justify-center rounded-full border-4 border-white shadow-sm transition-all duration-500 sm:h-12 sm:w-12
+                                                            ${isCompleted ? 'bg-[var(--sf-accent)] text-white shadow-[0_6px_16px_-8px_var(--sf-accent)]' : 'bg-slate-100 text-slate-400'}
+                                                            ${isCurrent ? 'scale-110 ring-4 ring-[var(--sf-accent-ring)]' : ''}
+                                                        `}>
+                                                            {index === 0 && <Box size={20} />}
+                                                            {index === 1 && <CheckCircle size={20} />}
+                                                            {index === 2 && <Package size={20} />}
+                                                            {index === 3 && <Truck size={20} />}
+                                                            {index === 4 && <CheckCircle size={20} />}
+                                                        </div>
+                                                        <p className={`mt-3 text-center text-xs font-black sm:text-sm ${isCompleted ? 'text-slate-950' : 'text-slate-400'}`}>
+                                                            {step}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2 sm:p-8">
+                                <div>
+                                    <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400">
+                                        <MapPin size={16} /> Delivery Information
+                                    </h3>
+                                    <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <p className="mb-1 font-black text-slate-950">{address?.fullName || order.customerName || 'Customer'}</p>
+                                        <p className="leading-relaxed text-slate-600">
+                                            {[address?.addressLine, address?.city].filter(Boolean).join(', ') || order.shippingZone}
+                                        </p>
+                                        {address?.phone && (
+                                            <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-600">
+                                                <Phone size={15} className="text-slate-400" />
+                                                {address.phone}
+                                            </p>
+                                        )}
+                                        <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
+                                            <span className="text-sm text-slate-500">Zone</span>
+                                            <span className="font-bold text-slate-950">{order.shippingZone}</span>
+                                        </div>
+                                        {(order.shippingCourier || order.shippingTrackingId || order.shippedAt || order.deliveredAt) && (
+                                            <div data-ab-surface={adaptiveParts ? '' : undefined} className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+                                                <div className="flex items-center gap-2 text-sm font-black text-slate-950">
+                                                    <Truck size={16} className="text-[var(--sf-accent)]" />
+                                                    Courier details
+                                                </div>
+                                                <div className="grid gap-2 text-sm text-slate-600">
+                                                    {order.shippingCourier && (
+                                                        <div className="flex justify-between gap-3">
+                                                            <span>Courier</span>
+                                                            <span className="font-bold text-slate-950">{order.shippingCourier}</span>
+                                                        </div>
+                                                    )}
+                                                    {order.shippingTrackingId && (
+                                                        <div className="flex justify-between gap-3">
+                                                            <span>Tracking ID</span>
+                                                            <span className="font-mono text-xs font-bold text-slate-950">{order.shippingTrackingId}</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between gap-3">
+                                                        <span>Shipped</span>
+                                                        <span className="font-semibold text-slate-950">{formatDateTime(order.shippedAt)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between gap-3">
+                                                        <span>Delivered</span>
+                                                        <span className="font-semibold text-slate-950">{formatDateTime(order.deliveredAt)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400">
+                                        <Package size={16} /> Order Summary
+                                    </h3>
+                                    <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                        <div className="mb-4 space-y-3">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-600">Subtotal</span>
+                                                <span className="font-bold text-slate-950">{formatMoney(order.subtotal || (order.totalAmount - order.shippingCost))}</span>
+                                            </div>
+                                            {Number(order.discount || 0) > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-600">Discount</span>
+                                                    <span className="font-bold text-emerald-700">- {formatMoney(order.discount)}</span>
+                                                </div>
+                                            )}
+                                            {order.promotion?.code && (
+                                                <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm">
+                                                    <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                                                        <Tag size={14} /> Coupon
+                                                    </span>
+                                                    <span className="font-mono font-black text-emerald-800">{order.promotion.code}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-600">Shipping</span>
+                                                <span className="font-bold text-slate-950">{formatMoney(order.shippingCost)}</span>
+                                            </div>
+                                            {Number(order.tax || 0) > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-600">Tax</span>
+                                                    <span className="font-bold text-slate-950">{formatMoney(order.tax)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+                                            <span className="font-black text-slate-950">Total</span>
+                                            <span className="text-xl font-black text-[var(--sf-accent)]">{formatMoney(order.totalAmount)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+                            <section data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h2 className="text-lg font-black text-slate-950">Items in this order</h2>
+                                        <p className="text-sm text-slate-500">Use these items if you need return/refund support after delivery.</p>
+                                    </div>
+                                    <StatusPill adaptiveParts={adaptiveParts}>{orderItems.length} item{orderItems.length === 1 ? '' : 's'}</StatusPill>
+                                </div>
+                                <div className="mt-4 space-y-3">
+                                    {orderItems.map((item) => {
+                                        const image = item.productId?.images?.[0];
+                                        return (
+                                            <div data-ab-surface={adaptiveParts ? '' : undefined} key={getItemKey(item)} className="flex gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                                                <div data-ab-surface={adaptiveParts ? '' : undefined} className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-white">
+                                                    <SafeProductImage
+                                                        src={image}
+                                                        alt={item.title || 'Product image'}
+                                                        width={64}
+                                                        height={64}
+                                                        sizes="64px"
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="line-clamp-2 font-black text-slate-950">{item.title}</p>
+                                                    <p className="mt-1 text-xs text-slate-500">
+                                                        Qty {item.quantity} · {item.sku || 'No SKU'}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-slate-950">{formatMoney(item.total)}</p>
+                                                    <p className="text-xs text-slate-500">{formatMoney(item.price)} each</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+
+                            <section className="space-y-4">
+                                <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                                            <CreditCard size={22} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="font-black text-slate-950">Payment details</h2>
+                                            <p className="mt-1 text-sm leading-6 text-slate-500">
+                                                {order.paymentMethod || 'COD'} payment is currently {order.paymentStatus || 'Pending'}.
+                                            </p>
+                                            {order.paymentTransactionId && (
+                                                <p data-ab-surface={adaptiveParts ? '' : undefined} className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs font-bold text-slate-700">
+                                                    Transaction: {order.paymentTransactionId}
+                                                </p>
+                                            )}
+                                            {order.paidAt && (
+                                                <p className="mt-2 text-xs font-semibold text-slate-500">Paid at {formatDateTime(order.paidAt)}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl bg-rose-50 p-3 text-rose-600">
+                                            <XCircle size={22} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="font-black text-slate-950">Cancel order</h2>
+                                            <p className="mt-1 text-sm leading-6 text-slate-500">
+                                                You can cancel only while the order is still pending.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {order.canCancel ? (
+                                        <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                            type="button"
+                                            onClick={() => setCancelOpen(true)}
+                                            className="mt-4 w-full rounded-2xl bg-rose-600 px-4 py-3 text-sm font-black text-white hover:bg-rose-700"
+                                        >
+                                            Cancel Order
+                                        </button>
+                                    ) : (
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+                                            {order.cancelUnavailableReason || 'Cancellation is not available for this order.'}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <div className="rounded-2xl bg-teal-50 p-3 text-teal-700">
+                                            <RefreshCcw size={22} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="font-black text-slate-950">Return / refund</h2>
+                                            <p className="mt-1 text-sm leading-6 text-slate-500">
+                                                Return support is available within 24 hours after delivery.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {order.returnRequest ? (
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <span className="text-sm font-bold text-slate-600">Request status</span>
+                                                <StatusPill adaptiveParts={adaptiveParts} tone={returnStatusTone}>{order.returnRequest.status}</StatusPill>
+                                            </div>
+                                            <p className="mt-3 text-sm text-slate-600">{order.returnRequest.reason}</p>
+                                            <div className="mt-3 border-t border-slate-200 pt-3 text-sm text-slate-500">
+                                                Refund: {order.returnRequest.refund?.status || 'Pending'} · {formatMoney(order.returnRequest.refund?.amount)}
+                                            </div>
+                                            {(order.returnRequest.proof?.images?.length > 0 || order.returnRequest.proof?.video?.url) && (
+                                                <div className="mt-4 border-t border-slate-200 pt-3">
+                                                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Uploaded proof</p>
+                                                    <div className="mt-2 grid grid-cols-3 gap-2">
+                                                        {(order.returnRequest.proof?.images || []).map((image, index) => (
+                                                            <a data-ab-surface={adaptiveParts ? '' : undefined}
+                                                                key={image.publicId || image.url || index}
+                                                                href={image.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                                                            >
+                                                                <SafeProductImage
+                                                                    src={image.url}
+                                                                    alt={`Return proof ${index + 1}`}
+                                                                    width={120}
+                                                                    height={80}
+                                                                    sizes="120px"
+                                                                    className="h-20 w-full object-cover"
+                                                                    fallbackClassName="flex h-20 w-full items-center justify-center bg-slate-100 text-slate-300"
+                                                                />
+                                                            </a>
+                                                        ))}
+                                                        {order.returnRequest.proof?.video?.url && (
+                                                            <a data-ab-surface={adaptiveParts ? '' : undefined}
+                                                                href={order.returnRequest.proof.video.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="flex h-20 items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-black text-slate-600"
+                                                            >
+                                                                <Video size={18} className="mr-1" />
+                                                                Video
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : canRequestReturn ? (
+                                        <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                            type="button"
+                                            onClick={openReturnModal}
+                                            className="mt-4 w-full rounded-2xl bg-[var(--sf-accent)] px-4 py-3 text-sm font-black text-white hover:opacity-90"
+                                        >
+                                            Request Return/Refund
+                                        </button>
+                                    ) : (
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+                                            {order.returnEligibility?.reason || 'Return is not available for this order yet.'}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="rounded-[1.5rem] border border-teal-100 bg-teal-50 p-4 text-sm text-teal-900">
+                                    <div className="flex gap-2 font-black">
+                                        <ShieldCheck size={18} />
+                                        Support note
+                                    </div>
+                                    <p className="mt-2 leading-6">
+                                        Vendors can review cancellation and return requests from their order and return management dashboard.
+                                    </p>
+                                </div>
+                            </section>
+                        </div>
+
+                        {Array.isArray(order.timeline) && order.timeline.length > 0 && (
+                            <section data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="mb-4 flex items-center gap-2">
+                                    <ClipboardList size={18} className="text-[var(--sf-accent)]" />
+                                    <h2 className="text-lg font-black text-slate-950">Order timeline</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {order.timeline.map((event, index) => (
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} key={`${event.type}-${event.createdAt}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                                <p className="font-black text-slate-950">{event.message || event.type}</p>
+                                                <p className="text-xs font-bold text-slate-400">{formatDateTime(event.createdAt)}</p>
+                                            </div>
+                                            {event.reason && (
+                                                <p className="mt-2 text-sm text-slate-600">Reason: {event.reason}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {cancelOpen && (
+                <ModalShell adaptiveParts={adaptiveParts} presentationVariant={presentationVariant} busy={actionLoading} title="Cancel this order?" onClose={() => setCancelOpen(false)}>
+                    <form onSubmit={handleCancelOrder} className="space-y-4">
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                            <div className="mb-1 flex items-center gap-2 font-black">
+                                <AlertTriangle size={18} />
+                                Pending orders only
+                            </div>
+                            You can only cancel while the order is still pending. Once the vendor starts processing, cancellation is no longer available here.
+                        </div>
+                        <label data-ab-part={adaptiveParts ? 'label' : undefined} className="block">
+                            <span className="text-sm font-black text-slate-700">Reason</span>
+                            <select data-ab-part={adaptiveParts ? 'input' : undefined}
+                                value={cancelReason}
+                                onChange={(event) => setCancelReason(event.target.value)}
+                                className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-2 focus:ring-[var(--sf-accent-ring)]"
+                            >
+                                {cancellationReasons.map(reason => <option key={reason}>{reason}</option>)}
+                            </select>
+                        </label>
+                        <label data-ab-part={adaptiveParts ? 'label' : undefined} className="block">
+                            <span className="text-sm font-black text-slate-700">Optional note</span>
+                            <textarea data-ab-part={adaptiveParts ? 'input' : undefined}
+                                value={cancelNote}
+                                onChange={(event) => setCancelNote(event.target.value)}
+                                rows={3}
+                                className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-2 focus:ring-[var(--sf-accent-ring)]"
+                                placeholder="Add anything the seller should know."
+                            />
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                type="button"
+                                onClick={() => setCancelOpen(false)}
+                                disabled={adaptiveParts && actionLoading}
+                                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+                            >
+                                Keep order
+                            </button>
+                            <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                type="submit"
+                                disabled={actionLoading}
+                                className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-black text-white hover:bg-rose-700 disabled:opacity-60"
+                            >
+                                {actionLoading ? 'Cancelling...' : 'Confirm cancel'}
+                            </button>
+                        </div>
+                    </form>
+                </ModalShell>
+            )}
+
+            {returnOpen && (
+                <ModalShell adaptiveParts={adaptiveParts} presentationVariant={presentationVariant} busy={actionLoading} title="Request return/refund" onClose={() => setReturnOpen(false)}>
+                    <form onSubmit={handleSubmitReturn} className="space-y-4">
+                        <div>
+                            <span className="text-sm font-black text-slate-700">Select item(s)</span>
+                            <div className="mt-2 space-y-2">
+                                {orderItems.map(item => (
+                                    <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} key={getItemKey(item)} className="flex items-center gap-3 rounded-2xl border border-slate-200 p-3 text-sm hover:bg-slate-50">
+                                        <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                                            type="checkbox"
+                                            checked={selectedReturnItems.includes(getItemKey(item))}
+                                            onChange={() => toggleReturnItem(item)}
+                                            className="h-4 w-4 rounded border-slate-300"
+                                        />
+                                        <span className="min-w-0 flex-1 font-semibold text-slate-800">{item.title}</span>
+                                        <span className="text-xs text-slate-500">Qty {item.quantity}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                        <label data-ab-part={adaptiveParts ? 'label' : undefined} className="block">
+                            <span className="text-sm font-black text-slate-700">Reason</span>
+                            <select data-ab-part={adaptiveParts ? 'input' : undefined}
+                                value={returnReason}
+                                onChange={(event) => setReturnReason(event.target.value)}
+                                className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-2 focus:ring-[var(--sf-accent-ring)]"
+                            >
+                                {returnReasons.map(reason => <option key={reason}>{reason}</option>)}
+                            </select>
+                        </label>
+                        <label data-ab-part={adaptiveParts ? 'label' : undefined} className="block">
+                            <span className="text-sm font-black text-slate-700">Details</span>
+                            <textarea data-ab-part={adaptiveParts ? 'input' : undefined}
+                                value={returnDescription}
+                                onChange={(event) => setReturnDescription(event.target.value)}
+                                rows={4}
+                                required
+                                className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[var(--sf-accent)] focus:ring-2 focus:ring-[var(--sf-accent-ring)]"
+                                placeholder="Tell the seller what happened."
+                            />
+                        </label>
+                        <div className="rounded-2xl border border-slate-200 p-4">
+                            <div className="flex items-start gap-2">
+                                <ImageIcon size={18} className="mt-0.5 text-[var(--sf-accent)]" />
+                                <div>
+                                    <p className="text-sm font-black text-slate-900">Proof files</p>
+                                    <p className="text-xs leading-5 text-slate-500">
+                                        Upload at least 1 proof image. You can upload up to 3 images. Video is optional.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} className={"rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50" + (adaptiveParts ? " focus-within:ring-2 focus-within:ring-slate-700 focus-within:ring-offset-2" : "")}>
+                                    Add proof images
+                                    <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        multiple
+                                        onChange={handleReturnProofImages}
+                                        className={adaptiveParts ? "sr-only" : "hidden"}
+                                    />
+                                </label>
+                                <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} className={"rounded-2xl border border-dashed border-slate-300 p-3 text-sm font-black text-slate-600 hover:bg-slate-50" + (adaptiveParts ? " focus-within:ring-2 focus-within:ring-slate-700 focus-within:ring-offset-2" : "")}>
+                                    Add optional video
+                                    <input data-ab-part={adaptiveParts ? 'input' : undefined}
+                                        type="file"
+                                        accept="video/mp4,video/quicktime"
+                                        onChange={event => setReturnProofVideo(event.target.files?.[0] || null)}
+                                        className={adaptiveParts ? "sr-only" : "hidden"}
+                                    />
+                                </label>
+                            </div>
+                            {(returnProofImages.length > 0 || returnProofVideo) && (
+                                <div className="mt-3 grid grid-cols-3 gap-2">
+                                    {returnProofImages.map((file, index) => (
+                                        <div
+                                            key={`${file.name}-${index}`}
+                                            className="relative h-20 overflow-hidden rounded-xl border border-slate-200 bg-cover bg-center"
+                                            style={{ backgroundImage: `url(${URL.createObjectURL(file)})` }}
+                                            aria-label={file.name}
+                                            role={(atelier || adaptiveParts) ? "group" : "img"}
+                                        >
+                                            <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                                type="button"
+                                                onClick={() => setReturnProofImages(prev => prev.filter((_, itemIndex) => itemIndex !== index))}
+                                                className="absolute right-1 top-1 rounded-full bg-white p-1 text-slate-600 shadow"
+                                                aria-label="Remove proof image"
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {returnProofVideo && (
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="relative flex h-20 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-2 text-xs font-black text-slate-600">
+                                            <Video size={18} className="mr-1 shrink-0" />
+                                            <span className="truncate">{returnProofVideo.name}</span>
+                                            <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                                type="button"
+                                                onClick={() => setReturnProofVideo(null)}
+                                                className="absolute right-1 top-1 rounded-full bg-white p-1 text-slate-600 shadow"
+                                                aria-label="Remove proof video"
+                                            >
+                                                <X size={13} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                type="button"
+                                onClick={() => setReturnOpen(false)}
+                                disabled={adaptiveParts && actionLoading}
+                                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+                            >
+                                Not now
+                            </button>
+                            <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
+                                type="submit"
+                                disabled={actionLoading || returnProofImages.length < 1}
+                                className="rounded-2xl bg-[var(--sf-accent)] px-4 py-3 text-sm font-black text-white hover:opacity-90 disabled:opacity-60"
+                            >
+                                {actionLoading ? 'Submitting...' : 'Submit request'}
+                            </button>
+                        </div>
+                    </form>
+                </ModalShell>
+            )}
+        </div>); }
+
+export { cancellationReasons, returnReasons, formatMoney, formatDateTime, shortOrderId, getProductId, getVariantId, getItemKey, StatusPill, ModalShell };

@@ -15,6 +15,8 @@ const statusCopy = ({ saving, hasUnsavedChanges, autosaveStatus, conflict, offli
 };
 
 export const StoreBuilderHeader = ({
+    adaptive = false,
+    publicationDisabled = false,
     hasUnsavedChanges,
     lastPublishedLabel,
     canUndo,
@@ -86,24 +88,24 @@ export const StoreBuilderHeader = ({
                 </div>
 
                 <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-                    <button type="button" onClick={onOpenThemes} className="hidden min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 xl:inline-flex"><LayoutTemplate size={16} /> Themes</button>
+                    <button type="button" onClick={onOpenThemes} disabled={adaptive} title={adaptive ? 'Theme replacement is unavailable for adaptive drafts.' : undefined} className="hidden min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-black text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40 xl:inline-flex"><LayoutTemplate size={16} /> Themes</button>
                     <button type="button" aria-label="Undo last change" title="Undo" onClick={onUndo} disabled={!canUndo || saving} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"><Undo2 className="mx-auto" size={17} /></button>
                     <button type="button" aria-label="Redo last change" title="Redo" onClick={onRedo} disabled={!canRedo || saving} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-40"><Redo2 className="mx-auto" size={17} /></button>
                     <button type="button" onClick={onOpenIssues} className={`hidden min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 xl:inline-flex ${validationCount ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}><AlertCircle size={16} /> Issues {validationCount || 0}</button>
-                    <BuilderButton type="button" className="flex-1 sm:flex-none" onClick={onSave} disabled={saving || validationCount > 0}><Save size={16} /> {saving ? 'Publishing…' : 'Publish'}</BuilderButton>
+                    <BuilderButton type="button" className="flex-1 sm:flex-none" title={publicationDisabled ? 'Synthetic preview: publication is disabled.' : undefined} onClick={onSave} disabled={publicationDisabled || saving || validationCount > 0}><Save size={16} /> {publicationDisabled ? 'Local draft only' : saving ? 'Publishing…' : 'Publish'}</BuilderButton>
 
                     <div ref={menuRef} className="relative">
                         <button ref={menuButtonRef} type="button" aria-label="More Store Builder actions" aria-haspopup="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)} className="min-h-10 min-w-10 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"><Ellipsis className="mx-auto" size={18} /></button>
                         {menuOpen && (
                             <div role="menu" aria-label="Store Builder actions" onKeyDown={handleMenuKey} className="absolute right-0 top-12 z-50 max-h-[60dvh] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-xl">
-                                <button role="menuitem" type="button" onClick={() => runMenuAction(onOpenThemes)} className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 xl:hidden"><LayoutTemplate size={16} /> Choose a theme</button>
+                                <button role="menuitem" type="button" disabled={adaptive} title={adaptive ? 'Theme replacement is unavailable for adaptive drafts.' : undefined} onClick={() => runMenuAction(onOpenThemes)} className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 xl:hidden"><LayoutTemplate size={16} /> Choose a theme</button>
                                 <button role="menuitem" type="button" onClick={() => runMenuAction(onOpenIssues)} className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 xl:hidden"><AlertCircle size={16} /> Issues {validationCount || 0}</button>
                                 <button role="menuitem" type="button" disabled={!hasUnsavedChanges || saving} onClick={() => runMenuAction(onSaveDraft)} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"><Cloud size={16} /> Save draft now</button>
                                 {liveStoreUrl && <a role="menuitem" href={liveStoreUrl} target="_blank" rel="noreferrer" className="flex min-h-10 items-center gap-3 rounded-md px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"><ExternalLink size={16} /> Open live store</a>}
                                 <button role="menuitem" type="button" disabled={saving} onClick={() => runMenuAction(onReload)} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"><RefreshCw size={16} /> Reload published version</button>
                                 <button role="menuitem" type="button" onClick={() => runMenuAction(onOpenHistory)} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-slate-700 hover:bg-slate-50"><History size={16} /> Version history</button>
                                 <div className="my-2 border-t border-slate-200" />
-                                <button role="menuitem" type="button" disabled={saving} onClick={() => runMenuAction(() => window.confirm('Reset visual styling to defaults while keeping your content? This remains a draft until published.') && onResetStyling())} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-amber-700 hover:bg-amber-50 disabled:opacity-40"><RotateCcw size={16} /> Reset styling</button>
+                                <button role="menuitem" type="button" disabled={saving || adaptive} title={adaptive ? 'Use the contextual page or section style resets.' : undefined} onClick={() => runMenuAction(() => window.confirm('Reset visual styling to defaults while keeping your content? This remains a draft until published.') && onResetStyling())} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-amber-700 hover:bg-amber-50 disabled:opacity-40"><RotateCcw size={16} /> Reset styling</button>
                                 <button role="menuitem" type="button" disabled={!hasUnsavedChanges || saving} onClick={() => runMenuAction(() => window.confirm('Discard all unpublished Store Builder changes?') && onRestorePublished())} className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-40"><Trash2 size={16} /> Discard all draft changes</button>
                             </div>
                         )}
@@ -111,13 +113,13 @@ export const StoreBuilderHeader = ({
                 </div>
             </div>
             {validationCount > 0 && <button type="button" onClick={onOpenIssues} className="w-full border-t border-red-100 bg-red-50 px-4 py-2 text-center text-xs font-bold text-red-800">Review {validationCount} publish-blocking issue{validationCount === 1 ? '' : 's'}</button>}
-            <nav className="mx-auto grid max-w-[1800px] grid-cols-3 gap-1 border-t border-slate-100 bg-slate-50 p-1 xl:hidden" aria-label="Store Builder workspace">
+            {!adaptive && <nav className="mx-auto grid max-w-[1800px] grid-cols-3 gap-1 border-t border-slate-100 bg-slate-50 p-1 xl:hidden" aria-label="Store Builder workspace">
                 {[
                     ['structure', 'Store'],
                     ['preview', 'Preview'],
                     ['edit', 'Settings']
                 ].map(([id, label]) => <button key={id} type="button" aria-current={mobileWorkspace === id ? 'page' : undefined} aria-controls={`builder-workspace-${id}`} onClick={() => onWorkspaceChange(id)} className={`min-h-11 rounded-md px-3 text-sm font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 ${mobileWorkspace === id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500'}`}>{label}</button>)}
-            </nav>
+            </nav>}
         </header>
     );
 };

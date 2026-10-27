@@ -1,0 +1,114 @@
+{
+  "originalSourceChecks": {
+    "ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx": true,
+    "ecommerce-backend/backend/controllers/storeBuilderController.js": true,
+    "ecommerce-backend/backend/controllers/storeController.js": true,
+    "ecommerce-backend/backend/tests/storefront-release-hardening.test.js": true,
+    "packages/storefront-renderer/presentation/ReviewSection.jsx": true
+  },
+  "existingDiagnostics": [
+    {
+      "file": "ecommerce-admin/src/pages/dashboard/StoreBuilder/editors/BasicEditors.jsx",
+      "rule": "@next/next/no-img-element",
+      "message": "Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element",
+      "line": 38
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeBuilderController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 613
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeBuilderController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 688
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeBuilderController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 698
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 158
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 415
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 462
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'error' is defined but never used.",
+      "line": 626
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 654
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 761
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 771
+    },
+    {
+      "file": "ecommerce-backend/backend/controllers/storeController.js",
+      "rule": "no-unused-vars",
+      "message": "'err' is defined but never used.",
+      "line": 781
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/storefront-release-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'product' is defined but never used.",
+      "line": 800
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/storefront-release-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'price' is defined but never used.",
+      "line": 801
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/storefront-release-hardening.test.js",
+      "rule": "no-useless-assignment",
+      "message": "The value assigned to 'tree' is not used in subsequent statements.",
+      "line": 1081
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/storefront-release-hardening.test.js",
+      "rule": "no-useless-assignment",
+      "message": "The value assigned to 'tree' is not used in subsequent statements.",
+      "line": 1085
+    },
+    {
+      "file": "packages/storefront-renderer/presentation/ReviewSection.jsx",
+      "rule": "no-unused-vars",
+      "message": "'id' is defined but never used.",
+      "line": 38
+    }
+  ],
+  "introducedDiagnostics": []
+}

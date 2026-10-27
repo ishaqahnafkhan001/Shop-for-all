@@ -14,8 +14,8 @@ import {
     LinkSlot,
 } from "./referenceCore";
 
-const FooterColumn = ({ title, links, LinkComponent }) => (
-    <div>
+const FooterColumn = ({ adaptiveParts = false, title, links, LinkComponent }) => (
+    <div data-ab-part={adaptiveParts ? 'navigation' : undefined}>
         <h3 className="text-sm font-black" style={{ ...headingStyle, color: "var(--sf-footer-heading)" }}>{title}</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-link)]">
             {links.map((link) => (
@@ -27,8 +27,8 @@ const FooterColumn = ({ title, links, LinkComponent }) => (
     </div>
 );
 
-const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, LinkComponent }) => (
-    <div>
+const FooterSupportColumn = ({ adaptiveParts = false, links, contactHref, contactLabel, socialLinks, LinkComponent }) => (
+    <div data-ab-part={adaptiveParts ? 'policies' : undefined}>
         <h3 className="text-sm font-black" style={{ ...headingStyle, color: "var(--sf-footer-heading)" }}>Support</h3>
         <div className="mt-4 grid gap-3 text-sm font-semibold text-[var(--sf-footer-link)]">
             {links.map((link) => (
@@ -55,8 +55,8 @@ const FooterSupportColumn = ({ links, contactHref, contactLabel, socialLinks, Li
     </div>
 );
 
-const FooterAccordion = ({ title, links, LinkComponent }) => (
-    <details className="group border-b py-3.5" style={{ borderColor: "var(--sf-footer-border)" }}>
+const FooterAccordion = ({ adaptiveParts = false, title, links, LinkComponent }) => (
+    <details data-ab-part={adaptiveParts ? (title === 'Support' ? 'policies' : 'navigation') : undefined} className="group border-b py-3.5" style={{ borderColor: "var(--sf-footer-border)" }}>
         <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-black" style={{ ...headingStyle, color: "var(--sf-footer-heading)" }}>
             {title}
             <ChevronDown size={17} className="transition group-open:rotate-180" />
@@ -97,7 +97,7 @@ const buildMailto = (email = "") => {
     return cleanEmail ? `mailto:${cleanEmail}` : "";
 };
 
-export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, subdomain, cartCount = 0, LinkComponent = DefaultLink, preview = false, previewDevice, editor, shopVerification }) {
+export function ReferenceStorefrontFooter({ adaptiveParts = false, theme: themeCandidate, shopName, subdomain, cartCount = 0, LinkComponent = DefaultLink, preview = false, previewDevice, editor, shopVerification }) {
     const theme = normalizeTheme(themeCandidate);
     const storefrontContainerClass = getContainerClass(theme.layout);
     const brandName = shopName || subdomain || "Storefront";
@@ -139,12 +139,12 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
     return (
         <>
             <EditorSelectionFrame editor={editor} id="footer" label="Footer" locked>
-                {getStorefrontPresentationVariant(theme) === 'atelier-editorial' ? <AtelierFooter theme={theme} brandName={brandName} storeLinks={storeLinks} supportLinks={supportLinks} contactHref={contactHref} socialLinks={socialLinks} shopVerification={shopVerification} LinkComponent={LinkComponent} /> : <footer className="min-w-0 overflow-x-hidden border-t pb-20 pt-7 text-[var(--sf-footer-text)] sm:pt-10 md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
+                {getStorefrontPresentationVariant(theme) === 'atelier-editorial' ? <AtelierFooter adaptiveParts={adaptiveParts} theme={theme} brandName={brandName} storeLinks={storeLinks} supportLinks={supportLinks} contactHref={contactHref} socialLinks={socialLinks} shopVerification={shopVerification} LinkComponent={LinkComponent} /> : <footer data-ab-surface={adaptiveParts ? '' : undefined} className="min-w-0 overflow-x-hidden border-t pb-20 pt-7 text-[var(--sf-footer-text)] sm:pt-10 md:pb-8 md:pt-12 lg:pt-14" style={{ ...getReferenceThemeStyle(theme), borderColor: "var(--sf-footer-border)", backgroundColor: "var(--sf-footer-background)" }}>
                     <div className={storefrontContainerClass}>
-                        <div className={footerGridClass}>
-                            <div className="min-w-0">
+                        <div data-ab-layout={adaptiveParts ? 'footerColumns' : undefined} className={footerGridClass}>
+                            <div data-ab-part={adaptiveParts ? 'identity' : undefined} className="min-w-0">
                                 <div className="flex min-w-0 items-center gap-3">
-                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--sf-accent)] text-base font-black text-white sm:h-12 sm:w-12">
+                                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--sf-accent)] text-base font-black text-white sm:h-12 sm:w-12">
                                         {getInitials(brandName)}
                                     </span>
                                     <div className="min-w-0">
@@ -158,16 +158,16 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                     </p>
                                 )}
                                 {isVerifiedSeller && (
-                                    <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-black text-emerald-700 sm:mt-6 sm:px-4">
+                                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-black text-emerald-700 sm:mt-6 sm:px-4">
                                         <CircleCheck size={17} />
                                         {shopVerification?.label || "Verified seller"}
                                     </span>
                                 )}
                             </div>
 
-                            <div className={desktopColumnsClass}>
-                                <FooterColumn title="Store" links={storeLinks} LinkComponent={LinkComponent} />
-                                <FooterSupportColumn
+                            <div data-ab-layout={adaptiveParts ? 'footerDesktop' : undefined} className={desktopColumnsClass}>
+                                <FooterColumn adaptiveParts={adaptiveParts} title="Store" links={storeLinks} LinkComponent={LinkComponent} />
+                                <FooterSupportColumn adaptiveParts={adaptiveParts}
                                     links={supportLinks}
                                     contactHref={contactHref}
                                     contactLabel={theme.footer?.contactLabel || "Contact store"}
@@ -175,9 +175,9 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
                                     LinkComponent={LinkComponent}
                                 />
                             </div>
-                            <div className={mobileColumnsClass}>
-                                <FooterAccordion title="Store" links={storeLinks} LinkComponent={LinkComponent} />
-                                <FooterAccordion title="Support" links={supportLinks} LinkComponent={LinkComponent} />
+                            <div data-ab-layout={adaptiveParts ? 'footerMobile' : undefined} className={mobileColumnsClass}>
+                                <FooterAccordion adaptiveParts={adaptiveParts} title="Store" links={storeLinks} LinkComponent={LinkComponent} />
+                                <FooterAccordion adaptiveParts={adaptiveParts} title="Support" links={supportLinks} LinkComponent={LinkComponent} />
                                 {contactHref && (
                                     <LinkSlot LinkComponent={LinkComponent} href={contactHref} prefetch={false} className="mt-4 inline-flex min-h-10 items-center gap-2 text-sm font-black text-[var(--sf-footer-link)]">
                                         <Mail size={17} />
@@ -219,14 +219,14 @@ export function ReferenceStorefrontFooter({ theme: themeCandidate, shopName, sub
             </EditorSelectionFrame>
 
             {theme.mobile?.showBottomNavigation && (
-                <nav className={bottomNavClass} style={bottomNavStyle}>
+                <nav data-ab-part={adaptiveParts ? 'navigation' : undefined} className={bottomNavClass} style={bottomNavStyle}>
                     {mobileLinks.map((item) => {
                         const Icon = item.icon;
                         return (
                             <LinkSlot key={item.label} LinkComponent={LinkComponent} href={item.href} prefetch={false} className="relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[11px] font-bold text-slate-500 transition hover:text-[var(--sf-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--sf-accent)]">
                                 <Icon size={20} />
                                 <span>{item.label}</span>
-                                {item.badge > 0 && <span className="absolute right-4 top-0 h-4 min-w-4 rounded-full bg-[var(--sf-accent)] px-1 text-[10px] leading-4 text-white">{item.badge}</span>}
+                                {item.badge > 0 && <span data-ab-surface={adaptiveParts ? '' : undefined} className="absolute right-4 top-0 h-4 min-w-4 rounded-full bg-[var(--sf-accent)] px-1 text-[10px] leading-4 text-white">{item.badge}</span>}
                             </LinkSlot>
                         );
                     })}

@@ -1,0 +1,16 @@
+{
+  "Id": "44be964b1c90ab310fbb742c7230c45568425b210dceed7d254baafd468eaacf",
+  "Name": "/sfa-adaptive-phase4",
+  "Label": "adaptive-phase4",
+  "Tmpfs": {
+    "/data/db": "rw,size=512m"
+  },
+  "Ports": {
+    "27017/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "27028"
+      }
+    ]
+  }
+}

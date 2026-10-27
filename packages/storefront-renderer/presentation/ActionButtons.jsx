@@ -9,24 +9,24 @@ const trustItems = [
     { icon: Wallet, title: 'Cash on delivery', text: 'Pay when it arrives' },
 ];
 
-const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, onBuyNow, presentationVariant }) {
+const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, onBuyNow, presentationVariant, adaptiveParts = false }) {
     return (
         <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-actions' : undefined} className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 {displayStock > 0 ? (
-                    <span className="sf-badge sf-badge-success">
+                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="sf-badge sf-badge-success">
                         <span className="relative flex h-2 w-2">
-                            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                            <span data-ab-surface={adaptiveParts ? '' : undefined} className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                            <span data-ab-surface={adaptiveParts ? '' : undefined} className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                         </span>
                         In Stock ({displayStock} units ready)
                     </span>
                 ) : (
-                    <span className="sf-badge bg-red-50 text-red-700">
+                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="sf-badge bg-red-50 text-red-700">
                         Out of Stock
                     </span>
                 )}
-                {presentationVariant !== 'atelier-editorial' && <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                {presentationVariant !== 'atelier-editorial' && <span data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     Ready for checkout
                 </span>}
             </div>
@@ -35,6 +35,7 @@ const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, o
                 <button
                     type="button"
                     onClick={onAddToCart}
+                    data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
                     disabled={displayStock <= 0}
                     className="sf-btn sf-btn-primary w-full px-8 py-4 text-base disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2"
                 >
@@ -45,6 +46,7 @@ const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, o
                     <button
                         type="button"
                         onClick={onBuyNow}
+                        data-ab-part={adaptiveParts ? 'secondaryButton' : undefined}
                         className="sf-btn sf-btn-secondary w-full py-4 sm:col-span-2"
                     >
                         Buy now
@@ -54,9 +56,9 @@ const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, o
 
             {presentationVariant !== 'atelier-editorial' && <div className="grid grid-cols-1 gap-3 pt-3 min-[420px]:grid-cols-2">
                 {trustItems.map(({ icon: Icon, title, text }) => (
-                    <div key={title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                    <div data-ab-surface={adaptiveParts ? '' : undefined} key={title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                         <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]">
+                            <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]">
                                 <Icon size={18} />
                             </div>
                             <div className="min-w-0">
@@ -68,7 +70,7 @@ const ActionButtons = memo(function ActionButtons({ displayStock, onAddToCart, o
                 ))}
             </div>}
 
-            {presentationVariant !== 'atelier-editorial' && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            {presentationVariant !== 'atelier-editorial' && <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="flex items-start gap-3">
                     <Headphones size={19} className="mt-0.5 shrink-0 text-emerald-600" />
                     <p className="text-sm font-semibold leading-6 text-emerald-800">

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ThemeSnapshot, installThemeGuard } = require('./storeBuilderThemeContract');
 
 const storeBuilderDraftSchema = new mongoose.Schema({
     shop_id: {
@@ -8,7 +9,7 @@ const storeBuilderDraftSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
-    theme: { type: mongoose.Schema.Types.Mixed, required: true, default: {} },
+    theme: { type: ThemeSnapshot, required: true, default: {} },
     searchAliases: { type: [String], default: [] },
     customDomain: { type: mongoose.Schema.Types.Mixed, default: {} },
     storewideDiscount: { type: Number, min: 0, max: 100, default: 0 },
@@ -19,4 +20,5 @@ const storeBuilderDraftSchema = new mongoose.Schema({
 
 storeBuilderDraftSchema.index({ shop_id: 1, updatedAt: -1 });
 
+installThemeGuard(storeBuilderDraftSchema, { draft: true });
 module.exports = mongoose.model('StoreBuilderDraft', storeBuilderDraftSchema);

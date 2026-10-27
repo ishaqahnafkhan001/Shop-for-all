@@ -22,6 +22,7 @@ test.before(async () => {
         resolve: { alias: { '@': src, '@scaleup/storefront-theme': path.join(root, 'packages/storefront-theme/index.mjs') } },
         plugins: [{ name: 'controlled-environment', resolveId(id) {
             if (id.startsWith('virtual:')) return id;
+            if (id === './PublishedAdaptivePage') return 'virtual:inactive-adaptive';
             if (id.endsWith('/StorefrontPreviewFrame.jsx')) return 'virtual:frame';
             if (id === 'next/link') return 'virtual:link';
             if (id === 'next/image') return 'virtual:image';
@@ -33,9 +34,11 @@ test.before(async () => {
             if (id.includes('/components/search/SearchModal')) return 'virtual:search';
             return null;
         }, load(id) {
+            if (id === 'virtual:inactive-adaptive') return `export default function UnexpectedAdaptiveLoad() { throw new Error('Legacy parity must never select adaptive rendering'); }`;
             if (id === 'virtual:parity') return `
                 export * from '${builder}/StorefrontPreview.jsx';
                 export * from '${builder}/themes/ThemeGallery.jsx';
+                export * from '${builder}/themes/themePreview.js';
                 export * from '${builder}/StoreBuilderPreviewPanel.jsx';
                 export {default as Provider} from '${src}/components/storefront/StorefrontThemeProvider.jsx';
                 export {default as Navbar} from '${src}/components/storefront/Navbar.jsx';
@@ -58,7 +61,7 @@ test.before(async () => {
         } }],
     });
     try {
-        const { output } = await bundle.generate({ format: 'cjs' });
+        const { output } = await bundle.generate({ format: 'cjs', inlineDynamicImports: true });
         const compiled = new Module(filename, module);
         compiled.paths = Module._nodeModulePaths(path.dirname(filename));
         compiled._compile(output[0].code, filename);

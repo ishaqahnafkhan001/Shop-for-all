@@ -1,0 +1,17 @@
+{
+  "buttons": [
+    {
+      "text": "Add",
+      "top": 841.328125,
+      "width": 183.15625
+    },
+    {
+      "text": "Buy Now",
+      "top": 841.328125,
+      "width": 183.171875
+    }
+  ],
+  "cardWidth": 406,
+  "overflow": false,
+  "viewport": 1280
+}

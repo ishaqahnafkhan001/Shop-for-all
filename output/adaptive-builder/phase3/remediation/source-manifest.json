@@ -1,0 +1,164 @@
+[
+  {
+    "path": "packages/storefront-theme/responsiveStyles.cjs",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\responsiveStyles.cjs",
+    "initialSha256": "f266d6fc28636db4de5bdcccefab4388d098ad9cf27a57edc7a1df343a3a43ed",
+    "sha256": "0b96cf81a4a08cf10d04aa07df5316a77ecd2fd24159dd5616306e7a3e6d6ece"
+  },
+  {
+    "path": "packages/storefront-theme/pageTemplates.cjs",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\pageTemplates.cjs",
+    "initialSha256": "b281dd0dd0c19b8499563bec4ca2e88acd78803c15ac874886ed7ecd6c2591fa",
+    "sha256": "9bc41ab2848e33045f1aa3624ff4147dce3ea6da5898e7b1c79461bed2d77124"
+  },
+  {
+    "path": "packages/storefront-theme/pageTemplateValidation.cjs",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\pageTemplateValidation.cjs",
+    "initialSha256": "305d13b2c856208bc2a4bbc65830ab3098efb185cf51f3ca4c03c3c23ae372fe",
+    "sha256": "b594b706eb4bc8d435ab70c6a2953df498bce962022bd5a4c3075589c1f5397f"
+  },
+  {
+    "path": "packages/storefront-theme/ADAPTIVE_CONTRACT.md",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-theme\\ADAPTIVE_CONTRACT.md",
+    "initialSha256": "46fe308168363859bd6b91a30686128dbf0f4abf858e867982b12c31796d728b",
+    "sha256": "9705c8c8acc0175576884705d6752ec31c1ead9ec84544adf0b7bdb49d089aeb"
+  },
+  {
+    "path": "packages/storefront-renderer/adaptive/index.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\index.jsx",
+    "initialSha256": "e995006ec50cf64e5a9f66672521da9cabce130b9d107a5203c2528342b52d6c",
+    "sha256": "5746abbe104ddaea303231464bb9d0c31d8af9f0378b7a7d34ccea7eacb6e348"
+  },
+  {
+    "path": "packages/storefront-renderer/adaptive/pagePlan.js",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\pagePlan.js",
+    "initialSha256": "f89c643a0777455fbd9be4fec50dc64af96a1240b0f91a46ce6db0a1a621bc87",
+    "sha256": "30d1649b966fa011aee42a4a6679ffbab5c145fd124dcc309da019a7cfba8031"
+  },
+  {
+    "path": "packages/storefront-renderer/adaptive/corePalette.js",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\corePalette.js",
+    "initialSha256": null,
+    "sha256": "9c9920a071480a14ff582ba229ee1ed7746c9741b088ef2e960da523710cd13e"
+  },
+  {
+    "path": "packages/storefront-renderer/adaptive/styleCompiler.js",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\styleCompiler.js",
+    "initialSha256": "34ca4704740f4eabee63cfdc4789662f41ea94c4c3cbcdc88f2b5a6591c97b53",
+    "sha256": "461057a67aabfc827e3795906f81f19a3d66f4471aac9b9d0bf906d7be5fb95b"
+  },
+  {
+    "path": "packages/storefront-renderer/adaptive/ProtectedCore.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\ProtectedCore.jsx",
+    "initialSha256": "686e009e04cf8818a4bf6b5c216533e1c475868ba9697cc85a9be3d460beec90",
+    "sha256": "751c25df537a0882061ae0602efe15447685147658813e6c0d886a3f6031578b"
+  },
+  {
+    "path": "packages/storefront-renderer/adaptive/PageTemplateRenderer.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\adaptive\\PageTemplateRenderer.jsx",
+    "initialSha256": "7ed9b0e6f133a49a247fdb6b8c381fe44622a68889bf905b617980583fb3dba1",
+    "sha256": "e267319647170a7fc69f1bf5f75a4684729ea5964c59ed5ec54f5a251aa04694"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/ProductDetailsView.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\ProductDetailsView.jsx",
+    "initialSha256": "4278400b292a197317d6c867b83f8a99e5b408ad970ecf0e4e294654cedc8bb3",
+    "sha256": "18058ba89584a3f9f190a8bf0d93dcb71b03cad8767a895ecfc08d8a48e0da07"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/ProductInfo.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\ProductInfo.jsx",
+    "initialSha256": "a69f62b5186b500d6482c9260114178868ab702f16e6ff9d6e761abf5d1ad99d",
+    "sha256": "f4e293cf8b05d064f37f16f8f13519b24d025e890dcff1da9bae317e8c90b026"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/ProductImageGallery.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\ProductImageGallery.jsx",
+    "initialSha256": "9f4d6bd8f7862b6ddb1a5240b909bd4540cd01034631db0379a4811044ed3ac1",
+    "sha256": "ffd883bdfdcbed819dbd087bbf1445c3c1aac44dfa87378b02de523204c393d9"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/VariantSelector.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\VariantSelector.jsx",
+    "initialSha256": "59870de9dfdca54595c906017086e7da49623c963084be3421711cabb4c19c4e",
+    "sha256": "a841e8dfd69dd464c40a2bc7ee228d55b70f82a2c699c465a50c0c6a9638b194"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/ActionButtons.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\ActionButtons.jsx",
+    "initialSha256": "d5758e0a7b51c2ade06503f1508cb7baabc4c18bf3e6e2b3a4e0a0924769ffe6",
+    "sha256": "544d336aa49bfee2071a3e3b1f009863a67d8f608b7006282b9e86536c781440"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/ProductExtras.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\ProductExtras.jsx",
+    "initialSha256": "985cae889d687605a5c92e48e5796b1f9df3f30ced6d169095806d210e6220e8",
+    "sha256": "ab362c9dfe808a444fc59e568b67340fc80a3c05ae1f1b0ed890584b5a31af36"
+  },
+  {
+    "path": "packages/storefront-renderer/presentation/CheckoutSections.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\presentation\\CheckoutSections.jsx",
+    "initialSha256": "b7471f04d16babc5270b311cba2355320347b6f48fe635a9566b53cbdc6dd6e6",
+    "sha256": "43d34b017a7996df1884cd4a82d20312f52cabd8a7a15a56e004bd4518ce75f9"
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontSectionRenderer.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\reference\\StorefrontSectionRenderer.jsx",
+    "initialSha256": "641d8cb83e04a6d5b22e5c7623b3a34b8ea61973d02752a7af11063d217593ad",
+    "sha256": "225786a94b47e5fe4c01329afc4385aee0bbec9ab655354225078b889c9c1476"
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontProductCard.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\reference\\StorefrontProductCard.jsx",
+    "initialSha256": "3f194af282bdf2dfd199a7f86ab5cf39deb82854415afb7140483019e3a5d2d4",
+    "sha256": "73b2ae199e36769eed201deb0307ed77c5ff9d9114c8e735b43fd45c9e83ec5b"
+  },
+  {
+    "path": "packages/storefront-renderer/reference/StorefrontSectionVariants.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\packages\\storefront-renderer\\reference\\StorefrontSectionVariants.jsx",
+    "initialSha256": "235890e14608ec12d8f4839cd70c0b2dd1936dfd631f773fe226cc4f493d7a37",
+    "sha256": "970210f1b3109d4dc33fd869936f6d9dfde37696958a98124ed71f4c1b78c652"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/adaptive-renderer.test.js",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\adaptive-renderer.test.js",
+    "initialSha256": "3c082ff80ee168870ed05d7b470f88cdc11c484a1ec5ea7271f8a75246e23ff3",
+    "sha256": "676a8c3cbc3dcb89995db878f14f0ba078c12e1d0ddc636ca164cabbba553d8a"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/adaptive-renderer-remediation.test.js",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\adaptive-renderer-remediation.test.js",
+    "initialSha256": null,
+    "sha256": "f94a14184e6be1c0054aa43b41471899e74ab87b4625f2fe1dd636db32674dfd"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/adaptive-builder/browser-fixture.jsx",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\fixtures\\adaptive-builder\\browser-fixture.jsx",
+    "initialSha256": "632417694b545edb6f8c184fbd30f6b2562816c25f4f77c9d618434aaecf2c7b",
+    "sha256": "6c4540a0bd35056627fddcce2204b781833aab5a25e0d2d1ffee9e8398776730"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/fixtures/adaptive-builder/remediation-fixtures.cjs",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\fixtures\\adaptive-builder\\remediation-fixtures.cjs",
+    "initialSha256": null,
+    "sha256": "fa4c392c24937744ce9ac8b8ef77f49d0416db4cebe60963e7fc42e4a2303e1c"
+  },
+  {
+    "path": "ecommerce-backend/backend/tests/helpers/adaptive-browser.cjs",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\ecommerce-backend\\backend\\tests\\helpers\\adaptive-browser.cjs",
+    "initialSha256": "59c0386b5b4210d53c8165a7dcfdfb608ccd8eab6a09ab9386911b1cafa00301",
+    "sha256": "d7e4778fdee0c1d166bcfae6f414a85d0ee7c6d2a2012c6791c1e4d1b7045f2b"
+  },
+  {
+    "path": "output/adaptive-builder/phase3/README.md",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\output\\adaptive-builder\\phase3\\README.md",
+    "initialSha256": "90c828b2092dddb7456ad6cbd876e7beea8431baa523093c1eb1915441f13967",
+    "sha256": "382884c62b5d169661a9bd42124b0137392ece434b6d61466c2542634bfe2f79"
+  },
+  {
+    "path": "track.md",
+    "absolutePath": "C:\\Users\\user\\WebstormProjects\\Shop-for-all\\track.md",
+    "initialSha256": "b9dcecd32bde7c792ac34a16be7cfbc14769e20ef13e1abf7160f7fc7ecefd82",
+    "sha256": "240ffb7364b8367635b3c8cd39209be527bca3d5c070b9465044f4ad0db88c22"
+  }
+]

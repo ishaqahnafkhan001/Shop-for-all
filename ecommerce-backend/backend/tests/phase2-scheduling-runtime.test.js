@@ -188,7 +188,8 @@ test('cart estimate and category filters are URL-backed storefront-only polish',
     const cartPage = readRepo('ecommerce-storefront/src/app/[subdomain]/cart/page.jsx');
     const cartConstants = readRepo('ecommerce-storefront/src/lib/cartConstants.js');
     const categoryPage = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/page.jsx');
-    const categoryClient = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx');
+    const categoryClient = readRepo('ecommerce-storefront/src/app/[subdomain]/categories/[slug]/CategoryPageClient.jsx')
+        + readRepo('packages/storefront-renderer/presentation/CategoryView.jsx');
     const productController = readBackend('controllers/productController.js');
 
     assert.match(cartConstants, /DEFAULT_CART_DELIVERY_ESTIMATE\s*=\s*80/);

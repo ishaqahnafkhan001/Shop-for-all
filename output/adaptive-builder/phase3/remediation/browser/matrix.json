@@ -1,0 +1,9064 @@
+[
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "16px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 115
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&scenario=normal&palette=dark",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 17,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 231
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=long&palette=dark",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 10.476,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 265
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 10.476,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 265
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 265
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 134
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 116
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 55,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=error&palette=dark",
+    "width": 320
+  },
+  {
+    "client": 345,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "16px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 115
+      }
+    ],
+    "scroll": 345,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&scenario=normal&palette=dark",
+    "width": 360
+  },
+  {
+    "client": 345,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 17,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 345
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 271
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 271
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 271
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 271
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 157
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 157
+      }
+    ],
+    "scroll": 345,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=long&palette=dark",
+    "width": 360
+  },
+  {
+    "client": 345,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 10.476,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 345
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 305
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 10.476,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 305
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 255
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 305
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 164
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 156
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 255
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      }
+    ],
+    "scroll": 345,
+    "smallControls": [],
+    "textCount": 55,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=error&palette=dark",
+    "width": 360
+  },
+  {
+    "client": 375,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "16px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 115
+      }
+    ],
+    "scroll": 375,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&scenario=normal&palette=dark",
+    "width": 390
+  },
+  {
+    "client": 375,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 17,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 375
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 335
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 301
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 301
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 301
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 301
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 99
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 110
+      }
+    ],
+    "scroll": 375,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=long&palette=dark",
+    "width": 390
+  },
+  {
+    "client": 375,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 10.476,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 375
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 335
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 10.476,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 335
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 285
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 335
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 335
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 185
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 186
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 285
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      }
+    ],
+    "scroll": 375,
+    "smallControls": [],
+    "textCount": 55,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=error&palette=dark",
+    "width": 390
+  },
+  {
+    "client": 415,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "16px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 115
+      }
+    ],
+    "scroll": 415,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&scenario=normal&palette=dark",
+    "width": 430
+  },
+  {
+    "client": 415,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 17,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 415
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 375
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 341
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 341
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 341
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 341
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 99
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 110
+      }
+    ],
+    "scroll": 415,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=long&palette=dark",
+    "width": 430
+  },
+  {
+    "client": 415,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 10.476,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 415
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 375
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 10.476,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 375
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 325
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 375
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 375
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 185
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 226
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 325
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      }
+    ],
+    "scroll": 415,
+    "smallControls": [],
+    "textCount": 56,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=error&palette=dark",
+    "width": 430
+  },
+  {
+    "client": 753,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "16px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 115
+      }
+    ],
+    "scroll": 753,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&scenario=normal&palette=dark",
+    "width": 768
+  },
+  {
+    "client": 753,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 17,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 753
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 697
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 647
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 647
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 647
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 647
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 99
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 110
+      }
+    ],
+    "scroll": 753,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=long&palette=dark",
+    "width": 768
+  },
+  {
+    "client": 753,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 10.476,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 753
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 425
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 10.476,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 697
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 631
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 631
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 631
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 306
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 306
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 306
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 306
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 631
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 631
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 631
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 631
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 631
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 631
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 697
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 697
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 185
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 639
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 540
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 639
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 639
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      }
+    ],
+    "scroll": 753,
+    "smallControls": [],
+    "textCount": 56,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=error&palette=dark",
+    "width": 768
+  },
+  {
+    "client": 1009,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "20px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 141
+      }
+    ],
+    "scroll": 1009,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&scenario=normal&palette=dark",
+    "width": 1024
+  },
+  {
+    "client": 1009,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 17,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1009
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 457
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "title",
+        "tag": "H1",
+        "width": 399
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 399
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 399
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 399
+      }
+    ],
+    "scroll": 1009,
+    "smallControls": [],
+    "textCount": 20,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=long&palette=dark",
+    "width": 1024
+  },
+  {
+    "client": 1009,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 10.476,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1009
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 586
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 10.476,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 461
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 395
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 395
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 395
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 187
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 187
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 187
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 187
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 395
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 395
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 395
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 395
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 395
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 395
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 461
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 461
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 242
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 403
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 303
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 403
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 403
+      }
+    ],
+    "scroll": 1009,
+    "smallControls": [],
+    "textCount": 53,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=error&palette=dark",
+    "width": 1024
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "20px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 141
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&scenario=normal&palette=dark",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 17,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1425
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 665
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "title",
+        "tag": "H1",
+        "width": 607
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 20,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=long&palette=dark",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 10.476,
+    "parts": [
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1425
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 626
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 10.476,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 669
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 603
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 603
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 603
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 291
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 291
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 291
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 291
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 603
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 603
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 603
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 603
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 603
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 603
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 669
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 669
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 242
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 611
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 511
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          16,
+          24,
+          38
+        ],
+        "color": "rgb(248, 250, 252)",
+        "contrast": 17,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 611
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 611
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 53,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=error&palette=dark",
+    "width": 1440
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 4.554,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.74,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.74,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.129 0.042 264.695)",
+        "contrast": 20.17,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.129 0.042 264.695)",
+        "contrast": 20.17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          250,
+          251,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.103,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.947,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 28,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=default",
+    "width": 320
+  },
+  {
+    "client": 320,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 4.525,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.74,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 320
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 280
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 280
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 280
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 149
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 136
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 86
+      },
+      {
+        "bg": [
+          236,
+          253,
+          245
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 9.82,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 158
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 162
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          241,
+          242
+        ],
+        "color": "rgb(185, 28, 28)",
+        "contrast": 5.883,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 278
+      }
+    ],
+    "scroll": 320,
+    "smallControls": [],
+    "textCount": 61,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=default",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 16.955,
+    "parts": [
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 231
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 28,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=light",
+    "width": 320
+  },
+  {
+    "client": 320,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 7.943,
+    "parts": [
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 320
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 280
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 280
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 280
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 145
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 131
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 162
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 278
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(153, 27, 27)",
+        "contrast": 7.943,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 278
+      }
+    ],
+    "scroll": 320,
+    "smallControls": [],
+    "textCount": 61,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=light",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 231
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 28,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 320,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 7.828,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 320
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 280
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 280
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 280
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 145
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 131
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 162
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 278
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 7.828,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 278
+      }
+    ],
+    "scroll": 320,
+    "smallControls": [],
+    "textCount": 61,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 18.883,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 28,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=edge",
+    "width": 320
+  },
+  {
+    "client": 320,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 15.18,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 320
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 280
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 280
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 280
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 145
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 131
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 230
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 162
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 278
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 278
+      }
+    ],
+    "scroll": 320,
+    "smallControls": [],
+    "textCount": 61,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=edge",
+    "width": 320
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 4.554,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.74,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1425
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.74,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 665
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.129 0.042 264.695)",
+        "contrast": 20.17,
+        "font": "32px",
+        "part": "title",
+        "tag": "H1",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.129 0.042 264.695)",
+        "contrast": 20.17,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          250,
+          251,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.103,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.947,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=default",
+    "width": 1440
+  },
+  {
+    "client": 1440,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 4.525,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 17.74,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1440
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 626
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 676
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 676
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 242
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 524
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 86
+      },
+      {
+        "bg": [
+          236,
+          253,
+          245
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 9.82,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 282
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "oklch(0.372 0.044 257.287)",
+        "contrast": 10.344,
+        "font": "18px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(15, 23, 42)",
+        "contrast": 17.853,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          241,
+          242
+        ],
+        "color": "rgb(185, 28, 28)",
+        "contrast": 5.883,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 193
+      }
+    ],
+    "scroll": 1440,
+    "smallControls": [],
+    "textCount": 59,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=default",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 16.955,
+    "parts": [
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1425
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 665
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "32px",
+        "part": "title",
+        "tag": "H1",
+        "width": 607
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=light",
+    "width": 1440
+  },
+  {
+    "client": 1440,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 7.943,
+    "parts": [
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1440
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 626
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 610
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 610
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 610
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 676
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 676
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 242
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 519
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 618
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 282
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(17, 24, 39)",
+        "contrast": 16.955,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 398
+      },
+      {
+        "bg": [
+          248,
+          250,
+          252
+        ],
+        "color": "rgb(153, 27, 27)",
+        "contrast": 7.943,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 193
+      }
+    ],
+    "scroll": 1440,
+    "smallControls": [],
+    "textCount": 59,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=light",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1425
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 665
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "title",
+        "tag": "H1",
+        "width": 607
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=custom",
+    "width": 1440
+  },
+  {
+    "client": 1440,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 7.828,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1440
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 626
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 610
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 610
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 610
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 676
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 676
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 242
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 519
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 618
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 282
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 398
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(255, 180, 171)",
+        "contrast": 7.828,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 193
+      }
+    ],
+    "scroll": 1440,
+    "smallControls": [],
+    "textCount": 59,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=custom",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 18.883,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1425
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 665
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "32px",
+        "part": "title",
+        "tag": "H1",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "options",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 607
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=variant&palette=edge",
+    "width": 1440
+  },
+  {
+    "client": 1440,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 15.18,
+    "parts": [
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 1440
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 626
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 295
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 610
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 676
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 676
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 242
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 519
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          0,
+          0,
+          0
+        ],
+        "color": "rgb(255, 255, 255)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 618
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 282
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(0, 0, 0)",
+        "contrast": 21,
+        "font": "16px",
+        "part": "error",
+        "tag": "P",
+        "width": 398
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 193
+      }
+    ],
+    "scroll": 1440,
+    "smallControls": [],
+    "textCount": 59,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=otp&palette=edge",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 21,
+    "parts": [
+      {
+        "bg": [
+          250,
+          250,
+          250
+        ],
+        "color": "rgb(18, 52, 86)",
+        "contrast": 12.184,
+        "font": "20px",
+        "part": "label",
+        "tag": "SPAN",
+        "width": 141
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 0,
+    "url": "http://127.0.0.1:5233/?page=home&palette=custom&narrow=yes",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 504
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 448
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "title",
+        "tag": "H1",
+        "width": 390
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 390
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 390
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 390
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 20,
+    "url": "http://127.0.0.1:5233/?page=product&palette=custom&narrow=yes",
+    "width": 1440
+  },
+  {
+    "client": 1425,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 504
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 269
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 382
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 382
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 382
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 181
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 181
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 181
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 181
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 382
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 382
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 382
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 382
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 382
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 382
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 448
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 448
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "32px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 242
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 390
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 291
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 390
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 390
+      }
+    ],
+    "scroll": 1425,
+    "smallControls": [],
+    "textCount": 52,
+    "url": "http://127.0.0.1:5233/?page=checkout&palette=custom&narrow=yes",
+    "width": 1440
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 231
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 45
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "quantity",
+        "tag": "DIV",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 137
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 24,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=zero&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "galleryFrame",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "title",
+        "tag": "H1",
+        "width": 231
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "price",
+        "tag": "P",
+        "width": 50
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 231
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 15,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=soldout&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 320,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 320
+      }
+    ],
+    "scroll": 320,
+    "smallControls": [],
+    "textCount": 1,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=loading&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 320,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 320
+      }
+    ],
+    "scroll": 320,
+    "smallControls": [],
+    "textCount": 1,
+    "url": "http://127.0.0.1:5233/?page=product&scenario=missing&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 134
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 116
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 161
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 52,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=busy&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 4.915,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 212
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 3,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=empty&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 4.915,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 207
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 7,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=success&palette=custom",
+    "width": 320
+  },
+  {
+    "client": 305,
+    "contrastFailures": [],
+    "errors": "",
+    "fallback": false,
+    "fieldContrastFailures": [],
+    "hydrated": "yes",
+    "minimumTextContrast": 11.936,
+    "parts": [
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "18px",
+        "part": "surface",
+        "tag": "DIV",
+        "width": 305
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H1",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "TEXTAREA",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "18px",
+        "part": "input",
+        "tag": "SELECT",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 215
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "20px",
+        "part": "summary",
+        "tag": "DIV",
+        "width": 265
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "24px",
+        "part": "heading",
+        "tag": "H2",
+        "width": 134
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          248,
+          231
+        ],
+        "color": "rgb(23, 36, 29)",
+        "contrast": 15.18,
+        "font": "20px",
+        "part": "input",
+        "tag": "INPUT",
+        "width": 116
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 91
+      },
+      {
+        "bg": [
+          18,
+          52,
+          59
+        ],
+        "color": "rgb(254, 243, 199)",
+        "contrast": 11.936,
+        "font": "16px",
+        "part": "label",
+        "tag": "LABEL",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "20px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 215
+      },
+      {
+        "bg": [
+          255,
+          255,
+          255
+        ],
+        "color": "rgb(17, 17, 17)",
+        "contrast": 18.883,
+        "font": "18px",
+        "part": "primaryButton",
+        "tag": "BUTTON",
+        "width": 160
+      }
+    ],
+    "scroll": 305,
+    "smallControls": [],
+    "textCount": 52,
+    "url": "http://127.0.0.1:5233/?page=checkout&scenario=no-consent&palette=custom",
+    "width": 320
+  }
+]

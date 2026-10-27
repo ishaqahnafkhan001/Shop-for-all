@@ -1,0 +1,13 @@
+{
+  "revision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "protectedFileCount": 743,
+  "changedProtectedFiles": [],
+  "browserScreenshotCases": 40,
+  "browserScreenshotHashMismatches": [],
+  "browserArtifactCount": 44,
+  "nodeCli": "v24.12.0",
+  "ssrClock": "2026-10-20T00:00:00.000Z",
+  "ssrTimezone": "UTC",
+  "taskOwnedMongoContainerRemoved": true,
+  "taskFixtureServerStopped": true
+}

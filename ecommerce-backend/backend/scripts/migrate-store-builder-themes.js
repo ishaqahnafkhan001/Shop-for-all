@@ -16,6 +16,8 @@ const run = async () => {
 
     for await (const shop of cursor) {
         scanned += 1;
+        // This legacy migration cannot convert or rewrite adaptive/future themes.
+        if (Number(shop.theme?.version) >= 5) continue;
         const holder = { _id: shop._id, theme: normalizeTheme(shop.theme || {}) };
         await ensureThemeSectionArchitecture(holder, { persist: false });
         holder.theme.policies = fillMissingPolicyDefaults(holder.theme.policies || {}, { storeName: shop.shopName }).policies;

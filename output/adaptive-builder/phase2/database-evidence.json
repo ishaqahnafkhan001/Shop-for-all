@@ -1,0 +1,25 @@
+{
+  "id": "1ebb1b11ae26435f59ac20c04f553b2cca30701e52c3a02a030fbdbc26a37422",
+  "name": "/sfa-adaptive-phase2-20261020",
+  "image": "sha256:c53852c00c23ca9f23fc39690350ffa9a80e3642fe8f96879726d8da0abe80a7",
+  "label": "adaptive-phase2-20261020",
+  "ports": {
+    "27017/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "27028"
+      }
+    ]
+  },
+  "tmpfs": {
+    "/data/configdb": "",
+    "/data/db": ""
+  },
+  "database": "atelier_acceptance_c085454b_test",
+  "replicaSet": "rs0",
+  "externalTransports": "blocked by isolatedAcceptance.cjs",
+  "notifications": "mocked",
+  "cloudinary": "mocked where deletion is tested",
+  "crashTestTransactionLifetimeSeconds": 5,
+  "cleanup": "Task-owned container stopped and removed; image and artifacts retained."
+}

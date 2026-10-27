@@ -1,0 +1,21 @@
+{
+  "lint": {
+    "files": 24,
+    "errors": 0,
+    "warnings": 0
+  },
+  "bundle": {
+    "browserEntryBytes": 374211,
+    "externalImports": [
+      "react",
+      "lucide-react",
+      "react/jsx-runtime"
+    ],
+    "note": "Explicit entry, dependencies external; not imported by production routes."
+  },
+  "moduleChecks": {
+    "cjsSsrLoad": true,
+    "esmSyntax": "PASS",
+    "esmCjsPlanAndCssParity": "PASS (11 page/palette cases and capabilities)"
+  }
+}

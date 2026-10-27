@@ -1,4 +1,5 @@
 const { sendAiOperationError } = require('../services/ai/aiHttpErrors');
+const logger = require('../services/logger');
 const Shop = require('../models/Shop');
 const Review = require('../models/Review');
 const Product = require('../models/Product');
@@ -50,6 +51,12 @@ const {
 
 const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const recordBuilderFailure = (req, error, operation) => logger.warn('store_builder_operation_failed', {
+    operation, shopId: String(req.tenantId || ''), requestId: req.id,
+    code: /^[A-Z0-9_]{1,64}$/.test(String(error.code || '')) ? error.code : 'STORE_BUILDER_FAILED',
+    status: Number(error.statusCode) || 400,
+});
+
 const sendStoreBuilderError = (res, err, fallbackMessage) => {
     const message = err.message || fallbackMessage;
     return res.status(err.statusCode || 400).json({
@@ -69,6 +76,7 @@ const invalidateStoreBuilderSeoCache = async (shopId) => {
         cache.del(`storefront:settings:${shopId}`),
         cache.delPattern(`storefront:settings:${shopId}:*`),
         cache.delPattern(`storefront:bootstrap:${shopId}:*`),
+        cache.delPattern(`storefront:adaptive:${shopId}:*`),
         shop?.subdomain ? invalidateTenantCache(shop.subdomain) : Promise.resolve(),
         shop?.customDomain?.domain ? invalidateTenantCache(shop.customDomain.domain) : Promise.resolve()
     ]);
@@ -238,6 +246,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
             cache.del(`storefront:settings:${req.tenantId}`),
             cache.delPattern(`storefront:settings:${req.tenantId}:*`),
             cache.delPattern(`storefront:bootstrap:${req.tenantId}:*`),
+            cache.delPattern(`storefront:adaptive:${req.tenantId}:*`),
             ...domainCacheKeys.map(domain => invalidateTenantCache(domain))
         ]).catch(() => {
             responseShop.warnings = [...(responseShop.warnings || []), 'CACHE_INVALIDATION_PENDING'];
@@ -249,7 +258,7 @@ exports.updateStoreBuilderSettings = async (req, res) => {
             planAccess: responseShop.planAccess
         });
     } catch (err) {
-        console.error('Update store builder settings error:', err);
+        recordBuilderFailure(req, err, 'publish');
         const duplicateDomain = err?.code === 11000 && String(err?.message || '').includes('customDomain');
         const message = duplicateDomain
             ? 'This domain is already connected to another shop.'
@@ -626,6 +635,7 @@ exports.saveStoreBuilderDraft = async (req, res) => {
         res.status(200).json({ success: true, message: 'Draft saved', data: draft });
     } catch (err) {
         const message = err.message || 'Failed to save Store Builder draft';
+        recordBuilderFailure(req, err, 'draft-save');
         res.status(err.statusCode || 400).json({
             success: false,
             code: err.code || 'INVALID_THEME',
@@ -639,11 +649,23 @@ exports.saveStoreBuilderDraft = async (req, res) => {
 exports.deleteStoreBuilderDraft = async (req, res) => {
     try {
         assertDraftTenant(req);
-        const result = await StoreBuilderDraft.deleteOne(draftWriteFilter(req.tenantId, req.body?.expectedDraftUpdatedAt));
+        const currentDraft = await StoreBuilderDraft.findOne({ shop_id: req.tenantId }).select('theme').lean();
+        let versionFilter = { $ne: 5 };
+        if (Number(currentDraft?.theme?.version) === 5) {
+            const policy = require('../services/storeBuilder/adaptivePersistencePolicy');
+            const access = await getShopPlanAccess(req.tenantId);
+            if (!policy.getAdaptiveAvailability({ shopId: req.tenantId, planAccess: access }).available) throw Object.assign(new Error('Adaptive drafts remain read-only while adaptive writes are disabled.'), { statusCode: 409, code: 'ADAPTIVE_READ_ONLY' });
+            if (typeof req.body?.expectedDraftUpdatedAt !== 'string') throw Object.assign(new Error('Reload this draft before discarding it.'), { statusCode: 409, code: 'THEME_CLIENT_UPGRADE_REQUIRED' });
+            const shop = await Shop.findById(req.tenantId).select('theme').lean();
+            await policy.assertAdaptiveThemeMutation({ shop, candidate: currentDraft.theme, req });
+            versionFilter = 5;
+        }
+        const result = await StoreBuilderDraft.deleteOne({ ...draftWriteFilter(req.tenantId, req.body?.expectedDraftUpdatedAt), 'theme.version': versionFilter });
         if (req.body?.expectedDraftUpdatedAt !== undefined && !result.deletedCount
             && await StoreBuilderDraft.findOne({ shop_id: req.tenantId }).select('_id').lean()) throw draftConflict();
         res.status(200).json({ success: true, message: 'Draft discarded' });
     } catch (err) {
+        recordBuilderFailure(req, err, 'draft-discard');
         res.status(err.statusCode || 500).json({ success: false, code: err.code, error: err.statusCode ? err.message : 'Failed to discard Store Builder draft' });
     }
 };
@@ -693,6 +715,7 @@ exports.restoreStoreBuilderRevision = async (req, res) => {
         res.status(200).json({ success: true, message: 'Revision restored as a new published revision', data: restored });
     } catch (err) {
         const message = err.message || 'Failed to restore Store Builder revision';
+        recordBuilderFailure(req, err, 'revision-restore');
         res.status(err.statusCode || 400).json({
             success: false,
             code: err.code,
@@ -723,7 +746,8 @@ exports.getPublicStorefrontSettings = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
 
         const planAccess = await getShopPlanAccess(req.tenantId);
-        const cacheKey = `storefront:settings:${req.tenantId}:${JSON.stringify({ revision: Number(shop.themeRevision || 0),
+        const cacheKey = `storefront:settings:${req.tenantId}:${JSON.stringify({ adaptivePolicy: require('../services/storeBuilder/adaptiveRolloutPolicy').readAdaptiveRollout().fingerprint,
+            operational: planAccess.isOperational && planAccess.shopOperational, revision: Number(shop.themeRevision || 0),
             updatedAt: shop.updatedAt, plan: planAccess.planKey, access: planAccess.storeBuilderAccess, features: planAccess.features })}`;
         const cached = await cache.get(cacheKey);
         if (cached) return res.status(200).json(cached);
@@ -733,7 +757,7 @@ exports.getPublicStorefrontSettings = async (req, res) => {
         await cache.set(cacheKey, response, 60);
         res.status(200).json(response);
     } catch (err) {
-        console.error('Get public storefront settings error:', err);
+        recordBuilderFailure(req, err, 'public-resolution');
         res.status(500).json({ success: false, error: 'Failed to load storefront settings' });
     }
 };

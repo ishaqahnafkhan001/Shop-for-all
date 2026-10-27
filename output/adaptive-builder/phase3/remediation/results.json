@@ -1,0 +1,46 @@
+{
+  "verdict": "BLOCKED",
+  "blocker": "Actual 200% browser zoom unavailable/unverified",
+  "compatibility": {
+    "tests": 671,
+    "pass": 671,
+    "fail": 0
+  },
+  "unit": {
+    "tests": 1128,
+    "pass": 1123,
+    "fail": 5
+  },
+  "mongo": {
+    "tests": 55,
+    "pass": 53,
+    "fail": 2
+  },
+  "browser": {
+    "cases": 48,
+    "failures": 0,
+    "realZoom": "BLOCKED"
+  },
+  "tooling": {
+    "lint": {
+      "files": 24,
+      "errors": 0,
+      "warnings": 0
+    },
+    "bundle": {
+      "browserEntryBytes": 374211,
+      "externalImports": [
+        "react",
+        "lucide-react",
+        "react/jsx-runtime"
+      ],
+      "note": "Explicit entry, dependencies external; not imported by production routes."
+    },
+    "moduleChecks": {
+      "cjsSsrLoad": true,
+      "esmSyntax": "PASS",
+      "esmCjsPlanAndCssParity": "PASS (11 page/palette cases and capabilities)"
+    }
+  },
+  "changedFileCount": 27
+}

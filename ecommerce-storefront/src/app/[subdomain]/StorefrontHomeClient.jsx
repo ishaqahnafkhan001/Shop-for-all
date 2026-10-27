@@ -1,5 +1,6 @@
 "use client";
 
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { PackageX, Tag, X } from 'lucide-react';
@@ -358,7 +359,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
 
     return (
         <>
-            <ReferenceStorefrontHome
+            <AdaptivePresentation pageKind="home" catalogActions={{ addToCart: handleProductAdd, buyNow: product => productActions.buyNow(product, { location: "adaptive-home" }) }}><ReferenceStorefrontHome
                 theme={theme}
                 shopName={shop?.shopName || initialData?.shop?.shopName || subdomain}
                 products={products}
@@ -397,7 +398,7 @@ export default function StorefrontHomeClient({ subdomain, initialData = null }) 
                         onCountdownBoundary={refreshBootstrap}
                     />
                 )}
-            />
+            /></AdaptivePresentation>
             {activeSalePopup && (
                 <div
                     role="dialog"

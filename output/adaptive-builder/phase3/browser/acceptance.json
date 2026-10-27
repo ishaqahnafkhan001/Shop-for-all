@@ -1,0 +1,128 @@
+{
+  "browser": "Codex in-app browser",
+  "version": "not recorded",
+  "height": 900,
+  "cases": 27,
+  "layoutFailures": 0,
+  "hydrationRecoverableErrors": 0,
+  "consoleWarningsOrErrors": 0,
+  "viewportReadings": [
+    [
+      320,
+      305,
+      305
+    ],
+    [
+      360,
+      345,
+      345
+    ],
+    [
+      390,
+      375,
+      375
+    ],
+    [
+      430,
+      415,
+      415
+    ],
+    [
+      767,
+      752,
+      752
+    ],
+    [
+      768,
+      753,
+      753
+    ],
+    [
+      1023,
+      1008,
+      1008
+    ],
+    [
+      1024,
+      1009,
+      1009
+    ],
+    [
+      1440,
+      1425,
+      1425
+    ]
+  ],
+  "pages": [
+    "home",
+    "product-long-English-Bengali",
+    "checkout"
+  ],
+  "columns": {
+    "below768": "one",
+    "from768": "two"
+  },
+  "decoration": {
+    "below1024": "hidden",
+    "from1024": "visible"
+  },
+  "headingPx": {
+    "below1024": 24,
+    "from1024": 32
+  },
+  "checkoutButton": {
+    "foreground": "rgb(17,17,17)",
+    "background": "rgb(255,255,255)",
+    "radiusPx": 8
+  },
+  "interFontReady": true,
+  "interactions": {
+    "requiredFields": 5,
+    "consentInitiallyBlocksSubmit": true,
+    "keyboard": {
+      "from": "checkout-full-name",
+      "to": "checkout-email",
+      "outline": "solid",
+      "minHeightPx": 44
+    },
+    "inertSubmit": [
+      "input",
+      "policyConsent",
+      "submit"
+    ],
+    "otp": {
+      "resendDisabledAt30Seconds": true,
+      "verifyDisabledFor3Digits": true,
+      "sixDigitsInvokesOnly": [
+        "otp",
+        "verifyOtp"
+      ]
+    },
+    "productZero": {
+      "price": 0,
+      "quantityAfterIncrease": 2,
+      "inertActions": [
+        "setQuantity",
+        "addToCart"
+      ]
+    },
+    "soldOut": {
+      "unavailableButtonDisabled": true,
+      "increaseQuantityButtons": 0
+    }
+  },
+  "zoom200": {
+    "status": "BLOCKED",
+    "reason": "Viewport capability has no zoom control; Control+Equal left innerWidth=1440 and devicePixelRatio=1 unchanged."
+  },
+  "limitations": [
+    "No complete accessibility audit or screen-reader test",
+    "No cross-browser acceptance",
+    "No production route integration",
+    "Visual OTP screenshot inspected inline; no retained pixel baseline"
+  ],
+  "cleanup": {
+    "temporaryViewportReset": true,
+    "taskTabsClosed": true
+  }
+}

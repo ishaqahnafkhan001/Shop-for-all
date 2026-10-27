@@ -113,6 +113,9 @@ const walk = (node, fn) => {
   if (Array.isArray(node)) return node.forEach(n => walk(n, fn));
   if (!node || typeof node !== 'object') return;
   fn(node);
+  // The route now supplies its unchanged presentation through the guarded live
+  // boundary. Inspect that real render port as well as ordinary JSX children.
+  if (node.props?.pageKind === 'checkout' && typeof node.props.renderCore === 'function') walk(node.props.renderCore(false), fn);
   walk(node.props?.children, fn);
 };
 const find = (node, predicate) => {

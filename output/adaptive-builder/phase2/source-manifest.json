@@ -1,0 +1,158 @@
+[
+  {
+    "file": "ecommerce-backend/backend/controllers/basicStoreSettingsController.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/basicStoreSettingsController.js",
+    "sha256": "64f90d7c76a78f0a771ae8887f1e583979f188e4020ec2f7b041a3249cbad227"
+  },
+  {
+    "file": "ecommerce-backend/backend/controllers/storeBuilderController.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/controllers/storeBuilderController.js",
+    "sha256": "433715ec72bbfd916321061e1df1289c5e4f8d1284d04d8068cf7aacd7870b2b"
+  },
+  {
+    "file": "ecommerce-backend/backend/models/Shop.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/Shop.js",
+    "sha256": "3d8989b15d693319f68ed150bc1b84e81a6981cb705e1eeca97a7de663665815"
+  },
+  {
+    "file": "ecommerce-backend/backend/models/StoreBuilderAsset.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/StoreBuilderAsset.js",
+    "sha256": "d9a53337884083a68811099d3534b63e2232a001dd01cd80a36b535e29ac4125"
+  },
+  {
+    "file": "ecommerce-backend/backend/models/StoreBuilderDraft.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/StoreBuilderDraft.js",
+    "sha256": "f8fad5ad91ad3b23cc901644317c69116eaa718177058bab39a0200ca0f049b1"
+  },
+  {
+    "file": "ecommerce-backend/backend/models/StoreBuilderRevision.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/StoreBuilderRevision.js",
+    "sha256": "dec728e2f176464635fbfc715396ca02881b28c81d46a885120765660f9e5991"
+  },
+  {
+    "file": "ecommerce-backend/backend/models/storeBuilderThemeContract.js",
+    "status": "new",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/models/storeBuilderThemeContract.js",
+    "sha256": "98f291914df62ca2fa7b506228d2fa0b7395318d590dd5703f8b398ccd817c30"
+  },
+  {
+    "file": "ecommerce-backend/backend/scripts/migrate-store-builder-themes.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/scripts/migrate-store-builder-themes.js",
+    "sha256": "7a097d1e58c2007685c6ca37c8017b2ff86df5b30dd232fa07b7d73c508fe771"
+  },
+  {
+    "file": "ecommerce-backend/backend/services/storeBuilder/adaptivePersistencePolicy.js",
+    "status": "new",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/adaptivePersistencePolicy.js",
+    "sha256": "b279d562a7d55170569bf6ad3b39fc760a36f3f31022de35847de3817a310953"
+  },
+  {
+    "file": "ecommerce-backend/backend/services/storeBuilder/effectiveThemeService.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/effectiveThemeService.js",
+    "sha256": "86d2fcb8cfd4029a5198cb1d45fa0eea0f95c1c9a43bbd1f9cc0df30ebe7ec56"
+  },
+  {
+    "file": "ecommerce-backend/backend/services/storeBuilder/storeBuilderAssetService.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/storeBuilderAssetService.js",
+    "sha256": "15440884ddfa88203459dd01a3a9059954436e89ec4d9f6c3a01daf2309c79d7"
+  },
+  {
+    "file": "ecommerce-backend/backend/services/storeBuilder/storeBuilderSeoService.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/storeBuilderSeoService.js",
+    "sha256": "2e766e8efa3b260775102a0a877015968d939d5dd24df51816a3df62b4cc3c7e"
+  },
+  {
+    "file": "ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js",
+    "sha256": "e3e01adebdbaedaea68c77f476fa495f63a31cb0aa04a42e0a1b723c6a702292"
+  },
+  {
+    "file": "ecommerce-backend/backend/services/storeBuilder/themeCompatibilityService.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/storeBuilder/themeCompatibilityService.js",
+    "sha256": "0efee544009ae4f114b9be4d5b3964474425126cb4bb9abcc062a74eca839c6a"
+  },
+  {
+    "file": "ecommerce-backend/backend/services/themeSectionService.js",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/services/themeSectionService.js",
+    "sha256": "88bfba856d49111b17d246bf0b69a19bb892a0c478bd09c543ec6c944a8e8e75"
+  },
+  {
+    "file": "ecommerce-backend/backend/tests/adaptive-persistence.test.js",
+    "status": "new",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/adaptive-persistence.test.js",
+    "sha256": "cb511338e91c0a6b15bdb796e23d8b5015a34d521ad03f3f5135ea33e6c38218"
+  },
+  {
+    "file": "ecommerce-backend/backend/tests/helpers/adaptive-transaction-crash.cjs",
+    "status": "new",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/adaptive-transaction-crash.cjs",
+    "sha256": "cbd8ff089988de44a63b655352ab6a4f50cb9803fbf28b35b0e3303a83cadb57"
+  },
+  {
+    "file": "ecommerce-backend/backend/tests/integration/adaptive-persistence.integration.test.js",
+    "status": "new",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/integration/adaptive-persistence.integration.test.js",
+    "sha256": "17e2b45740b2a9b87d5bd07cc83c81dce295533af76ff17e30b5f8311ec8c46b"
+  },
+  {
+    "file": "packages/storefront-theme/effective.cjs",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/effective.cjs",
+    "sha256": "31cc02a4cd1d0c4f1b4264926af163bd54c18abcf5da34c9199eab8b3682b520"
+  },
+  {
+    "file": "packages/storefront-theme/index.cjs",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/index.cjs",
+    "sha256": "688d2a23c2c8db72a7c151546bd093fdcc8104d8733727bb0ac9e615f66e5998"
+  },
+  {
+    "file": "packages/storefront-theme/index.mjs",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/index.mjs",
+    "sha256": "0893ea683e0e285f5496a08fa930801a6f03bb6cd76bb24e44324f979e794eb8"
+  },
+  {
+    "file": "packages/storefront-theme/package.json",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/package.json",
+    "sha256": "293bd85593f019b4a4c8eec06ee33b7892c9dab8294f99ef015183dd01667a63"
+  },
+  {
+    "file": "packages/storefront-theme/pageTemplates.cjs",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/pageTemplates.cjs",
+    "sha256": "b281dd0dd0c19b8499563bec4ca2e88acd78803c15ac874886ed7ecd6c2591fa"
+  },
+  {
+    "file": "packages/storefront-theme/storage.cjs",
+    "status": "new",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/storage.cjs",
+    "sha256": "c6d7aa6c575f0b3024e266e637f623e584517151feba93dcceaf2869dffa2a68"
+  },
+  {
+    "file": "packages/storefront-theme/storage.mjs",
+    "status": "new",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-theme/storage.mjs",
+    "sha256": "66474f45b1cb2f535f5104081789210dc48e1be976eb4782149f33ea067c7e77"
+  },
+  {
+    "file": "track.md",
+    "status": "modified",
+    "absolutePath": "C:/Users/user/WebstormProjects/Shop-for-all/track.md",
+    "sha256": "26db44811567df7568162802ec1c43269d5f5e629d43b98b5cccd47d8a5df029"
+  }
+]

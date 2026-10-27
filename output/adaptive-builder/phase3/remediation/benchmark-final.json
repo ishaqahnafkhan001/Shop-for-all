@@ -1,0 +1,61 @@
+{
+  "node": "v24.12.0",
+  "platform": "win32",
+  "arch": "x64",
+  "warmups": 20,
+  "samples": 100,
+  "heapNote": "Unforced GC; delta is observational, not retained allocation or peak memory.",
+  "results": [
+    {
+      "name": "small",
+      "documentNodes": 14,
+      "activePageNodes": 3,
+      "documentBytes": 2707,
+      "resolution": {
+        "medianMs": 3.766099999999824,
+        "p95Ms": 27.110599999999977
+      },
+      "ssrIncludingCss": {
+        "medianMs": 0.5135000000000218,
+        "p95Ms": 1.4841999999998734
+      },
+      "markupBytes": 4643,
+      "cssBytes": 3532,
+      "observedHeapDeltaBytes": 4563456
+    },
+    {
+      "name": "representative",
+      "documentNodes": 15,
+      "activePageNodes": 11,
+      "documentBytes": 3836,
+      "resolution": {
+        "medianMs": 2.429099999999835,
+        "p95Ms": 46.2815999999998
+      },
+      "ssrIncludingCss": {
+        "medianMs": 7.091100000000097,
+        "p95Ms": 83.08840000000009
+      },
+      "markupBytes": 21660,
+      "cssBytes": 11264,
+      "observedHeapDeltaBytes": -631096
+    },
+    {
+      "name": "near-node-limit",
+      "documentNodes": 200,
+      "activePageNodes": 50,
+      "documentBytes": 52153,
+      "resolution": {
+        "medianMs": 11.616899999999987,
+        "p95Ms": 107.62920000000031
+      },
+      "ssrIncludingCss": {
+        "medianMs": 5.1853000000000975,
+        "p95Ms": 7.828700000000026
+      },
+      "markupBytes": 27025,
+      "cssBytes": 17611,
+      "observedHeapDeltaBytes": -4637712
+    }
+  ]
+}

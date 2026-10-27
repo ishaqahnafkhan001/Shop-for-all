@@ -1,0 +1,14 @@
+{
+  "startRevision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "recordedExistingFiles": 834,
+  "unchangedExistingFiles": 832,
+  "changedExistingFiles": [
+    "packages/storefront-theme/package.json",
+    "track.md"
+  ],
+  "unexpectedExistingChanges": [],
+  "protectedPhase0ArtifactFiles": 65,
+  "changedPhase0Artifacts": [],
+  "priorTrackContentBytePreserved": true,
+  "buildOutputRetained": "Automatic approval review blocked recursive cleanup; no workaround used."
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -422,20 +423,20 @@ export default function CheckoutPage({ params }) {
     };
 
     if (isSuccess) {
-        return <CheckoutSuccessState orderId={orderId} />;
+        return <AdaptivePresentation pageKind="checkout" core><CheckoutSuccessState orderId={orderId} /></AdaptivePresentation>;
     }
 
     if (cartItems.length === 0) {
-        return <CheckoutEmptyCartState />;
+        return <AdaptivePresentation pageKind="checkout" core><CheckoutEmptyCartState /></AdaptivePresentation>;
     }
 
-    return (
+    return <AdaptivePresentation pageKind="checkout" renderCore={adaptiveParts => (
         <>
-            <CheckoutPageShell
+            <CheckoutPageShell adaptiveParts={adaptiveParts}
                 checkoutBranding={checkoutBranding}
                 onSubmit={handlePlaceOrder}
                 mobileStickyBar={(
-                    <CheckoutMobileStickyBar
+                    <CheckoutMobileStickyBar adaptiveParts={adaptiveParts}
                         loading={loading}
                         phoneVerified={phoneOtp.verified}
                         policyAccepted={policyAccepted}
@@ -443,15 +444,15 @@ export default function CheckoutPage({ params }) {
                     />
                 )}
             >
-                <CheckoutDetailsColumn
+                <CheckoutDetailsColumn adaptiveParts={adaptiveParts}
                     presentationVariant={presentationVariant}
                     formData={formData}
                     isDhaka={isDhaka}
                     onInputChange={handleInputChange}
                 />
 
-                <CheckoutMarketingConsent checked={marketingEmailOptIn} onChange={setMarketingEmailOptIn} />
-                <CheckoutOrderSummary
+                <CheckoutMarketingConsent adaptiveParts={adaptiveParts} checked={marketingEmailOptIn} onChange={setMarketingEmailOptIn} />
+                <CheckoutOrderSummary adaptiveParts={adaptiveParts}
                     presentationVariant={presentationVariant}
                     cartItems={cartItems}
                     checkoutBranding={checkoutBranding}
@@ -474,7 +475,7 @@ export default function CheckoutPage({ params }) {
                     visiblePolicies={visiblePolicies}
                 />
             </CheckoutPageShell>
-            <CheckoutOtpModal
+            <CheckoutOtpModal adaptiveParts={adaptiveParts}
                     presentationVariant={presentationVariant}
                 error={otpModalError || phoneOtp.error}
                 message={phoneOtp.message}
@@ -495,5 +496,5 @@ export default function CheckoutPage({ params }) {
                 verifying={phoneOtp.verifying}
             />
         </>
-    );
+    )} />;
 }

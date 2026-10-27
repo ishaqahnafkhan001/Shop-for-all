@@ -10,9 +10,11 @@
     "./reference-core": "./reference/referenceCore.jsx",
     "./presentation/*": "./presentation/*.jsx",
     "./product-data": "./normalizeProduct.js",
+    "./policy-data": "./presentation/policyData.js",
     "./image-domains": "./imageDomains.js",
     "./media": "./media.js",
     "./viewports": "./viewports.js",
+    "./adaptive": "./adaptive/index.jsx",
     "./styles.css": "./styles.css"
   },
   "peerDependencies": {

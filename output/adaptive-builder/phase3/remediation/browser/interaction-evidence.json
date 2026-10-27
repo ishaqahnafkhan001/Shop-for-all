@@ -1,0 +1,93 @@
+{
+  "keyboardChecks": [
+    {
+      "id": "checkout-full-name",
+      "label": "Full Name",
+      "outline": "rgb(255, 255, 255) solid 2px",
+      "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px"
+    },
+    {
+      "id": "checkout-email",
+      "label": "Email"
+    },
+    {
+      "id": "checkout-phone",
+      "label": "Phone Number"
+    },
+    {
+      "id": "checkout-address",
+      "label": "Full Address"
+    },
+    {
+      "id": "checkout-city",
+      "label": "Delivery area"
+    }
+  ],
+  "consent": {
+    "before": false,
+    "after": true
+  },
+  "shortDialog": {
+    "dialogs": [
+      {
+        "bottom": 450,
+        "height": 448,
+        "overflow": "auto",
+        "scroll": 801,
+        "top": 0
+      }
+    ],
+    "height": 450
+  },
+  "otpFocus": [
+    {
+      "outline": "rgb(255, 255, 255) solid 2px",
+      "shadow": "rgba(0, 0, 0, 0.608) 0px 0px 0px 2.43168px",
+      "text": "Cancel"
+    },
+    {
+      "text": "Verify & place order"
+    },
+    {
+      "text": "Close phone verification"
+    },
+    {
+      "text": "Verify & place order"
+    }
+  ],
+  "otpClosed": true,
+  "mediaAndCatalog": {
+    "cards": [
+      {
+        "bg": "rgb(255, 255, 255)",
+        "font": "18px"
+      }
+    ],
+    "gaps": [
+      "24px",
+      "20px"
+    ],
+    "image": [
+      {
+        "fit": "cover",
+        "height": 180,
+        "radius": "12px"
+      }
+    ],
+    "pageWidth": 520,
+    "section": "120px"
+  },
+  "zoom": {
+    "before": {
+      "dpr": 1,
+      "scale": 1,
+      "width": 1440
+    },
+    "after": {
+      "dpr": 1,
+      "scale": 1,
+      "width": 1440
+    },
+    "status": "BLOCKED: shortcut did not change real zoom; viewport capability has no zoom setting"
+  }
+}

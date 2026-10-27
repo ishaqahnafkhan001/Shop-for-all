@@ -1,0 +1,16 @@
+const fs = require('node:fs');
+const path = 'ecommerce-storefront/src/app/[subdomain]/checkout/page.jsx';
+let source = fs.readFileSync(path, 'utf8').replaceAll('\r\n', '\n');
+source = source.replace('import ', "import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';\nimport ");
+source = source.replace('return <CheckoutSuccessState orderId={orderId} />;', 'return <AdaptivePresentation pageKind="checkout" core><CheckoutSuccessState orderId={orderId} /></AdaptivePresentation>;');
+source = source.replace('return <CheckoutEmptyCartState />;', 'return <AdaptivePresentation pageKind="checkout" core><CheckoutEmptyCartState /></AdaptivePresentation>;');
+const marker = '    return (\n        <>\n            <CheckoutPageShell';
+const start = source.lastIndexOf(marker);
+if(start < 0) throw Error('Expected checkout presentation seam');
+let tail = source.slice(start);
+tail = tail.replace('    return (\n        <>', '    return <AdaptivePresentation pageKind="checkout" renderCore={adaptiveParts => (\n        <>');
+for (const name of ['CheckoutPageShell','CheckoutMobileStickyBar','CheckoutDetailsColumn','CheckoutMarketingConsent','CheckoutOrderSummary','CheckoutOtpModal']) tail = tail.replace(`<${name}`, `<${name} adaptiveParts={adaptiveParts}`);
+tail = tail.replace('        </>\n    );', '        </>\n    )} />;');
+fs.writeFileSync(path, source.slice(0,start) + tail);
+const track = 'track.md';
+fs.writeFileSync(track, '# Adaptive Store Builder — Phases 6 and 7 preparation (21 October 2026)\n\n**In progress. Rollout remains OFF. No production publication/deployment authorized.**\n\n- Recorded task-start revision, dirty-tree hashes and scoped source copies under output/adaptive-builder/phase6. Pre-edit compatibility: 839/839. Admin lint reproduced: 16 errors/2 warnings.\n- Reproduced both historical Mongo failures, corrected the test’s Mongoose-subdocument spread/stale preset-version setup, and fixed partial theme normalization by merging the stored theme before defaults. Focused isolated Mongo regression: 2/2. Existing version-2 saved preset metadata still round-trips.\n- Added a second hardcoded disposable test database so destructive tests cannot erase the interactive preview’s identities. All external transports stay blocked/mocked.\n- Implementing default-OFF, approved tenant rollout controls and published-only shared renderer integration. No existing merchant/theme conversion or env change.\n- Browser inventory reports local browser use disabled in Work settings; interactive, hydration, accessibility and real 200% zoom acceptance remain BLOCKED. Preview remains available for manual verification.\n\n<!-- TRACK_BEFORE_PHASE6 -->\n\n' + fs.readFileSync(track,'utf8'));

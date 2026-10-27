@@ -1,0 +1,12 @@
+const fs = require('node:fs');
+let tooling = fs.readFileSync('output/adaptive-builder/phase5/verify-tooling.cjs','utf8');
+tooling = tooling.replace("note: 'Explicit entry, dependencies external; not imported by production routes.'", "note: 'Explicit dynamically loaded entry for approved v5 pages only; dependencies external.'");
+tooling = tooling.replace("try { original = execFileSync(git,", "try { const saved = path.join(__dirname, 'source-at-start', relative); if (fs.existsSync(saved)) original = fs.readFileSync(saved, 'utf8'); else original = execFileSync(git,");
+fs.writeFileSync('output/adaptive-builder/phase6/verify-tooling.cjs', tooling);
+let benchmark = fs.readFileSync('ecommerce-backend/backend/tests/helpers/benchmark-adaptive-full-site.cjs','utf8');
+benchmark = benchmark.replace('output/adaptive-builder/phase5/performance.json','output/adaptive-builder/phase6/performance.json');
+benchmark = benchmark.replace('Browser page-switch/interaction/heap timings remain unverified.', 'Pure Node timings only; browser observations are recorded separately. These are not Web Vitals.');
+fs.writeFileSync('ecommerce-backend/backend/tests/helpers/benchmark-adaptive-release.cjs', benchmark);
+let integrity = fs.readFileSync('output/adaptive-builder/phase5/final-audit.cjs','utf8');
+integrity = integrity.replace('phase[0-4]', 'phase[0-5]').replaceAll('TRACK_BEFORE_PHASE5','TRACK_BEFORE_PHASE6');
+fs.writeFileSync('output/adaptive-builder/phase6/final-audit.cjs',integrity);

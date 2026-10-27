@@ -1,0 +1,81 @@
+{
+  "originalSourceChecks": {
+    "ecommerce-backend/backend/tests/security-hardening.test.js": true,
+    "ecommerce-backend/backend/tests/seo-rendering.test.js": true
+  },
+  "existingDiagnostics": [
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'helper' is assigned a value but never used.",
+      "line": 149
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'navigationRegistry' is assigned a value but never used.",
+      "line": 478
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'checkoutSections' is assigned a value but never used.",
+      "line": 978
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'productDetails' is assigned a value but never used.",
+      "line": 980
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'productInfo' is assigned a value but never used.",
+      "line": 981
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'productExtras' is assigned a value but never used.",
+      "line": 982
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'themeProvider' is assigned a value but never used.",
+      "line": 983
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'footer' is assigned a value but never used.",
+      "line": 984
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/security-hardening.test.js",
+      "rule": "no-unused-vars",
+      "message": "'storefrontCss' is assigned a value but never used.",
+      "line": 985
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/seo-rendering.test.js",
+      "rule": "no-unused-vars",
+      "message": "'storeBuilderColorConfig' is assigned a value but never used.",
+      "line": 729
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/seo-rendering.test.js",
+      "rule": "no-unused-vars",
+      "message": "'colorEditor' is assigned a value but never used.",
+      "line": 730
+    },
+    {
+      "file": "ecommerce-backend/backend/tests/seo-rendering.test.js",
+      "rule": "no-unused-vars",
+      "message": "'storeBuilderPage' is assigned a value but never used.",
+      "line": 731
+    }
+  ],
+  "introducedDiagnostics": []
+}

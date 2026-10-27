@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ThemeSnapshot, installThemeGuard } = require('./storeBuilderThemeContract');
 
 const storeBuilderRevisionSchema = new mongoose.Schema({
     shop_id: {
@@ -8,7 +9,8 @@ const storeBuilderRevisionSchema = new mongoose.Schema({
         index: true
     },
     revision: { type: Number, required: true, min: 1 },
-    theme: { type: mongoose.Schema.Types.Mixed, required: true },
+    theme: { type: ThemeSnapshot, required: true },
+    assetIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoreBuilderAsset' }],
     searchAliases: { type: [String], default: [] },
     customDomain: { type: mongoose.Schema.Types.Mixed, default: {} },
     storewideDiscount: { type: Number, min: 0, max: 100, default: 0 },
@@ -28,4 +30,5 @@ const storeBuilderRevisionSchema = new mongoose.Schema({
 storeBuilderRevisionSchema.index({ shop_id: 1, revision: -1 }, { unique: true });
 storeBuilderRevisionSchema.index({ shop_id: 1, createdAt: -1 });
 
+installThemeGuard(storeBuilderRevisionSchema, { revision: true });
 module.exports = mongoose.model('StoreBuilderRevision', storeBuilderRevisionSchema);

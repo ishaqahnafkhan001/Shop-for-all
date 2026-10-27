@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-20T20:54:43.651Z",
+  "uiUrl": "http://127.0.0.1:5185/dashboard/adaptive-builder-preview",
+  "uiHttpStatus": 200,
+  "editorModuleTransformStatus": 200,
+  "syntheticPasswordLoginStatus": 200,
+  "grantStatus": 200,
+  "grantScope": "synthetic-local-only",
+  "publication": false,
+  "normalBuilderStatus": 200,
+  "normalAdoptionAvailable": false,
+  "browserVerification": "BLOCKED: CUA reports Local browser use is disabled in Work settings. HTTP/auth/module-transform checks do not prove interactive access or hydration.",
+  "actual200PercentZoom": "BLOCKED: no approved browser surface available."
+}

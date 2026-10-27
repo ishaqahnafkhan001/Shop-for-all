@@ -1,3 +1,5 @@
 import StoreBuilderPage from './StoreBuilder/StoreBuilderPage.jsx';
 
-export default StoreBuilderPage;
+export default function StoreBuilder() {
+    return <StoreBuilderPage />;
+}

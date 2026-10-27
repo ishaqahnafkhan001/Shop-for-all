@@ -1,5 +1,6 @@
 "use client";
 
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useStorefrontTheme } from '@/components/storefront/StorefrontThemeProvider';
@@ -10,13 +11,13 @@ export default function StorefrontFooter({ subdomain }) {
     const { theme, settings } = useStorefrontTheme();
 
     return (
-        <ReferenceStorefrontFooter
+        <AdaptivePresentation pageKind="footer" core><ReferenceStorefrontFooter
             theme={theme}
             shopName={settings?.shopName}
             subdomain={subdomain}
             cartCount={cartCount}
             shopVerification={settings?.shopVerification}
             LinkComponent={Link}
-        />
+        /></AdaptivePresentation>
     );
 }

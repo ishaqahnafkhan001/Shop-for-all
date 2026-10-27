@@ -1,0 +1,1 @@
+var e=e=>{let t=String(e||``).trim();if(!t)return;let n=new Date(t);return Number.isFinite(n.getTime())?n.toISOString():void 0},t=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||`your local time`}catch{return`your local time`}};export{e as n,t};

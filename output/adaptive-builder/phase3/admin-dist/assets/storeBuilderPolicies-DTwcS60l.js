@@ -1,0 +1,1 @@
+import"./seoHealth-Db91-5c6.js";var e={refund:`Refund Policy`,shipping:`Shipping Policy`,privacy:`Privacy Policy`,terms:`Terms & Conditions`};export{e as t};

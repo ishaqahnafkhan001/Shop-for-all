@@ -301,7 +301,7 @@ test('full-plan prebuilt blueprint and merchant content survive draft and publis
     let sectionIndex = 0;
     const resolvedTheme = resolvePrebuiltTheme({
         currentTheme: normalizeTheme({
-            ...(shopA.theme || {}),
+            ...shopA.toObject().theme,
             homepageSections: [
                 { id: 'merchant-story', type: 'BrandStory', title: 'Our real story', settings: { text: 'Merchant-authored story.' } },
                 { id: 'merchant-featured', type: 'FeaturedProducts', title: 'Merchant picks', settings: { productIds: [], source: { type: 'manual', productIds: [] } } },
@@ -337,12 +337,18 @@ test('full-plan prebuilt blueprint and merchant content survive draft and publis
     assert.equal(published.body.data.theme.homepageSections[0].settings.text, 'Merchant-authored story.');
     assert.deepEqual(published.body.data.theme.preset, {
         id: 'editorial-fashion',
-        version: 2,
+        version: resolvedTheme.preset.version,
         appliedAt: '2026-08-05T00:00:00.000Z'
     });
 
     const persisted = await Shop.findById(shopA._id).lean();
     assert.deepEqual(persisted.theme.homepageSections.filter(section => section.isEnabled !== false).map(section => section.type), expectedTypes);
+    // Applying today's frozen preset uses its current version; previously
+    // saved version-2 snapshots must still remain version 2 on ordinary saves.
+    const older = { ...persisted.theme, preset: { ...persisted.theme.preset, version: 2 } };
+    const olderDraft = await vendorA.unsafePut('/api/store-builder/admin/draft', { basedOnRevision: 1, theme: older });
+    assert.equal(olderDraft.status, 200, JSON.stringify(olderDraft.body));
+    assert.equal(olderDraft.body.data.theme.preset.version, 2);
 });
 
 test('Store Builder bootstrap hydrates selected products beyond the first page and scopes SEO totals', async (t) => {
@@ -445,8 +451,10 @@ test('Store Builder draft autosave enforces the same limited-plan boundary as pu
         basedOnRevision: 0,
         theme: { typography: { headingFont: 'Arial', bodyFont: 'Inter', headingWeight: '700' } }
     });
-    assert.equal(allowedDraft.status, 200);
+    assert.equal(allowedDraft.status, 200, JSON.stringify(allowedDraft.body));
     assert.equal(allowedDraft.body.data.theme.typography.headingFont, 'Arial');
+    assert.equal(allowedDraft.body.data.theme.hero.title, shopA.theme.hero.title);
+    assert.deepEqual(allowedDraft.body.data.theme.homepageSections, []);
 
     const blockedDraft = await vendorA.unsafePut('/api/store-builder/admin/draft', {
         basedOnRevision: 0,

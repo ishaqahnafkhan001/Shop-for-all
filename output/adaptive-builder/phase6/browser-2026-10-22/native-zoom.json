@@ -1,0 +1,1291 @@
+{
+  "date": "2026-10-22",
+  "method": "User set native Chrome menu zoom; Page.getLayoutMetrics reports cssVisualViewport.zoom=2, devicePixelRatio=2. No emulation/CSS zoom applied.",
+  "admin": [
+    {
+      "label": "initial-native-200",
+      "metrics": {
+        "contentSize": {
+          "height": 1248,
+          "width": 1278,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 624,
+          "width": 639,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 639,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 639,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1278,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1278,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "height": 624,
+        "overflow": false,
+        "scrollWidth": 639,
+        "width": 639
+      }
+    },
+    {
+      "label": "edit-history-selection",
+      "checks": {
+        "treeEnterOpensInspector": true,
+        "editFontSize36": true,
+        "previewComputedFontSize": "36px",
+        "undoComputedFontSize": "44px",
+        "redoComputedFontSize": "36px",
+        "previewClickOpensInspector": true
+      }
+    },
+    {
+      "label": "recovery-and-navigation",
+      "checks": {
+        "reloadOffersRestore": true,
+        "restoreDraftComputedFontSize": "36px",
+        "mobileIframeWidth": 390,
+        "mobileFontSize": "28px",
+        "tabletIframeWidth": 768,
+        "tabletFontSize": "28px",
+        "retainedAfterPageSwitch": "36px"
+      }
+    }
+  ],
+  "storefront": [
+    {
+      "label": "home-native-200",
+      "metrics": {
+        "contentSize": {
+          "height": 2108,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1054,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "height": 624,
+        "overflow": false,
+        "scrollWidth": 631,
+        "width": 639
+      }
+    },
+    {
+      "label": "product-quantity-2-add-cart",
+      "metrics": {
+        "contentSize": {
+          "height": 7192,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 3596,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 1298
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 1298,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 2596
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 1298,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Shop A Product",
+          "Customer Reviews",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/products/shop-a-product",
+        "scrollWidth": 631,
+        "visibleInputs": [],
+        "width": 639
+      }
+    },
+    {
+      "label": "cart-populated",
+      "metrics": {
+        "contentSize": {
+          "height": 4002,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 2001,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Your Cart (1)",
+          "Order Summary",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/cart",
+        "scrollWidth": 631,
+        "visibleInputs": [
+          {
+            "disabled": false,
+            "name": "Promo code",
+            "required": false,
+            "tag": "INPUT",
+            "type": "text"
+          }
+        ],
+        "width": 639
+      }
+    },
+    {
+      "label": "checkout-populated-form-no-submit",
+      "metrics": {
+        "contentSize": {
+          "height": 7614,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 3807,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 620
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 620,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 1240
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 620,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Complete your order",
+          "Customer Information",
+          "Delivery Method",
+          "Payment Method",
+          "Order Summary",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/checkout",
+        "scrollWidth": 631,
+        "visibleInputs": [
+          {
+            "disabled": false,
+            "name": "Full Name",
+            "required": true,
+            "tag": "INPUT",
+            "type": "text"
+          },
+          {
+            "disabled": false,
+            "name": "Email",
+            "required": true,
+            "tag": "INPUT",
+            "type": "email"
+          },
+          {
+            "disabled": false,
+            "name": "Phone Number",
+            "required": true,
+            "tag": "INPUT",
+            "type": "tel"
+          },
+          {
+            "disabled": false,
+            "name": "Full Address",
+            "required": true,
+            "tag": "TEXTAREA",
+            "type": null
+          },
+          {
+            "disabled": false,
+            "name": "Delivery area",
+            "required": true,
+            "tag": "SELECT",
+            "type": null
+          },
+          {
+            "disabled": false,
+            "name": "Send me a confirmation email to subscribe to this store's offers and product updates. Optional; unsubscribe anytime.",
+            "required": false,
+            "tag": "INPUT",
+            "type": "checkbox"
+          },
+          {
+            "disabled": false,
+            "name": "Coupon Code",
+            "required": false,
+            "tag": "INPUT",
+            "type": "text"
+          },
+          {
+            "disabled": false,
+            "name": "I agree to this store's policies before placing my order.Review the policy sections below. This confirms you understand delivery, refund, and privacy terms.",
+            "required": false,
+            "tag": "INPUT",
+            "type": "checkbox"
+          }
+        ],
+        "width": 639
+      }
+    },
+    {
+      "label": "account-signed-out",
+      "metrics": {
+        "contentSize": {
+          "height": 2322,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1161,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Welcome Back",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/account",
+        "scrollWidth": 631,
+        "visibleInputs": [
+          {
+            "disabled": false,
+            "name": "Email Address",
+            "required": true,
+            "tag": "INPUT",
+            "type": "email"
+          },
+          {
+            "disabled": false,
+            "name": "Password",
+            "required": true,
+            "tag": "INPUT",
+            "type": "password"
+          }
+        ],
+        "width": 639
+      }
+    },
+    {
+      "label": "account-registration-presentation-no-submit",
+      "metrics": {
+        "contentSize": {
+          "height": 2438,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1219,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 468
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 468,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 936
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 468,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Create Account",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/account",
+        "scrollWidth": 631,
+        "visibleInputs": [
+          {
+            "disabled": false,
+            "name": "Full Name",
+            "required": true,
+            "tag": "INPUT",
+            "type": "text"
+          },
+          {
+            "disabled": false,
+            "name": "Email Address",
+            "required": true,
+            "tag": "INPUT",
+            "type": "email"
+          },
+          {
+            "disabled": false,
+            "name": "Password",
+            "required": true,
+            "tag": "INPUT",
+            "type": "password"
+          }
+        ],
+        "width": 639
+      }
+    },
+    {
+      "label": "account-signed-in-expanded-order",
+      "metrics": {
+        "contentSize": {
+          "height": 3024,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1512,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 394
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 394,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 788
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 394,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "My Account",
+          "Order History",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/account",
+        "scrollWidth": 631,
+        "visibleInputs": [],
+        "width": 639
+      }
+    },
+    {
+      "label": "tracking-lookup-no-otp",
+      "metrics": {
+        "contentSize": {
+          "height": 2310,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1155,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 48
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 48,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 96
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 48,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Track Your Order",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/track",
+        "scrollWidth": 631,
+        "visibleInputs": [
+          {
+            "disabled": false,
+            "name": "Order ID",
+            "required": false,
+            "tag": "INPUT",
+            "type": "text"
+          },
+          {
+            "disabled": false,
+            "name": "Delivery phone number",
+            "required": false,
+            "tag": "INPUT",
+            "type": "tel"
+          }
+        ],
+        "width": 639
+      }
+    },
+    {
+      "label": "policies-index",
+      "metrics": {
+        "contentSize": {
+          "height": 8290,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 4145,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Policies for Launch Shop A",
+          "Refund Policy",
+          "Shipping Policy",
+          "Privacy Policy",
+          "Terms & Conditions",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/policies",
+        "scrollWidth": 631,
+        "visibleInputs": [],
+        "width": 639
+      }
+    },
+    {
+      "label": "policy-shipping-details",
+      "metrics": {
+        "contentSize": {
+          "height": 2814,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1407,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Shipping Policy",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/policies/shipping",
+        "scrollWidth": 631,
+        "visibleInputs": [],
+        "width": 639
+      }
+    },
+    {
+      "label": "rebuilt-real-next-navigation",
+      "active": "Close menu",
+      "inside": true,
+      "overflow": "hidden",
+      "back": {
+        "inside": true,
+        "name": "Account"
+      },
+      "forward": {
+        "inside": true,
+        "name": "Close menu"
+      },
+      "escape": {
+        "active": "Open menu",
+        "open": false,
+        "overflow": ""
+      },
+      "metrics": {
+        "contentSize": {
+          "height": 2814,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1407,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      }
+    },
+    {
+      "label": "category-native-200",
+      "metrics": {
+        "contentSize": {
+          "height": 2616,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1308,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Shop A Category",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/categories/Shop%20A%20Category",
+        "scrollWidth": 631,
+        "visibleInputs": [
+          {
+            "disabled": false,
+            "name": "SortDefaultNewestPrice: Low to HighPrice: High to LowBest Rated",
+            "required": false,
+            "tag": "SELECT",
+            "type": null
+          }
+        ],
+        "width": 639
+      }
+    },
+    {
+      "label": "collection-native-200",
+      "metrics": {
+        "contentSize": {
+          "height": 2486,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1243,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Synthetic collection",
+          "No products in this collection yet",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/collections/browser-fixture",
+        "scrollWidth": 631,
+        "visibleInputs": [
+          {
+            "disabled": false,
+            "name": "SortNewestOldestPrice: Low to HighPrice: High to LowBest Rated",
+            "required": false,
+            "tag": "SELECT",
+            "type": null
+          }
+        ],
+        "width": 639
+      }
+    },
+    {
+      "label": "cart-empty",
+      "metrics": {
+        "contentSize": {
+          "height": 2310,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1155,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 67
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 67,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 134
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 67,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Your cart is empty",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/cart",
+        "scrollWidth": 631,
+        "visibleInputs": [],
+        "width": 639
+      }
+    },
+    {
+      "label": "home-footer-policy-access",
+      "metrics": {
+        "contentSize": {
+          "height": 2552,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1276,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 430
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 430,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 860
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 430,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "dom": {
+        "dpr": 2,
+        "headings": [
+          "Featured Products",
+          "Launch Shop A"
+        ],
+        "height": 624,
+        "overflow": false,
+        "path": "/",
+        "scrollWidth": 631,
+        "visibleInputs": [],
+        "width": 639
+      }
+    },
+    {
+      "label": "final-built-navigation",
+      "active": "Close menu",
+      "bodyOverflow": "hidden",
+      "inside": true,
+      "overflowY": "auto",
+      "metrics": {
+        "contentSize": {
+          "height": 2108,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1054,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "closed": true
+    },
+    {
+      "label": "narrow-catalog-card-after-fix",
+      "metrics": {
+        "contentSize": {
+          "height": 2212,
+          "width": 1263,
+          "x": 0,
+          "y": 0
+        },
+        "cssContentSize": {
+          "height": 1106,
+          "width": 631,
+          "x": 0,
+          "y": 0
+        },
+        "cssLayoutViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "cssVisualViewport": {
+          "clientHeight": 624,
+          "clientWidth": 631.5,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        },
+        "layoutViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "pageX": 0,
+          "pageY": 0
+        },
+        "visualViewport": {
+          "clientHeight": 1248,
+          "clientWidth": 1263,
+          "offsetX": 0,
+          "offsetY": 0,
+          "pageX": 0,
+          "pageY": 0,
+          "scale": 1,
+          "zoom": 2
+        }
+      },
+      "basis": "96px",
+      "buttonHeight": 42,
+      "buttonWidth": 124,
+      "dpr": 2,
+      "labels": [
+        {
+          "clientWidth": 67,
+          "clipped": false,
+          "overflow": "clip",
+          "scrollWidth": 67,
+          "text": "Buy Now"
+        }
+      ],
+      "pageOverflow": false,
+      "rect": {
+        "bottom": 681,
+        "height": 44,
+        "left": 168.75,
+        "right": 294.75,
+        "top": 637,
+        "width": 126,
+        "x": 168.75,
+        "y": 637
+      },
+      "width": 639,
+      "wrapper": {
+        "display": "flex",
+        "wrap": "wrap"
+      }
+    }
+  ]
+}

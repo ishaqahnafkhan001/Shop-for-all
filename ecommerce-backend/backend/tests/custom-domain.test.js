@@ -225,7 +225,8 @@ test('storefront proxy and API proxy preserve custom-domain host context', () =>
     assert.match(storefrontProxy, /export default function proxy/);
     assert.match(storefrontProxy, /RESERVED_HOSTS/);
     assert.match(storefrontProxy, /hostname\.endsWith\(`\.\$\{PLATFORM_DOMAIN\}`\)/);
-    assert.match(storefrontProxy, /return NextResponse\.rewrite\(new URL\(`\/\$\{hostname\}\$\{url\.pathname\}`/);
+    assert.match(storefrontProxy, /return rewriteTenant\(hostname\)/);
+    assert.match(storefrontProxy, /target\.search = url\.search/);
     assert.match(proxy, /headers\.set\('x-storefront-host', hostname\)/);
     assert.match(homepage, /storefrontHost:\s*host/);
     assert.match(authContext, /return reservedHosts\.includes\(hostname\) \? '' : hostname/);

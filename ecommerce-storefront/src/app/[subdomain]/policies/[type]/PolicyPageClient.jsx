@@ -1,5 +1,6 @@
 "use client";
 
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
 import { PolicyView } from '@scaleup/storefront-renderer/presentation/PolicyView';
 import StorefrontPresentationRuntime from '@/components/storefront/StorefrontPresentationRuntime';
@@ -13,5 +14,5 @@ export default function PolicyPageClient({ type }) {
         storeName: settings?.shopName || settings?.name || "this store"
     });
 
-    return <StorefrontPresentationRuntime><PolicyView presentationVariant={getStorefrontPresentationVariant(theme)} label={label} content={content} /></StorefrontPresentationRuntime>;
+    return <StorefrontPresentationRuntime><AdaptivePresentation pageKind="policy" core><PolicyView presentationVariant={getStorefrontPresentationVariant(theme)} label={label} content={content} /></AdaptivePresentation></StorefrontPresentationRuntime>;
 }

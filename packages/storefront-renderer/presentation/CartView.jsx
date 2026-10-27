@@ -4,7 +4,7 @@ import { CheckCircle, Headphones, Minus, Plus, ShieldCheck, ShoppingBag, Tag, Tr
 import { Link } from './Runtime.jsx';
 import SafeProductImage from './SafeProductImage.jsx';
 import { ProductCard } from '../reference/StorefrontProductCard.jsx';
-export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, shipping, totalSavings,
+export function CartView({ adaptiveParts = false, cartItems, removeFromCart, updateQuantity, subtotal, shipping, totalSavings,
     total, getCartImageUrl, promoCode, setPromoCode, promoFeedback, handleApplyPromo,
     recommendationsLoading, recommendations, themedProductCard, productActions, presentationVariant }) {
     const atelier = presentationVariant === 'atelier-editorial';
@@ -12,7 +12,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
     if (cartItems.length === 0) {
         return (
             <div className={atelier ? "sf-page atelier-cart flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center" : "sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center"}>
-                <div className="mb-6 rounded-[2rem] bg-white p-6 shadow-sm">
+                <div data-ab-surface={adaptiveParts ? '' : undefined} className="mb-6 rounded-[2rem] bg-white p-6 shadow-sm">
                     <ShoppingBag size={56} className="text-slate-300" />
                 </div>
                 <h2 className="mb-2 text-3xl font-black text-slate-950">Your cart is empty</h2>
@@ -36,29 +36,29 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                 <div className="flex items-center">
                 <div>
                     <p className="sf-kicker">Cart</p>
-                    <h1 className="sf-heading text-3xl">Your Cart ({cartItems.length})</h1>
+                    <h1 data-ab-part={adaptiveParts ? 'heading' : undefined} className="sf-heading text-3xl">Your Cart ({cartItems.length})</h1>
                     <p className="mt-2 max-w-xl text-sm font-semibold text-slate-500">
                         Review quantities, delivery estimate, and checkout securely when you are ready.
                     </p>
                 </div>
                 </div>
                 <div className="grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-3">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><ShieldCheck size={14} className="text-emerald-600" /> Secure</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><Truck size={14} className="text-[var(--sf-accent)]" /> Delivery</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><Headphones size={14} className="text-sky-600" /> Support</span>
+                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><ShieldCheck size={14} className="text-emerald-600" /> Secure</span>
+                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><Truck size={14} className="text-[var(--sf-accent)]" /> Delivery</span>
+                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow-sm"><Headphones size={14} className="text-sky-600" /> Support</span>
                 </div>
             </div>
 
-            <div data-atelier-part={atelier ? "cart-layout" : undefined} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
+            <div data-ab-part={adaptiveParts ? 'layout' : undefined} data-ab-layout={adaptiveParts ? 'cart' : undefined} data-atelier-part={atelier ? "cart-layout" : undefined} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
                 {/* Left Side: Items */}
                 <div className="space-y-4">
                     {cartItems.map((item) => (
-                        <div data-atelier-part={atelier ? "cart-item" : undefined} key={item.cartItemId || item._id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg hover:shadow-indigo-100/60 sm:p-6">
+                        <div data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'items' : undefined} data-atelier-part={atelier ? "cart-item" : undefined} key={item.cartItemId || item._id} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg hover:shadow-indigo-100/60 sm:p-6">
                             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
                                 <div className="flex w-full min-w-0 flex-1 items-start gap-4 sm:gap-5">
                                     {/* Product Image */}
-                                    <div data-atelier-part={atelier ? "cart-image" : undefined} className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-indigo-50 sm:h-28 sm:w-28">
+                                    <div data-ab-part={adaptiveParts ? 'image' : undefined} data-ab-surface={adaptiveParts ? '' : undefined} data-atelier-part={atelier ? "cart-image" : undefined} className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-indigo-50 sm:h-28 sm:w-28">
                                         <SafeProductImage
                                             src={getCartImageUrl(item)}
                                             alt={item.title}
@@ -81,7 +81,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                                 </span>
                                             )}
                                             {(item.sku || item.selectedVariant?.sku) && (
-                                                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
+                                                <span data-ab-surface={adaptiveParts ? '' : undefined} className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
                                                     SKU: {item.selectedVariant?.sku || item.sku}
                                                 </span>
                                             )}
@@ -102,7 +102,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                         {item.selectedVariant && item.selectedVariant.attributes && (
                                             <div className="flex flex-wrap gap-2 mb-2">
                                                 {item.selectedVariant.attributes.map((attr, idx) => (
-                                                    <span key={idx} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                                                    <span data-ab-surface={adaptiveParts ? '' : undefined} key={idx} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-700">
                                                         <span className="mr-1 text-slate-400">{attr.name}:</span>
                                                         {attr.value}
                                                     </span>
@@ -127,8 +127,8 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                 {/* Controls */}
                                 <div data-atelier-part={atelier ? "cart-controls" : undefined} className="flex w-full items-center justify-between gap-4 border-t border-slate-100 pt-4 sm:w-auto sm:justify-end sm:border-t-0 sm:pt-0">
                                     <div className="flex flex-col items-center sm:items-end">
-                                        <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
-                                            <button
+                                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
+                                            <button data-ab-surface={adaptiveParts ? '' : undefined}
                                                 type="button"
                                                 onClick={() => updateQuantity(item.cartItemId || item._id, item.quantity - 1)}
                                                 disabled={item.quantity <= 1}
@@ -137,10 +137,10 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                             >
                                                 <Minus size={14} />
                                             </button>
-                                            <span className="w-10 bg-white py-2 text-center text-sm font-black">
+                                            <span data-ab-surface={adaptiveParts ? '' : undefined} className="w-10 bg-white py-2 text-center text-sm font-black">
                                                 {item.quantity}
                                             </span>
-                                            <button
+                                            <button data-ab-surface={adaptiveParts ? '' : undefined}
                                                 type="button"
                                                 onClick={() => updateQuantity(item.cartItemId || item._id, item.quantity + 1)}
                                                 disabled={item.quantity >= (item.selectedVariant?.stock || item.stock || 99)}
@@ -158,7 +158,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                         )}
                                     </div>
 
-                                    <button
+                                    <button data-ab-surface={adaptiveParts ? '' : undefined}
                                         type="button"
                                         onClick={() => removeFromCart(item.cartItemId || item._id)}
                                         className="rounded-xl p-2.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
@@ -175,7 +175,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
 
                 {/* Right Side: Summary */}
                 <div>
-                    <div data-atelier-part={atelier ? "cart-summary" : undefined} className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/70">
+                    <div data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'totals' : undefined} data-atelier-part={atelier ? "cart-summary" : undefined} className="sticky top-28 rounded-[2rem] border border-slate-200 bg-white p-7 shadow-lg shadow-slate-200/70">
                         <div className="mb-6 flex items-start justify-between gap-4">
                             <div>
                                 <p className="sf-kicker">Summary</p>
@@ -197,14 +197,14 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                             </div>
 
                             {totalSavings > 0 && (
-                                <div className="flex justify-between rounded-2xl border border-emerald-200/60 bg-emerald-50 p-3 font-black text-emerald-700">
+                                <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex justify-between rounded-2xl border border-emerald-200/60 bg-emerald-50 p-3 font-black text-emerald-700">
                                     <span>Total Savings</span>
                                     <span>- ৳ {totalSavings}</span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                        <div data-ab-surface={adaptiveParts ? '' : undefined} className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                             <label htmlFor="cart-promo-code" className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                                 <Tag size={14} />
                                 Promo code
@@ -219,7 +219,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                                     aria-describedby={promoFeedback ? 'cart-promo-feedback' : undefined}
                                     className="sf-field min-w-0 flex-1 rounded-xl px-3 py-2.5 text-sm uppercase"
                                 />
-                                <button type="button" onClick={handleApplyPromo} className="rounded-xl bg-slate-950 px-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800">
+                                <button data-ab-surface={adaptiveParts ? '' : undefined} type="button" onClick={handleApplyPromo} className="rounded-xl bg-slate-950 px-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800">
                                     Apply
                                 </button>
                             </div>
@@ -235,7 +235,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                             <span className="text-3xl font-black text-slate-950">৳ {total}</span>
                         </div>
 
-                        <Link href="/checkout" className="sf-btn sf-btn-primary w-full">
+                        <Link data-ab-part={adaptiveParts ? 'primaryButton' : undefined} href="/checkout" className="sf-btn sf-btn-primary w-full">
                             Proceed to Checkout
                         </Link>
 
@@ -244,15 +244,15 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                         </Link>
 
                         <div className="mt-6 space-y-3 border-t border-slate-200 pt-5">
-                            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-600">
+                            <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-600">
                                 <ShieldCheck size={18} className="flex-shrink-0 text-emerald-600" />
                                 <span>Secure checkout and order confirmation</span>
                             </div>
-                            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-600">
+                            <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-600">
                                 <Truck size={18} className="flex-shrink-0 text-[var(--sf-accent)]" />
                                 <span>Fast & secure delivery</span>
                             </div>
-                            <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
+                            <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
                                 <CheckCircle size={18} className="flex-shrink-0 text-emerald-600" />
                                 <span>Cash on delivery available at checkout</span>
                             </div>
@@ -262,7 +262,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
             </div>
 
             {(recommendationsLoading || recommendations.length > 0) && (
-                <section data-atelier-part={atelier ? "cart-recommendations" : undefined} className="mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:mt-10 sm:rounded-[2rem] sm:p-7">
+                <section data-ab-surface={adaptiveParts ? '' : undefined} data-atelier-part={atelier ? "cart-recommendations" : undefined} className="mt-8 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:mt-10 sm:rounded-[2rem] sm:p-7">
                     <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <p className="sf-kicker">Recommended</p>
@@ -279,13 +279,13 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
                     {recommendationsLoading ? (
                         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                             {Array.from({ length: 4 }).map((_, index) => (
-                                <div key={index} className="h-72 animate-pulse rounded-[1.5rem] bg-slate-100" />
+                                <div data-ab-surface={adaptiveParts ? '' : undefined} key={index} className="h-72 animate-pulse rounded-[1.5rem] bg-slate-100" />
                             ))}
                         </div>
                     ) : (
                         <div className={`grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 ${recommendations.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                             {recommendations.map((product, index) => (
-                                <ProductCard
+                                <ProductCard adaptiveParts={adaptiveParts}
                                     key={product._id}
                                     presentationVariant={presentationVariant}
                                     product={product}
@@ -306,7 +306,7 @@ export function CartView({ cartItems, removeFromCart, updateQuantity, subtotal, 
         </div>
         {productActions.variantPicker}
 
-        <div className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{cartItems.length} item{cartItems.length === 1 ? '' : 's'} total</p>

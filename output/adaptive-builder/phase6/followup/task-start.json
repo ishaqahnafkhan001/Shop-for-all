@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-21T09:07:52.248Z",
+  "files": {
+    "packages/storefront-renderer/presentation/TrackingView.jsx": "3d205c8d94ee8e9b51c597dcfd855dd970a2fdf76f9a75a094f1dc14916e44cc",
+    "packages/storefront-renderer/presentation/CategoryView.jsx": "349127339543a4a40822b847ca5383707bbc06029101ab47ebe213c1301e6ffc",
+    "ecommerce-backend/backend/tests/adaptive-release.test.js": "c9d8d72eff95fdf4b3e2609d786bf03483faf8d50be53c658bcf263b2d56a4c3",
+    "output/adaptive-builder/FINAL_RELEASE_READINESS.md": "30b942fbeeca5242bd4ea869e9f4ee6b5d7a295dc85cf887a60b6981ab91e7e4",
+    "output/adaptive-builder/phase7/README.md": "abbd5cce6103855e35fe6ed789700cc7f32189f6d9033b4a1c811332890a180b"
+  }
+}

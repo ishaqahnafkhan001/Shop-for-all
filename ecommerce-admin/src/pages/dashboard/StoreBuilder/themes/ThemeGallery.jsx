@@ -1,23 +1,13 @@
+import { buildPreviewTheme } from './themePreview.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Eye, Layers3, Search, ShieldCheck, X } from 'lucide-react';
-import { getPrebuiltThemes, getPrebuiltTheme, resolvePrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
+import { getPrebuiltThemes, getPrebuiltTheme } from '@scaleup/storefront-theme/prebuilt';
 import { BuilderButton, DeviceSwitcher } from '../builderUi.jsx';
 import { StorefrontPreview } from '../StorefrontPreview.jsx';
 import { getAvailableGalleryThemes, isGalleryThemeAvailable } from './themeAvailability.js';
 const availableThemes = getPrebuiltThemes();
 const industryFilters = ['All', ...new Set(availableThemes.map(theme => theme.industry))];
 const styleFilters = ['All styles', ...new Set(availableThemes.map(theme => theme.style))];
-
-export const buildPreviewTheme = ({ currentTheme, presetId, planAccess }) => {
-    let sectionIndex = 0;
-    return resolvePrebuiltTheme({
-        currentTheme,
-        presetId,
-        planAccess,
-        appliedAt: '2026-01-01T00:00:00.000Z',
-        createSectionId: type => `preview-${presetId}-${String(type).toLowerCase()}-${sectionIndex += 1}`
-    });
-};
 
 // The full Gallery preview consumes the resolved candidate that Apply uses.
 // Keep its input forwarding in one place for Gallery/Builder/live comparisons.
@@ -136,7 +126,7 @@ export default function ThemeGallery({
             }
         });
         return resolved;
-    }, [availableThemes, currentTheme, planAccess, branding, shopName]);
+    }, [availableThemes, currentTheme, planAccess]);
 
     const previewResolution = useMemo(() => {
         if (!previewTheme) return { theme: null, error: '' };

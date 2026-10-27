@@ -27,16 +27,16 @@ import {
 
 import { shouldUseUnoptimizedImage } from "../imageDomains.js";
 
-export function CheckoutSuccessState({ orderId }) {
+export function CheckoutSuccessState({ adaptiveParts = false, orderId }) {
     return (
         <div className="sf-checkout-page sf-page flex min-h-screen items-center justify-center px-4">
-            <div className="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-8 text-center shadow-2xl shadow-slate-200/70 sm:p-10">
+            <div data-ab-surface={adaptiveParts ? '' : undefined} className="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-8 text-center shadow-2xl shadow-slate-200/70 sm:p-10">
                 <CheckCircle
                     size={90}
                     className="mx-auto mb-6 text-[var(--sf-checkout-success)]"
                 />
 
-                <h1 className="mb-3 text-4xl font-black text-[var(--sf-checkout-text)]">
+                <h1 data-ab-part={adaptiveParts ? 'heading' : undefined} className="mb-3 text-4xl font-black text-[var(--sf-checkout-text)]">
                     Order Confirmed
                 </h1>
 
@@ -44,7 +44,7 @@ export function CheckoutSuccessState({ orderId }) {
                     Thank you for your purchase.
                 </p>
 
-                <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div data-ab-surface={adaptiveParts ? '' : undefined} className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                     <p className="mb-2 text-sm font-black uppercase tracking-[0.16em] text-slate-500">
                         ORDER ID FOR TRACKING
                     </p>
@@ -74,7 +74,7 @@ export function CheckoutSuccessState({ orderId }) {
     );
 }
 
-export function CheckoutEmptyCartState() {
+export function CheckoutEmptyCartState({ adaptiveParts = false } = {}) {
     return (
         <div className="sf-checkout-page sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
             <Package
@@ -82,7 +82,7 @@ export function CheckoutEmptyCartState() {
                 className="mb-6 text-slate-300"
             />
 
-            <h2 className="mb-3 text-3xl font-black text-[var(--sf-checkout-text)]">
+            <h2 data-ab-part={adaptiveParts ? 'heading' : undefined} className="mb-3 text-3xl font-black text-[var(--sf-checkout-text)]">
                 Your cart is empty
             </h2>
 
@@ -100,13 +100,13 @@ export function CheckoutEmptyCartState() {
     );
 }
 
-export function CheckoutBrandingBanner({ checkoutBranding }) {
+export function CheckoutBrandingBanner({ adaptiveParts = false, checkoutBranding }) {
     if (!checkoutBranding.logoUrl && !checkoutBranding.bannerText) {
         return null;
     }
 
     return (
-        <div className="mb-8 rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 text-center shadow-sm">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="mb-8 rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 text-center shadow-sm">
             {checkoutBranding.logoUrl && (
                 <Image
                     src={checkoutBranding.logoUrl}
@@ -124,7 +124,7 @@ export function CheckoutBrandingBanner({ checkoutBranding }) {
     );
 }
 
-function CheckoutHeader() {
+function CheckoutHeader({ adaptiveParts = false } = {}) {
     return (
         <div className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -139,40 +139,40 @@ function CheckoutHeader() {
                     Back to Cart
                 </Link>
                 <p className="sf-kicker">Checkout</p>
-                <h1 className="sf-heading mt-1 text-3xl sm:text-4xl" style={{ color: 'var(--sf-checkout-text)' }}>Complete your order</h1>
+                <h1 data-ab-part={adaptiveParts ? 'heading' : undefined} className="sf-heading mt-1 text-3xl sm:text-4xl" style={{ color: 'var(--sf-checkout-text)' }}>Complete your order</h1>
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
                     Confirm delivery details, review your items, and place the order securely.
                 </p>
             </div>
-            <CheckoutTrustBadges />
+            <CheckoutTrustBadges adaptiveParts={adaptiveParts} />
         </div>
     );
 }
 
-export function CheckoutTrustBadges() {
+export function CheckoutTrustBadges({ adaptiveParts = false } = {}) {
     return (
         <div className="grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-3">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-2 shadow-sm">
+            <span data-ab-surface={adaptiveParts ? '' : undefined} className="inline-flex items-center gap-2 rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-2 shadow-sm">
                 <Lock size={14} className="text-[var(--sf-checkout-success)]" /> Secure
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-2 shadow-sm">
+            <span data-ab-surface={adaptiveParts ? '' : undefined} className="inline-flex items-center gap-2 rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-2 shadow-sm">
                 <CreditCard size={14} className="text-[var(--sf-checkout-accent)]" /> COD
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-2 shadow-sm">
+            <span data-ab-surface={adaptiveParts ? '' : undefined} className="inline-flex items-center gap-2 rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-2 shadow-sm">
                 <Truck size={14} className="text-sky-600" /> Delivery
             </span>
         </div>
     );
 }
 
-export function CheckoutPageShell({ checkoutBranding, children, mobileStickyBar, onSubmit }) {
+export function CheckoutPageShell({ adaptiveParts = false, checkoutBranding, children, mobileStickyBar, onSubmit }) {
     return (
         <div className="sf-checkout-page sf-page sf-mobile-action-page">
             <div className="sf-shell-wide py-8 sm:py-10">
-                <CheckoutBrandingBanner checkoutBranding={checkoutBranding} />
-                <CheckoutHeader />
+                <CheckoutBrandingBanner adaptiveParts={adaptiveParts} checkoutBranding={checkoutBranding} />
+                <CheckoutHeader adaptiveParts={adaptiveParts} />
 
-                <form
+                <form data-ab-part={adaptiveParts ? 'layout' : undefined} data-ab-layout={adaptiveParts ? 'checkout' : undefined}
                     onSubmit={onSubmit}
                     className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_450px]"
                 >
@@ -184,21 +184,21 @@ export function CheckoutPageShell({ checkoutBranding, children, mobileStickyBar,
     );
 }
 
-export function CheckoutCustomerInfo({ formData, onInputChange }) {
+export function CheckoutCustomerInfo({ adaptiveParts = false, formData, onInputChange }) {
     return (
-        <div className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
-            <h2 className="mb-6 text-2xl font-black text-[var(--sf-checkout-text)]">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
+            <h2 data-ab-part={adaptiveParts ? 'heading' : undefined} className="mb-6 text-2xl font-black text-[var(--sf-checkout-text)]">
                 Customer Information
             </h2>
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
-                    <label htmlFor="checkout-full-name" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor="checkout-full-name" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                         <User size={16} />
                         Full Name
                     </label>
 
-                    <input
+                    <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                         id="checkout-full-name"
                         required
                         type="text"
@@ -211,12 +211,12 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
                 </div>
 
                 <div>
-                    <label htmlFor="checkout-email" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor="checkout-email" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                         <Mail size={16} />
                         Email
                     </label>
 
-                    <input
+                    <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                         id="checkout-email"
                         required
                         type="email"
@@ -229,12 +229,12 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
                 </div>
 
                 <div>
-                    <label htmlFor="checkout-phone" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor="checkout-phone" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                         <Phone size={16} />
                         Phone Number
                     </label>
 
-                    <input
+                    <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                         id="checkout-phone"
                         required
                         type="tel"
@@ -247,12 +247,12 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
                 </div>
 
                 <div className="md:col-span-2">
-                    <label htmlFor="checkout-address" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor="checkout-address" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
                         <MapPin size={16} />
                         Full Address
                     </label>
 
-                    <textarea
+                    <textarea data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                         id="checkout-address"
                         required
                         rows={4}
@@ -265,11 +265,11 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
                 </div>
 
                 <div className="md:col-span-2">
-                    <label htmlFor="checkout-city" className="mb-2 block text-sm font-bold text-slate-700">
+                    <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor="checkout-city" className="mb-2 block text-sm font-bold text-slate-700">
                         Delivery area
                     </label>
 
-                    <select
+                    <select data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                         id="checkout-city"
                         required
                         name="city"
@@ -287,9 +287,9 @@ export function CheckoutCustomerInfo({ formData, onInputChange }) {
     );
 }
 
-export function CheckoutDeliveryChargeNotice() {
+export function CheckoutDeliveryChargeNotice({ adaptiveParts = false } = {}) {
     return (
-        <div className="flex gap-5 rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex gap-5 rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm">
             <Truck
                 size={32}
                 className="mt-1 text-[var(--sf-checkout-accent)]"
@@ -312,23 +312,23 @@ export function CheckoutDeliveryChargeNotice() {
     );
 }
 
-export function CheckoutDeliveryMethod({ isDhaka }) {
+export function CheckoutDeliveryMethod({ adaptiveParts = false, isDhaka }) {
     const hasSelection = typeof isDhaka === "boolean";
 
     return (
-        <div className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
-            <h2 className="mb-5 text-2xl font-black text-[var(--sf-checkout-text)]">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
+            <h2 data-ab-part={adaptiveParts ? 'heading' : undefined} className="mb-5 text-2xl font-black text-[var(--sf-checkout-text)]">
                 Delivery Method
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
-                <div className={`rounded-2xl border p-4 ${hasSelection && isDhaka ? "border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
+                <div data-ab-surface={adaptiveParts ? '' : undefined} className={`rounded-2xl border p-4 ${hasSelection && isDhaka ? "border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-black text-[var(--sf-checkout-text)]">Inside Dhaka</span>
                         <span className="text-sm font-black text-[var(--sf-checkout-accent)]">৳ 80</span>
                     </div>
                     <p className="mt-2 text-xs font-semibold text-slate-500">Same-city delivery estimate.</p>
                 </div>
-                <div className={`rounded-2xl border p-4 ${hasSelection && !isDhaka ? "border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
+                <div data-ab-surface={adaptiveParts ? '' : undefined} className={`rounded-2xl border p-4 ${hasSelection && !isDhaka ? "border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)]" : "border-slate-200 bg-slate-50"}`}>
                     <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-black text-[var(--sf-checkout-text)]">Outside Dhaka</span>
                         <span className="text-sm font-black text-[var(--sf-checkout-accent)]">৳ 120</span>
@@ -340,15 +340,15 @@ export function CheckoutDeliveryMethod({ isDhaka }) {
     );
 }
 
-export function CheckoutPaymentMethod({ presentationVariant } = {}) {
+export function CheckoutPaymentMethod({ adaptiveParts = false, presentationVariant } = {}) {
     return (
-        <div className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
-            <h2 className="mb-5 text-2xl font-black text-[var(--sf-checkout-text)]">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
+            <h2 data-ab-part={adaptiveParts ? 'heading' : undefined} className="mb-5 text-2xl font-black text-[var(--sf-checkout-text)]">
                 Payment Method
             </h2>
-            <div className="rounded-2xl border border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)] p-4">
+            <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl border border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)] p-4">
                 <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-checkout-card-background)] text-[var(--sf-checkout-accent)] shadow-sm">
+                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-checkout-card-background)] text-[var(--sf-checkout-accent)] shadow-sm">
                         <CreditCard size={19} />
                     </span>
                     <div>
@@ -363,7 +363,7 @@ export function CheckoutPaymentMethod({ presentationVariant } = {}) {
     );
 }
 
-export function CheckoutPhoneOtpBox({
+export function CheckoutPhoneOtpBox({ adaptiveParts = false,
     maskedPhone,
     onSendOtp,
     onVerifyOtp,
@@ -374,13 +374,13 @@ export function CheckoutPhoneOtpBox({
     verifying,
 }) {
     return (
-        <div className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 shadow-sm sm:p-8">
             <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[var(--sf-checkout-success)]">
+                <span data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[var(--sf-checkout-success)]">
                     <ShieldCheck size={20} />
                 </span>
                 <div>
-                    <h2 className="text-2xl font-black text-[var(--sf-checkout-text)]">Verify delivery phone</h2>
+                    <h2 data-ab-part={adaptiveParts ? 'heading' : undefined} className="text-2xl font-black text-[var(--sf-checkout-text)]">Verify delivery phone</h2>
                     <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
                         We send a 6-digit code before placing the order. Stock is reserved only after verification.
                     </p>
@@ -398,7 +398,7 @@ export function CheckoutPhoneOtpBox({
                     {verified ? "Phone verified" : "Send OTP"}
                 </button>
                 <div className="flex min-w-0 flex-1 gap-2">
-                    <input
+                    <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                         value={otp}
                         onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
                         placeholder="000000"
@@ -408,7 +408,7 @@ export function CheckoutPhoneOtpBox({
                         className="sf-field min-w-0 flex-1"
                         aria-label="Phone verification code"
                     />
-                    <button
+                    <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
                         type="button"
                         onClick={onVerifyOtp}
                         disabled={verifying || verified || otp.length !== 6}
@@ -419,7 +419,7 @@ export function CheckoutPhoneOtpBox({
                 </div>
             </div>
 
-            <p className={`mt-3 rounded-2xl px-4 py-3 text-xs font-bold ${
+            <p data-ab-surface={adaptiveParts ? '' : undefined} className={`mt-3 rounded-2xl px-4 py-3 text-xs font-bold ${
                 verified ? "bg-emerald-50 text-[var(--sf-checkout-success)]" : "bg-slate-50 text-slate-500"
             }`}>
                 {verified
@@ -433,30 +433,30 @@ export function CheckoutPhoneOtpBox({
 }
 
 // Presentation only: callers retain consent state and order/marketing behavior.
-export function CheckoutMarketingConsent({ checked, onChange }) {
+export function CheckoutMarketingConsent({ adaptiveParts = false, checked, onChange }) {
     return (
-        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
+        <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} data-ab-region={adaptiveParts ? 'marketing' : undefined} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
             <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1" />
             <span>Send me a confirmation email to subscribe to this store&apos;s offers and product updates. Optional; unsubscribe anytime.</span>
         </label>
     );
 }
 
-export function CheckoutDetailsColumn({ formData, isDhaka, onInputChange, presentationVariant }) {
+export function CheckoutDetailsColumn({ adaptiveParts = false, formData, isDhaka, onInputChange, presentationVariant }) {
     return (
         <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'checkout-fields' : undefined} className="space-y-7">
-            <CheckoutCustomerInfo
+            <CheckoutCustomerInfo adaptiveParts={adaptiveParts}
                 formData={formData}
                 onInputChange={onInputChange}
             />
-            <CheckoutDeliveryChargeNotice />
-            <CheckoutDeliveryMethod isDhaka={isDhaka} />
-            <CheckoutPaymentMethod presentationVariant={presentationVariant} />
+            <CheckoutDeliveryChargeNotice adaptiveParts={adaptiveParts} />
+            <CheckoutDeliveryMethod adaptiveParts={adaptiveParts} isDhaka={isDhaka} />
+            <CheckoutPaymentMethod adaptiveParts={adaptiveParts} presentationVariant={presentationVariant} />
         </div>
     );
 }
 
-function CheckoutCouponBox({
+function CheckoutCouponBox({ adaptiveParts = false,
     onApplyPromotion,
     promotionCode,
     promotionMessage,
@@ -464,11 +464,11 @@ function CheckoutCouponBox({
 }) {
     return (
         <div className="mb-6">
-            <label htmlFor="checkout-coupon-code" className="mb-2 block text-sm font-bold text-slate-700">
+            <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor="checkout-coupon-code" className="mb-2 block text-sm font-bold text-slate-700">
                 Coupon Code
             </label>
             <div className="flex gap-2">
-                <input
+                <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                     id="checkout-coupon-code"
                     type="text"
                     value={promotionCode}
@@ -477,7 +477,7 @@ function CheckoutCouponBox({
                     aria-describedby={promotionMessage ? "checkout-coupon-feedback" : undefined}
                     className="sf-field min-w-0 flex-1 uppercase"
                 />
-                <button
+                <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
                     type="button"
                     onClick={onApplyPromotion}
                     className="sf-btn sf-btn-primary min-h-0 px-4 py-3"
@@ -486,7 +486,7 @@ function CheckoutCouponBox({
                 </button>
             </div>
             {promotionMessage && (
-                <p id="checkout-coupon-feedback" className={`mt-2 rounded-xl px-3 py-2 text-xs font-bold ${
+                <p data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'error' : undefined} id="checkout-coupon-feedback" className={`mt-2 rounded-xl px-3 py-2 text-xs font-bold ${
                     promotionMessage.type === "error"
                         ? "bg-red-50 text-[var(--sf-checkout-error)]"
                         : promotionMessage.type === "success"
@@ -500,9 +500,9 @@ function CheckoutCouponBox({
     );
 }
 
-function CheckoutPolicyConsent({ policyAccepted, setPolicyAccepted }) {
+function CheckoutPolicyConsent({ adaptiveParts = false, policyAccepted, setPolicyAccepted }) {
     return (
-        <label className={`mt-6 flex items-start gap-3 rounded-2xl border p-4 text-sm font-semibold transition ${
+        <label data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'label' : undefined} className={`mt-6 flex items-start gap-3 rounded-2xl border p-4 text-sm font-semibold transition ${
             policyAccepted
                 ? "border-[var(--sf-checkout-accent)] bg-[var(--sf-accent-bg)] text-slate-700"
                 : "border-slate-200 bg-slate-50 text-slate-600"
@@ -524,7 +524,7 @@ function CheckoutPolicyConsent({ policyAccepted, setPolicyAccepted }) {
     );
 }
 
-function CheckoutPolicies({ policies, visiblePolicies }) {
+function CheckoutPolicies({ adaptiveParts = false, policies, visiblePolicies }) {
     if (visiblePolicies.length === 0) {
         return null;
     }
@@ -537,7 +537,7 @@ function CheckoutPolicies({ policies, visiblePolicies }) {
             </div>
             <div className="space-y-2">
                 {visiblePolicies.map(([key, label]) => (
-                    <details key={key} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <details data-ab-surface={adaptiveParts ? '' : undefined} key={key} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <summary className="cursor-pointer text-sm font-bold text-slate-800">
                             {label}
                         </summary>
@@ -551,7 +551,7 @@ function CheckoutPolicies({ policies, visiblePolicies }) {
     );
 }
 
-function CheckoutOrderItem({
+function CheckoutOrderItem({ adaptiveParts = false,
     presentationVariant,
     item,
     product,
@@ -590,9 +590,9 @@ function CheckoutOrderItem({
 
                     <div className="flex items-center justify-between mt-5">
                         <div className="flex items-center gap-2">
-                            <button
+                            <button data-ab-surface={adaptiveParts ? '' : undefined}
                                 type="button"
-                                aria-label={presentationVariant === 'atelier-editorial' ? 'Decrease quantity for ' + item.title : undefined}
+                                aria-label={adaptiveParts || presentationVariant === 'atelier-editorial' ? 'Decrease quantity for ' + item.title : undefined}
                                 onClick={() =>
                                     updateQuantity(
                                         item.cartItemId || item._id,
@@ -608,9 +608,9 @@ function CheckoutOrderItem({
                                 {item.quantity}
                             </div>
 
-                            <button
+                            <button data-ab-surface={adaptiveParts ? '' : undefined}
                                 type="button"
-                                aria-label={presentationVariant === 'atelier-editorial' ? 'Increase quantity for ' + item.title : undefined}
+                                aria-label={adaptiveParts || presentationVariant === 'atelier-editorial' ? 'Increase quantity for ' + item.title : undefined}
                                 onClick={() =>
                                     updateQuantity(
                                         item.cartItemId || item._id,
@@ -629,7 +629,7 @@ function CheckoutOrderItem({
                                 {getCartItemPrice(item) * item.quantity}
                             </p>
 
-                            <p className="text-xs text-slate-400">
+                            <p data-ab-muted={adaptiveParts ? '' : undefined} className="text-xs text-slate-400">
                                 ৳
                                 {getCartItemPrice(item)}
                                 each
@@ -655,7 +655,7 @@ function CheckoutOrderItem({
     );
 }
 
-export function CheckoutOrderSummary({
+export function CheckoutOrderSummary({ adaptiveParts = false,
     presentationVariant,
     cartItems,
     checkoutBranding,
@@ -679,16 +679,16 @@ export function CheckoutOrderSummary({
 }) {
     return (
         <div>
-            <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'checkout-summary' : undefined} className="sticky top-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] shadow-xl shadow-slate-200/70">
-                <div className="border-b border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 sm:p-7">
+            <div data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'summary' : undefined} data-atelier-part={presentationVariant === 'atelier-editorial' ? 'checkout-summary' : undefined} className="sticky top-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] shadow-xl shadow-slate-200/70">
+                <div data-ab-surface={adaptiveParts ? '' : undefined} className="border-b border-slate-200 bg-[var(--sf-checkout-card-background)] p-6 sm:p-7">
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <p className="sf-kicker">Review</p>
-                            <h2 className="mt-1 text-2xl font-black text-[var(--sf-checkout-text)]">
+                            <h2 data-ab-part={adaptiveParts ? 'heading' : undefined} className="mt-1 text-2xl font-black text-[var(--sf-checkout-text)]">
                                 Order Summary
                             </h2>
                         </div>
-                        <span className="rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-1.5 text-xs font-black text-[var(--sf-checkout-accent)] shadow-sm">
+                        <span data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-full bg-[var(--sf-checkout-card-background)] px-3 py-1.5 text-xs font-black text-[var(--sf-checkout-accent)] shadow-sm">
                             {cartItems.length} item{cartItems.length === 1 ? "" : "s"}
                         </span>
                     </div>
@@ -696,7 +696,7 @@ export function CheckoutOrderSummary({
 
                 <div className="max-h-[460px] space-y-5 overflow-y-auto p-6 sm:p-7">
                     {cartItems.map((item) => (
-                        <CheckoutOrderItem
+                        <CheckoutOrderItem adaptiveParts={adaptiveParts}
                             presentationVariant={presentationVariant}
                             key={item.cartItemId || item._id}
                             item={item}
@@ -708,7 +708,7 @@ export function CheckoutOrderSummary({
                 </div>
 
                 <div className="border-t border-slate-200 p-6 sm:p-7">
-                    <CheckoutCouponBox
+                    <CheckoutCouponBox adaptiveParts={adaptiveParts}
                         onApplyPromotion={onApplyPromotion}
                         promotionCode={promotionCode}
                         promotionMessage={promotionMessage}
@@ -759,12 +759,12 @@ export function CheckoutOrderSummary({
                         </span>
                     </div>
 
-                    <CheckoutPolicyConsent
+                    <CheckoutPolicyConsent adaptiveParts={adaptiveParts}
                         policyAccepted={policyAccepted}
                         setPolicyAccepted={setPolicyAccepted}
                     />
 
-                    <button
+                    <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
                         type="submit"
                         disabled={loading || !policyAccepted}
                         className="sf-btn sf-checkout-submit mt-7 w-full py-5 text-lg disabled:opacity-50"
@@ -791,12 +791,12 @@ export function CheckoutOrderSummary({
                             />
                             {checkoutBranding.trustMessage || "Secure Checkout"}
                         </p>
-                        <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-[var(--sf-checkout-success)]">
+                        <p data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-[var(--sf-checkout-success)]">
                             Cash on delivery order. You pay when the product arrives.
                         </p>
                     </div>
 
-                    <CheckoutPolicies
+                    <CheckoutPolicies adaptiveParts={adaptiveParts}
                         policies={policies}
                         visiblePolicies={visiblePolicies}
                     />
@@ -806,15 +806,15 @@ export function CheckoutOrderSummary({
     );
 }
 
-export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted, totalAmount }) {
+export function CheckoutMobileStickyBar({ adaptiveParts = false, loading, phoneVerified, policyAccepted, totalAmount }) {
     return (
-        <div className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-[var(--sf-checkout-card-background)] p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} className="sf-mobile-action-bar fixed inset-x-0 z-40 border-t border-slate-200 bg-[var(--sf-checkout-card-background)] p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
             <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Pay on delivery</p>
                     <p className="text-xl font-black text-[var(--sf-checkout-text)]">৳ {totalAmount}</p>
                 </div>
-                <button
+                <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
                     type="submit"
                     disabled={loading || !policyAccepted}
                     className="sf-btn min-h-0 px-5 py-3 text-sm disabled:opacity-50"
@@ -828,13 +828,14 @@ export function CheckoutMobileStickyBar({ loading, phoneVerified, policyAccepted
     );
 }
 
-// Keep the original modal callable without React hooks; only Atelier needs focus management.
+// Keep the original modal callable without hooks; Atelier and the explicit
+// adaptive adapter opt into the existing dialog focus boundary.
 function AtelierCheckoutDialog({ open, onClose, busy, render }) {
     const dialogRef = useAtelierDialog({ enabled: true, open, onClose, busy });
     return render(dialogRef);
 }
 
-export function CheckoutOtpModal({
+export function CheckoutOtpModal({ adaptiveParts = false,
     presentationVariant,
     error,
     message,
@@ -853,6 +854,7 @@ export function CheckoutOtpModal({
     verifying,
 }) {
     const atelier = presentationVariant === 'atelier-editorial';
+    const accessible = atelier || adaptiveParts;
     const isBusy = sending || verifying || state === "placing_order";
     if (!open) return null;
     const isOtpInput = state === "otp_input" || state === "verifying" || state === "error";
@@ -868,15 +870,15 @@ export function CheckoutOtpModal({
     };
 
     const renderModal = (dialogRef) => (
-        <div ref={dialogRef} aria-busy={atelier && isBusy ? true : undefined} data-atelier-dialog={atelier ? "checkout-otp" : undefined} className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-otp-title">
-            <form onSubmit={handleSubmit} className="w-full overflow-hidden rounded-t-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] shadow-2xl shadow-slate-950/20 sm:max-w-md sm:rounded-[2rem]">
+        <div ref={dialogRef} aria-busy={accessible && isBusy ? true : undefined} data-atelier-dialog={atelier ? "checkout-otp" : undefined} className="fixed inset-0 z-[120] flex items-end bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="checkout-otp-title">
+            <form data-ab-surface={adaptiveParts ? '' : undefined} onSubmit={handleSubmit} className="w-full overflow-hidden rounded-t-[2rem] border border-slate-200 bg-[var(--sf-checkout-card-background)] shadow-2xl shadow-slate-950/20 sm:max-w-md sm:rounded-[2rem]">
                 <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
                     <div className="flex items-start gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[var(--sf-checkout-success)]">
+                        <span data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[var(--sf-checkout-success)]">
                             <ShieldCheck size={20} />
                         </span>
                         <div>
-                            <h2 id="checkout-otp-title" className="text-xl font-black text-[var(--sf-checkout-text)]">
+                            <h2 data-ab-part={adaptiveParts ? 'heading' : undefined} id="checkout-otp-title" className="text-xl font-black text-[var(--sf-checkout-text)]">
                                 Verify your phone number
                             </h2>
                             <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
@@ -884,7 +886,7 @@ export function CheckoutOtpModal({
                             </p>
                         </div>
                     </div>
-                    <button
+                    <button data-ab-surface={adaptiveParts ? '' : undefined}
                         type="button"
                         onClick={onCancel}
                         disabled={isBusy}
@@ -896,7 +898,7 @@ export function CheckoutOtpModal({
                 </div>
 
                 <div className="space-y-5 p-5 sm:p-6">
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-600">
+                    <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-600">
                         {isOtpInput ? (
                             <>Enter the 6-digit code sent to <span className="font-black text-[var(--sf-checkout-text)]">{maskedPhone || "your phone"}</span>.</>
                         ) : state === "placing_order" ? (
@@ -908,14 +910,14 @@ export function CheckoutOtpModal({
 
                     {isOtpInput && (
                         <div>
-                            <label htmlFor="checkout-modal-otp" className="mb-2 block text-sm font-bold text-slate-700">
+                            <label data-ab-part={adaptiveParts ? 'label' : undefined} htmlFor="checkout-modal-otp" className="mb-2 block text-sm font-bold text-slate-700">
                                 Verification code
                             </label>
-                            <input
+                            <input data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'input' : undefined}
                                 id="checkout-modal-otp"
-                                autoFocus={atelier || undefined}
-                                aria-invalid={atelier && error ? true : undefined}
-                                aria-describedby={atelier && error ? "checkout-otp-error" : undefined}
+                                autoFocus={accessible || undefined}
+                                aria-invalid={accessible && error ? true : undefined}
+                                aria-describedby={accessible && error ? "checkout-otp-error" : undefined}
                                 value={otp}
                                 onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
                                 placeholder="000000"
@@ -945,7 +947,7 @@ export function CheckoutOtpModal({
                     )}
 
                     {error && (
-                        <p id={atelier ? "checkout-otp-error" : undefined} role={atelier ? "alert" : undefined} className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-[var(--sf-checkout-error)]">
+                        <p data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'error' : undefined} id={accessible ? "checkout-otp-error" : undefined} role={accessible ? "alert" : undefined} className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-[var(--sf-checkout-error)]">
                             {error}
                         </p>
                     )}
@@ -961,7 +963,7 @@ export function CheckoutOtpModal({
                         </button>
 
                         {!isOtpInput ? (
-                            <button
+                            <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
                                 type="submit"
                                 disabled={isBusy || cooldownSeconds > 0}
                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
@@ -970,7 +972,7 @@ export function CheckoutOtpModal({
                                 Send Code
                             </button>
                         ) : (
-                            <button
+                            <button data-ab-part={adaptiveParts ? 'primaryButton' : undefined}
                                 type="submit"
                                 disabled={isBusy || otp.length !== 6 || expired}
                                 className="sf-btn sf-btn-primary justify-center py-3 disabled:opacity-50"
@@ -984,7 +986,7 @@ export function CheckoutOtpModal({
             </form>
         </div>
     );
-    return atelier
+    return accessible
         ? <AtelierCheckoutDialog open={open} onClose={onCancel} busy={isBusy} render={renderModal}/>
         : renderModal();
 }

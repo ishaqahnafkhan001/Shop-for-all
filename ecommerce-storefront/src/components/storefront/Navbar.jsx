@@ -1,5 +1,6 @@
 "use client";
 
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import API from '@/api/api';
@@ -46,7 +47,7 @@ export default function Navbar({ subdomain }) {
 
     return (
         <>
-            <ReferenceStorefrontHeader
+            <AdaptivePresentation pageKind="header" core><ReferenceStorefrontHeader
                 theme={theme}
                 shopName={shopSettings?.shopName}
                 subdomain={subdomain}
@@ -55,7 +56,7 @@ export default function Navbar({ subdomain }) {
                 cartCount={cartCount}
                 onSearch={() => setSearchOpen(true)}
                 LinkComponent={Link}
-            />
+            /></AdaptivePresentation>
             <SearchModal
                 isOpen={searchOpen}
                 onClose={() => setSearchOpen(false)}

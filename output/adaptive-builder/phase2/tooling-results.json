@@ -1,0 +1,14 @@
+{
+  "lint": {
+    "files": 24,
+    "errors": 5,
+    "warnings": 0,
+    "preExisting": 5,
+    "introduced": 0
+  },
+  "bundle": {
+    "bytes": 178901,
+    "externalImports": 0,
+    "nodeBrowserTargetSmoke": "PASS"
+  }
+}

@@ -150,7 +150,7 @@ test('policy fallbacks are identical across Admin, storefront, and server; merch
 const loadAdapter = (deps) => {
     const filename = path.join(root, 'ecommerce-backend/backend/services/storeBuilder/effectiveThemeService.js');
     const compiled = new Module(filename, module);
-    compiled.require = id => deps[id] || require(id);
+    compiled.require = id => deps[id] || Module.createRequire(filename)(id);
     compiled._compile(fs.readFileSync(filename, 'utf8'), filename);
     return compiled.exports;
 };
@@ -196,6 +196,7 @@ test('actual public settings, shop-info and bootstrap handlers return identical 
         '../models/Collection': { find: () => chain([]) },
         '../services/cacheService': { get: async key => structuredClone(cacheData.get(key)), set: async (key, data) => cacheData.set(key, structuredClone(data)) },
         '../services/storeBuilder/effectiveThemeService': { applyEffectiveStoreTheme },
+        '../services/storeBuilder/adaptiveRolloutPolicy': require('../services/storeBuilder/adaptiveRolloutPolicy'),
         '../services/billing/planAccessService': { getShopPlanAccess: async () => plan('none') },
         '../services/shops/featureAccessService': { hasFeature: async () => false },
         '../services/verification/vendorVerificationStatusService': { buildPublicShopVerification: () => ({}) },

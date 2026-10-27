@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import API from '../../../../api/api.js';
 
-export function useStoreBuilderBootstrap() {
+export function useStoreBuilderBootstrap({ api = API } = {}) {
     const [state, setState] = useState({ loading: true, data: null, error: '' });
     const requestId = useRef(0);
 
@@ -10,7 +10,7 @@ export function useStoreBuilderBootstrap() {
         const currentRequest = ++requestId.current;
         setState(prev => ({ ...prev, loading: !keepCurrent, error: '' }));
         try {
-            const response = await API.get('/store-builder/admin');
+            const response = await api.get('/store-builder/admin');
             if (currentRequest !== requestId.current) return null;
             const legacyData = response.data?.data || null;
             const payload = response.data?.bootstrap || (legacyData ? {
@@ -39,7 +39,7 @@ export function useStoreBuilderBootstrap() {
             }));
             throw error;
         }
-    }, []);
+    }, [api]);
 
     useEffect(() => {
         reload().catch(() => {});

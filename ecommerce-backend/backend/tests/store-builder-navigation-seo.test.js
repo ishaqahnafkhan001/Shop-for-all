@@ -174,6 +174,7 @@ test('standalone Homepage SEO page is deep-linkable and preserves local drafts o
     assert.match(hook, /buildLegacySeoBootstrap/);
     assert.match(hook, /bootstrap\?\.compatibilityMode/);
     assert.match(page, /Compatibility mode/);
-    assert.match(storeBuilderBootstrap, /API\.get\('\/store-builder\/admin'\)/);
+    assert.match(storeBuilderBootstrap, /api = API/);
+    assert.match(storeBuilderBootstrap, /api\.get\('\/store-builder\/admin'\)/);
     assert.match(page, /Your local SEO draft has been preserved/);
 });

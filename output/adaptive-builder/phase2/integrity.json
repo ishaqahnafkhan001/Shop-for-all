@@ -1,0 +1,43 @@
+{
+  "initialRevision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "initialFiles": 1665,
+  "unchanged": 1646,
+  "modified": [
+    "packages/storefront-theme/pageTemplates.cjs",
+    "ecommerce-backend/backend/controllers/basicStoreSettingsController.js",
+    "ecommerce-backend/backend/controllers/storeBuilderController.js",
+    "ecommerce-backend/backend/models/Shop.js",
+    "ecommerce-backend/backend/models/StoreBuilderAsset.js",
+    "ecommerce-backend/backend/models/StoreBuilderDraft.js",
+    "ecommerce-backend/backend/models/StoreBuilderRevision.js",
+    "ecommerce-backend/backend/scripts/migrate-store-builder-themes.js",
+    "ecommerce-backend/backend/services/storeBuilder/effectiveThemeService.js",
+    "ecommerce-backend/backend/services/storeBuilder/storeBuilderAssetService.js",
+    "ecommerce-backend/backend/services/storeBuilder/storeBuilderSeoService.js",
+    "ecommerce-backend/backend/services/storeBuilder/storeBuilderService.js",
+    "ecommerce-backend/backend/services/storeBuilder/themeCompatibilityService.js",
+    "ecommerce-backend/backend/services/themeSectionService.js",
+    "packages/storefront-theme/effective.cjs",
+    "packages/storefront-theme/index.cjs",
+    "packages/storefront-theme/index.mjs",
+    "packages/storefront-theme/package.json",
+    "track.md"
+  ],
+  "added": [
+    "ecommerce-backend/backend/models/storeBuilderThemeContract.js",
+    "ecommerce-backend/backend/services/storeBuilder/adaptivePersistencePolicy.js",
+    "ecommerce-backend/backend/tests/adaptive-persistence.test.js",
+    "ecommerce-backend/backend/tests/helpers/adaptive-transaction-crash.cjs",
+    "ecommerce-backend/backend/tests/integration/adaptive-persistence.integration.test.js",
+    "packages/storefront-theme/storage.cjs",
+    "packages/storefront-theme/storage.mjs"
+  ],
+  "missing": [],
+  "priorTrackerTailPreserved": true,
+  "tenPresetDefinitionsUnchanged": true,
+  "frozenManifestSha256": "06f9c824214c10ec907fcb5e5de12e269f3ba334749d98294ca381153452b841",
+  "earlierArtifactChanges": [],
+  "frontendSourceChanges": [],
+  "dependencyLockChanges": [],
+  "existingTestChanges": []
+}

@@ -1,3 +1,262 @@
+# Adaptive Builder merchant access paused — 28 October 2026
+
+- User requested blocking and hiding Adaptive Builder pending further work. Removed normal adoption CTA, development-preview link and route. Existing adaptive snapshots show the existing read-only notice; legacy Builder remains available.
+- Backend code-owned release hold blocks adaptive writes/adoption even with stale rollout-on environment settings, and denies direct development-preview grants. Published rendering is preserved independently so existing storefronts do not change. Local `.env` writes set off and preview allowlist cleared; no merchant records modified.
+- Verified 12/12 focused release tests, changed Admin-file lint, Admin production build and `git diff --check`. Configuration reports writes=false, rendering=true. Full historical/integration suites were not rerun; earlier enabled-adoption tests describe the now-suspended release policy and must be revisited before re-enablement.
+- Running servers must load updated backend code; deployed Admin needs the new build. No deployment or production restart performed. Re-enable only after deliberate removal of both backend and UI holds and renewed validation.
+
+# Adaptive Store Builder — Phases 6 and 7 preparation (21 October 2026)
+
+## Browser verification resumed — 22 October 2026
+
+- Browser access works again. Restarted the existing authorized task-owned tmpfs Mongo replica set and isolated Admin/published fixtures; real merchant rollout remains OFF. The rebuilt category drawer passes 390px focus entry, forward/backward wraps, Escape restoration, price Apply and 1024px close/scroll release.
+- **Actual native 200% verified:** user set Chrome menu zoom on both origins; supported diagnostics independently confirm zoom 2 / DPR 2. Builder inspector edits, undo/redo, explicit draft restoration, device inheritance and page retention pass. All ten public routes pass measured page-level reflow; product/cart/checkout, account and policy access remain usable. No CSS/device-scale substitute. `browser-2026-10-22/native-zoom.json` and screenshots record exact states and limitations.
+- Native zoom found adaptive header focus/Escape/long-menu overflow defects and unreachable proof file inputs. Fixed only adaptive presentation using the existing dialog helper, bounded panel scrolling and focusable visually hidden inputs with label rings; narrow-card purchase actions can wrap. New development-only synthetic fixture mounts the existing renderer with inert local actions; actual cancellation/return focus, wraps, Escape, pending guards and proof removal pass at 200%. It adds no auth bypass or second editor/controller. Six source/test/fixture paths changed this session; exact paths and before/after evidence are in `browser-2026-10-22/README.md`.
+- Verification: compatibility **850/850**, final full backend **1303/1308** (same five failures), both final builds and storefront lint PASS, same 13 historical Admin lint errors/0 warnings. New fixture lint PASS; focused tooling 57 JS files, 16 errors/1 warning all pre-existing, zero introduced; CJS/ESM parity 20/20. Fresh actual HTTP/Next/recovery lifecycle **1/1 PASS**; default-off config PASS. Full relevant Mongo 62/62 earlier evidence retained; no persistence change. Frozen definitions/expectations unchanged.
+- Chrome standard Navigation/Paint/heap observations: home warm FCP 184/196/252 ms, Admin development 364 ms; raw `performance.json`. Unthrottled loopback observations do not complete representative performance acceptance. Complete screen-reader/touch/reduced-motion/contrast, performance, target operations and release decisions remain BLOCKED. No deployment, real activation, order/provider message, dependency installation, commit or push.
+
+### 21 October checkpoint retained below
+
+**Phase 6: BLOCKED. Phase 7 preparation: BLOCKED. Default rollout remains OFF; no real merchant adoption, production publication or deployment occurred.**
+
+- Follow-up to the repeated Phase 6–7 request: fixed non-Atelier adaptive tracking dialog semantics/focus opt-in, busy dismissal guards and proof image group semantics; mobile category filter focus uses the existing helper and closes at the desktop breakpoint. Five new rendered regression cases pass. Final follow-up compatibility **847/847**, backend **1300/1305** (same five failures), both builds and storefront lint pass; same 13 unrelated Admin lint errors. Rebuilt actual-route/disposable lifecycle **1/1** passes; existing relevant Mongo **62/62** retained. Exact source manifest now includes 55 source/test/helper files plus tracker. `phase6/followup/README.md` records commands and limits.
+- Browser reproduced focus outside the old mobile drawer at actual 390px, then access became disabled in Work settings before rebuilt verification. New drawer/resize/tracking-modal browser checks remain BLOCKED. No passing result from failed preview semantic-scan attempt. Actual 200% zoom and existing accessibility/performance/target-operation gates remain unchanged. Phase 7 now includes the explicit launch readiness matrix and separate implementation/quality/operations/authorization decisions.
+
+- Task-start revision remains `54a04b6d34939dab3b9cc6f0139a753116edbd32`; dirty-tree hashes and scoped source copies recorded under `output/adaptive-builder/phase6`. Exact task-relative manifest: `changed-files.txt` (55 source/test/helper files plus tracker, including follow-up). Prior Phase 0–5 artifacts and earlier tracker remain intact. No frozen expectation was regenerated; manifest SHA-256 stays `06f9c824214c10ec907fcb5e5de12e269f3ba334749d98294ca381153452b841`.
+- Added guarded published-only adaptive projection and SSR-capable shared renderer integration across all twelve families. Existing route/controller callbacks own commerce. Batched tenant-scoped public sources, finite shared tokens, conditional semantic parts and policy-aware cache keys reuse existing infrastructure. OFF/unassigned stores retain legacy output; no automatic conversion or Atelier-based activation.
+- Implemented explicit operator OFF/pilot/all policy, approval reference, tenant allowlist and independent write/render kills, with fresh tenant/staff/current plan checks and sanitized failure diagnostics/configuration checker. Config check PASS: OFF, writes/rendering false. Enabled policies exist only inside disposable synthetic fixture processes. No `.env`, dependency or production-data changes.
+- Fixed both relevant historical Mongo failures: Mongoose fixture spreading/current preset-version assertion and partial limited-plan draft normalization. Preserve older saved preset metadata and complete preset switching. Added authorized v5 draft discard with CAS/old-client fencing. Fixed tenant root redirect/query preservation, adaptive field errors, header/quantity names, review sign-in URL and actual search-dialog focus restoration.
+- Before compatibility **839/839**; final **842/842** including three rollout tests. Ten presets, 370 exact cases, 144 earlier hashes and 20 Gallery/Builder/live-home comparisons unchanged. Full backend **1295/1300**: same five unrelated historical failures. Final six-file isolated Mongo suite **62/62**, including actual HTTP draft/publish/restore, real production Next routes/CSS parity, actual unique indexes, old writers, tenant/staff/plan/CAS/media and kill-switch checks. Supplemental all-file Mongo run **86/102**: 15 dedicated-DB guard blocks (AI/welcome suites), one unrelated catalog `isActive` assertion unresolved; it is not relabelled historical without before-task evidence.
+- Both production builds and storefront lint PASS. Relevant Builder lint fixed; full Admin now **13 unrelated historical errors / 0 warnings**. Changed-source tooling: 16 errors/1 warning all present at task start, zero introduced. CJS/ESM/CSS parity passes 20 page/palette cases. `git diff --check`, exact checkpoint diff reconstruction and final integrity checks pass; original dirty changes retained.
+- Browser access became available. Verified normal authenticated Admin route: twelve page/global choices, 57 synthetic states, element selection/inspector edits, optional structural commands, independent saved-section copies/presets, undo/redo, local autosave/reload and cross-page retention. Protected operations disabled. Invalid input has field-associated error; keyboard tree Arrow/Enter works with visible focus. Editor tested at nine widths (320/360/390/430/767/768/1023/1024/1440) without page overflow.
+- Real published synthetic storefront: ten routes × nine widths = 90 no-page-overflow checks, global templates, product/cart/checkout navigation, synthetic customer login/dashboard/security-tab/sign-out and empty cart. Final accessible search trap/Escape restoration, checkout names and review `/account` link verified. No captured hydration errors in tested journeys. No browser order/OTP/password change/provider operation submitted.
+- **Actual 200% zoom remains BLOCKED:** only the in-app browser is available, no zoom capability/native app surface; shortcuts do not change scaling even after viewport reset. No CSS scaling/narrow viewport substitution. Full screen-reader/WCAG/touch/reduced-motion acceptance and representative browser Web Vitals/interactive/heap measurements remain incomplete. User instruction to unblock is not passing evidence. Reproducible manual acceptance/startup steps: `phase6/BROWSER_ACCEPTANCE.md`.
+- Local near-limit 200-node benchmark: validated edit p95 23.62ms, serialization 1.35ms, compile 0.188ms, all-page resolve 80.32ms; approximately 3.50MB for 30 UTF-16 history strings excluding actual heap/objects. Variable-load comparison is not a proven optimization or regression. Actual loopback SSR response bytes/times/CSS parity and renderer entry size are recorded; browser FCP/LCP/CLS/INP/hydration cost not claimed.
+- Reports: `phase6/README.md`, `phase7/README.md`, `FINAL_RELEASE_READINESS.md`; release/rollback/merchant guides prepared. Production backup/media restore, target indexes/topology, multi-instance policy/cache/worker compatibility, real monitoring/alert and rollback drills, commercial eligibility/adoption mapping and named-pilot approval remain gates. No deploy/commit/push.
+- Left task-owned tmpfs Mongo (`sfa-adaptive-phase5`), synthetic API 4008, actual Admin 5185 and production-build synthetic storefront 3018 available for review. Three hardcoded isolated DBs prevent acceptance tests from erasing preview identities; all provider transports blocked/mocked. See browser instructions before restarting; stop only identified fixture processes before rebuilds. User port-3000 server is untouched.
+
+**Exact next safe task:** collect actual browser-native 200% zoom evidence using `output/adaptive-builder/phase6/BROWSER_ACCEPTANCE.md`; complete remaining accessibility/performance acceptance, remediate confirmed findings and review the release failure/operational register. Obtain separate named-pilot/deployment approval only after mandatory gates pass. Stop after Phases 6 and 7 preparation; keep real rollout OFF.
+
+<!-- TRACK_BEFORE_PHASE6 -->
+
+# Adaptive Store Builder — Phase 5 (21 October 2026)
+
+**Acceptance / Phase 6 readiness: BLOCKED — authenticated browser interaction, hydration and actual 200% browser zoom remain unverified because Work reports local browser use disabled. Stop after Phase 5.**
+
+- Extended the existing contextual editor to all twelve registered page families and finite synthetic state previews. Shared pure category/collection/account/tracking/policy views retain existing commerce controllers, APIs and calculations. Registered part, media, grid and stack/column controls use existing validation, compiler, commands, whole-site state, queue, autosave, conflict/recovery and history.
+- Added an authenticated DEV-only entry in the actual Admin: **http://127.0.0.1:5185/dashboard/adaptive-builder-preview**. Real auth/tenant/staff/full-plan/operational-shop checks, loopback socket and explicit shop allowlist guard the read-only development grant. Synthetic draft transport stays in browser storage and refuses publication/uploads/network mutations. No real customer sessions/orders/providers are used. Actual interface is not counted browser-verified; HTTP/module transform/login/grant/bootstrap checks are 200 and normal adoption remains false.
+- Compatibility **839/839**, including **116 new full-site tests**; earlier **723/723** passed before edits. Ten theme definitions, 370 frozen rendering cases, 144 earlier hashes and 20 home comparisons preserved. Frozen manifest SHA-256 remains 06f9c824214c10ec907fcb5e5de12e269f3ba334749d98294ca381153452b841.
+- Full backend **1291/1296** with the same five historical failures. Verified owned tmpfs Mongo **59/61** with the same two historical failures; four new auth/default-deny/tenant/plan/full-site CAS tests pass independently, including suspended subscriptions and inactive shops. Initial test-harness mistakes and superseded source-inspection paths were corrected and retested; no old baseline expectations were regenerated.
+- Both frontend builds pass; storefront lint passes. Full Admin remains **16 errors/2 warnings**. Focused 58-file JS lint has **12 pre-existing unused-variable diagnostics** in two touched source-inspection test files, confirmed against initial revision, **zero introduced diagnostics**. CJS/ESM plan/CSS/capability parity passes 20 page/palette cases.
+- Pure benchmarks cover 14/80/200 nodes. Near-limit validated edit p95 21.73ms under concurrent local verification, serialization p95 0.87ms, style compile p95 0.18ms; 30 history strings approximately 3.34 MiB excluding runtime overhead. Browser page-switch/input/heap timings and visual accessibility remain unmeasured.
+- Backend validation and renderer share code-owned nested semantic paint contexts, closing a late contrast gap. Required cores remain first/singleton/nonremovable/nonhideable/nonduplicable. Product before-core sections remain unsupported by accepted blueprint v1 and are explicitly identified in UI/report. Legacy live routes reuse exact shared views; production adaptive route selection remains inactive and end-to-end adaptive live-route/controller/hydration acceptance remains outstanding.
+- Evidence, startup commands, capability matrix, exact files/responsibilities, test/failure registers and limitations: **output/adaptive-builder/phase5/README.md**, **changed-files.txt**, **changed-file-responsibilities.md**, **integrity.json**, **local-access.json**, **performance.json**. Git revision remains 54a04b6d34939dab3b9cc6f0139a753116edbd32. Phase 0–4 artifacts, all ten themes and baseline files remain intact.
+- Isolated fixture API (4008), actual Admin (5185) and labeled tmpfs Mongo container sfa-adaptive-phase5 are left running for manual acceptance. Stop fixture server before destructive integration tests. Backend restarts reseed disposable identities; browser copies remain scoped to their prior identities. Do not use a production/shared database. No .env/dependency/schema/commerce API change, real message/order, merchant adoption, deployment, publication, commit or push.
+
+**Exact next safe task:** enable an approved browser surface, sign into the isolated normal Admin using the synthetic credentials in the report, exercise all page/state/style/history/reload/device controls and record actual 200% zoom. Resolve any confirmed issue and review live-route/default-off integration plus historical release blockers before approving another phase. Do not begin Phase 6 automatically.
+
+<!-- TRACK_BEFORE_PHASE5 -->
+
+# Adaptive Store Builder — Phase 4 (21 October 2026)
+
+**Acceptance: BLOCKED — actual 200% browser zoom remains unverified. Inactive home/header/footer editor implemented. Stop before Phase 5.**
+
+- Reused the actual Builder whole-theme state, queue, autosave, history and shared renderer/contracts. Added responsive structure/preview/inspector, stable selection, safe block operations, typed design tiers/resets, saved copies/presets, protected global adapters and version-safe recovery. No second builder engine, dependency or database collection.
+- Merchant adoption remains disabled by the unchanged server policy and direct-service guards. Existing v5 designs/drafts open read-only without a server grant. No v4-to-v5 conversion, merchant enablement, live publication, production-data/env/API/model change, deployment, commit or push.
+- Compatibility: **723/723**, including **54/54 new editor tests**; all ten definitions, 370 frozen rendering cases, 144 earlier hashes and 20 home comparisons preserved. Two old unsupported-adapter cases now have supported global adapters; no frozen expectations were regenerated.
+- Full backend: **1175/1180**, same five historical failures. Disposable Mongo: **55/57**, same two historical failures; both new tenant-media/library-copy/CAS tests pass. Earlier introduced import/harness/focus/container issues fixed and retested.
+- Browser: **34 passing assertions**, two earlier failed attempts retained with successful retests, no unresolved recorded interactions. Covered grouped undo/recovery, stale conflicts, unknown recovery retention, inert commerce selection, keyboard focus, saved copies/presets, responsive typography/panels, seven Admin widths, 200-node editing, default/Atelier narrow globals and contrast/reset guards. Actual zoom unavailable; viewport scaling is not counted.
+- Both frontend production builds pass; changed-file lint **30 files, zero errors/warnings**, actual focused Admin lint passes; storefront lint passes. Full Admin remains **16 errors/2 warnings** in unchanged files (two old hook errors and two dependency warnings corrected in already affected code). CJS/ESM 13-case plan/CSS/capability parity and diff checks pass.
+- Performance recorded for 14/80/200 nodes: near-limit edit p95 ~24.46ms, serialization p95 ~1.00ms; browser near-limit input observation 65.4ms. These are local observations, not an SLA or measured heap. History remains bounded to 30 entries.
+- Evidence, commands, exact files/hashes, limitations and release register: **output/adaptive-builder/phase4/README.md**, **integrity.json**, **browser/results.json**, **editor-performance.json**. Initial revision 54a04b6d34939dab3b9cc6f0139a753116edbd32 and 2670-file manifest retained; prior output/phase0–3 and frozen baselines unchanged.
+- Owned tmpfs Mongo container removed after label/port checks and fixture server stopped. Browser tab cleanup/viewport reset was interrupted because local browser use became disabled in Work settings; no setting bypassed. No real orders/messages/providers were exercised.
+
+**Exact next safe task:** verify actual 200% browser zoom on the isolated actual-Builder fixture using an approved browser with real zoom controls; record keyboard/overflow/EN-BN/global/inspector evidence. Review the historical failure register before further phases. Do not start Phase 5 or enable adoption automatically.
+
+<!-- TRACK_BEFORE_PHASE4 -->
+
+# Adaptive Store Builder — Phase 3 remediation (20 October 2026)
+
+**Readiness: BLOCKED — actual 200% browser zoom remains unverified. Stop before Phase 4.**
+
+Resolved core-first contract conflict, explicit adapter capabilities, scoped semantic palettes/typography/borders, catalog/media controls, narrow-page grid behavior, OTP short-screen scrolling/focus, touch targets, stale missing-product protection and adaptive-only contrast defects. Existing shared views/controllers retained; no merchant UI/adoption/data/deployment.
+
+- Compatibility: **671/671**, including 27 new regression tests (107 renderer total), all ten definitions, 370 frozen cases, 144 older hashes and 20 home parity comparisons.
+- Unit suite: **1123/1128**, same five historical failures. Isolated Mongo: **53/55**, same two historical failures; all 35 adaptive persistence + eight Atelier hardening checks pass.
+- Real browser: **48/48** matrix cases; widths 320/360/390/430/768/1024/1440, default/light/dark/custom/inverted palettes, EN/BN wrapping, consent/OTP/critical states, narrow configured pages, contrast and 44px control targets. Real zoom shortcut left width/DPR/scale unchanged; 320×450 test is not zoom evidence.
+- Both final production builds pass. Focused lint: 24 files, 0 errors/warnings. Storefront lint passes; full Admin retains 18 errors/4 warnings. CJS/ESM plan+CSS/capability parity passes (11 cases). Git diff check passes.
+- Commands, exact changed paths, sources/hashes, browser screenshots/probe, benchmark observations, historical classifications and next safe acceptance task: **output/adaptive-builder/phase3/README.md** and **output/adaptive-builder/phase3/remediation/**.
+- Disposable labeled tmpfs Mongo container removed after ownership check; synthetic browser tab closed, viewport reset and server stopped. No actual orders/messages were sent. No frozen expected results were changed.
+
+Next: actual 200% zoom acceptance using a browser with a real zoom control, then review readiness. No automatic Phase 4.
+
+<!-- TRACK_BEFORE_PHASE3_REMEDIATION -->
+## 2026-10-20 — Adaptive Store Builder Phase 3: inactive renderer and scoped CSS
+
+**Inactive foundation implemented; Phase 4 readiness: BLOCKED. Stop after Phase 3.**
+
+Report: [Phase 3 implementation/evidence](C:/Users/user/WebstormProjects/Shop-for-all/output/adaptive-builder/phase3/README.md). Exact paths/hashes: [source manifest](C:/Users/user/WebstormProjects/Shop-for-all/output/adaptive-builder/phase3/source-manifest.json).
+
+- Added the explicit renderer adaptive entry, strict immutable page plans, shared registered block rendering, scoped three-tier CSS and trusted product/checkout presentation adapters. Reused existing views, catalog sections and PresentationRuntime. Five existing product primitives only gain opt-in markers; normal output remains unchanged.
+- All ten definitions, v4 behavior, 370 exact rendering cases, 144 earlier hashes and 20 Gallery/Builder/live-home comparisons are preserved. No snapshot regeneration, application route/UI wiring, theme-contract/persistence/commerce change, adaptive adoption, publication, deployment, dependency installation, commit or push.
+- Pre-edit compatibility: 564/564. Final compatibility: 644/644, including 80 new renderer tests. Full backend: 1096/1101, same five historical failures. Disposable Mongo integration: 53/55, including 35/35 adaptive tests; same two historical Builder failures. Original failing tests and implicated sources remain unchanged.
+- Commands: backend node --test tests/*.test.js; exact 13-suite compatibility command in the report; isolated preload + three integration suites; Admin Vite build and full ESLint; storefront Next build and full ESLint; node output/adaptive-builder/phase3/verify-tooling.cjs; node tests/helpers/benchmark-adaptive-renderer.cjs; git diff --check. Logs and native exit files retained in the phase directory.
+- Both frontend builds PASS. Storefront lint PASS. Full Admin lint remains 18 errors/4 warnings. All 16 changed JS/JSX files lint clean. CJS/ESM three-family plans and CSS match. Explicit inactive browser entry: 356243 raw bytes, React/JSX/lucide external; no new dependencies.
+- Actual in-app browser: 27/27 layout/hydration cases across home, long English/Bengali product and checkout at 320/360/390/430/767/768/1023/1024/1440 px. No final horizontal document overflow, recovery errors or console warnings/errors. Fixed a 320 px gallery overflow only in the adaptive branch. Exercised inert quantity/cart/consent/submit/OTP callbacks, keyboard focus, required fields, zero price and out-of-stock. No live order/notification/provider write. Browser server and tmpfs Mongo container stopped; viewport reset and task tabs closed.
+- Security: graph/style/content/source validation reused, no raw HTML/code/selectors/unsafe URLs, approved media only, finite public sources and trusted actions. Invalid plans retain trusted commerce cores. Legacy opaque interiors make general core palette inheritance unsafe: affected paint fails closed; primary-button paint requires an explicit foreground/background pair.
+- Blockers: immutable root-zero core contradicts requested product content above it; minHeight/editable media fitting/core width are absent or forbidden by the approved contract; broad core paint needs a verified presentation seam. Real 200% zoom is unavailable through current browser controls. Complete accessibility, other page adapters and production Next route integration remain unverified/deferred.
+- Next safe task after review: select/approve the narrow contract and paint-seam scope, add isolated regression tests and complete only that inactive work before Builder UI. Phase 4/5 integration requirements are documented; neither phase started.
+
+---
+
+## 2026-10-20 — Adaptive Store Builder Phase 2: persistence, fences, permissions and media
+
+**Phase 2 safety contract / inactive Phase 3 readiness: PASS. Stop after Phase 2.** Adoption remains unavailable to all merchants, including when Atelier is enabled or an adaptive environment flag is set. Production release still has the existing failure register and later product/browser/deployment gates; no renderer, editor UI or live adoption was implemented.
+
+Implemented explicit `@scaleup/storefront-theme/storage` v5 readers while preserving the v4 editor/default contract and all old assertions. Added declared `theme.siteBuilder` and validated atomic JSON types; real MongoDB retains empty maps and 14/80/200-node graphs exactly. Old query/document/upsert writers cannot erase v5 designs or drafts, including adoption races. Legacy publication/SEO cleanup leaves newer unpublished drafts intact. Existing v5 SEO maintenance preserves graphs; other adaptive editing is read-only. Trusted user/membership/staff/plan checks and a separate closed adoption policy protect direct services as well as current routes.
+
+Extended typed media references, tenant ownership/public product eligibility, draft attachments, promotion, immutable revision asset metadata, retained snapshot inspection and cleanup claims/reference revisions. Retained media survives beyond seven days; old revisions need no bulk backfill. Cleanup fails closed on invalid history/excess retention and recovers stale claims. Fixed internal asset attachment invalidating the returned draft CAS timestamp. v5 publication/draft writes require actual MongoDB transaction support, verified via `hello` rather than the direct-connection topology label. Existing v4 fallback behavior remains intact. Added an inactive public projection and tenant-scoped future cache invalidation; current storefront rendering remains unchanged.
+
+**Final verification:**
+
+- Pre-edit compatibility/contract: **261/261**. Combined compatibility/Phase 1/new reader suite: **564/564**, including 370 exact rendering cases, 144 earlier hashes and 20 home parity comparisons; rerun by the final full backend gate.
+- New reader tests: **14/14**. New real MongoDB integration: **35/35**, including exact all-ten v4 comparison against the original Git Shop schema, old-writer races, permission/ownership denial, disabled-validator attempts, SEO preservation, transaction failure injection, actual process crash/retry, media recovery/pruning and post-commit cache warnings.
+- Full backend `node --test tests/*.test.js`: before **1002/1007**, final **1016/1021**; same five pre-existing failures. Isolated new + Builder + release integration: before **18/20**, final **53/55**; same two pre-existing failures. No final introduced failures.
+- Original normalization-depth failure comes from spreading nested Mongoose objects; JSON serialization succeeds. Limited-plan typography-only draft 403 is a legacy normalization mismatch: `homepageSections: []` becomes fallback `featured-products`, then correctly fails `sectionReordering`. Neither old assertions nor the existing capability rules were weakened. Precise evidence: `legacy-boundary-diagnosis.json`.
+- Changed JS lint: 24 files, five verified pre-existing violations, **zero introduced**. CJS/ESM/browser-target smoke passes; reader bundle 178901 bytes, no external imports. Full Admin lint retains **18 errors / 4 warnings**; Storefront lint passes. Both production builds pass. `git diff --check` passes.
+
+MongoDB tests used the verified task-owned `sfa-adaptive-phase2-20261020` container (label `sfa.task=adaptive-phase2-20261020`), cached `mongo:7`, loopback port 27028, tmpfs storage, replica set `rs0`, and exact `atelier_acceptance_c085454b_test` database. Existing isolation preload blocked real environment loading/external transports/workers and mocked mail/SMS; Cloudinary deletion tests were mocked. A disposable-only five-second transaction lifetime bounded actual child-process crash recovery. Container removed after testing; cached image, earlier artifacts and the new Admin distribution retained. No live provider, production migration/data change, deployment, real publication, commit or push was performed.
+
+Full report, exact source manifest, commands, final logs and preservation evidence: `output/adaptive-builder/phase2/README.md`, `source-manifest.json`, `results.json`, `integrity.json`, `artifact-sha256.json`. All ten definitions, frontend/commerce source, dependencies and frozen expectations remain unchanged. Previous tracker contents preserved byte-for-byte. No cleanup-policy workaround was attempted.
+
+**Remaining rollout gates:** review the existing five backend/two Builder integration failures and Admin lint issues; decide adaptive entitlements, downgrade policy and pilot ownership; deploy readers/fences everywhere and drain old binaries before any adoption; verify actual deployment topology/backups/cleanup and later browser/media acceptance. No live MongoDB/provider readiness is claimed.
+
+**Exact next task, only after review/authorization:** implement an inactive shared renderer/style compiler using the existing manifest, protected commerce primitives and explicit public projection, starting with synthetic home/product/checkout fixtures. Preserve legacy rendering and all ten-theme hashes. Do not enable merchant adoption.
+
+---
+
+
+## 2026-10-20 — Adaptive Store Builder Phase 1: inactive contracts
+
+**Scope:** pure page/block/style validation and immutable commands only. Phase 0 was accepted for this work. No Phase 2 storage, renderer, UI, API, adoption, environment or merchant-data change is authorized or implemented here.
+
+**Phase 2 readiness: PASS for reviewed inactive-contract completion. Tasks A–E complete. Production release remains subject to existing gates. Phase 2 has not started.** The new entry is isolated at `@scaleup/storefront-theme/adaptive`; existing root/prebuilt imports do not load it. Current theme schema remains v4.
+
+- **A / skeleton:** twelve approved page kinds, versioned code-owned blueprints, nineteen registered block types, finite source schemas, reserved singleton root cores, semantic-part/property/operation allowlists and structured `{ path, code, message }` issues. Header/footer keep navigation/policy access inside protected cores. No merchant conditional authority.
+- **B / graph validation:** strict bounded JSON, assignments, node IDs/ownership/reachability, cycles, cross-template links, parent slots/count/depth, required cores, content/media/source shapes, dormant templates/saved sections/presets, all proposed count and UTF-8 limits. The complete-theme helper checks the future 256 KiB budget only; it does not accept a live v5 theme.
+- **C / styles:** typed values; base/tablet/desktop at 0/768/1024; per-layer responsive resolution before specificity; text-only inheritance; explicit false/zero; deletion-based resets. Protected controls cannot use hiding, clipping, fixed dimensions or arbitrary CSS. Functional contrast includes literal/token/default pairs; future callers must supply trusted complete effective tenant color tokens.
+- **D / commands:** immutable add/remove/copy/move/content/source/style/reset/preset/saved insertion, complete before/after validation, no partial value on failure, globally unused deterministic copy IDs and remapped children. Compatible cross-template/saved copies remain independent. Protected operations cannot be enabled by submitted JSON.
+- **E / evidence so far:** before check **43/43**; new contract suite **218/218**; after compatibility suites **332/332** (370 exact cases, 144 older hashes, 20 Gallery/Builder/live-home comparisons preserved); both application production builds pass; ten new JavaScript files lint clean; browser-target bundle has zero external imports and passes a pure import smoke check. This is not a browser interaction test.
+- **Final broad backend:** **1002/1007 pass**, with exactly the same five pre-existing failures as Phase 0: AI SEO provenance, prompt contract version, and three inventory/promotion/courier source-text assertions. No new final failure. Initial new-code issues (malformed percent URL acceptance and a frozen test fixture reused for setup) were fixed; regression tests pass. No old snapshot/assertion was changed.
+- **Compatibility:** 832 of 834 recorded pre-existing source/config/test files unchanged. The only intended changes among that set are this additive tracker entry and four package-export lines for `./adaptive`. All Phase 0 test/fixture/evidence hashes are preserved except the intentionally extended `track.md`. Existing index CJS/ESM, effective/capabilities, presets, renderer, frontend/backend application sources, models, lockfiles and dependencies remain unchanged. Evidence: `output/adaptive-builder/phase1/integrity.json`.
+- **Performance:** standalone synthetic validation medians are approximately 2.7 ms / 3.5 ms / 4.8 ms for 14 / 80 / 200 nodes; near-byte-limit 200-node candidate approximately 6.3 ms (p95 6.6 ms). Three-tier resolution batch median 0.066 ms. The 246286-byte graph also fits the proposed whole-theme budget alongside each of the ten frozen raw snapshots. Large text/preset libraries can reach the byte cap before the node cap; no bound was increased. These are local microbenchmarks, not production latency or memory guarantees. `benchmark-final.json` is the standalone run; the earlier concurrent run has scheduler variance and is retained separately.
+- **Limits:** no MongoDB/browser journeys rerun for this inactive-only phase. Phase 0's two Builder integration failures, full Admin lint failures and remaining browser/media-recovery gaps are still release gates. No ownership, staff/plan, actual font/layout/accessibility or provider success claim comes from pure validation. The browser-target bundle was imported in Node for syntax/pure smoke only; no DOM behavior is claimed.
+
+Exact changed paths, commands, results, security boundaries and the Phase 2 handoff are in `output/adaptive-builder/phase1/README.md`; machine-readable results and artifact hashes are alongside it. Automatic approval review rejected recursive cleanup of the generated Admin distribution with “blocked by policy”; the local build output and an accidentally created empty task directory were retained, with no workaround attempted. No runtime dependency was installed, and no production data, environment, publish/deploy, commit or push action occurred.
+
+Contract API/limits/commands and Phase 2 boundaries: `packages/storefront-theme/ADAPTIVE_CONTRACT.md`. Next step, after review and authorization: version-aware storage/reader design and tests for explicit v5 reader-first deployment, older-client replacement fencing, graph-preserving SEO/branding writers, tenant/plan ownership validation, transactional draft/publication/restore and retained-revision media safety. Keep adoption disabled and do not wire a renderer until its later phase. **Stop after Phase 1.**
+
+---
+
+## 2026-10-20 — Adaptive Store Builder Phase 0 compatibility baseline
+
+**Phase 1 readiness: PASS for the inactive contract phase after review. Production/release gates remain BLOCKED. Phase 1 has not started.** This is a test-only baseline, not a claim that every commerce journey or existing test is passing.
+
+### Repository preservation and changed files
+
+- Task-start revision: `54a04b6d34939dab3b9cc6f0139a753116edbd32`.
+- Initial working tree: only the three untracked `ADAPTIVE_BUILDER_ARCHITECTURE_AUDIT.md`, `ADAPTIVE_BUILDER_SYSTEM_DESIGN.md` and `ADAPTIVE_BUILDER_IMPLEMENTATION_ROADMAP.md`. They remain byte-identical. No pre-existing work was discarded.
+- Added `ecommerce-backend/backend/tests/adaptive-builder-baseline.test.js` (18 tests), `tests/helpers/adaptive-baseline.cjs` (read-only capture), and `tests/fixtures/adaptive-builder/baseline-manifest.json`, relative to that backend directory. Updated this `track.md` only among existing tracked files.
+- Evidence: `output/adaptive-builder/phase0/`, including task-start hashes, final integrity, command logs, homepage parity, 40 responsive homepage PNGs and three Atelier commerce PNGs. `README.md` and `results.json` index the evidence. These are generated synthetic test artifacts.
+- All **743 protected files** recorded at task start retain identical SHA-256 values: application sources, shared theme/renderer packages, existing backend tests/baselines, selected frontend package/config files and the three planning documents. No existing expected result was regenerated or weakened. Application source, all ten theme definitions, commerce APIs and `.env` remain unchanged.
+- The existing fixture Vite config writes into an older tracked cache directory. Its generated cache changes were restored from the clean task-start Git revision after stopping the task server; task-created untracked cache entries were removed. No source fix or configuration edit was made.
+
+### Frozen evidence for all ten themes
+
+| Preset ID | Definition version | Complete configuration | Exact new SSR cases | Homepage browser widths |
+|---|---:|---|---:|---|
+| `modern-general` | 2 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `minimal-general` | 2 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `modern-fashion` | 2 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `editorial-fashion` | 3 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `luxury-jewellery` | 3 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `minimal-jewellery` | 2 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `soft-beauty` | 2 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `modern-electronics` | 3 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `fresh-grocery` | 2 | Existing immutable snapshot + pinned digests | 37 | 1180 / 768 / 390 / 320 |
+| `atelier-editorial` | 1 | Full new snapshot embedded in manifest | 37 | 1180 / 768 / 390 / 320 |
+
+The manifest references the **untouched** nine full definition/raw/normalized/effective snapshots in `tests/fixtures/atelier-legacy/contracts.json`; it embeds the corresponding complete Atelier snapshot. For every theme it pins definition ID/version/hash, raw and normalized configuration hashes, full/limited/none effective outputs and capabilities, a customized merchant snapshot hash, CSS variables and serialized raw byte size. These are synthetic published-shape configurations, not reads of merchant production settings.
+
+The **370 exact markup hashes and byte counts** comprise, per theme: home at four declared devices, customized home, empty home; product normal/zero/sold-out/missing-media/long-Bangla states; populated/empty category, collection, cart and checkout; sign-in, registration, reset, populated/empty account dashboard, profile, security, vendor account; initial tracking; normal/busy/error OTP; preview policy, four actual policy-detail views and actual asynchronous policy index. Existing **144** frozen product/category/collection/commerce/account/tracking/policy hashes are independently checked within this set. Ten product callback tests retain add/buy/variant callback identities and quantity limits.
+
+The new helper fixes the SSR clock at `2026-10-20T00:00:00.000Z` and timezone at UTC, then restores both. It has no write/update-snapshot mode. Exact JSX output is not canonicalized; configuration digests sort object keys only. Existing synthetic fixtures and local SVG media are reused. Cart/checkout SSR cases deliberately retain the existing `PreviewCommercePage` seam; actual controllers/hooks and HTTP behavior are covered separately by the reused tests, not claimed from those preview hashes.
+
+### Commands and verified results
+
+Node CLI: `v24.12.0`. Commands below ran from `ecommerce-backend/backend` unless otherwise stated; output files are under `output/adaptive-builder/phase0/`.
+
+| Command / check | Result | Log / artifact |
+|---|---|---|
+| `node --test tests/storefront-atelier-contract.test.js tests/storefront-atelier-routes.test.js tests/storefront-atelier-commerce.test.js` | **172/172 pass**, including unchanged nine-theme configuration and 144 earlier page expectations | `legacy-tests.log` |
+| `node --test tests/adaptive-builder-baseline.test.js` | **18/18 pass**, 370 snapshots | `adaptive-tests.log` |
+| `$env:TZ='Pacific/Honolulu'; node --test tests/adaptive-builder-baseline.test.js` | **18/18 pass** after final helper changes; clock/timezone restoration asserted | `adaptive-tests-final.log` |
+| Set `THEME_PARITY_REPORT` to the absolute evidence `home-parity.json`; `node --test tests/storefront-preview-parity.test.js tests/storefront-atelier-builder.test.js tests/storefront-atelier-presentation.test.js tests/storefront-release-hardening.test.js tests/storefront-effective-theme.test.js tests/store-builder-prebuilt-themes.test.js` | **142/142 pass** | `extended-tests.log`, `home-parity.json` |
+| `node --test tests/*.test.js` | **784/789 pass; 5 pre-existing failures** | `backend-all.log` |
+| `node --test tests/ai-acceptance-provenance.test.js tests/ai-preferences.test.js tests/security-hardening.test.js` | **50/55 pass; same 5 failures**, without the new suite | `preexisting-failures.log` |
+| Isolated preload + release-hardening integration suite | **8/8 pass** | `mongo-integration.log` |
+| Isolated preload + `tests/integration/store-builder-safety.integration.test.js` | **10/12 pass; same 2 previously recorded failures** | `builder-integration.log` |
+| Admin: `node node_modules/eslint/bin/eslint.js .` | **18 existing errors, 4 warnings** | `admin-lint.log` |
+| Admin: `node node_modules/vite/bin/vite.js build --outDir ../output/adaptive-builder/phase0/admin-dist` | **PASS**; generated distribution removed after recording the log | `admin-build.log` |
+| Storefront: `node node_modules/eslint/bin/eslint.js` | **PASS** | `storefront-lint.log` |
+| Storefront: `node node_modules/next/dist/bin/next build` | **PASS** | `storefront-build.log` |
+| `git diff --check`; protected SHA-256 comparison | **PASS**; zero protected-file changes | `diff-check.log`, `integrity.json` |
+
+The 142-test run includes **20** exact Gallery/Builder/live-home SSR comparisons (ten themes × full/limited access), zero-price cart/reload/tenant switching, checkout refresh/totals/coupon contracts, OTP cooldown/concurrency/stale-response rules and server-version guards. Test totals overlap; they are not additive independent coverage counts.
+
+**Mongo safety:** used the already cached official `mongo:7` image (no installation/download), image ID `sha256:c53852c00c23ca9f23fc39690350ffa9a80e3642fe8f96879726d8da0abe80a7`. Created task-owned container `sfa-adaptive-phase0-20261020`, ID `1626d2cfb193e814943e473ecf88946a73af14efeadab5183ebac0fb8e0f34dd`, label `sfa.task=adaptive-phase0-20261020`, loopback-only `127.0.0.1:27028:27017`, tmpfs database/config storage, replica set `rs0`. Verified ownership, port/storage configuration and writable primary before tests. Database was exactly `atelier_acceptance_c085454b_test`. Test processes set `NODE_ENV=test`, `SFA_ISOLATED_ACCEPTANCE=c085454b` and the exact loopback `MONGO_URI_TEST`, with `--require ./tests/helpers/isolatedAcceptance.cjs --test --test-concurrency=1`. The preload prevents `.env` loading, unexpected Mongo targets, external network and worker startup; notification transports are mocked. Synthetic order writes occurred only inside that disposable database. No actual orders, mail, SMS, courier or payment-provider operations occurred. Container removed and port released after completion.
+
+The eight integration passes verify real unique indexes, guest/authenticated zero/null/base/positive price checkout, server rollout/SEO injection guards, draft/publish/reload/restore recovery, concurrent publication conflict, OTP concurrency/expiry/binding, single-use proof/idempotent stock handling, and lockout/rate limiting. The twelve Builder tests additionally exercise tenant scoping, URL/content sanitization, restricted staff, media ownership/lifecycle/cleanup, drafts and restore. No new database test was required; existing isolated infrastructure was reused.
+
+### Failure classification — nothing hidden
+
+| Classification | Existing failing check | Actual evidence |
+|---|---|---|
+| Pre-existing backend | `ai-acceptance-provenance.test.js:11` | SEO origin is `provider`, expected `deterministic_fallback`. |
+| Pre-existing backend | `ai-preferences.test.js:27` | Current prompt contract is `5.0.0`, expected `4.0.0`. |
+| Pre-existing backend | `security-hardening.test.js:339` | Source-text regex expects `enqueueLowStockAlertsForLogs(lowStockLogs)`. |
+| Pre-existing backend | `security-hardening.test.js` promotion-scheduling assertion | Source-text regex expects “checkout will not apply them before the start time”. |
+| Pre-existing backend | `security-hardening.test.js:883` confirmed-order notification assertion | Source-text regex expects `Retry Courier` in `OrderList.jsx` (failure at line 905). |
+| Pre-existing integration | `store-builder-safety.integration.test.js:295` | `RangeError` before draft save: fixture spreads Mongoose `shopA.theme` into `normalizeTheme`, exceeding nesting depth. Later assertions in this case remain unverified; it also contains older preset metadata expectations. |
+| Pre-existing integration | `store-builder-safety.integration.test.js:438` | Limited-plan typography-only draft expects HTTP 200, receives 403 at line 448. The boundary discrepancy remains unresolved; no policy was changed. |
+| Pre-existing lint | Admin application and existing fixture lint | 18 errors / 4 warnings in unchanged inputs; exact files/rules retained in `admin-lint.log`. |
+| Introduced | New baseline suite | **None found.** 18/18 pass, including an independent process with another timezone. |
+
+The backend failures reproduce in the three original files without importing the new test/helper; implicated application/test inputs are unchanged from task-start Git. Integration failures match the earlier release-hardening record and reproduce using the original suite on a fresh replica set. This establishes pre-existence; it does not establish that each underlying assertion is obsolete or authorize changing it.
+
+### Browser evidence and remaining gaps
+
+- Browser access was available during this phase. A task-only Vite fixture server ran on loopback port **5218** using `tests/atelier-routes.config.js`; only synthetic fixture pages were opened. It was stopped afterward.
+- **40** homepage captures: ten themes at actual iframe widths **1180/768/390/320**, height 800. Measured document `scrollWidth` did not exceed `clientWidth` in any case. Saved computed root font/color/background and SHA-256 of each PNG in `browser/homepage-evidence.json`. Atelier carousel was paused with its visible control and slide 1 selected before final captures.
+- Screenshots show the iframe viewport, not a full-page traversal of every below-fold element. They are reference artifacts, **not automated visual-diff assertions**. Computed font-family does not prove the external font file loaded. SSR responsive hashes alone do not evaluate CSS.
+- Actual mocked browser flow: selected Studio edition → added zero-price variant → cart retained price 0 and total 80 delivery → filled synthetic checkout details and required consent → Place Order opened phone-verification gate. No checkout OTP was sent and no browser order was placed. Additional tracking flow used only the fixture mock to verify access and showed Pending order details, cancellation control and ineligible-return state. Three PNGs preserve these states.
+- Browser access became disabled in Work settings on the continuation. No workaround was attempted. Further all-theme commerce journeys, delivered/eligible-return/cancel completion, browser account submissions, focus/keyboard/screen-reader checks, all pages at all widths, cold-cache/hydration and cross-browser verification remain open. Temporary viewport reset could not be issued after access was disabled.
+- Real MongoDB is **not environment-blocked** for these suites: 18/20 integration checks passed on disposable infrastructure. Production topology/indexes were not inspected. Known two integration failures remain failed gates.
+- **Media recovery remains a release risk:** current asset service retires unused assets after a seven-day grace and does not pin retained revision media. Current media ownership/cleanup tests do not prove recovery after physical provider deletion. No real media was uploaded/deleted, and no media/revision source was changed.
+- Representative performance/memory budgets and live notification/payment/courier success are unverified. Serialized configuration/markup bytes and test/build results are evidence, not production performance benchmarks.
+
+### Compatibility requirements before v5 adoption
+
+1. Keep existing v4 definitions, normalized/effective outputs, plan entitlements and unassigned rendering paths identical to this baseline.
+2. Deploy explicit v5 readers and declared Mongoose graph storage before any v5 writes; opaque unknown-field archives are not active graph persistence.
+3. Current guards reject unsupported incoming **and persisted** version 5 before external work (`storefront-effective-theme.test.js`, included above). Once v5 is supported, add an explicit older-client replacement fence: a v4 full save must never erase the current v5 graph. Do not assume today's supported-version check alone will do this after its version ceiling changes.
+4. Enforce version/revision checks for draft autosave, compatibility saves, publish, restore, SEO and branding writers; unrelated writes must preserve new graph fields. Mixed old/new clients need explicit regression tests.
+5. Version-aware read/restore, tenant/plan enforcement, transactional publication and graph/revision media safety must pass before adaptive adoption is enabled. Existing Atelier rollout is not authorization to enable adaptive rendering.
+
+**Exact next safe task, only after review/authorization:** implement inactive pure page-template, block-registry and responsive-style contracts with isolated tests inside the shared theme package. Do not wire them into current resolvers, storage, routes, preview or publication, and do not implement schema v5 in that first task. Phase 0 stops here.
+
+---
+
 ## 2026-10-20 — User-authorized Atelier availability for all shops
 
 The user superseded the earlier release instruction to keep rollout disabled, first approving ADI-only access and then explicitly requesting **Enable for all shop**. Updated only the rollout keys in the ignored local backend `.env`: `ATELIER_EDITORIAL_ROLLOUT=on`, empty test-shop list, and `ATELIER_EDITORIAL_APPROVED_PLAN_KEYS=beginner,starter,growth,pro`. Other environment values were compared and remain unchanged. The repository example remains safely disabled by default. No tenant themes were applied or published.

@@ -1,0 +1,93 @@
+{
+  "synthetic": true,
+  "browser": false,
+  "hydration": "NOT RUN",
+  "routes": [
+    {
+      "pageKind": "home",
+      "route": "/",
+      "status": 200,
+      "ssrMs": 319.09429999999975,
+      "bytes": 121184,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "product",
+      "route": "/products/shop-a-product",
+      "status": 200,
+      "ssrMs": 198.73589999999967,
+      "bytes": 144335,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "category",
+      "route": "/categories/Shop%20A%20Category",
+      "status": 200,
+      "ssrMs": 167.01260000000002,
+      "bytes": 142712,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "collection",
+      "route": "/collections/release-fixture",
+      "status": 200,
+      "ssrMs": 147.3782000000001,
+      "bytes": 130213,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "cart",
+      "route": "/cart",
+      "status": 200,
+      "ssrMs": 109.14830000000075,
+      "bytes": 108609,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "checkout",
+      "route": "/checkout",
+      "status": 200,
+      "ssrMs": 102.08119999999963,
+      "bytes": 115065,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "account",
+      "route": "/account",
+      "status": 200,
+      "ssrMs": 95.38180000000011,
+      "bytes": 107539,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "track",
+      "route": "/track",
+      "status": 200,
+      "ssrMs": 99.03369999999995,
+      "bytes": 108597,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "policiesIndex",
+      "route": "/policies",
+      "status": 200,
+      "ssrMs": 123.54479999999967,
+      "bytes": 128788,
+      "exactCssParity": true
+    },
+    {
+      "pageKind": "policy",
+      "route": "/policies/shipping",
+      "status": 200,
+      "ssrMs": 188.92720000000008,
+      "bytes": 110056,
+      "exactCssParity": true
+    }
+  ],
+  "globalFamilies": [
+    "header",
+    "footer"
+  ],
+  "restoredLegacyPresentation": true,
+  "mediaRetained": true
+}

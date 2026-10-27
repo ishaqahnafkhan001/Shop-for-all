@@ -1,4 +1,5 @@
 "use client";
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
 import {useStorefrontTheme} from '@/components/storefront/StorefrontThemeProvider';
 import React, { useState, useEffect } from 'react';
@@ -165,19 +166,19 @@ export default function AccountPage({ params }) {
     // 🌟 Use authLoading from context instead of local state
     if (authLoading || (user && user.role === 'Customer' && ordersLoading)) {
         return (
-            <div className="min-h-[60vh] flex items-center justify-center">
+            <AdaptivePresentation pageKind="account" core><div className="min-h-[60vh] flex items-center justify-center">
                 <div className="relative">
                     <div className="h-12 w-12 rounded-full border-4 border-gray-200"></div>
                     <div className="absolute top-0 left-0 h-12 w-12 rounded-full border-4 border-[var(--sf-accent)] border-t-transparent animate-spin"></div>
                 </div>
-            </div>
+            </div></AdaptivePresentation>
         );
     }
 
     if (!user) {
         if (isResettingPassword) {
             return (
-                <PasswordResetFlow
+                <AdaptivePresentation pageKind="account" core><PasswordResetFlow
                     presentationVariant={presentationVariant}
                     subdomain={subdomain}
                     onBack={() => setIsResettingPassword(false)}
@@ -185,12 +186,12 @@ export default function AccountPage({ params }) {
                         setIsResettingPassword(false);
                         setIsRegistering(false);
                     }}
-                />
+                /></AdaptivePresentation>
             );
         }
 
         return (
-            <AuthView
+            <AdaptivePresentation pageKind="account" core><AuthView
                     presentationVariant={presentationVariant}
                 isRegistering={isRegistering}
                 setIsRegistering={setIsRegistering}
@@ -205,16 +206,16 @@ export default function AccountPage({ params }) {
                 handleSendOTP={handleSendOTP}
                 otpTimer={otpTimer}
                 otpLoading={otpLoading}
-            />
+            /></AdaptivePresentation>
         );
     }
 
     if (user.role === 'VendorAdmin' || user.role === 'VendorStaff') {
-        return <VendorView presentationVariant={presentationVariant} user={user} handleLogout={handleUserLogout} />;
+        return <AdaptivePresentation pageKind="account" core><VendorView presentationVariant={presentationVariant} user={user} handleLogout={handleUserLogout} /></AdaptivePresentation>;
     }
 
     return (
-        <CustomerDashboard
+        <AdaptivePresentation pageKind="account" core><CustomerDashboard
                     presentationVariant={presentationVariant}
             user={user}
             orders={orders}
@@ -222,6 +223,6 @@ export default function AccountPage({ params }) {
             passForm={passForm}
             setPassForm={setPassForm}
             handlePasswordReset={handlePasswordReset}
-        />
+        /></AdaptivePresentation>
     );
 }

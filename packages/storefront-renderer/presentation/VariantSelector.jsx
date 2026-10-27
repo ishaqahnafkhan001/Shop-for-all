@@ -9,7 +9,7 @@ const variantMatches = (variant, candidate) => {
     });
 };
 
-const VariantSelector = memo(function VariantSelector({ availableAttributes, selectedAttributes, variants = [], onSelect, presentationVariant }) {
+const VariantSelector = memo(function VariantSelector({ availableAttributes, selectedAttributes, variants = [], onSelect, presentationVariant, adaptiveParts = false }) {
     const optionAvailability = useMemo(() => {
         const availability = {};
         for (const [attrName, values] of Object.entries(availableAttributes)) {
@@ -25,14 +25,14 @@ const VariantSelector = memo(function VariantSelector({ availableAttributes, sel
     if (!Object.keys(availableAttributes).length) return null;
 
     return (
-        <div data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-options' : undefined} className="space-y-5 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+        <div data-ab-surface={adaptiveParts ? '' : undefined} data-ab-part={adaptiveParts ? 'options' : undefined} data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-options' : undefined} className="space-y-5 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
             <div className="flex flex-col gap-2 border-b border-slate-200/70 pb-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p className="text-sm font-black text-slate-950">Choose your options</p>
                     <p className="mt-1 text-xs font-semibold text-slate-500">Select a combination to update price, SKU, image, and stock.</p>
                 </div>
                 {Object.keys(selectedAttributes).length > 0 && (
-                    <p className="max-w-full truncate rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">
+                    <p data-ab-surface={adaptiveParts ? '' : undefined} className="max-w-full truncate rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">
                         {Object.entries(selectedAttributes).filter(([, value]) => value).map(([name, value]) => `${name}: ${value}`).join(' / ')}
                     </p>
                 )}
@@ -41,14 +41,14 @@ const VariantSelector = memo(function VariantSelector({ availableAttributes, sel
                 <div key={attrName}>
                     <h3 className="mb-3 flex min-w-0 items-center text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                         {attrName}
-                        <span className="ml-3 h-px flex-1 bg-slate-200" />
+                        <span data-ab-surface={adaptiveParts ? '' : undefined} className="ml-3 h-px flex-1 bg-slate-200" />
                     </h3>
                     <div className="flex min-w-0 flex-wrap gap-2.5">
                         {values.map(value => {
                             const isSelected = selectedAttributes[attrName] === value;
                             const isAvailable = optionAvailability[attrName]?.[value] !== false;
                             return (
-                                <button
+                                <button data-ab-surface={adaptiveParts ? '' : undefined}
                                     key={value}
                                     type="button"
                                     onClick={() => onSelect(attrName, value)}

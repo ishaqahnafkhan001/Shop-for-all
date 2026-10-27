@@ -1,0 +1,15 @@
+{
+  "buttonHeight": 42,
+  "buttonWidth": 57,
+  "dpr": 2,
+  "labels": [
+    {
+      "clientWidth": 41,
+      "clipped": true,
+      "overflow": "ellipsis",
+      "scrollWidth": 67,
+      "text": "Buy Now"
+    }
+  ],
+  "width": 639
+}

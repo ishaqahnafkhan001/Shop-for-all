@@ -1,0 +1,26 @@
+{
+  "name": "@scaleup/storefront-theme",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "./index.cjs",
+  "module": "./index.mjs",
+  "exports": {
+    ".": {
+      "require": "./index.cjs",
+      "import": "./index.mjs"
+    },
+    "./adaptive": {
+      "require": "./adaptive.cjs",
+      "import": "./adaptive.mjs"
+    },
+    "./storage": {
+      "require": "./storage.cjs",
+      "import": "./storage.mjs"
+    },
+    "./prebuilt": {
+      "require": "./prebuilt.cjs",
+      "import": "./prebuilt.mjs"
+    }
+  }
+}

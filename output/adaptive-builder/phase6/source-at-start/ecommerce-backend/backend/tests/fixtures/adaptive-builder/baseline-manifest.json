@@ -1,0 +1,4702 @@
+{
+  "formatVersion": 1,
+  "recordedAt": "2026-10-20",
+  "revision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "scope": "Synthetic fixtures only. Exact SSR strings are not browser pixels, CSS evaluation or end-to-end commerce evidence.",
+  "legacyConfigurationDigest": "284d33a0be5ed14f7ff2186950bae315ac38982945ede62da5394f37f80403b6",
+  "coverage": {
+    "themes": 10,
+    "renderCases": 370,
+    "oldPageHashes": 144,
+    "viewports": {
+      "desktop": [
+        1180,
+        800
+      ],
+      "tablet": [
+        768,
+        800
+      ],
+      "mobile": [
+        390,
+        800
+      ],
+      "smallMobile": [
+        320,
+        800
+      ]
+    },
+    "configurationSnapshots": "Nine complete snapshots referenced from untouched atelier-legacy/contracts.json; Atelier complete snapshot embedded below.",
+    "limitations": [
+      "Home cases use the shared Builder presentation; existing storefront-preview-parity tests separately compare the live SSR presentation.",
+      "Cart and checkout non-live cases use existing PreviewCommercePage fixtures. Existing mocked hook and isolated HTTP tests cover commerce logic separately.",
+      "Tracking SSR captures the initial lookup, not verified order/cancel/return results.",
+      "Responsive SSR cases do not evaluate CSS media queries. Browser evidence is recorded separately.",
+      "No live provider, public production store, production database or merchant/customer data."
+    ],
+    "ssrClock": "2026-10-20T00:00:00.000Z; UTC; restored after capture"
+  },
+  "v5CompatibilityRequirements": [
+    "Deploy explicit v5 readers and declared storage before enabling any v5 writes.",
+    "Fence every older-client complete save against the persisted version; reject v4 replacement of a v5 graph rather than dropping it.",
+    "SEO, branding, compatibility saves, draft autosave, publish and restore must preserve the graph and enforce optimistic revision/version checks.",
+    "Keep v4 preset definitions, normalization, effective outputs, plan policy and unassigned page paths unchanged.",
+    "Unknown-field archives are opaque retention, not active page-graph persistence or permission to render new blocks.",
+    "Add explicit tests for mixed-version writers, transactional draft/publish/restore and retained revision media before adopting v5."
+  ],
+  "capture": {
+    "definitions": [
+      {
+        "id": "modern-general",
+        "version": 2,
+        "sha256": "16b807e3d3b341c2845d85b0319942f59c566f8863db9672358b622442971345"
+      },
+      {
+        "id": "minimal-general",
+        "version": 2,
+        "sha256": "b8a6fed6a713933862bc98045aefb2e0f85c1456d09b50e862fa13c8da2fdf9b"
+      },
+      {
+        "id": "modern-fashion",
+        "version": 2,
+        "sha256": "9a915eba23a090600b6735034bef38ffeb8c6bd219f590a8cae621dada456a43"
+      },
+      {
+        "id": "editorial-fashion",
+        "version": 3,
+        "sha256": "ffaed346397d3306a5201c7a06a56bbbee887ef2c734a7222d794ca066435452"
+      },
+      {
+        "id": "luxury-jewellery",
+        "version": 3,
+        "sha256": "3a18b2856dcfcc3c142b2e36352b316af5647c287bcbaccfbf2be89ab368dc94"
+      },
+      {
+        "id": "minimal-jewellery",
+        "version": 2,
+        "sha256": "6e4b336a811f53881bbc9ba672f7ca786e650dd1f934e17c3efc215beee44625"
+      },
+      {
+        "id": "soft-beauty",
+        "version": 2,
+        "sha256": "50120dd184212536e62cec3a833765aa9e9ef8755e1844fc5fb385f5233f49f2"
+      },
+      {
+        "id": "modern-electronics",
+        "version": 3,
+        "sha256": "8a9cccd45ced4ef0be593c43d9137bd53caa961e68003e711b0b0413bf1a22a3"
+      },
+      {
+        "id": "fresh-grocery",
+        "version": 2,
+        "sha256": "abc1e04146c16bff2d1ed344c6ea966b0a40729bd240dcb673964eedd1ea6b7f"
+      },
+      {
+        "id": "atelier-editorial",
+        "version": 1,
+        "sha256": "a6144be33b192c4b7988d471aacfe8525227b1d7dac60727480f5e454041a06e"
+      }
+    ],
+    "configurations": {
+      "modern-general": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/0",
+        "raw": "ace1a83325606d4e13780ff225574c01bf78e6b7c1c5eec950a23c5259bf34c0",
+        "normalized": "ace1a83325606d4e13780ff225574c01bf78e6b7c1c5eec950a23c5259bf34c0",
+        "capabilities": {
+          "full": "79dd795f39414ee4173c568bf80d6d0157e71aae37e5f29baa03fe829543d1b5",
+          "limited": "84798cc86922a081082ec1fa25c8c6acc40bb0d45616f21daf85f7d39535d72e",
+          "none": "a43b49973cfb4104491b411dffaf36e4b930c7f3e65f3a0a1f9b385add3a1d28"
+        },
+        "effective": {
+          "full": "3360b35af9412c256a5ad3ad2a8650d3b42db75f9879a099f4f7befe99463284",
+          "limited": "caa78f89733f82274b7854f8e9b9afb07aefb06be5d247a21dc0b64bc44552dd",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "3452d81d556eaa26078b2ef69469b3e498ab701bbefa79234cdbeb1751bdef96",
+        "cssVariables": "dbb19e2b086bfbadf2d02464f150999be317865fafb71cc0a49c4afa594d399f",
+        "serializedRawBytes": 8433
+      },
+      "minimal-general": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/1",
+        "raw": "ed73ed1fef6560effb8c22839ac94654397d836cd181c5a1a33b78573aa44743",
+        "normalized": "ed73ed1fef6560effb8c22839ac94654397d836cd181c5a1a33b78573aa44743",
+        "capabilities": {
+          "full": "79dd795f39414ee4173c568bf80d6d0157e71aae37e5f29baa03fe829543d1b5",
+          "limited": "84798cc86922a081082ec1fa25c8c6acc40bb0d45616f21daf85f7d39535d72e",
+          "none": "a43b49973cfb4104491b411dffaf36e4b930c7f3e65f3a0a1f9b385add3a1d28"
+        },
+        "effective": {
+          "full": "d7f0ee229c4d8be7a79cb0d893d74803790f0e8896442a1806446290c59df05e",
+          "limited": "67a96b55875904b8fbbde63b82c299f46e662e2db8ec95f811721f8cf2729a9b",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "bf1f42aec1f95bdf3354b7753650f6fc190d685b41c3b33bc7dd167003d0f944",
+        "cssVariables": "95ae76699119a2886074731cddb0cdc93d5160a8d0444b5bcd8634677daa688e",
+        "serializedRawBytes": 7589
+      },
+      "modern-fashion": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/2",
+        "raw": "51f79cc0d469fb960ad5a484d33327a38609c7d56821042d2fa6c6a7463f4b76",
+        "normalized": "51f79cc0d469fb960ad5a484d33327a38609c7d56821042d2fa6c6a7463f4b76",
+        "capabilities": {
+          "full": "79dd795f39414ee4173c568bf80d6d0157e71aae37e5f29baa03fe829543d1b5",
+          "limited": "84798cc86922a081082ec1fa25c8c6acc40bb0d45616f21daf85f7d39535d72e",
+          "none": "a43b49973cfb4104491b411dffaf36e4b930c7f3e65f3a0a1f9b385add3a1d28"
+        },
+        "effective": {
+          "full": "40dbef945fb9ff7b129714e9fe02b9b52779c15c507d0c479bd9e8ce9878cb01",
+          "limited": "b33570e63ebcaa7de72e6321d33c44d9cddc9583a656cd0aef001a2ae721ea63",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "bd61deebe989a7c377b999cffe83c7d641a8c0d804381ad1b28d6c3d746cd26b",
+        "cssVariables": "c167d9be5fa013d2c9d7e1051d74ac0d7390cf8bc7dffb72dc27e2f8f270f0a8",
+        "serializedRawBytes": 8600
+      },
+      "editorial-fashion": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/3",
+        "raw": "3edbefdd989445658698faf7b477ebee30c51ed23361a7747578121c0588802a",
+        "normalized": "3edbefdd989445658698faf7b477ebee30c51ed23361a7747578121c0588802a",
+        "capabilities": {
+          "full": "f076f105d297fc1187da603fe8657a3f45ac8a8baeec1f54a2d4e413df1a2f1f",
+          "limited": "97bae61c7333cdda82358775ff942d767a27cef229afa3052d3a18d34d3a4638",
+          "none": "49bd66bea17de571aedda4aa59f62cd6b05c54349b3c6a30af57c1c8db9305c1"
+        },
+        "effective": {
+          "full": "88ee682a14b97103fed2dd5b303eeef4b923b054c986ba02995e0ca00b84a9f4",
+          "limited": "fb588293b2e2f06534d212944e9c437c89b734a7a19b32d44671777335568909",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "7463eac0dc8301650efcdc834a677eaf3e07ef84cc1bb0280a471e6820bcb12b",
+        "cssVariables": "b0336f21fa6e27903cc89d5aaafb752aa33b2784dcac656eeec2c6c8a83c74d8",
+        "serializedRawBytes": 8219
+      },
+      "luxury-jewellery": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/4",
+        "raw": "ff67e7954033d330eccfd12c391308a3ef6515b3c7a424919d3e2837141917f6",
+        "normalized": "ff67e7954033d330eccfd12c391308a3ef6515b3c7a424919d3e2837141917f6",
+        "capabilities": {
+          "full": "c1e74b0098a0af48e99606000269b3e40df4566dffd0cdd3dcca70463a60026e",
+          "limited": "1a4978bb829406f43270ab5963b229e1eb5ec57ac73910f60475fd1d99ebe904",
+          "none": "b937ee878db2c56c7a7bc09c66146ea24da54e8c853b6f78314c65f321503a95"
+        },
+        "effective": {
+          "full": "c0969b8efe06b4d76b5b48cd48018b8fe378a35f9dfb9b79391b9b265582d95e",
+          "limited": "68353d60cb2eedb356e1de7cc8ad8f6310032e49003d361a542e12a4bdd2ceb5",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "60ac16dd67ab5901b2fcacbb5cccf795d872c6f986eb61b0465a642874e44bd3",
+        "cssVariables": "da5a44f97825822d5c138144328ef35aab33b262e9ab20b21ada0f1d32816394",
+        "serializedRawBytes": 8427
+      },
+      "minimal-jewellery": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/5",
+        "raw": "69cdf36e1a5d347753ff702f5ca7229d89be246633c40de298c3b6880c2dc779",
+        "normalized": "69cdf36e1a5d347753ff702f5ca7229d89be246633c40de298c3b6880c2dc779",
+        "capabilities": {
+          "full": "79dd795f39414ee4173c568bf80d6d0157e71aae37e5f29baa03fe829543d1b5",
+          "limited": "84798cc86922a081082ec1fa25c8c6acc40bb0d45616f21daf85f7d39535d72e",
+          "none": "a43b49973cfb4104491b411dffaf36e4b930c7f3e65f3a0a1f9b385add3a1d28"
+        },
+        "effective": {
+          "full": "2e9c274d9fe41995eaf9f2657e0bf5b724485e77ca0d1226f6286832187eace7",
+          "limited": "a71fa10de77540d9177897c6b6dd9ebe3839333d8198cd48a18d6dfb89dda81a",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "c58d2b65c2ea87675320e43f4498143397a99b76a24032703205837dbf4297b0",
+        "cssVariables": "2f118fd8742ef007c722cb6cb0d76fd9d96e607dc0fc48058da5ac0d7daa4f87",
+        "serializedRawBytes": 7621
+      },
+      "soft-beauty": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/6",
+        "raw": "afc6c6053f97f88c4c0f28bf28b9d6e6814fc53b9e0ceeafa555b81fe7038b36",
+        "normalized": "afc6c6053f97f88c4c0f28bf28b9d6e6814fc53b9e0ceeafa555b81fe7038b36",
+        "capabilities": {
+          "full": "79dd795f39414ee4173c568bf80d6d0157e71aae37e5f29baa03fe829543d1b5",
+          "limited": "84798cc86922a081082ec1fa25c8c6acc40bb0d45616f21daf85f7d39535d72e",
+          "none": "a43b49973cfb4104491b411dffaf36e4b930c7f3e65f3a0a1f9b385add3a1d28"
+        },
+        "effective": {
+          "full": "ce337848f9b9536c84dc63cfdf5790101419792caf6f01d9af47cc9ae3f79d9f",
+          "limited": "f200335013ebbec424c47d3a174c0c6ac5179e738d17e99e03bb964392da0ed7",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "35a9a4aadfdb4229d1e4d2cab861f19102217711e8f9b38e440d340af9bc7d61",
+        "cssVariables": "2974c308b0413d28c418bf0658d2f0fa755b3e584b92c97423367036a9317749",
+        "serializedRawBytes": 8444
+      },
+      "modern-electronics": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/7",
+        "raw": "c46a08c7777f905d89de9e394d195ee90731514260ccb11639131f4ba03c170c",
+        "normalized": "c46a08c7777f905d89de9e394d195ee90731514260ccb11639131f4ba03c170c",
+        "capabilities": {
+          "full": "7f449db34bcf733826d8660fb914e5de33c22e136e09bead687ae499423cb0a1",
+          "limited": "e3a785f235e91d90b4deb695d5df54cbc8bad35b24c61440790fd8be4c8d460d",
+          "none": "2c8406f2578bcc52a1eab0a36a7e6cca14ddb708122afffdbc1247110633d69b"
+        },
+        "effective": {
+          "full": "00c13bfdab35d643de1f0e4bb40d5e26b38a266cb98039b8e21b180da5ec319e",
+          "limited": "1a602326bfc8648df59eee0053622a4daef829b8b1ce213eb8ed1602c6cd8192",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "2ddf8eb3e7fc3c3c3c374b72256756d23490c537f53d83ef08fd86eff66de895",
+        "cssVariables": "ed9fcbb7db5aee8a981cb942bd1dc933e13308b61621bb5b70d9cf2fd3d48166",
+        "serializedRawBytes": 8351
+      },
+      "fresh-grocery": {
+        "snapshotRef": "../atelier-legacy/contracts.json#/8",
+        "raw": "957f2a238052030b5303f532729e521d7815a2311e6e1c78aff7ba59a45296a5",
+        "normalized": "957f2a238052030b5303f532729e521d7815a2311e6e1c78aff7ba59a45296a5",
+        "capabilities": {
+          "full": "79dd795f39414ee4173c568bf80d6d0157e71aae37e5f29baa03fe829543d1b5",
+          "limited": "84798cc86922a081082ec1fa25c8c6acc40bb0d45616f21daf85f7d39535d72e",
+          "none": "a43b49973cfb4104491b411dffaf36e4b930c7f3e65f3a0a1f9b385add3a1d28"
+        },
+        "effective": {
+          "full": "4c7227a38b46d7df3fb540567ad9c8da5ed5ce9e3caccfcc0314aac6b89d780f",
+          "limited": "e36bfa164345e561fd82e549e840bb3fa79f1ded1e0e017dc324dc2d6302a495",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "0105e344cbcb8bc53781d2134426108e2a86dcefcb6a18e543a9885b74cd43ab",
+        "cssVariables": "696bca9c3fed437c05cac13d3bcdd5a1d6f3a1c97db739a9fbfd3063c811f119",
+        "serializedRawBytes": 8394
+      },
+      "atelier-editorial": {
+        "snapshotRef": "#/atelierSnapshot",
+        "raw": "e2c00c2a4bfed2633098b512072ee5197b30f79a359bbbc86cdb100a191aa880",
+        "normalized": "e2c00c2a4bfed2633098b512072ee5197b30f79a359bbbc86cdb100a191aa880",
+        "capabilities": {
+          "full": "66add826a3e51d4ca1a254f41dfe9b8f049362a1e7f33845e83d2b938c94fa05",
+          "limited": "e5a96633a51c1980a51637a5c8975849b1bfbe2477015c4db99868707b05b352",
+          "none": "fcb77bc2f5818464e45d79e419e2335a6062814e08d30ecf654ae52d8e3b0f1d"
+        },
+        "effective": {
+          "full": "46c9ce4d174f8042549cc0defcc9d54300ca2335bc87b053dbc57f9c1656aa72",
+          "limited": "95d144fff895ed90013ac860198dad0281294d18f2af9e5ec4d00d58ad8d2033",
+          "none": "46083f1a849b21b3bac1e0639a3d0729dcb24d7eb3fa47ae98424150b3faaf6f"
+        },
+        "customized": "25c8f4e5d8c15accf32d4655ec09f73e33086249ea0eb9b59fcda1c896f67bf3",
+        "cssVariables": "809d303666c49e5c8c971c4fb6eb0d52205ffd842a55113769269924e0cda21d",
+        "serializedRawBytes": 7873
+      }
+    },
+    "atelierSnapshot": {
+      "id": "atelier-editorial",
+      "version": 1,
+      "definition": {
+        "catalogVersion": 3,
+        "status": "hidden",
+        "id": "atelier-editorial",
+        "version": 1,
+        "name": "Atelier Editorial",
+        "industry": "General",
+        "style": "Editorial",
+        "thumbnailKey": "atelier-editorial",
+        "description": "An expressive editorial homepage with paper surfaces, generous imagery and considered typography.",
+        "tags": [
+          "editorial",
+          "asymmetric hero",
+          "paper surfaces"
+        ],
+        "presentation": {
+          "presentationVariant": "atelier-editorial",
+          "colors": {
+            "accent": "#4653c9",
+            "accentHover": "#3742a8",
+            "accentSoft": "#dbec8b",
+            "accentBg": "#eeedf9",
+            "accentStrong": "#202721",
+            "accentMuted": "#606cf0",
+            "accentLight": "#dfdaf5",
+            "accentRing": "#dadbd1",
+            "background": "#f7f5ee",
+            "foreground": "#202721",
+            "headerBackground": "#f7f5ee",
+            "primaryButtonBg": "#202721",
+            "primaryButtonText": "#ffffff",
+            "primaryButtonHoverBg": "#3742a8",
+            "secondaryButtonBg": "#f7f5ee",
+            "secondaryButtonText": "#202721",
+            "secondaryButtonHoverBg": "#eeedf9",
+            "navbarBackground": "#f7f5ee",
+            "navbarText": "#202721",
+            "navbarHover": "#4653c9",
+            "cardBackground": "#f7f5ee",
+            "cardBorder": "#dadbd1",
+            "cardHoverBorder": "#dbec8b",
+            "priceColor": "#202721",
+            "saleBadgeBg": "#dc2626",
+            "saleBadgeText": "#ffffff",
+            "ratingColor": "#f59e0b",
+            "footerBackground": "#f7f5ee",
+            "footerText": "#5f655e",
+            "footerLink": "#202721",
+            "brand": {
+              "primary": "#4653c9",
+              "secondary": "#202721",
+              "accent": "#4653c9",
+              "hover": "#3742a8",
+              "soft": "#eeedf9",
+              "ring": "#dadbd1"
+            },
+            "header": {
+              "background": "#f7f5ee",
+              "text": "#202721",
+              "mutedText": "#5f655e",
+              "icon": "#202721",
+              "border": "#dadbd1",
+              "hover": "#4653c9",
+              "cartBadgeBackground": "#4653c9",
+              "cartBadgeText": "#ffffff"
+            },
+            "hero": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#202721",
+              "overlay": "#f7f5ee",
+              "primaryButtonBackground": "#202721",
+              "primaryButtonText": "#ffffff",
+              "secondaryButtonBackground": "#f7f5ee",
+              "secondaryButtonText": "#202721"
+            },
+            "productCard": {
+              "background": "#f7f5ee",
+              "border": "#dadbd1",
+              "shadow": "#dadbd1",
+              "title": "#202721",
+              "category": "#5f655e",
+              "price": "#202721",
+              "compareAtPrice": "#5f655e",
+              "saleBadgeBackground": "#dc2626",
+              "saleBadgeText": "#ffffff",
+              "ratingStar": "#f59e0b",
+              "ratingText": "#5f655e",
+              "wishlistIcon": "#5f655e",
+              "wishlistActive": "#e11d48",
+              "addToCartBackground": "#202721",
+              "addToCartText": "#ffffff",
+              "buyNowBackground": "#202721",
+              "buyNowText": "#ffffff",
+              "outOfStockBackground": "#fff1f2",
+              "outOfStockText": "#be123c",
+              "stockBackground": "#eeedf9",
+              "stockText": "#202721",
+              "variantChipBackground": "#f7f5ee",
+              "variantChipText": "#5f655e",
+              "variantChipSelectedBackground": "#4653c9",
+              "variantChipSelectedText": "#ffffff"
+            },
+            "allProducts": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#5f655e",
+              "filterBackground": "#f7f5ee",
+              "filterText": "#5f655e",
+              "dropdownBackground": "#f7f5ee",
+              "paginationBackground": "#f7f5ee",
+              "paginationText": "#5f655e",
+              "paginationActiveBackground": "#4653c9",
+              "paginationActiveText": "#ffffff"
+            },
+            "sections": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#5f655e",
+              "bannerOverlay": "#f7f5ee",
+              "bannerText": "#202721",
+              "faqBackground": "#f7f5ee",
+              "faqText": "#5f655e",
+              "testimonialBackground": "#f7f5ee",
+              "testimonialText": "#5f655e",
+              "trustIcon": "#4653c9",
+              "trustText": "#5f655e"
+            },
+            "footer": {
+              "background": "#f7f5ee",
+              "heading": "#202721",
+              "text": "#5f655e",
+              "link": "#202721",
+              "linkHover": "#dfdaf5",
+              "border": "#202721",
+              "poweredBy": "#5f655e"
+            },
+            "checkout": {
+              "background": "#f7f5ee",
+              "cardBackground": "#ffffff",
+              "text": "#202721",
+              "buttonBackground": "#202721",
+              "buttonText": "#f7f5ee",
+              "accent": "#4653c9",
+              "inputBackground": "#ffffff",
+              "inputBorder": "#dadbd1",
+              "inputFocus": "#4653c9",
+              "error": "#dc2626",
+              "success": "#047857"
+            }
+          },
+          "typography": {
+            "headingFont": "DM Sans",
+            "bodyFont": "DM Sans",
+            "baseSize": 16,
+            "headingWeight": "800"
+          },
+          "layout": {
+            "homepageComposition": "standard",
+            "maxWidth": "Wide",
+            "containerWidth": "Wide",
+            "sectionSpacing": "Spacious",
+            "contentSpacing": "Spacious",
+            "sectionWidth": "Full Width",
+            "sectionPaddingTop": 24,
+            "sectionPaddingBottom": 24,
+            "sectionMarginTop": 0,
+            "sectionMarginBottom": 40,
+            "productColumnsDesktop": 4,
+            "productColumnsMobile": 2,
+            "productGap": "Comfortable",
+            "cardAlignment": "Left"
+          },
+          "productGridStyle": "Editorial",
+          "productCard": {
+            "style": "Minimal",
+            "imageFit": "Contain",
+            "aspectRatio": "Portrait",
+            "imageRadius": "Soft",
+            "hoverZoom": true,
+            "showCategory": false,
+            "showRating": true,
+            "showReviews": true,
+            "showStock": true,
+            "showSku": false,
+            "showDiscountBadge": true,
+            "showQuickBuy": true,
+            "showWishlist": true,
+            "borderRadius": "Soft",
+            "shadow": "None",
+            "titleSize": "Medium",
+            "titleWeight": "700",
+            "priceSize": "Medium",
+            "buttonStyle": "Outline",
+            "buttonShape": "Rounded"
+          },
+          "header": {
+            "variant": "standard",
+            "menuStyle": "Nested"
+          },
+          "hero": {
+            "variant": "split",
+            "overlayOpacity": 0,
+            "height": "Tall"
+          },
+          "mobile": {
+            "stickyCheckoutButton": true,
+            "compactHeader": true,
+            "showBottomNavigation": false
+          },
+          "allProducts": {
+            "desktopColumns": 4,
+            "tabletColumns": 3,
+            "mobileColumns": 2,
+            "spacing": "Editorial"
+          }
+        },
+        "homepageBlueprint": [
+          {
+            "type": "PromoBlock",
+            "presentationSettings": {
+              "variant": "strip"
+            },
+            "desktopSettings": {},
+            "mobileSettings": {}
+          },
+          {
+            "type": "CategoryList",
+            "presentationSettings": {
+              "columns": 4,
+              "maxCategories": 8,
+              "variant": "editorial"
+            },
+            "desktopSettings": {},
+            "mobileSettings": {}
+          },
+          {
+            "type": "FeaturedProducts",
+            "presentationSettings": {},
+            "desktopSettings": {
+              "columns": 4
+            },
+            "mobileSettings": {
+              "columns": 2
+            }
+          },
+          {
+            "type": "BrandStory",
+            "presentationSettings": {
+              "variant": "editorial"
+            },
+            "desktopSettings": {},
+            "mobileSettings": {}
+          },
+          {
+            "type": "TrustBadges",
+            "presentationSettings": {},
+            "desktopSettings": {},
+            "mobileSettings": {}
+          }
+        ]
+      },
+      "rawPublishedSnapshot": {
+        "version": 4,
+        "preset": {
+          "id": "atelier-editorial",
+          "version": 1,
+          "appliedAt": "2026-10-20T00:00:00.000Z"
+        },
+        "logoUrl": "",
+        "faviconUrl": "",
+        "fontFamily": "DM Sans",
+        "productGridStyle": "Editorial",
+        "colors": {
+          "accent": "#4653c9",
+          "accentHover": "#3742a8",
+          "accentSoft": "#dbec8b",
+          "accentBg": "#eeedf9",
+          "accentStrong": "#202721",
+          "accentMuted": "#606cf0",
+          "accentLight": "#dfdaf5",
+          "accentRing": "#dadbd1",
+          "background": "#f7f5ee",
+          "foreground": "#202721",
+          "headerBackground": "#f7f5ee",
+          "primaryButtonBg": "#202721",
+          "primaryButtonText": "#ffffff",
+          "primaryButtonHoverBg": "#3742a8",
+          "secondaryButtonBg": "#f7f5ee",
+          "secondaryButtonText": "#202721",
+          "secondaryButtonHoverBg": "#eeedf9",
+          "navbarBackground": "#f7f5ee",
+          "navbarText": "#202721",
+          "navbarHover": "#4653c9",
+          "cardBackground": "#f7f5ee",
+          "cardBorder": "#dadbd1",
+          "cardHoverBorder": "#dbec8b",
+          "priceColor": "#202721",
+          "saleBadgeBg": "#dc2626",
+          "saleBadgeText": "#ffffff",
+          "ratingColor": "#f59e0b",
+          "footerBackground": "#f7f5ee",
+          "footerText": "#5f655e",
+          "footerLink": "#202721",
+          "brand": {
+            "primary": "#4653c9",
+            "secondary": "#202721",
+            "accent": "#4653c9",
+            "hover": "#3742a8",
+            "soft": "#eeedf9",
+            "ring": "#dadbd1"
+          },
+          "header": {
+            "background": "#f7f5ee",
+            "text": "#202721",
+            "mutedText": "#5f655e",
+            "icon": "#202721",
+            "border": "#dadbd1",
+            "hover": "#4653c9",
+            "cartBadgeBackground": "#4653c9",
+            "cartBadgeText": "#ffffff"
+          },
+          "hero": {
+            "background": "#f7f5ee",
+            "title": "#202721",
+            "subtitle": "#202721",
+            "overlay": "#f7f5ee",
+            "primaryButtonBackground": "#202721",
+            "primaryButtonText": "#ffffff",
+            "secondaryButtonBackground": "#f7f5ee",
+            "secondaryButtonText": "#202721"
+          },
+          "productCard": {
+            "background": "#f7f5ee",
+            "border": "#dadbd1",
+            "shadow": "#dadbd1",
+            "title": "#202721",
+            "category": "#5f655e",
+            "price": "#202721",
+            "compareAtPrice": "#5f655e",
+            "saleBadgeBackground": "#dc2626",
+            "saleBadgeText": "#ffffff",
+            "ratingStar": "#f59e0b",
+            "ratingText": "#5f655e",
+            "wishlistIcon": "#5f655e",
+            "wishlistActive": "#e11d48",
+            "addToCartBackground": "#202721",
+            "addToCartText": "#ffffff",
+            "buyNowBackground": "#202721",
+            "buyNowText": "#ffffff",
+            "outOfStockBackground": "#fff1f2",
+            "outOfStockText": "#be123c",
+            "stockBackground": "#eeedf9",
+            "stockText": "#202721",
+            "variantChipBackground": "#f7f5ee",
+            "variantChipText": "#5f655e",
+            "variantChipSelectedBackground": "#4653c9",
+            "variantChipSelectedText": "#ffffff"
+          },
+          "allProducts": {
+            "background": "#f7f5ee",
+            "title": "#202721",
+            "subtitle": "#5f655e",
+            "filterBackground": "#f7f5ee",
+            "filterText": "#5f655e",
+            "dropdownBackground": "#f7f5ee",
+            "paginationBackground": "#f7f5ee",
+            "paginationText": "#5f655e",
+            "paginationActiveBackground": "#4653c9",
+            "paginationActiveText": "#ffffff"
+          },
+          "sections": {
+            "background": "#f7f5ee",
+            "title": "#202721",
+            "subtitle": "#5f655e",
+            "bannerOverlay": "#f7f5ee",
+            "bannerText": "#202721",
+            "faqBackground": "#f7f5ee",
+            "faqText": "#5f655e",
+            "testimonialBackground": "#f7f5ee",
+            "testimonialText": "#5f655e",
+            "trustIcon": "#4653c9",
+            "trustText": "#5f655e"
+          },
+          "footer": {
+            "background": "#f7f5ee",
+            "heading": "#202721",
+            "text": "#5f655e",
+            "link": "#202721",
+            "linkHover": "#dfdaf5",
+            "border": "#202721",
+            "poweredBy": "#5f655e"
+          },
+          "checkout": {
+            "background": "#f7f5ee",
+            "cardBackground": "#ffffff",
+            "text": "#202721",
+            "buttonBackground": "#202721",
+            "buttonText": "#f7f5ee",
+            "accent": "#4653c9",
+            "inputBackground": "#ffffff",
+            "inputBorder": "#dadbd1",
+            "inputFocus": "#4653c9",
+            "error": "#dc2626",
+            "success": "#047857"
+          }
+        },
+        "header": {
+          "variant": "standard",
+          "logoPosition": "Left",
+          "menuStyle": "Nested"
+        },
+        "typography": {
+          "headingFont": "DM Sans",
+          "bodyFont": "DM Sans",
+          "baseSize": 16,
+          "headingWeight": "800"
+        },
+        "hero": {
+          "variant": "split",
+          "title": "Controlled merchant hero",
+          "subtitle": "Same revision and content",
+          "imageUrl": "/tests/fixtures/theme-media.svg",
+          "ctaLabel": "Shop Now",
+          "ctaUrl": "/",
+          "overlayOpacity": 0,
+          "height": "Tall",
+          "bannerSlides": [
+            {
+              "id": "hero-slide-1",
+              "enabled": true,
+              "desktopImage": "/tests/fixtures/theme-media.svg",
+              "mobileImage": "",
+              "title": "Controlled merchant hero",
+              "subtitle": "Same revision and content",
+              "badgeText": "",
+              "discountText": "",
+              "primaryCtaText": "Shop Now",
+              "primaryCtaLink": "/",
+              "secondaryCtaText": "Explore Collection",
+              "secondaryCtaLink": "#products",
+              "desktopFocalPoint": {
+                "x": 50,
+                "y": 50
+              },
+              "mobileFocalPoint": {
+                "x": 50,
+                "y": 50
+              }
+            }
+          ]
+        },
+        "layout": {
+          "homepageComposition": "standard",
+          "maxWidth": "Wide",
+          "containerWidth": "Wide",
+          "sectionSpacing": "Spacious",
+          "contentSpacing": "Spacious",
+          "sectionWidth": "Full Width",
+          "sectionPaddingTop": 24,
+          "sectionPaddingBottom": 24,
+          "sectionMarginTop": 0,
+          "sectionMarginBottom": 40,
+          "productColumnsDesktop": 4,
+          "productColumnsMobile": 2,
+          "productGap": "Comfortable",
+          "cardAlignment": "Left"
+        },
+        "productCard": {
+          "style": "Minimal",
+          "imageFit": "Contain",
+          "aspectRatio": "Portrait",
+          "imageRadius": "Soft",
+          "hoverZoom": true,
+          "showCategory": false,
+          "showRating": true,
+          "showReviews": true,
+          "showStock": true,
+          "showSku": false,
+          "showDiscountBadge": true,
+          "showQuickBuy": true,
+          "showWishlist": true,
+          "borderRadius": "Soft",
+          "shadow": "None",
+          "titleSize": "Medium",
+          "titleWeight": "700",
+          "priceSize": "Medium",
+          "priceColor": "#0f172a",
+          "buttonStyle": "Outline",
+          "buttonShape": "Rounded",
+          "buttonColor": "#0f766e"
+        },
+        "checkoutBranding": {
+          "logoUrl": "",
+          "bannerText": "",
+          "buttonStyle": "Rounded",
+          "trustMessage": "Secure checkout"
+        },
+        "mobile": {
+          "stickyCheckoutButton": true,
+          "compactHeader": true,
+          "showBottomNavigation": false,
+          "heroComposition": "Theme",
+          "sectionSpacing": "Theme"
+        },
+        "paymentSettings": {
+          "additionalMethodsEnabled": false,
+          "providers": {
+            "stripe": false,
+            "sslcommerz": false,
+            "bkash": false,
+            "nagad": false,
+            "rocket": false,
+            "paypal": false
+          }
+        },
+        "seo": {
+          "mode": "auto",
+          "siteName": "",
+          "title": "",
+          "description": "",
+          "keywords": [],
+          "topics": [],
+          "socialTitle": "",
+          "socialDescription": "",
+          "socialImage": "",
+          "socialImageAssetId": null,
+          "socialImageAlt": "",
+          "socialImageWidth": null,
+          "socialImageHeight": null,
+          "socialImageMimeType": "",
+          "facebookUrl": "",
+          "searchEngineVisibility": true,
+          "googleSiteVerification": "",
+          "language": "en-BD",
+          "spellingPreference": "british",
+          "primaryCategory": "",
+          "aiSuggestion": {
+            "alternatives": [],
+            "generatedAt": null,
+            "generatedFromHash": "",
+            "inputSnapshot": null,
+            "acceptedOptionId": "",
+            "acceptedFields": [],
+            "acceptedAt": null,
+            "acceptedOrigins": {}
+          },
+          "autoUpdate": false
+        },
+        "homepageSections": [
+          {
+            "id": "categories",
+            "type": "CategoryList",
+            "title": "Category list",
+            "isEnabled": true,
+            "sortOrder": 0,
+            "settings": {
+              "variant": "editorial",
+              "maxCategories": 8,
+              "columns": 4
+            },
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true
+            },
+            "source": {}
+          },
+          {
+            "id": "featured",
+            "type": "FeaturedProducts",
+            "settings": {
+              "productIds": [
+                "product-1"
+              ],
+              "source": {
+                "type": "manual",
+                "productIds": [
+                  "product-1"
+                ]
+              }
+            },
+            "title": "Featured products",
+            "isEnabled": true,
+            "sortOrder": 1,
+            "desktopSettings": {
+              "isVisible": true,
+              "columns": 4
+            },
+            "mobileSettings": {
+              "isVisible": true,
+              "columns": 2
+            },
+            "source": {
+              "type": "manual",
+              "productIds": [
+                "product-1"
+              ]
+            }
+          },
+          {
+            "id": "story",
+            "type": "BrandStory",
+            "settings": {
+              "variant": "editorial",
+              "text": "Controlled story",
+              "imageUrl": "/tests/fixtures/theme-media.svg",
+              "focalPoint": {
+                "x": 50,
+                "y": 50
+              }
+            },
+            "title": "Brand story",
+            "isEnabled": true,
+            "sortOrder": 2,
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true,
+              "focalPoint": {
+                "x": 50,
+                "y": 50
+              }
+            },
+            "source": {}
+          },
+          {
+            "id": "atelier-editorial-promoblock-1",
+            "type": "PromoBlock",
+            "title": "Promotion block",
+            "isEnabled": false,
+            "sortOrder": 3,
+            "settings": {
+              "variant": "strip",
+              "text": ""
+            },
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true
+            },
+            "source": {}
+          },
+          {
+            "id": "atelier-editorial-trustbadges-1",
+            "type": "TrustBadges",
+            "title": "Trust badges",
+            "isEnabled": false,
+            "sortOrder": 4,
+            "settings": {
+              "text": ""
+            },
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true
+            },
+            "source": {}
+          }
+        ],
+        "allProducts": {
+          "title": "All Products",
+          "subtitle": "Browse this shop's latest catalog",
+          "isEnabled": true,
+          "desktopColumns": 4,
+          "tabletColumns": 3,
+          "mobileColumns": 2,
+          "spacing": "Editorial"
+        },
+        "migrations": {
+          "bannerSectionsV1": false
+        },
+        "navigation": [
+          {
+            "label": "Policies",
+            "url": "/policies",
+            "sortOrder": 0,
+            "children": [],
+            "megaMenu": false,
+            "isExternal": false
+          }
+        ],
+        "footer": {
+          "text": "Controlled merchant footer",
+          "contactLabel": "Contact store",
+          "contactEmail": "",
+          "facebookUrl": "",
+          "instagramUrl": "",
+          "twitterUrl": "",
+          "youtubeUrl": "",
+          "tiktokUrl": "",
+          "links": []
+        },
+        "policies": {
+          "refund": "",
+          "shipping": "",
+          "privacy": "",
+          "terms": ""
+        },
+        "presentationVariant": "atelier-editorial"
+      },
+      "normalized": {
+        "version": 4,
+        "preset": {
+          "id": "atelier-editorial",
+          "version": 1,
+          "appliedAt": "2026-10-20T00:00:00.000Z"
+        },
+        "logoUrl": "",
+        "faviconUrl": "",
+        "fontFamily": "DM Sans",
+        "productGridStyle": "Editorial",
+        "colors": {
+          "accent": "#4653c9",
+          "accentHover": "#3742a8",
+          "accentSoft": "#dbec8b",
+          "accentBg": "#eeedf9",
+          "accentStrong": "#202721",
+          "accentMuted": "#606cf0",
+          "accentLight": "#dfdaf5",
+          "accentRing": "#dadbd1",
+          "background": "#f7f5ee",
+          "foreground": "#202721",
+          "headerBackground": "#f7f5ee",
+          "primaryButtonBg": "#202721",
+          "primaryButtonText": "#ffffff",
+          "primaryButtonHoverBg": "#3742a8",
+          "secondaryButtonBg": "#f7f5ee",
+          "secondaryButtonText": "#202721",
+          "secondaryButtonHoverBg": "#eeedf9",
+          "navbarBackground": "#f7f5ee",
+          "navbarText": "#202721",
+          "navbarHover": "#4653c9",
+          "cardBackground": "#f7f5ee",
+          "cardBorder": "#dadbd1",
+          "cardHoverBorder": "#dbec8b",
+          "priceColor": "#202721",
+          "saleBadgeBg": "#dc2626",
+          "saleBadgeText": "#ffffff",
+          "ratingColor": "#f59e0b",
+          "footerBackground": "#f7f5ee",
+          "footerText": "#5f655e",
+          "footerLink": "#202721",
+          "brand": {
+            "primary": "#4653c9",
+            "secondary": "#202721",
+            "accent": "#4653c9",
+            "hover": "#3742a8",
+            "soft": "#eeedf9",
+            "ring": "#dadbd1"
+          },
+          "header": {
+            "background": "#f7f5ee",
+            "text": "#202721",
+            "mutedText": "#5f655e",
+            "icon": "#202721",
+            "border": "#dadbd1",
+            "hover": "#4653c9",
+            "cartBadgeBackground": "#4653c9",
+            "cartBadgeText": "#ffffff"
+          },
+          "hero": {
+            "background": "#f7f5ee",
+            "title": "#202721",
+            "subtitle": "#202721",
+            "overlay": "#f7f5ee",
+            "primaryButtonBackground": "#202721",
+            "primaryButtonText": "#ffffff",
+            "secondaryButtonBackground": "#f7f5ee",
+            "secondaryButtonText": "#202721"
+          },
+          "productCard": {
+            "background": "#f7f5ee",
+            "border": "#dadbd1",
+            "shadow": "#dadbd1",
+            "title": "#202721",
+            "category": "#5f655e",
+            "price": "#202721",
+            "compareAtPrice": "#5f655e",
+            "saleBadgeBackground": "#dc2626",
+            "saleBadgeText": "#ffffff",
+            "ratingStar": "#f59e0b",
+            "ratingText": "#5f655e",
+            "wishlistIcon": "#5f655e",
+            "wishlistActive": "#e11d48",
+            "addToCartBackground": "#202721",
+            "addToCartText": "#ffffff",
+            "buyNowBackground": "#202721",
+            "buyNowText": "#ffffff",
+            "outOfStockBackground": "#fff1f2",
+            "outOfStockText": "#be123c",
+            "stockBackground": "#eeedf9",
+            "stockText": "#202721",
+            "variantChipBackground": "#f7f5ee",
+            "variantChipText": "#5f655e",
+            "variantChipSelectedBackground": "#4653c9",
+            "variantChipSelectedText": "#ffffff"
+          },
+          "allProducts": {
+            "background": "#f7f5ee",
+            "title": "#202721",
+            "subtitle": "#5f655e",
+            "filterBackground": "#f7f5ee",
+            "filterText": "#5f655e",
+            "dropdownBackground": "#f7f5ee",
+            "paginationBackground": "#f7f5ee",
+            "paginationText": "#5f655e",
+            "paginationActiveBackground": "#4653c9",
+            "paginationActiveText": "#ffffff"
+          },
+          "sections": {
+            "background": "#f7f5ee",
+            "title": "#202721",
+            "subtitle": "#5f655e",
+            "bannerOverlay": "#f7f5ee",
+            "bannerText": "#202721",
+            "faqBackground": "#f7f5ee",
+            "faqText": "#5f655e",
+            "testimonialBackground": "#f7f5ee",
+            "testimonialText": "#5f655e",
+            "trustIcon": "#4653c9",
+            "trustText": "#5f655e"
+          },
+          "footer": {
+            "background": "#f7f5ee",
+            "heading": "#202721",
+            "text": "#5f655e",
+            "link": "#202721",
+            "linkHover": "#dfdaf5",
+            "border": "#202721",
+            "poweredBy": "#5f655e"
+          },
+          "checkout": {
+            "background": "#f7f5ee",
+            "cardBackground": "#ffffff",
+            "text": "#202721",
+            "buttonBackground": "#202721",
+            "buttonText": "#f7f5ee",
+            "accent": "#4653c9",
+            "inputBackground": "#ffffff",
+            "inputBorder": "#dadbd1",
+            "inputFocus": "#4653c9",
+            "error": "#dc2626",
+            "success": "#047857"
+          }
+        },
+        "header": {
+          "variant": "standard",
+          "logoPosition": "Left",
+          "menuStyle": "Nested"
+        },
+        "typography": {
+          "headingFont": "DM Sans",
+          "bodyFont": "DM Sans",
+          "baseSize": 16,
+          "headingWeight": "800"
+        },
+        "hero": {
+          "variant": "split",
+          "title": "Controlled merchant hero",
+          "subtitle": "Same revision and content",
+          "imageUrl": "/tests/fixtures/theme-media.svg",
+          "ctaLabel": "Shop Now",
+          "ctaUrl": "/",
+          "overlayOpacity": 0,
+          "height": "Tall",
+          "bannerSlides": [
+            {
+              "id": "hero-slide-1",
+              "enabled": true,
+              "desktopImage": "/tests/fixtures/theme-media.svg",
+              "mobileImage": "",
+              "title": "Controlled merchant hero",
+              "subtitle": "Same revision and content",
+              "badgeText": "",
+              "discountText": "",
+              "primaryCtaText": "Shop Now",
+              "primaryCtaLink": "/",
+              "secondaryCtaText": "Explore Collection",
+              "secondaryCtaLink": "#products",
+              "desktopFocalPoint": {
+                "x": 50,
+                "y": 50
+              },
+              "mobileFocalPoint": {
+                "x": 50,
+                "y": 50
+              }
+            }
+          ]
+        },
+        "layout": {
+          "homepageComposition": "standard",
+          "maxWidth": "Wide",
+          "containerWidth": "Wide",
+          "sectionSpacing": "Spacious",
+          "contentSpacing": "Spacious",
+          "sectionWidth": "Full Width",
+          "sectionPaddingTop": 24,
+          "sectionPaddingBottom": 24,
+          "sectionMarginTop": 0,
+          "sectionMarginBottom": 40,
+          "productColumnsDesktop": 4,
+          "productColumnsMobile": 2,
+          "productGap": "Comfortable",
+          "cardAlignment": "Left"
+        },
+        "productCard": {
+          "style": "Minimal",
+          "imageFit": "Contain",
+          "aspectRatio": "Portrait",
+          "imageRadius": "Soft",
+          "hoverZoom": true,
+          "showCategory": false,
+          "showRating": true,
+          "showReviews": true,
+          "showStock": true,
+          "showSku": false,
+          "showDiscountBadge": true,
+          "showQuickBuy": true,
+          "showWishlist": true,
+          "borderRadius": "Soft",
+          "shadow": "None",
+          "titleSize": "Medium",
+          "titleWeight": "700",
+          "priceSize": "Medium",
+          "priceColor": "#0f172a",
+          "buttonStyle": "Outline",
+          "buttonShape": "Rounded",
+          "buttonColor": "#0f766e"
+        },
+        "checkoutBranding": {
+          "logoUrl": "",
+          "bannerText": "",
+          "buttonStyle": "Rounded",
+          "trustMessage": "Secure checkout"
+        },
+        "mobile": {
+          "stickyCheckoutButton": true,
+          "compactHeader": true,
+          "showBottomNavigation": false,
+          "heroComposition": "Theme",
+          "sectionSpacing": "Theme"
+        },
+        "paymentSettings": {
+          "additionalMethodsEnabled": false,
+          "providers": {
+            "stripe": false,
+            "sslcommerz": false,
+            "bkash": false,
+            "nagad": false,
+            "rocket": false,
+            "paypal": false
+          }
+        },
+        "seo": {
+          "mode": "auto",
+          "siteName": "",
+          "title": "",
+          "description": "",
+          "keywords": [],
+          "topics": [],
+          "socialTitle": "",
+          "socialDescription": "",
+          "socialImage": "",
+          "socialImageAssetId": null,
+          "socialImageAlt": "",
+          "socialImageWidth": null,
+          "socialImageHeight": null,
+          "socialImageMimeType": "",
+          "facebookUrl": "",
+          "searchEngineVisibility": true,
+          "googleSiteVerification": "",
+          "language": "en-BD",
+          "spellingPreference": "british",
+          "primaryCategory": "",
+          "aiSuggestion": {
+            "alternatives": [],
+            "generatedAt": null,
+            "generatedFromHash": "",
+            "inputSnapshot": null,
+            "acceptedOptionId": "",
+            "acceptedFields": [],
+            "acceptedAt": null,
+            "acceptedOrigins": {}
+          },
+          "autoUpdate": false
+        },
+        "homepageSections": [
+          {
+            "id": "categories",
+            "type": "CategoryList",
+            "title": "Category list",
+            "isEnabled": true,
+            "sortOrder": 0,
+            "settings": {
+              "variant": "editorial",
+              "maxCategories": 8,
+              "columns": 4
+            },
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true
+            },
+            "source": {}
+          },
+          {
+            "id": "featured",
+            "type": "FeaturedProducts",
+            "settings": {
+              "productIds": [
+                "product-1"
+              ],
+              "source": {
+                "type": "manual",
+                "productIds": [
+                  "product-1"
+                ]
+              }
+            },
+            "title": "Featured products",
+            "isEnabled": true,
+            "sortOrder": 1,
+            "desktopSettings": {
+              "isVisible": true,
+              "columns": 4
+            },
+            "mobileSettings": {
+              "isVisible": true,
+              "columns": 2
+            },
+            "source": {
+              "type": "manual",
+              "productIds": [
+                "product-1"
+              ]
+            }
+          },
+          {
+            "id": "story",
+            "type": "BrandStory",
+            "settings": {
+              "variant": "editorial",
+              "text": "Controlled story",
+              "imageUrl": "/tests/fixtures/theme-media.svg",
+              "focalPoint": {
+                "x": 50,
+                "y": 50
+              }
+            },
+            "title": "Brand story",
+            "isEnabled": true,
+            "sortOrder": 2,
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true,
+              "focalPoint": {
+                "x": 50,
+                "y": 50
+              }
+            },
+            "source": {}
+          },
+          {
+            "id": "atelier-editorial-promoblock-1",
+            "type": "PromoBlock",
+            "title": "Promotion block",
+            "isEnabled": false,
+            "sortOrder": 3,
+            "settings": {
+              "variant": "strip",
+              "text": ""
+            },
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true
+            },
+            "source": {}
+          },
+          {
+            "id": "atelier-editorial-trustbadges-1",
+            "type": "TrustBadges",
+            "title": "Trust badges",
+            "isEnabled": false,
+            "sortOrder": 4,
+            "settings": {
+              "text": ""
+            },
+            "desktopSettings": {
+              "isVisible": true
+            },
+            "mobileSettings": {
+              "isVisible": true
+            },
+            "source": {}
+          }
+        ],
+        "allProducts": {
+          "title": "All Products",
+          "subtitle": "Browse this shop's latest catalog",
+          "isEnabled": true,
+          "desktopColumns": 4,
+          "tabletColumns": 3,
+          "mobileColumns": 2,
+          "spacing": "Editorial"
+        },
+        "migrations": {
+          "bannerSectionsV1": false
+        },
+        "navigation": [
+          {
+            "label": "Policies",
+            "url": "/policies",
+            "sortOrder": 0,
+            "children": [],
+            "megaMenu": false,
+            "isExternal": false
+          }
+        ],
+        "footer": {
+          "text": "Controlled merchant footer",
+          "contactLabel": "Contact store",
+          "contactEmail": "",
+          "facebookUrl": "",
+          "instagramUrl": "",
+          "twitterUrl": "",
+          "youtubeUrl": "",
+          "tiktokUrl": "",
+          "links": []
+        },
+        "policies": {
+          "refund": "",
+          "shipping": "",
+          "privacy": "",
+          "terms": ""
+        },
+        "presentationVariant": "atelier-editorial"
+      },
+      "capabilities": {
+        "full": {
+          "plan": {
+            "access": "full",
+            "planName": "your current plan",
+            "editing": {
+              "enabled": true,
+              "label": "Available"
+            },
+            "sections": {
+              "enabled": true,
+              "label": "Available"
+            },
+            "advancedDesign": {
+              "enabled": true,
+              "label": "Available"
+            },
+            "customDomain": {
+              "enabled": true,
+              "label": "Available"
+            },
+            "scheduledBanners": {
+              "enabled": false,
+              "label": "Scheduled banners are not included in your current plan"
+            }
+          },
+          "composition": {
+            "id": "standard",
+            "label": "Standard",
+            "classification": "theme-controlled",
+            "merchantSelectable": false,
+            "changeCommand": "apply-theme",
+            "slots": {},
+            "orderingHelp": "Sections follow your list order between the hero and catalog."
+          },
+          "header": {
+            "allowed": [
+              "standard",
+              "minimal",
+              "centered"
+            ],
+            "merchantSelectable": false,
+            "reason": "Atelier Editorial controls its header structure."
+          },
+          "hero": {
+            "allowed": [
+              "fullBleed",
+              "split",
+              "centered",
+              "editorial",
+              "minimal"
+            ],
+            "merchantSelectable": false,
+            "reason": "Atelier Editorial controls its hero structure."
+          },
+          "sections": {
+            "FeaturedProducts": {
+              "editable": true,
+              "addable": true,
+              "variants": null
+            },
+            "Collection": {
+              "editable": true,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "grid",
+                  "spacious",
+                  "mosaic"
+                ],
+                "merchantSelectable": true,
+                "reason": ""
+              }
+            },
+            "CategoryList": {
+              "editable": true,
+              "addable": true,
+              "variants": {
+                "allowed": [
+                  "cards",
+                  "imageGrid",
+                  "circles",
+                  "editorial"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "Banner": {
+              "editable": true,
+              "addable": true,
+              "variants": {
+                "allowed": [
+                  "overlay",
+                  "split",
+                  "minimal"
+                ],
+                "merchantSelectable": true,
+                "reason": ""
+              }
+            },
+            "TextBlock": {
+              "editable": true,
+              "addable": true,
+              "variants": null
+            },
+            "Newsletter": {
+              "editable": true,
+              "addable": true,
+              "variants": {
+                "allowed": [
+                  "boxed",
+                  "fullWidth",
+                  "minimal"
+                ],
+                "merchantSelectable": true,
+                "reason": ""
+              }
+            },
+            "Reviews": {
+              "editable": true,
+              "addable": true,
+              "variants": {
+                "allowed": [
+                  "cards",
+                  "quote",
+                  "minimal"
+                ],
+                "merchantSelectable": true,
+                "reason": ""
+              }
+            },
+            "FAQ": {
+              "editable": true,
+              "addable": true,
+              "variants": null
+            },
+            "TrustBadges": {
+              "editable": true,
+              "addable": true,
+              "variants": null
+            },
+            "BrandStory": {
+              "editable": true,
+              "addable": true,
+              "variants": {
+                "allowed": [
+                  "standard",
+                  "imageLeft",
+                  "imageRight",
+                  "fullWidth",
+                  "editorial"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "PromoBlock": {
+              "editable": true,
+              "addable": true,
+              "variants": {
+                "allowed": [
+                  "boxed",
+                  "strip",
+                  "split"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "BrandShowcase": {
+              "editable": true,
+              "addable": false,
+              "variants": null
+            },
+            "CollectionShowcase": {
+              "editable": true,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "grid",
+                  "spacious",
+                  "mosaic"
+                ],
+                "merchantSelectable": true,
+                "reason": ""
+              }
+            }
+          },
+          "sectionStructure": {
+            "editable": true,
+            "reason": ""
+          },
+          "layout": {
+            "editable": true,
+            "reason": ""
+          },
+          "colors": {
+            "editable": true
+          },
+          "mobile": {
+            "editable": true
+          }
+        },
+        "limited": {
+          "plan": {
+            "access": "limited",
+            "planName": "your current plan",
+            "editing": {
+              "enabled": true,
+              "label": "Available"
+            },
+            "sections": {
+              "enabled": false,
+              "label": "Requires a plan with advanced homepage sections (current: your current plan)"
+            },
+            "advancedDesign": {
+              "enabled": false,
+              "label": "Requires full Store Builder access (current: your current plan)"
+            },
+            "customDomain": {
+              "enabled": true,
+              "label": "Available"
+            },
+            "scheduledBanners": {
+              "enabled": false,
+              "label": "Scheduled banners are not included in your current plan"
+            }
+          },
+          "composition": {
+            "id": "standard",
+            "label": "Standard",
+            "classification": "theme-controlled",
+            "merchantSelectable": false,
+            "changeCommand": "apply-theme",
+            "slots": {},
+            "orderingHelp": "Sections follow your list order between the hero and catalog."
+          },
+          "header": {
+            "allowed": [
+              "standard",
+              "minimal",
+              "centered"
+            ],
+            "merchantSelectable": false,
+            "reason": "Atelier Editorial controls its header structure."
+          },
+          "hero": {
+            "allowed": [
+              "fullBleed",
+              "split",
+              "centered",
+              "editorial",
+              "minimal"
+            ],
+            "merchantSelectable": false,
+            "reason": "Atelier Editorial controls its hero structure."
+          },
+          "sections": {
+            "FeaturedProducts": {
+              "editable": true,
+              "addable": false,
+              "variants": null
+            },
+            "Collection": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "grid",
+                  "spacious",
+                  "mosaic"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "CategoryList": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "cards",
+                  "imageGrid",
+                  "circles",
+                  "editorial"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "Banner": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "overlay",
+                  "split",
+                  "minimal"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "TextBlock": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "Newsletter": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "boxed",
+                  "fullWidth",
+                  "minimal"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "Reviews": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "cards",
+                  "quote",
+                  "minimal"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "FAQ": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "TrustBadges": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "BrandStory": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "standard",
+                  "imageLeft",
+                  "imageRight",
+                  "fullWidth",
+                  "editorial"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "PromoBlock": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "boxed",
+                  "strip",
+                  "split"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "BrandShowcase": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "CollectionShowcase": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "grid",
+                  "spacious",
+                  "mosaic"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            }
+          },
+          "sectionStructure": {
+            "editable": false,
+            "reason": "Requires a plan with advanced homepage sections (current: your current plan)"
+          },
+          "layout": {
+            "editable": false,
+            "reason": "Requires full Store Builder access (current: your current plan)"
+          },
+          "colors": {
+            "editable": true
+          },
+          "mobile": {
+            "editable": true
+          }
+        },
+        "none": {
+          "plan": {
+            "access": "none",
+            "planName": "your current plan",
+            "editing": {
+              "enabled": false,
+              "label": "Store Builder is not included in the current plan."
+            },
+            "sections": {
+              "enabled": false,
+              "label": "Requires a plan with advanced homepage sections (current: your current plan)"
+            },
+            "advancedDesign": {
+              "enabled": false,
+              "label": "Requires full Store Builder access (current: your current plan)"
+            },
+            "customDomain": {
+              "enabled": true,
+              "label": "Available"
+            },
+            "scheduledBanners": {
+              "enabled": false,
+              "label": "Scheduled banners are not included in your current plan"
+            }
+          },
+          "composition": {
+            "id": "standard",
+            "label": "Standard",
+            "classification": "theme-controlled",
+            "merchantSelectable": false,
+            "changeCommand": "apply-theme",
+            "slots": {},
+            "orderingHelp": "Sections follow your list order between the hero and catalog."
+          },
+          "header": {
+            "allowed": [
+              "standard",
+              "minimal",
+              "centered"
+            ],
+            "merchantSelectable": false,
+            "reason": "Atelier Editorial controls its header structure."
+          },
+          "hero": {
+            "allowed": [
+              "fullBleed",
+              "split",
+              "centered",
+              "editorial",
+              "minimal"
+            ],
+            "merchantSelectable": false,
+            "reason": "Atelier Editorial controls its hero structure."
+          },
+          "sections": {
+            "FeaturedProducts": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "Collection": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "grid",
+                  "spacious",
+                  "mosaic"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "CategoryList": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "cards",
+                  "imageGrid",
+                  "circles",
+                  "editorial"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "Banner": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "overlay",
+                  "split",
+                  "minimal"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "TextBlock": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "Newsletter": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "boxed",
+                  "fullWidth",
+                  "minimal"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "Reviews": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "cards",
+                  "quote",
+                  "minimal"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            },
+            "FAQ": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "TrustBadges": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "BrandStory": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "standard",
+                  "imageLeft",
+                  "imageRight",
+                  "fullWidth",
+                  "editorial"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "PromoBlock": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "boxed",
+                  "strip",
+                  "split"
+                ],
+                "merchantSelectable": false,
+                "reason": "Atelier Editorial controls this section structure; content, visibility and spacing remain editable.",
+                "classification": "theme-controlled"
+              }
+            },
+            "BrandShowcase": {
+              "editable": false,
+              "addable": false,
+              "variants": null
+            },
+            "CollectionShowcase": {
+              "editable": false,
+              "addable": false,
+              "variants": {
+                "allowed": [
+                  "grid",
+                  "spacious",
+                  "mosaic"
+                ],
+                "merchantSelectable": false,
+                "reason": "Requires full Store Builder access (current: your current plan)"
+              }
+            }
+          },
+          "sectionStructure": {
+            "editable": false,
+            "reason": "Requires a plan with advanced homepage sections (current: your current plan)"
+          },
+          "layout": {
+            "editable": false,
+            "reason": "Requires full Store Builder access (current: your current plan)"
+          },
+          "colors": {
+            "editable": false
+          },
+          "mobile": {
+            "editable": false
+          }
+        }
+      },
+      "effective": {
+        "full": {
+          "version": 4,
+          "preset": {
+            "id": "atelier-editorial",
+            "version": 1,
+            "appliedAt": "2026-10-20T00:00:00.000Z"
+          },
+          "logoUrl": "",
+          "faviconUrl": "",
+          "fontFamily": "DM Sans",
+          "productGridStyle": "Editorial",
+          "colors": {
+            "accent": "#4653c9",
+            "accentHover": "#3742a8",
+            "accentSoft": "#dbec8b",
+            "accentBg": "#eeedf9",
+            "accentStrong": "#202721",
+            "accentMuted": "#606cf0",
+            "accentLight": "#dfdaf5",
+            "accentRing": "#dadbd1",
+            "background": "#f7f5ee",
+            "foreground": "#202721",
+            "headerBackground": "#f7f5ee",
+            "primaryButtonBg": "#202721",
+            "primaryButtonText": "#ffffff",
+            "primaryButtonHoverBg": "#3742a8",
+            "secondaryButtonBg": "#f7f5ee",
+            "secondaryButtonText": "#202721",
+            "secondaryButtonHoverBg": "#eeedf9",
+            "navbarBackground": "#f7f5ee",
+            "navbarText": "#202721",
+            "navbarHover": "#4653c9",
+            "cardBackground": "#f7f5ee",
+            "cardBorder": "#dadbd1",
+            "cardHoverBorder": "#dbec8b",
+            "priceColor": "#202721",
+            "saleBadgeBg": "#dc2626",
+            "saleBadgeText": "#ffffff",
+            "ratingColor": "#f59e0b",
+            "footerBackground": "#f7f5ee",
+            "footerText": "#5f655e",
+            "footerLink": "#202721",
+            "brand": {
+              "primary": "#4653c9",
+              "secondary": "#202721",
+              "accent": "#4653c9",
+              "hover": "#3742a8",
+              "soft": "#eeedf9",
+              "ring": "#dadbd1"
+            },
+            "header": {
+              "background": "#f7f5ee",
+              "text": "#202721",
+              "mutedText": "#5f655e",
+              "icon": "#202721",
+              "border": "#dadbd1",
+              "hover": "#4653c9",
+              "cartBadgeBackground": "#4653c9",
+              "cartBadgeText": "#ffffff"
+            },
+            "hero": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#202721",
+              "overlay": "#f7f5ee",
+              "primaryButtonBackground": "#202721",
+              "primaryButtonText": "#ffffff",
+              "secondaryButtonBackground": "#f7f5ee",
+              "secondaryButtonText": "#202721"
+            },
+            "productCard": {
+              "background": "#f7f5ee",
+              "border": "#dadbd1",
+              "shadow": "#dadbd1",
+              "title": "#202721",
+              "category": "#5f655e",
+              "price": "#202721",
+              "compareAtPrice": "#5f655e",
+              "saleBadgeBackground": "#dc2626",
+              "saleBadgeText": "#ffffff",
+              "ratingStar": "#f59e0b",
+              "ratingText": "#5f655e",
+              "wishlistIcon": "#5f655e",
+              "wishlistActive": "#e11d48",
+              "addToCartBackground": "#202721",
+              "addToCartText": "#ffffff",
+              "buyNowBackground": "#202721",
+              "buyNowText": "#ffffff",
+              "outOfStockBackground": "#fff1f2",
+              "outOfStockText": "#be123c",
+              "stockBackground": "#eeedf9",
+              "stockText": "#202721",
+              "variantChipBackground": "#f7f5ee",
+              "variantChipText": "#5f655e",
+              "variantChipSelectedBackground": "#4653c9",
+              "variantChipSelectedText": "#ffffff"
+            },
+            "allProducts": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#5f655e",
+              "filterBackground": "#f7f5ee",
+              "filterText": "#5f655e",
+              "dropdownBackground": "#f7f5ee",
+              "paginationBackground": "#f7f5ee",
+              "paginationText": "#5f655e",
+              "paginationActiveBackground": "#4653c9",
+              "paginationActiveText": "#ffffff"
+            },
+            "sections": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#5f655e",
+              "bannerOverlay": "#f7f5ee",
+              "bannerText": "#202721",
+              "faqBackground": "#f7f5ee",
+              "faqText": "#5f655e",
+              "testimonialBackground": "#f7f5ee",
+              "testimonialText": "#5f655e",
+              "trustIcon": "#4653c9",
+              "trustText": "#5f655e"
+            },
+            "footer": {
+              "background": "#f7f5ee",
+              "heading": "#202721",
+              "text": "#5f655e",
+              "link": "#202721",
+              "linkHover": "#dfdaf5",
+              "border": "#202721",
+              "poweredBy": "#5f655e"
+            },
+            "checkout": {
+              "background": "#f7f5ee",
+              "cardBackground": "#ffffff",
+              "text": "#202721",
+              "buttonBackground": "#202721",
+              "buttonText": "#f7f5ee",
+              "accent": "#4653c9",
+              "inputBackground": "#ffffff",
+              "inputBorder": "#dadbd1",
+              "inputFocus": "#4653c9",
+              "error": "#dc2626",
+              "success": "#047857"
+            }
+          },
+          "header": {
+            "variant": "standard",
+            "logoPosition": "Left",
+            "menuStyle": "Nested"
+          },
+          "typography": {
+            "headingFont": "DM Sans",
+            "bodyFont": "DM Sans",
+            "baseSize": 16,
+            "headingWeight": "800"
+          },
+          "hero": {
+            "variant": "split",
+            "title": "Controlled merchant hero",
+            "subtitle": "Same revision and content",
+            "imageUrl": "/tests/fixtures/theme-media.svg",
+            "ctaLabel": "Shop Now",
+            "ctaUrl": "/",
+            "overlayOpacity": 0,
+            "height": "Tall",
+            "bannerSlides": [
+              {
+                "id": "hero-slide-1",
+                "enabled": true,
+                "desktopImage": "/tests/fixtures/theme-media.svg",
+                "mobileImage": "",
+                "title": "Controlled merchant hero",
+                "subtitle": "Same revision and content",
+                "badgeText": "",
+                "discountText": "",
+                "primaryCtaText": "Shop Now",
+                "primaryCtaLink": "/",
+                "secondaryCtaText": "Explore Collection",
+                "secondaryCtaLink": "#products",
+                "desktopFocalPoint": {
+                  "x": 50,
+                  "y": 50
+                },
+                "mobileFocalPoint": {
+                  "x": 50,
+                  "y": 50
+                }
+              }
+            ]
+          },
+          "layout": {
+            "homepageComposition": "standard",
+            "maxWidth": "Wide",
+            "containerWidth": "Wide",
+            "sectionSpacing": "Spacious",
+            "contentSpacing": "Spacious",
+            "sectionWidth": "Full Width",
+            "sectionPaddingTop": 24,
+            "sectionPaddingBottom": 24,
+            "sectionMarginTop": 0,
+            "sectionMarginBottom": 40,
+            "productColumnsDesktop": 4,
+            "productColumnsMobile": 2,
+            "productGap": "Comfortable",
+            "cardAlignment": "Left"
+          },
+          "productCard": {
+            "style": "Minimal",
+            "imageFit": "Contain",
+            "aspectRatio": "Portrait",
+            "imageRadius": "Soft",
+            "hoverZoom": true,
+            "showCategory": false,
+            "showRating": true,
+            "showReviews": true,
+            "showStock": true,
+            "showSku": false,
+            "showDiscountBadge": true,
+            "showQuickBuy": true,
+            "showWishlist": true,
+            "borderRadius": "Soft",
+            "shadow": "None",
+            "titleSize": "Medium",
+            "titleWeight": "700",
+            "priceSize": "Medium",
+            "priceColor": "#0f172a",
+            "buttonStyle": "Outline",
+            "buttonShape": "Rounded",
+            "buttonColor": "#0f766e"
+          },
+          "checkoutBranding": {
+            "logoUrl": "",
+            "bannerText": "",
+            "buttonStyle": "Rounded",
+            "trustMessage": "Secure checkout"
+          },
+          "mobile": {
+            "stickyCheckoutButton": true,
+            "compactHeader": true,
+            "showBottomNavigation": false,
+            "heroComposition": "Theme",
+            "sectionSpacing": "Theme"
+          },
+          "paymentSettings": {
+            "additionalMethodsEnabled": false,
+            "providers": {
+              "stripe": false,
+              "sslcommerz": false,
+              "bkash": false,
+              "nagad": false,
+              "rocket": false,
+              "paypal": false
+            }
+          },
+          "seo": {
+            "mode": "auto",
+            "siteName": "",
+            "title": "",
+            "description": "",
+            "keywords": [],
+            "topics": [],
+            "socialTitle": "",
+            "socialDescription": "",
+            "socialImage": "",
+            "socialImageAssetId": null,
+            "socialImageAlt": "",
+            "socialImageWidth": null,
+            "socialImageHeight": null,
+            "socialImageMimeType": "",
+            "facebookUrl": "",
+            "searchEngineVisibility": true,
+            "googleSiteVerification": "",
+            "language": "en-BD",
+            "spellingPreference": "british",
+            "primaryCategory": "",
+            "aiSuggestion": {
+              "alternatives": [],
+              "generatedAt": null,
+              "generatedFromHash": "",
+              "inputSnapshot": null,
+              "acceptedOptionId": "",
+              "acceptedFields": [],
+              "acceptedAt": null,
+              "acceptedOrigins": {}
+            },
+            "autoUpdate": false
+          },
+          "homepageSections": [
+            {
+              "id": "categories",
+              "type": "CategoryList",
+              "title": "Category list",
+              "isEnabled": true,
+              "sortOrder": 0,
+              "settings": {
+                "variant": "editorial",
+                "maxCategories": 8,
+                "columns": 4
+              },
+              "desktopSettings": {
+                "isVisible": true
+              },
+              "mobileSettings": {
+                "isVisible": true
+              },
+              "source": {}
+            },
+            {
+              "id": "featured",
+              "type": "FeaturedProducts",
+              "settings": {
+                "productIds": [
+                  "product-1"
+                ],
+                "source": {
+                  "type": "manual",
+                  "productIds": [
+                    "product-1"
+                  ]
+                }
+              },
+              "title": "Featured products",
+              "isEnabled": true,
+              "sortOrder": 1,
+              "desktopSettings": {
+                "isVisible": true,
+                "columns": 4
+              },
+              "mobileSettings": {
+                "isVisible": true,
+                "columns": 2
+              },
+              "source": {
+                "type": "manual",
+                "productIds": [
+                  "product-1"
+                ]
+              }
+            },
+            {
+              "id": "story",
+              "type": "BrandStory",
+              "settings": {
+                "variant": "editorial",
+                "text": "Controlled story",
+                "imageUrl": "/tests/fixtures/theme-media.svg",
+                "focalPoint": {
+                  "x": 50,
+                  "y": 50
+                }
+              },
+              "title": "Brand story",
+              "isEnabled": true,
+              "sortOrder": 2,
+              "desktopSettings": {
+                "isVisible": true
+              },
+              "mobileSettings": {
+                "isVisible": true,
+                "focalPoint": {
+                  "x": 50,
+                  "y": 50
+                }
+              },
+              "source": {}
+            },
+            {
+              "id": "atelier-editorial-promoblock-1",
+              "type": "PromoBlock",
+              "title": "Promotion block",
+              "isEnabled": false,
+              "sortOrder": 3,
+              "settings": {
+                "variant": "strip",
+                "text": ""
+              },
+              "desktopSettings": {
+                "isVisible": true
+              },
+              "mobileSettings": {
+                "isVisible": true
+              },
+              "source": {}
+            },
+            {
+              "id": "atelier-editorial-trustbadges-1",
+              "type": "TrustBadges",
+              "title": "Trust badges",
+              "isEnabled": false,
+              "sortOrder": 4,
+              "settings": {
+                "text": ""
+              },
+              "desktopSettings": {
+                "isVisible": true
+              },
+              "mobileSettings": {
+                "isVisible": true
+              },
+              "source": {}
+            }
+          ],
+          "allProducts": {
+            "title": "All Products",
+            "subtitle": "Browse this shop's latest catalog",
+            "isEnabled": true,
+            "desktopColumns": 4,
+            "tabletColumns": 3,
+            "mobileColumns": 2,
+            "spacing": "Editorial"
+          },
+          "migrations": {
+            "bannerSectionsV1": false
+          },
+          "navigation": [
+            {
+              "label": "Policies",
+              "url": "/policies",
+              "sortOrder": 0,
+              "children": [],
+              "megaMenu": false,
+              "isExternal": false
+            }
+          ],
+          "footer": {
+            "text": "Controlled merchant footer",
+            "contactLabel": "Contact store",
+            "contactEmail": "",
+            "facebookUrl": "",
+            "instagramUrl": "",
+            "twitterUrl": "",
+            "youtubeUrl": "",
+            "tiktokUrl": "",
+            "links": []
+          },
+          "policies": {
+            "refund": "Thank you for shopping with Fixture store. We want our customers to have a smooth and reliable shopping experience.\n\nRefund or return requests must be made within 24 hours of receiving the product. To be eligible for a return, the product must be unused, undamaged, and in its original packaging.\n\nRefunds or exchanges may be accepted if:\n\n* the product is damaged during delivery\n* the wrong product is delivered\n* the product is significantly different from the description\n* the product has a verified quality issue\n\nRefunds may not be accepted if:\n\n* the product has been used\n* the product is damaged after delivery\n* the original packaging is missing\n* the return request is made after the allowed return period\n* the product is listed as non-returnable\n\nCustomers may need to provide order details, photos, or other proof when requesting a refund or return.\n\nApproved refunds will be processed using the available payment or refund method agreed with the customer.\n\nFor refund or return support, please contact us using the contact information provided on our store.",
+            "shipping": "At Fixture store, we try to deliver orders safely and on time.\n\nAfter an order is confirmed, we usually process it within 1-3 business days. Delivery time may vary depending on the customer's location, courier availability, holidays, weather, or other operational conditions.\n\nEstimated delivery time:\n\n* Inside major city areas: 2-5 business days\n* Outside major city areas: 3-7 business days\n* Remote areas may take longer\n\nDelivery charges may vary based on location, product size, product weight, and courier service.\n\nCustomers should provide correct delivery information, including name, phone number, and full address. Fixture store is not responsible for delivery delays caused by incorrect or incomplete customer information.\n\nIf a parcel is delayed, lost, or damaged during delivery, customers should contact us so we can coordinate with the courier service.",
+            "privacy": "Fixture store respects customer privacy and is committed to protecting personal information.\n\nWe may collect customer information such as name, phone number, email address, delivery address, order details, and payment-related information when customers place an order or contact us.\n\nWe use this information to:\n\n* process and deliver orders\n* contact customers about their orders\n* provide customer support\n* improve our products and services\n* prevent fraud or misuse\n\nWe do not sell customer personal information. Customer information may be shared only with necessary service providers such as delivery/courier partners, payment support providers, or platform service providers when required to complete an order or provide support.\n\nCustomers are responsible for providing accurate information. Customers may contact us to update or request information related to their orders.\n\nBy using this store, customers agree to the collection and use of information as described in this Privacy Policy.",
+            "terms": "Welcome to Fixture store. By using this store and placing an order, customers agree to the following terms and conditions.\n\nCustomers should review product details, price, size, color, quantity, and delivery information before placing an order.\n\nProduct availability, pricing, and offers may change without prior notice. We try to keep all product information accurate, but small differences in color, packaging, or appearance may occur due to photography, screen settings, or supplier changes.\n\nAn order may be cancelled if:\n\n* the product is out of stock\n* payment information is invalid or incomplete\n* delivery information is incorrect\n* suspicious or fraudulent activity is detected\n* the customer cannot be reached for confirmation\n\nCustomers must provide accurate contact and delivery details. Fixture store is not responsible for failed delivery caused by incorrect customer information.\n\nAll refunds, returns, and deliveries are handled according to our Refund Policy and Shipping Policy.\n\nFixture store reserves the right to update these terms when necessary. Continued use of the store means customers accept the updated terms."
+          },
+          "presentationVariant": "atelier-editorial"
+        },
+        "limited": {
+          "version": 4,
+          "preset": {
+            "id": "atelier-editorial",
+            "version": 1,
+            "appliedAt": "2026-10-20T00:00:00.000Z"
+          },
+          "logoUrl": "",
+          "faviconUrl": "",
+          "fontFamily": "DM Sans",
+          "productGridStyle": "Editorial",
+          "colors": {
+            "accent": "#4653c9",
+            "accentHover": "#3742a8",
+            "accentSoft": "#dbec8b",
+            "accentBg": "#eeedf9",
+            "accentStrong": "#202721",
+            "accentMuted": "#606cf0",
+            "accentLight": "#dfdaf5",
+            "accentRing": "#dadbd1",
+            "background": "#f7f5ee",
+            "foreground": "#202721",
+            "headerBackground": "#f7f5ee",
+            "primaryButtonBg": "#202721",
+            "primaryButtonText": "#ffffff",
+            "primaryButtonHoverBg": "#3742a8",
+            "secondaryButtonBg": "#f7f5ee",
+            "secondaryButtonText": "#202721",
+            "secondaryButtonHoverBg": "#eeedf9",
+            "navbarBackground": "#f7f5ee",
+            "navbarText": "#202721",
+            "navbarHover": "#4653c9",
+            "cardBackground": "#f7f5ee",
+            "cardBorder": "#dadbd1",
+            "cardHoverBorder": "#dbec8b",
+            "priceColor": "#202721",
+            "saleBadgeBg": "#dc2626",
+            "saleBadgeText": "#ffffff",
+            "ratingColor": "#f59e0b",
+            "footerBackground": "#f7f5ee",
+            "footerText": "#5f655e",
+            "footerLink": "#202721",
+            "brand": {
+              "primary": "#4653c9",
+              "secondary": "#202721",
+              "accent": "#4653c9",
+              "hover": "#3742a8",
+              "soft": "#eeedf9",
+              "ring": "#dadbd1"
+            },
+            "header": {
+              "background": "#f7f5ee",
+              "text": "#202721",
+              "mutedText": "#5f655e",
+              "icon": "#202721",
+              "border": "#dadbd1",
+              "hover": "#4653c9",
+              "cartBadgeBackground": "#4653c9",
+              "cartBadgeText": "#ffffff"
+            },
+            "hero": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#202721",
+              "overlay": "#f7f5ee",
+              "primaryButtonBackground": "#202721",
+              "primaryButtonText": "#ffffff",
+              "secondaryButtonBackground": "#f7f5ee",
+              "secondaryButtonText": "#202721"
+            },
+            "productCard": {
+              "background": "#f7f5ee",
+              "border": "#dadbd1",
+              "shadow": "#dadbd1",
+              "title": "#202721",
+              "category": "#5f655e",
+              "price": "#202721",
+              "compareAtPrice": "#5f655e",
+              "saleBadgeBackground": "#dc2626",
+              "saleBadgeText": "#ffffff",
+              "ratingStar": "#f59e0b",
+              "ratingText": "#5f655e",
+              "wishlistIcon": "#5f655e",
+              "wishlistActive": "#e11d48",
+              "addToCartBackground": "#202721",
+              "addToCartText": "#ffffff",
+              "buyNowBackground": "#202721",
+              "buyNowText": "#ffffff",
+              "outOfStockBackground": "#fff1f2",
+              "outOfStockText": "#be123c",
+              "stockBackground": "#eeedf9",
+              "stockText": "#202721",
+              "variantChipBackground": "#f7f5ee",
+              "variantChipText": "#5f655e",
+              "variantChipSelectedBackground": "#4653c9",
+              "variantChipSelectedText": "#ffffff"
+            },
+            "allProducts": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#5f655e",
+              "filterBackground": "#f7f5ee",
+              "filterText": "#5f655e",
+              "dropdownBackground": "#f7f5ee",
+              "paginationBackground": "#f7f5ee",
+              "paginationText": "#5f655e",
+              "paginationActiveBackground": "#4653c9",
+              "paginationActiveText": "#ffffff"
+            },
+            "sections": {
+              "background": "#f7f5ee",
+              "title": "#202721",
+              "subtitle": "#5f655e",
+              "bannerOverlay": "#f7f5ee",
+              "bannerText": "#202721",
+              "faqBackground": "#f7f5ee",
+              "faqText": "#5f655e",
+              "testimonialBackground": "#f7f5ee",
+              "testimonialText": "#5f655e",
+              "trustIcon": "#4653c9",
+              "trustText": "#5f655e"
+            },
+            "footer": {
+              "background": "#f7f5ee",
+              "heading": "#202721",
+              "text": "#5f655e",
+              "link": "#202721",
+              "linkHover": "#dfdaf5",
+              "border": "#202721",
+              "poweredBy": "#5f655e"
+            },
+            "checkout": {
+              "background": "#f7f5ee",
+              "cardBackground": "#ffffff",
+              "text": "#202721",
+              "buttonBackground": "#202721",
+              "buttonText": "#f7f5ee",
+              "accent": "#4653c9",
+              "inputBackground": "#ffffff",
+              "inputBorder": "#dadbd1",
+              "inputFocus": "#4653c9",
+              "error": "#dc2626",
+              "success": "#047857"
+            }
+          },
+          "header": {
+            "variant": "standard",
+            "logoPosition": "Left",
+            "menuStyle": "Nested"
+          },
+          "typography": {
+            "headingFont": "DM Sans",
+            "bodyFont": "DM Sans",
+            "baseSize": 16,
+            "headingWeight": "800"
+          },
+          "hero": {
+            "variant": "split",
+            "title": "Controlled merchant hero",
+            "subtitle": "Same revision and content",
+            "imageUrl": "/tests/fixtures/theme-media.svg",
+            "ctaLabel": "Shop Now",
+            "ctaUrl": "/",
+            "overlayOpacity": 0,
+            "height": "Tall",
+            "bannerSlides": [
+              {
+                "id": "hero-slide-1",
+                "enabled": true,
+                "desktopImage": "/tests/fixtures/theme-media.svg",
+                "mobileImage": "",
+                "title": "Controlled merchant hero",
+                "subtitle": "Same revision and content",
+                "badgeText": "",
+                "discountText": "",
+                "primaryCtaText": "Shop Now",
+                "primaryCtaLink": "/",
+                "secondaryCtaText": "Explore Collection",
+                "secondaryCtaLink": "#products",
+                "desktopFocalPoint": {
+                  "x": 50,
+                  "y": 50
+                },
+                "mobileFocalPoint": {
+                  "x": 50,
+                  "y": 50
+                }
+              }
+            ]
+          },
+          "layout": {
+            "homepageComposition": "standard",
+            "maxWidth": "Wide",
+            "containerWidth": "Wide",
+            "sectionSpacing": "Spacious",
+            "contentSpacing": "Spacious",
+            "sectionWidth": "Full Width",
+            "sectionPaddingTop": 24,
+            "sectionPaddingBottom": 24,
+            "sectionMarginTop": 0,
+            "sectionMarginBottom": 40,
+            "productColumnsDesktop": 4,
+            "productColumnsMobile": 2,
+            "productGap": "Comfortable",
+            "cardAlignment": "Left"
+          },
+          "productCard": {
+            "style": "Minimal",
+            "imageFit": "Contain",
+            "aspectRatio": "Portrait",
+            "imageRadius": "Soft",
+            "hoverZoom": true,
+            "showCategory": false,
+            "showRating": true,
+            "showReviews": true,
+            "showStock": true,
+            "showSku": false,
+            "showDiscountBadge": true,
+            "showQuickBuy": true,
+            "showWishlist": true,
+            "borderRadius": "Soft",
+            "shadow": "None",
+            "titleSize": "Medium",
+            "titleWeight": "700",
+            "priceSize": "Medium",
+            "priceColor": "#0f172a",
+            "buttonStyle": "Outline",
+            "buttonShape": "Rounded",
+            "buttonColor": "#0f766e"
+          },
+          "checkoutBranding": {
+            "logoUrl": "",
+            "bannerText": "",
+            "buttonStyle": "Rounded",
+            "trustMessage": "Secure checkout"
+          },
+          "mobile": {
+            "stickyCheckoutButton": true,
+            "compactHeader": true,
+            "showBottomNavigation": false,
+            "heroComposition": "Theme",
+            "sectionSpacing": "Theme"
+          },
+          "paymentSettings": {
+            "additionalMethodsEnabled": false,
+            "providers": {
+              "stripe": false,
+              "sslcommerz": false,
+              "bkash": false,
+              "nagad": false,
+              "rocket": false,
+              "paypal": false
+            }
+          },
+          "seo": {
+            "mode": "auto",
+            "siteName": "",
+            "title": "",
+            "description": "",
+            "keywords": [],
+            "topics": [],
+            "socialTitle": "",
+            "socialDescription": "",
+            "socialImage": "",
+            "socialImageAssetId": null,
+            "socialImageAlt": "",
+            "socialImageWidth": null,
+            "socialImageHeight": null,
+            "socialImageMimeType": "",
+            "facebookUrl": "",
+            "searchEngineVisibility": true,
+            "googleSiteVerification": "",
+            "language": "en-BD",
+            "spellingPreference": "british",
+            "primaryCategory": "",
+            "aiSuggestion": {
+              "alternatives": [],
+              "generatedAt": null,
+              "generatedFromHash": "",
+              "inputSnapshot": null,
+              "acceptedOptionId": "",
+              "acceptedFields": [],
+              "acceptedAt": null,
+              "acceptedOrigins": {}
+            },
+            "autoUpdate": false
+          },
+          "homepageSections": [
+            {
+              "id": "featured",
+              "type": "FeaturedProducts",
+              "settings": {
+                "productIds": [
+                  "product-1"
+                ],
+                "source": {
+                  "type": "manual",
+                  "productIds": [
+                    "product-1"
+                  ]
+                }
+              },
+              "title": "Featured products",
+              "isEnabled": true,
+              "sortOrder": 0,
+              "desktopSettings": {
+                "isVisible": true,
+                "columns": 4
+              },
+              "mobileSettings": {
+                "isVisible": true,
+                "columns": 2
+              },
+              "source": {
+                "type": "manual",
+                "productIds": [
+                  "product-1"
+                ]
+              }
+            }
+          ],
+          "allProducts": {
+            "title": "All Products",
+            "subtitle": "Browse this shop's latest catalog",
+            "isEnabled": true,
+            "desktopColumns": 4,
+            "tabletColumns": 3,
+            "mobileColumns": 2,
+            "spacing": "Editorial"
+          },
+          "migrations": {
+            "bannerSectionsV1": false
+          },
+          "navigation": [
+            {
+              "label": "Policies",
+              "url": "/policies",
+              "sortOrder": 0,
+              "children": [],
+              "megaMenu": false,
+              "isExternal": false
+            }
+          ],
+          "footer": {
+            "text": "Controlled merchant footer",
+            "contactLabel": "Contact store",
+            "contactEmail": "",
+            "facebookUrl": "",
+            "instagramUrl": "",
+            "twitterUrl": "",
+            "youtubeUrl": "",
+            "tiktokUrl": "",
+            "links": []
+          },
+          "policies": {
+            "refund": "Thank you for shopping with Fixture store. We want our customers to have a smooth and reliable shopping experience.\n\nRefund or return requests must be made within 24 hours of receiving the product. To be eligible for a return, the product must be unused, undamaged, and in its original packaging.\n\nRefunds or exchanges may be accepted if:\n\n* the product is damaged during delivery\n* the wrong product is delivered\n* the product is significantly different from the description\n* the product has a verified quality issue\n\nRefunds may not be accepted if:\n\n* the product has been used\n* the product is damaged after delivery\n* the original packaging is missing\n* the return request is made after the allowed return period\n* the product is listed as non-returnable\n\nCustomers may need to provide order details, photos, or other proof when requesting a refund or return.\n\nApproved refunds will be processed using the available payment or refund method agreed with the customer.\n\nFor refund or return support, please contact us using the contact information provided on our store.",
+            "shipping": "At Fixture store, we try to deliver orders safely and on time.\n\nAfter an order is confirmed, we usually process it within 1-3 business days. Delivery time may vary depending on the customer's location, courier availability, holidays, weather, or other operational conditions.\n\nEstimated delivery time:\n\n* Inside major city areas: 2-5 business days\n* Outside major city areas: 3-7 business days\n* Remote areas may take longer\n\nDelivery charges may vary based on location, product size, product weight, and courier service.\n\nCustomers should provide correct delivery information, including name, phone number, and full address. Fixture store is not responsible for delivery delays caused by incorrect or incomplete customer information.\n\nIf a parcel is delayed, lost, or damaged during delivery, customers should contact us so we can coordinate with the courier service.",
+            "privacy": "Fixture store respects customer privacy and is committed to protecting personal information.\n\nWe may collect customer information such as name, phone number, email address, delivery address, order details, and payment-related information when customers place an order or contact us.\n\nWe use this information to:\n\n* process and deliver orders\n* contact customers about their orders\n* provide customer support\n* improve our products and services\n* prevent fraud or misuse\n\nWe do not sell customer personal information. Customer information may be shared only with necessary service providers such as delivery/courier partners, payment support providers, or platform service providers when required to complete an order or provide support.\n\nCustomers are responsible for providing accurate information. Customers may contact us to update or request information related to their orders.\n\nBy using this store, customers agree to the collection and use of information as described in this Privacy Policy.",
+            "terms": "Welcome to Fixture store. By using this store and placing an order, customers agree to the following terms and conditions.\n\nCustomers should review product details, price, size, color, quantity, and delivery information before placing an order.\n\nProduct availability, pricing, and offers may change without prior notice. We try to keep all product information accurate, but small differences in color, packaging, or appearance may occur due to photography, screen settings, or supplier changes.\n\nAn order may be cancelled if:\n\n* the product is out of stock\n* payment information is invalid or incomplete\n* delivery information is incorrect\n* suspicious or fraudulent activity is detected\n* the customer cannot be reached for confirmation\n\nCustomers must provide accurate contact and delivery details. Fixture store is not responsible for failed delivery caused by incorrect customer information.\n\nAll refunds, returns, and deliveries are handled according to our Refund Policy and Shipping Policy.\n\nFixture store reserves the right to update these terms when necessary. Continued use of the store means customers accept the updated terms."
+          },
+          "presentationVariant": "atelier-editorial"
+        },
+        "none": {
+          "version": 4,
+          "preset": null,
+          "logoUrl": "",
+          "faviconUrl": "",
+          "fontFamily": "Inter",
+          "productGridStyle": "Comfortable",
+          "colors": {
+            "accent": "#0f766e",
+            "accentHover": "#115e59",
+            "accentSoft": "#99f6e4",
+            "accentBg": "#ecfdf5",
+            "accentStrong": "#042f2e",
+            "accentMuted": "#14b8a6",
+            "accentLight": "#5eead4",
+            "accentRing": "#ccfbf1",
+            "background": "#ffffff",
+            "foreground": "#111827",
+            "headerBackground": "#ffffff",
+            "primaryButtonBg": "#0f766e",
+            "primaryButtonText": "#ffffff",
+            "primaryButtonHoverBg": "#115e59",
+            "secondaryButtonBg": "#ffffff",
+            "secondaryButtonText": "#0f172a",
+            "secondaryButtonHoverBg": "#f8fafc",
+            "navbarBackground": "#ffffff",
+            "navbarText": "#0f172a",
+            "navbarHover": "#0f766e",
+            "cardBackground": "#ffffff",
+            "cardBorder": "#e2e8f0",
+            "cardHoverBorder": "#99f6e4",
+            "priceColor": "#0f172a",
+            "saleBadgeBg": "#dc2626",
+            "saleBadgeText": "#ffffff",
+            "ratingColor": "#f59e0b",
+            "footerBackground": "#ffffff",
+            "footerText": "#64748b",
+            "footerLink": "#0f172a",
+            "brand": {
+              "primary": "#0f766e",
+              "secondary": "#0f172a",
+              "accent": "#0f766e",
+              "hover": "#115e59",
+              "soft": "#ecfdf5",
+              "ring": "#ccfbf1"
+            },
+            "header": {
+              "background": "#ffffff",
+              "text": "#0f172a",
+              "mutedText": "#64748b",
+              "icon": "#0f172a",
+              "border": "#e2e8f0",
+              "hover": "#0f766e",
+              "cartBadgeBackground": "#0f766e",
+              "cartBadgeText": "#ffffff"
+            },
+            "hero": {
+              "background": "#020617",
+              "title": "#ffffff",
+              "subtitle": "#e2e8f0",
+              "overlay": "#020617",
+              "primaryButtonBackground": "#ffffff",
+              "primaryButtonText": "#0f172a",
+              "secondaryButtonBackground": "#ffffff",
+              "secondaryButtonText": "#0f172a"
+            },
+            "productCard": {
+              "background": "#ffffff",
+              "border": "#e2e8f0",
+              "shadow": "#e2e8f0",
+              "title": "#0f172a",
+              "category": "#64748b",
+              "price": "#0f172a",
+              "compareAtPrice": "#94a3b8",
+              "saleBadgeBackground": "#dc2626",
+              "saleBadgeText": "#ffffff",
+              "ratingStar": "#f59e0b",
+              "ratingText": "#94a3b8",
+              "wishlistIcon": "#64748b",
+              "wishlistActive": "#e11d48",
+              "addToCartBackground": "#0f766e",
+              "addToCartText": "#ffffff",
+              "buyNowBackground": "#0f172a",
+              "buyNowText": "#ffffff",
+              "outOfStockBackground": "#fff1f2",
+              "outOfStockText": "#e11d48",
+              "stockBackground": "#ecfdf5",
+              "stockText": "#047857",
+              "variantChipBackground": "#f8fafc",
+              "variantChipText": "#475569",
+              "variantChipSelectedBackground": "#0f766e",
+              "variantChipSelectedText": "#ffffff"
+            },
+            "allProducts": {
+              "background": "#f8fafc",
+              "title": "#0f172a",
+              "subtitle": "#64748b",
+              "filterBackground": "#ffffff",
+              "filterText": "#475569",
+              "dropdownBackground": "#ffffff",
+              "paginationBackground": "#ffffff",
+              "paginationText": "#475569",
+              "paginationActiveBackground": "#0f766e",
+              "paginationActiveText": "#ffffff"
+            },
+            "sections": {
+              "background": "#ffffff",
+              "title": "#0f172a",
+              "subtitle": "#64748b",
+              "bannerOverlay": "#020617",
+              "bannerText": "#ffffff",
+              "faqBackground": "#f8fafc",
+              "faqText": "#475569",
+              "testimonialBackground": "#f8fafc",
+              "testimonialText": "#475569",
+              "trustIcon": "#0f766e",
+              "trustText": "#475569"
+            },
+            "footer": {
+              "background": "#ffffff",
+              "heading": "#0f172a",
+              "text": "#64748b",
+              "link": "#0f172a",
+              "linkHover": "#0f766e",
+              "border": "#e2e8f0",
+              "poweredBy": "#64748b"
+            },
+            "checkout": {
+              "background": "#f8fafc",
+              "cardBackground": "#ffffff",
+              "text": "#0f172a",
+              "buttonBackground": "#0f172a",
+              "buttonText": "#ffffff",
+              "accent": "#0f766e",
+              "inputBackground": "#ffffff",
+              "inputBorder": "#cbd5e1",
+              "inputFocus": "#0f766e",
+              "error": "#dc2626",
+              "success": "#047857"
+            }
+          },
+          "header": {
+            "variant": "standard",
+            "logoPosition": "Left",
+            "menuStyle": "Simple"
+          },
+          "typography": {
+            "headingFont": "Inter",
+            "bodyFont": "Inter",
+            "baseSize": 16,
+            "headingWeight": "800"
+          },
+          "hero": {
+            "variant": "fullBleed",
+            "title": "",
+            "subtitle": "",
+            "imageUrl": "",
+            "ctaLabel": "Shop Now",
+            "ctaUrl": "/",
+            "overlayOpacity": 25,
+            "height": "Medium",
+            "bannerSlides": []
+          },
+          "layout": {
+            "homepageComposition": "standard",
+            "maxWidth": "Wide",
+            "containerWidth": "Wide",
+            "sectionSpacing": "Comfortable",
+            "contentSpacing": "Comfortable",
+            "sectionWidth": "Full Width",
+            "sectionPaddingTop": 40,
+            "sectionPaddingBottom": 40,
+            "sectionMarginTop": 0,
+            "sectionMarginBottom": 40,
+            "productColumnsDesktop": 3,
+            "productColumnsMobile": 2,
+            "productGap": "Comfortable",
+            "cardAlignment": "Left"
+          },
+          "productCard": {
+            "style": "Modern",
+            "imageFit": "Contain",
+            "aspectRatio": "Square",
+            "imageRadius": "Rounded",
+            "hoverZoom": true,
+            "showCategory": true,
+            "showRating": true,
+            "showReviews": true,
+            "showStock": true,
+            "showSku": false,
+            "showDiscountBadge": true,
+            "showQuickBuy": true,
+            "showWishlist": true,
+            "borderRadius": "Rounded",
+            "shadow": "Soft",
+            "titleSize": "Medium",
+            "titleWeight": "800",
+            "priceSize": "Medium",
+            "priceColor": "#0f172a",
+            "buttonStyle": "Solid",
+            "buttonShape": "Rounded",
+            "buttonColor": "#0f766e"
+          },
+          "checkoutBranding": {
+            "logoUrl": "",
+            "bannerText": "",
+            "buttonStyle": "Rounded",
+            "trustMessage": "Secure checkout"
+          },
+          "mobile": {
+            "stickyCheckoutButton": true,
+            "compactHeader": true,
+            "showBottomNavigation": false,
+            "heroComposition": "Theme",
+            "sectionSpacing": "Theme"
+          },
+          "paymentSettings": {
+            "additionalMethodsEnabled": false,
+            "providers": {
+              "stripe": false,
+              "sslcommerz": false,
+              "bkash": false,
+              "nagad": false,
+              "rocket": false,
+              "paypal": false
+            }
+          },
+          "seo": {
+            "mode": "auto",
+            "siteName": "",
+            "title": "",
+            "description": "",
+            "keywords": [],
+            "topics": [],
+            "socialTitle": "",
+            "socialDescription": "",
+            "socialImage": "",
+            "socialImageAssetId": null,
+            "socialImageAlt": "",
+            "socialImageWidth": null,
+            "socialImageHeight": null,
+            "socialImageMimeType": "",
+            "facebookUrl": "",
+            "searchEngineVisibility": true,
+            "googleSiteVerification": "",
+            "language": "en-BD",
+            "spellingPreference": "british",
+            "primaryCategory": "",
+            "aiSuggestion": {
+              "alternatives": [],
+              "generatedAt": null,
+              "generatedFromHash": "",
+              "inputSnapshot": null,
+              "acceptedOptionId": "",
+              "acceptedFields": [],
+              "acceptedAt": null,
+              "acceptedOrigins": {}
+            },
+            "autoUpdate": false
+          },
+          "homepageSections": [
+            {
+              "id": "featured-products",
+              "type": "FeaturedProducts",
+              "title": "Featured Products",
+              "sortOrder": 0,
+              "isEnabled": true,
+              "settings": {
+                "productIds": [],
+                "source": {
+                  "type": "manual",
+                  "productIds": []
+                }
+              },
+              "desktopSettings": {
+                "isVisible": true
+              },
+              "mobileSettings": {
+                "columns": 2,
+                "isVisible": true
+              },
+              "source": {
+                "type": "manual",
+                "productIds": []
+              }
+            }
+          ],
+          "allProducts": {
+            "title": "All Products",
+            "subtitle": "Browse this shop's latest catalog",
+            "isEnabled": true,
+            "desktopColumns": 3,
+            "tabletColumns": 2,
+            "mobileColumns": 2,
+            "spacing": "Comfortable"
+          },
+          "migrations": {
+            "bannerSectionsV1": false
+          },
+          "navigation": [
+            {
+              "label": "Shop",
+              "url": "/",
+              "sortOrder": 0,
+              "children": [],
+              "megaMenu": false,
+              "isExternal": false
+            },
+            {
+              "label": "Policies",
+              "url": "/policies",
+              "sortOrder": 1,
+              "children": [],
+              "megaMenu": false,
+              "isExternal": false
+            },
+            {
+              "label": "Track Order",
+              "url": "/track",
+              "sortOrder": 2,
+              "children": [],
+              "megaMenu": false,
+              "isExternal": false
+            }
+          ],
+          "footer": {
+            "text": "Controlled merchant footer",
+            "contactLabel": "Contact store",
+            "contactEmail": "",
+            "facebookUrl": "",
+            "instagramUrl": "",
+            "twitterUrl": "",
+            "youtubeUrl": "",
+            "tiktokUrl": "",
+            "links": []
+          },
+          "policies": {
+            "refund": "Thank you for shopping with Fixture store. We want our customers to have a smooth and reliable shopping experience.\n\nRefund or return requests must be made within 24 hours of receiving the product. To be eligible for a return, the product must be unused, undamaged, and in its original packaging.\n\nRefunds or exchanges may be accepted if:\n\n* the product is damaged during delivery\n* the wrong product is delivered\n* the product is significantly different from the description\n* the product has a verified quality issue\n\nRefunds may not be accepted if:\n\n* the product has been used\n* the product is damaged after delivery\n* the original packaging is missing\n* the return request is made after the allowed return period\n* the product is listed as non-returnable\n\nCustomers may need to provide order details, photos, or other proof when requesting a refund or return.\n\nApproved refunds will be processed using the available payment or refund method agreed with the customer.\n\nFor refund or return support, please contact us using the contact information provided on our store.",
+            "shipping": "At Fixture store, we try to deliver orders safely and on time.\n\nAfter an order is confirmed, we usually process it within 1-3 business days. Delivery time may vary depending on the customer's location, courier availability, holidays, weather, or other operational conditions.\n\nEstimated delivery time:\n\n* Inside major city areas: 2-5 business days\n* Outside major city areas: 3-7 business days\n* Remote areas may take longer\n\nDelivery charges may vary based on location, product size, product weight, and courier service.\n\nCustomers should provide correct delivery information, including name, phone number, and full address. Fixture store is not responsible for delivery delays caused by incorrect or incomplete customer information.\n\nIf a parcel is delayed, lost, or damaged during delivery, customers should contact us so we can coordinate with the courier service.",
+            "privacy": "Fixture store respects customer privacy and is committed to protecting personal information.\n\nWe may collect customer information such as name, phone number, email address, delivery address, order details, and payment-related information when customers place an order or contact us.\n\nWe use this information to:\n\n* process and deliver orders\n* contact customers about their orders\n* provide customer support\n* improve our products and services\n* prevent fraud or misuse\n\nWe do not sell customer personal information. Customer information may be shared only with necessary service providers such as delivery/courier partners, payment support providers, or platform service providers when required to complete an order or provide support.\n\nCustomers are responsible for providing accurate information. Customers may contact us to update or request information related to their orders.\n\nBy using this store, customers agree to the collection and use of information as described in this Privacy Policy.",
+            "terms": "Welcome to Fixture store. By using this store and placing an order, customers agree to the following terms and conditions.\n\nCustomers should review product details, price, size, color, quantity, and delivery information before placing an order.\n\nProduct availability, pricing, and offers may change without prior notice. We try to keep all product information accurate, but small differences in color, packaging, or appearance may occur due to photography, screen settings, or supplier changes.\n\nAn order may be cancelled if:\n\n* the product is out of stock\n* payment information is invalid or incomplete\n* delivery information is incorrect\n* suspicious or fraudulent activity is detected\n* the customer cannot be reached for confirmation\n\nCustomers must provide accurate contact and delivery details. Fixture store is not responsible for failed delivery caused by incorrect customer information.\n\nAll refunds, returns, and deliveries are handled according to our Refund Policy and Shipping Policy.\n\nFixture store reserves the right to update these terms when necessary. Continued use of the store means customers accept the updated terms."
+          }
+        }
+      }
+    },
+    "markup": {
+      "modern-general/home/desktop": {
+        "sha256": "596e4250764aecbb56cc9bab831ab76bd0c4f3d410b48d3d31ee1df4f948ed45",
+        "bytes": 77121
+      },
+      "modern-general/home/tablet": {
+        "sha256": "596e4250764aecbb56cc9bab831ab76bd0c4f3d410b48d3d31ee1df4f948ed45",
+        "bytes": 77121
+      },
+      "modern-general/home/mobile": {
+        "sha256": "596e4250764aecbb56cc9bab831ab76bd0c4f3d410b48d3d31ee1df4f948ed45",
+        "bytes": 77121
+      },
+      "modern-general/home/smallMobile": {
+        "sha256": "596e4250764aecbb56cc9bab831ab76bd0c4f3d410b48d3d31ee1df4f948ed45",
+        "bytes": 77121
+      },
+      "modern-general/home/customized": {
+        "sha256": "657de7d8908ee6c1d5c57b3d13e48e95dfa05748e74f135419b758459e64caa8",
+        "bytes": 69519
+      },
+      "modern-general/home/empty": {
+        "sha256": "288091ecdfb27bb0ef19092f85fcbea2435eb45925a3ef73894c29049d3473b2",
+        "bytes": 53107
+      },
+      "modern-general/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "modern-general/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "modern-general/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "modern-general/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "modern-general/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "modern-general/category/normal": {
+        "sha256": "3668db1cd0691a938d5eaf82783c29598c3337082ef1a7525220b2b4fa8518db",
+        "bytes": 29543
+      },
+      "modern-general/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "modern-general/collection/normal": {
+        "sha256": "41b97413e372472012f296da16369bd99c8f35883da110689059c6c5b540fc52",
+        "bytes": 26856
+      },
+      "modern-general/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "modern-general/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "modern-general/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "modern-general/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "modern-general/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "modern-general/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "modern-general/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "modern-general/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "modern-general/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "modern-general/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "modern-general/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "modern-general/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "modern-general/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "modern-general/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "modern-general/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "modern-general/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "modern-general/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "modern-general/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "modern-general/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "modern-general/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "modern-general/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "modern-general/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "modern-general/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "minimal-general/home/desktop": {
+        "sha256": "ed575033c48f9be41d318fc2d04b71e80dda2f20d1e94fd7178ee67dc131a424",
+        "bytes": 69971
+      },
+      "minimal-general/home/tablet": {
+        "sha256": "ed575033c48f9be41d318fc2d04b71e80dda2f20d1e94fd7178ee67dc131a424",
+        "bytes": 69971
+      },
+      "minimal-general/home/mobile": {
+        "sha256": "ed575033c48f9be41d318fc2d04b71e80dda2f20d1e94fd7178ee67dc131a424",
+        "bytes": 69971
+      },
+      "minimal-general/home/smallMobile": {
+        "sha256": "ed575033c48f9be41d318fc2d04b71e80dda2f20d1e94fd7178ee67dc131a424",
+        "bytes": 69971
+      },
+      "minimal-general/home/customized": {
+        "sha256": "f366e9dde68e9c10791764c2d97d5718510ee2fd07edb17b8343c4ee73c94a20",
+        "bytes": 66587
+      },
+      "minimal-general/home/empty": {
+        "sha256": "ff8d4c0fe330e792c6e1829d9c42abdf55bc7107c1864211c8e38e62091bdd62",
+        "bytes": 49206
+      },
+      "minimal-general/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "minimal-general/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "minimal-general/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "minimal-general/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "minimal-general/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "minimal-general/category/normal": {
+        "sha256": "7bfa983270366faee809e8ae8641f31d875d63e433238217041ea0193b4cb223",
+        "bytes": 26237
+      },
+      "minimal-general/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "minimal-general/collection/normal": {
+        "sha256": "1edf3c838a10b1c9ae29714ad13a709b2944ce27561b40e1dc60ef9dd05054a4",
+        "bytes": 23550
+      },
+      "minimal-general/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "minimal-general/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "minimal-general/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "minimal-general/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "minimal-general/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "minimal-general/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "minimal-general/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "minimal-general/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "minimal-general/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "minimal-general/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "minimal-general/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "minimal-general/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "minimal-general/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "minimal-general/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "minimal-general/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "minimal-general/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "minimal-general/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "minimal-general/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "minimal-general/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "minimal-general/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "minimal-general/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "minimal-general/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "minimal-general/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "modern-fashion/home/desktop": {
+        "sha256": "651de197a3491e175bc8aa7884160b3b8565af03cdcfff52838bdbe586d89786",
+        "bytes": 77550
+      },
+      "modern-fashion/home/tablet": {
+        "sha256": "651de197a3491e175bc8aa7884160b3b8565af03cdcfff52838bdbe586d89786",
+        "bytes": 77550
+      },
+      "modern-fashion/home/mobile": {
+        "sha256": "651de197a3491e175bc8aa7884160b3b8565af03cdcfff52838bdbe586d89786",
+        "bytes": 77550
+      },
+      "modern-fashion/home/smallMobile": {
+        "sha256": "651de197a3491e175bc8aa7884160b3b8565af03cdcfff52838bdbe586d89786",
+        "bytes": 77550
+      },
+      "modern-fashion/home/customized": {
+        "sha256": "09a1349c8cee212a1ad27e63c850f1ceb53060fc8618de3efef7b139b9b95ca2",
+        "bytes": 69948
+      },
+      "modern-fashion/home/empty": {
+        "sha256": "d794930b7f71aaa355da7ebaa3f78c45eb874224943d7ae27f5b892c24e2c4a5",
+        "bytes": 53479
+      },
+      "modern-fashion/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "modern-fashion/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "modern-fashion/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "modern-fashion/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "modern-fashion/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "modern-fashion/category/normal": {
+        "sha256": "ac2506c90fe7d898c21beea103e740edfd5aa5271ec7cc31520b04430f1a658f",
+        "bytes": 29484
+      },
+      "modern-fashion/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "modern-fashion/collection/normal": {
+        "sha256": "5d7cbdc3200e68b01a8a4c28ce8d214bad72c0191d1a24028e2c9b00701b0bed",
+        "bytes": 26797
+      },
+      "modern-fashion/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "modern-fashion/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "modern-fashion/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "modern-fashion/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "modern-fashion/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "modern-fashion/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "modern-fashion/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "modern-fashion/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "modern-fashion/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "modern-fashion/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "modern-fashion/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "modern-fashion/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "modern-fashion/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "modern-fashion/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "modern-fashion/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "modern-fashion/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "modern-fashion/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "modern-fashion/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "modern-fashion/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "modern-fashion/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "modern-fashion/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "modern-fashion/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "modern-fashion/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "editorial-fashion/home/desktop": {
+        "sha256": "ce842aa826564b57720b75bea75a7cd5775eb73665807837668eec1efff17a5f",
+        "bytes": 72130
+      },
+      "editorial-fashion/home/tablet": {
+        "sha256": "ce842aa826564b57720b75bea75a7cd5775eb73665807837668eec1efff17a5f",
+        "bytes": 72130
+      },
+      "editorial-fashion/home/mobile": {
+        "sha256": "ce842aa826564b57720b75bea75a7cd5775eb73665807837668eec1efff17a5f",
+        "bytes": 72130
+      },
+      "editorial-fashion/home/smallMobile": {
+        "sha256": "ce842aa826564b57720b75bea75a7cd5775eb73665807837668eec1efff17a5f",
+        "bytes": 72130
+      },
+      "editorial-fashion/home/customized": {
+        "sha256": "4e60aafbd20a39321417540c89788b0360a599da9caa884737d0e975e14d3f5e",
+        "bytes": 68745
+      },
+      "editorial-fashion/home/empty": {
+        "sha256": "0c6ace0ecb0d1e7a4dd35822105cb7a17c535ebd3a1a551a6973a659e12d2019",
+        "bytes": 49236
+      },
+      "editorial-fashion/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "editorial-fashion/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "editorial-fashion/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "editorial-fashion/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "editorial-fashion/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "editorial-fashion/category/normal": {
+        "sha256": "e3ef59136ad31dca04fd390a3ccac06c8026f9f5a10b6df04aa1fe243acb6d7b",
+        "bytes": 28307
+      },
+      "editorial-fashion/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "editorial-fashion/collection/normal": {
+        "sha256": "4a94e3dedd5d328ce6460b21529b47e1437fbdf4b0dd59a0be31e1c12772c3f9",
+        "bytes": 25620
+      },
+      "editorial-fashion/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "editorial-fashion/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "editorial-fashion/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "editorial-fashion/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "editorial-fashion/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "editorial-fashion/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "editorial-fashion/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "editorial-fashion/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "editorial-fashion/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "editorial-fashion/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "editorial-fashion/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "editorial-fashion/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "editorial-fashion/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "editorial-fashion/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "editorial-fashion/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "editorial-fashion/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "editorial-fashion/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "editorial-fashion/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "editorial-fashion/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "editorial-fashion/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "editorial-fashion/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "editorial-fashion/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "editorial-fashion/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "luxury-jewellery/home/desktop": {
+        "sha256": "9b9b0312d0a3ae6c5e56a62795e6804b5a8d16c3c5d04a02d5f17b06c98afdac",
+        "bytes": 76695
+      },
+      "luxury-jewellery/home/tablet": {
+        "sha256": "9b9b0312d0a3ae6c5e56a62795e6804b5a8d16c3c5d04a02d5f17b06c98afdac",
+        "bytes": 76695
+      },
+      "luxury-jewellery/home/mobile": {
+        "sha256": "9b9b0312d0a3ae6c5e56a62795e6804b5a8d16c3c5d04a02d5f17b06c98afdac",
+        "bytes": 76695
+      },
+      "luxury-jewellery/home/smallMobile": {
+        "sha256": "9b9b0312d0a3ae6c5e56a62795e6804b5a8d16c3c5d04a02d5f17b06c98afdac",
+        "bytes": 76695
+      },
+      "luxury-jewellery/home/customized": {
+        "sha256": "d69120ca37989509fec7aa82ae24b87484743502f5ff4e7c2de49c08c177ffd1",
+        "bytes": 69092
+      },
+      "luxury-jewellery/home/empty": {
+        "sha256": "f69f51e3304edfdfa897e6b209293b06edcb43c969c6604bfec37aa9bb62c845",
+        "bytes": 53526
+      },
+      "luxury-jewellery/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "luxury-jewellery/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "luxury-jewellery/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "luxury-jewellery/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "luxury-jewellery/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "luxury-jewellery/category/normal": {
+        "sha256": "18a2db4b28871503c31ba314d842d29024345306770b511532a8688e04eb2a9d",
+        "bytes": 28582
+      },
+      "luxury-jewellery/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "luxury-jewellery/collection/normal": {
+        "sha256": "a1bac27266274253d3156ed06782c05fa2f29faf7eb10f1b7f09e34e23b52043",
+        "bytes": 25895
+      },
+      "luxury-jewellery/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "luxury-jewellery/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "luxury-jewellery/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "luxury-jewellery/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "luxury-jewellery/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "luxury-jewellery/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "luxury-jewellery/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "luxury-jewellery/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "luxury-jewellery/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "luxury-jewellery/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "luxury-jewellery/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "luxury-jewellery/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "luxury-jewellery/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "luxury-jewellery/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "luxury-jewellery/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "luxury-jewellery/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "luxury-jewellery/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "luxury-jewellery/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "luxury-jewellery/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "luxury-jewellery/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "luxury-jewellery/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "luxury-jewellery/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "luxury-jewellery/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "minimal-jewellery/home/desktop": {
+        "sha256": "00d004f2db540a0959d3ca811a02cfa39fd9405d89b2ceb85a1506ec3d229fc2",
+        "bytes": 71778
+      },
+      "minimal-jewellery/home/tablet": {
+        "sha256": "00d004f2db540a0959d3ca811a02cfa39fd9405d89b2ceb85a1506ec3d229fc2",
+        "bytes": 71778
+      },
+      "minimal-jewellery/home/mobile": {
+        "sha256": "00d004f2db540a0959d3ca811a02cfa39fd9405d89b2ceb85a1506ec3d229fc2",
+        "bytes": 71778
+      },
+      "minimal-jewellery/home/smallMobile": {
+        "sha256": "00d004f2db540a0959d3ca811a02cfa39fd9405d89b2ceb85a1506ec3d229fc2",
+        "bytes": 71778
+      },
+      "minimal-jewellery/home/customized": {
+        "sha256": "20cc22c7f244e62638f87d6c4b1ee99b214167d4d2579efd69fcc000d2f5b53c",
+        "bytes": 68394
+      },
+      "minimal-jewellery/home/empty": {
+        "sha256": "6c29b517a1ee92077e5eee7bdbbe1040959b7b78bc12a8bb2509a7269dc451b4",
+        "bytes": 49212
+      },
+      "minimal-jewellery/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "minimal-jewellery/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "minimal-jewellery/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "minimal-jewellery/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "minimal-jewellery/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "minimal-jewellery/category/normal": {
+        "sha256": "5f660064172d7590a133a6b5142343dec33939bfa02c1dbfb4fb7431f58dde6a",
+        "bytes": 27945
+      },
+      "minimal-jewellery/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "minimal-jewellery/collection/normal": {
+        "sha256": "cae8686a2524d31902dd0db00bc97275d77a506cee3d1cf6b1fef6230c52e75e",
+        "bytes": 25258
+      },
+      "minimal-jewellery/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "minimal-jewellery/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "minimal-jewellery/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "minimal-jewellery/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "minimal-jewellery/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "minimal-jewellery/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "minimal-jewellery/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "minimal-jewellery/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "minimal-jewellery/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "minimal-jewellery/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "minimal-jewellery/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "minimal-jewellery/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "minimal-jewellery/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "minimal-jewellery/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "minimal-jewellery/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "minimal-jewellery/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "minimal-jewellery/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "minimal-jewellery/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "minimal-jewellery/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "minimal-jewellery/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "minimal-jewellery/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "minimal-jewellery/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "minimal-jewellery/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "soft-beauty/home/desktop": {
+        "sha256": "f29d9d8b54d220705dfd76a394785075424f030cd54a50b2d50f1eb9d1dee05f",
+        "bytes": 76865
+      },
+      "soft-beauty/home/tablet": {
+        "sha256": "f29d9d8b54d220705dfd76a394785075424f030cd54a50b2d50f1eb9d1dee05f",
+        "bytes": 76865
+      },
+      "soft-beauty/home/mobile": {
+        "sha256": "f29d9d8b54d220705dfd76a394785075424f030cd54a50b2d50f1eb9d1dee05f",
+        "bytes": 76865
+      },
+      "soft-beauty/home/smallMobile": {
+        "sha256": "f29d9d8b54d220705dfd76a394785075424f030cd54a50b2d50f1eb9d1dee05f",
+        "bytes": 76865
+      },
+      "soft-beauty/home/customized": {
+        "sha256": "6443b17f89df60089f015c51aad34066687f779fe0f2ea0d4475da6c0ab13dac",
+        "bytes": 69263
+      },
+      "soft-beauty/home/empty": {
+        "sha256": "85f6414548b6565e631dbab9c69c343a2efaef4d7d93c0d4d37e8ba6ed024ed3",
+        "bytes": 52704
+      },
+      "soft-beauty/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "soft-beauty/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "soft-beauty/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "soft-beauty/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "soft-beauty/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "soft-beauty/category/normal": {
+        "sha256": "8f2342465e536d6531d7eac6c09e1a407bae0d4ecaf56fd26524c5711b597d63",
+        "bytes": 29540
+      },
+      "soft-beauty/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "soft-beauty/collection/normal": {
+        "sha256": "291416f5fc0ea50e8a8a542a5f6f2ab3bef1fbce0bb24f00438e18e8fa74c67d",
+        "bytes": 26853
+      },
+      "soft-beauty/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "soft-beauty/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "soft-beauty/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "soft-beauty/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "soft-beauty/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "soft-beauty/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "soft-beauty/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "soft-beauty/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "soft-beauty/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "soft-beauty/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "soft-beauty/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "soft-beauty/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "soft-beauty/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "soft-beauty/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "soft-beauty/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "soft-beauty/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "soft-beauty/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "soft-beauty/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "soft-beauty/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "soft-beauty/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "soft-beauty/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "soft-beauty/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "soft-beauty/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "modern-electronics/home/desktop": {
+        "sha256": "98fe0a5e5d65d321b1fed048a5e0dff201d4fb7d7353b989806fed73815e72ac",
+        "bytes": 77408
+      },
+      "modern-electronics/home/tablet": {
+        "sha256": "98fe0a5e5d65d321b1fed048a5e0dff201d4fb7d7353b989806fed73815e72ac",
+        "bytes": 77408
+      },
+      "modern-electronics/home/mobile": {
+        "sha256": "98fe0a5e5d65d321b1fed048a5e0dff201d4fb7d7353b989806fed73815e72ac",
+        "bytes": 77408
+      },
+      "modern-electronics/home/smallMobile": {
+        "sha256": "98fe0a5e5d65d321b1fed048a5e0dff201d4fb7d7353b989806fed73815e72ac",
+        "bytes": 77408
+      },
+      "modern-electronics/home/customized": {
+        "sha256": "b48432acb6960b5f0f8c3076f5176e99850582d3e916b71ad6e6ae1c2c63b37b",
+        "bytes": 69806
+      },
+      "modern-electronics/home/empty": {
+        "sha256": "a3f828ab9b8a79edfbdb5aa0549c228620b8e0b373cc9e08e57e4cf590870e56",
+        "bytes": 53278
+      },
+      "modern-electronics/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "modern-electronics/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "modern-electronics/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "modern-electronics/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "modern-electronics/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "modern-electronics/category/normal": {
+        "sha256": "3f5b824faec564e302e1e1c0f6e11ee2f1cec8a43e26d1bc36294e289a4c88ef",
+        "bytes": 29483
+      },
+      "modern-electronics/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "modern-electronics/collection/normal": {
+        "sha256": "5e7a664f716158cb6fa83d4f24ad7fb5dbedaacb4b32fabc7c36f25c21b1f7ae",
+        "bytes": 26796
+      },
+      "modern-electronics/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "modern-electronics/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "modern-electronics/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "modern-electronics/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "modern-electronics/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "modern-electronics/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "modern-electronics/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "modern-electronics/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "modern-electronics/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "modern-electronics/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "modern-electronics/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "modern-electronics/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "modern-electronics/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "modern-electronics/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "modern-electronics/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "modern-electronics/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "modern-electronics/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "modern-electronics/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "modern-electronics/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "modern-electronics/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "modern-electronics/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "modern-electronics/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "modern-electronics/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "fresh-grocery/home/desktop": {
+        "sha256": "73c90f1de72756b76c567a40ecd51484c8a85a118d93543430a7acb8bbf18177",
+        "bytes": 74586
+      },
+      "fresh-grocery/home/tablet": {
+        "sha256": "73c90f1de72756b76c567a40ecd51484c8a85a118d93543430a7acb8bbf18177",
+        "bytes": 74586
+      },
+      "fresh-grocery/home/mobile": {
+        "sha256": "73c90f1de72756b76c567a40ecd51484c8a85a118d93543430a7acb8bbf18177",
+        "bytes": 74586
+      },
+      "fresh-grocery/home/smallMobile": {
+        "sha256": "73c90f1de72756b76c567a40ecd51484c8a85a118d93543430a7acb8bbf18177",
+        "bytes": 74586
+      },
+      "fresh-grocery/home/customized": {
+        "sha256": "64720bbfd4be1c0ea7b32d5f789c70436f852cc661dfd563037941ab0820c1e1",
+        "bytes": 70368
+      },
+      "fresh-grocery/home/empty": {
+        "sha256": "8c0bb836ad5a210e3135ebb6f32adc9169d91f135cd316259663f8c2d3293738",
+        "bytes": 53786
+      },
+      "fresh-grocery/product/normal": {
+        "sha256": "822f825143bc16f07a8756d3c3f8708c53eacae59a8f002fd64f73ffca788399",
+        "bytes": 32354
+      },
+      "fresh-grocery/product/zero": {
+        "sha256": "e9fb1c7db0f8b83c98b33785d8c388bc7340213e18509d45c8b721422c15e82f",
+        "bytes": 32231
+      },
+      "fresh-grocery/product/soldout": {
+        "sha256": "e4007c4f9fbdea9019611a5330a855efb8ab68740d68c72eaab85485000b3f87",
+        "bytes": 29356
+      },
+      "fresh-grocery/product/no-images": {
+        "sha256": "22826c64776f3ae8c0ba6203938446dc2378895ff64799e9a1086812fc78d83c",
+        "bytes": 29565
+      },
+      "fresh-grocery/product/long": {
+        "sha256": "595d5cf51b5d236d59f0acea0e1025061e21d8c1ad36801f0e059802cfbde0b3",
+        "bytes": 37404
+      },
+      "fresh-grocery/category/normal": {
+        "sha256": "56364aa455e704ce5daef37d4b0f5645dbb03c5367e5d65653af2e52a5b62bc9",
+        "bytes": 26179
+      },
+      "fresh-grocery/category/empty": {
+        "sha256": "d080974b2f3b0f94c7422261d1cae63b88d3c4bfafc0d32402324d224d06a367",
+        "bytes": 6110
+      },
+      "fresh-grocery/collection/normal": {
+        "sha256": "9a9b933f03d5b0115f85cbdd7885ead41691fb5403888f7756957c720b46f0db",
+        "bytes": 23492
+      },
+      "fresh-grocery/collection/empty": {
+        "sha256": "3fb9e9839a29eedac565ea4cb2e5339687ab8bb711b294b3636048ca0591bf30",
+        "bytes": 3774
+      },
+      "fresh-grocery/cart/normal": {
+        "sha256": "451fdb61ffc9500b4bd2b58fd3cb479a7a0c301cd1664cf82606dfb46c864868",
+        "bytes": 13715
+      },
+      "fresh-grocery/cart/empty": {
+        "sha256": "40892996fb5a4d9c3e16fe8d5f422f5949d4b1e9f7147cac3046eb23478b7d1a",
+        "bytes": 927
+      },
+      "fresh-grocery/checkout/normal": {
+        "sha256": "a0513c7c91ab8cba202b039ec820d6fc98fb565234c6efb0e6ce16b8258ab511",
+        "bytes": 18058
+      },
+      "fresh-grocery/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "fresh-grocery/account/normal": {
+        "sha256": "cbdc2080233fd812ce0af2f2785f0028d868459314dfced5f932e10ad3d620fc",
+        "bytes": 1232
+      },
+      "fresh-grocery/register/normal": {
+        "sha256": "e09b3cb9f4eb15d58d6f287c14c5cd1fb95f1cf80e0fa3a318375a737928ee6f",
+        "bytes": 1886
+      },
+      "fresh-grocery/reset/normal": {
+        "sha256": "f6c902ef25287cc5dc352f57f5e1a7b4c51be20e8088f83f8e1df507026a34fe",
+        "bytes": 905
+      },
+      "fresh-grocery/dashboard/normal": {
+        "sha256": "5f46b24d3796d16c30f1800f326e33268a41099c55070e050ecd7172f9854893",
+        "bytes": 4291
+      },
+      "fresh-grocery/dashboard/empty": {
+        "sha256": "229de99c4f44b4b1fca112ddc1f823da1c8301425ff7b0aeddd31bbdef15d298",
+        "bytes": 3742
+      },
+      "fresh-grocery/profile/normal": {
+        "sha256": "59ab6a97817ddbd6d70ebdd0b11927ad680ff7de865e77cd8b9b64168a2e49e8",
+        "bytes": 995
+      },
+      "fresh-grocery/security/normal": {
+        "sha256": "c7f71471f94153d9983dce6550d2255cff92b39465c097ebb5ea96b956139efa",
+        "bytes": 1809
+      },
+      "fresh-grocery/vendor/normal": {
+        "sha256": "ec1171af2267f5dc0a97639f17ed50945e761881d339143d2b69504ec1785c48",
+        "bytes": 1845
+      },
+      "fresh-grocery/track/normal": {
+        "sha256": "3ff18af77a9042e149a1d4f346a61c005299d02f88a0b3d997c126afe3de4910",
+        "bytes": 1281
+      },
+      "fresh-grocery/otp/normal": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "fresh-grocery/otp/busy": {
+        "sha256": "17d701974f16e78a345385521b9991ae6412dbee46d5f6b4758bfb8fae6ad9f9",
+        "bytes": 3266
+      },
+      "fresh-grocery/otp/otp-error": {
+        "sha256": "e2fba218d702dfe3e372d51d0f7791cedd379323b635ff7fd12bc09ea1a5a17e",
+        "bytes": 3419
+      },
+      "fresh-grocery/policy/normal": {
+        "sha256": "6e285617fad4625a453de38ce80db7cdd3b9da53df30dd6d29ab49d9c1d22687",
+        "bytes": 2294
+      },
+      "fresh-grocery/policy-refund/normal": {
+        "sha256": "e04317fd35e46b0b3b2deb13534bd8a2abbba63eba4df91293d0029c33c9460b",
+        "bytes": 2288
+      },
+      "fresh-grocery/policy-shipping/normal": {
+        "sha256": "9a22d4cfc7599bad27fea23f716a5a576b05b85f767ce4a6d9b444e6245d8bd2",
+        "bytes": 2087
+      },
+      "fresh-grocery/policy-privacy/normal": {
+        "sha256": "40964297be6505c37d3b39d849a76302647fcf435d2d8795b9fc46c93fcb8dee",
+        "bytes": 2214
+      },
+      "fresh-grocery/policy-terms/normal": {
+        "sha256": "cbe5f2b50f45329d2f28eb0a3ae15c83fee72ceffb5fc0757a62eef96d897c1d",
+        "bytes": 2356
+      },
+      "fresh-grocery/policy-index/normal": {
+        "sha256": "12f84e58e4a0df9070d09dcd417db1af945beb6469eb4f956106bd0e77d2af9a",
+        "bytes": 11037
+      },
+      "atelier-editorial/home/desktop": {
+        "sha256": "82eb9cb6a4cc0e009a0b81a9c840cbfb6696e3c5d9d4f3808b9edad933d1b1e1",
+        "bytes": 42892
+      },
+      "atelier-editorial/home/tablet": {
+        "sha256": "82eb9cb6a4cc0e009a0b81a9c840cbfb6696e3c5d9d4f3808b9edad933d1b1e1",
+        "bytes": 42892
+      },
+      "atelier-editorial/home/mobile": {
+        "sha256": "82eb9cb6a4cc0e009a0b81a9c840cbfb6696e3c5d9d4f3808b9edad933d1b1e1",
+        "bytes": 42892
+      },
+      "atelier-editorial/home/smallMobile": {
+        "sha256": "82eb9cb6a4cc0e009a0b81a9c840cbfb6696e3c5d9d4f3808b9edad933d1b1e1",
+        "bytes": 42892
+      },
+      "atelier-editorial/home/customized": {
+        "sha256": "e1ce2c8373599291367f2564699455c40e9710f8614b45f6c5c99959abe899c5",
+        "bytes": 42152
+      },
+      "atelier-editorial/home/empty": {
+        "sha256": "0b26787baf71d5800314f4aabb18412d9574d1f0bdcc42e956d80a32564859d4",
+        "bytes": 32600
+      },
+      "atelier-editorial/product/normal": {
+        "sha256": "0b57fccad0d042f6021d1d7cd199acf0e65041a169e873752fc6af1811ddd8ac",
+        "bytes": 27544
+      },
+      "atelier-editorial/product/zero": {
+        "sha256": "0ae6ccd74d724622bb623fa65fc7d3c0029c15e54b7362c5969292eb771e3cfa",
+        "bytes": 27421
+      },
+      "atelier-editorial/product/soldout": {
+        "sha256": "a66a266959560413088924643fdc893d6ea18e067a9eefc53135968d0c6e049a",
+        "bytes": 24517
+      },
+      "atelier-editorial/product/no-images": {
+        "sha256": "9e9fde089af6fe8304d52a533a2d0a85dc50c747fa89a19affc87fa0a0cb9f01",
+        "bytes": 24719
+      },
+      "atelier-editorial/product/long": {
+        "sha256": "9dbd34cdbce8a1f24795b2e0a6776135c0f7b89996940c5c6c934d1422930d94",
+        "bytes": 32594
+      },
+      "atelier-editorial/category/normal": {
+        "sha256": "cc5404d32d6bf72f2f7f0a1ca1871a7652766d73b434532d06a74d74f4a77ec6",
+        "bytes": 15993
+      },
+      "atelier-editorial/category/empty": {
+        "sha256": "ea04de6cebac2f924c5c9e2c88d26cf9650cc5f3d8a3ec1002614cbad7e4757f",
+        "bytes": 6249
+      },
+      "atelier-editorial/collection/normal": {
+        "sha256": "af99947380ded5edf8768f6c19a4c4005ca90316358288ae3162abc663cf2b76",
+        "bytes": 13217
+      },
+      "atelier-editorial/collection/empty": {
+        "sha256": "7a6639d08455a7ccff6f234f8e308baa0080a707ed6b98ee5d91339acad34696",
+        "bytes": 3824
+      },
+      "atelier-editorial/cart/normal": {
+        "sha256": "b60bf917810823148ce9f3dab330ebc094ad920750c3d8b70a233616f4d24621",
+        "bytes": 13983
+      },
+      "atelier-editorial/cart/empty": {
+        "sha256": "8a8bc54a268a570025c148f0f28fdb25c7a1b21500441f401012d4d74320ee35",
+        "bytes": 940
+      },
+      "atelier-editorial/checkout/normal": {
+        "sha256": "ec379a9efa6820bb3c82302b7f0b4cd2e80e069c164d0754a814367d81318ab6",
+        "bytes": 18647
+      },
+      "atelier-editorial/checkout/empty": {
+        "sha256": "98706c262b7f98d154a1ab64404fba654e41087d7b42865b420529603255cdec",
+        "bytes": 839
+      },
+      "atelier-editorial/account/normal": {
+        "sha256": "69684e3248bcf5ef0cc00c922a800bc3248150a208d0a0ce6f43c7263e4e9d9e",
+        "bytes": 1484
+      },
+      "atelier-editorial/register/normal": {
+        "sha256": "a289b8b45c1300c54c6d12f66e7cc1eae61f810528dbf1e985ab3b5a29bc42d5",
+        "bytes": 2220
+      },
+      "atelier-editorial/reset/normal": {
+        "sha256": "5e16f8341402f62deec7c37e8e91d740d73c0a73112d55f90e09cfeabe1303dc",
+        "bytes": 954
+      },
+      "atelier-editorial/dashboard/normal": {
+        "sha256": "0a4c9c177a9fe9e1d32c1e41011115381cc62a679b3e32c63b7b39b79b2a3d89",
+        "bytes": 4499
+      },
+      "atelier-editorial/dashboard/empty": {
+        "sha256": "7b82853ad42d62b3192e6f890b45e8f947de67d80031e4491661866f872aabcf",
+        "bytes": 3897
+      },
+      "atelier-editorial/profile/normal": {
+        "sha256": "5878d53d92e5970eb9fafd4fd1200cd7685950538c5373765f274de99d34e6d5",
+        "bytes": 1013
+      },
+      "atelier-editorial/security/normal": {
+        "sha256": "0996972c0240618b29b8d1c413c11b6c3201bc2b73c40ecec5c9e9bfa9c89c43",
+        "bytes": 1954
+      },
+      "atelier-editorial/vendor/normal": {
+        "sha256": "5c08000404238c93d7bf2b751e8e691dd782718b7ffb5eeca171f0ffd0e17808",
+        "bytes": 1860
+      },
+      "atelier-editorial/track/normal": {
+        "sha256": "556ab792bbe4d1de7da7dec89e2f67c29bea9bc233ef5193246914e5043bccf7",
+        "bytes": 1425
+      },
+      "atelier-editorial/otp/normal": {
+        "sha256": "884c45ed537aae0520b48c945a0f6b40c3df8687aca467d6ac9c4e565ee00855",
+        "bytes": 3314
+      },
+      "atelier-editorial/otp/busy": {
+        "sha256": "884c45ed537aae0520b48c945a0f6b40c3df8687aca467d6ac9c4e565ee00855",
+        "bytes": 3314
+      },
+      "atelier-editorial/otp/otp-error": {
+        "sha256": "48aea2c3862721afa427019b2c44c36af274d55d7e450effe282239f4ef9074b",
+        "bytes": 3562
+      },
+      "atelier-editorial/policy/normal": {
+        "sha256": "e604d3bef447ebae434a27670436f446de26989320ff66052594191c1c5a7c6d",
+        "bytes": 2309
+      },
+      "atelier-editorial/policy-refund/normal": {
+        "sha256": "a5a1e7d009da4a8bd1c3927a2b1749203298eb57fc0294a267f621931c92df8c",
+        "bytes": 2303
+      },
+      "atelier-editorial/policy-shipping/normal": {
+        "sha256": "027ca88f9b245eca42399b76d84ab751015beb668ca72cb86e319c5b179c574a",
+        "bytes": 2102
+      },
+      "atelier-editorial/policy-privacy/normal": {
+        "sha256": "31a15eadf1f09bc24adacde07425dce79d51d2a76f1d6045f2149ed301acfd8a",
+        "bytes": 2229
+      },
+      "atelier-editorial/policy-terms/normal": {
+        "sha256": "672bcf763410e9115447345d2fc8fa6152c7d6e114d2660ce861765ac0f51217",
+        "bytes": 2371
+      },
+      "atelier-editorial/policy-index/normal": {
+        "sha256": "32d08d50f800e04aa5be8441b04229e9a52514259c75d383184bc353e94566c7",
+        "bytes": 11232
+      }
+    },
+    "fileHashes": {
+      "ecommerce-backend/backend/tests/fixtures/atelier-legacy/contracts.json": "f2c3d3db1305643b776dbf5641dac12508f13c94fbef757f3c3c590553ea17d2",
+      "ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase3-markup-sha256.json": "caa72536ed13f575065d0485a8fcbfd0e06cbf979bc3d4d58f2c403871740d04",
+      "ecommerce-backend/backend/tests/fixtures/atelier-legacy/phase4-markup-sha256.json": "fd8b3550a51fa72a0281eafd3bd8b145918c59c3038bcee3ee1d82d648869ec7",
+      "ecommerce-admin/tests/fixtures/atelier-route-data.js": "271ddbe40516a9138a52927c0cf79da966d63fade7042bb4b9e9dcab9e9d287b",
+      "ecommerce-admin/tests/fixtures/atelier-route-runtime.jsx": "0c48002d54d3222ea6dbc2fab15fa59d176c0abaa046901d115e865a0e7b9c70",
+      "ecommerce-admin/tests/fixtures/atelier-route-cases.jsx": "b3ad13d62018f591bdaef6b9fcba061ca2791ea4c98a18a4fbb0f3cb24c92423",
+      "ecommerce-admin/tests/fixtures/atelier-phase4-cases.jsx": "00a76aa88b66616e93b246be3dea9c117dc40f48e275f095d7016d60e79ee7c2",
+      "ecommerce-admin/tests/fixtures/theme-media.svg": "eaf636c573d7990a499b78b49cd1d50ae2e10fcd372ccc54601521bc1e6c26d5",
+      "packages/storefront-renderer/styles.css": "c84b4d81aa65122a987dd23d7de449ebe4d7bdf40e0bd7a71352354aacef6aa9",
+      "packages/storefront-renderer/atelier/atelier.css": "ab2be18ebb7bc8d9b8a06dd4aac45d1ad785e576c9df8bee950be637cf4a2271",
+      "packages/storefront-renderer/atelier/atelier-pages.css": "e554df3ce72716c91756b93bbd133fd14c81126c6c70c824090d46f7b326e9ef",
+      "ecommerce-storefront/src/app/globals.css": "9f35869c70c609e872217dc0e51f068f0cda18c89b5c680a5d776dd2b3826b52",
+      "packages/storefront-renderer/viewports.js": "a08e5780e8f9caad29278f73072738bad1817f0cd9c3b49518dec6cb6816fa0b"
+    }
+  }
+}

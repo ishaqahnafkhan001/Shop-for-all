@@ -24,7 +24,7 @@ import {
     titleSizeClasses,
 } from "./referenceCore";
 
-export const ProductCard = memo(function ProductCard({
+export const ProductCard = memo(function ProductCard({ adaptiveParts = false,
     product,
     index,
     storewideDiscount,
@@ -106,7 +106,7 @@ export const ProductCard = memo(function ProductCard({
     const wishlistClass = forceMobilePreview
         ? "right-2 top-2 h-10 w-10"
         : "right-2 top-2 h-10 w-10 sm:right-3 sm:top-3 sm:h-11 sm:w-11";
-    const quickBuyButtonClass = forceMobilePreview
+    const quickBuyButtonClass = adaptiveParts ? "min-h-11 basis-24 grow px-2 py-2 text-xs sm:text-sm" : forceMobilePreview
         ? "h-11 px-1.5 text-[11px]"
         : "h-11 px-1.5 text-[11px] min-[430px]:px-2 min-[430px]:text-xs sm:px-3 sm:text-sm";
 
@@ -139,6 +139,8 @@ export const ProductCard = memo(function ProductCard({
 
     return (
         <article
+            data-ab-part={adaptiveParts ? 'card' : undefined}
+            data-ab-surface={adaptiveParts ? '' : undefined}
             className={`group relative flex min-h-full min-w-0 flex-col overflow-hidden border border-[var(--sf-card-border-color)] transition duration-300 ease-out hover:-translate-y-1 hover:border-[var(--sf-card-hover-border)] ${cardRadiusClass} ${shadowClass}`}
             style={{
                 animationDelay: `${(index % 8) * 35}ms`,
@@ -147,7 +149,7 @@ export const ProductCard = memo(function ProductCard({
             }}
         >
             <LinkSlot LinkComponent={LinkComponent} href={`/products/${product.slug || product._id}`} prefetch={false} className="absolute inset-0 z-10" aria-label={`View ${product.title}`} />
-            <div className={`relative overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 ring-1 ring-slate-900/5 ${aspectClass} ${imageFrameSpacing} ${imageRadiusClass}`}>
+            <div data-ab-surface={adaptiveParts ? '' : undefined} className={`relative overflow-hidden bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 ring-1 ring-slate-900/5 ${aspectClass} ${imageFrameSpacing} ${imageRadiusClass}`}>
                 {imageUrl && !imageFailed ? (
                     <img
                         src={optimizeCloudinaryImage(imageUrl, { width: 560 })}
@@ -162,12 +164,12 @@ export const ProductCard = memo(function ProductCard({
                         decoding="async"
                     />
                 ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-300">
+                    <div data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-300">
                         <ShoppingBag size={34} />
                     </div>
                 )}
                 {productCard?.showWishlist !== false && (
-                    <button
+                    <button data-ab-surface={adaptiveParts ? '' : undefined}
                         type="button"
                         onClick={handleWishlist}
                         aria-pressed={wishlisted}
@@ -229,13 +231,13 @@ export const ProductCard = memo(function ProductCard({
                                 {stockText}
                             </p>
                         )}
-                        {productCard?.showSku && sku && <p className="hidden max-w-full truncate rounded-full bg-slate-50 px-2 py-1 text-slate-400 sm:block">SKU: {sku}</p>}
+                        {productCard?.showSku && sku && <p data-ab-surface={adaptiveParts ? '' : undefined} className="hidden max-w-full truncate rounded-full bg-slate-50 px-2 py-1 text-slate-400 sm:block">SKU: {sku}</p>}
                     </div>
                 )}
                 <div className="mt-auto flex flex-col gap-3 pt-4">
                     {productCard?.showQuickBuy !== false && (
-                        <div className="relative z-20 grid w-full grid-cols-2 gap-2">
-                            <button
+                        <div className={adaptiveParts ? "relative z-20 flex w-full flex-wrap gap-2" : "relative z-20 grid w-full grid-cols-2 gap-2"}>
+                            <button data-ab-surface={adaptiveParts ? '' : undefined}
                                 type="button"
                                 disabled={isOutOfStock}
                                 onClick={handleAdd}
@@ -246,10 +248,10 @@ export const ProductCard = memo(function ProductCard({
                                     : buttonInlineStyle}
                             >
                                 {!forceMobilePreview && <ShoppingBag size={14} className="hidden shrink-0 sm:block" />}
-                                <span className="truncate">{isOutOfStock ? "Unavailable" : "Add"}</span>
+                                <span className={adaptiveParts ? "min-w-0 whitespace-normal break-words" : "truncate"}>{isOutOfStock ? "Unavailable" : "Add"}</span>
                             </button>
                             {onProductBuyNow && (
-                                <button
+                                <button data-ab-surface={adaptiveParts ? '' : undefined}
                                     type="button"
                                     disabled={isOutOfStock}
                                     onClick={handleBuyNow}
@@ -260,7 +262,9 @@ export const ProductCard = memo(function ProductCard({
                                         : { backgroundColor: cardColors.buyNowBackground, borderColor: cardColors.buyNowBackground, color: cardColors.buyNowText }}
                                 >
                                     {!forceMobilePreview && <Zap size={14} className="hidden shrink-0 sm:block" />}
-                                    {forceMobilePreview ? (
+                                    {adaptiveParts ? (
+                                        <span className="min-w-0 whitespace-normal break-words">Buy Now</span>
+                                    ) : forceMobilePreview ? (
                                         <span className="truncate">Buy</span>
                                     ) : (
                                         <>

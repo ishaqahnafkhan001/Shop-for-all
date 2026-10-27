@@ -1,0 +1,17 @@
+{
+  "views": [
+    "AccountAuthView",
+    "AccountTabsViews",
+    "AccountSecurityView",
+    "AccountDashboardView"
+  ],
+  "securityViewProps": [
+    "handlePasswordReset",
+    "loading",
+    "passForm",
+    "passwordScore",
+    "passwordsMatch",
+    "presentationVariant",
+    "setPassForm"
+  ]
+}

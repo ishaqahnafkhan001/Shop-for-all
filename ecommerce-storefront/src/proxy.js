@@ -28,6 +28,13 @@ export default function proxy(req) {
     // Always replace a caller-supplied value.
     requestHeaders.set('x-storefront-pathname', `${url.pathname}${url.search}`);
     const options = { request: { headers: requestHeaders } };
+    const rewriteTenant = tenant => {
+        const target = new URL(req.url);
+        // Avoid exposing the internal tenant path through a root-slash redirect.
+        target.pathname = `/${tenant}${url.pathname === '/' ? '' : url.pathname}`;
+        target.search = url.search;
+        return NextResponse.rewrite(target, options);
+    };
 
     if (!hostname || RESERVED_HOSTS.has(hostname)) {
         return NextResponse.next(options);
@@ -36,18 +43,18 @@ export default function proxy(req) {
     if (hostname.endsWith('.localhost')) {
         const subdomain = hostname.slice(0, -'.localhost'.length);
         if (subdomain && !subdomain.includes('.')) {
-            return NextResponse.rewrite(new URL(`/${subdomain}${url.pathname}`, req.url), options);
+            return rewriteTenant(subdomain);
         }
     }
 
     if (hostname.endsWith(`.${PLATFORM_DOMAIN}`)) {
         const subdomain = hostname.slice(0, -`.${PLATFORM_DOMAIN}`.length);
         if (subdomain && !subdomain.includes('.') && !RESERVED_SUBDOMAINS.has(subdomain)) {
-            return NextResponse.rewrite(new URL(`/${subdomain}${url.pathname}`, req.url), options);
+            return rewriteTenant(subdomain);
         }
 
         return NextResponse.next(options);
     }
 
-    return NextResponse.rewrite(new URL(`/${hostname}${url.pathname}`, req.url), options);
+    return rewriteTenant(hostname);
 }

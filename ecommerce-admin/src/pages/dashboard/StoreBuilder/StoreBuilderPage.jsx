@@ -36,6 +36,8 @@ import { useMobileWorkspace } from './hooks/useMobileWorkspace.js';
 import { useStoreBuilderBootstrap } from './hooks/useStoreBuilderBootstrap.js';
 import { useAutosaveRecovery } from './hooks/useAutosaveRecovery.js';
 import { useThemeMedia } from './hooks/useThemeMedia.js';
+import { validateStoredTheme } from '@scaleup/storefront-theme/storage';
+import { parseBuilderRecovery } from './adaptive/adaptiveEditorState.js';
 import {
     HERO_SLIDE_LIMIT,
     HISTORY_LIMIT,
@@ -59,7 +61,6 @@ import {
     loadBuilderTheme,
     normalizeHeroSlideForBuilder,
     normalizeHomepageSections,
-    safeParseSnapshot,
     stableStringify,
     syncHeroLegacyFields,
     updateBuilderThemeSetting
@@ -90,6 +91,7 @@ const NavigationEditor = lazy(() => import('./editors/NavigationEditor.jsx').the
 const HeroEditor = lazy(() => import('./editors/HeroEditor.jsx').then(module => ({ default: module.HeroEditor })));
 const ProductCardsEditor = lazy(() => import('./editors/ProductCardsEditor.jsx').then(module => ({ default: module.ProductCardsEditor })));
 const ThemeGallery = lazy(() => import('./themes/ThemeGallery.jsx'));
+const AdaptiveStoreEditor = lazy(() => import('./adaptive/AdaptiveStoreEditor.jsx').then(module => ({ default: module.AdaptiveStoreEditor })));
 
 const isCustomDomainConnected = (customDomain = {}) => (
     customDomain?.status === 'Verified' &&
@@ -105,8 +107,8 @@ const DEFAULT_PLAN_ACCESS = {
     features: {}
 };
 
-const StoreBuilderPage = () => {
-    const { loading, data: bootstrap, error: bootstrapError, reload: reloadBootstrap } = useStoreBuilderBootstrap();
+const StoreBuilderPage = ({ api = API, developmentPreview = false } = {}) => {
+    const { loading, data: bootstrap, error: bootstrapError, reload: reloadBootstrap } = useStoreBuilderBootstrap({ api });
     const [saving, setSaving] = useState(false);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [uploadingThemeImage, setUploadingThemeImage] = useState(false);
@@ -143,6 +145,8 @@ const StoreBuilderPage = () => {
     const [issuesOpen, setIssuesOpen] = useState(false);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [themeGalleryOpen, setThemeGalleryOpen] = useState(false);
+    const [adaptiveEditorIssues, setAdaptiveEditorIssues] = useState([]);
+    const [adaptiveUploads, setAdaptiveUploads] = useState({});
     const [inspectorOpen, setInspectorOpen] = useState(true);
     const [advancedColorsOpen, setAdvancedColorsOpen] = useState(false);
     const [colorMode, setColorMode] = useState('quick');
@@ -151,11 +155,17 @@ const StoreBuilderPage = () => {
     const historyModeRef = useRef('record');
     const lastHistorySnapshotRef = useRef('');
     const dirtyRef = useRef(false);
+    const adaptiveHistoryStartedRef = useRef(0);
+    const adaptiveIssueNavigationRef = useRef(null);
+    const acknowledgedRecoveryRef = useRef(null);
+    // Temporary merchant release hold, including tabs with stale bootstrap data.
+    const adaptiveEditing = false;
+    const adaptiveReadOnly = Number(theme.version) >= 5 || Number(bootstrap?.shop?.theme?.version) >= 5 || Number(bootstrap?.draft?.theme?.version) >= 5;
     const {
         rememberTemporaryAsset,
         discardTemporaryAsset,
         clearTemporaryAssets
-    } = useThemeMedia({ theme });
+    } = useThemeMedia({ theme, api });
 
     const {
         currentSnapshot,
@@ -171,8 +181,10 @@ const StoreBuilderPage = () => {
     const canUndo = editorHistory.past.length > 0;
     const canRedo = editorHistory.future.length > 0;
     const autosave = useAutosaveRecovery({
+        api,
+        ...(developmentPreview ? { recoveryKey: `adaptive-development:${bootstrap?.developmentScope || 'pending'}` } : {}),
         shopKey: hydratedShopKey,
-        enabled: hasUnsavedChanges && !saving,
+        enabled: hasUnsavedChanges && !saving && !adaptiveReadOnly,
         currentSnapshot,
         theme,
         searchAliases,
@@ -181,6 +193,7 @@ const StoreBuilderPage = () => {
         basedOnRevision: themeRevision,
         initialDraftVersion: bootstrap?.draft?.updatedAt ?? null
     });
+    const resetDraftVersion = autosave.resetVersion;
     useEffect(() => {
         dirtyRef.current = hasUnsavedChanges;
     }, [hasUnsavedChanges]);
@@ -192,7 +205,7 @@ const StoreBuilderPage = () => {
             if (checking) return;
             checking = true;
             try {
-                const response = await API.get('/store-builder/admin/seo/bootstrap');
+                const response = await api.get('/store-builder/admin/seo/bootstrap');
                 if (!active) return;
                 const seoBootstrap = response.data?.data;
                 if (seoBootstrap?.seoStats) setSeoStats(seoBootstrap.seoStats);
@@ -216,11 +229,11 @@ const StoreBuilderPage = () => {
         };
         window.addEventListener('focus', refreshSeoStatus);
         return () => { active = false; window.removeEventListener('focus', refreshSeoStatus); };
-    }, [reloadBootstrap, themeRevision]);
+    }, [api, reloadBootstrap, themeRevision]);
 
     useEffect(() => {
         const local = autosave.localRecovery;
-        if (!local?.snapshot || recoveryDraft || Number(local.basedOnRevision || 0) !== themeRevision) return;
+        if (!local?.snapshot || local.snapshot === acknowledgedRecoveryRef.current || recoveryDraft || Number(local.basedOnRevision || 0) !== themeRevision) return;
         if (local.snapshot !== initialSnapshot) {
             const timer = window.setTimeout(() => setRecoveryDraft({ ...local, source: 'local' }), 0);
             return () => window.clearTimeout(timer);
@@ -301,6 +314,7 @@ const StoreBuilderPage = () => {
     };
 
     const applyPrebuiltTheme = async (preset) => {
+        if (Number(theme.version) === 5) { toast.error('Adaptive designs use contextual presets. The complete design has been preserved.'); return false; }
         try {
             if (preset.id === 'atelier-editorial' && bootstrap?.themeAvailability?.['atelier-editorial']?.available !== true) {
                 throw new Error('Atelier Editorial is not available for this store.');
@@ -348,19 +362,20 @@ const StoreBuilderPage = () => {
         ]
             .filter(([, value]) => value && !isHexColor(value))
             .map(([label], index) => ({ path: index === 0 ? 'productCard.priceColor' : 'productCard.buttonColor', message: `${label} must be a valid hex color.`, group: 'products' }));
-        const contractErrors = validateTheme(theme).errors.map(error => ({
+        const contractErrors = (Number(theme.version) === 5 ? validateStoredTheme(theme) : validateTheme(theme)).errors.map(error => ({
             ...error,
-            group: error.path?.startsWith('seo.')
+            path: Array.isArray(error.path) ? error.path.join('.') : error.path,
+            group: String(error.path || '').startsWith('seo.')
                 ? 'seo'
-                : error.path?.startsWith('homepageSections.')
+                : String(error.path || '').startsWith('homepageSections.')
                     ? 'sections'
-                    : error.path?.startsWith('navigation.')
+                    : String(error.path || '').startsWith('navigation.')
                         ? 'navigation'
                         : 'brand'
         }));
 
-        return [...contractErrors, ...colorErrors, ...nestedColorErrors, ...discountErrors, ...navErrors, ...navChildErrors, ...productColorErrors];
-    }, [theme, storewideDiscount]);
+        return [...contractErrors, ...adaptiveEditorIssues, ...colorErrors, ...nestedColorErrors, ...discountErrors, ...navErrors, ...navChildErrors, ...productColorErrors];
+    }, [theme, storewideDiscount, adaptiveEditorIssues]);
     const validation = useMemo(() => validationDetails.map(error => error.message), [validationDetails]);
 
     const mergeProductCache = (products = []) => {
@@ -376,7 +391,7 @@ const StoreBuilderPage = () => {
     const loadProductOptions = async ({ page = 1, append = false, search = productPicker.search, category = productPicker.category } = {}) => {
         setProductPicker(prev => ({ ...prev, loading: true }));
         try {
-            const { data } = await API.get('/admin/products', {
+            const { data } = await api.get('/admin/products', {
                 params: {
                     limit: 10,
                     page,
@@ -411,7 +426,7 @@ const StoreBuilderPage = () => {
     const loadReviewOptions = async ({ page = 1, append = false, search = reviewPicker.search, ids = '' } = {}) => {
         setReviewPicker(prev => ({ ...prev, loading: true }));
         try {
-            const { data } = await API.get('/store-builder/admin/reviews', {
+            const { data } = await api.get('/store-builder/admin/reviews', {
                 params: {
                     page,
                     limit: 10,
@@ -493,7 +508,7 @@ const StoreBuilderPage = () => {
         setEditorHistory({ past: [], future: [] });
 
         const serverDraft = bootstrap.draft;
-        autosave.resetVersion(serverDraft?.updatedAt ?? null);
+        resetDraftVersion(serverDraft?.updatedAt ?? null);
         if (serverDraft?.theme && !serverDraft.stale) {
             const draftSnapshot = stableStringify({
                 theme: loadBuilderTheme(serverDraft.theme),
@@ -505,7 +520,7 @@ const StoreBuilderPage = () => {
                 window.setTimeout(() => setRecoveryDraft({ ...serverDraft, snapshot: draftSnapshot, source: 'server' }), 0);
             }
         }
-    }, [bootstrap, hydratedShopKey]);
+    }, [bootstrap, hydratedShopKey, resetDraftVersion]);
 
     useEffect(() => {
         const handleBeforeUnload = (event) => {
@@ -534,18 +549,20 @@ const StoreBuilderPage = () => {
 
         if (lastHistorySnapshotRef.current === currentSnapshot) return undefined;
 
+        if (adaptiveEditing && !adaptiveHistoryStartedRef.current) adaptiveHistoryStartedRef.current = Date.now();
         const timer = window.setTimeout(() => {
             const previousSnapshot = lastHistorySnapshotRef.current;
             if (!previousSnapshot || previousSnapshot === currentSnapshot) return;
             lastHistorySnapshotRef.current = currentSnapshot;
+            adaptiveHistoryStartedRef.current = 0;
             setEditorHistory(prev => ({
                 past: [...prev.past, previousSnapshot].slice(-HISTORY_LIMIT),
                 future: []
             }));
-        }, 550);
+        }, adaptiveEditing ? Math.min(550, Math.max(0, 2000 - (Date.now() - adaptiveHistoryStartedRef.current))) : 550);
 
         return () => window.clearTimeout(timer);
-    }, [currentSnapshot, loading]);
+    }, [currentSnapshot, loading, adaptiveEditing]);
 
     const setColor = (key, value) => {
         setTheme(prev => ({
@@ -1114,6 +1131,7 @@ const StoreBuilderPage = () => {
     };
 
     const resetStyling = () => {
+        if (Number(theme.version) === 5) { toast.error('Use the contextual page and section reset controls. Your adaptive content is preserved.'); return; }
         setTheme(prev => loadBuilderTheme({
             logoUrl: prev.logoUrl,
             faviconUrl: prev.faviconUrl,
@@ -1136,8 +1154,9 @@ const StoreBuilderPage = () => {
     };
 
     const applyBuilderSnapshot = (snapshot) => {
-        const parsed = safeParseSnapshot(snapshot);
-        if (!parsed) return false;
+        const checked = parseBuilderRecovery({ snapshot, basedOnRevision: themeRevision }, themeRevision);
+        if (!checked.compatible) { toast.error(checked.message); return false; }
+        const parsed = checked.value;
 
         historyModeRef.current = 'skip';
         const nextTheme = loadBuilderTheme(parsed.theme || {});
@@ -1185,6 +1204,8 @@ const StoreBuilderPage = () => {
 
     const restoreRecoveryVersion = () => {
         if (!recoveryDraft) return;
+        const check = parseBuilderRecovery(recoveryDraft, themeRevision);
+        if (recoveryDraft.snapshot && !check.compatible) { toast.error(check.message); return; }
         const snapshot = recoveryDraft.snapshot || stableStringify({
             theme: recoveryDraft.theme,
             searchAliases: recoveryDraft.searchAliases || searchAliases,
@@ -1192,6 +1213,7 @@ const StoreBuilderPage = () => {
             storewideDiscount: Number(recoveryDraft.storewideDiscount) || 0
         });
         if (applyBuilderSnapshot(snapshot)) {
+            acknowledgedRecoveryRef.current = autosave.localRecovery?.snapshot;
             setRecoveryDraft(null);
             toast.success('Recovered Store Builder draft. Review it before publishing.');
         }
@@ -1199,7 +1221,7 @@ const StoreBuilderPage = () => {
 
     const discardRecoveryVersion = async () => {
         try {
-            await autosave.clearRecovery();
+            await autosave.clearRecovery({ discardUnknown: true });
             setRecoveryDraft(null);
             toast.success('Recovered draft discarded.');
         } catch (error) { toast.error(error.response?.data?.error || 'Could not discard the draft.'); }
@@ -1241,6 +1263,7 @@ const StoreBuilderPage = () => {
 
     const focusValidationError = (error) => {
         setIssuesOpen(false);
+        if (adaptiveEditing) { adaptiveIssueNavigationRef.current?.(error); return; }
         const sectionMatch = String(error?.path || '').match(/^homepageSections\.(\d+)/);
         if (sectionMatch) {
             const sectionIndex = Number(sectionMatch[1]);
@@ -1260,7 +1283,7 @@ const StoreBuilderPage = () => {
     const previewRevision = async (revisionId) => {
         if (hasUnsavedChanges && !window.confirm('Replace the current draft with this historical revision for preview?')) return;
         try {
-            const { data } = await API.get(`/store-builder/admin/revisions/${revisionId}`);
+            const { data } = await api.get(`/store-builder/admin/revisions/${revisionId}`);
             const revision = data.data;
             applyBuilderSnapshot(stableStringify({
                 theme: revision.theme,
@@ -1280,7 +1303,7 @@ const StoreBuilderPage = () => {
         setSaving(true);
         try {
             await autosave.pause();
-            const { data } = await API.post(`/store-builder/admin/revisions/${revisionId}/restore`, { expectedRevision: themeRevision, expectedShopId: hydratedShopKey });
+            const { data } = await api.post(`/store-builder/admin/revisions/${revisionId}/restore`, { expectedRevision: themeRevision, expectedShopId: hydratedShopKey });
             const savedShop = data.data;
             const nextTheme = loadBuilderTheme(savedShop.theme || {});
             const nextSearchAliases = Array.isArray(savedShop.searchAliases) ? savedShop.searchAliases : [];
@@ -1325,7 +1348,7 @@ const StoreBuilderPage = () => {
         setUploadingLogo(true);
 
         try {
-            const { data } = await API.post('/store-builder/admin/logo', formData, {
+            const { data } = await api.post('/store-builder/admin/logo', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             const url = data.data?.url;
@@ -1360,7 +1383,7 @@ const StoreBuilderPage = () => {
         setUploadingThemeImage(true);
 
         try {
-            const { data } = await API.post('/store-builder/admin/image', formData, {
+            const { data } = await api.post('/store-builder/admin/image', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             const url = data.data?.url;
@@ -1400,7 +1423,7 @@ const StoreBuilderPage = () => {
             const results = await Promise.allSettled(uploadFiles.map(async file => {
                 const formData = new FormData();
                 formData.append('image', file);
-                const { data } = await API.post('/store-builder/admin/image', formData, {
+                const { data } = await api.post('/store-builder/admin/image', formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
                 if (!data.data?.url) throw new Error('Upload did not return an image URL');
@@ -1422,6 +1445,7 @@ const StoreBuilderPage = () => {
     };
 
     const handleSave = () => {
+        if (developmentPreview) { toast('This synthetic workspace saves locally. Merchant publication is disabled.'); return; }
         if (validation.length > 0) {
             toast.error(validation[0]);
             return;
@@ -1434,6 +1458,7 @@ const StoreBuilderPage = () => {
     };
 
     const publishChanges = async () => {
+        if (developmentPreview) { toast('This synthetic workspace cannot publish merchant changes.'); return; }
         if (saving) return;
         setSaving(true);
         try {
@@ -1445,7 +1470,7 @@ const StoreBuilderPage = () => {
                 expectedShopId: hydratedShopKey
             };
             await autosave.pause();
-            const { data } = await API.patch('/store-builder/admin', payload);
+            const { data } = await api.patch('/store-builder/admin', payload);
             const savedShop = data.data || {};
             const hasSavedTheme = savedShop.theme && Object.keys(savedShop.theme).length > 0;
             const nextTheme = hasSavedTheme ? loadBuilderTheme(savedShop.theme) : theme;
@@ -1709,9 +1734,13 @@ const StoreBuilderPage = () => {
         );
     }
 
+    if (adaptiveReadOnly) return <section className="m-4 rounded-xl border border-amber-300 bg-amber-50 p-6" role="status"><h1 className="text-lg font-bold">Adaptive design is preserved in read-only mode</h1><p className="mt-2 text-sm">Editing is disabled by the server. Your complete published design and any adaptive draft remain unchanged. Use an approved compatible editor when editing becomes available.</p></section>;
+
     return (
         <StoreBuilderShell busy={saving}>
             <StoreBuilderHeader
+                publicationDisabled={developmentPreview}
+                adaptive={adaptiveEditing}
                 hasUnsavedChanges={hasUnsavedChanges}
                 statusLabel={hasUnsavedChanges ? 'Unsaved changes' : 'Published'}
                 lastSavedLabel={formatBuilderDate(lastSavedAt) || 'Current session'}
@@ -1737,6 +1766,8 @@ const StoreBuilderPage = () => {
                 mobileWorkspace={mobileWorkspace}
                 onWorkspaceChange={setMobileWorkspace}
             />
+
+            {autosave.localRecoveryIssue && <div role="alert" className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm"><p>{autosave.localRecoveryIssue} Server draft saving remains separate. This local copy will not be overwritten automatically.</p><button type="button" className="mt-2 min-h-11 font-semibold underline" onClick={() => autosave.clearRecovery({ clearServer: false, discardUnknown: true }).catch(() => toast.error('Local recovery could not be cleared.'))}>Discard incompatible local copy</button></div>}
 
             {recoveryDraft && (
                 <div className="mx-auto max-w-[1600px] px-4 pt-4">
@@ -1772,7 +1803,17 @@ const StoreBuilderPage = () => {
                 </div>
             )}
 
-            <div className={`mx-auto grid max-w-[1800px] grid-cols-1 gap-4 p-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(520px,1fr)_380px] ${
+            {adaptiveEditing ? <Suspense fallback={<p role="status" className="p-6">Loading adaptive editor…</p>}><AdaptiveStoreEditor theme={theme} availability={bootstrap?.adaptiveAvailability} onThemeChange={setTheme}
+                issueNavigationRef={adaptiveIssueNavigationRef}
+                shop={bootstrap?.shop} products={Object.values(bootstrap?.previewCatalog?.productsById || {})} categories={productCategoryDetails.length ? productCategoryDetails : productCategories}
+                assets={[...(bootstrap?.adaptiveAssets || []), ...Object.values(adaptiveUploads)]} uploading={uploadingThemeImage}
+                onUpload={developmentPreview ? undefined : (event, done) => handleThemeImageUpload(event, (url, asset) => { setAdaptiveUploads(previous => ({ ...previous, [asset.assetId]: { ...asset, url } })); done(asset); })}
+                onIssuesChange={setAdaptiveEditorIssues} onHistoryBoundary={() => {
+                    if (lastHistorySnapshotRef.current && lastHistorySnapshotRef.current !== currentSnapshot) {
+                        const previousSnapshot = lastHistorySnapshotRef.current; lastHistorySnapshotRef.current = currentSnapshot; adaptiveHistoryStartedRef.current = 0;
+                        setEditorHistory(previous => ({ past: [...previous.past, previousSnapshot].slice(-HISTORY_LIMIT), future: [] }));
+                    }
+                }} /></Suspense> : <div className={`mx-auto grid max-w-[1800px] grid-cols-1 gap-4 p-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(520px,1fr)_380px] ${
                 inspectorOpen ? 'xl:pr-[396px] 2xl:pr-4' : ''
             }`}>
                 <StoreBuilderSidebar
@@ -1832,7 +1873,7 @@ const StoreBuilderPage = () => {
                         </Suspense>
                     </StoreBuilderEditorPanel>
                 </main>
-            </div>
+            </div>}
 
             <IssuesDrawer
                 open={issuesOpen}

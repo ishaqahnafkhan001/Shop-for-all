@@ -1,0 +1,589 @@
+{
+  "journeys": [
+    {
+      "page": "Homepage",
+      "buttons": 3,
+      "inputs": 0,
+      "templates": [
+        "preview_home"
+      ],
+      "text": "Thoughtfully made, for everyday living\nFeatured Products\n\nHandpicked products from this store\n\nView all\n10% OFF\nHandcrafted ceramic vessel\n\n৳ 1,080\n\n৳ 1,200\n\n4.5 (8 reviews)\n\nStudio Collection\n\n12 in stock\n\nAdd\nBuy Now"
+    },
+    {
+      "page": "Product Details",
+      "buttons": 10,
+      "inputs": 0,
+      "templates": [
+        "preview_product"
+      ],
+      "text": "Continue Shopping\nSTUDIO COLLECTION\n10% OFF\n4.5 / 5 from 8 reviews\nHandcrafted ceramic vessel\n\nVERIFIED STORE ITEM\n\nPrice\n\n৳ 1080\n\n৳ 1200\n\n10% OFF\n\nPAYMENT\n\nCash on delivery\n\nCarefully made for everyday use. হস্তনির্মিত পণ্য।\n\nChoose your options\n\nSelect a combination to update price, SKU, image, an"
+    },
+    {
+      "page": "Categories",
+      "buttons": 8,
+      "inputs": 6,
+      "templates": [
+        "preview_category"
+      ],
+      "text": "Back to store\nCATEGORY\nStudio collection\n\n1 product\n\nSort\nDefault\nNewest\nPrice: Low to High\nPrice: High to Low\nBest Rated\nFILTER PRODUCTS\nPRICE RANGE\nAVAILABILITY\nAll\nIn stock\nOut of stock\nOn sale\nRATING\nAny rating\n4 stars and above\n3 stars and above\nClear\nApply\n10% OFF\nHandcrafted ceramic vessel\n\n৳"
+    },
+    {
+      "page": "Collections",
+      "buttons": 5,
+      "inputs": 1,
+      "templates": [
+        "preview_collection"
+      ],
+      "text": "Back to store\nCOLLECTION\nStudio collection\n\nThoughtfully made objects. হস্তনির্মিত সংগ্রহ।\n\n1 product\n\nSort\nNewest\nOldest\nPrice: Low to High\nPrice: High to Low\nBest Rated\n10% OFF\nHandcrafted ceramic vessel\n\n৳ 1,080\n\n৳ 1,200\n\n4.5 (8 reviews)\n\nStudio Collection\n\n12 in stock\n\nAdd\nBuy Now\nPrevious\nPage "
+    },
+    {
+      "page": "Cart",
+      "buttons": 4,
+      "inputs": 1,
+      "templates": [
+        "preview_cart"
+      ],
+      "text": "CART\n\nYour Cart (1)\n\nReview quantities, delivery estimate, and checkout securely when you are ready.\n\nSecure\nDelivery\nSupport\nSTUDIO COLLECTION\nHandcrafted ceramic vessel\n\nCarefully made for everyday use. হস্তনির্মিত পণ্য।\n\nSIZE:MEDIUM\n\n৳ 1080\n\n৳ 1200\n\n1\n\nSUMMARY\n\nOrder Summary\n1 item\nSubtotal\n৳ 108"
+    },
+    {
+      "page": "Checkout",
+      "buttons": 6,
+      "inputs": 8,
+      "templates": [
+        "preview_checkout"
+      ],
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCOD\nDelivery\nCustomer Information\nFull Name\nEmail\nPhone Number\nFull Address\nDelivery area\nSelect delivery area\nInside Dhaka\nOutside Dhaka\nDelivery Charge\n\nInside Dhaka → ৳ "
+    },
+    {
+      "page": "Account",
+      "buttons": 3,
+      "inputs": 2,
+      "templates": [
+        "preview_account"
+      ],
+      "text": "WELCOME BACK\n\nWelcome Back\n\nSign in to view orders, tracking, and account details.\n\nEmail Address\nPassword\nForgot password?Sign In\nDon't have an account? Sign up"
+    },
+    {
+      "page": "Order Tracking",
+      "buttons": 1,
+      "inputs": 2,
+      "templates": [
+        "preview_track"
+      ],
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view delivery, cancellation, and return support.\n\nSend access code"
+    },
+    {
+      "page": "Policies",
+      "buttons": 0,
+      "inputs": 0,
+      "templates": [
+        "preview_policiesIndex"
+      ],
+      "text": "STORE POLICIES\n\nPolicies for Synthetic Studio\n\nReview refund, shipping, privacy, and terms information before placing an order.\n\nCUSTOMER INFORMATION\nRefund Policy\nShipping Policy\nPrivacy Policy\nTerms & Conditions\nRefund Policy\nOpen page\nExample refund policy. Contact the store for eligible returns."
+    },
+    {
+      "page": "Policy Details",
+      "buttons": 0,
+      "inputs": 0,
+      "templates": [
+        "preview_policy"
+      ],
+      "text": "STORE POLICY\n\nShipping Policy\nExample shipping policy. Orders normally dispatch within three working days.\nBack to store"
+    },
+    {
+      "page": "Global header",
+      "buttons": 3,
+      "inputs": 0,
+      "templates": [
+        "preview_header"
+      ],
+      "text": "S\nSynthetic Studio\nStorefront\nSearch products\nPolicies"
+    },
+    {
+      "page": "Global footer",
+      "buttons": 0,
+      "inputs": 0,
+      "templates": [
+        "preview_footer"
+      ],
+      "text": "SS\nSynthetic Studio\n\nSTOREFRONT\n\nSynthetic Studio — local design workspace.\n\nStore\nPolicies\nAccount\nCart\nSupport\nShipping Policy\nRefund Policy\nPrivacy Policy\nTerms & Conditions\n\n© 2026 Synthetic Studio. Powered by Scaleup.\n\nSecure checkout\nPrivacy-friendly analytics"
+    }
+  ],
+  "actions": {
+    "productTitleEdit": "center",
+    "undo": "start",
+    "redo": "center",
+    "autosave": "Draft saved",
+    "add": "content.text",
+    "duplicate": true,
+    "reorder": true,
+    "remove": true,
+    "savedSectionCopy": "Independent saved copy",
+    "presetFontSize": "20px",
+    "reload": "Draft saved; both original and independent text present",
+    "realZoom": "BLOCKED: ctrl+plus and ctrl+equal left dpr=1 and innerWidth=1440",
+    "fieldErrorAssociation": "Verified aria-invalid=true with described error; removed after correction"
+  },
+  "editorWidths": [
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 320,
+      "width": 320
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 360,
+      "width": 360
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 390,
+      "width": 390
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 430,
+      "width": 430
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 767,
+      "width": 767
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 768,
+      "width": 768
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 1023,
+      "width": 1023
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 1024,
+      "width": 1024
+    },
+    {
+      "controls": 55,
+      "overflow": false,
+      "scrollWidth": 1440,
+      "width": 1440
+    }
+  ],
+  "states": [
+    {
+      "page": "Product Details",
+      "scenario": "normal",
+      "controls": 10,
+      "hasTemplate": true,
+      "text": "Continue Shopping\nSTUDIO COLLECTION\n10% OFF\n4.5 / 5 from 8 reviews\nHandcrafted ceramic vessel\n\nVERIFIED STORE ITEM\n\nPrice\n\n৳ 1080\n"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "variants",
+      "controls": 11,
+      "hasTemplate": true,
+      "text": "Continue Shopping\nSTUDIO COLLECTION\n10% OFF\n4.5 / 5 from 8 reviews\nHandcrafted ceramic vessel\n\nVERIFIED STORE ITEM\n\nPrice\n\n৳ 1080\n"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "out-of-stock",
+      "controls": 5,
+      "hasTemplate": true,
+      "text": "Continue Shopping\nSTUDIO COLLECTION\n10% OFF\n4.5 / 5 from 8 reviews\nHandcrafted ceramic vessel\n\nVERIFIED STORE ITEM\n\nPrice\n\n৳ 1080\n"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "zero-price",
+      "controls": 9,
+      "hasTemplate": true,
+      "text": "Continue Shopping\nSTUDIO COLLECTION\n4.5 / 5 from 8 reviews\nHandcrafted ceramic vessel\n\nVERIFIED STORE ITEM\n\nPrice\n\n৳ 0\n\nPAYMENT\n\nC"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "missing-image",
+      "controls": 10,
+      "hasTemplate": true,
+      "text": "Continue Shopping\n\nImage unavailable\n\nAdd or replace this product image from the admin catalog.\n\nSTUDIO COLLECTION\n10% OFF\n4.5 / 5"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "long-title",
+      "controls": 10,
+      "hasTemplate": true,
+      "text": "Continue Shopping\nSTUDIO COLLECTION\n10% OFF\n4.5 / 5 from 8 reviews\nহস্তনির্মিত সংগ্রহ — Thoughtful everyday goods হস্তনির্মিত সংগ্"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "discounted",
+      "controls": 10,
+      "hasTemplate": true,
+      "text": "Continue Shopping\nSTUDIO COLLECTION\n10% OFF\n4.5 / 5 from 8 reviews\nHandcrafted ceramic vessel\n\nVERIFIED STORE ITEM\n\nPrice\n\n৳ 1080\n"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "loading",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Loading product…"
+    },
+    {
+      "page": "Product Details",
+      "scenario": "missing",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Product unavailable"
+    },
+    {
+      "page": "Categories",
+      "scenario": "populated",
+      "controls": 14,
+      "hasTemplate": true,
+      "text": "Back to store\nCATEGORY\nStudio collection\n\n1 product\n\nSort\nDefault\nNewest\nPrice: Low to High\nPrice: High to Low\nBest Rated\nFILTER P"
+    },
+    {
+      "page": "Categories",
+      "scenario": "empty",
+      "controls": 9,
+      "hasTemplate": true,
+      "text": "Back to store\nCATEGORY\nStudio collection\n\n0 products\n\nSort\nDefault\nNewest\nPrice: Low to High\nPrice: High to Low\nBest Rated\nFILTER "
+    },
+    {
+      "page": "Categories",
+      "scenario": "filtered",
+      "controls": 12,
+      "hasTemplate": true,
+      "text": "Back to store\nCATEGORY\nStudio collection\n\n0 products\n\nIn stock\nClear all\nSort\nDefault\nNewest\nPrice: Low to High\nPrice: High to Low"
+    },
+    {
+      "page": "Categories",
+      "scenario": "loading",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Loading products…"
+    },
+    {
+      "page": "Categories",
+      "scenario": "missing",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Catalog unavailable"
+    },
+    {
+      "page": "Collections",
+      "scenario": "populated",
+      "controls": 6,
+      "hasTemplate": true,
+      "text": "Back to store\nCOLLECTION\nStudio collection\n\nThoughtfully made objects. হস্তনির্মিত সংগ্রহ।\n\n1 product\n\nSort\nNewest\nOldest\nPrice: L"
+    },
+    {
+      "page": "Collections",
+      "scenario": "empty",
+      "controls": 1,
+      "hasTemplate": true,
+      "text": "Back to store\nCOLLECTION\nStudio collection\n\nThoughtfully made objects. হস্তনির্মিত সংগ্রহ।\n\n0 products\n\nSort\nNewest\nOldest\nPrice: "
+    },
+    {
+      "page": "Collections",
+      "scenario": "loading",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Loading products…"
+    },
+    {
+      "page": "Collections",
+      "scenario": "missing",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Catalog unavailable"
+    },
+    {
+      "page": "Cart",
+      "scenario": "populated",
+      "controls": 5,
+      "hasTemplate": true,
+      "text": "CART\n\nYour Cart (1)\n\nReview quantities, delivery estimate, and checkout securely when you are ready.\n\nSecure\nDelivery\nSupport\nSTUD"
+    },
+    {
+      "page": "Cart",
+      "scenario": "empty",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Your cart is empty\n\nAdd products to compare options, review totals, and complete checkout securely.\n\nContinue Shopping"
+    },
+    {
+      "page": "Cart",
+      "scenario": "refreshing",
+      "controls": 5,
+      "hasTemplate": true,
+      "text": "Refreshing cart…\n\nCART\n\nYour Cart (1)\n\nReview quantities, delivery estimate, and checkout securely when you are ready.\n\nSecure\nDel"
+    },
+    {
+      "page": "Cart",
+      "scenario": "error",
+      "controls": 5,
+      "hasTemplate": true,
+      "text": "Synthetic cart refresh failed. Please try again.\n\nCART\n\nYour Cart (1)\n\nReview quantities, delivery estimate, and checkout securely"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "form",
+      "controls": 14,
+      "hasTemplate": true,
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCO"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "empty",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Your cart is empty\n\nAdd some products first\n\nContinue Shopping"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "validation-error",
+      "controls": 14,
+      "hasTemplate": true,
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCO"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "otp",
+      "controls": 19,
+      "hasTemplate": true,
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCO"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "otp-error",
+      "controls": 19,
+      "hasTemplate": true,
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCO"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "expired-otp",
+      "controls": 19,
+      "hasTemplate": true,
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCO"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "loading",
+      "controls": 14,
+      "hasTemplate": true,
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCO"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "submission-failure",
+      "controls": 14,
+      "hasTemplate": true,
+      "text": "Back to Cart\n\nCHECKOUT\n\nComplete your order\n\nConfirm delivery details, review your items, and place the order securely.\n\nSecure\nCO"
+    },
+    {
+      "page": "Checkout",
+      "scenario": "success",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Order Confirmed\n\nThank you for your purchase.\n\nORDER ID FOR TRACKING\n\n#111111\n\nFull ID: e11111111111111111111111\n\nUse the short ID"
+    },
+    {
+      "page": "Account",
+      "scenario": "login",
+      "controls": 5,
+      "hasTemplate": true,
+      "text": "WELCOME BACK\n\nWelcome Back\n\nSign in to view orders, tracking, and account details.\n\nEmail Address\nPassword\nForgot password?Sign In"
+    },
+    {
+      "page": "Account",
+      "scenario": "registration",
+      "controls": 5,
+      "hasTemplate": true,
+      "text": "CUSTOMER ACCOUNT\n\nCreate Account\n\nCreate a shop-specific customer account to track orders and review purchases.\n\nFull Name\nEmail A"
+    },
+    {
+      "page": "Account",
+      "scenario": "verification",
+      "controls": 7,
+      "hasTemplate": true,
+      "text": "CUSTOMER ACCOUNT\n\nCreate Account\n\nCreate a shop-specific customer account to track orders and review purchases.\n\nFull Name\nEmail A"
+    },
+    {
+      "page": "Account",
+      "scenario": "orders",
+      "controls": 4,
+      "hasTemplate": true,
+      "text": "CUSTOMER CENTER\n\nMy Account\n\nWelcome back, Synthetic Buyer\n\nSign Out\nOrder History\nMy Profile\nPassword Reset\nOrder History\n\nYou ha"
+    },
+    {
+      "page": "Account",
+      "scenario": "profile",
+      "controls": 4,
+      "hasTemplate": true,
+      "text": "CUSTOMER CENTER\n\nMy Account\n\nWelcome back, Synthetic Buyer\n\nSign Out\nOrder History\nMy Profile\nPassword Reset\nProfile Details\nFULL "
+    },
+    {
+      "page": "Account",
+      "scenario": "security",
+      "controls": 8,
+      "hasTemplate": true,
+      "text": "CUSTOMER CENTER\n\nMy Account\n\nWelcome back, Synthetic Buyer\n\nSign Out\nOrder History\nMy Profile\nPassword Reset\nChange Password\nCurre"
+    },
+    {
+      "page": "Account",
+      "scenario": "loading",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Loading account…"
+    },
+    {
+      "page": "Account",
+      "scenario": "error",
+      "controls": 5,
+      "hasTemplate": true,
+      "text": "Synthetic sign-in error. Check your details and try again.\n\nWELCOME BACK\n\nWelcome Back\n\nSign in to view orders, tracking, and acco"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "lookup",
+      "controls": 3,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "otp",
+      "controls": 4,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "invalid-information",
+      "controls": 3,
+      "hasTemplate": true,
+      "text": "No example order matches these details.\n\nORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen "
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "verification-error",
+      "controls": 4,
+      "hasTemplate": true,
+      "text": "The example verification code is invalid.\n\nORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation scree"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "found",
+      "controls": 4,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "in-transit",
+      "controls": 3,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "delivered",
+      "controls": 3,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "cancelled",
+      "controls": 3,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "return-eligible",
+      "controls": 4,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Order Tracking",
+      "scenario": "return-ineligible",
+      "controls": 3,
+      "hasTemplate": true,
+      "text": "ORDER TRACKING\n\nTrack Your Order\n\nEnter the short Order ID from your confirmation screen and delivery phone number to view deliver"
+    },
+    {
+      "page": "Policies",
+      "scenario": "index",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "STORE POLICIES\n\nPolicies for Synthetic Studio\n\nReview refund, shipping, privacy, and terms information before placing an order.\n\nC"
+    },
+    {
+      "page": "Policy Details",
+      "scenario": "shipping",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "STORE POLICY\n\nShipping Policy\nExample shipping policy. Orders normally dispatch within three working days.\nBack to store"
+    },
+    {
+      "page": "Policy Details",
+      "scenario": "refund",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "STORE POLICY\n\nRefund Policy\nExample refund policy. Contact the store for eligible returns.\nBack to store"
+    },
+    {
+      "page": "Policy Details",
+      "scenario": "privacy",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "STORE POLICY\n\nPrivacy Policy\nExample privacy policy. Customer information is protected.\nBack to store"
+    },
+    {
+      "page": "Policy Details",
+      "scenario": "terms",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "STORE POLICY\n\nTerms & Conditions\nExample store terms. Review your order before confirming.\nBack to store"
+    },
+    {
+      "page": "Policy Details",
+      "scenario": "notFound",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "Policy unavailable"
+    },
+    {
+      "page": "Global header",
+      "scenario": "navigation",
+      "controls": 3,
+      "hasTemplate": true,
+      "text": "S\nSynthetic Studio\nStorefront\nSearch products\nPolicies"
+    },
+    {
+      "page": "Global footer",
+      "scenario": "policyAccess",
+      "controls": 0,
+      "hasTemplate": true,
+      "text": "SS\nSynthetic Studio\n\nSTOREFRONT\n\nSynthetic Studio — local design workspace.\n\nStore\nPolicies\nAccount\nCart\nSupport\nShipping Policy\nR"
+    }
+  ],
+  "keyboardTree": {
+    "arrowUpSelected": "Independent saved copy",
+    "visibleFocus": "rgb(79, 70, 229) solid 3px",
+    "enterLocatedPreview": true
+  }
+}

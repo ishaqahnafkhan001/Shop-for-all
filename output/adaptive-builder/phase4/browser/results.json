@@ -1,0 +1,1611 @@
+{
+  "cases": [
+    {
+      "name": "whole Builder grouped typing undo/redo and restored v5 draft",
+      "passed": true,
+      "observed": "Two text edits undo in one step; redo and server recovery retain stable story_text and edited text."
+    },
+    {
+      "name": "responsive typography and per-node isolation",
+      "passed": true
+    },
+    {
+      "name": "invalid typed color blocks publication without changing valid preview",
+      "passed": true
+    },
+    {
+      "name": "issue navigation focuses stable color control",
+      "passed": false,
+      "resolvedBy": "corrected validation issue focus reaches offending input"
+    },
+    {
+      "name": "product action click selects presentation without commerce writes",
+      "passed": true,
+      "allowedTransport": "mock draft saves only; CSP connect-src none; no cart/order controller bundled"
+    },
+    {
+      "name": "preset and saved-section preview",
+      "passed": true
+    },
+    {
+      "name": "inserted section survives deletion of saved definition",
+      "passed": true
+    },
+    {
+      "name": "global header core remains protected",
+      "passed": true
+    },
+    {
+      "name": "320px global header container does not overflow in desktop preview",
+      "passed": true
+    },
+    {
+      "name": "corrected validation issue focus reaches offending input",
+      "passed": true
+    },
+    {
+      "name": "footer content retained in bounded required core",
+      "passed": true
+    },
+    {
+      "name": "compatible add/reorder/duplicate",
+      "passed": true
+    },
+    {
+      "name": "changing link type does not invent destination",
+      "passed": true
+    },
+    {
+      "name": "keyboard tree child navigation keeps stable selection",
+      "passed": true
+    },
+    {
+      "name": "keyboard preview activation focuses inspector",
+      "passed": true
+    },
+    {
+      "name": "real iframe click selects registered heading",
+      "passed": true
+    },
+    {
+      "name": "Admin responsive 320",
+      "passed": false,
+      "resolvedBy": "Admin responsive verified 320 (initial overflow came from test diagnostics; diagnostics now wrap)"
+    },
+    {
+      "name": "Admin responsive verified 320",
+      "passed": true
+    },
+    {
+      "name": "Admin responsive verified 360",
+      "passed": true
+    },
+    {
+      "name": "Admin responsive verified 390",
+      "passed": true
+    },
+    {
+      "name": "Admin responsive verified 430",
+      "passed": true
+    },
+    {
+      "name": "Admin responsive verified 768",
+      "passed": true
+    },
+    {
+      "name": "Admin responsive verified 1024",
+      "passed": true
+    },
+    {
+      "name": "Admin responsive verified 1440",
+      "passed": true
+    },
+    {
+      "name": "restoring draft dismisses acknowledged recovery prompt",
+      "passed": true
+    },
+    {
+      "name": "preview-only mode hides both editing panels",
+      "passed": true
+    },
+    {
+      "name": "stale autosave detects conflict and stops blind writes",
+      "passed": true
+    },
+    {
+      "name": "unknown recovery survives independent server autosave",
+      "passed": true
+    },
+    {
+      "name": "closed server availability exposes read-only preservation view",
+      "passed": true
+    },
+    {
+      "name": "200-node document supports real 50-node home editing",
+      "passed": true
+    },
+    {
+      "name": "Atelier header composition remains code-owned",
+      "passed": true
+    },
+    {
+      "name": "Atelier 48px typography at 320px retains bounded navigation",
+      "passed": true
+    },
+    {
+      "name": "near-limit insert UI disables oversized additions",
+      "passed": true
+    },
+    {
+      "name": "blurring untouched inherited style does not create validation error",
+      "passed": true
+    },
+    {
+      "name": "unsafe protected palette is rejected before draft mutation",
+      "passed": true
+    },
+    {
+      "name": "property reset clears invalid local field and publish barrier",
+      "passed": true
+    }
+  ],
+  "measurements": [
+    {
+      "mobileMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 375,
+        "iframeScrollWidth": 375,
+        "nodes": [
+          {
+            "id": "section_story",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "story_text",
+            "fontSize": "24px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "story_link",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "columns",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "image",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "column_copy",
+            "fontSize": "18px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "stack",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "stack_copy",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "decorative",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 0
+          },
+          {
+            "id": "products",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          },
+          {
+            "id": "categories",
+            "fontSize": "16px",
+            "color": "rgb(18, 52, 86)",
+            "width": 375
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 41.89999997615814
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.899999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.800000011920929
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.5
+          },
+          {
+            "type": "click",
+            "milliseconds": 20.100000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 21
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.599999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.899999976158142
+          }
+        ],
+        "sinceNavigationMs": 20973.19999998808
+      },
+      "desktopMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1265,
+        "iframeScrollWidth": 1265,
+        "nodes": [
+          {
+            "id": "section_story",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "story_text",
+            "fontSize": "40px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "story_link",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "columns",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "image",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 624.5
+          },
+          {
+            "id": "column_copy",
+            "fontSize": "18px",
+            "color": "rgb(18, 52, 86)",
+            "width": 624.5
+          },
+          {
+            "id": "stack",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "stack_copy",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "decorative",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "products",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          },
+          {
+            "id": "categories",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 41.89999997615814
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.899999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.800000011920929
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.5
+          },
+          {
+            "type": "click",
+            "milliseconds": 20.100000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 21
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.599999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.899999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.100000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.5
+          }
+        ],
+        "sinceNavigationMs": 22177.100000023842
+      }
+    },
+    {
+      "headerMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1280,
+        "iframeScrollWidth": 1280,
+        "nodes": [
+          {
+            "id": "core_tpl_header",
+            "fontSize": "16px",
+            "color": "rgb(17, 24, 39)",
+            "width": 320
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 19.100000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.5
+          },
+          {
+            "type": "click",
+            "milliseconds": 16.400000035762787
+          },
+          {
+            "type": "click",
+            "milliseconds": 23.69999998807907
+          },
+          {
+            "type": "input",
+            "milliseconds": 24
+          },
+          {
+            "type": "click",
+            "milliseconds": 29.19999998807907
+          },
+          {
+            "type": "input",
+            "milliseconds": 12.599999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.400000035762787
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.699999988079071
+          },
+          {
+            "type": "input",
+            "milliseconds": 16.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 12
+          },
+          {
+            "type": "input",
+            "milliseconds": 25.30000001192093
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.80000001192093
+          },
+          {
+            "type": "click",
+            "milliseconds": 25.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 15.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 25.099999964237213
+          },
+          {
+            "type": "input",
+            "milliseconds": 13.099999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 23.600000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.400000035762787
+          },
+          {
+            "type": "click",
+            "milliseconds": 29.19999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 25.400000035762787
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.099999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 27.400000035762787
+          },
+          {
+            "type": "input",
+            "milliseconds": 31.899999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 12.300000011920929
+          },
+          {
+            "type": "input",
+            "milliseconds": 21
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.600000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 12.300000011920929
+          },
+          {
+            "type": "input",
+            "milliseconds": 24.30000001192093
+          }
+        ],
+        "sinceNavigationMs": 201061.69999998808
+      }
+    },
+    {
+      "finalHeader": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1280,
+        "iframeScrollWidth": 1280,
+        "nodes": [
+          {
+            "id": "core_tpl_header",
+            "fontSize": "16px",
+            "color": "rgb(17, 24, 39)",
+            "width": 320,
+            "scrollWidth": 320
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 29.69999998807907
+          },
+          {
+            "type": "input",
+            "milliseconds": 21.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.799999952316284
+          }
+        ],
+        "initialReadyMs": 454.60000002384186,
+        "unknownRecoveryPreserved": false,
+        "sinceNavigationMs": 10507.200000047684
+      }
+    },
+    {
+      "footerMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1280,
+        "iframeScrollWidth": 1280,
+        "nodes": [
+          {
+            "id": "core_tpl_footer",
+            "fontSize": "16px",
+            "color": "rgb(17, 24, 39)",
+            "width": 320,
+            "scrollWidth": 320
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 29.69999998807907
+          },
+          {
+            "type": "input",
+            "milliseconds": 21.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.799999952316284
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.899999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 12.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.600000023841858
+          },
+          {
+            "type": "input",
+            "milliseconds": 24.399999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.5
+          },
+          {
+            "type": "input",
+            "milliseconds": 37.19999998807907
+          },
+          {
+            "type": "input",
+            "milliseconds": 25.30000001192093
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.600000023841858
+          },
+          {
+            "type": "input",
+            "milliseconds": 20.600000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.099999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 12.200000047683716
+          },
+          {
+            "type": "input",
+            "milliseconds": 27
+          }
+        ],
+        "initialReadyMs": 454.60000002384186,
+        "unknownRecoveryPreserved": false,
+        "sinceNavigationMs": 26016.400000035763
+      }
+    },
+    {
+      "interactiveMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1265,
+        "iframeScrollWidth": 1265,
+        "nodes": [
+          {
+            "id": "section_story",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "story_text",
+            "fontSize": "24px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "story_link",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "columns",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "image",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 624.5,
+            "scrollWidth": 625
+          },
+          {
+            "id": "column_copy",
+            "fontSize": "18px",
+            "color": "rgb(18, 52, 86)",
+            "width": 624.5,
+            "scrollWidth": 625
+          },
+          {
+            "id": "stack",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "stack_copy",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "decorative",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "products",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_1",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_2",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_3",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_4",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "categories",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 29.69999998807907
+          },
+          {
+            "type": "input",
+            "milliseconds": 21.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.799999952316284
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.899999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 12.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.600000023841858
+          },
+          {
+            "type": "input",
+            "milliseconds": 24.399999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.5
+          },
+          {
+            "type": "input",
+            "milliseconds": 37.19999998807907
+          },
+          {
+            "type": "input",
+            "milliseconds": 25.30000001192093
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.600000023841858
+          },
+          {
+            "type": "input",
+            "milliseconds": 20.600000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.099999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 12.200000047683716
+          },
+          {
+            "type": "input",
+            "milliseconds": 27
+          },
+          {
+            "type": "click",
+            "milliseconds": 10
+          },
+          {
+            "type": "click",
+            "milliseconds": 26.099999964237213
+          },
+          {
+            "type": "input",
+            "milliseconds": 25.700000047683716
+          },
+          {
+            "type": "input",
+            "milliseconds": 8.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 23.399999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 26.30000001192093
+          },
+          {
+            "type": "click",
+            "milliseconds": 23.80000001192093
+          },
+          {
+            "type": "click",
+            "milliseconds": 21.5
+          },
+          {
+            "type": "click",
+            "milliseconds": 12.400000035762787
+          },
+          {
+            "type": "input",
+            "milliseconds": 9.399999976158142
+          },
+          {
+            "type": "input",
+            "milliseconds": 19.899999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.599999964237213
+          },
+          {
+            "type": "iframe:selection",
+            "milliseconds": 13.300000011920929
+          }
+        ],
+        "initialReadyMs": 454.60000002384186,
+        "unknownRecoveryPreserved": false,
+        "sinceNavigationMs": 63978.60000002384
+      }
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": false
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": false
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 1261,
+      "width": 320
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": false
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": false
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 305,
+      "width": 320
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": false
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": false
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 345,
+      "width": 360
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": false
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": false
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 375,
+      "width": 390
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": false
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": false
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 415,
+      "width": 430
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": true
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": true
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 753,
+      "width": 768
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": true
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": true
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 1009,
+      "width": 1024
+    },
+    {
+      "panels": [
+        {
+          "name": "Page structure",
+          "shown": true
+        },
+        {
+          "name": "Live adaptive preview",
+          "shown": true
+        },
+        {
+          "name": "adaptive-panel adaptive-inspector",
+          "shown": true
+        }
+      ],
+      "scroll": 1425,
+      "width": 1440
+    },
+    {
+      "recoveryMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1265,
+        "iframeScrollWidth": 1265,
+        "nodes": [
+          {
+            "id": "section_story",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "story_text",
+            "fontSize": "24px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "story_link",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "columns",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "image",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 624.5,
+            "scrollWidth": 625
+          },
+          {
+            "id": "column_copy",
+            "fontSize": "18px",
+            "color": "rgb(18, 52, 86)",
+            "width": 624.5,
+            "scrollWidth": 625
+          },
+          {
+            "id": "stack",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "stack_copy",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "decorative",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "products",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_1",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_2",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_3",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "node_4",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "categories",
+            "fontSize": "20px",
+            "color": "rgb(18, 52, 86)",
+            "width": 1265,
+            "scrollWidth": 1265
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 33.10000002384186
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.199999988079071
+          },
+          {
+            "type": "input",
+            "milliseconds": 23.599999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 17.299999952316284
+          }
+        ],
+        "initialReadyMs": 311,
+        "unknownRecoveryPreserved": true,
+        "sinceNavigationMs": 10172.899999976158
+      }
+    },
+    {
+      "limitMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1265,
+        "iframeScrollWidth": 1265,
+        "nodes": [
+          {
+            "id": "section_story",
+            "fontSize": "16px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "story_text",
+            "fontSize": "16px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "story_link",
+            "fontSize": "16px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_1",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_2",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_3",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_4",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_5",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_6",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_7",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_8",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_9",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_10",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_11",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_12",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_13",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_14",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_15",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_16",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_17",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_18",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_19",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_20",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_21",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_22",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_23",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_24",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_25",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_26",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_27",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_28",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_29",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_30",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_31",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_32",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_33",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_34",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_35",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_36",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_37",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_38",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_39",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_40",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_41",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_42",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_43",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_44",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_45",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_46",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          },
+          {
+            "id": "text_47",
+            "fontSize": "20px",
+            "color": "rgb(17, 24, 39)",
+            "width": 1265,
+            "scrollWidth": 1265
+          }
+        ],
+        "timings": [
+          {
+            "type": "click",
+            "milliseconds": 16.600000023841858
+          },
+          {
+            "type": "input",
+            "milliseconds": 65.39999997615814
+          },
+          {
+            "type": "click",
+            "milliseconds": 11.200000047683716
+          }
+        ],
+        "initialReadyMs": 359,
+        "unknownRecoveryPreserved": true,
+        "sinceNavigationMs": 80013.19999998808
+      }
+    },
+    {
+      "atelierMetrics": {
+        "viewport": 1280,
+        "width": 1265,
+        "iframeWidth": 1280,
+        "iframeScrollWidth": 1280,
+        "nodes": [
+          {
+            "id": "core_tpl_header",
+            "fontSize": "48px",
+            "color": "rgb(32, 39, 33)",
+            "width": 320,
+            "scrollWidth": 320
+          }
+        ],
+        "timings": [
+          {
+            "type": "input",
+            "milliseconds": 28.099999964237213
+          },
+          {
+            "type": "click",
+            "milliseconds": 14.199999988079071
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.399999976158142
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.600000023841858
+          },
+          {
+            "type": "click",
+            "milliseconds": 15.5
+          },
+          {
+            "type": "input",
+            "milliseconds": 23.69999998807907
+          },
+          {
+            "type": "click",
+            "milliseconds": 10.800000011920929
+          },
+          {
+            "type": "click",
+            "milliseconds": 19.899999976158142
+          },
+          {
+            "type": "input",
+            "milliseconds": 22.30000001192093
+          },
+          {
+            "type": "click",
+            "milliseconds": 13.300000011920929
+          }
+        ],
+        "initialReadyMs": 353.69999998807907,
+        "unknownRecoveryPreserved": true,
+        "sinceNavigationMs": 18694.30000001192
+      }
+    }
+  ],
+  "status": "PASS for recorded interactions after documented corrections; phase acceptance BLOCKED on actual browser zoom",
+  "scope": "Actual StoreBuilderPage + shared renderer; isolated mock transport, no live writes",
+  "zoom": "BLOCKED; see ../zoom-prerequisite.json"
+}

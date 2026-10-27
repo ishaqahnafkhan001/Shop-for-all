@@ -1,0 +1,39 @@
+{
+  "runtime": "v24.12.0",
+  "kind": "Local synthetic microbenchmark, not production latency or a test threshold",
+  "validation": [
+    {
+      "nodes": 14,
+      "templates": 12,
+      "graphBytes": 2707,
+      "completeThemeBytes": 8990,
+      "iterations": 100,
+      "medianMs": 2.7504000000000133,
+      "p95Ms": 27.270400000000024
+    },
+    {
+      "nodes": 80,
+      "templates": 12,
+      "graphBytes": 20179,
+      "completeThemeBytes": 26462,
+      "iterations": 100,
+      "medianMs": 3.5205000000000837,
+      "p95Ms": 41.51420000000007
+    },
+    {
+      "nodes": 200,
+      "templates": 12,
+      "graphBytes": 52153,
+      "completeThemeBytes": 58436,
+      "iterations": 100,
+      "medianMs": 4.874000000000251,
+      "p95Ms": 9.547900000000027
+    }
+  ],
+  "resolution": {
+    "callsPerIteration": 3,
+    "iterations": 1000,
+    "medianMs": 0.05749999999989086,
+    "p95Ms": 0.17519999999967695
+  }
+}

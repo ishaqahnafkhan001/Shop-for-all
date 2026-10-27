@@ -1,0 +1,203 @@
+{
+  "kind": "server-rendered markup, not browser pixels",
+  "viewports": {
+    "desktop": {
+      "width": 1180,
+      "height": 800
+    },
+    "tablet": {
+      "width": 768,
+      "height": 800
+    },
+    "mobile": {
+      "width": 390,
+      "height": 800
+    },
+    "smallMobile": {
+      "width": 320,
+      "height": 800
+    }
+  },
+  "comparisons": [
+    {
+      "preset": "modern-general",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "654ef3b81c736ea3c45974ab391a5c88e4f583c762a6a1af13911bd3ca598067",
+      "builder": "654ef3b81c736ea3c45974ab391a5c88e4f583c762a6a1af13911bd3ca598067",
+      "live": "654ef3b81c736ea3c45974ab391a5c88e4f583c762a6a1af13911bd3ca598067"
+    },
+    {
+      "preset": "modern-general",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "79981bd312bb9bca0e69f91341d5a064f4524332e092b540f1b1ec4947850d5b",
+      "builder": "79981bd312bb9bca0e69f91341d5a064f4524332e092b540f1b1ec4947850d5b",
+      "live": "79981bd312bb9bca0e69f91341d5a064f4524332e092b540f1b1ec4947850d5b"
+    },
+    {
+      "preset": "minimal-general",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "17a95aeef493a68b7726285ba7e537e29dbc0cd75e496eaf7a7e11bb7cbd1277",
+      "builder": "17a95aeef493a68b7726285ba7e537e29dbc0cd75e496eaf7a7e11bb7cbd1277",
+      "live": "17a95aeef493a68b7726285ba7e537e29dbc0cd75e496eaf7a7e11bb7cbd1277"
+    },
+    {
+      "preset": "minimal-general",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "823db9b5e88953557d48ee0bb54cd14e2af254ea69698efa9892758422de2b0d",
+      "builder": "823db9b5e88953557d48ee0bb54cd14e2af254ea69698efa9892758422de2b0d",
+      "live": "823db9b5e88953557d48ee0bb54cd14e2af254ea69698efa9892758422de2b0d"
+    },
+    {
+      "preset": "modern-fashion",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "148ec5b3781e57e507becd216e93384e9f2e96a9fe2ff86d8f616c0a64580aa0",
+      "builder": "148ec5b3781e57e507becd216e93384e9f2e96a9fe2ff86d8f616c0a64580aa0",
+      "live": "148ec5b3781e57e507becd216e93384e9f2e96a9fe2ff86d8f616c0a64580aa0"
+    },
+    {
+      "preset": "modern-fashion",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "4393b9696ddefca14de8c59e946bef5e0b60e1f1ec18df9e4fc8b30ea7710d4a",
+      "builder": "4393b9696ddefca14de8c59e946bef5e0b60e1f1ec18df9e4fc8b30ea7710d4a",
+      "live": "4393b9696ddefca14de8c59e946bef5e0b60e1f1ec18df9e4fc8b30ea7710d4a"
+    },
+    {
+      "preset": "editorial-fashion",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "1c522d58112e33470ea72aa132ee2827a53da704dba8959cd6dab3071c1187d9",
+      "builder": "1c522d58112e33470ea72aa132ee2827a53da704dba8959cd6dab3071c1187d9",
+      "live": "1c522d58112e33470ea72aa132ee2827a53da704dba8959cd6dab3071c1187d9"
+    },
+    {
+      "preset": "editorial-fashion",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "cc3840669b6f9835acb255f31b7037e5c5de17ad6abc3512155b85810cdb5831",
+      "builder": "cc3840669b6f9835acb255f31b7037e5c5de17ad6abc3512155b85810cdb5831",
+      "live": "cc3840669b6f9835acb255f31b7037e5c5de17ad6abc3512155b85810cdb5831"
+    },
+    {
+      "preset": "luxury-jewellery",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "3c3a90be6d523199e8c86aee52cc0e994b0b3238c86d371fc4155f02b92c2f89",
+      "builder": "3c3a90be6d523199e8c86aee52cc0e994b0b3238c86d371fc4155f02b92c2f89",
+      "live": "3c3a90be6d523199e8c86aee52cc0e994b0b3238c86d371fc4155f02b92c2f89"
+    },
+    {
+      "preset": "luxury-jewellery",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "fc657c81740ca60aa7729549e35f18e0afa755f9d3032eb68cf03df9f26f4621",
+      "builder": "fc657c81740ca60aa7729549e35f18e0afa755f9d3032eb68cf03df9f26f4621",
+      "live": "fc657c81740ca60aa7729549e35f18e0afa755f9d3032eb68cf03df9f26f4621"
+    },
+    {
+      "preset": "minimal-jewellery",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "adab2f4d7338f7f60fd5941764eb589be0ba072cb2b2712417a6031143131417",
+      "builder": "adab2f4d7338f7f60fd5941764eb589be0ba072cb2b2712417a6031143131417",
+      "live": "adab2f4d7338f7f60fd5941764eb589be0ba072cb2b2712417a6031143131417"
+    },
+    {
+      "preset": "minimal-jewellery",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "49cec47689f2e2ddaa4d49c26e52c18d84689aed524920cfa8a9b355ccd03bd3",
+      "builder": "49cec47689f2e2ddaa4d49c26e52c18d84689aed524920cfa8a9b355ccd03bd3",
+      "live": "49cec47689f2e2ddaa4d49c26e52c18d84689aed524920cfa8a9b355ccd03bd3"
+    },
+    {
+      "preset": "soft-beauty",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "97785a4ddb8df822ab1b4c3d060b2c24d744f39dfbafdd92a8a78bf7475f8926",
+      "builder": "97785a4ddb8df822ab1b4c3d060b2c24d744f39dfbafdd92a8a78bf7475f8926",
+      "live": "97785a4ddb8df822ab1b4c3d060b2c24d744f39dfbafdd92a8a78bf7475f8926"
+    },
+    {
+      "preset": "soft-beauty",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "823465b3e4cc7011085fb87286dfe802e934bd5c5f5e4255292087946d21e9bc",
+      "builder": "823465b3e4cc7011085fb87286dfe802e934bd5c5f5e4255292087946d21e9bc",
+      "live": "823465b3e4cc7011085fb87286dfe802e934bd5c5f5e4255292087946d21e9bc"
+    },
+    {
+      "preset": "modern-electronics",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "68c2faa474d8c42403a6f509f6d891fc2ce340c408d92038db28d55a7f770280",
+      "builder": "68c2faa474d8c42403a6f509f6d891fc2ce340c408d92038db28d55a7f770280",
+      "live": "68c2faa474d8c42403a6f509f6d891fc2ce340c408d92038db28d55a7f770280"
+    },
+    {
+      "preset": "modern-electronics",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "e888ec093fd3bbdcc3b59b398807f61725aab0641272c8e7c4c61e278f6b9f5a",
+      "builder": "e888ec093fd3bbdcc3b59b398807f61725aab0641272c8e7c4c61e278f6b9f5a",
+      "live": "e888ec093fd3bbdcc3b59b398807f61725aab0641272c8e7c4c61e278f6b9f5a"
+    },
+    {
+      "preset": "fresh-grocery",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "c9ea9a0b3c1f3aba93c53d569f17459ef2f34fbb447a04e07000987ba6fb42a1",
+      "builder": "c9ea9a0b3c1f3aba93c53d569f17459ef2f34fbb447a04e07000987ba6fb42a1",
+      "live": "c9ea9a0b3c1f3aba93c53d569f17459ef2f34fbb447a04e07000987ba6fb42a1"
+    },
+    {
+      "preset": "fresh-grocery",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "32bb6aa486dc0cf01562270709b361a31e14fdc356c1bd951274e3ba9af6a5d3",
+      "builder": "32bb6aa486dc0cf01562270709b361a31e14fdc356c1bd951274e3ba9af6a5d3",
+      "live": "32bb6aa486dc0cf01562270709b361a31e14fdc356c1bd951274e3ba9af6a5d3"
+    },
+    {
+      "preset": "atelier-editorial",
+      "access": "full",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "5d3317914615b946d04a64a254d4cdafedefd871699081f92ce5c3f61d5f31bb",
+      "builder": "5d3317914615b946d04a64a254d4cdafedefd871699081f92ce5c3f61d5f31bb",
+      "live": "5d3317914615b946d04a64a254d4cdafedefd871699081f92ce5c3f61d5f31bb"
+    },
+    {
+      "preset": "atelier-editorial",
+      "access": "limited",
+      "revision": 17,
+      "schemaVersion": 4,
+      "gallery": "3b9b5db6867c67f1a547b7233a2281e72825c8a10d383da73bca9f53a9c4a290",
+      "builder": "3b9b5db6867c67f1a547b7233a2281e72825c8a10d383da73bca9f53a9c4a290",
+      "live": "3b9b5db6867c67f1a547b7233a2281e72825c8a10d383da73bca9f53a9c4a290"
+    }
+  ]
+}

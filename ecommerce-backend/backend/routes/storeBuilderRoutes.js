@@ -54,6 +54,17 @@ const storeBuilderAiLimiter = rateLimit({
     message: { success: false, code: 'RATE_LIMITED', error: 'Too many SEO AI requests. Please try again later.' }
 });
 
+router.get('/admin/development-preview', protect, authorize('VendorAdmin', 'VendorStaff'),
+    requirePermission('storeBuilder'), requireShopFeature('storeBuilder'), async (req, res) => {
+        res.set('Cache-Control', 'no-store');
+        try {
+            const grant = await require('../services/storeBuilder/developmentPreviewAccess').getDevelopmentPreviewAccess(req);
+            res.json({ success: true, grant });
+        } catch (error) {
+            res.status(error.statusCode || 500).json({ success: false, code: error.code || 'DEVELOPMENT_PREVIEW_FAILED', error: error.statusCode ? error.message : 'Unable to verify development access.' });
+        }
+    });
+
 router.get(
     '/admin',
     protect,

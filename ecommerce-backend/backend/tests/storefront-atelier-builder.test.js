@@ -364,7 +364,8 @@ test('shared marketing control keeps separate opt-in event semantics and identic
   assert.match(html, /Optional; unsubscribe anytime/);
   assert.ok(!html.includes('checked=""'));
 });
-test('actual undo/redo/recovery functions preserve optional identity and merchant settings', () => {
+test('actual undo/redo/recovery functions preserve optional identity and merchant settings', async () => {
+  const editor = await require('./helpers/adaptive-editor.cjs').loadAdaptiveEditor();
   const req = Module.createRequire(path.join(root, 'ecommerce-admin/package.json'));
   const parser = req('@babel/parser');
   const generate = req('@babel/generator').default;
@@ -407,6 +408,9 @@ test('actual undo/redo/recovery functions preserve optional identity and merchan
       future: []
     };
   const context = {
+    parseBuilderRecovery: editor.ui.parseBuilderRecovery,
+    themeRevision: 0,
+    toast: { error() {} },
     safeParseSnapshot: h.ui.safeParseSnapshot,
     loadBuilderTheme: h.ui.loadBuilderTheme,
     historyModeRef: {

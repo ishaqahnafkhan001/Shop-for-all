@@ -1,0 +1,86 @@
+{
+  "coreBefore": {
+    "valid": false,
+    "errors": [
+      {
+        "path": [
+          "templates",
+          "tpl_product",
+          "rootOrder"
+        ],
+        "code": "REQUIRED_CORE",
+        "message": "Keep exactly one required core in its fixed blueprint position."
+      }
+    ],
+    "bytes": 3836,
+    "counts": {
+      "templates": 3,
+      "nodes": 15
+    }
+  },
+  "darkGeneric": {
+    "valid": true,
+    "errors": [],
+    "bytes": 3913,
+    "counts": {
+      "templates": 3,
+      "nodes": 15
+    }
+  },
+  "darkRenderer": {
+    "valid": false,
+    "errors": [
+      {
+        "code": "CORE_PALETTE_ADAPTER",
+        "message": "Core paint inheritance is not supported by this presentation adapter.",
+        "path": [
+          "templates",
+          "tpl_product",
+          "nodes",
+          "core_tpl_product",
+          "styles"
+        ]
+      }
+    ]
+  },
+  "missingFit": {
+    "valid": false,
+    "errors": [
+      {
+        "path": [
+          "templates",
+          "tpl_home",
+          "nodes",
+          "image",
+          "styles",
+          "base",
+          "objectFit"
+        ],
+        "code": "UNKNOWN_PROPERTY",
+        "message": "Property is not registered."
+      },
+      {
+        "path": [
+          "templates",
+          "tpl_home",
+          "nodes",
+          "image",
+          "styles",
+          "base",
+          "objectFit"
+        ],
+        "code": "STYLE_CAPABILITY",
+        "message": "This component does not permit this property."
+      }
+    ],
+    "bytes": 3856,
+    "counts": {
+      "templates": 3,
+      "nodes": 15
+    }
+  },
+  "corePositions": {
+    "product": 0,
+    "checkout": 0
+  }
+}

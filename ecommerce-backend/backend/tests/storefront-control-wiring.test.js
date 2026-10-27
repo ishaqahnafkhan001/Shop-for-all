@@ -23,8 +23,8 @@ test.before(async () => {
     const shared = path.join(root, 'packages/storefront-renderer').replaceAll('\\', '/');
     const bundle = await rolldown({ input: 'virtual:controls', platform: 'node', external: ['react', 'react/jsx-runtime', 'react-dom', 'lucide-react'],
         resolve: { alias: { '@scaleup/storefront-theme': path.join(root, 'packages/storefront-theme/index.mjs'), '@': path.join(root, 'ecommerce-storefront/src') } },
-        plugins: [{ name: 'controls', resolveId: id => id === 'virtual:controls' ? id : ['next/link', 'next/image', 'next/navigation'].includes(id) ? `virtual:${id}` : id.includes('useStorefrontProductActions') ? 'virtual:product-actions' : null,
-            load: id => id === 'virtual:next/link' ? `import React from 'react'; export default function Link({children, prefetch, ...props}) { return React.createElement('a', props, children); }`
+        plugins: [{ name: 'controls', resolveId: id => id === './PublishedAdaptivePage' ? 'virtual:inactive-adaptive' : id === 'virtual:controls' ? id : ['next/link', 'next/image', 'next/navigation'].includes(id) ? `virtual:${id}` : id.includes('useStorefrontProductActions') ? 'virtual:product-actions' : null,
+            load: id => id === 'virtual:inactive-adaptive' ? `export default function UnexpectedAdaptiveLoad() { throw new Error('Legacy controls must not select adaptive rendering'); }` : id === 'virtual:next/link' ? `import React from 'react'; export default function Link({children, prefetch, ...props}) { return React.createElement('a', props, children); }`
                 : id === 'virtual:next/image' ? `import React from 'react'; export default function Image({fill, priority, unoptimized, ...props}) { return React.createElement('img', props); }`
                 : id === 'virtual:next/navigation' ? `export const useParams = () => ({ subdomain: 'audit' }); export const useRouter = () => ({ push() {}, replace() {} }); export const usePathname = () => '/categories/audit'; export const useSearchParams = () => new URLSearchParams();`
                 : id === 'virtual:product-actions' ? `export const useStorefrontProductActions = () => ({ addProductToCart() {}, buyNow() {}, toggleWishlist() {}, isWishlisted: () => false, variantPicker: null });`
@@ -35,6 +35,7 @@ test.before(async () => {
                 export * from '${base}/editors/BasicEditors.jsx';
                 export * from '${base}/editors/ProductCardsEditor.jsx';
                 export * from '${base}/StorefrontPreview.jsx';
+                export * from '${base}/previewEditor.js';
                 export * from '${shared}/reference/referenceCore.jsx';
                 export * from '${shared}/designTokens.js';
                 export * from '${shared}/normalizeProduct.js';
@@ -50,7 +51,7 @@ test.before(async () => {
             ` : null }],
     });
     try {
-        const { output } = await bundle.generate({ format: 'cjs' });
+        const { output } = await bundle.generate({ format: 'cjs', inlineDynamicImports: true });
         const compiled = new Module(filename, module);
         compiled.paths = Module._nodeModulePaths(path.dirname(filename));
         compiled._compile(output[0].code, filename);

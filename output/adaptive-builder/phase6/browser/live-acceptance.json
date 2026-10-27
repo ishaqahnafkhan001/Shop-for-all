@@ -1,0 +1,800 @@
+{
+  "synthetic": true,
+  "commerce": {
+    "productQuantity": 2,
+    "cartSubtotal": 2400,
+    "checkoutTotal": 2400,
+    "policyRequired": true,
+    "orderSubmitted": false,
+    "customerLogin": "Verified synthetic customer dashboard and existing security tab; no password change submitted",
+    "emptyCart": "Verified after removing synthetic item"
+  },
+  "routes": [
+    {
+      "page": "home",
+      "path": "/",
+      "widths": [
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "product",
+      "path": "/products/shop-a-product",
+      "widths": [
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Shop A Product"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "category",
+      "path": "/categories/Shop%20A%20Category",
+      "widths": [
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Shop A Category"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "collection",
+      "path": "/collections/browser-fixture",
+      "widths": [
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Synthetic collection"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "cart",
+      "path": "/cart",
+      "widths": [
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Your Cart (1)"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "checkout",
+      "path": "/checkout",
+      "widths": [
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Complete your order"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "account",
+      "path": "/account",
+      "widths": [
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Welcome Back"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "track",
+      "path": "/track",
+      "widths": [
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Track Your Order"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "policiesIndex",
+      "path": "/policies",
+      "widths": [
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Policies for Launch Shop A"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    },
+    {
+      "page": "policy",
+      "path": "/policies/shipping",
+      "widths": [
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 305,
+          "width": 320
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 345,
+          "width": 360
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 375,
+          "width": 390
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 415,
+          "width": 430
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 752,
+          "width": 767
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 753,
+          "width": 768
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 1008,
+          "width": 1023
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 1009,
+          "width": 1024
+        },
+        {
+          "headings": [
+            "Shipping Policy"
+          ],
+          "overflow": false,
+          "scrollWidth": 1425,
+          "width": 1440
+        }
+      ]
+    }
+  ],
+  "console": {
+    "entries": 0,
+    "hydrationErrors": 0,
+    "errors": []
+  },
+  "finalAccessibility": {
+    "headerNamedLinks": [
+      "Track order",
+      "Customer account",
+      "Cart, 1 items"
+    ],
+    "reviewAccountHref": "/account",
+    "search": {
+      "role": "dialog",
+      "name": "Search products",
+      "inputName": "Search products",
+      "backwardTrap": true,
+      "forwardTrap": true,
+      "escapeRestores": "Search products"
+    },
+    "checkoutQuantityNames": true,
+    "placeOrderDisabled": true,
+    "realOrderSubmitted": false
+  }
+}

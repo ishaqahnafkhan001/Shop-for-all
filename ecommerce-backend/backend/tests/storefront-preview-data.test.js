@@ -31,6 +31,8 @@ test('Builder bootstrap prepares public cards and draft-only selections with ten
     const projected = raw.map(product => ({ _id: product._id, title: product.title, pricing: product.pricing, images: product.images.slice(0, 1), totalStock: 4 }));
     const deps = {
         mongoose, '@scaleup/storefront-theme': contract,
+        '@scaleup/storefront-theme/storage': require('@scaleup/storefront-theme/storage'),
+        './adaptivePersistencePolicy': { getAdaptiveAvailability: require('../services/storeBuilder/adaptivePersistencePolicy').getAdaptiveAvailability },
         '../../models/Shop': { findById: id => { assert.equal(id, tenant); return chain({ _id: tenant, shopName: 'Fixture', theme, themeRevision: 17 }); } },
         '../../models/StoreBuilderDraft': { findOne: query => { assert.equal(query.shop_id, tenant); return chain({ theme: { homepageSections: [{ id: 'draft-selected', type: 'FeaturedProducts', settings: { productIds: [draftId] } }] }, basedOnRevision: 17 }); } },
         '../../models/StoreBuilderRevision': { find: () => chain([]) },
@@ -86,6 +88,8 @@ test('Builder bootstrap prepares public cards and draft-only selections with ten
     });
     const service = load('services/storeBuilder/storeBuilderService.js', deps);
     const result = await service.getStoreBuilderBootstrap({ shopId: tenant });
+    assert.equal(result.adaptiveAvailability.available, false);
+    assert.deepEqual(result.adaptiveAssets, []);
     assert.deepEqual(calls[1]._id.$in, [selectedId, draftId]);
     assert.equal(saleCalls.length, 2);
     assert.deepEqual(result.products.map(product => product._id), [firstId, selectedId, draftId]);
@@ -106,6 +110,7 @@ test('live bootstrap fetches Collection and CollectionShowcase selections outsid
     const sections = ['FeaturedProducts', 'Collection', 'CollectionShowcase'].map((type, index) => ({ id: `section-${index}`, type, isEnabled: true, settings: { productIds: [selectedId] } }));
     let selectedQuery = null;
     const controller = load('controllers/storeController.js', {
+        '../services/storeBuilder/adaptiveRolloutPolicy': require('../services/storeBuilder/adaptiveRolloutPolicy'),
         mongoose, joi: require('joi'),
         '../models/Shop': { findById: () => chain({ _id: tenant, theme: { homepageSections: sections } }) },
         '../models/Product': {

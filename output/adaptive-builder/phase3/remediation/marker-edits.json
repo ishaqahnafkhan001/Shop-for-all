@@ -1,0 +1,12 @@
+{
+  "packages/storefront-renderer/presentation/ProductDetailsView.jsx": 10,
+  "packages/storefront-renderer/presentation/ProductInfo.jsx": 7,
+  "packages/storefront-renderer/presentation/ProductImageGallery.jsx": 5,
+  "packages/storefront-renderer/presentation/VariantSelector.jsx": 4,
+  "packages/storefront-renderer/presentation/ActionButtons.jsx": 8,
+  "packages/storefront-renderer/presentation/ProductExtras.jsx": 17,
+  "packages/storefront-renderer/presentation/CheckoutSections.jsx": 75,
+  "packages/storefront-renderer/reference/StorefrontSectionRenderer.jsx": 6,
+  "packages/storefront-renderer/reference/StorefrontProductCard.jsx": 6,
+  "packages/storefront-renderer/reference/StorefrontSectionVariants.jsx": 6
+}

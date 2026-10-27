@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ChevronDown,
     Menu,
@@ -15,6 +15,7 @@ import {
 
 import { getSortedNavigation, getStorefrontPresentationVariant, resolveEffectiveTheme as normalizeTheme } from "@scaleup/storefront-theme";
 import { AtelierHeader } from '../atelier/AtelierHeader';
+import { useAtelierDialog } from '../atelier/useAtelierDialog.js';
 import {
     DefaultLink,
     EditorSelectionFrame,
@@ -25,11 +26,11 @@ import {
     optimizeCloudinaryImage,
 } from "./referenceCore";
 
-const TrustedBadge = ({ badge }) => {
+const TrustedBadge = ({ adaptiveParts = false, badge }) => {
     if (!badge?.active) return null;
 
     return (
-        <span
+        <span data-ab-surface={adaptiveParts ? '' : undefined}
             className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase text-emerald-800 ring-1 ring-emerald-200"
             title={badge.tooltip || "Verified by ScaleUp based on identity verification, sales history, store age, and customer review quality."}
             aria-label={`${badge.label || "ScaleUp Trusted"}: ${badge.tooltip || "Verified by ScaleUp"}`}
@@ -40,11 +41,11 @@ const TrustedBadge = ({ badge }) => {
     );
 };
 
-const VerifiedSellerBadge = ({ verification }) => {
+const VerifiedSellerBadge = ({ adaptiveParts = false, verification }) => {
     if (!verification?.isVerified) return null;
 
     return (
-        <span
+        <span data-ab-surface={adaptiveParts ? '' : undefined}
             className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black uppercase text-sky-800 ring-1 ring-sky-200"
             title="This seller has completed Scaleup identity and phone verification."
             aria-label="Verified seller: completed Scaleup identity and phone verification"
@@ -55,8 +56,8 @@ const VerifiedSellerBadge = ({ verification }) => {
     );
 };
 
-const BrandMark = ({ theme, brandName, trustedBadge, shopVerification, compact = false }) => (
-    <span className={`flex min-w-0 items-center ${compact ? "gap-2" : "gap-2.5 sm:gap-3"}`}>
+const BrandMark = ({ adaptiveParts = false, theme, brandName, trustedBadge, shopVerification, compact = false }) => (
+    <span data-ab-part={adaptiveParts ? 'identity' : undefined} className={`flex min-w-0 items-center ${compact ? "gap-2" : "gap-2.5 sm:gap-3"}`}>
         {theme.logoUrl ? (
             <img
                 src={optimizeCloudinaryImage(theme.logoUrl, { width: 96 })}
@@ -68,20 +69,20 @@ const BrandMark = ({ theme, brandName, trustedBadge, shopVerification, compact =
                 decoding="async"
             />
         ) : (
-            <span className={`flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 ${compact ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12"}`}>
+            <span data-ab-surface={adaptiveParts ? '' : undefined} className={`flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-sm font-black text-white shadow-sm shadow-teal-900/20 ${compact ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12"}`}>
                 {brandName.slice(0, 1).toUpperCase()}
             </span>
         )}
         <span className="min-w-0">
             <span className="block truncate text-base font-black leading-tight text-[var(--sf-navbar-text)] sm:text-lg">{brandName}</span>
             <span className="hidden truncate text-xs font-semibold text-[var(--sf-navbar-muted-text)] sm:block">Storefront</span>
-            <VerifiedSellerBadge verification={shopVerification} />
-            <TrustedBadge badge={trustedBadge} />
+            <VerifiedSellerBadge adaptiveParts={adaptiveParts} verification={shopVerification} />
+            <TrustedBadge adaptiveParts={adaptiveParts} badge={trustedBadge} />
         </span>
     </span>
 );
 
-const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
+const HeaderNavItem = ({ adaptiveParts = false, item, LinkComponent, onClick }) => {
     const children = item.children || [];
     const hasChildren = children.length > 0;
 
@@ -113,7 +114,7 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
                 <span className="truncate whitespace-nowrap">{item.label}</span>
                 <ChevronDown size={14} className="shrink-0 transition group-hover:rotate-180" />
             </LinkSlot>
-            <div className={`invisible absolute top-full z-40 translate-y-2 rounded-2xl border p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${item.megaMenu ? 'inset-x-4 grid grid-cols-2 gap-2 lg:grid-cols-3' : 'left-0 min-w-56'}`} style={{ backgroundColor: 'var(--sf-header-background)', borderColor: 'var(--sf-header-border)' }}>
+            <div data-ab-surface={adaptiveParts ? '' : undefined} className={`invisible absolute top-full z-40 translate-y-2 rounded-2xl border p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 ${item.megaMenu ? 'inset-x-4 grid grid-cols-2 gap-2 lg:grid-cols-3' : 'left-0 min-w-56'}`} style={{ backgroundColor: 'var(--sf-header-background)', borderColor: 'var(--sf-header-border)' }}>
                 {children.map((child, index) => (
                     <LinkSlot
                         key={`${child.label}-${index}`}
@@ -131,12 +132,12 @@ const HeaderNavItem = ({ item, LinkComponent, onClick }) => {
     );
 };
 
-const HeaderOverflowMenu = ({ items, LinkComponent }) => {
+const HeaderOverflowMenu = ({ adaptiveParts = false, items, LinkComponent }) => {
     if (!items.length) return null;
 
     return (
         <div className="group relative">
-            <button
+            <button data-ab-surface={adaptiveParts ? '' : undefined}
                 type="button"
                 className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)]"
                 aria-label="Open more navigation links"
@@ -145,7 +146,7 @@ const HeaderOverflowMenu = ({ items, LinkComponent }) => {
                 More
                 <ChevronDown size={14} className="transition group-hover:rotate-180 group-focus-within:rotate-180" />
             </button>
-            <div role="menu" className="invisible absolute right-0 top-full z-40 min-w-56 max-w-72 translate-y-2 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            <div data-ab-surface={adaptiveParts ? '' : undefined} role="menu" className="invisible absolute right-0 top-full z-40 min-w-56 max-w-72 translate-y-2 rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-xl shadow-slate-900/10 transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
                 {items.map((item, index) => (
                     <div key={`${item.label}-${index}`} role="none">
                         <LinkSlot
@@ -178,7 +179,7 @@ const HeaderOverflowMenu = ({ items, LinkComponent }) => {
     );
 };
 
-export function ReferenceStorefrontHeader({
+export function ReferenceStorefrontHeader({ adaptiveParts = false,
     theme: themeCandidate,
     shopName,
     subdomain,
@@ -201,16 +202,25 @@ export function ReferenceStorefrontHeader({
     const visibleHeaderNavLinks = headerNavLinks.slice(0, 3);
     const overflowHeaderNavLinks = headerNavLinks.slice(3);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const mobileMenuRef = useAtelierDialog({ enabled: adaptiveParts && !preview, open: mobileMenuOpen, onClose: () => setMobileMenuOpen(false) });
+    useEffect(() => {
+        if (!adaptiveParts || !mobileMenuOpen) return undefined;
+        const desktop = window.matchMedia('(min-width: 1024px)');
+        const closeOnDesktop = () => { if (desktop.matches) setMobileMenuOpen(false); };
+        closeOnDesktop();
+        desktop.addEventListener('change', closeOnDesktop);
+        return () => desktop.removeEventListener('change', closeOnDesktop);
+    }, [adaptiveParts, mobileMenuOpen]);
     const forcedDesktopLayoutClass = "grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
     const desktopLayoutClass = "lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_minmax(260px,1.05fr)]";
     const brandSlot = (
         <LinkSlot LinkComponent={LinkComponent} href="/" prefetch={false} className="min-w-0">
-            <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
+            <BrandMark adaptiveParts={adaptiveParts} theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
         </LinkSlot>
     );
     const searchSlot = (
-        <div className="flex min-w-0 justify-center">
-            <button
+        <div data-ab-part={adaptiveParts ? 'utilities' : undefined} className="flex min-w-0 justify-center">
+            <button data-ab-surface={adaptiveParts ? '' : undefined}
                 type="button"
                 onClick={onSearch}
                 aria-label="Search products"
@@ -222,37 +232,38 @@ export function ReferenceStorefrontHeader({
         </div>
     );
     const navigationSlot = (
-        <nav className="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1">
+        <nav data-ab-part={adaptiveParts ? 'navigation' : undefined} className="flex min-w-0 items-center justify-center gap-0.5 overflow-visible text-sm font-bold text-[var(--sf-navbar-text)] 2xl:gap-1">
                 {visibleHeaderNavLinks.map((item, index) => (
-                    <HeaderNavItem
+                    <HeaderNavItem adaptiveParts={adaptiveParts}
                         key={`${item.label}-${index}`}
                         item={item}
                         LinkComponent={LinkComponent}
                     />
                 ))}
-                <HeaderOverflowMenu items={overflowHeaderNavLinks} LinkComponent={LinkComponent} />
+                <HeaderOverflowMenu adaptiveParts={adaptiveParts} items={overflowHeaderNavLinks} LinkComponent={LinkComponent} />
         </nav>
     );
     const utilitySlot = (
-        <div className="flex shrink-0 items-center justify-end gap-1 xl:gap-2">
-            <LinkSlot LinkComponent={LinkComponent} href="/track" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
+        <div data-ab-part={adaptiveParts ? 'utilities' : undefined} className="flex shrink-0 items-center justify-end gap-1 xl:gap-2">
+            <LinkSlot aria-label={adaptiveParts ? 'Track order' : undefined} LinkComponent={LinkComponent} href="/track" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <Truck size={17} className="shrink-0" />
                 <span className="hidden 2xl:inline">Track Order</span>
             </LinkSlot>
-            <LinkSlot LinkComponent={LinkComponent} href="/account" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
+            <LinkSlot aria-label={adaptiveParts ? 'Customer account' : undefined} LinkComponent={LinkComponent} href="/account" prefetch={false} className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-2 text-sm font-bold text-[var(--sf-navbar-text)] transition hover:bg-slate-100 hover:text-[var(--sf-navbar-hover)] xl:px-3">
                 <User size={17} className="shrink-0" />
                 <span className="hidden 2xl:inline">Account</span>
             </LinkSlot>
             <LinkSlot
                 LinkComponent={LinkComponent}
                 href="/cart"
+                aria-label={adaptiveParts ? `Cart, ${cartCount} items` : undefined}
                 prefetch={false}
                 className="relative inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-[var(--sf-primary-button-bg)] px-3 text-sm font-black text-[var(--sf-primary-button-text)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--sf-primary-button-hover-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sf-accent)] xl:px-4"
             >
                 <ShoppingBag size={17} className="shrink-0" />
                 <span className="hidden 2xl:inline">Cart</span>
                 {cartCount > 0 && (
-                    <span className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
+                    <span data-ab-surface={adaptiveParts ? '' : undefined} className="absolute -right-1.5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
                         {cartCount}
                     </span>
                 )}
@@ -260,7 +271,7 @@ export function ReferenceStorefrontHeader({
         </div>
     );
     const compactSearchSlot = (
-        <button
+        <button data-ab-part={adaptiveParts ? 'utilities' : undefined} data-ab-surface={adaptiveParts ? '' : undefined}
             type="button"
             onClick={onSearch}
             aria-label="Search products"
@@ -311,7 +322,7 @@ export function ReferenceStorefrontHeader({
 
     if (getStorefrontPresentationVariant(theme) === 'atelier-editorial') return (
         <EditorSelectionFrame editor={editor} id="header" label="Navbar" locked>
-            <AtelierHeader theme={theme} brandName={brandName} badges={<><VerifiedSellerBadge verification={shopVerification} /><TrustedBadge badge={trustedBadge} /></>}
+            <AtelierHeader adaptiveParts={adaptiveParts} theme={theme} brandName={brandName} badges={<><VerifiedSellerBadge adaptiveParts={adaptiveParts} verification={shopVerification} /><TrustedBadge adaptiveParts={adaptiveParts} badge={trustedBadge} /></>}
                 navigation={navigationSlot} links={[...headerNavLinks, { label: 'Track Order', url: '/track' }, { label: 'Account', url: '/account' }, { label: 'Cart', url: '/cart' }]}
                 cartCount={cartCount} onSearch={onSearch} open={mobileMenuOpen} onToggle={() => setMobileMenuOpen(value => !value)} onClose={() => setMobileMenuOpen(false)} LinkComponent={LinkComponent} />
         </EditorSelectionFrame>
@@ -320,26 +331,28 @@ export function ReferenceStorefrontHeader({
     return (
         <>
             <EditorSelectionFrame editor={editor} id="header" label="Navbar" locked>
-                <header data-structural-variant={headerVariant} className="sticky top-0 z-50 border-b bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl" style={{ borderColor: "var(--sf-header-border)" }}>
+                <header data-ab-surface={adaptiveParts ? '' : undefined} data-structural-variant={headerVariant} className="sticky top-0 z-50 border-b bg-[var(--sf-navbar-background)] text-[var(--sf-navbar-text)] backdrop-blur-xl" style={{ borderColor: "var(--sf-header-border)" }}>
                     <div className={storefrontContainerClass}>
-                        <div className={desktopHeaderClass}>
+                        <div data-ab-layout={adaptiveParts ? 'headerDesktop' : undefined} className={desktopHeaderClass}>
                             {desktopHeader}
                         </div>
 
-                        <div className={mobileHeaderClass}>
-                            <button
+                        <div data-ab-layout={adaptiveParts ? 'headerMobile' : undefined} className={mobileHeaderClass}>
+                            <button data-ab-surface={adaptiveParts ? '' : undefined}
                                 type="button"
                                 onClick={() => setMobileMenuOpen(true)}
                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11"
                                 aria-label="Open menu"
+                                aria-haspopup={adaptiveParts ? 'dialog' : undefined}
+                                aria-expanded={adaptiveParts ? mobileMenuOpen : undefined}
                             >
                                 <Menu size={20} />
                             </button>
                             <LinkSlot LinkComponent={LinkComponent} href="/" prefetch={false} className={`min-w-0 flex-1 ${headerVariant === "centered" ? "flex justify-center" : ""}`}>
-                                <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} compact={compactMobileHeader} />
+                                <BrandMark adaptiveParts={adaptiveParts} theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} compact={compactMobileHeader} />
                             </LinkSlot>
                             <div className="flex shrink-0 items-center gap-1">
-                                {headerVariant === "minimal" && <button type="button" onClick={onSearch} aria-label="Search products" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11"><Search size={18} /></button>}
+                                {headerVariant === "minimal" && <button data-ab-surface={adaptiveParts ? '' : undefined} type="button" onClick={onSearch} aria-label="Search products" className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--sf-header-border)] bg-[var(--sf-header-background)] text-[var(--sf-header-icon)] sm:h-11 sm:w-11"><Search size={18} /></button>}
                                 <LinkSlot
                                     LinkComponent={LinkComponent}
                                     href="/cart"
@@ -349,7 +362,7 @@ export function ReferenceStorefrontHeader({
                                 >
                                     <ShoppingBag size={18} />
                                     {cartCount > 0 && (
-                                        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
+                                        <span data-ab-surface={adaptiveParts ? '' : undefined} className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: "var(--sf-header-cart-badge-bg)", color: "var(--sf-header-cart-badge-text)" }}>
                                             {cartCount}
                                         </span>
                                     )}
@@ -357,8 +370,8 @@ export function ReferenceStorefrontHeader({
                             </div>
                         </div>
 
-                        <div className={mobileSearchClass}>
-                            <button
+                        <div data-ab-layout={adaptiveParts && headerVariant !== 'minimal' ? 'headerMobileSearch' : undefined} className={mobileSearchClass}>
+                            <button data-ab-surface={adaptiveParts ? '' : undefined}
                                 type="button"
                                 onClick={onSearch}
                                 aria-label="Search products"
@@ -373,17 +386,17 @@ export function ReferenceStorefrontHeader({
             </EditorSelectionFrame>
 
             {mobileMenuOpen && !preview && (
-                <div className="fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-                    <aside className="h-full w-[86vw] max-w-sm bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+                <div data-ab-surface={adaptiveParts ? '' : undefined} className="fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+                    <aside data-ab-surface={adaptiveParts ? '' : undefined} ref={mobileMenuRef} role={adaptiveParts ? 'dialog' : undefined} aria-modal={adaptiveParts || undefined} aria-label={adaptiveParts ? 'Store navigation' : undefined} className={"h-full w-[86vw] max-w-sm bg-white p-5 shadow-2xl" + (adaptiveParts ? " overflow-y-auto" : "")} onClick={(event) => event.stopPropagation()}>
                         <div className="mb-6 flex items-center justify-between gap-4">
-                            <BrandMark theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
-                            <button type="button" onClick={() => setMobileMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Close menu">
+                            <BrandMark adaptiveParts={adaptiveParts} theme={theme} brandName={brandName} trustedBadge={trustedBadge} shopVerification={shopVerification} />
+                            <button data-ab-surface={adaptiveParts ? '' : undefined} type="button" onClick={() => setMobileMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700" aria-label="Close menu">
                                 <X size={20} />
                             </button>
                         </div>
-                        <nav className="grid gap-2">
+                        <nav data-ab-part={adaptiveParts ? 'navigation' : undefined} className="grid gap-2">
                             {[...headerNavLinks, { label: "Track Order", url: "/track" }, { label: "Account", url: "/account" }].map((item, index) => (
-                                <div key={`${item.label}-${index}`} className="rounded-2xl border border-slate-200 bg-white">
+                                <div data-ab-surface={adaptiveParts ? '' : undefined} key={`${item.label}-${index}`} className="rounded-2xl border border-slate-200 bg-white">
                                     <LinkSlot
                                         LinkComponent={LinkComponent}
                                         href={item.url || "#"}

@@ -5,6 +5,11 @@ const Shop = require('../../models/Shop');
 // The archive is opaque to rendering. Reinstating a field needs an explicit future
 // migration, so unknown configuration cannot bypass today's validation or plan gates.
 const preserveThemeExtensions = (incoming = {}, previous = {}) => {
+    if (Number(incoming.version) === 5 && incoming.siteBuilder) {
+        const { siteBuilder, ...legacy } = incoming;
+        const old = { ...(previous?.toObject ? previous.toObject() : previous) }; delete old.siteBuilder;
+        return { ...preserveThemeExtensions({ ...legacy, version: 4 }, { ...old, version: 4 }), version: 5, siteBuilder };
+    }
     const next = sanitizeThemePayload(incoming);
     const old = sanitizeThemePayload(previous);
     const extensions = mergeThemePatch(old.extensions || {}, next.extensions || {});

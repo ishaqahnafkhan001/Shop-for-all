@@ -1,4 +1,5 @@
 "use client";
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import React from 'react';
 import {getStorefrontPresentationVariant} from '@scaleup/storefront-theme';
 import { useCart } from '@/context/CartContext';
@@ -91,10 +92,10 @@ export default function CartPage() {
         setPromoFeedback({ type: 'success', text: 'Coupon saved. It will be validated during checkout.' });
     };
 
-    return <StorefrontPresentationRuntime><CartView {...{
+    return <StorefrontPresentationRuntime><AdaptivePresentation pageKind="cart" core><CartView {...{
         presentationVariant: getStorefrontPresentationVariant(theme),
         cartItems, removeFromCart, updateQuantity, subtotal, shipping, totalSavings, total, getCartImageUrl,
         promoCode, setPromoCode, promoFeedback, handleApplyPromo, recommendationsLoading, recommendations,
         themedProductCard, productActions,
-    }} /></StorefrontPresentationRuntime>;
+    }} /></AdaptivePresentation></StorefrontPresentationRuntime>;
 }

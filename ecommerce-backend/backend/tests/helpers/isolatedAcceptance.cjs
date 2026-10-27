@@ -2,7 +2,13 @@
 
 // Explicit opt-in only. Run against the task-owned, tmpfs Docker replica set.
 // Never use this preload with a shared developer/staging/production database.
-const expected = 'mongodb://127.0.0.1:27028/atelier_acceptance_c085454b_test?directConnection=true&replicaSet=rs0';
+// Separate, hardcoded disposable databases protect browser fixture identities
+// from destructive regression-test cleanup.
+const databases = { adaptive_phase6: 'adaptive_release_phase6_test', adaptive_browser: 'adaptive_browser_phase6_test', preview: 'atelier_acceptance_c085454b_test' };
+const scenario = process.env.SFA_ACCEPTANCE_DATABASE || 'preview';
+if (!Object.hasOwn(databases, scenario)) throw new Error('Unknown disposable acceptance database');
+const database = databases[scenario];
+const expected = `mongodb://127.0.0.1:27028/${database}?directConnection=true&replicaSet=rs0`;
 if (process.env.NODE_ENV !== 'test' || process.env.SFA_ISOLATED_ACCEPTANCE !== 'c085454b' || process.env.MONGO_URI_TEST !== expected) {
   throw new Error('Isolated acceptance requires the verified task-owned loopback replica set.');
 }

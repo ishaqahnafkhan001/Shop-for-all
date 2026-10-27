@@ -10,6 +10,14 @@
       "require": "./index.cjs",
       "import": "./index.mjs"
     },
+    "./adaptive": {
+      "require": "./adaptive.cjs",
+      "import": "./adaptive.mjs"
+    },
+    "./storage": {
+      "require": "./storage.cjs",
+      "import": "./storage.mjs"
+    },
     "./prebuilt": {
       "require": "./prebuilt.cjs",
       "import": "./prebuilt.mjs"

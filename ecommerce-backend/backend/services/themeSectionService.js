@@ -89,6 +89,8 @@ const ensureThemeSectionArchitecture = async (shopDocOrLean, { persist = false }
 
     const shopId = shopDocOrLean._id || shopDocOrLean.id;
     const theme = shopDocOrLean.theme || {};
+    // A reader must not migrate an adaptive snapshot's preserved legacy fallback.
+    if (Number(theme.version) >= 5) return shopDocOrLean;
     const legacyAllProductsSection = (theme.homepageSections || []).find(isLegacyAllProductsSection);
     const sections = normalizeDynamicSections(theme.homepageSections || []);
     const hasMigrated = theme.migrations?.bannerSectionsV1 === true;

@@ -1,0 +1,25 @@
+{
+  "name": "@scaleup/storefront-renderer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.jsx",
+    "./design-tokens": "./designTokens.js",
+    "./product-card": "./reference/StorefrontProductCard.jsx",
+    "./reference-core": "./reference/referenceCore.jsx",
+    "./presentation/*": "./presentation/*.jsx",
+    "./product-data": "./normalizeProduct.js",
+    "./policy-data": "./presentation/policyData.js",
+    "./image-domains": "./imageDomains.js",
+    "./media": "./media.js",
+    "./viewports": "./viewports.js",
+    "./adaptive": "./adaptive/index.jsx",
+    "./styles.css": "./styles.css"
+  },
+  "peerDependencies": {
+    "@scaleup/storefront-theme": "1.0.0",
+    "lucide-react": ">=0.400.0",
+    "react": ">=18.0.0"
+  }
+}

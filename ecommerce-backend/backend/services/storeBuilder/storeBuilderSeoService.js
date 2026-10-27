@@ -11,8 +11,11 @@ const {
     getStoreBuilderBootstrap,
     normalizeShopAliases,
     normalizeThemeForShop,
-    publishStoreBuilder
+    publishStoreBuilder,
+    withAdaptiveTransaction,
+    lockAdaptiveDraftRevision
 } = require('./storeBuilderService');
+const adaptivePolicy = require('./adaptivePersistencePolicy');
 const {
     assertThemeAssetOwnership,
     attachAssetsToDraft
@@ -145,7 +148,8 @@ const saveStoreBuilderSeoDraft = async ({ shopId, req, seo, searchAliases, based
     const normalizedTheme = await normalizeThemeForShop({
         ...baseTheme,
         seo: seo === undefined ? (baseTheme.seo || {}) : seo
-    }, shop);
+    }, shop, { changeScope: 'homepage-seo' });
+    if (Number(shop.theme?.version) === 5 || Number(normalizedTheme.version) === 5) await adaptivePolicy.assertAdaptiveThemeMutation({ shop, candidate: normalizedTheme, req, changeScope: 'homepage-seo' });
     const aliasResult = await normalizeShopAliases({
         aliases: searchAliases === undefined
             ? (existingDraft?.searchAliases || shop.searchAliases || [])
@@ -159,29 +163,34 @@ const saveStoreBuilderSeoDraft = async ({ shopId, req, seo, searchAliases, based
     const previousUpdatedAt = existingDraft?.updatedAt ? new Date(existingDraft.updatedAt).toISOString() : null;
     const updatedAt = new Date(Math.max(Date.now(), new Date(previousUpdatedAt || 0).getTime() + 1));
     let draft;
-    try { draft = await StoreBuilderDraft.findOneAndUpdate(
-        draftWriteFilter(shopId, previousUpdatedAt),
-        {
-            $set: {
-                theme: normalizedTheme,
-                searchAliases: aliasResult.aliases,
-                basedOnRevision: revision,
-                updatedBy: getActorId(req),
-                updatedAt
+    const execute = async session => {
+        if (Number(normalizedTheme.version) === 5) await lockAdaptiveDraftRevision({ shopId, expectedRevision: revision, session });
+        try { draft = await StoreBuilderDraft.findOneAndUpdate(
+            draftWriteFilter(shopId, previousUpdatedAt),
+            {
+                $set: {
+                    theme: normalizedTheme,
+                    searchAliases: aliasResult.aliases,
+                    basedOnRevision: revision,
+                    updatedBy: getActorId(req),
+                    updatedAt
+                },
+                $setOnInsert: {
+                    createdAt: updatedAt,
+                    customDomain: shop.customDomain || {},
+                    storewideDiscount: Number(shop.storewideDiscount || 0)
+                }
             },
-            $setOnInsert: {
-                createdAt: updatedAt,
-                customDomain: shop.customDomain || {},
-                storewideDiscount: Number(shop.storewideDiscount || 0)
-            }
-        },
-        { returnDocument: 'after', upsert: !existingDraft, runValidators: true, setDefaultsOnInsert: true, timestamps: false }
-    ); } catch (error) {
-        if (error.code === 11000) throw draftConflict();
-        throw error;
-    }
-    if (!draft) throw draftConflict();
-    await attachAssetsToDraft({ shopId, draftId: draft._id, theme: normalizedTheme });
+            { returnDocument: 'after', upsert: !existingDraft, runValidators: true, setDefaultsOnInsert: true, timestamps: false, session }
+        ); } catch (error) {
+            if (error.code === 11000) throw draftConflict();
+            throw error;
+        }
+        if (!draft) throw draftConflict();
+        await attachAssetsToDraft({ shopId, draftId: draft._id, theme: normalizedTheme, session });
+    };
+    if (Number(normalizedTheme.version) === 5) await withAdaptiveTransaction(normalizedTheme, execute);
+    else await execute(null);
     return {
         seo: draft.theme?.seo || {},
         searchAliases: draft.searchAliases || [],
@@ -204,6 +213,12 @@ const deleteStoreBuilderSeoDraft = async ({ shopId, req }) => {
     ]);
     if (!shop) return null;
     if (!draft) return { deleted: false, rebased: false };
+    if (Number(draft.theme?.version) === 5 && Number(shop.theme?.version) !== 5) {
+        throw Object.assign(new Error('This adaptive draft remains read-only until adoption is explicitly approved.'), { code: 'ADAPTIVE_READ_ONLY', statusCode: 403 });
+    }
+    if (Number(draft.theme?.version) === 5 || Number(shop.theme?.version) === 5) {
+        await adaptivePolicy.assertAdaptiveThemeMutation({ shop: { ...shop, _id: shopId }, candidate: shop.theme, req, changeScope: 'homepage-seo' });
+    }
 
     const hasUnrelatedDraft = JSON.stringify(withoutSeo(draft.theme || {})) !== JSON.stringify(withoutSeo(shop.theme || {}))
         || JSON.stringify(draft.customDomain || {}) !== JSON.stringify(shop.customDomain || {})
@@ -214,17 +229,23 @@ const deleteStoreBuilderSeoDraft = async ({ shopId, req }) => {
         return { deleted: true, rebased: false };
     }
 
-    draft.theme = await normalizeThemeForShop({ ...(draft.theme || {}), seo: shop.theme?.seo || {} }, shop);
+    draft.theme = await normalizeThemeForShop({ ...JSON.parse(JSON.stringify(draft.theme || {})), seo: shop.theme?.seo || {} }, shop, { changeScope: 'homepage-seo' });
     draft.searchAliases = shop.searchAliases || [];
     draft.basedOnRevision = Number(shop.themeRevision || 0);
     draft.updatedBy = getActorId(req);
-    const result = await StoreBuilderDraft.updateOne(
-        { _id: draft._id, ...draftWriteFilter(shopId, draft.updatedAt ? new Date(draft.updatedAt).toISOString() : null) },
-        { $set: { theme: draft.theme, searchAliases: draft.searchAliases, basedOnRevision: draft.basedOnRevision,
-            updatedBy: draft.updatedBy, updatedAt: new Date(Math.max(Date.now(), new Date(draft.updatedAt || 0).getTime() + 1)) } },
-        { runValidators: true, timestamps: false }
-    );
-    if (!result.matchedCount) throw draftConflict();
+    const execute = async session => {
+        if (session) await lockAdaptiveDraftRevision({ shopId, expectedRevision: draft.basedOnRevision, session });
+        const result = await StoreBuilderDraft.updateOne(
+            { _id: draft._id, ...draftWriteFilter(shopId, draft.updatedAt ? new Date(draft.updatedAt).toISOString() : null) },
+            { $set: { theme: draft.theme, searchAliases: draft.searchAliases, basedOnRevision: draft.basedOnRevision,
+                updatedBy: draft.updatedBy, updatedAt: new Date(Math.max(Date.now(), new Date(draft.updatedAt || 0).getTime() + 1)) } },
+            { runValidators: true, timestamps: false, session }
+        );
+        if (!result.matchedCount) throw draftConflict();
+        if (session) await attachAssetsToDraft({ shopId, draftId: draft._id, theme: draft.theme, session });
+    };
+    if (Number(draft.theme.version) === 5) await withAdaptiveTransaction(draft.theme, execute);
+    else await execute(null);
     return { deleted: false, rebased: true };
 };
 

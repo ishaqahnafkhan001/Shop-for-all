@@ -1,0 +1,31 @@
+{
+  "open": {
+    "active": "Minimum price",
+    "bodyOverflow": "hidden",
+    "insideDialog": true,
+    "width": 390
+  },
+  "backwardWrap": {
+    "insideDialog": true,
+    "text": "Apply"
+  },
+  "forwardWrap": {
+    "insideDialog": true,
+    "name": "Close filters"
+  },
+  "escape": {
+    "active": "Filters",
+    "dialogOpen": false,
+    "overflow": ""
+  },
+  "apply": {
+    "url": "http://launchshopa.localhost:3018/categories/Shop%20A%20Category?minPrice=100&page=1",
+    "dialogCount": 0
+  },
+  "desktop": {
+    "active": ".sf-adaptive[data-ab-scope=\"ab_005f0052005f0070006",
+    "dialogOpen": false,
+    "overflow": "",
+    "width": 1024
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "runtime": "v24.12.0",
+  "kind": "Local synthetic microbenchmark, not production latency or a test threshold",
+  "validation": [
+    {
+      "label": "small",
+      "nodes": 14,
+      "templates": 12,
+      "graphBytes": 2707,
+      "completeThemeBytes": 8990,
+      "iterations": 100,
+      "medianMs": 2.6972999999999843,
+      "p95Ms": 2.9832999999999856
+    },
+    {
+      "label": "medium",
+      "nodes": 80,
+      "templates": 12,
+      "graphBytes": 20179,
+      "completeThemeBytes": 26462,
+      "iterations": 100,
+      "medianMs": 3.508299999999963,
+      "p95Ms": 3.89549999999997
+    },
+    {
+      "label": "near-node-limit",
+      "nodes": 200,
+      "templates": 12,
+      "graphBytes": 52153,
+      "completeThemeBytes": 58436,
+      "iterations": 100,
+      "medianMs": 4.7672999999999774,
+      "p95Ms": 4.979800000000068
+    },
+    {
+      "label": "near-byte-limit",
+      "nodes": 200,
+      "templates": 12,
+      "graphBytes": 246286,
+      "completeThemeBytes": 252569,
+      "existingThemeBudgetChecks": [
+        {
+          "id": "modern-general",
+          "bytes": 254734
+        },
+        {
+          "id": "minimal-general",
+          "bytes": 253890
+        },
+        {
+          "id": "modern-fashion",
+          "bytes": 254901
+        },
+        {
+          "id": "editorial-fashion",
+          "bytes": 254520
+        },
+        {
+          "id": "luxury-jewellery",
+          "bytes": 254728
+        },
+        {
+          "id": "minimal-jewellery",
+          "bytes": 253922
+        },
+        {
+          "id": "soft-beauty",
+          "bytes": 254745
+        },
+        {
+          "id": "modern-electronics",
+          "bytes": 254652
+        },
+        {
+          "id": "fresh-grocery",
+          "bytes": 254695
+        },
+        {
+          "id": "atelier-editorial",
+          "bytes": 254174
+        }
+      ],
+      "iterations": 100,
+      "medianMs": 6.264599999999973,
+      "p95Ms": 6.6370999999999185
+    }
+  ],
+  "resolution": {
+    "callsPerIteration": 3,
+    "iterations": 1000,
+    "medianMs": 0.0658000000003085,
+    "p95Ms": 0.07580000000007203
+  }
+}

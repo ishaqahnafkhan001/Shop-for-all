@@ -77,7 +77,8 @@ test('policy backfill script supports dry-run and does not overwrite edited poli
 });
 
 test('storefront policy pages use default fallback content and reject invalid policy types', () => {
-    const policyIndexPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/page.jsx');
+    const policyIndexPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/page.jsx')
+        + readRepo('packages/storefront-renderer/presentation/PolicyIndexView.jsx');
     const policyPage = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/[type]/page.jsx');
     const policyClient = readRepo('ecommerce-storefront/src/app/[subdomain]/policies/[type]/PolicyPageClient.jsx');
     const defaultPolicies = readRepo('ecommerce-storefront/src/lib/defaultPolicies.js');

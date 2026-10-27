@@ -5,6 +5,11 @@ const { HOMEPAGE_COMPOSITIONS, getHomepageComposition, planHomepageComposition }
 
 const THEME_SCHEMA_VERSION = 4;
 
+// Lazy reader entry points keep adaptive code outside ordinary v4 rendering.
+const normalizeStoredTheme = (...args) => require('./storage.cjs').normalizeStoredTheme(...args);
+const validateStoredTheme = (...args) => require('./storage.cjs').validateStoredTheme(...args);
+const assertReadableThemeVersion = (...args) => require('./storage.cjs').assertReadableThemeVersion(...args);
+
 const structuralVariant = (defaultValue, values) => Object.freeze({
     default: defaultValue,
     values: Object.freeze(values),
@@ -1121,6 +1126,9 @@ const summarizeThemeChanges = (before = {}, after = {}) => {
 const getStorefrontPresentationVariant = (theme = {}) => theme?.presentationVariant === 'atelier-editorial' ? 'atelier-editorial' : 'default';
 
 module.exports = {
+    normalizeStoredTheme,
+    validateStoredTheme,
+    assertReadableThemeVersion,
     getStorefrontPresentationVariant,
     HOMEPAGE_COMPOSITIONS,
     getHomepageComposition,

@@ -725,7 +725,8 @@ test('storefront pagination keeps page sizes, metadata, and controls consistent'
     const homeClient = readProject('ecommerce-storefront/src/app/[subdomain]/StorefrontHomeClient.jsx');
     const allProducts = readProject('packages/storefront-renderer/reference/StorefrontAllProducts.jsx');
     const collectionPage = readProject('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/page.jsx');
-    const collectionClient = readProject('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx');
+    const collectionClient = readProject('ecommerce-storefront/src/app/[subdomain]/collections/[slug]/CollectionPageClient.jsx')
+        + readProject('packages/storefront-renderer/presentation/CollectionView.jsx');
 
     assert.match(productController, /normalizeStorefrontPageLimit/);
     assert.match(productController, /isStorefrontRequest[\s\S]*normalizeStorefrontPageLimit\(req\.query\.limit,\s*9\)/);

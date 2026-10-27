@@ -93,6 +93,7 @@ exports.updateBasicStoreSettings = async (req, res) => {
         if (!shop) return res.status(404).json({ success: false, error: 'Shop not found.' });
 
         const before = serializeBasicSettings(shop);
+        if (Number(shop.theme?.version) === 5) throw Object.assign(new Error('Adaptive designs are read-only during reader-first rollout.'), { statusCode: 409, code: 'ADAPTIVE_READ_ONLY' });
         const payload = req.body || {};
         const social = payload.socialLinks || {};
         const policies = payload.policies || {};
@@ -206,6 +207,7 @@ exports.uploadBasicStoreBrandAsset = async (req, res) => {
             ...(shop.theme?.toObject ? shop.theme.toObject() : shop.theme || {}),
             [target]: req.file.path
         };
+        if (Number(shop.theme?.version) === 5) throw Object.assign(new Error('Adaptive designs are read-only during reader-first rollout.'), { statusCode: 409, code: 'ADAPTIVE_READ_ONLY' });
         shop.theme = await normalizeThemeForShop(mergedTheme, shop);
         await shop.save();
         await invalidateBasicSettingsCache(shop._id);

@@ -1,0 +1,31 @@
+{
+  "basis": "96px",
+  "buttonHeight": 42,
+  "buttonWidth": 124,
+  "dpr": 2,
+  "labels": [
+    {
+      "clientWidth": 67,
+      "clipped": false,
+      "overflow": "clip",
+      "scrollWidth": 67,
+      "text": "Buy Now"
+    }
+  ],
+  "pageOverflow": false,
+  "rect": {
+    "bottom": 681,
+    "height": 44,
+    "left": 168.75,
+    "right": 294.75,
+    "top": 637,
+    "width": 126,
+    "x": 168.75,
+    "y": 637
+  },
+  "width": 639,
+  "wrapper": {
+    "display": "flex",
+    "wrap": "wrap"
+  }
+}

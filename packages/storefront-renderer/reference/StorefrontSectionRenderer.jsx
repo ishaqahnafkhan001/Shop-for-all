@@ -28,7 +28,7 @@ import {
     TextualVariantSection,
 } from "./StorefrontSectionVariants";
 
-export const HomepageSection = memo(function HomepageSection({
+export const HomepageSection = memo(function HomepageSection({ adaptiveParts = false,
     section,
     sectionIndex,
     categories,
@@ -89,9 +89,9 @@ export const HomepageSection = memo(function HomepageSection({
                     </div>
                     <LinkSlot LinkComponent={LinkComponent} href="#products" className="hidden rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-[var(--sf-accent-soft)] hover:text-[var(--sf-accent)] sm:inline-flex">View all</LinkSlot>
                 </div>
-                <div className={`grid ${featuredGridClass} ${productGridGapClasses[featuredSpacing]} ${products.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
+                <div data-ab-layout={adaptiveParts ? 'catalog' : undefined} className={`grid ${featuredGridClass} ${productGridGapClasses[featuredSpacing]} ${products.length === 1 ? "mx-auto w-full max-w-[20rem] sm:mx-0 sm:max-w-none" : ""}`}>
                     {products.map((product, index) => (
-                        <ProductCard key={product._id} product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} presentationVariant={presentationVariant} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
+                        <ProductCard adaptiveParts={adaptiveParts} key={product._id} product={product} index={index} storewideDiscount={storewideDiscount} productCard={productCard} presentationVariant={presentationVariant} onProductAdd={onProductAdd} onProductBuyNow={onProductBuyNow} onWishlistToggle={onWishlistToggle} isWishlisted={isProductWishlisted} LinkComponent={LinkComponent} previewDevice={previewDevice} />
                     ))}
                 </div>
             </section>
@@ -107,7 +107,7 @@ export const HomepageSection = memo(function HomepageSection({
     );
 
     if (section.type === "CategoryList") return frame(
-        <CategoryVariantSection section={section} presentationVariant={presentationVariant} categories={categories} catalogProducts={catalogProducts} previewDevice={previewDevice} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} LinkComponent={LinkComponent} />
+        <CategoryVariantSection adaptiveParts={adaptiveParts} section={section} presentationVariant={presentationVariant} categories={categories} catalogProducts={catalogProducts} previewDevice={previewDevice} responsiveClass={responsiveVisibilityClass} sectionLayout={sectionLayout} contentGapClass={contentGapClass} colors={sectionColors} LinkComponent={LinkComponent} />
     );
 
     if (["Collection", "CollectionShowcase"].includes(section.type)) {
@@ -132,7 +132,7 @@ export const HomepageSection = memo(function HomepageSection({
         return frame(
             <section className={`${responsiveVisibilityClass} ${sectionLayout.className} rounded-[1.5rem] border border-slate-200 p-5 shadow-sm sm:p-7`} style={{ ...sectionLayout.style, backgroundColor: sectionColors.background || "var(--sf-section-background)" }}>
                 <h2 className="text-xl font-black sm:text-3xl" style={{ ...headingStyle, color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Frequently asked questions"}</h2>
-                <div className={`mt-5 grid ${contentGapClass}`}>
+                <div data-ab-layout={adaptiveParts ? 'catalog' : undefined} className={`mt-5 grid ${contentGapClass}`}>
                     {questions.map((item, index) => (
                         <details key={`${item.question}-${index}`} className="group rounded-2xl p-4" style={{ backgroundColor: sectionColors.faqBackground || "var(--sf-section-faq-bg)" }} open={Boolean(previewDevice && index === 0)}>
                             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black sm:text-base" style={{ color: sectionColors.faqText || "var(--sf-section-faq-text)" }}>{item.question}<ChevronDown size={17} className="shrink-0 transition group-open:rotate-180" /></summary>
@@ -150,8 +150,8 @@ export const HomepageSection = memo(function HomepageSection({
         return frame(
             <section data-atelier-section={presentationVariant === 'atelier-editorial' ? 'TrustBadges' : undefined} className={`${responsiveVisibilityClass} ${sectionLayout.className}`} style={sectionLayout.style}>
                 <h2 className="text-center text-xl font-black sm:text-3xl" style={{ ...headingStyle, color: sectionColors.title || "var(--sf-section-title)" }}>{section.title || "Why shop with us"}</h2>
-                <div className={`mt-5 grid grid-cols-1 ${contentGapClass} sm:grid-cols-2 lg:grid-cols-4`}>
-                    {badges.map((badge, index) => <div key={`${badge}-${index}`} className="flex min-h-24 items-center gap-3 rounded-2xl border border-slate-200 p-4 shadow-sm" style={{ backgroundColor: sectionColors.background || "var(--sf-section-background)", color: sectionColors.trustText || "var(--sf-section-trust-text)" }}><span className="rounded-full bg-[var(--sf-accent-bg)] p-2.5" style={{ color: sectionColors.trustIcon || "var(--sf-section-trust-icon)" }}><ShieldCheck size={20} /></span><span className="text-sm font-black leading-5">{badge}</span></div>)}
+                <div data-ab-layout={adaptiveParts ? 'catalog' : undefined} className={`mt-5 grid grid-cols-1 ${contentGapClass} sm:grid-cols-2 lg:grid-cols-4`}>
+                    {badges.map((badge, index) => <div key={`${badge}-${index}`} className="flex min-h-24 items-center gap-3 rounded-2xl border border-slate-200 p-4 shadow-sm" style={{ backgroundColor: sectionColors.background || "var(--sf-section-background)", color: sectionColors.trustText || "var(--sf-section-trust-text)" }}><span data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-full bg-[var(--sf-accent-bg)] p-2.5" style={{ color: sectionColors.trustIcon || "var(--sf-section-trust-icon)" }}><ShieldCheck size={20} /></span><span className="text-sm font-black leading-5">{badge}</span></div>)}
                 </div>
             </section>
         );

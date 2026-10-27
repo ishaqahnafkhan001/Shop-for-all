@@ -1,0 +1,289 @@
+{
+  "revision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "date": "2026-10-20",
+  "phase": 0,
+  "phase1Readiness": "PASS",
+  "readinessScope": "Review and later authorized inactive contract work only; Phase 1 not started.",
+  "productionReleaseReadiness": "BLOCKED",
+  "newFailures": 0,
+  "baseline": {
+    "themes": [
+      {
+        "id": "modern-general",
+        "version": 2,
+        "definitionSha256": "16b807e3d3b341c2845d85b0319942f59c566f8863db9672358b622442971345",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "minimal-general",
+        "version": 2,
+        "definitionSha256": "b8a6fed6a713933862bc98045aefb2e0f85c1456d09b50e862fa13c8da2fdf9b",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "modern-fashion",
+        "version": 2,
+        "definitionSha256": "9a915eba23a090600b6735034bef38ffeb8c6bd219f590a8cae621dada456a43",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "editorial-fashion",
+        "version": 3,
+        "definitionSha256": "ffaed346397d3306a5201c7a06a56bbbee887ef2c734a7222d794ca066435452",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "luxury-jewellery",
+        "version": 3,
+        "definitionSha256": "3a18b2856dcfcc3c142b2e36352b316af5647c287bcbaccfbf2be89ab368dc94",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "minimal-jewellery",
+        "version": 2,
+        "definitionSha256": "6e4b336a811f53881bbc9ba672f7ca786e650dd1f934e17c3efc215beee44625",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "soft-beauty",
+        "version": 2,
+        "definitionSha256": "50120dd184212536e62cec3a833765aa9e9ef8755e1844fc5fb385f5233f49f2",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "modern-electronics",
+        "version": 3,
+        "definitionSha256": "8a9cccd45ced4ef0be593c43d9137bd53caa961e68003e711b0b0413bf1a22a3",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "fresh-grocery",
+        "version": 2,
+        "definitionSha256": "abc1e04146c16bff2d1ed344c6ea966b0a40729bd240dcb673964eedd1ea6b7f",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      },
+      {
+        "id": "atelier-editorial",
+        "version": 1,
+        "definitionSha256": "a6144be33b192c4b7988d471aacfe8525227b1d7dac60727480f5e454041a06e",
+        "ssrCases": 37,
+        "browserWidths": [
+          1180,
+          768,
+          390,
+          320
+        ]
+      }
+    ],
+    "ssrCases": 370,
+    "legacyPageHashesRetained": 144,
+    "legacyFullConfigurationsRetained": 9,
+    "previewLiveComparisons": 20,
+    "homepageBrowserCaptures": 40,
+    "commerceBrowserCaptures": 3,
+    "protectedUnchangedFiles": 743
+  },
+  "runs": [
+    {
+      "command": "node --test tests/storefront-atelier-contract.test.js tests/storefront-atelier-routes.test.js tests/storefront-atelier-commerce.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 172,
+      "fail": 0,
+      "log": "legacy-tests.log"
+    },
+    {
+      "command": "node --test tests/adaptive-builder-baseline.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 18,
+      "fail": 0,
+      "log": "adaptive-tests.log"
+    },
+    {
+      "command": "$env:TZ='Pacific/Honolulu'; node --test tests/adaptive-builder-baseline.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 18,
+      "fail": 0,
+      "log": "adaptive-tests-final.log"
+    },
+    {
+      "command": "node --test tests/storefront-preview-parity.test.js tests/storefront-atelier-builder.test.js tests/storefront-atelier-presentation.test.js tests/storefront-release-hardening.test.js tests/storefront-effective-theme.test.js tests/store-builder-prebuilt-themes.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "environment": {
+        "THEME_PARITY_REPORT": "C:/Users/user/WebstormProjects/Shop-for-all/output/adaptive-builder/phase0/home-parity.json"
+      },
+      "pass": 142,
+      "fail": 0,
+      "log": "extended-tests.log"
+    },
+    {
+      "command": "node --test tests/*.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 784,
+      "fail": 5,
+      "classification": "pre-existing; confirmed in original files without new suite",
+      "log": "backend-all.log"
+    },
+    {
+      "command": "node --test tests/ai-acceptance-provenance.test.js tests/ai-preferences.test.js tests/security-hardening.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 50,
+      "fail": 5,
+      "log": "preexisting-failures.log"
+    },
+    {
+      "command": "node --require ./tests/helpers/isolatedAcceptance.cjs --test --test-concurrency=1 tests/integration/atelier-release-hardening.integration.test.js tests/integration/store-builder-launch.integration.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 8,
+      "fail": 0,
+      "note": "Only atelier-release-hardening.integration.test.js exists/matched; it supplied all eight executed tests.",
+      "log": "mongo-integration.log"
+    },
+    {
+      "command": "node --require ./tests/helpers/isolatedAcceptance.cjs --test --test-concurrency=1 tests/integration/store-builder-safety.integration.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 10,
+      "fail": 2,
+      "classification": "pre-existing, same nesting-depth and 403/200 failures",
+      "log": "builder-integration.log"
+    },
+    {
+      "command": "node node_modules/eslint/bin/eslint.js .",
+      "cwd": "ecommerce-admin",
+      "errors": 18,
+      "warnings": 4,
+      "classification": "pre-existing",
+      "log": "admin-lint.log"
+    },
+    {
+      "command": "node node_modules/vite/bin/vite.js build --outDir ../output/adaptive-builder/phase0/admin-dist",
+      "cwd": "ecommerce-admin",
+      "status": "PASS",
+      "log": "admin-build.log",
+      "note": "Temporary generated dist removed after recording result."
+    },
+    {
+      "command": "node node_modules/eslint/bin/eslint.js",
+      "cwd": "ecommerce-storefront",
+      "status": "PASS",
+      "log": "storefront-lint.log"
+    },
+    {
+      "command": "node node_modules/next/dist/bin/next build",
+      "cwd": "ecommerce-storefront",
+      "status": "PASS",
+      "log": "storefront-build.log"
+    },
+    {
+      "command": "git diff --check",
+      "cwd": ".",
+      "status": "PASS",
+      "log": "diff-check.log"
+    }
+  ],
+  "isolatedDatabase": {
+    "image": "mongo:7",
+    "imageId": "sha256:c53852c00c23ca9f23fc39690350ffa9a80e3642fe8f96879726d8da0abe80a7",
+    "container": "sfa-adaptive-phase0-20261020",
+    "containerId": "1626d2cfb193e814943e473ecf88946a73af14efeadab5183ebac0fb8e0f34dd",
+    "label": "sfa.task=adaptive-phase0-20261020",
+    "bind": "127.0.0.1:27028:27017",
+    "storage": "tmpfs /data/db and /data/configdb",
+    "environment": {
+      "NODE_ENV": "test",
+      "SFA_ISOLATED_ACCEPTANCE": "c085454b",
+      "MONGO_URI_TEST": "mongodb://127.0.0.1:27028/atelier_acceptance_c085454b_test?directConnection=true&replicaSet=rs0"
+    },
+    "guards": [
+      "exact test URI only",
+      "dotenv disabled",
+      "external network blocked",
+      "workers prohibited",
+      "email/SMS mocked"
+    ],
+    "removed": true
+  },
+  "browser": {
+    "fixture": "http://127.0.0.1:5218/tests/fixtures/theme-presentation.html?baseline=1",
+    "transport": "existing synthetic fixtures; no real API",
+    "responsiveOverflowCases": 0,
+    "referenceScreenshotsOnly": true,
+    "continuationBlocker": "Browser use became disabled in Work settings after saved captures; no workaround attempted.",
+    "temporaryViewportReset": "Could not issue reset after browser tools disabled.",
+    "savedJourneys": [
+      "Studio edition selection -> zero-price cart -> required checkout fields and consent -> OTP gate; no code sent or order placed.",
+      "Mock tracking send-access/verification -> Pending fixture order/cancel control/ineligible return."
+    ],
+    "serverStopped": true
+  },
+  "remainingGates": [
+    "five existing backend failures",
+    "two existing Builder integration failures",
+    "18 Admin lint errors and 4 warnings",
+    "complete all-theme/all-page browser interactions and a11y/cold hydration/console verification",
+    "retained revision media recovery after physical provider deletion",
+    "representative performance and cross-browser baselines",
+    "mixed-version graph preservation before v5 adoption"
+  ],
+  "v5CompatibilityRequirements": [
+    "Deploy explicit v5 readers and declared storage before enabling any v5 writes.",
+    "Fence every older-client complete save against the persisted version; reject v4 replacement of a v5 graph rather than dropping it.",
+    "SEO, branding, compatibility saves, draft autosave, publish and restore must preserve the graph and enforce optimistic revision/version checks.",
+    "Keep v4 preset definitions, normalization, effective outputs, plan policy and unassigned page paths unchanged.",
+    "Unknown-field archives are opaque retention, not active page-graph persistence or permission to render new blocks.",
+    "Add explicit tests for mixed-version writers, transactional draft/publish/restore and retained revision media before adopting v5."
+  ]
+}

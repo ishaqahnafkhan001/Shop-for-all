@@ -1,0 +1,21 @@
+{
+  "startingRevision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "finalRevision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "originalFiles": 1828,
+  "unchangedOriginalFiles": 1821,
+  "intentionallyModifiedOriginalFiles": [
+    "packages/storefront-renderer/package.json",
+    "packages/storefront-renderer/presentation/ActionButtons.jsx",
+    "packages/storefront-renderer/presentation/ProductDetailsView.jsx",
+    "packages/storefront-renderer/presentation/ProductImageGallery.jsx",
+    "packages/storefront-renderer/presentation/ProductInfo.jsx",
+    "packages/storefront-renderer/presentation/VariantSelector.jsx",
+    "track.md"
+  ],
+  "unexpected": [],
+  "trackerTailPreserved": true,
+  "changedSourceFiles": 18,
+  "newSourceFiles": 11,
+  "newFileWhitespaceErrors": [],
+  "baselineSha256": "06f9c824214c10ec907fcb5e5de12e269f3ba334749d98294ca381153452b841"
+}

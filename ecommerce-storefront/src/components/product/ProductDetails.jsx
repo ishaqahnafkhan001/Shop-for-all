@@ -1,4 +1,5 @@
 "use client";
+import AdaptivePresentation from '@/components/storefront/AdaptivePresentation';
 import { useCallback, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useCart }    from '@/context/CartContext';
 import { useAuth }    from '@/context/AuthContext';
@@ -116,11 +117,11 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
     }, [handleAttributeSelect]);
 
     /* ── Guards ── */
-    if (loading) return <PageSpinner />;
+    if (loading) return <AdaptivePresentation pageKind="product" core><PageSpinner /></AdaptivePresentation>;
 
     if (error || !product) {
         return (
-            <div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
+            <AdaptivePresentation pageKind="product" core><div className="sf-page flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 text-center">
                 <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-white shadow-sm">
                     <ShoppingCart size={40} className="text-slate-300" />
                 </div>
@@ -131,15 +132,15 @@ export default function ProductDetails({ subdomain, id, initialProduct = null })
                 <Link href="/" className="sf-btn sf-btn-primary mt-8 px-6">
                     <ArrowLeft size={18} /> Back to shop
                 </Link>
-            </div>
+            </div></AdaptivePresentation>
         );
     }
 
-    return <StorefrontPresentationRuntime><ProductDetailsView
+    return <StorefrontPresentationRuntime><AdaptivePresentation pageKind="product" core><ProductDetailsView
         presentationVariant={presentationVariant} product={product} currentVariant={currentVariant} displayStock={displayStock}
         baseOriginalPrice={baseOriginalPrice} displayDiscount={displayDiscount} displayFinalPrice={displayFinalPrice}
         availableAttributes={availableAttributes} selectedAttributes={selectedAttributes} handleVariantSelect={handleVariantSelect}
         quantity={quantity} setQuantity={setQuantity} handleAddToCart={handleAddToCart} handleBuyNow={handleBuyNow}
         relatedContent={<Suspense fallback={null}><RelatedProducts subdomain={subdomain} products={relatedProducts} presentationVariant={presentationVariant} productCard={{ ...theme.productCard, colors: theme.colors?.productCard }} /></Suspense>} reviewContent={<Suspense fallback={<div className="mt-24 h-64 rounded-3xl bg-gray-50 animate-pulse" />}><ReviewSection presentationVariant={presentationVariant} subdomain={subdomain} id={id} isLoggedIn={isLoggedIn} reviews={reviews} onReviewSuccess={refreshProductStats} /></Suspense>}
-    /></StorefrontPresentationRuntime>;
+    /></AdaptivePresentation></StorefrontPresentationRuntime>;
 }

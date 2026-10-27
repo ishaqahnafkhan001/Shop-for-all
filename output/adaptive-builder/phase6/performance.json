@@ -1,0 +1,81 @@
+{
+  "environment": "Local Node synthetic repeated operations. Pure Node timings only; browser observations are recorded separately. These are not Web Vitals.",
+  "history": "Retained 30 past JSON strings only; excludes current/future snapshots and object/React/browser overhead.",
+  "results": [
+    {
+      "count": 14,
+      "snapshotUtf8Bytes": 8965,
+      "max30HistoryStringsUtf16Bytes": 537900,
+      "serialization": {
+        "medianMs": 0.12459999999998672,
+        "p95Ms": 0.251700000000028
+      },
+      "validatedInspectorEdit": {
+        "medianMs": 11.988800000000083,
+        "p95Ms": 18.445400000000006
+      },
+      "resolveAll12Pages": {
+        "medianMs": 40.319099999999935,
+        "p95Ms": 46.484500000000025
+      },
+      "styleCompilation": {
+        "medianMs": 0.051099999999905776,
+        "p95Ms": 0.10449999999991633
+      },
+      "productSsrPreview": {
+        "medianMs": 12.61999999999989,
+        "p95Ms": 16.41489999999999
+      }
+    },
+    {
+      "count": 80,
+      "snapshotUtf8Bytes": 26437,
+      "max30HistoryStringsUtf16Bytes": 1586220,
+      "serialization": {
+        "medianMs": 0.29970000000002983,
+        "p95Ms": 0.6230000000000473
+      },
+      "validatedInspectorEdit": {
+        "medianMs": 17.367899999999963,
+        "p95Ms": 21.935199999999895
+      },
+      "resolveAll12Pages": {
+        "medianMs": 51.5299,
+        "p95Ms": 57.697999999999865
+      },
+      "styleCompilation": {
+        "medianMs": 0.10469999999986612,
+        "p95Ms": 0.155699999999797
+      },
+      "productSsrPreview": {
+        "medianMs": 13.326700000000073,
+        "p95Ms": 19.26240000000007
+      }
+    },
+    {
+      "count": 200,
+      "snapshotUtf8Bytes": 58411,
+      "max30HistoryStringsUtf16Bytes": 3504660,
+      "serialization": {
+        "medianMs": 0.7923000000000684,
+        "p95Ms": 1.346599999999853
+      },
+      "validatedInspectorEdit": {
+        "medianMs": 21.409599999999955,
+        "p95Ms": 23.620100000000093
+      },
+      "resolveAll12Pages": {
+        "medianMs": 75.19349999999986,
+        "p95Ms": 80.3152
+      },
+      "styleCompilation": {
+        "medianMs": 0.1517999999996391,
+        "p95Ms": 0.18799999999919237
+      },
+      "productSsrPreview": {
+        "medianMs": 15.054999999999382,
+        "p95Ms": 24.488999999999578
+      }
+    }
+  ]
+}

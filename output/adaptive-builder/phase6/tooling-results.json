@@ -1,0 +1,23 @@
+{
+  "lint": {
+    "files": 57,
+    "errors": 16,
+    "warnings": 1,
+    "preExisting": 17,
+    "introduced": 0
+  },
+  "bundle": {
+    "browserEntryBytes": 571287,
+    "externalImports": [
+      "react",
+      "lucide-react",
+      "react/jsx-runtime"
+    ],
+    "note": "Explicit dynamically loaded entry for approved v5 pages only; dependencies external."
+  },
+  "moduleChecks": {
+    "cjsSsrLoad": true,
+    "esmSyntax": "PASS",
+    "esmCjsPlanAndCssParity": "PASS (20 page/palette cases and capabilities)"
+  }
+}

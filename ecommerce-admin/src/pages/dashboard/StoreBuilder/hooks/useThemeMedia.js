@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import API from '../../../../api/api';
 
-export const useThemeMedia = ({ theme }) => {
+export const useThemeMedia = ({ theme, api = API }) => {
     const [temporaryAssets, setTemporaryAssets] = useState({});
     const assetsRef = useRef(temporaryAssets);
     const themeRef = useRef(theme);
@@ -35,8 +35,8 @@ export const useThemeMedia = ({ theme }) => {
             delete next[url];
             return next;
         });
-        await API.delete(`/store-builder/admin/assets/${assetId}`).catch(() => {});
-    }, []);
+        await api.delete(`/store-builder/admin/assets/${assetId}`).catch(() => {});
+    }, [api]);
 
     const clearTemporaryAssets = useCallback(() => {
         setTemporaryAssets({});

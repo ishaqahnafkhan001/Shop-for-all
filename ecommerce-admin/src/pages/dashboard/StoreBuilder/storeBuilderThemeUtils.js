@@ -6,6 +6,7 @@ import {
     resolveHeroSlideFields
 } from '@scaleup/storefront-theme';
 import { HERO_SLIDE_LIMIT } from './storeBuilderConstants.jsx';
+import { normalizeStoredTheme } from '@scaleup/storefront-theme/storage';
 
 export const normalizeBuilderNavigation = (navigation = []) => navigation.map((item, index) => ({
     isExternal: false,
@@ -127,7 +128,8 @@ export const syncHeroLegacyFields = (hero = {}, slides = []) => {
 
 // Complete snapshots retain the historical root replacement behavior. Deep
 // merging fallback groups here would mask sparse style/layout inheritance.
-export const loadBuilderTheme = (snapshot = {}) => normalizeBuilderTheme({
+export const loadBuilderTheme = (snapshot = {}) => Number(snapshot?.version) >= 5 || Object.hasOwn(snapshot || {}, 'siteBuilder')
+    ? normalizeStoredTheme(snapshot) : normalizeBuilderTheme({
     ...defaultTheme,
     ...(snapshot || {})
 });

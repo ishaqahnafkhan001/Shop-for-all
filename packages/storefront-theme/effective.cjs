@@ -121,6 +121,13 @@ module.exports = ({ normalizeTheme, mergeThemePatch, FALLBACK_THEME, cloneTheme,
     };
 
     const resolveEffectiveTheme = (candidate = {}, context = {}) => {
+        // Reader-first release: validate stored v5, then expose only the existing
+        // v4 fallback presentation. The future graph projection is opt-in/inert.
+        if (Number(candidate?.version) === 5 && candidate.siteBuilder) {
+            const fallback = require('./storage.cjs').normalizeStoredTheme(candidate);
+            delete fallback.siteBuilder;
+            candidate = { ...fallback, version: THEME_SCHEMA_VERSION };
+        }
         const input = createThemeInput(candidate, context);
         let theme = normalizeTheme(mergeThemePatch(input.defaults, input.overrides));
         // Missing plan context means this is already effective data or an editor

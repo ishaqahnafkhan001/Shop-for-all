@@ -164,7 +164,19 @@ test('tenant rewrites preserve the public redirect path and overwrite spoofed pa
         assert.equal(result.options.request.headers.get('x-storefront-pathname'), '/products/example?variant=blue');
         assert.equal(result.options.request.headers.get('host'), host);
         if (host === 'localhost') assert.equal(result.url, undefined);
-        else assert.ok(result.url.includes(`/${host === 'merchant.example.com' ? host : 'alpha'}/products/example`));
+        else {
+            assert.ok(result.url.includes(`/${host === 'merchant.example.com' ? host : 'alpha'}/products/example`));
+            assert.equal(new URL(result.url).search, '?variant=blue');
+        }
+    }
+});
+
+test('tenant homepage rewrites avoid a trailing-slash redirect to the internal tenant path', () => {
+    for (const host of ['alpha.localhost', 'alpha.scaleup.codes', 'merchant.example.com']) {
+        const url = new URL(`http://${host}/?search=synthetic`);
+        const result = ui.proxy({ url: String(url), nextUrl: url, headers: new Headers({ host }) });
+        assert.equal(new URL(result.url).pathname, host === 'merchant.example.com' ? `/${host}` : '/alpha');
+        assert.equal(new URL(result.url).search, '?search=synthetic');
     }
 });
 

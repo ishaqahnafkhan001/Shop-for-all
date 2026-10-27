@@ -19,15 +19,15 @@ const normalizeFeatures = (features) => (
         : []
 );
 
-export const ProductFeatures = memo(function ProductFeatures({ features }) {
+export const ProductFeatures = memo(function ProductFeatures({ adaptiveParts = false, features }) {
     const normalizedFeatures = normalizeFeatures(features);
 
     if (!normalizedFeatures.length) return null;
 
     return (
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+        <section data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
             <div className="mb-5 flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]">
+                <span data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]">
                     <Sparkles size={22} />
                 </span>
                 <div>
@@ -37,7 +37,7 @@ export const ProductFeatures = memo(function ProductFeatures({ features }) {
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {normalizedFeatures.map((feature, idx) => (
-                    <div
+                    <div data-ab-surface={adaptiveParts ? '' : undefined}
                         key={idx}
                         className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                     >
@@ -50,13 +50,13 @@ export const ProductFeatures = memo(function ProductFeatures({ features }) {
     );
 });
 
-export const ProductSpecifications = memo(function ProductSpecifications({ specifications }) {
+export const ProductSpecifications = memo(function ProductSpecifications({ adaptiveParts = false, specifications }) {
     if (!specifications?.length) return null;
 
     return (
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
+        <section data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-6">
             <div className="mb-5 flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]">
+                <span data-ab-surface={adaptiveParts ? '' : undefined} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--sf-accent-bg)] text-[var(--sf-accent)]">
                     <ClipboardList size={22} />
                 </span>
                 <div>
@@ -64,9 +64,9 @@ export const ProductSpecifications = memo(function ProductSpecifications({ speci
                     <h2 className="text-2xl font-black text-slate-950">Specifications</h2>
                 </div>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+            <div data-ab-surface={adaptiveParts ? '' : undefined} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                 {specifications.map((spec, idx) => (
-                    <div
+                    <div data-ab-surface={adaptiveParts ? '' : undefined}
                         key={idx}
                         className="flex flex-col border-b border-slate-200/70 bg-white px-4 py-4 transition-colors last:border-0 hover:bg-slate-50 sm:flex-row sm:px-5"
                     >
@@ -83,12 +83,12 @@ export const ProductSpecifications = memo(function ProductSpecifications({ speci
     );
 });
 
-export const ExpertNotes = memo(function ExpertNotes({ comments }) {
+export const ExpertNotes = memo(function ExpertNotes({ adaptiveParts = false, comments }) {
     if (!comments?.length) return null;
 
     return (
         <aside className="lg:sticky lg:top-24">
-            <div className="overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950 shadow-2xl shadow-slate-900/20">
+            <div data-ab-surface={adaptiveParts ? '' : undefined} className="overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950 shadow-2xl shadow-slate-900/20">
                 <div className="border-b border-white/10 p-5 sm:p-6">
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">Buying guide</p>
                     <h3 className="mt-2 flex items-center text-xl font-black text-white">
@@ -98,7 +98,7 @@ export const ExpertNotes = memo(function ExpertNotes({ comments }) {
                 </div>
                 <div className="divide-y divide-white/10">
                     {comments.map((comment, idx) => (
-                        <details key={idx} className="group p-5 open:bg-white/[0.03] sm:p-6" open={idx === 0}>
+                        <details data-ab-surface={adaptiveParts ? '' : undefined} key={idx} className="group p-5 open:bg-white/[0.03] sm:p-6" open={idx === 0}>
                             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black uppercase tracking-wider text-cyan-200">
                                 <span>{comment.title}</span>
                                 <ChevronDown size={17} className="shrink-0 transition group-open:rotate-180" />
@@ -112,13 +112,13 @@ export const ExpertNotes = memo(function ExpertNotes({ comments }) {
     );
 });
 
-const EmptyTabState = ({ label }) => (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+const EmptyTabState = ({ adaptiveParts = false, label }) => (
+    <div data-ab-surface={adaptiveParts ? '' : undefined} className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
         <p className="text-sm font-bold text-slate-500">{label} have not been added for this product yet.</p>
     </div>
 );
 
-export const ProductInformationTabs = memo(function ProductInformationTabs({
+export const ProductInformationTabs = memo(function ProductInformationTabs({ adaptiveParts = false,
     presentationVariant,
     features,
     specifications,
@@ -152,8 +152,8 @@ export const ProductInformationTabs = memo(function ProductInformationTabs({
     };
 
     return (
-        <section data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-information' : undefined} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
-            <div
+        <section data-ab-surface={adaptiveParts ? '' : undefined} data-atelier-part={presentationVariant === 'atelier-editorial' ? 'product-information' : undefined} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/60">
+            <div data-ab-surface={adaptiveParts ? '' : undefined}
                 role="tablist"
                 aria-label="Product information"
                 className="grid grid-cols-3 border-b border-slate-200 bg-slate-50"
@@ -162,7 +162,7 @@ export const ProductInformationTabs = memo(function ProductInformationTabs({
                     const Icon = tab.icon;
                     const selected = activeTab === tab.id;
                     return (
-                        <button
+                        <button data-ab-surface={adaptiveParts ? '' : undefined}
                             key={tab.id}
                             id={`product-info-tab-${tab.id}`}
                             type="button"
@@ -201,20 +201,20 @@ export const ProductInformationTabs = memo(function ProductInformationTabs({
                                 </div>
                             ))}
                         </dl>
-                    ) : <EmptyTabState label="Product details" />
+                    ) : <EmptyTabState adaptiveParts={adaptiveParts} label="Product details" />
                 )}
 
                 {activeTab === 'highlights' && (
                     normalizedFeatures.length ? (
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             {normalizedFeatures.map((feature, index) => (
-                                <div key={`${feature.point}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <div data-ab-surface={adaptiveParts ? '' : undefined} key={`${feature.point}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                                     <h3 className="text-sm font-black text-slate-950">{feature.point}</h3>
                                     <p className="mt-2 text-sm leading-6 text-slate-600">{feature.reason}</p>
                                 </div>
                             ))}
                         </div>
-                    ) : <EmptyTabState label="Product highlights" />
+                    ) : <EmptyTabState adaptiveParts={adaptiveParts} label="Product highlights" />
                 )}
 
                 {activeTab === 'buying-guide' && (
@@ -230,7 +230,7 @@ export const ProductInformationTabs = memo(function ProductInformationTabs({
                                 </details>
                             ))}
                         </div>
-                    ) : <EmptyTabState label="Buying guide notes" />
+                    ) : <EmptyTabState adaptiveParts={adaptiveParts} label="Buying guide notes" />
                 )}
             </div>
         </section>

@@ -1,0 +1,193 @@
+{
+  "nativeZoom": {
+    "contentSize": {
+      "height": 4590,
+      "width": 1263,
+      "x": 0,
+      "y": 0
+    },
+    "cssContentSize": {
+      "height": 2295,
+      "width": 631,
+      "x": 0,
+      "y": 0
+    },
+    "cssLayoutViewport": {
+      "clientHeight": 624,
+      "clientWidth": 631,
+      "pageX": 0,
+      "pageY": 0
+    },
+    "cssVisualViewport": {
+      "clientHeight": 624,
+      "clientWidth": 631.5,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pageX": 0,
+      "pageY": 0,
+      "scale": 1,
+      "zoom": 2
+    },
+    "layoutViewport": {
+      "clientHeight": 1248,
+      "clientWidth": 1263,
+      "pageX": 0,
+      "pageY": 0
+    },
+    "visualViewport": {
+      "clientHeight": 1248,
+      "clientWidth": 1263,
+      "offsetX": 0,
+      "offsetY": 0,
+      "pageX": 0,
+      "pageY": 0,
+      "scale": 1,
+      "zoom": 2
+    }
+  },
+  "cases": [
+    {
+      "name": "cancel-idle",
+      "entry": {
+        "active": "Optional note",
+        "inside": true,
+        "overflow": "hidden"
+      },
+      "back": {
+        "inside": true,
+        "name": "Confirm cancel"
+      },
+      "forward": {
+        "inside": true,
+        "name": "Close modal"
+      },
+      "escape": {
+        "active": "Cancel Order",
+        "open": false,
+        "overflow": ""
+      }
+    },
+    {
+      "name": "cancel-busy",
+      "closeDisabled": true,
+      "secondaryDisabled": true,
+      "escapeRetainsDialog": true
+    },
+    {
+      "name": "return-idle",
+      "entry": {
+        "active": "Details",
+        "files": [
+          {
+            "display": "block",
+            "label": "Add proof images",
+            "rects": 1
+          },
+          {
+            "display": "block",
+            "label": "Add optional video",
+            "rects": 1
+          }
+        ],
+        "inside": true,
+        "overflow": "hidden"
+      },
+      "uploadFocus": {
+        "label": "Add proof images",
+        "labelRing": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(255, 255, 255) 0px 0px 0px 2px, oklch(0.372 0.044 257.287) 0px 0px 0px 4px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+        "type": "file"
+      },
+      "back": {
+        "inside": true,
+        "name": "Submit request"
+      },
+      "forward": {
+        "inside": true,
+        "name": "Close modal"
+      },
+      "proofRemoved": {
+        "groupsRemaining": 0,
+        "submitDisabled": true
+      },
+      "escape": {
+        "active": "Request Return/Refund",
+        "open": false,
+        "overflow": ""
+      }
+    },
+    {
+      "name": "return-busy",
+      "closeDisabled": true,
+      "secondaryDisabled": true,
+      "escapeRetainsDialog": true
+    },
+    {
+      "name": "header-after-fix",
+      "entry": {
+        "active": "Close menu",
+        "inside": true,
+        "overflow": "hidden"
+      },
+      "back": {
+        "inside": true,
+        "name": "Account"
+      },
+      "forward": {
+        "inside": true,
+        "name": "Close menu"
+      },
+      "escape": {
+        "active": "Open menu",
+        "open": false,
+        "overflow": ""
+      }
+    },
+    {
+      "name": "header-breakpoint-close",
+      "mobile": {
+        "inside": true,
+        "overflow": "hidden",
+        "width": 390
+      },
+      "desktop": {
+        "active": null,
+        "open": false,
+        "overflow": "",
+        "width": 1024
+      }
+    },
+    {
+      "name": "long-header-native-200",
+      "before": {
+        "height": 624,
+        "scrollHeight": 836,
+        "overflow": "visible",
+        "lastLinkBottom": 836,
+        "viewportHeight": 624
+      },
+      "after": {
+        "active": "Account",
+        "activeBottom": 603,
+        "height": 624,
+        "overflow": "auto",
+        "scrollHeight": 856,
+        "scrollTop": 232,
+        "viewportHeight": 624
+      }
+    }
+  ],
+  "returnUploadBefore": {
+    "files": [
+      {
+        "label": "Add proof images",
+        "display": "none",
+        "rects": 0
+      },
+      {
+        "label": "Add optional video",
+        "display": "none",
+        "rects": 0
+      }
+    ]
+  }
+}

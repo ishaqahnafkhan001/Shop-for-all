@@ -1,0 +1,17 @@
+{
+  "id": "ce0fab4a21b75237209feb04808ff6a6b7b913f2221b011a9e64c2e0a8550382",
+  "task": "adaptive-remediation-fc0f7ec2",
+  "tmpfs": {
+    "/data/db": "rw,size=512m"
+  },
+  "ports": {
+    "27017/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "27028"
+      }
+    ]
+  },
+  "image": "sha256:c53852c00c23ca9f23fc39690350ffa9a80e3642fe8f96879726d8da0abe80a7",
+  "primaryVerified": true
+}

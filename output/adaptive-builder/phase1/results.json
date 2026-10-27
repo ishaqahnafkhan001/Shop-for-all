@@ -1,0 +1,294 @@
+{
+  "phase": 1,
+  "date": "2026-10-20",
+  "startRevision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+  "phase2Readiness": "PASS",
+  "phase2Started": false,
+  "productionReleaseReadiness": "BLOCKED by existing and later release gates",
+  "liveThemeSchemaVersion": 4,
+  "inactiveContractVersion": 1,
+  "applicationBehaviorModified": false,
+  "adoptionEnabled": false,
+  "newRuntimeDependencies": 0,
+  "changedFiles": [
+    "packages/storefront-theme/adaptive.cjs",
+    "packages/storefront-theme/adaptive.mjs",
+    "packages/storefront-theme/adaptiveData.cjs",
+    "packages/storefront-theme/pageTemplates.cjs",
+    "packages/storefront-theme/pageTemplateValidation.cjs",
+    "packages/storefront-theme/responsiveStyles.cjs",
+    "packages/storefront-theme/pageTemplateCommands.cjs",
+    "packages/storefront-theme/package.json",
+    "packages/storefront-theme/ADAPTIVE_CONTRACT.md",
+    "ecommerce-backend/backend/tests/adaptive-page-contract.test.js",
+    "ecommerce-backend/backend/tests/fixtures/adaptive-builder/contract-fixtures.cjs",
+    "ecommerce-backend/backend/tests/helpers/benchmark-adaptive-contract.cjs",
+    "track.md"
+  ],
+  "preservedBaseline": {
+    "themes": [
+      {
+        "id": "modern-general",
+        "version": 2,
+        "sha256": "16b807e3d3b341c2845d85b0319942f59c566f8863db9672358b622442971345"
+      },
+      {
+        "id": "minimal-general",
+        "version": 2,
+        "sha256": "b8a6fed6a713933862bc98045aefb2e0f85c1456d09b50e862fa13c8da2fdf9b"
+      },
+      {
+        "id": "modern-fashion",
+        "version": 2,
+        "sha256": "9a915eba23a090600b6735034bef38ffeb8c6bd219f590a8cae621dada456a43"
+      },
+      {
+        "id": "editorial-fashion",
+        "version": 3,
+        "sha256": "ffaed346397d3306a5201c7a06a56bbbee887ef2c734a7222d794ca066435452"
+      },
+      {
+        "id": "luxury-jewellery",
+        "version": 3,
+        "sha256": "3a18b2856dcfcc3c142b2e36352b316af5647c287bcbaccfbf2be89ab368dc94"
+      },
+      {
+        "id": "minimal-jewellery",
+        "version": 2,
+        "sha256": "6e4b336a811f53881bbc9ba672f7ca786e650dd1f934e17c3efc215beee44625"
+      },
+      {
+        "id": "soft-beauty",
+        "version": 2,
+        "sha256": "50120dd184212536e62cec3a833765aa9e9ef8755e1844fc5fb385f5233f49f2"
+      },
+      {
+        "id": "modern-electronics",
+        "version": 3,
+        "sha256": "8a9cccd45ced4ef0be593c43d9137bd53caa961e68003e711b0b0413bf1a22a3"
+      },
+      {
+        "id": "fresh-grocery",
+        "version": 2,
+        "sha256": "abc1e04146c16bff2d1ed344c6ea966b0a40729bd240dcb673964eedd1ea6b7f"
+      },
+      {
+        "id": "atelier-editorial",
+        "version": 1,
+        "sha256": "a6144be33b192c4b7988d471aacfe8525227b1d7dac60727480f5e454041a06e"
+      }
+    ],
+    "exactRenderCases": 370,
+    "olderRenderHashes": 144,
+    "galleryBuilderLiveComparisons": 20,
+    "manifestSha256": "06f9c824214c10ec907fcb5e5de12e269f3ba334749d98294ca381153452b841"
+  },
+  "runs": [
+    {
+      "command": "node --test tests/adaptive-builder-baseline.test.js tests/storefront-preview-parity.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 43,
+      "fail": 0,
+      "stage": "before",
+      "log": "baseline-before.log"
+    },
+    {
+      "command": "node --test tests/adaptive-page-contract.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 218,
+      "fail": 0,
+      "log": "contracts.log"
+    },
+    {
+      "command": "node --test tests/adaptive-builder-baseline.test.js tests/storefront-preview-parity.test.js tests/storefront-atelier-contract.test.js tests/storefront-atelier-routes.test.js tests/storefront-atelier-commerce.test.js tests/storefront-atelier-builder.test.js tests/storefront-atelier-presentation.test.js tests/storefront-release-hardening.test.js tests/storefront-effective-theme.test.js tests/store-builder-prebuilt-themes.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 332,
+      "fail": 0,
+      "environment": {
+        "THEME_PARITY_REPORT": "C:/Users/user/WebstormProjects/Shop-for-all/output/adaptive-builder/phase1/home-parity-after.json"
+      },
+      "log": "baseline-after.log"
+    },
+    {
+      "command": "node --test tests/*.test.js",
+      "cwd": "ecommerce-backend/backend",
+      "pass": 1002,
+      "fail": 5,
+      "classification": "same pre-existing failures as Phase 0; new final failures zero",
+      "log": "backend-final.log"
+    },
+    {
+      "command": "node output/adaptive-builder/phase1/verify-contract-tooling.cjs",
+      "cwd": ".",
+      "status": "PASS",
+      "logs": [
+        "focused-lint.log",
+        "tooling-results.json"
+      ]
+    },
+    {
+      "command": "node node_modules/vite/bin/vite.js build --outDir ../output/adaptive-builder/phase1/admin-dist",
+      "cwd": "ecommerce-admin",
+      "status": "PASS",
+      "log": "admin-build.log"
+    },
+    {
+      "command": "node node_modules/next/dist/bin/next build",
+      "cwd": "ecommerce-storefront",
+      "status": "PASS",
+      "log": "storefront-build.log"
+    },
+    {
+      "command": "node tests/helpers/benchmark-adaptive-contract.cjs",
+      "cwd": "ecommerce-backend/backend",
+      "status": "PASS",
+      "log": "benchmark-final.json"
+    },
+    {
+      "command": "git diff --check",
+      "cwd": ".",
+      "status": "PASS",
+      "log": "diff-check.log"
+    }
+  ],
+  "integrity": {
+    "startRevision": "54a04b6d34939dab3b9cc6f0139a753116edbd32",
+    "recordedExistingFiles": 834,
+    "unchangedExistingFiles": 832,
+    "changedExistingFiles": [
+      "packages/storefront-theme/package.json",
+      "track.md"
+    ],
+    "unexpectedExistingChanges": [],
+    "protectedPhase0ArtifactFiles": 65,
+    "changedPhase0Artifacts": [],
+    "priorTrackContentBytePreserved": true,
+    "buildOutputRetained": "Automatic approval review blocked recursive cleanup; no workaround used."
+  },
+  "benchmark": {
+    "runtime": "v24.12.0",
+    "kind": "Local synthetic microbenchmark, not production latency or a test threshold",
+    "validation": [
+      {
+        "label": "small",
+        "nodes": 14,
+        "templates": 12,
+        "graphBytes": 2707,
+        "completeThemeBytes": 8990,
+        "iterations": 100,
+        "medianMs": 2.6972999999999843,
+        "p95Ms": 2.9832999999999856
+      },
+      {
+        "label": "medium",
+        "nodes": 80,
+        "templates": 12,
+        "graphBytes": 20179,
+        "completeThemeBytes": 26462,
+        "iterations": 100,
+        "medianMs": 3.508299999999963,
+        "p95Ms": 3.89549999999997
+      },
+      {
+        "label": "near-node-limit",
+        "nodes": 200,
+        "templates": 12,
+        "graphBytes": 52153,
+        "completeThemeBytes": 58436,
+        "iterations": 100,
+        "medianMs": 4.7672999999999774,
+        "p95Ms": 4.979800000000068
+      },
+      {
+        "label": "near-byte-limit",
+        "nodes": 200,
+        "templates": 12,
+        "graphBytes": 246286,
+        "completeThemeBytes": 252569,
+        "existingThemeBudgetChecks": [
+          {
+            "id": "modern-general",
+            "bytes": 254734
+          },
+          {
+            "id": "minimal-general",
+            "bytes": 253890
+          },
+          {
+            "id": "modern-fashion",
+            "bytes": 254901
+          },
+          {
+            "id": "editorial-fashion",
+            "bytes": 254520
+          },
+          {
+            "id": "luxury-jewellery",
+            "bytes": 254728
+          },
+          {
+            "id": "minimal-jewellery",
+            "bytes": 253922
+          },
+          {
+            "id": "soft-beauty",
+            "bytes": 254745
+          },
+          {
+            "id": "modern-electronics",
+            "bytes": 254652
+          },
+          {
+            "id": "fresh-grocery",
+            "bytes": 254695
+          },
+          {
+            "id": "atelier-editorial",
+            "bytes": 254174
+          }
+        ],
+        "iterations": 100,
+        "medianMs": 6.264599999999973,
+        "p95Ms": 6.6370999999999185
+      }
+    ],
+    "resolution": {
+      "callsPerIteration": 3,
+      "iterations": 1000,
+      "medianMs": 0.0658000000003085,
+      "p95Ms": 0.07580000000007203
+    }
+  },
+  "tooling": {
+    "lint": {
+      "files": 10,
+      "errors": 0,
+      "warnings": 0
+    },
+    "browserBundle": {
+      "bytes": 173282,
+      "externalImports": 0,
+      "syntaxAndPureSmoke": "PASS",
+      "limitation": "Browser-target bundle imported in Node; not a DOM/browser interaction test."
+    }
+  },
+  "existingFailureNames": [
+    "empty Product output is never chargeable; every requested section is checked",
+    "all four generators use the same effective voice for English, Bangla, Banglish and mixed content",
+    "low stock warnings are queued, tenant-scoped, and sent only on threshold crossing",
+    "promotion scheduling is enforced by backend checkout evaluation and exposed in admin UI",
+    "confirmed order status email is sent through status update endpoint once"
+  ],
+  "newFinalFailures": 0,
+  "limitations": [
+    "No MongoDB/browser journey tests rerun; inactive pure modules do not change those paths.",
+    "Phase 0 full Admin lint and two Builder integration failures remain known release gates.",
+    "Tenant/staff/plan checks, ID ownership/public eligibility and database graph preservation belong to Phase 2.",
+    "Future integration must pass complete actual effective color tokens; fallback contrast is not evidence for an unknown tenant theme.",
+    "Browser-target bundle import is a Node pure smoke check, not DOM/hydration/a11y proof.",
+    "Microbenchmarks are local synthetic observations, not production latency or peak memory guarantees.",
+    "Parsed JSON cannot recover duplicate lexical object keys already discarded by a parser.",
+    "Admin build output and an accidental empty task directory retained after automatic approval review blocked cleanup; no workaround."
+  ],
+  "nextStep": "After review/authorization, begin Phase 2 version-aware storage/reader and old-client fencing tests, ownership/plan integration and transactional revision/media safety; keep adoption disabled and do not wire renderer/UI."
+}

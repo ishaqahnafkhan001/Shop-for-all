@@ -1,0 +1,50 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import API from '../../../../api/api.js';
+
+export function useStoreBuilderBootstrap({ api = API } = {}) {
+    const [state, setState] = useState({ loading: true, data: null, error: '' });
+    const requestId = useRef(0);
+
+    const reload = useCallback(async ({ keepCurrent = false } = {}) => {
+        const currentRequest = ++requestId.current;
+        setState(prev => ({ ...prev, loading: !keepCurrent, error: '' }));
+        try {
+            const response = await api.get('/store-builder/admin');
+            if (currentRequest !== requestId.current) return null;
+            const legacyData = response.data?.data || null;
+            const payload = response.data?.bootstrap || (legacyData ? {
+                shop: legacyData.shop || legacyData,
+                products: legacyData.products || [],
+                categories: legacyData.categories || [],
+                categoryDetails: legacyData.categoryDetails || [],
+                collections: legacyData.collections || [],
+                reviews: legacyData.reviews || [],
+                seoStats: legacyData.seoStats || null,
+                draft: legacyData.draft || null,
+                revisions: legacyData.revisions || [],
+                publication: legacyData.publication || null,
+                planAccess: response.data?.planAccess || legacyData.planAccess || null,
+                compatibilityMode: true
+            } : null);
+            if (!payload?.shop) throw new Error('Store Builder bootstrap did not include shop settings.');
+            setState({ loading: false, data: payload, error: '' });
+            return payload;
+        } catch (error) {
+            if (currentRequest !== requestId.current) return null;
+            setState(prev => ({
+                loading: false,
+                data: keepCurrent ? prev.data : null,
+                error: error.response?.data?.error || error.message || 'Failed to load Store Builder'
+            }));
+            throw error;
+        }
+    }, [api]);
+
+    useEffect(() => {
+        reload().catch(() => {});
+        return () => { requestId.current += 1; };
+    }, [reload]);
+
+    return { ...state, reload };
+}

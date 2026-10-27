@@ -1,0 +1,92 @@
+[
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/package.json",
+    "status": "modified",
+    "sha256": "4c00e2d458b3fc6eca346dc951824ece4c7023ed0fa90e15928f46a3b5f44942"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/adaptive/index.jsx",
+    "status": "new",
+    "sha256": "e995006ec50cf64e5a9f66672521da9cabce130b9d107a5203c2528342b52d6c"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/adaptive/pagePlan.js",
+    "status": "new",
+    "sha256": "f89c643a0777455fbd9be4fec50dc64af96a1240b0f91a46ce6db0a1a621bc87"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/adaptive/styleCompiler.js",
+    "status": "new",
+    "sha256": "34ca4704740f4eabee63cfdc4789662f41ea94c4c3cbcdc88f2b5a6591c97b53"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/adaptive/PageTemplateRenderer.jsx",
+    "status": "new",
+    "sha256": "7ed9b0e6f133a49a247fdb6b8c381fe44622a68889bf905b617980583fb3dba1"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/adaptive/ProtectedCore.jsx",
+    "status": "new",
+    "sha256": "686e009e04cf8818a4bf6b5c216533e1c475868ba9697cc85a9be3d460beec90"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ProductDetailsView.jsx",
+    "status": "modified",
+    "sha256": "4278400b292a197317d6c867b83f8a99e5b408ad970ecf0e4e294654cedc8bb3"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ProductInfo.jsx",
+    "status": "modified",
+    "sha256": "a69f62b5186b500d6482c9260114178868ab702f16e6ff9d6e761abf5d1ad99d"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ProductImageGallery.jsx",
+    "status": "modified",
+    "sha256": "9f4d6bd8f7862b6ddb1a5240b909bd4540cd01034631db0379a4811044ed3ac1"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/VariantSelector.jsx",
+    "status": "modified",
+    "sha256": "59870de9dfdca54595c906017086e7da49623c963084be3421711cabb4c19c4e"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/packages/storefront-renderer/presentation/ActionButtons.jsx",
+    "status": "modified",
+    "sha256": "d5758e0a7b51c2ade06503f1508cb7baabc4c18bf3e6e2b3a4e0a0924769ffe6"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/adaptive-renderer.test.js",
+    "status": "new",
+    "sha256": "3c082ff80ee168870ed05d7b470f88cdc11c484a1ec5ea7271f8a75246e23ff3"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/fixtures/adaptive-builder/render-fixtures.cjs",
+    "status": "new",
+    "sha256": "1908a43c5aec9fd618d3445f54b33f4cca7166e816fa6ab414951c9753e42035"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/fixtures/adaptive-builder/browser-fixture.jsx",
+    "status": "new",
+    "sha256": "632417694b545edb6f8c184fbd30f6b2562816c25f4f77c9d618434aaecf2c7b"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/adaptive-renderer.cjs",
+    "status": "new",
+    "sha256": "b8c5323f1ac7683ecc7b91a8ed92a0c5825f2b7086ed5ab97477c461796ea2af"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/adaptive-browser.cjs",
+    "status": "new",
+    "sha256": "59c0386b5b4210d53c8165a7dcfdfb608ccd8eab6a09ab9386911b1cafa00301"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/ecommerce-backend/backend/tests/helpers/benchmark-adaptive-renderer.cjs",
+    "status": "new",
+    "sha256": "55f7f103334904233f352fd82a32d5ac58041b02ec81e94b4f0f25286d0b2d21"
+  },
+  {
+    "path": "C:/Users/user/WebstormProjects/Shop-for-all/track.md",
+    "status": "modified",
+    "sha256": "b9dcecd32bde7c792ac34a16be7cfbc14769e20ef13e1abf7160f7fc7ecefd82"
+  }
+]

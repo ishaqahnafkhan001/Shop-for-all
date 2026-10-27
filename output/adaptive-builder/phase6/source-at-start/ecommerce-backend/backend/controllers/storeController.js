@@ -1,0 +1,978 @@
+const Shop = require('../models/Shop');
+const Product = require('../models/Product');
+const Banner = require('../models/Banner');
+const Review = require('../models/Review');
+const Collection = require('../models/Collection');
+const Category = require('../models/Category');
+const { getPublicTrustedBadge } = require('../services/verification/publicTrustedBadgeService');
+const mongoose = require('mongoose');
+const cache = require('../services/cacheService');
+const { getPathaoCities, getPathaoZones, getPathaoAreas, getPathaoToken,createPathaoStore,getPathaoStores } = require('../services/pathaoService');
+const { mirrorPathaoConfigOnShop } = require('../services/courierConfigService');
+const { encryptSecret } = require('../utils/secretCrypto');
+const safeStorefrontLink = require('../utils/safeStorefrontLink');
+const {
+    PUBLIC_PRODUCT_CARD_PROJECT,
+    sanitizePublicProduct,
+    sanitizePublicProducts
+} = require('../services/publicProductSerializer');
+const { buildPublicShopVerification } = require('../services/verification/vendorVerificationStatusService');
+const {
+    applyScheduledSalesToProducts,
+    getActiveSalePopups
+} = require('../services/sales/scheduledSaleService');
+const { hasFeature } = require('../services/shops/featureAccessService');
+const { getShopPlanAccess } = require('../services/billing/planAccessService');
+const { applyEffectiveStoreTheme } = require('../services/storeBuilder/effectiveThemeService');
+const { buildPagination } = require('../utils/pagination');
+const { mergeCategoryDetails, normalizeCategoryKey } = require('../services/categories/categoryService');
+const { normalizeSearchText } = require('../services/products/productQueryService');
+const { resolveSlugRedirect } = require('../services/seo/slugRedirectService');
+
+const PUBLIC_SHOP_FIELDS = 'shopName subdomain searchAliases branding theme themeRevision storewideDiscount customDomain.domain customDomain.status customDomain.ownershipVerified customDomain.routingVerified customDomain.manuallyVerifiedRouting customDomain.planInactive badgeStatus badgeType badgeApprovedAt badgeExpiresAt badgeRevokedAt verification.status verification.phoneVerified verification.phoneVerifiedAt verification.isVendorVerified verification.verifiedAt isActive approvalStatus plan updatedAt';
+const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
+
+const getActiveBannerQuery = (shopId, now = new Date()) => ({
+    shop_id: shopId,
+    isActive: true,
+    $and: [
+        { $or: [{ startsAt: null }, { startsAt: { $lte: now } }] },
+        { $or: [{ endsAt: null }, { endsAt: { $gt: now } }] }
+    ]
+});
+
+const buildProductUrl = (product) => product ? `/products/${product.slug || product._id}` : '';
+
+const normalizeBannerForPublic = (banner, now = new Date()) => {
+    const product = banner.scheduledProduct || null;
+    const productPublished = product
+        ? product.isDeleted !== true && product.isActive === true && product.status === 'Published'
+        : false;
+
+    if (banner.type === 'scheduled_product') {
+        if (!product) return null;
+        if (productPublished && banner.postLaunchBehavior === 'hide_on_publish') return null;
+        if (productPublished && banner.postLaunchBehavior === 'keep_until_end' && banner.endsAt && new Date(banner.endsAt) <= now) return null;
+    }
+
+    const isUpcoming = banner.type === 'scheduled_product' && !productPublished;
+    const launchAt = product?.publishAt || null;
+
+    return {
+        _id: banner._id,
+        type: banner.type || 'standard',
+        title: banner.title,
+        subtitle: banner.subtitle || '',
+        images: banner.images || [],
+        desktopImages: banner.desktopImages || banner.images || [],
+        mobileImages: banner.mobileImages || [],
+        link: isUpcoming ? '' : safeStorefrontLink(banner.link || buildProductUrl(product)),
+        startsAt: banner.startsAt,
+        endsAt: banner.endsAt,
+        countdownEnabled: Boolean(banner.countdownEnabled && isUpcoming && launchAt),
+        launchAt,
+        postLaunchBehavior: banner.postLaunchBehavior,
+        postLaunchCtaText: banner.postLaunchCtaText || 'View product',
+        scheduledProduct: product ? {
+            _id: product._id,
+            title: product.title,
+            slug: product.slug,
+            status: product.status,
+            publicationStatus: product.publicationStatus,
+            publishAt: product.publishAt,
+            isPublic: productPublished
+        } : null
+    };
+};
+
+const attachPublicBranding = async (shop) => {
+    if (!shop) return shop;
+    shop.showPlatformBranding = !(await hasFeature(shop._id, 'platformBrandingRemoval'));
+    delete shop.plan;
+    return shop;
+};
+
+
+const getManualSectionProductIds = (sections = []) => {
+    const idsBySection = {};
+    sections.forEach(section => {
+        if (!['FeaturedProducts', 'Collection', 'CollectionShowcase'].includes(section?.type) || section?.isEnabled === false) return;
+        const source = section.settings?.source || section.source || {};
+        const productIds = section.settings?.productIds || source.productIds || [];
+        if ((source.type || 'manual') !== 'manual' || !Array.isArray(productIds) || productIds.length === 0) return;
+        idsBySection[section.id || String(section._id)] = productIds.map(String).filter(id => /^[a-f\d]{24}$/i.test(id));
+    });
+    return idsBySection;
+};
+
+const getSelectedSectionReviewIds = (sections = []) => {
+    const idsBySection = {};
+    sections.forEach(section => {
+        if (section?.type !== 'Reviews' || section?.isEnabled === false) return;
+        const reviewIds = section.settings?.reviewIds || [];
+        if (!Array.isArray(reviewIds) || reviewIds.length === 0) return;
+        idsBySection[section.id || String(section._id)] = reviewIds.map(String).filter(id => /^[a-f\d]{24}$/i.test(id));
+    });
+    return idsBySection;
+};
+
+
+exports.getStorefrontThemeRevision = async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+        const shop = await Shop.findById(req.tenantId).select('_id themeRevision').lean();
+        if (!shop) return res.status(404).json({ error: 'Store not found.' });
+        return res.json({ shopId: String(shop._id), themeRevision: Number(shop.themeRevision || 0) });
+    } catch {
+        return res.status(503).json({ error: 'Store revision unavailable.' });
+    }
+};
+
+exports.getStoreInfo = async (req, res) => {
+    try {
+        const shop = await Shop.findById(req.tenantId)
+            .select(PUBLIC_SHOP_FIELDS)
+            .lean();
+
+        if (!shop) {
+            return res.status(404).json({ error: "Shop details not found." });
+        }
+        const planAccess = await getShopPlanAccess(shop._id);
+        await applyEffectiveStoreTheme(shop, planAccess);
+        shop.trustedBadge = await getPublicTrustedBadge(shop);
+        shop.shopVerification = buildPublicShopVerification(shop, {
+            eligible: planAccess.features.publicVerifiedBadge
+        });
+        await attachPublicBranding(shop);
+        delete shop.badgeStatus;
+        delete shop.badgeType;
+        delete shop.badgeApprovedAt;
+        delete shop.badgeExpiresAt;
+        delete shop.badgeRevokedAt;
+        delete shop.verification;
+        delete shop.isActive;
+        delete shop.approvalStatus;
+
+        res.status(200).json(shop);
+    } catch (err) {
+        res.status(500).json({ error: "Error fetching shop info." });
+    }
+};
+
+exports.getStorefrontBootstrap = async (req, res) => {
+    try {
+        const shopId = req.tenantId;
+        const {
+            page = 1,
+            sort,
+            category,
+            minPrice,
+            maxPrice,
+            minRating,
+            search,
+            stock
+        } = req.query;
+        const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+        const limit = 9;
+        const skip = (currentPage - 1) * limit;
+        const shopObjectId = new mongoose.Types.ObjectId(shopId);
+        const [shop, planAccess] = await Promise.all([
+            Shop.findById(shopId).select(PUBLIC_SHOP_FIELDS).lean(),
+            getShopPlanAccess(shopId)
+        ]);
+        if (!shop) return res.status(404).json({ error: 'Shop details not found.' });
+        const cacheKey = `storefront:bootstrap:${shopId}:${JSON.stringify({
+            revision: Number(shop.themeRevision || 0),
+            updatedAt: shop.updatedAt,
+            plan: planAccess.planKey,
+            access: planAccess.storeBuilderAccess,
+            features: planAccess.features,
+            page: currentPage,
+            sort,
+            category,
+            minPrice,
+            maxPrice,
+            minRating,
+            search: normalizeSearchText(search),
+            stock
+        })}`;
+
+        const cached = await cache.get(cacheKey);
+        if (cached) {
+            return res.status(200).json({
+                ...cached,
+                data: {
+                    ...(cached.data || {}),
+                    serverNow: new Date().toISOString()
+                }
+            });
+        }
+
+        const query = {
+            shop_id: shopObjectId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        };
+
+        if (category && category !== 'All') query.category = category;
+        if (minPrice || maxPrice) {
+            query['pricing.sellingPrice'] = {};
+            if (minPrice) query['pricing.sellingPrice'].$gte = Number(minPrice);
+            if (maxPrice) query['pricing.sellingPrice'].$lte = Number(maxPrice);
+        }
+        if (minRating) query.averageRating = { $gte: Math.min(Math.max(Number(minRating) || 0, 0), 5) };
+        const normalizedSearch = normalizeSearchText(search);
+        if (normalizedSearch) query.$text = { $search: normalizedSearch };
+        if (stock === 'in') query.$expr = { $gt: [{ $sum: '$variants.stock' }, 0] };
+        if (stock === 'out') query.$expr = { $lte: [{ $sum: '$variants.stock' }, 0] };
+
+        let sortQuery = { createdAt: -1, _id: 1 };
+        if (sort === 'priceAsc') sortQuery = { 'pricing.sellingPrice': 1, _id: 1 };
+        else if (sort === 'priceDesc') sortQuery = { 'pricing.sellingPrice': -1, _id: 1 };
+        else if (sort === 'ratingDesc') sortQuery = { averageRating: -1, numReviews: -1, _id: 1 };
+        else if (sort === 'ratingAsc') sortQuery = { averageRating: 1, numReviews: 1, _id: 1 };
+        else if (sort === 'nameAsc') sortQuery = { title: 1, _id: 1 };
+        else if (sort === 'nameDesc') sortQuery = { title: -1, _id: 1 };
+
+        const [banners, products, totalProducts, categories, categoryMetadata, categoryCounts, collections] = await Promise.all([
+            planAccess.features.scheduledBanners
+                ? Banner.find(getActiveBannerQuery(shopId))
+                    .populate('scheduledProduct', 'title slug status publicationStatus publishAt isActive isDeleted')
+                    .sort({ createdAt: -1 })
+                    .lean()
+                : Promise.resolve([]),
+            Product.aggregate([
+                { $match: query },
+                { $sort: sortQuery },
+                { $skip: skip },
+                { $limit: limit },
+                { $project: PUBLIC_PRODUCT_CARD_PROJECT }
+            ]),
+            Product.countDocuments(query),
+            Product.distinct('category', {
+                shop_id: shopObjectId,
+                isDeleted: false,
+                isActive: true,
+                status: 'Published'
+            }),
+            Category.find({ shop_id: shopId }).select('name coverImage updatedAt').lean(),
+            Product.aggregate([
+                {
+                    $match: {
+                        shop_id: shopObjectId,
+                        isDeleted: false,
+                        isActive: true,
+                        status: 'Published',
+                        category: { $type: 'string', $ne: '' }
+                    }
+                },
+                { $group: { _id: '$category', productCount: { $sum: 1 } } }
+            ]),
+            Collection.find({ shop_id: shopId, isActive: true })
+                .select('title slug updatedAt')
+                .sort({ title: 1 })
+                .limit(50)
+                .lean()
+        ]);
+
+        if (!shop) {
+            return res.status(404).json({ error: "Shop details not found." });
+        }
+
+        await applyEffectiveStoreTheme(shop, planAccess);
+        shop.trustedBadge = await getPublicTrustedBadge(shop);
+        shop.shopVerification = buildPublicShopVerification(shop, {
+            eligible: planAccess.features.publicVerifiedBadge
+        });
+        await attachPublicBranding(shop);
+        delete shop.badgeStatus;
+        delete shop.badgeType;
+        delete shop.badgeApprovedAt;
+        delete shop.badgeExpiresAt;
+        delete shop.badgeRevokedAt;
+        delete shop.verification;
+        delete shop.isActive;
+        delete shop.approvalStatus;
+
+        const pricedProducts = await applyScheduledSalesToProducts({ shopId, products });
+        const manualIdsBySection = getManualSectionProductIds(shop.theme?.homepageSections || []);
+        const allManualProductIds = [...new Set(Object.values(manualIdsBySection).flat())];
+        const reviewIdsBySection = getSelectedSectionReviewIds(shop.theme?.homepageSections || []);
+        const allReviewIds = [...new Set(Object.values(reviewIdsBySection).flat())];
+        let sectionProducts = {};
+        let sectionReviews = {};
+
+        if (allManualProductIds.length > 0) {
+            const manualProducts = await Product.aggregate([
+                {
+                    $match: {
+                        _id: { $in: allManualProductIds.map(id => new mongoose.Types.ObjectId(id)) },
+                        shop_id: shopObjectId,
+                        isDeleted: false,
+                        isActive: true,
+                        status: 'Published'
+                    }
+                },
+                { $project: PUBLIC_PRODUCT_CARD_PROJECT }
+            ]);
+            const pricedManualProducts = await applyScheduledSalesToProducts({ shopId, products: manualProducts });
+            const productMap = new Map(sanitizePublicProducts(pricedManualProducts).map(product => [String(product._id), product]));
+            sectionProducts = Object.entries(manualIdsBySection).reduce((acc, [sectionId, productIds]) => {
+                acc[sectionId] = productIds.map(id => productMap.get(String(id))).filter(Boolean);
+                return acc;
+            }, {});
+        }
+
+        if (allReviewIds.length > 0) {
+            const reviews = await Review.find({
+                _id: { $in: allReviewIds.map(id => new mongoose.Types.ObjectId(id)) },
+                shop_id: shopObjectId,
+                rating: 5,
+                ...Review.getEligibilityQuery()
+            }).select('_id product_id name rating comment createdAt').lean();
+            const reviewProductIds = [...new Set(reviews.map(review => String(review.product_id)).filter(Boolean))];
+            const reviewProducts = reviewProductIds.length
+                ? await Product.find({
+                    _id: { $in: reviewProductIds.map(id => new mongoose.Types.ObjectId(id)) },
+                    shop_id: shopObjectId,
+                    isDeleted: false
+                }).select('title').lean()
+                : [];
+            const productMap = new Map(reviewProducts.map(product => [String(product._id), product]));
+            const reviewMap = new Map(reviews.map(review => [
+                String(review._id),
+                {
+                    ...review,
+                    product: productMap.get(String(review.product_id)) || null
+                }
+            ]));
+            sectionReviews = Object.entries(reviewIdsBySection).reduce((acc, [sectionId, reviewIds]) => {
+                acc[sectionId] = reviewIds.map(id => reviewMap.get(String(id))).filter(Boolean);
+                return acc;
+            }, {});
+        }
+
+        const activeSalePopups = planAccess.features.scheduledSales
+            ? await getActiveSalePopups({ shopId })
+            : [];
+
+        const response = {
+            success: true,
+            data: {
+                shop,
+                banners: banners.map(banner => normalizeBannerForPublic(banner)).filter(Boolean),
+                activeSalePopups,
+                sectionProducts,
+                sectionReviews,
+                products: sanitizePublicProducts(pricedProducts),
+                categories: categories.filter(Boolean),
+                categoryDetails: mergeCategoryDetails({
+                    names: categories,
+                    metadata: categoryMetadata,
+                    counts: new Map(categoryCounts.map(item => [normalizeCategoryKey(item._id), Number(item.productCount || 0)]))
+                }),
+                collections,
+                pagination: buildPagination({
+                    total: totalProducts,
+                    page: currentPage,
+                    limit
+                })
+            }
+        };
+
+        await cache.set(cacheKey, response, BOOTSTRAP_CACHE_TTL_SECONDS);
+        res.status(200).json({
+            ...response,
+            data: {
+                ...response.data,
+                serverNow: new Date().toISOString()
+            }
+        });
+    } catch (err) {
+        console.error("Storefront bootstrap error:", err);
+        res.status(500).json({ error: "Error loading storefront data." });
+    }
+};
+
+
+exports.getStoreProducts = async (req, res) => {
+    try {
+        const products = await Product.find({ shop_id: req.tenantId })
+            .sort({ createdAt: -1 });
+        const pricedProducts = await applyScheduledSalesToProducts({
+            shopId: req.tenantId,
+            products: products.map(product => product.toObject({ virtuals: true }))
+        });
+
+        res.status(200).json({
+            count: pricedProducts.length,
+            products: sanitizePublicProducts(pricedProducts)
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Error fetching products." });
+    }
+};
+
+exports.getSingleProduct = async (req, res) => {
+    try {
+        const slugOrId = String(req.params.id || '').trim();
+        const baseQuery = {
+            shop_id: req.tenantId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        };
+
+        let product = await Product.findOne({
+            ...baseQuery,
+            slug: slugOrId.toLowerCase()
+        });
+
+        if (!product && mongoose.Types.ObjectId.isValid(slugOrId)) {
+            product = await Product.findOne({
+                ...baseQuery,
+                _id: slugOrId
+            });
+        }
+
+        if (!product && !mongoose.Types.ObjectId.isValid(slugOrId)) {
+            const historical = await resolveSlugRedirect({
+                shopId: req.tenantId,
+                resourceType: 'product',
+                oldSlug: slugOrId
+            });
+            if (historical) {
+                product = await Product.findOne({ ...baseQuery, _id: historical.resourceId });
+            }
+        }
+
+        if (!product) {
+            return res.status(404).json({ error: "Product not found." });
+        }
+
+        const [pricedProduct] = await applyScheduledSalesToProducts({
+            shopId: req.tenantId,
+            products: [product.toObject({ virtuals: true })]
+        });
+        res.status(200).json(sanitizePublicProduct(pricedProduct));
+    } catch (err) {
+        res.status(500).json({ error: "Error fetching product details." });
+    }
+};
+
+exports.getStorefrontSitemapData = async (req, res) => {
+    const type = String(req.query.type || 'summary').trim().toLowerCase();
+    if (!['summary', 'core', 'products'].includes(type)) {
+        return res.status(400).json({ success: false, error: 'Invalid sitemap resource type.' });
+    }
+
+    try {
+        const shopId = req.tenantId;
+        const shopObjectId = new mongoose.Types.ObjectId(shopId);
+        const productQuery = {
+            shop_id: shopObjectId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        };
+        const productCount = await Product.countDocuments(productQuery);
+
+        if (type === 'summary') {
+            return res.status(200).json({
+                success: true,
+                data: { productCount, productChunkSize: 1000, generatedAt: new Date().toISOString() }
+            });
+        }
+
+        if (type === 'products') {
+            const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 1000, 1), 1000);
+            const totalPages = Math.ceil(productCount / limit);
+            const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+            if (totalPages === 0 || page > totalPages) {
+                return res.status(404).json({ success: false, error: 'Sitemap product chunk not found.' });
+            }
+            const products = await Product.find(productQuery)
+                .select('_id slug createdAt updatedAt')
+                .sort({ _id: 1 })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .lean();
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    products,
+                    pagination: buildPagination({ total: productCount, page, limit }),
+                    generatedAt: new Date().toISOString()
+                }
+            });
+        }
+
+        const [categoryRows, categoryMetadata, collections] = await Promise.all([
+            Product.aggregate([
+                { $match: { ...productQuery, category: { $type: 'string', $ne: '' } } },
+                { $group: { _id: '$category', productCount: { $sum: 1 }, updatedAt: { $max: '$updatedAt' } } },
+                { $sort: { _id: 1 } }
+            ]),
+            Category.find({ shop_id: shopId }).select('name coverImage seo updatedAt').lean(),
+            Collection.aggregate([
+                { $match: { shop_id: shopObjectId, isActive: true } },
+                {
+                    $lookup: {
+                        from: Product.collection.name,
+                        let: { collectionId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ['$shop_id', shopObjectId] },
+                                            { $eq: ['$isDeleted', false] },
+                                            { $eq: ['$isActive', true] },
+                                            { $eq: ['$status', 'Published'] },
+                                            { $in: ['$$collectionId', { $ifNull: ['$collections', []] }] }
+                                        ]
+                                    }
+                                }
+                            },
+                            { $count: 'count' }
+                        ],
+                        as: 'productStats'
+                    }
+                },
+                { $addFields: { productCount: { $ifNull: [{ $first: '$productStats.count' }, 0] } } },
+                { $match: { productCount: { $gt: 0 } } },
+                { $project: { title: 1, slug: 1, seo: 1, image: 1, createdAt: 1, updatedAt: 1, productCount: 1 } },
+                { $sort: { slug: 1, _id: 1 } }
+            ])
+        ]);
+        const categoryCounts = new Map(categoryRows.map(row => [normalizeCategoryKey(row._id), row.productCount]));
+        const categoryUpdatedAt = new Map(categoryRows.map(row => [normalizeCategoryKey(row._id), row.updatedAt]));
+        const categories = mergeCategoryDetails({
+            names: categoryRows.map(row => row._id),
+            metadata: categoryMetadata,
+            counts: categoryCounts
+        }).map(category => ({
+            ...category,
+            updatedAt: category.updatedAt || categoryUpdatedAt.get(normalizeCategoryKey(category.name)) || null
+        })).filter(category => category.productCount > 0);
+
+        return res.status(200).json({
+            success: true,
+            data: { categories, collections, productCount, generatedAt: new Date().toISOString() }
+        });
+    } catch (error) {
+        console.error('Storefront sitemap data error:', {
+            shopId: String(req.tenantId || ''),
+            type,
+            errorCode: error?.code || 'SITEMAP_DATA_FAILED'
+        });
+        return res.status(503).json({ success: false, error: 'Storefront sitemap data is temporarily unavailable.' });
+    }
+};
+
+exports.getStorefrontSlugRedirect = async (req, res) => {
+    try {
+        const resourceType = String(req.params.type || '').trim().toLowerCase();
+        if (!['product', 'collection', 'category'].includes(resourceType)) {
+            return res.status(400).json({ success: false, error: 'Invalid redirect resource type.' });
+        }
+        const historical = await resolveSlugRedirect({
+            shopId: req.tenantId,
+            resourceType,
+            oldSlug: req.params.slug
+        });
+        if (!historical) return res.status(404).json({ success: false, error: 'Redirect not found.' });
+
+        let currentSlug = '';
+        if (resourceType === 'product') {
+            const product = await Product.findOne({
+                _id: historical.resourceId,
+                shop_id: req.tenantId,
+                isDeleted: false,
+                isActive: true,
+                status: 'Published'
+            }).select('slug').lean();
+            currentSlug = product?.slug || '';
+        } else if (resourceType === 'collection') {
+            const collection = await Collection.findOne({
+                _id: historical.resourceId,
+                shop_id: req.tenantId,
+                isActive: true
+            }).select('slug').lean();
+            currentSlug = collection?.slug || '';
+        } else {
+            const category = await Category.findOne({
+                _id: historical.resourceId,
+                shop_id: req.tenantId
+            }).select('name').lean();
+            if (category) {
+                const hasPublicProduct = await Product.exists({
+                    shop_id: req.tenantId,
+                    isDeleted: false,
+                    isActive: true,
+                    status: 'Published',
+                    category: category.name
+                });
+                if (hasPublicProduct) currentSlug = category.name;
+            }
+        }
+        if (!currentSlug) return res.status(404).json({ success: false, error: 'Redirect target not found.' });
+        return res.status(200).json({ success: true, data: { resourceType, currentSlug } });
+    } catch (error) {
+        return res.status(500).json({ success: false, error: 'Failed to resolve storefront redirect.' });
+    }
+};
+
+exports.getBatchProducts = async (req, res) => {
+    try {
+        const ids = String(req.query.ids || '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
+
+        if (ids.length === 0) {
+            return res.status(200).json({ success: true, data: [] });
+        }
+
+        const products = await Product.find({
+            _id: { $in: ids },
+            shop_id: req.tenantId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published'
+        })
+            .select('title slug category collections imageAltText coverMediaId images pricing variants averageRating numReviews entitlementMedia')
+            .lean({ virtuals: true });
+
+        const pricedProducts = await applyScheduledSalesToProducts({ shopId: req.tenantId, products });
+        res.status(200).json({ success: true, data: sanitizePublicProducts(pricedProducts) });
+    } catch (err) {
+        res.status(500).json({ success: false, error: "Error fetching products." });
+    }
+};
+
+exports.getCartRecommendations = async (req, res) => {
+    try {
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 6, 1), 12);
+        const shopObjectId = new mongoose.Types.ObjectId(req.tenantId);
+        const cartIds = String(req.query.ids || '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(id => mongoose.Types.ObjectId.isValid(id))
+            .slice(0, 40);
+        const cartObjectIds = [...new Set(cartIds)].map(id => new mongoose.Types.ObjectId(id));
+
+        const baseMatch = {
+            shop_id: shopObjectId,
+            isDeleted: false,
+            isActive: true,
+            status: 'Published',
+            ...(cartObjectIds.length > 0 ? { _id: { $nin: cartObjectIds } } : {}),
+            $expr: { $gt: [{ $sum: '$variants.stock' }, 0] }
+        };
+
+        const cartProducts = cartObjectIds.length
+            ? await Product.find({
+                _id: { $in: cartObjectIds },
+                shop_id: shopObjectId,
+                isDeleted: false
+            }).select('category tags collections').lean()
+            : [];
+
+        const categories = [...new Set(cartProducts.map(product => product.category).filter(Boolean))];
+        const tags = [...new Set(cartProducts.flatMap(product => product.tags || []).filter(Boolean))];
+        const collections = [...new Set(cartProducts.flatMap(product => product.collections || []).map(String).filter(Boolean))];
+
+        const priorityMatches = [];
+        if (categories.length > 0) priorityMatches.push({ category: { $in: categories } });
+        if (tags.length > 0) priorityMatches.push({ tags: { $in: tags } });
+        if (collections.length > 0) {
+            priorityMatches.push({
+                collections: {
+                    $in: collections.map(id => new mongoose.Types.ObjectId(id))
+                }
+            });
+        }
+
+        const projectStage = { $project: PUBLIC_PRODUCT_CARD_PROJECT };
+        const sortStage = { $sort: { averageRating: -1, numReviews: -1, createdAt: -1, _id: 1 } };
+        let recommendations = [];
+
+        if (priorityMatches.length > 0) {
+            recommendations = await Product.aggregate([
+                { $match: { ...baseMatch, $or: priorityMatches } },
+                sortStage,
+                { $limit: limit },
+                projectStage
+            ]);
+        }
+
+        if (recommendations.length < limit) {
+            const alreadyPickedIds = recommendations.map(product => product._id);
+            const fallbackProducts = await Product.aggregate([
+                {
+                    $match: {
+                        ...baseMatch,
+                        ...(alreadyPickedIds.length > 0
+                            ? {
+                                _id: {
+                                    $nin: [
+                                        ...cartObjectIds,
+                                        ...alreadyPickedIds
+                                    ]
+                                }
+                            }
+                            : {})
+                    }
+                },
+                sortStage,
+                { $limit: limit - recommendations.length },
+                projectStage
+            ]);
+            recommendations = [...recommendations, ...fallbackProducts];
+        }
+
+        const pricedRecommendations = await applyScheduledSalesToProducts({
+            shopId: req.tenantId,
+            products: recommendations
+        });
+
+        res.status(200).json({
+            success: true,
+            data: sanitizePublicProducts(pricedRecommendations)
+        });
+    } catch (err) {
+        console.error("Cart recommendations error:", err);
+        res.status(500).json({ success: false, error: "Error loading recommendations." });
+    }
+};
+
+
+exports.getCities = async (req, res) => {
+    try {
+        const token = await getPathaoToken();
+        const cities = await getPathaoCities(token);
+        res.status(200).json({ success: true, data: cities });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load cities' });
+    }
+};
+
+exports.getZones = async (req, res) => {
+    try {
+        const token = await getPathaoToken();
+        const zones = await getPathaoZones(token, req.params.cityId);
+        res.status(200).json({ success: true, data: zones });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load zones' });
+    }
+};
+
+exports.getAreas = async (req, res) => {
+    try {
+        const token = await getPathaoToken();
+        const areas = await getPathaoAreas(token, req.params.zoneId);
+        res.status(200).json({ success: true, data: areas });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to load areas' });
+    }
+};
+
+const Joi = require('joi');
+
+
+const pathaoSetupSchema = Joi.object({
+    contact_name: Joi.string().min(3).max(50).required(),
+    contact_number: Joi.string().pattern(/^01\d{9}$/).required().messages({
+        'string.pattern.base': 'Contact number must be an 11-digit Bangladesh mobile number'
+    }),
+    address: Joi.string().min(10).max(120).required(),
+    city_id: Joi.number().integer().positive().required(),
+    zone_id: Joi.number().integer().positive().required(),
+    area_id: Joi.number().integer().positive().required()
+});
+
+const pathaoLinkSchema = Joi.object({
+    client_id: Joi.string().trim().min(1).max(200).required(),
+    client_secret: Joi.string().trim().min(1).max(500).required(),
+    username: Joi.string().trim().email().max(200).required(),
+    password: Joi.string().min(1).max(500).required(),
+    store_id: Joi.number().integer().positive().required(),
+    isLive: Joi.boolean().required()
+});
+
+const pathaoStoreList = response => {
+    const list = response?.data?.data || response?.data || [];
+    return Array.isArray(list) ? list : [];
+};
+
+const findApprovedPathaoStore = (stores, { name, address }) => {
+    const normalize = value => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const matches = stores.filter(store =>
+        normalize(store.store_name) === normalize(name) && normalize(store.store_address) === normalize(address) &&
+        Number.isInteger(Number(store.store_id)) && Number(store.store_id) > 0 &&
+        store.is_active !== 0 && store.is_active !== '0' && store.is_active !== false
+    );
+    return matches.length === 1 ? matches[0] : null;
+};
+
+exports.setupVendorPathaoStore = async (req, res) => {
+    try {
+        const { error, value } = pathaoSetupSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ success: false, error: error.details[0].message });
+        }
+
+        const shopId = req.tenantId;
+
+        const shop = await Shop.findById(shopId);
+        if (!shop) {
+            return res.status(404).json({ success: false, error: 'Shop not found' });
+        }
+        if (shop.couriers?.pathao?.pendingStore) {
+            return res.status(409).json({ success: false, error: 'A Pathao pickup shop is awaiting approval. Check its status before creating another.' });
+        }
+        if (shop.pathaoStoreId) {
+            return res.status(409).json({ success: false, error: 'Pathao is already connected for this shop.' });
+        }
+
+        const token = await getPathaoToken();
+
+        const storePayload = {
+            name: `${shop.shopName.trim().slice(0, 43)}-${String(shop._id).slice(-6)}`,
+            contact_name: value.contact_name,
+            contact_number: value.contact_number,
+            address: value.address,
+            city_id: parseInt(value.city_id, 10),
+            zone_id: parseInt(value.zone_id, 10),
+            area_id: parseInt(value.area_id, 10)
+        };
+
+        await createPathaoStore(token, storePayload);
+
+        shop.couriers = shop.couriers || {};
+        shop.couriers.pathao = shop.couriers.pathao || {};
+        shop.couriers.pathao.pendingStore = {
+            name: storePayload.name,
+            address: storePayload.address,
+            requestedAt: new Date()
+        };
+        await shop.save();
+
+        // Pathao's create response has no store ID. Its store list may lag until approval.
+        let newStore = null;
+        try {
+            const storesList = pathaoStoreList(await getPathaoStores(token));
+            newStore = findApprovedPathaoStore(storesList, shop.couriers.pathao.pendingStore);
+        } catch {
+            // The request is persisted and can be checked again after Pathao approval.
+        }
+
+        if (!newStore) {
+            return res.status(202).json({
+                success: true,
+                pending: true,
+                message: 'Pathao accepted the pickup shop. Check its approval status here later.'
+            });
+        }
+
+        shop.pathaoStoreId = newStore.store_id;
+        mirrorPathaoConfigOnShop(shop, {
+            storeId: newStore.store_id,
+            storeName: newStore.store_name || newStore.name || ''
+        });
+        shop.couriers.pathao.pendingStore = null;
+        await shop.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Pathao shipping location successfully linked to your shop!',
+            data: {
+                pathaoStoreId: shop.pathaoStoreId
+            }
+        });
+
+    } catch (err) {
+        console.error("Vendor Pathao Setup Error:", err);
+        res.status(500).json({
+            success: false,
+            error: err.message || 'Failed to setup Pathao integration'
+        });
+    }
+};
+
+exports.checkPendingPathaoStore = async (req, res) => {
+    try {
+        const shop = await Shop.findById(req.tenantId);
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+        const pendingStore = shop.couriers?.pathao?.pendingStore;
+        if (!pendingStore) return res.status(400).json({ success: false, error: 'No Pathao pickup shop is awaiting approval.' });
+
+        const token = await getPathaoToken();
+        const approvedStore = findApprovedPathaoStore(pathaoStoreList(await getPathaoStores(token)), pendingStore);
+        if (!approvedStore) {
+            return res.status(202).json({ success: true, pending: true, message: 'Pathao has not approved the pickup shop yet.' });
+        }
+        shop.pathaoStoreId = Number(approvedStore.store_id);
+        mirrorPathaoConfigOnShop(shop, {
+            storeId: shop.pathaoStoreId,
+            storeName: approvedStore.store_name || ''
+        });
+        shop.couriers.pathao.pendingStore = null;
+        await shop.save();
+        return res.json({ success: true, pending: false, message: 'Pathao pickup shop approved and connected.' });
+    } catch {
+        return res.status(502).json({ success: false, error: 'Could not check Pathao approval status. Try again later.' });
+    }
+};
+
+// Link Existing Pathao Account
+exports.linkExistingPathaoAccount = async (req, res) => {
+    try {
+        const { error, value } = pathaoLinkSchema.validate(req.body);
+        if (error) return res.status(400).json({ success: false, error: error.details[0].message });
+        const { client_id, client_secret, username, password, store_id, isLive } = value;
+        const shopId = req.tenantId;
+
+        const customCreds = { client_id, client_secret, username, password, isLive };
+        const token = await getPathaoToken(customCreds);
+        const linkedStore = pathaoStoreList(await getPathaoStores(token, isLive))
+            .find(store => Number(store.store_id) === store_id);
+        if (!linkedStore) {
+            return res.status(400).json({ success: false, error: 'This Pathao store ID was not found in the selected account and environment.' });
+        }
+        if (linkedStore.is_active === 0 || linkedStore.is_active === '0' || linkedStore.is_active === false) {
+            return res.status(400).json({ success: false, error: 'This Pathao store is not active yet. Wait for Pathao approval.' });
+        }
+
+        const shop = await Shop.findById(shopId);
+        if (!shop) return res.status(404).json({ success: false, error: 'Shop not found' });
+        shop.pathaoStoreId = store_id;
+        shop.pathaoCredentials = {
+            client_id,
+            client_secret: encryptSecret(client_secret, { trim: false }),
+            username,
+            password: encryptSecret(password, { trim: false }),
+            isLive
+        };
+        mirrorPathaoConfigOnShop(shop, {
+            storeId: shop.pathaoStoreId,
+            storeName: linkedStore.store_name || '',
+            enabled: true,
+            status: 'Active'
+        });
+        shop.couriers.pathao.pendingStore = null;
+        await shop.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Successfully linked your existing Pathao account!',
+            data: { pathaoStoreId: shop.pathaoStoreId }
+        });
+
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message || 'Invalid Pathao credentials.' });
+    }
+};
